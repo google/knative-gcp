@@ -46,16 +46,16 @@ func SmokeCloudAuditLogsSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 
-	lib.MakeAuditLogsOrDie(client,
-		lib.ServiceGVK,
-		auditlogsName,
-		lib.PubSubCreateTopicMethodName,
-		project,
-		resourceName,
-		lib.PubSubServiceName,
-		svcName,
-		authConfig.PubsubServiceAccount,
-	)
+	lib.MakeAuditLogsOrDie(client, lib.AuditLogsConfig{
+		SinkGVK:            lib.ServiceGVK,
+		SinkName:           svcName,
+		AuditlogsName:      auditlogsName,
+		MethodName:         lib.PubSubCreateTopicMethodName,
+		Project:            project,
+		ResourceName:       resourceName,
+		ServiceName:        lib.PubSubServiceName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
 
 	createdAuditLogs := client.GetAuditLogsOrFail(auditlogsName)
 
@@ -78,7 +78,7 @@ func SmokeCloudAuditLogsSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 		t.Errorf("Expected subscription %q to exist", subID)
 	}
 	client.DeleteAuditLogsOrFail(auditlogsName)
-	//Wait for 20 seconds for topic, subscription and notification to get deleted in gcp
+	//Wait for 40 seconds for topic, subscription and notification to get deleted in gcp
 	time.Sleep(resources.WaitDeletionTime)
 
 	deletedSinkExists := lib.StackdriverSinkExists(t, sinkID)
@@ -112,16 +112,16 @@ func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName, v1beta1.CloudAuditLogsSourceEvent)
 
 	// Create the CloudAuditLogsSource.
-	lib.MakeAuditLogsOrDie(client,
-		lib.ServiceGVK,
-		auditlogsName,
-		lib.PubSubCreateTopicMethodName,
-		project,
-		resourceName,
-		lib.PubSubServiceName,
-		targetName,
-		authConfig.PubsubServiceAccount,
-	)
+	lib.MakeAuditLogsOrDie(client, lib.AuditLogsConfig{
+		SinkGVK:            lib.ServiceGVK,
+		SinkName:           targetName,
+		AuditlogsName:      auditlogsName,
+		MethodName:         lib.PubSubCreateTopicMethodName,
+		Project:            project,
+		ResourceName:       resourceName,
+		ServiceName:        lib.PubSubServiceName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
 
 	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)
 

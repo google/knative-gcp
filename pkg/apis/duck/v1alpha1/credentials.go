@@ -30,20 +30,13 @@ const (
 )
 
 var (
-	// The format of gServiceAccountName is service-account-name@project-id.iam.gserviceaccount.com
-	// Service account name must be between 6 and 30 characters (inclusive),
-	// must begin with a lowercase letter, and consist of lowercase alphanumeric characters that can be separated by hyphens.
-	// Project IDs must start with a lowercase letter and can have lowercase ASCII letters, digits or hyphens,
-	// must be between 6 and 30 characters.
-	gsaValidationRegex = regexp.MustCompile(`^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`)
-
 	// The name of a k8s ServiceAccount object must be a valid DNS subdomain name.
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
 	ksaValidationRegex = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$`)
 )
 
 // ValidateCredential checks secret and service account.
-func ValidateCredential(secret *corev1.SecretKeySelector, gServiceAccountName string, kServiceAccountName string) *apis.FieldError {
+func ValidateCredential(secret *corev1.SecretKeySelector, kServiceAccountName string) *apis.FieldError {
 	if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) && kServiceAccountName != "" {
 		return &apis.FieldError{
 			Message: "Can't have spec.serviceAccountName and spec.secret at the same time",
@@ -51,16 +44,10 @@ func ValidateCredential(secret *corev1.SecretKeySelector, gServiceAccountName st
 		}
 	} else if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) {
 		return validateSecret(secret)
-	} else {
-		var errs *apis.FieldError
-		if kServiceAccountName != "" {
-			errs = errs.Also(validateK8sServiceAccount(kServiceAccountName))
-		}
-		if gServiceAccountName != "" {
-			errs = errs.Also(validateGCPServiceAccount(gServiceAccountName))
-		}
-		return errs
+	} else if kServiceAccountName != "" {
+		return validateK8sServiceAccount(kServiceAccountName)
 	}
+	return nil
 }
 
 func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
@@ -72,18 +59,6 @@ func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
 		errs = errs.Also(apis.ErrMissingField("secret.key"))
 	}
 	return errs
-}
-
-func validateGCPServiceAccount(gServiceAccountName string) *apis.FieldError {
-	match := gsaValidationRegex.FindStringSubmatch(gServiceAccountName)
-	if len(match) == 0 {
-		return &apis.FieldError{
-			Message: fmt.Sprintf(`invalid value: %s, googleServiceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
-				gServiceAccountName),
-			Paths: []string{"googleServiceAccount"},
-		}
-	}
-	return nil
 }
 
 func validateK8sServiceAccount(kServiceAccountName string) *apis.FieldError {

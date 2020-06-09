@@ -1087,47 +1087,6 @@ func TestAllCases(t *testing.T) {
 			},
 			WantStatusUpdates: nil,
 		}, {
-			Name: "delete fails with getting k8s service account error",
-			Objects: []runtime.Object{
-				NewCloudStorageSource(storageName, testNS,
-					WithCloudStorageSourceProject(testProject),
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceBucket(bucket),
-					WithCloudStorageSourceSink(sinkGVK, sinkName),
-					WithCloudStorageSourceSinkURI(storageSinkURL),
-					WithCloudStorageSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-					}),
-					WithCloudStorageSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-					WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
-					WithDeletionTimestamp(),
-				),
-				newSink(),
-			},
-			Key: testNS + "/" + storageName,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed",
-					`Failed to delete CloudStorageSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewCloudStorageSource(storageName, testNS,
-					WithCloudStorageSourceProject(testProject),
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceBucket(bucket),
-					WithCloudStorageSourceSink(sinkGVK, sinkName),
-					WithCloudStorageSourceSinkURI(storageSinkURL),
-					WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
-					WithCloudStorageSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-					WithCloudStorageSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-					}),
-					WithCloudStorageSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed",
-						`serviceaccounts "test123-fake-cluster-name" not found`),
-					WithDeletionTimestamp(),
-				),
-			}},
-		},
-		{
 			Name: "successfully deleted storage when bucket doesn't exist",
 			Objects: []runtime.Object{
 				NewCloudStorageSource(storageName, testNS,

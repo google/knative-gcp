@@ -78,9 +78,9 @@ func WithCloudSchedulerSourceSchedule(schedule string) CloudSchedulerSourceOptio
 	}
 }
 
-func WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount string) CloudSchedulerSourceOption {
+func WithCloudSchedulerSourceServiceAccount(kServiceAccount string) CloudSchedulerSourceOption {
 	return func(ps *v1alpha1.CloudSchedulerSource) {
-		ps.Spec.GoogleServiceAccount = gServiceAccount
+		ps.Spec.ServiceAccountName = kServiceAccount
 	}
 }
 

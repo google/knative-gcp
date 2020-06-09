@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pool
+package handler
 
 import (
 	"context"
@@ -29,7 +29,6 @@ import (
 	"knative.dev/eventing/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/handler"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
@@ -59,7 +58,7 @@ type FanoutPool struct {
 }
 
 type fanoutHandlerCache struct {
-	handler.Handler
+	Handler
 	b *config.Broker
 }
 
@@ -153,24 +152,26 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 		sub := p.pubsubClient.Subscription(b.DecoupleQueue.Subscription)
 		sub.ReceiveSettings = p.options.PubsubReceiveSettings
 
+		h := NewHandler(
+			sub,
+			processors.ChainProcessors(
+				&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
+				&filter.Processor{Targets: p.targets},
+				&deliver.Processor{
+					DeliverClient:      p.deliverClient,
+					Targets:            p.targets,
+					RetryOnFailure:     true,
+					DeliverRetryClient: p.deliverRetryClient,
+					DeliverTimeout:     p.options.DeliveryTimeout,
+					StatsReporter:      p.statsReporter,
+				},
+			),
+			p.options.TimeoutPerEvent,
+			p.options.RetryPolicy,
+		)
 		hc := &fanoutHandlerCache{
-			Handler: handler.Handler{
-				Timeout:      p.options.TimeoutPerEvent,
-				Subscription: sub,
-				Processor: processors.ChainProcessors(
-					&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
-					&filter.Processor{Targets: p.targets},
-					&deliver.Processor{
-						DeliverClient:      p.deliverClient,
-						Targets:            p.targets,
-						RetryOnFailure:     true,
-						DeliverRetryClient: p.deliverRetryClient,
-						DeliverTimeout:     p.options.DeliveryTimeout,
-						StatsReporter:      p.statsReporter,
-					},
-				),
-			},
-			b: b,
+			Handler: *h,
+			b:       b,
 		}
 
 		// Start the handler with broker key in context.

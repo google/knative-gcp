@@ -81,13 +81,13 @@ func TestCloudStorageSourceIdentitySpec(t *testing.T) {
 		Spec: CloudStorageSourceSpec{
 			PubSubSpec: v1alpha1.PubSubSpec{
 				IdentitySpec: v1alpha1.IdentitySpec{
-					GoogleServiceAccount: "test",
+					ServiceAccountName: "test",
 				},
 			},
 		},
 	}
 	want := "test"
-	got := s.IdentitySpec().GoogleServiceAccount
+	got := s.IdentitySpec().ServiceAccountName
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

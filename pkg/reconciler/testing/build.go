@@ -62,12 +62,6 @@ func WithCloudBuildSourceSink(gvk metav1.GroupVersionKind, name string) CloudBui
 	}
 }
 
-func WithCloudBuildSourceGCPServiceAccount(gServiceAccount string) CloudBuildSourceOption {
-	return func(bs *v1alpha1.CloudBuildSource) {
-		bs.Spec.GoogleServiceAccount = gServiceAccount
-	}
-}
-
 func WithCloudBuildSourceDeletionTimestamp(s *v1alpha1.CloudBuildSource) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	s.ObjectMeta.SetDeletionTimestamp(&t)

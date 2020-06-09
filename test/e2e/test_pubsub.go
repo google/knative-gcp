@@ -49,9 +49,13 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	defer lib.TearDown(client)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(client, metav1.GroupVersionKind{
-		Version: "v1",
-		Kind:    "Service"}, psName, svcName, topic, authConfig.PubsubServiceAccount)
+	lib.MakePubSubOrDie(client, lib.PubSubConfig{
+		SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
+		PubSubName:         psName,
+		SinkName:           svcName,
+		TopicName:          topic,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
 
 	createdPubSub := client.GetPubSubOrFail(psName)
 	subID := createdPubSub.Status.SubscriptionID
@@ -62,7 +66,7 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	}
 
 	client.DeletePubSubOrFail(psName)
-	//Wait for 20 seconds for subscription to get deleted in gcp
+	//Wait for 40 seconds for subscription to get deleted in gcp
 	time.Sleep(resources.WaitDeletionTime)
 	deletedSubExists := lib.SubscriptionExists(t, subID)
 	if deletedSubExists {
@@ -93,7 +97,13 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 	lib.MakePubSubTargetJobOrDie(client, source, targetName, v1beta1.CloudPubSubSourcePublish)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(client, lib.ServiceGVK, psName, targetName, topicName, authConfig.PubsubServiceAccount)
+	lib.MakePubSubOrDie(client, lib.PubSubConfig{
+		SinkGVK:            lib.ServiceGVK,
+		PubSubName:         psName,
+		SinkName:           targetName,
+		TopicName:          topicName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
 
 	topic := lib.GetTopic(t, topicName)
 
