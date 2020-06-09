@@ -20,8 +20,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"testing"
+	"time"
 
-	monitoring "cloud.google.com/go/monitoring/apiv3"
+	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"github.com/golang/protobuf/ptypes/duration"
 	googlepb "github.com/golang/protobuf/ptypes/timestamp"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
@@ -85,4 +87,39 @@ func StringifyStackDriverFilter(filter map[string]interface{}) string {
 		sb.WriteString(fmt.Sprintf("%s=\"%v\" ", k, v))
 	}
 	return strings.TrimSuffix(sb.String(), " ")
+}
+
+type Assertion interface {
+	Assert(*monitoring.MetricClient) error
+}
+
+func CheckAssertions(t *testing.T, assertions ...Assertion) {
+	t.Helper()
+	ctx := context.Background()
+	client, err := monitoring.NewMetricClient(ctx)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	timeout := time.After(5 * time.Minute)
+	for {
+		errors := make([]error, 0, len(assertions))
+		for _, assertion := range assertions {
+			if err := assertion.Assert(client); err != nil {
+				errors = append(errors, err)
+			}
+		}
+		if len(errors) == 0 {
+			return
+		}
+		select {
+		case <-timeout:
+			t.Errorf("timeout checking metrics")
+			for _, err := range errors {
+				t.Error(err)
+			}
+			return
+		case <-time.After(5 * time.Second):
+		}
+	}
 }

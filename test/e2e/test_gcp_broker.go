@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	knativegcptestresources "github.com/google/knative-gcp/test/e2e/lib/resources"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
@@ -55,10 +56,32 @@ Note: the number denotes the sequence of the event that flows in this test case.
 func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
-	client.SetupStackDriverMetrics(t)
 	brokerURL, brokerName := createGCPBroker(client)
 	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName)
-	lib.AssertBrokerMetrics(client)
+}
+
+func GCPBrokerMetricsTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	projectID := os.Getenv(lib.ProwProjectKey)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+	client.SetupStackDriverMetrics(t)
+	brokerURL, brokerName := createGCPBroker(client)
+	start := time.Now()
+	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName)
+	end := time.Now()
+	metrics.CheckAssertions(t,
+		lib.BrokerMetricAssertion{
+			ProjectID:       projectID,
+			BrokerName:      brokerName,
+			BrokerNamespace: client.Namespace,
+			StartTime:       start,
+			EndTime:         end,
+			CountPerType: map[string]int64{
+				lib.E2EDummyEventType:     1,
+				lib.E2EDummyRespEventType: 1,
+			},
+		},
+	)
 }
 
 func GCPBrokerTracingTestImpl(t *testing.T, authConfig lib.AuthConfig) {

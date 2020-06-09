@@ -48,17 +48,11 @@ PubSubWithBrokerTestImpl tests the following scenario:
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig, assertMetrics bool) {
+func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
-	if assertMetrics {
-		client.SetupStackDriverMetricsInNamespace(t)
-	}
 	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
 	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName)
-	if assertMetrics {
-		lib.AssertBrokerMetrics(client)
-	}
 }
 
 func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {

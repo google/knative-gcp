@@ -17,55 +17,89 @@ limitations under the License.
 package lib
 
 import (
+	"context"
 	"fmt"
 	"net/http"
-	"os"
+	"strconv"
 	"time"
 
+	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
-	pkgmetrics "knative.dev/pkg/metrics"
+	"google.golang.org/api/iterator"
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
-func AssertBrokerMetrics(client *Client) {
-	client.T.Helper()
-	timeout := time.After(4 * time.Minute)
-	var err error
-	for {
-		err = tryAssertBrokerMetrics(client)
-		if err == nil {
-			return
-		}
-		select {
-		case <-timeout:
-			client.T.Errorf("timeout checking metrics: %v", err)
-			return
-		case <-time.After(5 * time.Second):
-		}
-	}
+type BrokerMetricAssertion struct {
+	ProjectID       string
+	BrokerName      string
+	BrokerNamespace string
+	StartTime       time.Time
+	EndTime         time.Time
+	CountPerType    map[string]int64
 }
 
-func tryAssertBrokerMetrics(client *Client) error {
-	// If we reach this point, the projectID should have been set.
-	projectID := os.Getenv(ProwProjectKey)
-	f := map[string]interface{}{
-		"metric.type":                      BrokerEventCountMetricType,
-		"resource.type":                    BrokerMetricResourceType,
-		"metric.label.event_type":          E2EDummyEventType,
-		"resource.label.namespace_name":    client.Namespace,
-		"metric.label.response_code":       http.StatusAccepted,
-		"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusAccepted),
-	}
-
-	filter := metrics.StringifyStackDriverFilter(f)
-	client.T.Logf("Filter expression: %s", filter)
-
-	actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
+func (a BrokerMetricAssertion) Assert(client *monitoring.MetricClient) error {
+	ctx := context.Background()
+	start, err := ptypes.TimestampProto(a.StartTime)
 	if err != nil {
-		return fmt.Errorf("failed to get stackdriver event count metric: %w", err)
+		return err
 	}
-	expectedCount := int64(1)
-	if *actualCount != expectedCount {
-		return fmt.Errorf("actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
+	end, err := ptypes.TimestampProto(a.EndTime)
+	if err != nil {
+		return err
+	}
+	it := client.ListTimeSeries(ctx, &monitoringpb.ListTimeSeriesRequest{
+		Name:     fmt.Sprintf("projects/%s", a.ProjectID),
+		Filter:   a.StackdriverFilter(),
+		Interval: &monitoringpb.TimeInterval{StartTime: start, EndTime: end},
+		View:     monitoringpb.ListTimeSeriesRequest_FULL,
+	})
+	gotCount := make(map[string]int64)
+	for {
+		ts, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		labels := ts.GetMetric().GetLabels()
+		eventType := labels["event_type"]
+		code, err := strconv.Atoi(labels["response_code"])
+		if err != nil {
+			return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
+		}
+		if code != http.StatusAccepted {
+			return fmt.Errorf("metric has unexpected response code: %v", ts.GetMetric())
+		}
+		var startTime *timestamp.Timestamp
+		var lastValue int64
+		for _, point := range ts.GetPoints() {
+			if !proto.Equal(point.GetInterval().GetStartTime(), startTime) {
+				lastValue = 0
+			}
+			val := point.GetValue().GetInt64Value()
+			gotCount[eventType] = gotCount[eventType] + val - lastValue
+			lastValue = val
+		}
+	}
+	if diff := cmp.Diff(a.CountPerType, gotCount); diff != "" {
+		return fmt.Errorf("unexpected broker metric count (-want, +got) = %v", diff)
 	}
 	return nil
+}
+
+func (a BrokerMetricAssertion) StackdriverFilter() string {
+	filter := map[string]interface{}{
+		"metric.type":                   BrokerEventCountMetricType,
+		"resource.type":                 BrokerMetricResourceType,
+		"resource.label.project_id":     a.ProjectID,
+		"resource.label.namespace_name": a.BrokerNamespace,
+		"resource.label.broker_name":    a.BrokerName,
+	}
+	return metrics.StringifyStackDriverFilter(filter)
 }
