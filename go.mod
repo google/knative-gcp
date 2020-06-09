@@ -9,7 +9,7 @@ require (
 	cloud.google.com/go/storage v1.6.1-0.20200331222814-69e77e66e597
 	github.com/cloudevents/sdk-go v1.2.0
 	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
-	github.com/cloudevents/sdk-go/v2 v2.0.0
+	github.com/cloudevents/sdk-go/v2 v2.0.1-0.20200608152019-2ab697c8fc0b
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.0
@@ -29,13 +29,13 @@ require (
 	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.21.0
-	k8s.io/api v0.17.6
-	k8s.io/apimachinery v0.17.6
+	k8s.io/api v0.18.1
+	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.15.1-0.20200605120418-4085d471bd3a
-	knative.dev/pkg v0.0.0-20200605112617-7b4093b435c0
-	knative.dev/serving v0.15.1-0.20200605022218-74cef7837317
-	knative.dev/test-infra v0.0.0-20200605033518-4b5d9e1bbdbe // indirect
+	knative.dev/eventing v0.15.1-0.20200609184333-fb349c350f10
+	knative.dev/pkg v0.0.0-20200609184032-fef70cc2616b
+	knative.dev/serving v0.15.1-0.20200609213032-ff6a680fa7c1
+	knative.dev/test-infra v0.0.0-20200609214832-1d9763fe8228 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
