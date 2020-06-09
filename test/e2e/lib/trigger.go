@@ -1,19 +1,3 @@
-/*
-Copyright 2020 Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package lib
 
 import (
@@ -31,15 +15,15 @@ import (
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
-type BrokerMetricAssertion struct {
+type TriggerMetricAssertion struct {
 	ProjectID       string
-	BrokerName      string
 	BrokerNamespace string
+	BrokerName      string
 	StartTime       time.Time
-	CountPerType    map[string]int64
+	CountPerTrigger map[string]int64
 }
 
-func (a BrokerMetricAssertion) Assert(client *monitoring.MetricClient) error {
+func (a TriggerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 	ctx := context.Background()
 	start, err := ptypes.TimestampProto(a.StartTime)
 	if err != nil {
@@ -64,27 +48,27 @@ func (a BrokerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 		if err != nil {
 			return err
 		}
+		triggerName := ts.GetResource().GetLabels()["trigger_name"]
 		labels := ts.GetMetric().GetLabels()
-		eventType := labels["event_type"]
 		code, err := strconv.Atoi(labels["response_code"])
 		if err != nil {
 			return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
 		}
-		if code != http.StatusAccepted {
+		if code != http.StatusAccepted && code != http.StatusOK {
 			return fmt.Errorf("metric has unexpected response code: %v", ts.GetMetric())
 		}
-		gotCount[eventType] = gotCount[eventType] + metrics.SumCumulative(ts)
+		gotCount[triggerName] = gotCount[triggerName] + metrics.SumCumulative(ts)
 	}
-	if diff := cmp.Diff(a.CountPerType, gotCount); diff != "" {
+	if diff := cmp.Diff(a.CountPerTrigger, gotCount); diff != "" {
 		return fmt.Errorf("unexpected broker metric count (-want, +got) = %v", diff)
 	}
 	return nil
 }
 
-func (a BrokerMetricAssertion) StackdriverFilter() string {
+func (a TriggerMetricAssertion) StackdriverFilter() string {
 	filter := map[string]interface{}{
-		"metric.type":                   BrokerEventCountMetricType,
-		"resource.type":                 BrokerMetricResourceType,
+		"metric.type":                   TriggerEventCountMetricType,
+		"resource.type":                 TriggerMonitoredResourceType,
 		"resource.label.namespace_name": a.BrokerNamespace,
 		"resource.label.broker_name":    a.BrokerName,
 	}

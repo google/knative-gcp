@@ -25,8 +25,10 @@ import (
 
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	googlepb "github.com/golang/protobuf/ptypes/timestamp"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
+	"google.golang.org/protobuf/proto"
 )
 
 // TODO upstream to knative/pkg
@@ -122,4 +124,19 @@ func CheckAssertions(t *testing.T, assertions ...Assertion) {
 		case <-time.After(5 * time.Second):
 		}
 	}
+}
+
+func SumCumulative(ts *monitoringpb.TimeSeries) int64 {
+	var startTime *timestamp.Timestamp
+	var lastVal int64
+	var sum int64
+	for _, point := range ts.GetPoints() {
+		if !proto.Equal(point.GetInterval().GetStartTime(), startTime) {
+			lastVal = 0
+		}
+		val := point.GetValue().GetInt64Value()
+		sum += val - lastVal
+		lastVal = val
+	}
+	return sum
 }

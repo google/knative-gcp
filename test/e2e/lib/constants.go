@@ -27,6 +27,9 @@ const (
 	BrokerEventCountMetricType = "knative.dev/eventing/broker/event_count"
 	BrokerMetricResourceType   = "knative_broker"
 
+	TriggerEventCountMetricType  = "knative.dev/eventing/trigger/event_count"
+	TriggerMonitoredResourceType = "knative_trigger"
+
 	EventType          = "type"
 	EventSource        = "source"
 	EventSubject       = "subject"
