@@ -97,7 +97,6 @@ func (a BrokerMetricAssertion) StackdriverFilter() string {
 	filter := map[string]interface{}{
 		"metric.type":                   BrokerEventCountMetricType,
 		"resource.type":                 BrokerMetricResourceType,
-		"resource.label.project_id":     a.ProjectID,
 		"resource.label.namespace_name": a.BrokerNamespace,
 		"resource.label.broker_name":    a.BrokerName,
 	}
