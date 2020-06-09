@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/utils"
 	"time"
 
 	"cloud.google.com/go/pubsub"
@@ -53,6 +52,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
+	"github.com/google/knative-gcp/pkg/utils"
 )
 
 const (

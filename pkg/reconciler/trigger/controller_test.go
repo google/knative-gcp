@@ -42,6 +42,7 @@ import (
 
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
+
 	c := NewController(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
