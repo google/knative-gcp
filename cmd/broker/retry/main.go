@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool"
+	"github.com/google/knative-gcp/pkg/broker/handler"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -58,6 +58,9 @@ type envConfig struct {
 
 	// Max to 10m.
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
+
+	MinRetryBackoff time.Duration `envconfig:"MIN_RETRY_BACKOFF" default:"1s"`
+	MaxRetryBackoff time.Duration `envconfig:"MAX_RETRY_BACKOFF" default:"1m"`
 }
 
 func main() {
@@ -86,19 +89,19 @@ func main() {
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
 	syncPool, err := InitializeSyncPool(
 		ctx,
-		pool.ProjectID(projectID),
+		handler.ProjectID(projectID),
 		metrics.PodName(env.PodName),
 		metrics.ContainerName(component),
 		[]volume.Option{
 			volume.WithPath(env.TargetsConfigPath),
 			volume.WithNotifyChan(targetsUpdateCh),
 		},
-		buildPoolOptions(env)...,
+		buildHandlerOptions(env)...,
 	)
 	if err != nil {
 		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
 	}
-	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, pool.DefaultHealthCheckPort); err != nil {
+	if _, err := handler.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, handler.DefaultHealthCheckPort); err != nil {
 		logger.Fatal("Failed to start retry sync pool", zap.Error(err))
 	}
 
@@ -127,7 +130,7 @@ func poolSyncSignal(ctx context.Context, targetsUpdateCh chan struct{}) chan str
 	return ch
 }
 
-func buildPoolOptions(env envConfig) []pool.Option {
+func buildHandlerOptions(env envConfig) []handler.Option {
 	rs := pubsub.DefaultReceiveSettings
 	// If Synchronous is true, then no more than MaxOutstandingMessages will be in memory at one time.
 	// MaxOutstandingBytes still refers to the total bytes processed, rather than in memory.
@@ -136,15 +139,19 @@ func buildPoolOptions(env envConfig) []pool.Option {
 	rs.Synchronous = true
 	rs.MaxOutstandingMessages = env.OutstandingMessagesPerSub
 	rs.MaxOutstandingBytes = env.OutstandingBytesPerSub
-	var opts []pool.Option
+	var opts []handler.Option
 	if env.HandlerConcurrency > 0 {
-		opts = append(opts, pool.WithHandlerConcurrency(env.HandlerConcurrency))
+		opts = append(opts, handler.WithHandlerConcurrency(env.HandlerConcurrency))
 		rs.NumGoroutines = env.HandlerConcurrency
 	}
 	if env.TimeoutPerEvent > 0 {
-		opts = append(opts, pool.WithTimeoutPerEvent(env.TimeoutPerEvent))
+		opts = append(opts, handler.WithTimeoutPerEvent(env.TimeoutPerEvent))
 	}
-	opts = append(opts, pool.WithPubsubReceiveSettings(rs))
+	opts = append(opts, handler.WithRetryPolicy(handler.RetryPolicy{
+		MinBackoff: env.MinRetryBackoff,
+		MaxBackoff: env.MaxRetryBackoff,
+	}))
+	opts = append(opts, handler.WithPubsubReceiveSettings(rs))
 	// The default CeClient is good?
 	return opts
 }

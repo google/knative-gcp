@@ -32,19 +32,25 @@ import (
 	pkgmetrics "knative.dev/pkg/metrics"
 )
 
-func MakePubSubOrDie(client *Client,
-	sinkGVK metav1.GroupVersionKind,
-	psName, sinkName, topicName, pubsubServiceAccount string,
-	so ...kngcptesting.CloudPubSubSourceOption,
-) {
+type PubSubConfig struct {
+	SinkGVK            metav1.GroupVersionKind
+	PubSubName         string
+	SinkName           string
+	TopicName          string
+	ServiceAccountName string
+	Options            []kngcptesting.CloudPubSubSourceOption
+}
+
+func MakePubSubOrDie(client *Client, config PubSubConfig) {
 	client.T.Helper()
-	so = append(so, kngcptesting.WithCloudPubSubSourceSink(sinkGVK, sinkName))
-	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(topicName))
-	so = append(so, kngcptesting.WithCloudPubSubSourceGCPServiceAccount(pubsubServiceAccount))
-	eventsPubSub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace, so...)
+	so := config.Options
+	so = append(so, kngcptesting.WithCloudPubSubSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(config.TopicName))
+	so = append(so, kngcptesting.WithCloudPubSubSourceServiceAccount(config.ServiceAccountName))
+	eventsPubSub := kngcptesting.NewCloudPubSubSource(config.PubSubName, client.Namespace, so...)
 	client.CreatePubSubOrFail(eventsPubSub)
 
-	client.Core.WaitForResourceReadyOrFail(psName, CloudPubSubSourceTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(config.PubSubName, CloudPubSubSourceTypeMeta)
 }
 
 func MakePubSubTargetJobOrDie(client *Client, source, targetName, eventType string) {
