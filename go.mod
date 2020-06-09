@@ -51,10 +51,6 @@ replace (
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 )
 
-// This can be removed when https://github.com/cloudevents/sdk-go/issues/525 is
-// fixed (should be next sdk-go release)
-replace github.com/cloudevents/sdk-go/v2 => github.com/cloudevents/sdk-go/v2 v2.0.0
-
 replace github.com/aws/aws-sdk-go => github.com/aws/aws-sdk-go v1.25.1
 
 replace github.com/blang/semver => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
