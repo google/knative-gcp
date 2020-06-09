@@ -18,12 +18,12 @@ package trigger
 
 import (
 	"context"
-	"k8s.io/client-go/tools/cache"
 	"os"
 
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"

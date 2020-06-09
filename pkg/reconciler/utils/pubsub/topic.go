@@ -55,7 +55,7 @@ func (r *Reconciler) ReconcileTopic(ctx context.Context, id string, topicConfig 
 		return nil, err
 	}
 	logger.Info("Created PubSub topic", zap.String("name", topic.ID()))
-	r.Recorder.Eventf(obj, corev1.EventTypeNormal, topicCreated, "Created PubSub topic %q", topic.ID())
+	r.recorder.Eventf(obj, corev1.EventTypeNormal, topicCreated, "Created PubSub topic %q", topic.ID())
 	updater.MarkTopicReady()
 	return topic, nil
 }
@@ -78,7 +78,7 @@ func (r *Reconciler) DeleteTopic(ctx context.Context, id string, obj runtime.Obj
 			return err
 		}
 		logger.Info("Deleted PubSub topic", zap.String("name", topic.ID()))
-		r.Recorder.Eventf(obj, corev1.EventTypeNormal, topicDeleted, "Deleted PubSub topic %q", topic.ID())
+		r.recorder.Eventf(obj, corev1.EventTypeNormal, topicDeleted, "Deleted PubSub topic %q", topic.ID())
 	}
 	return nil
 }

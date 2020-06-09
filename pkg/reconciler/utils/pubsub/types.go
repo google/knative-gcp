@@ -23,13 +23,13 @@ import (
 
 type Reconciler struct {
 	client   *pubsub.Client
-	Recorder record.EventRecorder
+	recorder record.EventRecorder
 }
 
 func NewReconciler(client *pubsub.Client, recorder record.EventRecorder) *Reconciler {
 	return &Reconciler{
 		client:   client,
-		Recorder: recorder,
+		recorder: recorder,
 	}
 }
 

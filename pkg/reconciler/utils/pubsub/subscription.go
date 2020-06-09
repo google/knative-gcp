@@ -72,7 +72,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 		return nil, err
 	}
 	logger.Info("Created PubSub subscription", zap.String("name", sub.ID()))
-	r.Recorder.Eventf(obj, corev1.EventTypeNormal, subCreated, "Created PubSub subscription %q", sub.ID())
+	r.recorder.Eventf(obj, corev1.EventTypeNormal, subCreated, "Created PubSub subscription %q", sub.ID())
 	updater.MarkSubscriptionReady()
 	return sub, nil
 }
@@ -93,7 +93,7 @@ func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runt
 			return err
 		}
 		logger.Info("Deleted PubSub subscription", zap.String("name", sub.ID()))
-		r.Recorder.Eventf(obj, corev1.EventTypeNormal, subDeleted, "Deleted PubSub subscription %q", sub.ID())
+		r.recorder.Eventf(obj, corev1.EventTypeNormal, subDeleted, "Deleted PubSub subscription %q", sub.ID())
 	}
 
 	return nil
