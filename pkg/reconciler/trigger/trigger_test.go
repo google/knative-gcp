@@ -213,7 +213,7 @@ func TestAllCasesTrigger(t *testing.T) {
 				Object: NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(testUID),
 					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
-					WithTriggerBrokerUnknown("Broker-", ""),
+					WithTriggerBrokerUnknown("Broker/", ""),
 					WithTriggerSubscriptionReady,
 					WithTriggerTopicReady,
 					WithTriggerDependencyReady,
