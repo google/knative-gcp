@@ -38,7 +38,6 @@ type BrokerMetricAssertion struct {
 	BrokerName      string
 	BrokerNamespace string
 	StartTime       time.Time
-	EndTime         time.Time
 	CountPerType    map[string]int64
 }
 
@@ -48,7 +47,7 @@ func (a BrokerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 	if err != nil {
 		return err
 	}
-	end, err := ptypes.TimestampProto(a.EndTime)
+	end, err := ptypes.TimestampProto(time.Now())
 	if err != nil {
 		return err
 	}

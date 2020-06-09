@@ -68,14 +68,12 @@ func GCPBrokerMetricsTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	brokerURL, brokerName := createGCPBroker(client)
 	start := time.Now()
 	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName)
-	end := time.Now()
 	metrics.CheckAssertions(t,
 		lib.BrokerMetricAssertion{
 			ProjectID:       projectID,
 			BrokerName:      brokerName,
 			BrokerNamespace: client.Namespace,
 			StartTime:       start,
-			EndTime:         end,
 			CountPerType: map[string]int64{
 				lib.E2EDummyEventType:     1,
 				lib.E2EDummyRespEventType: 1,
