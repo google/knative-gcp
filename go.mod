@@ -22,7 +22,7 @@ require (
 	go.opencensus.io v0.22.4-0.20200604162333-785d8992f1ac
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.5.0
-	go.uber.org/zap v1.14.1
+	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20200317142112-1b76d66859c6 // indirect
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	google.golang.org/api v0.24.0
@@ -49,10 +49,6 @@ replace (
 	k8s.io/code-generator => k8s.io/code-generator v0.17.6
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 )
-
-// This can be removed when https://github.com/cloudevents/sdk-go/issues/525 is
-// fixed (should be next sdk-go release)
-replace github.com/cloudevents/sdk-go/v2 => github.com/cloudevents/sdk-go/v2 v2.0.0
 
 replace github.com/aws/aws-sdk-go => github.com/aws/aws-sdk-go v1.25.1
 
