@@ -33,7 +33,6 @@ import (
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -153,21 +152,6 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 // getGoogleServiceAccountName will return Google service account name and corresponding raw Kubernetes service account name.
 func (i *Identity) getGoogleServiceAccountName(ctx context.Context, identifiable duck.Identifiable) (resources.IdentityNames, error) {
 	namespace := identifiable.GetObjectMeta().GetNamespace()
-	clusterName := identifiable.GetObjectMeta().GetAnnotations()[v1alpha1.ClusterNameAnnotation]
-	if clusterName == "" {
-		err := fmt.Errorf(`unable to get cluster name, please provide it by adding annotation "%s=$CLUSTER_NAME" to source`, v1alpha1.ClusterNameAnnotation)
-		return resources.IdentityNames{}, fmt.Errorf("failed to get cluster name: %w", err)
-	}
-
-	if identifiable.IdentitySpec().GoogleServiceAccount != "" {
-		googleServiceAccount := identifiable.IdentitySpec().GoogleServiceAccount
-		return resources.IdentityNames{
-			KServiceAccountName:      resources.GenerateServiceAccountName(googleServiceAccount, clusterName),
-			GoogleServiceAccountName: googleServiceAccount,
-			Namespace:                namespace,
-			ClusterName:              clusterName,
-		}, nil
-	}
 	ad := i.gcpAuthStore.Load()
 	if ad == nil || ad.GCPAuthDefaults == nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to get default config from GCP auth configmap")
@@ -177,7 +161,6 @@ func (i *Identity) getGoogleServiceAccountName(ctx context.Context, identifiable
 		KServiceAccountName:      identifiable.IdentitySpec().ServiceAccountName,
 		GoogleServiceAccountName: ad.GCPAuthDefaults.WorkloadIdentityGSA(namespace, identifiable.IdentitySpec().ServiceAccountName),
 		Namespace:                namespace,
-		ClusterName:              clusterName,
 	}, nil
 }
 

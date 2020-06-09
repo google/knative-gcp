@@ -442,7 +442,7 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 				Data:     schedulerWithSecret.Data,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
-						GoogleServiceAccount: "new-service-account",
+						ServiceAccountName: "new-service-account",
 					},
 					SourceSpec: schedulerWithSecret.SourceSpec,
 					Secret:     schedulerWithSecret.Secret,

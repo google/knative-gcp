@@ -26,10 +26,8 @@ import (
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 
 	"k8s.io/api/apps/v1"
@@ -149,17 +147,6 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 			Name:          "metrics",
 			ContainerPort: 9090,
 		}},
-	}
-
-	// If GCP service account is specified, use that service account as credential.
-	if args.PullSubscription.Spec.GoogleServiceAccount != "" {
-		kServiceAccountName := resources.GenerateServiceAccountName(args.PullSubscription.Spec.GoogleServiceAccount, args.PullSubscription.Annotations[duckv1alpha1.ClusterNameAnnotation])
-		return &corev1.PodSpec{
-			ServiceAccountName: kServiceAccountName,
-			Containers: []corev1.Container{
-				receiveAdapterContainer,
-			},
-		}
 	}
 
 	// If there is no secret to embed, return what we have.

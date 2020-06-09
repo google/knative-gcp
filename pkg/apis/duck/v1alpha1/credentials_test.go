@@ -80,7 +80,7 @@ func TestValidateCredential(t *testing.T) {
 	defer logtesting.ClearAll()
 
 	for _, tc := range testCases {
-		errs := ValidateCredential(tc.secret, "", tc.serviceAccount)
+		errs := ValidateCredential(tc.secret, tc.serviceAccount)
 		got := errs != nil
 		if diff := cmp.Diff(tc.wantErr, got); diff != "" {
 			t.Errorf("unexpected resource (-want, +got) = %v", diff)

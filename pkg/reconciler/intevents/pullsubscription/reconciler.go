@@ -103,9 +103,9 @@ func (r *Base) ReconcileKind(ctx context.Context, ps *v1alpha1.PullSubscription)
 	ps.Status.InitializeConditions()
 	ps.Status.ObservedGeneration = ps.Generation
 
-	// If pullsubscription doesn't have ownerReference and GCP ServiceAccount is provided, reconcile workload identity.
+	// If pullsubscription doesn't have ownerReference and ServiceAccountName is provided, reconcile workload identity.
 	// Otherwise, its owner will reconcile workload identity.
-	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && (ps.Spec.ServiceAccountName != "" || ps.Spec.GoogleServiceAccount != "") {
+	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.ServiceAccountName != "" {
 		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, ps.Spec.Project, ps); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Pub/Sub subscription workload identity: %s", err.Error())
 		}
@@ -404,7 +404,7 @@ func (r *Base) resolveDestination(ctx context.Context, destination duckv1.Destin
 func (r *Base) FinalizeKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {
 	// If pullsubscription doesn't have ownerReference, k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && (ps.Spec.ServiceAccountName != "" || ps.Spec.GoogleServiceAccount != "") {
+	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.ServiceAccountName != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, ps.Spec.Project, ps); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete delete Pub/Sub subscription workload identity: %s", err.Error())
 		}

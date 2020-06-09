@@ -50,8 +50,7 @@ func MakePullSubscription(args *PullSubscriptionArgs) *v1alpha1.PullSubscription
 		PubSubSpec: gcpduckv1alpha1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{},
 			IdentitySpec: gcpduckv1alpha1.IdentitySpec{
-				GoogleServiceAccount: args.ServiceAccount,
-				ServiceAccountName:   args.ServiceAccountName,
+				ServiceAccountName: args.ServiceAccountName,
 			},
 			Secret:  args.Secret,
 			Project: args.Project,
