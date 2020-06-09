@@ -316,6 +316,13 @@ func TestGCPBroker(t *testing.T) {
 }
 
 // TestGCPBroker tests we can knock a Knative Service from a gcp broker.
+func TestGCPBrokerMetrics(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	GCPBrokerMetricsTestImpl(t, authConfig)
+}
+
+// TestGCPBroker tests we can knock a Knative Service from a gcp broker.
 func TestGCPBrokerTracing(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
