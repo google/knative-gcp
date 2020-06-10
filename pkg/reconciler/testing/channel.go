@@ -129,12 +129,6 @@ func WithChannelDefaults(s *v1alpha1.Channel) {
 	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }
 
-func WithChannelGCPServiceAccount(gServiceAccount string) ChannelOption {
-	return func(ps *v1alpha1.Channel) {
-		ps.Spec.GoogleServiceAccount = gServiceAccount
-	}
-}
-
 func WithChannelServiceAccount(kServiceAccount string) ChannelOption {
 	return func(ps *v1alpha1.Channel) {
 		ps.Spec.ServiceAccountName = kServiceAccount

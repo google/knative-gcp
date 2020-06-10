@@ -24,9 +24,7 @@ import (
 	"knative.dev/pkg/kmeta"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 )
 
 // PublisherArgs are the arguments needed to create a Topic publisher.
@@ -68,17 +66,6 @@ func makePublisherPodSpec(args *PublisherArgs) *corev1.PodSpec {
 			Name:  "K_TRACING_CONFIG",
 			Value: args.TracingConfig,
 		}},
-	}
-
-	// If GCP service account is specified, use that service account as credential.
-	if args.Topic.Spec.GoogleServiceAccount != "" {
-		kServiceAccountName := resources.GenerateServiceAccountName(args.Topic.Spec.GoogleServiceAccount, args.Topic.Annotations[duckv1alpha1.ClusterNameAnnotation])
-		return &corev1.PodSpec{
-			ServiceAccountName: kServiceAccountName,
-			Containers: []corev1.Container{
-				publisherContainer,
-			},
-		}
 	}
 
 	// If k8s service account is specified, use that service account as credential.

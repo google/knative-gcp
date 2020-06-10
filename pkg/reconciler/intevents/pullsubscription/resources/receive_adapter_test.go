@@ -341,8 +341,8 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 	}
 }
 
-func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
-	gServiceAccountName := "test@test.iam.gserviceaccount.com"
+func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
+	serviceAccountName := "test"
 	ps := &v1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testname",
@@ -355,13 +355,7 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 		Spec: v1alpha1.PullSubscriptionSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: gServiceAccountName,
-				},
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "eventing-secret-name",
-					},
-					Key: "eventing-secret-key",
+					ServiceAccountName: serviceAccountName,
 				},
 				Project: "eventing-name",
 				SourceSpec: duckv1.SourceSpec{
@@ -427,7 +421,7 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "test-fake-cluster-name",
+					ServiceAccountName: "test",
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: "test-image",

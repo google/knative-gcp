@@ -119,7 +119,7 @@ func TestAllCases(t *testing.T) {
 		},
 		OtherTestData: map[string]interface{}{
 			"pre": []PubsubAction{
-				TopicAndSub("cre-bkr_testnamespace_test-broker_abc123"),
+				TopicAndSub("cre-bkr_testnamespace_test-broker_abc123", "cre-bkr_testnamespace_test-broker_abc123"),
 			},
 		},
 		PostConditions: []func(*testing.T, *TableRow){
