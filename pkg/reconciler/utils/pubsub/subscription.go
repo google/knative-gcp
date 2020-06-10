@@ -18,7 +18,7 @@ package pubsub
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
@@ -34,8 +34,6 @@ const (
 	subCreated   = "SubscriptionCreated"
 	subDeleted   = "SubscriptionDeleted"
 )
-
-var deletedTopicErr = errors.New("topic of the subscription has been deleted")
 
 func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subConfig pubsub.SubscriptionConfig, obj runtime.Object, updater StatusUpdater) (*pubsub.Subscription, error) {
 	logger := logging.FromContext(ctx)
@@ -56,26 +54,20 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 			return nil, err
 		}
 		if config.Topic != nil && config.Topic.String() == deletedTopic {
-			logger.Error("The topic is deleted")
-			updater.MarkSubscriptionFailed("DeletedTopic", "Pull subscriptions must be recreated to work with recreated topic")
-			return nil, deletedTopicErr
+			logger.Warn("Detected deleted topic. Going to recreate the pull subscription.")
+			// Subscription with "_deleted-topic_" cannot pull from the new topic. In order to recover, we first delete
+			// the sub and then create it. Unacked messages will be lost.
+			if err := r.deleteSubscription(ctx, sub, obj); err != nil {
+				updater.MarkSubscriptionFailed("SubscriptionDeletionFailed", "topic of the subscription has been deleted, need to recreate the subscription: %v", err)
+				return nil, fmt.Errorf("topic of the subscription has been deleted, need to recreate the subscription: %v", err)
+			}
+			return r.createSubscription(ctx, id, subConfig, obj, updater)
 		}
 		updater.MarkSubscriptionReady()
 		return sub, nil
 	}
 
-	// Create a new subscription.
-	logger.Debug("Creating sub with cfg", zap.String("id", id), zap.Any("cfg", subConfig))
-	sub, err = r.client.CreateSubscription(ctx, id, subConfig)
-	if err != nil {
-		logger.Error("Failed to create subscription", zap.Error(err))
-		updater.MarkSubscriptionFailed("SubscriptionCreationFailed", "Subscription creation failed: %w", err)
-		return nil, err
-	}
-	logger.Info("Created PubSub subscription", zap.String("name", sub.ID()))
-	r.recorder.Eventf(obj, corev1.EventTypeNormal, subCreated, "Created PubSub subscription %q", sub.ID())
-	updater.MarkSubscriptionReady()
-	return sub, nil
+	return r.createSubscription(ctx, id, subConfig, obj, updater)
 }
 
 func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runtime.Object) error {
@@ -89,13 +81,34 @@ func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runt
 		return err
 	}
 	if exists {
-		if err := sub.Delete(ctx); err != nil {
-			logger.Error("Failed to delete Pub/Sub subscription", zap.Error(err))
-			return err
-		}
-		logger.Info("Deleted PubSub subscription", zap.String("name", sub.ID()))
-		r.recorder.Eventf(obj, corev1.EventTypeNormal, subDeleted, "Deleted PubSub subscription %q", sub.ID())
+		return r.deleteSubscription(ctx, sub, obj)
 	}
 
 	return nil
+}
+
+func (r *Reconciler) deleteSubscription(ctx context.Context, sub *pubsub.Subscription, obj runtime.Object) error {
+	logger := logging.FromContext(ctx)
+	if err := sub.Delete(ctx); err != nil {
+		logger.Error("Failed to delete Pub/Sub subscription", zap.Error(err))
+		return err
+	}
+	logger.Info("Deleted PubSub subscription", zap.String("name", sub.ID()))
+	r.recorder.Eventf(obj, corev1.EventTypeNormal, subDeleted, "Deleted PubSub subscription %q", sub.ID())
+	return nil
+}
+
+func (r *Reconciler) createSubscription(ctx context.Context, id string, subConfig pubsub.SubscriptionConfig, obj runtime.Object, updater StatusUpdater) (*pubsub.Subscription, error) {
+	logger := logging.FromContext(ctx)
+	logger.Debug("Creating sub with cfg", zap.String("id", id), zap.Any("cfg", subConfig))
+	sub, err := r.client.CreateSubscription(ctx, id, subConfig)
+	if err != nil {
+		logger.Error("Failed to create subscription", zap.Error(err))
+		updater.MarkSubscriptionFailed("SubscriptionCreationFailed", "Subscription creation failed: %w", err)
+		return nil, err
+	}
+	logger.Info("Created PubSub subscription", zap.String("name", sub.ID()))
+	r.recorder.Eventf(obj, corev1.EventTypeNormal, subCreated, "Created PubSub subscription %q", sub.ID())
+	updater.MarkSubscriptionReady()
+	return sub, nil
 }
