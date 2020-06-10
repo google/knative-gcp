@@ -56,7 +56,6 @@ func AssertBrokerEventCountMetric(client *Client) {
 	}
 
 	AssertMetricCount(client, timeseries, 1 /* expectedCount */)
-
 }
 
 func AssertTriggerEventCountMetric(client *Client) {
