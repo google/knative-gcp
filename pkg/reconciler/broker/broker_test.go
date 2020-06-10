@@ -119,7 +119,7 @@ func TestAllCases(t *testing.T) {
 		},
 		OtherTestData: map[string]interface{}{
 			"pre": []PubsubAction{
-				TopicAndSub("cre-bkr_testnamespace_test-broker_abc123"),
+				TopicAndSub("cre-bkr_testnamespace_test-broker_abc123", "cre-bkr_testnamespace_test-broker_abc123"),
 			},
 		},
 		PostConditions: []func(*testing.T, *TableRow){
@@ -140,6 +140,7 @@ func TestAllCases(t *testing.T) {
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerReadyURI(brokerAddress),
+				WithBrokerConfigReady,
 			),
 		}},
 		WantEvents: []string{
@@ -172,6 +173,7 @@ func TestAllCases(t *testing.T) {
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerReadyURI(brokerAddress),
+				WithBrokerConfigReady,
 				WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
 			),
 		}},
@@ -236,6 +238,7 @@ func TestAllCases(t *testing.T) {
 					WithBrokerClass(brokerv1beta1.BrokerClass),
 					WithBrokerUID(testUID),
 					WithBrokerReadyURI(brokerAddress),
+					WithBrokerConfigReady,
 					WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
 				),
 			},

@@ -1177,55 +1177,13 @@ func TestAllCases(t *testing.T) {
 					DeleteJobErr: gstatus.Error(codes.NotFound, "delete-job-induced-error"),
 				},
 			},
-		}, {
-			Name: "scheduler deleted with getting k8s service account error",
-			Objects: []runtime.Object{
-				NewCloudSchedulerSource(schedulerName, testNS,
-					WithCloudSchedulerSourceProject(testProject),
-					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceData(testData),
-					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithInitCloudSchedulerSourceConditions,
-					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
-					WithCloudSchedulerSourceDeletionTimestamp,
-					WithCloudSchedulerSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-					}),
-					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
-					WithCloudSchedulerSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-				),
-				newSink(),
-			},
-			Key: testNS + "/" + schedulerName,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewCloudSchedulerSource(schedulerName, testNS,
-					WithCloudSchedulerSourceProject(testProject),
-					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceData(testData),
-					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithInitCloudSchedulerSourceConditions,
-					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
-					WithCloudSchedulerSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-					}),
-					WithCloudSchedulerSourceDeletionTimestamp,
-					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
-					WithCloudSchedulerSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-					WithCloudSchedulerSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
-				),
-			}},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudSchedulerSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
-			},
 		}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			PubSubBase:      intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-			Identity:        identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			Identity:        identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			schedulerLister: listers.GetCloudSchedulerSourceLister(),
 			createClientFn:  gscheduler.TestClientCreator(testData["scheduler"]),
 		}

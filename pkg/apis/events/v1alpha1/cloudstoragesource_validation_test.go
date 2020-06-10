@@ -454,7 +454,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
-						GoogleServiceAccount: "new-service-account",
+						ServiceAccountName: "new-service-account",
 					},
 					SourceSpec: storageSourceSpec.SourceSpec,
 					Secret:     storageSourceSpec.Secret,

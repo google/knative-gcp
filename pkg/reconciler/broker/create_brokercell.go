@@ -63,6 +63,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 			bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Get(want.Name, metav1.GetOptions{})
 			if err != nil {
 				logging.FromContext(ctx).Error("Failed to get the brokercell from the API server", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
+				b.Status.MarkBrokerCelllUnknown("BrokerCellUnknown", "Failed to get the brokercell from the API server %s/%s", want.Namespace, want.Name)
 				return err
 			}
 		}

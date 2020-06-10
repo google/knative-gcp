@@ -19,11 +19,14 @@ package pubsub
 import (
 	"context"
 
+	"knative.dev/pkg/injection"
+
 	"k8s.io/client-go/tools/cache"
 	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudpubsubsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudpubsubsource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
@@ -46,22 +49,20 @@ const (
 	receiveAdapterName = "cloudpubsubsource.events.cloud.google.com"
 )
 
-// NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
-func NewController(
-	ctx context.Context,
-	cmw configmap.Watcher,
-) *controller.Impl {
-	return newControllerWithIAMPolicyManager(
-		ctx,
-		cmw,
-		iam.DefaultIAMPolicyManager())
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a CloudPubSubSource controller.
+func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+	}
 }
 
-func newControllerWithIAMPolicyManager(
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	cloudpubsubsourceInformer := cloudpubsubsourceinformers.Get(ctx)
@@ -69,7 +70,7 @@ func newControllerWithIAMPolicyManager(
 
 	r := &Reconciler{
 		PubSubBase:   intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:     identity.NewIdentity(ctx, ipm),
+		Identity:     identity.NewIdentity(ctx, ipm, gcpas),
 		pubsubLister: cloudpubsubsourceInformer.Lister(),
 	}
 	impl := cloudpubsubsourcereconciler.NewImpl(ctx, r)

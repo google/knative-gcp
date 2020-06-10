@@ -9,7 +9,7 @@ require (
 	cloud.google.com/go/storage v1.8.0
 	github.com/cloudevents/sdk-go v1.2.0
 	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
-	github.com/cloudevents/sdk-go/v2 v2.0.0
+	github.com/cloudevents/sdk-go/v2 v2.0.1-0.20200608152019-2ab697c8fc0b
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.2
@@ -22,20 +22,20 @@ require (
 	go.opencensus.io v0.22.4-0.20200604162333-785d8992f1ac
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.5.0
-	go.uber.org/zap v1.14.1
+	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20200317142112-1b76d66859c6 // indirect
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	google.golang.org/api v0.26.0
 	google.golang.org/genproto v0.0.0-20200608115520-7c474a2e3482
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.24.0
-	k8s.io/api v0.17.6
-	k8s.io/apimachinery v0.17.6
+	k8s.io/api v0.18.1
+	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.15.1-0.20200605120418-4085d471bd3a
-	knative.dev/pkg v0.0.0-20200605112617-7b4093b435c0
-	knative.dev/serving v0.15.1-0.20200605022218-74cef7837317
-	knative.dev/test-infra v0.0.0-20200605033518-4b5d9e1bbdbe // indirect
+	knative.dev/eventing v0.15.1-0.20200610152122-1873f64a57fb
+	knative.dev/pkg v0.0.0-20200609184032-fef70cc2616b
+	knative.dev/serving v0.15.1-0.20200610170822-42e22bad6559
+	knative.dev/test-infra v0.0.0-20200610141822-fd009ecf10fe // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -50,10 +50,6 @@ replace (
 	k8s.io/code-generator => k8s.io/code-generator v0.17.6
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 )
-
-// This can be removed when https://github.com/cloudevents/sdk-go/issues/525 is
-// fixed (should be next sdk-go release)
-replace github.com/cloudevents/sdk-go/v2 => github.com/cloudevents/sdk-go/v2 v2.0.0
 
 replace github.com/aws/aws-sdk-go => github.com/aws/aws-sdk-go v1.25.1
 

@@ -504,52 +504,13 @@ func TestAllCases(t *testing.T) {
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, channelName, true),
 			},
-		}, {
-			Name: "delete channel failed with getting k8s service account error",
-			Objects: []runtime.Object{
-				NewChannel(channelName, testNS,
-					WithChannelUID(channelUID),
-					WithChannelSpec(v1alpha1.ChannelSpec{
-						Project: testProject,
-					}),
-					WithInitChannelConditions,
-					WithChannelGCPServiceAccount(gServiceAccount),
-					WithChannelDefaults,
-					WithChannelDeletionTimestamp,
-					WithChannelServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-					WithChannelAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName}),
-				),
-			},
-			Key: testNS + "/" + channelName,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed",
-					`Failed to delete Channel workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewChannel(channelName, testNS,
-					WithChannelUID(channelUID),
-					WithChannelSpec(v1alpha1.ChannelSpec{
-						Project: testProject,
-					}),
-					WithInitChannelConditions,
-					WithChannelGCPServiceAccount(gServiceAccount),
-					WithChannelDefaults,
-					WithChannelServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-					WithChannelDeletionTimestamp,
-					WithChannelWorkloadIdentityFailed("WorkloadIdentityDeleteFailed",
-						`serviceaccounts "test123-fake-cluster-name" not found`),
-					WithChannelAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName}),
-				),
-			}},
 		}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
-			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			channelLister: listers.GetChannelLister(),
 			topicLister:   listers.GetTopicLister(),
 		}

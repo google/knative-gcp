@@ -133,7 +133,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			},
 			OtherTestData: map[string]interface{}{
 				"pre": []PubsubAction{
-					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123"),
+					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123", "cre-tgr_testnamespace_test-trigger_abc123"),
 				},
 			},
 		},
@@ -152,7 +152,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			},
 			OtherTestData: map[string]interface{}{
 				"pre": []PubsubAction{
-					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123"),
+					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123", "cre-tgr_testnamespace_test-trigger_abc123"),
 				},
 			},
 		},
@@ -173,7 +173,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			},
 			OtherTestData: map[string]interface{}{
 				"pre": []PubsubAction{
-					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123"),
+					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123", "cre-tgr_testnamespace_test-trigger_abc123"),
 				},
 			},
 		},
@@ -193,7 +193,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			},
 			OtherTestData: map[string]interface{}{
 				"pre": []PubsubAction{
-					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123"),
+					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123", "cre-tgr_testnamespace_test-trigger_abc123"),
 				},
 			},
 		},
@@ -213,7 +213,7 @@ func TestAllCasesTrigger(t *testing.T) {
 				Object: NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(testUID),
 					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
-					WithTriggerBrokerUnknown("", ""),
+					WithTriggerBrokerUnknown("Broker/", ""),
 					WithTriggerSubscriptionReady,
 					WithTriggerTopicReady,
 					WithTriggerDependencyReady,
@@ -243,7 +243,8 @@ func TestAllCasesTrigger(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerv1beta1.BrokerClass),
 					WithInitBrokerConditions,
-					WithBrokerReady("url")),
+					WithBrokerReady("url"),
+					WithBrokerConfigReady),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(testUID),
 					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
@@ -273,7 +274,8 @@ func TestAllCasesTrigger(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerv1beta1.BrokerClass),
 					WithInitBrokerConditions,
-					WithBrokerReady("url")),
+					WithBrokerReady("url"),
+					WithBrokerConfigReady),
 				makeSubscriberAddressableAsUnstructured(),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(testUID),

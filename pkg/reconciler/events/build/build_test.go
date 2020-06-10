@@ -361,47 +361,13 @@ func TestAllCases(t *testing.T) {
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", buildName),
 				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudBuildSource reconciled: "%s/%s"`, testNS, buildName),
 			},
-		}, {
-			Name: "pullsubscription deleted with getting k8s service account error",
-			Objects: []runtime.Object{
-				NewCloudBuildSource(buildName, testNS,
-					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
-					WithCloudBuildSourceSink(sinkGVK, sinkName),
-					WithCloudBuildSourceDeletionTimestamp,
-					WithCloudBuildSourceGCPServiceAccount(gServiceAccount),
-					WithCloudBuildSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-					WithCloudBuildSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-					}),
-				),
-				newSink(),
-			},
-			Key: testNS + "/" + buildName,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewCloudBuildSource(buildName, testNS,
-					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
-					WithCloudBuildSourceSink(sinkGVK, sinkName),
-					WithCloudBuildSourceDeletionTimestamp,
-					WithCloudBuildSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
-					WithCloudBuildSourceGCPServiceAccount(gServiceAccount),
-					WithCloudBuildSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-					WithCloudBuildSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-					}),
-				),
-			}},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudBuildSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
-			},
 		}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			PubSubBase:           intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			buildLister:          listers.GetCloudBuildSourceLister(),
 			serviceAccountLister: listers.GetServiceAccountLister(),
 		}

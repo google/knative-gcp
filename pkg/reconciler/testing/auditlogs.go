@@ -171,9 +171,9 @@ func WithCloudAuditLogsSourceServiceName(serviceName string) CloudAuditLogsSourc
 	}
 }
 
-func WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount string) CloudAuditLogsSourceOption {
+func WithCloudAuditLogsSourceServiceAccount(kServiceAccount string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Spec.GoogleServiceAccount = gServiceAccount
+		s.Spec.ServiceAccountName = kServiceAccount
 	}
 }
 

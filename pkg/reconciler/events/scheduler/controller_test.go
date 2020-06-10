@@ -19,10 +19,14 @@ package scheduler
 import (
 	"testing"
 
-	iamtesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"knative.dev/pkg/configmap"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
+
+	iamtesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+
+	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake"
 
 	// Fake injection informers
 	_ "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1alpha1/fake"
@@ -31,15 +35,13 @@ import (
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/topic/fake"
 	_ "github.com/google/knative-gcp/pkg/reconciler/testing"
-	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake"
 )
 
 func TestNew(t *testing.T) {
 	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
-
-	c := newControllerWithIAMPolicyManager(ctx, configmap.NewStaticWatcher(), iamtesting.NoopIAMPolicyManager)
+	cmw := configmap.NewStaticWatcher()
+	c := newController(ctx, cmw, iamtesting.NoopIAMPolicyManager, iamtesting.NewGCPAuthTestStore(t, nil))
 
 	if c == nil {
 		t.Fatal("Expected newControllerWithIAMPolicyManager to return a non-nil value")

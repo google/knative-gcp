@@ -107,9 +107,9 @@ func WithCloudStorageSourceWorkloadIdentityFailed(reason, message string) CloudS
 	}
 }
 
-func WithCloudStorageSourceGCPServiceAccount(gServiceAccount string) CloudStorageSourceOption {
+func WithCloudStorageSourceServiceAccount(kServiceAccount string) CloudStorageSourceOption {
 	return func(ps *v1alpha1.CloudStorageSource) {
-		ps.Spec.GoogleServiceAccount = gServiceAccount
+		ps.Spec.ServiceAccountName = kServiceAccount
 	}
 }
 

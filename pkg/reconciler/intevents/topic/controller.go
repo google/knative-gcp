@@ -19,6 +19,8 @@ package topic
 import (
 	"context"
 
+	"knative.dev/pkg/injection"
+
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
@@ -27,6 +29,7 @@ import (
 	"knative.dev/pkg/logging"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -54,22 +57,20 @@ type envConfig struct {
 	Publisher string `envconfig:"PUBSUB_PUBLISHER_IMAGE" required:"true"`
 }
 
-// NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
-func NewController(
-	ctx context.Context,
-	cmw configmap.Watcher,
-) *controller.Impl {
-	return newControllerWithIAMPolicyManager(
-		ctx,
-		cmw,
-		iam.DefaultIAMPolicyManager())
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a Topic controller.
+func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+	}
 }
 
-func newControllerWithIAMPolicyManager(
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	topicInformer := topicinformer.Get(ctx)
 	serviceInformer := serviceinformer.Get(ctx)
@@ -88,7 +89,7 @@ func newControllerWithIAMPolicyManager(
 
 	r := &Reconciler{
 		PubSubBase:     pubsubBase,
-		Identity:       identity.NewIdentity(ctx, ipm),
+		Identity:       identity.NewIdentity(ctx, ipm, gcpas),
 		topicLister:    topicInformer.Lister(),
 		serviceLister:  serviceInformer.Lister(),
 		publisherImage: env.Publisher,

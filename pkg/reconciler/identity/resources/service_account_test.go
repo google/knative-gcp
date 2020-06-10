@@ -27,17 +27,7 @@ import (
 var (
 	gServiceAccountName = "test@test.iam.gserviceaccount.com"
 	kServiceAccountName = "test-cluster"
-	clusterName         = "cluster"
 )
-
-func TestGenerateServiceAccountName(t *testing.T) {
-	want := kServiceAccountName
-	got := GenerateServiceAccountName(gServiceAccountName, clusterName)
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected (-want, +got) = %v", diff)
-	}
-}
 
 func TestMakeServiceAccount(t *testing.T) {
 	want := &corev1.ServiceAccount{
@@ -49,7 +39,10 @@ func TestMakeServiceAccount(t *testing.T) {
 			},
 		},
 	}
-	got := MakeServiceAccount("default", gServiceAccountName, clusterName)
+	got := MakeServiceAccount(IdentityNames{
+		KServiceAccountName:      kServiceAccountName,
+		GoogleServiceAccountName: gServiceAccountName,
+		Namespace:                "default"})
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)
 	}

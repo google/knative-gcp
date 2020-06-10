@@ -19,10 +19,13 @@ package keda
 import (
 	"context"
 
+	"knative.dev/pkg/injection"
+
 	"go.uber.org/zap"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
@@ -64,22 +67,20 @@ type envConfig struct {
 	ReceiveAdapter string `envconfig:"PUBSUB_RA_IMAGE" required:"true"`
 }
 
-// NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
-func NewController(
-	ctx context.Context,
-	cmw configmap.Watcher,
-) *controller.Impl {
-	return newControllerWithIAMPolicyManager(
-		ctx,
-		cmw,
-		iam.DefaultIAMPolicyManager())
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a KEDA-based PullSubscription controller.
+func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+	}
 }
 
-func newControllerWithIAMPolicyManager(
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	deploymentInformer := deploymentinformer.Get(ctx)
 	pullSubscriptionInformer := pullsubscriptioninformers.Get(ctx)
@@ -99,7 +100,7 @@ func newControllerWithIAMPolicyManager(
 	r := &Reconciler{
 		Base: &psreconciler.Base{
 			PubSubBase:             pubsubBase,
-			Identity:               identity.NewIdentity(ctx, ipm),
+			Identity:               identity.NewIdentity(ctx, ipm, gcpas),
 			DeploymentLister:       deploymentInformer.Lister(),
 			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
 			ReceiveAdapterImage:    env.ReceiveAdapter,

@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"log"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	configvalidation "github.com/google/knative-gcp/pkg/apis/configs/validation"
@@ -34,6 +35,7 @@ import (
 	"knative.dev/eventing/pkg/logconfig"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/leaderelection"
 	"knative.dev/pkg/logging"
@@ -64,14 +66,18 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	inteventsv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &inteventsv1alpha1.Topic{},
 }
 
-func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-	// Decorate contexts with the current state of the config.
-	authStore := gcpauth.NewStore(logging.FromContext(ctx).Named("config-gcp-auth-store"))
-	authStore.WatchConfigs(cmw)
+type defaultingAdmissionController func(context.Context, configmap.Watcher) *controller.Impl
 
+func newDefaultingAdmissionConstructor(gcpas *gcpauth.StoreSingleton) defaultingAdmissionController {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newDefaultingAdmissionController(ctx, cmw, gcpas.Store(ctx, cmw))
+	}
+}
+
+func newDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher, gcpas *gcpauth.Store) *controller.Impl {
 	// Decorate contexts with the current state of the config.
 	ctxFunc := func(ctx context.Context) context.Context {
-		return authStore.ToContext(ctx)
+		return gcpas.ToContext(ctx)
 	}
 
 	return defaulting.NewAdmissionController(ctx,
@@ -93,14 +99,18 @@ func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher
 	)
 }
 
-func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-	// Decorate contexts with the current state of the config.
-	authStore := gcpauth.NewStore(logging.FromContext(ctx).Named("config-gcp-auth-store"))
-	authStore.WatchConfigs(cmw)
+type validationController func(context.Context, configmap.Watcher) *controller.Impl
 
+func newValidationConstructor(gcpas *gcpauth.StoreSingleton) validationController {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newValidationAdmissionController(ctx, cmw, gcpas.Store(ctx, cmw))
+	}
+}
+
+func newValidationAdmissionController(ctx context.Context, cmw configmap.Watcher, gcpas *gcpauth.Store) *controller.Impl {
 	// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
 	ctxFunc := func(ctx context.Context) context.Context {
-		return authStore.ToContext(ctx)
+		return gcpas.ToContext(ctx)
 	}
 
 	return validation.NewAdmissionController(ctx,
@@ -141,7 +151,15 @@ func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *co
 	)
 }
 
-func NewConversionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+type conversionController func(context.Context, configmap.Watcher) *controller.Impl
+
+func newConversionConstructor(gcpas *gcpauth.StoreSingleton) conversionController {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newConversionController(ctx, cmw, gcpas.Store(ctx, cmw))
+	}
+}
+
+func newConversionController(ctx context.Context, _ configmap.Watcher, gcpas *gcpauth.Store) *controller.Impl {
 	var (
 		eventsv1alpha1_    = eventsv1alpha1.SchemeGroupVersion.Version
 		eventsv1beta1_     = eventsv1beta1.SchemeGroupVersion.Version
@@ -152,12 +170,8 @@ func NewConversionController(ctx context.Context, cmw configmap.Watcher) *contro
 	)
 
 	// Decorate contexts with the current state of the config.
-	authStore := gcpauth.NewStore(logging.FromContext(ctx).Named("config-gcp-auth-store"))
-	authStore.WatchConfigs(cmw)
-
-	// Decorate contexts with the current state of the config.
 	ctxFunc := func(ctx context.Context) context.Context {
-		return authStore.ToContext(ctx)
+		return gcpas.ToContext(ctx)
 	}
 
 	return conversion.NewConversionController(ctx,
@@ -229,6 +243,7 @@ func NewConversionController(ctx context.Context, cmw configmap.Watcher) *contro
 		ctxFunc,
 	)
 }
+
 func main() {
 	// Set up a signal context with our webhook options
 	ctx := webhook.WithOptions(signals.NewContext(), webhook.Options{
@@ -238,11 +253,23 @@ func main() {
 		SecretName: "webhook-certs",
 	})
 
-	sharedmain.WebhookMainWithContext(ctx, logconfig.WebhookName(),
+	controllers, err := InitializeControllers(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	sharedmain.WebhookMainWithContext(ctx, logconfig.WebhookName(), controllers...)
+}
+
+func Controllers(
+	conversionController conversionController,
+	defaultingAdmissionController defaultingAdmissionController,
+	validationController validationController,
+) []injection.ControllerConstructor {
+	return []injection.ControllerConstructor{
 		certificates.NewController,
 		NewConfigValidationController,
-		NewValidationAdmissionController,
-		NewDefaultingAdmissionController,
-		NewConversionController,
-	)
+		injection.ControllerConstructor(validationController),
+		injection.ControllerConstructor(defaultingAdmissionController),
+		injection.ControllerConstructor(conversionController),
+	}
 }

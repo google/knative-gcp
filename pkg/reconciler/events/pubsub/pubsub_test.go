@@ -360,47 +360,13 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
 			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
 		},
-	}, {
-		Name: "pullsubscription deleted with getting k8s service account error",
-		Objects: []runtime.Object{
-			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithCloudPubSubSourceDeletionTimestamp,
-				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
-				WithCloudPubSubSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-				WithCloudPubSubSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				}),
-			),
-			newSink(),
-		},
-		Key: testNS + "/" + pubsubName,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithCloudPubSubSourceDeletionTimestamp,
-				WithCloudPubSubSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
-				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
-				WithCloudPubSubSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-				WithCloudPubSubSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				}),
-			),
-		}},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudPubSubSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
-		},
 	}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			PubSubBase:   intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-			Identity:     identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			Identity:     identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			pubsubLister: listers.GetCloudPubSubSourceLister(),
 		}
 		return cloudpubsubsource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudPubSubSourceLister(), r.Recorder, r)

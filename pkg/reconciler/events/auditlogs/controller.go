@@ -20,16 +20,20 @@ package auditlogs
 import (
 	"context"
 
+	"knative.dev/pkg/injection"
+
+	"k8s.io/client-go/tools/cache"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
-	"k8s.io/client-go/tools/cache"
-	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
-	"knative.dev/pkg/configmap"
-	"knative.dev/pkg/controller"
 
 	cloudauditlogssourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudauditlogssource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
@@ -51,22 +55,20 @@ const (
 	receiveAdapterName = "cloudauditlogssource.events.cloud.google.com"
 )
 
-// NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
-func NewController(
-	ctx context.Context,
-	cmw configmap.Watcher,
-) *controller.Impl {
-	return newControllerWithIAMPolicyManager(
-		ctx,
-		cmw,
-		iam.DefaultIAMPolicyManager())
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a CloudAuditLogsSource controller.
+func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+	}
 }
 
-func newControllerWithIAMPolicyManager(
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
@@ -75,7 +77,7 @@ func newControllerWithIAMPolicyManager(
 
 	r := &Reconciler{
 		PubSubBase:             intevents.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsConverter, cmw),
-		Identity:               identity.NewIdentity(ctx, ipm),
+		Identity:               identity.NewIdentity(ctx, ipm, gcpas),
 		auditLogsSourceLister:  cloudauditlogssourceInformer.Lister(),
 		logadminClientProvider: glogadmin.NewClient,
 		pubsubClientProvider:   gpubsub.NewClient,

@@ -49,8 +49,7 @@ func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
 
 	_ = os.Setenv("PUBSUB_RA_IMAGE", "PUBSUB_RA_IMAGE")
-
-	c := newControllerWithIAMPolicyManager(ctx, configmap.NewStaticWatcher(
+	cmw := configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      logging.ConfigMapName(),
@@ -72,8 +71,8 @@ func TestNew(t *testing.T) {
 			},
 			Data: map[string]string{},
 		},
-	),
-		iamtesting.NoopIAMPolicyManager)
+	)
+	c := newController(ctx, cmw, iamtesting.NoopIAMPolicyManager, iamtesting.NewGCPAuthTestStore(t, nil))
 
 	if c == nil {
 		t.Fatal("Expected newControllerWithIAMPolicyManager to return a non-nil value")

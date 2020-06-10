@@ -116,7 +116,7 @@ func TestBrokerChannelFlow(t *testing.T) {
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.BrokerChannelFlowTestHelper(t, "MTChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.BrokerChannelFlowWithTransformation(t, "MTChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelDeadLetterSink(t *testing.T) {
@@ -127,16 +127,6 @@ func TestChannelDeadLetterSink(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	e2ehelpers.ChannelDeadLetterSinkTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
-}
-
-func TestBrokerDeadLetterSink(t *testing.T) {
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
-	cancel := logstream.Start(t)
-	defer cancel()
-	e2ehelpers.BrokerDeadLetterSinkTestHelper(t, "MTChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelTracing(t *testing.T) {

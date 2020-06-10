@@ -51,7 +51,7 @@ func (current *CloudAuditLogsSourceSpec) Validate(ctx context.Context) *apis.Fie
 		errs = errs.Also(apis.ErrMissingField("methodName"))
 	}
 
-	if err := duckv1alpha1.ValidateCredential(current.Secret, current.GoogleServiceAccount, current.ServiceAccountName); err != nil {
+	if err := duckv1alpha1.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 

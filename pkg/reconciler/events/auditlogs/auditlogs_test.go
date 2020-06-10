@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	clientgotesting "k8s.io/client-go/testing"
-
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/configmap"
@@ -1327,43 +1326,6 @@ func TestAllCases(t *testing.T) {
 				Name: sourceName,
 			},
 		},
-	}, {
-		Name: "delete failed with getting k8s service account error",
-		Objects: []runtime.Object{
-			NewCloudAuditLogsSource(sourceName, testNS,
-				WithCloudAuditLogsSourceUID(sourceUID),
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
-				WithCloudAuditLogsSourceDeletionTimestamp,
-				WithCloudAuditLogsSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				}),
-			),
-		},
-		Key: testNS + "/" + sourceName,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLogsSource(sourceName, testNS,
-				WithCloudAuditLogsSourceUID(sourceUID),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
-				WithCloudAuditLogsSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
-				WithCloudAuditLogsSourceDeletionTimestamp,
-				WithCloudAuditLogsSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				}),
-			),
-		}},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
-		},
 	}}
 
 	defer logtesting.ClearAll()
@@ -1377,7 +1339,7 @@ func TestAllCases(t *testing.T) {
 				func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 					r := &Reconciler{
 						PubSubBase:             intevents.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsConverter, cmw),
-						Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
+						Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 						auditLogsSourceLister:  listers.GetCloudAuditLogsSourceLister(),
 						logadminClientProvider: logadminClientProvider,
 						pubsubClientProvider:   gpubsub.TestClientCreator(testData["pubsub"]),

@@ -69,9 +69,6 @@ spec:
           required:
             - topic
           properties:
-            googleServiceAccount:
-              type: string
-              description: "GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service account must be a valid Google service account (see https://cloud.google.com/iam/docs/service-accounts)."
             serviceAccountName:
               type: string
               description: "Kubernetes service account used to bind to a google service account to poll the Cloud Pub/Sub Subscription. The value of the Kubernetes service account must be a valid DNS subdomain name. (see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names)"
@@ -95,6 +92,9 @@ spec:
               type: string
               enum: [CreateDelete, CreateNoDelete, NoCreateNoDelete]
               description: "Propagation policy defines how Topic controls the Cloud Pub/Sub topic for lifecycle changes. Default is CreateNoDelete."
+            publisher:
+              type: boolean
+              description: "Flag that controls the creation of an HTTP publisher endpoint. If set to true, then a publisher will be created and this Topic will be Addressable (have status.address). If set to false, then no publisher will be created and this custom object represents the creation and deletion of a GCP Pub/Sub Topic only."
         status:
           type: object
           properties:
