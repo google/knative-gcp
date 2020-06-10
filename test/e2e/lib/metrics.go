@@ -18,6 +18,7 @@ package lib
 
 import (
 	"fmt"
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -202,4 +203,16 @@ func createGVR(o metav1.OwnerReference) schema.GroupVersionResource {
 	}
 	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
 	return gvr
+}
+
+func AssertMetricCount(client *Client, timeseries []*monitoringpb.TimeSeries, expectedCount int64) {
+	var actualCount int64 = 0
+	for _, res := range (timeseries) {
+		actualCount += res.GetPoints()[0].GetValue().GetInt64Value()
+	}
+
+	if actualCount != expectedCount {
+		client.T.Errorf("Actual metric count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
+		client.T.Fail()
+	}
 }

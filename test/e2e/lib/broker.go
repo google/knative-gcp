@@ -50,27 +50,14 @@ func AssertBrokerEventCountMetric(client *Client) {
 
 	filter := metrics.StringifyStackDriverFilter(f)
 	client.T.Logf("Filter expression: %s", filter)
-
 	timeseries, err := client.StackDriverTimeSeriesFor(projectID, filter)
 	if err != nil {
 		client.T.Fatalf("failed to get stackdriver timeseries: %v", err)
 	}
 
 	AssertMetricCount(client, timeseries, 1 /* expectedCount */)
+
 }
-
-func AssertMetricCount(client *Client, timeseries []*monitoringpb.TimeSeries, expectedCount int64) {
-	var actualCount int64 = 0
-	for _, res := range(timeseries) {
-		actualCount += res.GetPoints()[0].GetValue().GetInt64Value()
-	}
-
-	if actualCount != expectedCount {
-		client.T.Errorf("Actual metric count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
-		client.T.Fail()
-	}
-}
-
 
 func AssertTriggerEventCountMetric(client *Client) {
 	// If we reach this point, the projectID should have been set.

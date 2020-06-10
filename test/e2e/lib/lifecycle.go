@@ -200,39 +200,6 @@ func (c *Client) LogsFor(namespace, name string, tm *metav1.TypeMeta) (string, e
 }
 
 // TODO make this function more generic.
-func (c *Client) StackDriverEventCountMetricFor(namespace, projectID, filter string) (*int64, error) {
-	metricClient, err := metrics.NewStackDriverMetricClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create stackdriver metric client: %v", err)
-	}
-
-	// TODO make times configurable if needed.
-	metricRequest := metrics.NewStackDriverListTimeSeriesRequest(projectID,
-		metrics.WithStackDriverFilter(filter),
-		// Starting 5 minutes back until now.
-		metrics.WithStackDriverInterval(time.Now().Add(-5*time.Minute).Unix(), time.Now().Unix()),
-		// Delta counts aggregated every 2 minutes.
-		// We aggregate for count as other aggregations will give higher values.
-		// The reason is that PubSub upon an error, will retry, thus we will be recording multiple events.
-		metrics.WithStackDriverAlignmentPeriod(2*int64(time.Minute.Seconds())),
-		metrics.WithStackDriverPerSeriesAligner(monitoringpb.Aggregation_ALIGN_DELTA),
-		metrics.WithStackDriverCrossSeriesReducer(monitoringpb.Aggregation_REDUCE_COUNT),
-	)
-
-	it := metricClient.ListTimeSeries(context.TODO(), metricRequest)
-
-	for {
-		res, err := it.Next()
-		if err == iterator.Done {
-			return nil, errors.New("no metric reported")
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to iterate over result: %v", err)
-		}
-		actualCount := res.GetPoints()[0].GetValue().GetInt64Value()
-		return &actualCount, nil
-	}
-}
 func (c *Client) StackDriverTimeSeriesFor(projectID, filter string) ([]*monitoringpb.TimeSeries, error) {
 	metricClient, err := metrics.NewStackDriverMetricClient()
 	if err != nil {
@@ -265,7 +232,6 @@ func (c *Client) StackDriverTimeSeriesFor(projectID, filter string) ([]*monitori
 
 		timeseries = append(timeseries, res)
 	}
-	// TODO(zar) maybe don't do this and just return an empty list
 	if len(timeseries) == 0 {
 		return nil, errors.New("no metric reported")
 	}
