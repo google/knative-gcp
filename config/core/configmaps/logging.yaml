@@ -20,7 +20,7 @@ metadata:
   labels:
     events.cloud.google.com/release: devel
   annotations:
-    knative.dev/example-checksum: 29d75d67
+    knative.dev/example-checksum: e08b5dde
 data:
   _example: |
     ################################
@@ -61,12 +61,7 @@ data:
         }
       }
 
-    # Log level overrides
-    # For all components except the autoscaler and queue proxy,
-    # changes are be picked up immediately.
-    # For autoscaler and queue proxy, changes require recreation of the pods.
+    # Log level overrides, updated values are used immediately. They do not need
+    # Pod restarts.
     loglevel.controller: "info"
-    loglevel.autoscaler: "info"
-    loglevel.queueproxy: "info"
     loglevel.webhook: "info"
-    loglevel.activator: "info"
