@@ -30,7 +30,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
@@ -51,19 +51,15 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
+	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
 	"github.com/google/knative-gcp/pkg/utils"
 )
 
 const (
 	// Name of the corev1.Events emitted from the Broker reconciliation process.
-	brokerReconcileError = "BrokerReconcileError"
-	brokerReconciled     = "BrokerReconciled"
-	brokerFinalized      = "BrokerFinalized"
-	topicCreated         = "TopicCreated"
-	brokerCellCreated    = "BrokerCellCreated"
-	subCreated           = "SubscriptionCreated"
-	topicDeleted         = "TopicDeleted"
-	subDeleted           = "SubscriptionDeleted"
+	brokerReconciled  = "BrokerReconciled"
+	brokerFinalized   = "BrokerFinalized"
+	brokerCellCreated = "BrokerCellCreated"
 
 	targetsCMName         = "broker-targets"
 	targetsCMKey          = "targets"
@@ -105,8 +101,6 @@ type Reconciler struct {
 	// between multiple controller workers.
 	targetsNeedsUpdate chan struct{}
 
-	// projectID is used as the GCP project ID when present, skipping the
-	// metadata server check. Used by tests.
 	projectID string
 
 	// pubsubClient is used as the Pubsub client when present.
@@ -238,6 +232,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
+		b.Status.MarkSubscriptionUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
 		return err
 	}
 	// Set the projectID in the status.
@@ -246,7 +241,8 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 
 	client := r.pubsubClient
 	if client == nil {
-		client, err := pubsub.NewClient(ctx, projectID)
+		var err error
+		client, err = pubsub.NewClient(ctx, projectID)
 		if err != nil {
 			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
 			b.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
@@ -254,85 +250,40 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 		}
 		defer client.Close()
 	}
+	pubsubReconciler := reconcilerutilspubsub.NewReconciler(client, r.Recorder)
+
+	labels := map[string]string{
+		"resource":     "brokers",
+		"broker_class": brokerv1beta1.BrokerClass,
+		"namespace":    b.Namespace,
+		"name":         b.Name,
+		//TODO add resource labels, but need to be sanitized: https://cloud.google.com/pubsub/docs/labels#requirements
+	}
 
 	// Check if topic exists, and if not, create it.
 	topicID := resources.GenerateDecouplingTopicName(b)
-	topic := client.Topic(topicID)
-	exists, err := topic.Exists(ctx)
+	topicConfig := &pubsub.TopicConfig{Labels: labels}
+	topic, err := pubsubReconciler.ReconcileTopic(ctx, topicID, topicConfig, b, &b.Status)
 	if err != nil {
-		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
-		b.Status.MarkTopicUnknown("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %w", err)
 		return err
 	}
-
-	if !exists {
-		// TODO If this can ever change through the Broker's lifecycle, add
-		// update handling
-		topicConfig := &pubsub.TopicConfig{
-			Labels: map[string]string{
-				"resource":     "brokers",
-				"broker_class": brokerv1beta1.BrokerClass,
-				"namespace":    b.Namespace,
-				"name":         b.Name,
-				//TODO add resource labels, but need to be sanitized: https://cloud.google.com/pubsub/docs/labels#requirements
-			},
-		}
-		// Create a new topic.
-		logger.Debug("Creating topic with cfg", zap.String("id", topicID), zap.Any("cfg", topicConfig))
-		topic, err = client.CreateTopicWithConfig(ctx, topicID, topicConfig)
-		if err != nil {
-			logger.Error("Failed to create Pub/Sub topic", zap.Error(err))
-			b.Status.MarkTopicFailed("TopicCreationFailed", "Topic creation failed: %w", err)
-			return err
-		}
-		logger.Info("Created PubSub topic", zap.String("name", topic.ID()))
-		r.Recorder.Eventf(b, corev1.EventTypeNormal, topicCreated, "Created PubSub topic %q", topic.ID())
-	}
-
-	b.Status.MarkTopicReady()
 	// TODO(grantr): this isn't actually persisted due to webhook issues.
 	//TODO uncomment when eventing webhook allows this
 	//b.Status.TopicID = topic.ID()
 
 	// Check if PullSub exists, and if not, create it.
 	subID := resources.GenerateDecouplingSubscriptionName(b)
-	sub := client.Subscription(subID)
-	subExists, err := sub.Exists(ctx)
-	if err != nil {
-		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
-		b.Status.MarkSubscriptionUnknown("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %w", err)
+	subConfig := pubsub.SubscriptionConfig{
+		Topic:  topic,
+		Labels: labels,
+		//TODO(grantr): configure these settings?
+		// AckDeadline
+		// RetentionDuration
+	}
+	if _, err := pubsubReconciler.ReconcileSubscription(ctx, subID, subConfig, b, &b.Status); err != nil {
 		return err
 	}
 
-	if !subExists {
-		// TODO If this can ever change through the Broker's lifecycle, add
-		// update handling
-		subConfig := pubsub.SubscriptionConfig{
-			Topic: topic,
-			Labels: map[string]string{
-				"resource":     "brokers",
-				"broker_class": brokerv1beta1.BrokerClass,
-				"namespace":    b.Namespace,
-				"name":         b.Name,
-				//TODO add resource labels, but need to be sanitized: https://cloud.google.com/pubsub/docs/labels#requirements
-			},
-			//TODO(grantr): configure these settings?
-			// AckDeadline
-			// RetentionDuration
-		}
-		// Create a new subscription to the previous topic with the given name.
-		logger.Debug("Creating sub with cfg", zap.String("id", subID), zap.Any("cfg", subConfig))
-		sub, err = client.CreateSubscription(ctx, subID, subConfig)
-		if err != nil {
-			logger.Error("Failed to create subscription", zap.Error(err))
-			b.Status.MarkSubscriptionFailed("SubscriptionCreationFailed", "Subscription creation failed: %w", err)
-			return err
-		}
-		logger.Info("Created PubSub subscription", zap.String("name", sub.ID()))
-		r.Recorder.Eventf(b, corev1.EventTypeNormal, subCreated, "Created PubSub subscription %q", sub.ID())
-	}
-
-	b.Status.MarkSubscriptionReady()
 	// TODO(grantr): this isn't actually persisted due to webhook issues.
 	//TODO uncomment when eventing webhook allows this
 	//b.Status.SubscriptionID = sub.ID()
@@ -360,45 +311,16 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 		}
 		defer client.Close()
 	}
+	pubsubReconciler := reconcilerutilspubsub.NewReconciler(client, r.Recorder)
 
 	// Delete topic if it exists. Pull subscriptions continue pulling from the
 	// topic until deleted themselves.
 	topicID := resources.GenerateDecouplingTopicName(b)
-	topic := client.Topic(topicID)
-	exists, err := topic.Exists(ctx)
-	if err != nil {
-		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
-		return err
-	}
-	if exists {
-		if err := topic.Delete(ctx); err != nil {
-			logger.Error("Failed to delete Pub/Sub topic", zap.Error(err))
-			return err
-		}
-		logger.Info("Deleted PubSub topic", zap.String("name", topic.ID()))
-		r.Recorder.Eventf(b, corev1.EventTypeNormal, topicDeleted, "Deleted PubSub topic %q", topic.ID())
-	}
-
-	// Delete pull subscription if it exists.
-	// TODO could alternately set expiration policy to make pubsub delete it after some idle time.
-	// https://cloud.google.com/pubsub/docs/admin#deleting_a_topic
+	err = multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, b))
 	subID := resources.GenerateDecouplingSubscriptionName(b)
-	sub := client.Subscription(subID)
-	exists, err = sub.Exists(ctx)
-	if err != nil {
-		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
-		return err
-	}
-	if exists {
-		if err := sub.Delete(ctx); err != nil {
-			logger.Error("Failed to delete Pub/Sub subscription", zap.Error(err))
-			return err
-		}
-		logger.Info("Deleted PubSub subscription", zap.String("name", sub.ID()))
-		r.Recorder.Eventf(b, corev1.EventTypeNormal, subDeleted, "Deleted PubSub subscription %q", sub.ID())
-	}
+	err = multierr.Append(err, pubsubReconciler.DeleteSubscription(ctx, subID, b))
 
-	return nil
+	return err
 }
 
 //TODO all this stuff should be in a configmap variant of the config object
@@ -424,7 +346,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 	r.Logger.Debug("Current targets config", zap.Any("targetsConfig", r.targetsConfig.String()))
 
 	existing, err := r.configMapLister.ConfigMaps(desired.Namespace).Get(desired.Name)
-	if errors.IsNotFound(err) {
+	if apierrs.IsNotFound(err) {
 		r.Logger.Debug("Creating targets ConfigMap", zap.String("namespace", desired.Namespace), zap.String("name", desired.Name))
 		existing, err = r.KubeClientSet.CoreV1().ConfigMaps(desired.Namespace).Create(desired)
 		if err != nil {
@@ -476,7 +398,7 @@ func (r *Reconciler) LoadTargetsConfig(ctx context.Context) error {
 	//TODO retry with wait.ExponentialBackoff
 	existing, err := r.configMapLister.ConfigMaps(system.Namespace()).Get(targetsCMName)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if apierrs.IsNotFound(err) {
 			r.targetsConfig = memory.NewEmptyTargets()
 			return nil
 		}
