@@ -19,7 +19,8 @@ package iam
 import (
 	"context"
 	"fmt"
-	"sync"
+
+	"github.com/google/wire"
 
 	"cloud.google.com/go/iam"
 	admin "cloud.google.com/go/iam/admin/apiv1"
@@ -71,26 +72,11 @@ type IAMPolicyManager interface {
 	RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role RoleName) error
 }
 
-var (
-	globalManager       IAMPolicyManager
-	createGlobalManager sync.Once
+var PolicyManagerSet = wire.NewSet(
+	admin.NewIamClient,
+	wire.Bind(new(gclient.IamClient), new(*admin.IamClient)),
+	NewIAMPolicyManager,
 )
-
-// DefaultIAMPolicyManager returns a shared global policy manager.
-func DefaultIAMPolicyManager() IAMPolicyManager {
-	createGlobalManager.Do(func() {
-		c, err := admin.NewIamClient(context.Background())
-		if err != nil {
-			panic(err)
-		}
-		m, err := NewIAMPolicyManager(context.Background(), c)
-		if err != nil {
-			panic(err)
-		}
-		globalManager = m
-	})
-	return globalManager
-}
 
 // manager is an IAMPolicyManager which serializes and batches IAM policy changes to a Google
 // Service Account to avoid conflicting changes.
