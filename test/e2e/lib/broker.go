@@ -17,7 +17,6 @@ limitations under the License.
 package lib
 
 import (
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"net/http"
 	"os"
 	"time"
