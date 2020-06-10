@@ -140,3 +140,11 @@ func SumCumulative(ts *monitoringpb.TimeSeries) int64 {
 	}
 	return sum
 }
+
+func SumDistCount(ts *monitoringpb.TimeSeries) int64 {
+	var sum int64
+	for _, point := range ts.GetPoints() {
+		sum += point.GetValue().GetDistributionValue().GetCount()
+	}
+	return sum
+}

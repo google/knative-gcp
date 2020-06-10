@@ -27,8 +27,10 @@ const (
 	BrokerEventCountMetricType = "knative.dev/eventing/broker/event_count"
 	BrokerMetricResourceType   = "knative_broker"
 
-	TriggerEventCountMetricType  = "knative.dev/eventing/trigger/event_count"
-	TriggerMonitoredResourceType = "knative_trigger"
+	TriggerEventCountMetricType       = "knative.dev/eventing/trigger/event_count"
+	TriggerEventDispatchLatencyType   = "knative.dev/eventing/trigger/event_dispatch_latencies"
+	TriggerEventProcessingLatencyType = "knative.dev/eventing/trigger/event_processing_latencies"
+	TriggerMonitoredResourceType      = "knative_trigger"
 
 	EventType          = "type"
 	EventSource        = "source"

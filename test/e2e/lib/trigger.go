@@ -24,6 +24,19 @@ type TriggerMetricAssertion struct {
 }
 
 func (a TriggerMetricAssertion) Assert(client *monitoring.MetricClient) error {
+	if err := a.assertMetric(client, TriggerEventCountMetricType, accumEventCount); err != nil {
+		return err
+	}
+	if err := a.assertMetric(client, TriggerEventDispatchLatencyType, accumDispatchLatency); err != nil {
+		return err
+	}
+	if err := a.assertMetric(client, TriggerEventProcessingLatencyType, accumProcessingLatency); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, metric string, accF func(map[string]int64, *monitoringpb.TimeSeries) error) error {
 	ctx := context.Background()
 	start, err := ptypes.TimestampProto(a.StartTime)
 	if err != nil {
@@ -35,7 +48,7 @@ func (a TriggerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 	}
 	it := client.ListTimeSeries(ctx, &monitoringpb.ListTimeSeriesRequest{
 		Name:     fmt.Sprintf("projects/%s", a.ProjectID),
-		Filter:   a.StackdriverFilter(),
+		Filter:   a.StackdriverFilter(metric),
 		Interval: &monitoringpb.TimeInterval{StartTime: start, EndTime: end},
 		View:     monitoringpb.ListTimeSeriesRequest_FULL,
 	})
@@ -48,26 +61,53 @@ func (a TriggerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 		if err != nil {
 			return err
 		}
-		triggerName := ts.GetResource().GetLabels()["trigger_name"]
-		labels := ts.GetMetric().GetLabels()
-		code, err := strconv.Atoi(labels["response_code"])
-		if err != nil {
-			return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
+		if err := accF(gotCount, ts); err != nil {
+			return err
 		}
-		if code != http.StatusAccepted && code != http.StatusOK {
-			return fmt.Errorf("metric has unexpected response code: %v", ts.GetMetric())
-		}
-		gotCount[triggerName] = gotCount[triggerName] + metrics.SumCumulative(ts)
 	}
 	if diff := cmp.Diff(a.CountPerTrigger, gotCount); diff != "" {
-		return fmt.Errorf("unexpected broker metric count (-want, +got) = %v", diff)
+		return fmt.Errorf("unexpected metric %q count (-want, +got) = %v", metric, diff)
 	}
 	return nil
 }
 
-func (a TriggerMetricAssertion) StackdriverFilter() string {
+func accumEventCount(accum map[string]int64, ts *monitoringpb.TimeSeries) error {
+	triggerName := ts.GetResource().GetLabels()["trigger_name"]
+	labels := ts.GetMetric().GetLabels()
+	code, err := strconv.Atoi(labels["response_code"])
+	if err != nil {
+		return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
+	}
+	if code != http.StatusAccepted && code != http.StatusOK {
+		return fmt.Errorf("metric has unexpected response code: %v", ts.GetMetric())
+	}
+	accum[triggerName] = accum[triggerName] + metrics.SumCumulative(ts)
+	return nil
+}
+
+func accumDispatchLatency(accum map[string]int64, ts *monitoringpb.TimeSeries) error {
+	triggerName := ts.GetResource().GetLabels()["trigger_name"]
+	labels := ts.GetMetric().GetLabels()
+	code, err := strconv.Atoi(labels["response_code"])
+	if err != nil {
+		return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
+	}
+	if code != http.StatusAccepted && code != http.StatusOK {
+		return fmt.Errorf("metric has unexpected response code: %v", ts.GetMetric())
+	}
+	accum[triggerName] = accum[triggerName] + metrics.SumDistCount(ts)
+	return nil
+}
+
+func accumProcessingLatency(accum map[string]int64, ts *monitoringpb.TimeSeries) error {
+	triggerName := ts.GetResource().GetLabels()["trigger_name"]
+	accum[triggerName] = accum[triggerName] + metrics.SumDistCount(ts)
+	return nil
+}
+
+func (a TriggerMetricAssertion) StackdriverFilter(metric string) string {
 	filter := map[string]interface{}{
-		"metric.type":                   TriggerEventCountMetricType,
+		"metric.type":                   metric,
 		"resource.type":                 TriggerMonitoredResourceType,
 		"resource.label.namespace_name": a.BrokerNamespace,
 		"resource.label.broker_name":    a.BrokerName,
