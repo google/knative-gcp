@@ -80,4 +80,6 @@ replace honnef.co/go/tools => honnef.co/go/tools v0.0.1-2019.2.3
 
 replace sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
 
+// Encountered ambiguous import issue, has to pin to specific knative.dev/test-infra version
+// Details are here: https://github.com/google/knative-gcp/pull/1257#discussion_r437842648
 replace knative.dev/test-infra => knative.dev/test-infra v0.0.0-20200610004422-8b4a5283a123
