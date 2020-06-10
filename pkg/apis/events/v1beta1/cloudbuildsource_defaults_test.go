@@ -24,7 +24,7 @@ import (
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -42,11 +42,11 @@ func TestBuildSourceDefaults(t *testing.T) {
 		start: &CloudBuildSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudBuildSourceSpec{
-				PubSubSpec: duckv1alpha1.PubSubSpec{
+				PubSubSpec: duckv1beta1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: "my-cloud-key",
@@ -60,11 +60,11 @@ func TestBuildSourceDefaults(t *testing.T) {
 		want: &CloudBuildSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudBuildSourceSpec{
-				PubSubSpec: duckv1alpha1.PubSubSpec{
+				PubSubSpec: duckv1beta1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: "my-cloud-key",
@@ -81,7 +81,7 @@ func TestBuildSourceDefaults(t *testing.T) {
 		start: &CloudBuildSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudBuildSourceSpec{},
@@ -89,11 +89,11 @@ func TestBuildSourceDefaults(t *testing.T) {
 		want: &CloudBuildSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudBuildSourceSpec{
-				PubSubSpec: duckv1alpha1.PubSubSpec{
+				PubSubSpec: duckv1beta1.PubSubSpec{
 					Secret: &gcpauthtesthelper.Secret,
 				},
 				Topic: ptr.String(defaultTopic),
@@ -117,11 +117,11 @@ func TestCloudBuildSourceDefaults_NoChange(t *testing.T) {
 	want := &CloudBuildSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			},
 		},
 		Spec: CloudBuildSourceSpec{
-			PubSubSpec: duckv1alpha1.PubSubSpec{
+			PubSubSpec: duckv1beta1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "my-cloud-key",

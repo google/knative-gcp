@@ -21,7 +21,7 @@ import (
 
 	"knative.dev/pkg/apis"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 
 	"knative.dev/pkg/ptr"
@@ -34,8 +34,8 @@ const (
 func (bs *CloudBuildSource) SetDefaults(ctx context.Context) {
 	ctx = apis.WithinParent(ctx, bs.ObjectMeta)
 	bs.Spec.SetDefaults(ctx)
-	duckv1alpha1.SetClusterNameAnnotation(&bs.ObjectMeta, metadataClient.NewDefaultMetadataClient())
-	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &bs.ObjectMeta)
+	duckv1beta1.SetClusterNameAnnotation(&bs.ObjectMeta, metadataClient.NewDefaultMetadataClient())
+	duckv1beta1.SetAutoscalingAnnotationsDefaults(ctx, &bs.ObjectMeta)
 }
 
 func (bss *CloudBuildSourceSpec) SetDefaults(ctx context.Context) {

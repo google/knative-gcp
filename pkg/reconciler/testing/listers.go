@@ -50,7 +50,7 @@ import (
 	Messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
-	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1beta1"
 	intlisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1beta1"
 	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1beta1"

@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 )
@@ -124,9 +124,9 @@ func TestCloudBuildSourceStatusGetCondition(t *testing.T) {
 			s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), "NotReady", "test message")
 			return &s.Status
 		}(),
-		condQuery: duckv1alpha1.PullSubscriptionReady,
+		condQuery: duckv1beta1.PullSubscriptionReady,
 		want: &apis.Condition{
-			Type:    duckv1alpha1.PullSubscriptionReady,
+			Type:    duckv1beta1.PullSubscriptionReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  "NotReady",
 			Message: "test message",
@@ -139,9 +139,9 @@ func TestCloudBuildSourceStatusGetCondition(t *testing.T) {
 			s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 			return &s.Status
 		}(),
-		condQuery: duckv1alpha1.PullSubscriptionReady,
+		condQuery: duckv1beta1.PullSubscriptionReady,
 		want: &apis.Condition{
-			Type:   duckv1alpha1.PullSubscriptionReady,
+			Type:   duckv1beta1.PullSubscriptionReady,
 			Status: corev1.ConditionTrue,
 		},
 	}}

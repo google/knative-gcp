@@ -20,7 +20,7 @@ import (
 	"knative.dev/pkg/apis"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -37,7 +37,7 @@ func TestCloudBuildSourceEventSource(t *testing.T) {
 func TestCloudBuildSourceGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
 		Group:   "events.cloud.google.com",
-		Version: "v1alpha1",
+		Version: "v1beta1",
 		Kind:    "CloudBuildSource",
 	}
 
@@ -52,8 +52,8 @@ func TestCloudBuildSourceGetGroupVersionKind(t *testing.T) {
 func TestCloudBuildSourceIdentitySpec(t *testing.T) {
 	s := &CloudBuildSource{
 		Spec: CloudBuildSourceSpec{
-			PubSubSpec: v1alpha1.PubSubSpec{
-				IdentitySpec: v1alpha1.IdentitySpec{
+			PubSubSpec: v1beta1.PubSubSpec{
+				IdentitySpec: v1beta1.IdentitySpec{
 					ServiceAccountName: "test",
 				},
 			},
@@ -69,10 +69,10 @@ func TestCloudBuildSourceIdentitySpec(t *testing.T) {
 func TestCloudBuildSourceIdentityStatus(t *testing.T) {
 	s := &CloudBuildSource{
 		Status: CloudBuildSourceStatus{
-			PubSubStatus: v1alpha1.PubSubStatus{},
+			PubSubStatus: v1beta1.PubSubStatus{},
 		},
 	}
-	want := &v1alpha1.IdentityStatus{}
+	want := &v1beta1.IdentityStatus{}
 	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
@@ -81,7 +81,7 @@ func TestCloudBuildSourceIdentityStatus(t *testing.T) {
 
 func TestCloudBuildSourceConditionSet(t *testing.T) {
 	want := []apis.Condition{{
-		Type: v1alpha1.PullSubscriptionReady,
+		Type: v1beta1.PullSubscriptionReady,
 	}, {
 		Type: apis.ConditionReady,
 	}}
