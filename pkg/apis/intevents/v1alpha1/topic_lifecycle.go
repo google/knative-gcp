@@ -75,6 +75,7 @@ func (ts *TopicStatus) PropagatePublisherStatus(ss *v1.ServiceStatus) {
 	case sc.Status == corev1.ConditionUnknown:
 		ts.MarkPublisherUnknown(sc.Reason, sc.Message)
 	case sc.Status == corev1.ConditionTrue:
+		ts.SetAddress(ss.Address.URL)
 		ts.MarkPublisherDeployed()
 	case sc.Status == corev1.ConditionFalse:
 		ts.MarkPublisherNotDeployed(sc.Reason, sc.Message)
