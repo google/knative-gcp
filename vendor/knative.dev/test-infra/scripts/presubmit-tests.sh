@@ -171,12 +171,13 @@ function default_build_test_runner() {
     # Consider an error message everything that's not a package name.
     errors_go1="$(grep -v '^\(github\.com\|knative\.dev\)/' "${report}" | sort | uniq)"
   fi
-  # Get all build tags in go code (ignore /vendor, /hack and /third_party)
+  # Get all packages that have build tags in go code (ignore /vendor, /hack, /scripts and /third_party)
+  # TODO(chizhg): currently it assumes all these packages are test packages, support building normal go packages when we need to.
   local tags="$(grep -r '// +build' . \
-    | grep -v '^./vendor/' | grep -v '^./hack/' | grep -v '^./third_party' \
+    | grep -v '^./vendor/' | grep -v '^./hack/' | grep -v '^./third_party' | grep -v '^./scripts' \
     | cut -f3 -d' ' | sort | uniq | tr '\n' ' ')"
   local tagged_pkgs="$(grep -r '// +build' . \
-    | grep -v '^./vendor/' | grep -v '^./hack/' | grep -v '^./third_party' \
+    | grep -v '^./vendor/' | grep -v '^./hack/' | grep -v '^./third_party' | grep -v '^./scripts' \
     | grep ":// +build " | cut -f1 -d: | xargs dirname \
     | sort | uniq | tr '\n' ' ')"
   for pkg in ${tagged_pkgs}; do

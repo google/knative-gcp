@@ -7,9 +7,11 @@ require (
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
 	cloud.google.com/go/pubsub v1.3.2-0.20200506222144-2c46308f8465
 	cloud.google.com/go/storage v1.6.1-0.20200331222814-69e77e66e597
+	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/cloudevents/sdk-go v1.2.0
 	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
 	github.com/cloudevents/sdk-go/v2 v2.0.1-0.20200608152019-2ab697c8fc0b
+	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.0
@@ -19,6 +21,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
+	github.com/streadway/quantile v0.0.0-20150917103942-b0c588724d25 // indirect
 	go.opencensus.io v0.22.4-0.20200604162333-785d8992f1ac
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.5.0
@@ -29,12 +32,13 @@ require (
 	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.21.0
-	k8s.io/api v0.17.6
-	k8s.io/apimachinery v0.17.6
+	k8s.io/api v0.18.1
+	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.15.1-0.20200609153232-bbc05a966b49
-	knative.dev/pkg v0.0.0-20200606224418-7ed1d4a552bc
-	knative.dev/serving v0.15.1-0.20200605022218-74cef7837317
+	knative.dev/eventing v0.15.1-0.20200609184333-fb349c350f10
+	knative.dev/pkg v0.0.0-20200609184032-fef70cc2616b
+	knative.dev/serving v0.15.1-0.20200610021622-ffb936acceb5
+	knative.dev/test-infra/scripts v0.0.0-20200610004422-8b4a5283a123 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -75,3 +79,5 @@ replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
 replace honnef.co/go/tools => honnef.co/go/tools v0.0.1-2019.2.3
 
 replace sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
+
+replace knative.dev/test-infra => knative.dev/test-infra v0.0.0-20200610004422-8b4a5283a123
