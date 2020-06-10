@@ -44,4 +44,8 @@ var (
 		Group:    GroupName,
 		Resource: "cloudstoragesources",
 	}
+	CloudBuildSourcesResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "cloudbuildsources",
+	}
 )

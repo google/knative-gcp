@@ -45,15 +45,15 @@ import (
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	EventsV1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	MessagingV1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	Messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
-	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	intlisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
-	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
+	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1beta1"
+	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1beta1"
 )
 
 var sinkAddToScheme = func(scheme *runtime.Scheme) error {
@@ -117,15 +117,15 @@ func (l *Listers) GetServingObjects() []runtime.Object {
 }
 
 func (l *Listers) GetPullSubscriptionLister() inteventslisters.PullSubscriptionLister {
-	return inteventslisters.NewPullSubscriptionLister(l.indexerFor(&inteventsv1alpha1.PullSubscription{}))
+	return inteventslisters.NewPullSubscriptionLister(l.indexerFor(&inteventsv1beta1.PullSubscription{}))
 }
 
 func (l *Listers) GetTopicLister() inteventslisters.TopicLister {
-	return inteventslisters.NewTopicLister(l.indexerFor(&inteventsv1alpha1.Topic{}))
+	return inteventslisters.NewTopicLister(l.indexerFor(&inteventsv1beta1.Topic{}))
 }
 
 func (l *Listers) GetChannelLister() messaginglisters.ChannelLister {
-	return messaginglisters.NewChannelLister(l.indexerFor(&MessagingV1alpha1.Channel{}))
+	return messaginglisters.NewChannelLister(l.indexerFor(&Messagingv1beta1.Channel{}))
 }
 
 func (l *Listers) GetJobLister() batchv1listers.JobLister {

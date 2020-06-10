@@ -33,6 +33,8 @@ const (
 	// AutoscalingClassAnnotation is the annotation for the explicit class of
 	// scaler that a particular resource has opted into.
 	AutoscalingClassAnnotation = Autoscaling + "/class"
+	// ClusterNameAnnotation is the annotation for the cluster Name.
+	ClusterNameAnnotation = "cluster-name"
 
 	// AutoscalingMinScaleAnnotation is the annotation to specify the minimum number of pods to scale to.
 	AutoscalingMinScaleAnnotation = Autoscaling + "/minScale"

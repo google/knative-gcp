@@ -42,9 +42,9 @@ import (
 
 	gstatus "google.golang.org/grpc/status"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/topic"
-	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/topic"
+	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1beta1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
@@ -85,7 +85,7 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface.
 var _ topicreconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1alpha1.Topic) reconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1beta1.Topic) reconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("topic", topic)))
 
 	topic.Status.InitializeConditions()
@@ -128,7 +128,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1alpha1.Topic) r
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, topic.Namespace, topic.Name)
 }
 
-func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) error {
+func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1beta1.Topic) error {
 	if topic.Status.ProjectID == "" {
 		projectID, err := utils.ProjectID(topic.Spec.Project, metadataClient.NewDefaultMetadataClient())
 		if err != nil {
@@ -156,7 +156,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 	}
 
 	if !exists {
-		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyNoCreateNoDelete {
+		if topic.Spec.PropagationPolicy == v1beta1.TopicPolicyNoCreateNoDelete {
 			logging.FromContext(ctx).Desugar().Error("Topic does not exist and the topic policy doesn't allow creation")
 			return fmt.Errorf("Topic %q does not exist and the topic policy doesn't allow creation", topic.Spec.Topic)
 		} else {
@@ -183,7 +183,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 // deleteTopic looks at the status.TopicID and if non-empty,
 // hence indicating that we have created a topic successfully,
 // remove it.
-func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1alpha1.Topic) error {
+func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1beta1.Topic) error {
 	if topic.Status.TopicID == "" {
 		return nil
 	}
@@ -213,7 +213,7 @@ func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1alpha1.Topic) err
 	return nil
 }
 
-func (r *Reconciler) reconcilePublisher(ctx context.Context, topic *v1alpha1.Topic) (error, *servingv1.Service) {
+func (r *Reconciler) reconcilePublisher(ctx context.Context, topic *v1beta1.Topic) (error, *servingv1.Service) {
 	name := resources.GeneratePublisherName(topic)
 	existing, err := r.serviceLister.Services(topic.Namespace).Get(name)
 	if err != nil {
@@ -275,7 +275,7 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 	// TODO: requeue all Topics. See https://github.com/google/knative-gcp/issues/457.
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, topic *v1alpha1.Topic) reconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, topic *v1beta1.Topic) reconciler.Event {
 	// If topic doesn't have ownerReference, and
 	// k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
 	// remove the corresponding GCP ServiceAccount iam policy binding.
@@ -285,7 +285,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, topic *v1alpha1.Topic) re
 			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete delete Pub/Sub topic workload identity: %s", err.Error())
 		}
 	}
-	if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
+	if topic.Spec.PropagationPolicy == v1beta1.TopicPolicyCreateDelete {
 		logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub topic")
 		if err := r.deleteTopic(ctx, topic); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, deleteTopicFailed, "Failed to delete Pub/Sub topic: %s", err.Error())
