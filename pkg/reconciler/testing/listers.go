@@ -44,7 +44,7 @@ import (
 	fakeservingclientset "knative.dev/serving/pkg/client/clientset/versioned/fake"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	EventsV1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	EventsV1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	Messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
@@ -133,23 +133,23 @@ func (l *Listers) GetJobLister() batchv1listers.JobLister {
 }
 
 func (l *Listers) GetCloudAuditLogsSourceLister() eventslisters.CloudAuditLogsSourceLister {
-	return eventslisters.NewCloudAuditLogsSourceLister(l.indexerFor(&EventsV1alpha1.CloudAuditLogsSource{}))
+	return eventslisters.NewCloudAuditLogsSourceLister(l.indexerFor(&EventsV1beta1.CloudAuditLogsSource{}))
 }
 
 func (l *Listers) GetCloudStorageSourceLister() eventslisters.CloudStorageSourceLister {
-	return eventslisters.NewCloudStorageSourceLister(l.indexerFor(&EventsV1alpha1.CloudStorageSource{}))
+	return eventslisters.NewCloudStorageSourceLister(l.indexerFor(&EventsV1beta1.CloudStorageSource{}))
 }
 
 func (l *Listers) GetCloudSchedulerSourceLister() eventslisters.CloudSchedulerSourceLister {
-	return eventslisters.NewCloudSchedulerSourceLister(l.indexerFor(&EventsV1alpha1.CloudSchedulerSource{}))
+	return eventslisters.NewCloudSchedulerSourceLister(l.indexerFor(&EventsV1beta1.CloudSchedulerSource{}))
 }
 
 func (l *Listers) GetCloudPubSubSourceLister() eventslisters.CloudPubSubSourceLister {
-	return eventslisters.NewCloudPubSubSourceLister(l.indexerFor(&EventsV1alpha1.CloudPubSubSource{}))
+	return eventslisters.NewCloudPubSubSourceLister(l.indexerFor(&EventsV1beta1.CloudPubSubSource{}))
 }
 
 func (l *Listers) GetCloudBuildSourceLister() eventslisters.CloudBuildSourceLister {
-	return eventslisters.NewCloudBuildSourceLister(l.indexerFor(&EventsV1alpha1.CloudBuildSource{}))
+	return eventslisters.NewCloudBuildSourceLister(l.indexerFor(&EventsV1beta1.CloudBuildSource{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {

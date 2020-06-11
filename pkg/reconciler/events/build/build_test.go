@@ -38,10 +38,10 @@ import (
 
 	. "knative.dev/pkg/reconciler/testing"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudbuildsource"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudbuildsource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
@@ -54,7 +54,7 @@ const (
 	sinkName  = "sink"
 
 	testNS                                     = "testnamespace"
-	testTopicID                                = v1alpha1.DefaultTopic
+	testTopicID                                = v1beta1.DefaultTopic
 	generation                                 = 1
 	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
@@ -68,7 +68,7 @@ var (
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
-		Version: "v1alpha1",
+		Version: "v1beta1",
 		Kind:    "Sink",
 	}
 
@@ -84,13 +84,13 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = v1alpha1.AddToScheme(scheme.Scheme)
+	_ = v1beta1.AddToScheme(scheme.Scheme)
 }
 
 // Returns an ownerref for the test CloudBuildSource object
 func ownerRef() metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "events.cloud.google.com/v1alpha1",
+		APIVersion:         "events.cloud.google.com/v1beta1",
 		Kind:               "CloudBuildSource",
 		Name:               buildName,
 		UID:                buildUID,
@@ -115,7 +115,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 func newSink() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.google.com/v1alpha1",
+			"apiVersion": "testing.cloud.google.com/v1beta1",
 			"kind":       "Sink",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -133,7 +133,7 @@ func newSink() *unstructured.Unstructured {
 func newSinkDestination() duckv1.Destination {
 	return duckv1.Destination{
 		Ref: &duckv1.KReference{
-			APIVersion: "testing.cloud.google.com/v1alpha1",
+			APIVersion: "testing.cloud.google.com/v1beta1",
 			Kind:       "Sink",
 			Namespace:  testNS,
 			Name:       sinkName,
@@ -164,7 +164,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithCloudBuildSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithCloudBuildSourceDefaultGCPAuth(),
 				),
@@ -180,7 +180,7 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithCloudBuildSourceDefaultGCPAuth(),
 					WithCloudBuildSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
@@ -188,9 +188,9 @@ func TestAllCases(t *testing.T) {
 			}},
 			WantCreates: []runtime.Object{
 				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
-						PubSubSpec: duckv1alpha1.PubSubSpec{
+						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
 							SourceSpec: duckv1.SourceSpec{
 								Sink: newSinkDestination(),
@@ -204,7 +204,7 @@ func TestAllCases(t *testing.T) {
 					}),
 					WithPullSubscriptionAnnotations(map[string]string{
 						"metrics-resource-group":           resourceGroup,
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 					WithPullSubscriptionDefaultGCPAuth(),
@@ -226,9 +226,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
 				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
-						PubSubSpec: duckv1alpha1.PubSubSpec{
+						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
 							SourceSpec: duckv1.SourceSpec{
 								Sink: newSinkDestination(),
@@ -266,9 +266,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
 				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
-						PubSubSpec: duckv1alpha1.PubSubSpec{
+						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
 							SourceSpec: duckv1.SourceSpec{
 								Sink: newSinkDestination(),
@@ -306,9 +306,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
 				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
-						PubSubSpec: duckv1alpha1.PubSubSpec{
+						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
 							SourceSpec: duckv1.SourceSpec{
 								Sink: newSinkDestination(),
@@ -327,7 +327,7 @@ func TestAllCases(t *testing.T) {
 						return false, nil, nil
 					}
 					attempts++
-					return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+					return true, nil, apierrs.NewConflict(v1beta1.Resource("foo"), "bar", errors.New("foo"))
 				},
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{

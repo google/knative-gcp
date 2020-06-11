@@ -39,8 +39,8 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/topic"
+	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/topic"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
@@ -74,7 +74,7 @@ var (
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
-		Version: "v1alpha1",
+		Version: "v1beta1",
 		Kind:    "Sink",
 	}
 
@@ -88,13 +88,13 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = pubsubv1alpha1.AddToScheme(scheme.Scheme)
+	_ = pubsubv1beta1.AddToScheme(scheme.Scheme)
 }
 
 func newSink() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.google.com/v1alpha1",
+			"apiVersion": "testing.cloud.google.com/v1beta1",
 			"kind":       "Sink",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -135,7 +135,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
@@ -162,7 +162,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
@@ -177,7 +177,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
@@ -206,7 +206,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
@@ -221,7 +221,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
@@ -243,7 +243,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
@@ -258,7 +258,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
@@ -285,7 +285,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
@@ -300,7 +300,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project:         testProject,
 					Topic:           testTopicID,
 					Secret:          &secret,
@@ -323,7 +323,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project:         testProject,
 					Topic:           testTopicID,
 					Secret:          &secret,
@@ -339,7 +339,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
@@ -364,7 +364,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+				WithTopicSpec(pubsubv1beta1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
@@ -381,7 +381,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					WithTopicSpec(pubsubv1beta1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
@@ -409,7 +409,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
 					WithTopicProjectID(testProject),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					WithTopicSpec(pubsubv1beta1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
@@ -425,7 +425,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					WithTopicSpec(pubsubv1beta1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
@@ -453,7 +453,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
 					WithTopicProjectID(testProject),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					WithTopicSpec(pubsubv1beta1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
@@ -469,7 +469,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					WithTopicSpec(pubsubv1beta1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
@@ -497,7 +497,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
 					WithTopicProjectID(testProject),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					WithTopicSpec(pubsubv1beta1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
@@ -514,7 +514,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					WithTopicSpec(pubsubv1beta1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
@@ -542,7 +542,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
 					WithTopicProjectID(testProject),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					WithTopicSpec(pubsubv1beta1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
@@ -559,7 +559,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					WithTopicSpec(pubsubv1beta1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
@@ -578,7 +578,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					WithTopicSpec(pubsubv1beta1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
@@ -598,7 +598,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					WithTopicSpec(pubsubv1beta1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
@@ -670,7 +670,7 @@ func patchFinalizers(namespace, name, finalizer string, existingFinalizers ...st
 
 func ownerReferences() []metav1.OwnerReference {
 	return []metav1.OwnerReference{{
-		APIVersion:         "internal.events.cloud.google.com/v1alpha1",
+		APIVersion:         "internal.events.cloud.google.com/v1beta1",
 		Kind:               "Topic",
 		Name:               topicName,
 		UID:                topicUID,
@@ -731,7 +731,7 @@ func makeFalseStatusPublisher(reason, message string) *servingv1.Service {
 func newPublisher() *servingv1.Service {
 	t := NewTopic(topicName, testNS,
 		WithTopicUID(topicUID),
-		WithTopicSpec(pubsubv1alpha1.TopicSpec{
+		WithTopicSpec(pubsubv1beta1.TopicSpec{
 			Project: testProject,
 			Topic:   testTopicID,
 			Secret:  &secret,

@@ -35,8 +35,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	// Fake injection informers and clients
-	_ "github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1beta1/resource/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription/fake"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"

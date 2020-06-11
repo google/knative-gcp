@@ -27,9 +27,9 @@ import (
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
@@ -48,10 +48,10 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+		kngcptesting.WithPullSubscriptionSpec(v1beta1.PullSubscriptionSpec{
 			Topic: topic,
-			PubSubSpec: duckv1alpha1.PubSubSpec{
-				IdentitySpec: duckv1alpha1.IdentitySpec{
+			PubSubSpec: duckv1beta1.PubSubSpec{
+				IdentitySpec: duckv1beta1.IdentitySpec{
 					ServiceAccountName: authConfig.ServiceAccountName,
 				},
 			},
@@ -82,10 +82,10 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+		kngcptesting.WithPullSubscriptionSpec(v1beta1.PullSubscriptionSpec{
 			Topic: topicName,
-			PubSubSpec: duckv1alpha1.PubSubSpec{
-				IdentitySpec: duckv1alpha1.IdentitySpec{
+			PubSubSpec: duckv1beta1.PubSubSpec{
+				IdentitySpec: duckv1beta1.IdentitySpec{
 					ServiceAccountName: authConfig.ServiceAccountName,
 				},
 			},

@@ -23,17 +23,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 )
 
 func TestMakeTopic(t *testing.T) {
-	channel := &v1alpha1.Channel{
+	channel := &v1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "channel-name",
 			Namespace: "channel-namespace",
 		},
-		Spec: v1alpha1.ChannelSpec{
+		Spec: v1beta1.ChannelSpec{
 			Project: "eventing-name",
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
@@ -42,7 +42,7 @@ func TestMakeTopic(t *testing.T) {
 				Key: "eventing-secret-key",
 			},
 		},
-		Status: v1alpha1.ChannelStatus{
+		Status: v1beta1.ChannelStatus{
 			ProjectID: "project-123",
 			TopicID:   "topic-abc",
 		},
@@ -61,7 +61,7 @@ func TestMakeTopic(t *testing.T) {
 	})
 
 	yes := true
-	want := &inteventsv1alpha1.Topic{
+	want := &inteventsv1beta1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "channel-namespace",
 			Name:      "cre-channel-name-chan",
@@ -70,14 +70,14 @@ func TestMakeTopic(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "messaging.cloud.google.com/v1alpha1",
+				APIVersion:         "messaging.cloud.google.com/v1beta1",
 				Kind:               "Channel",
 				Name:               "channel-name",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: inteventsv1alpha1.TopicSpec{
+		Spec: inteventsv1beta1.TopicSpec{
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
@@ -86,7 +86,7 @@ func TestMakeTopic(t *testing.T) {
 			},
 			Project:           "project-123",
 			Topic:             "topic-abc",
-			PropagationPolicy: inteventsv1alpha1.TopicPolicyCreateDelete,
+			PropagationPolicy: inteventsv1beta1.TopicPolicyCreateDelete,
 		},
 	}
 
