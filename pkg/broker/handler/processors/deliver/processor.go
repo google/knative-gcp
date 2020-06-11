@@ -23,11 +23,11 @@ import (
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/binding"
-	"github.com/cloudevents/sdk-go/v2/binding/spec"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/event"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
 
@@ -147,11 +147,28 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	}
 
 	if hops <= 0 {
-		_, id := respMsg.GetAttribute(spec.ID)
-		logging.FromContext(ctx).Debug("dropping event based on remaining hops status",
+		e, err := binding.ToEvent(ctx, respMsg)
+		if err != nil {
+			logging.FromContext(ctx).Error("failed to convert response message to event",
+				zap.Error(err),
+				zap.Any("response", respMsg),
+			)
+			return nil
+		}
+		logging.FromContext(ctx).Warn("event has exhausted allowed hops: dropping reply",
 			zap.String("target", target.Name),
 			zap.Int32("hops", hops),
-			zap.Any("event.id", id))
+			zap.Any("event context", e.Context),
+		)
+		if span := trace.FromContext(ctx); span.IsRecordingEvents() {
+			span.Annotate(
+				append(
+					ceclient.EventTraceAttributes(e),
+					trace.Int64Attribute("remaining_hops", int64(hops)),
+				),
+				"Event reply dropped due to hop limit",
+			)
+		}
 		return nil
 	}
 
