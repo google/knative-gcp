@@ -16,11 +16,53 @@ limitations under the License.
 
 package testing
 
-type StatusUpdater struct {}
+import (
+	"fmt"
 
-func(su *StatusUpdater) MarkTopicFailed(reason, format string, args ...interface{}) {    }
-func(su *StatusUpdater) MarkTopicUnknown(reason, format string, args ...interface{}) {    }
-func(su *StatusUpdater) MarkTopicReady() {    }
-func(su *StatusUpdater) MarkSubscriptionFailed(reason, format string, args ...interface{}) {    }
-func(su *StatusUpdater) MarkSubscriptionUnknown(reason, format string, args ...interface{}) {    }
-func(su *StatusUpdater) MarkSubscriptionReady() {    }
+	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/apis"
+)
+
+type StatusUpdater struct {
+	TopicCondition apis.Condition
+	SubCondition   apis.Condition
+}
+
+func (su *StatusUpdater) MarkTopicFailed(reason, format string, args ...interface{}) {
+	su.TopicCondition = apis.Condition{
+		Status:  corev1.ConditionFalse,
+		Reason:  reason,
+		Message: fmt.Sprintf(format, args...),
+	}
+}
+func (su *StatusUpdater) MarkTopicUnknown(reason, format string, args ...interface{}) {
+	su.TopicCondition = apis.Condition{
+		Status:  corev1.ConditionUnknown,
+		Reason:  reason,
+		Message: fmt.Sprintf(format, args...),
+	}
+}
+func (su *StatusUpdater) MarkTopicReady() {
+	su.TopicCondition = apis.Condition{
+		Status: corev1.ConditionTrue,
+	}
+}
+func (su *StatusUpdater) MarkSubscriptionFailed(reason, format string, args ...interface{}) {
+	su.SubCondition = apis.Condition{
+		Status:  corev1.ConditionFalse,
+		Reason:  reason,
+		Message: fmt.Sprintf(format, args...),
+	}
+}
+func (su *StatusUpdater) MarkSubscriptionUnknown(reason, format string, args ...interface{}) {
+	su.SubCondition = apis.Condition{
+		Status:  corev1.ConditionUnknown,
+		Reason:  reason,
+		Message: fmt.Sprintf(format, args...),
+	}
+}
+func (su *StatusUpdater) MarkSubscriptionReady() {
+	su.SubCondition = apis.Condition{
+		Status: corev1.ConditionTrue,
+	}
+}
