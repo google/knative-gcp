@@ -44,7 +44,7 @@ import (
 	fakeservingclientset "knative.dev/serving/pkg/client/clientset/versioned/fake"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	EventsV1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	EventsV1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	Messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"

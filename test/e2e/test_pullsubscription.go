@@ -28,8 +28,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
@@ -48,7 +48,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPullSubscriptionSpec(v1beta1.PullSubscriptionSpec{
+		kngcptesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 			Topic: topic,
 			PubSubSpec: duckv1beta1.PubSubSpec{
 				IdentitySpec: duckv1beta1.IdentitySpec{
@@ -71,18 +71,18 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 
 	psName := topicName + "-sub"
 	targetName := topicName + "-target"
-	source := v1beta1.CloudPubSubSourceEventSource(project, topicName)
+	source := eventsv1beta1.CloudPubSubSourceEventSource(project, topicName)
 	data := fmt.Sprintf(`{"topic":%s}`, topicName)
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakePubSubTargetJobOrDie(client, source, targetName, v1beta1.CloudPubSubSourcePublish)
+	lib.MakePubSubTargetJobOrDie(client, source, targetName, eventsv1beta1.CloudPubSubSourcePublish)
 
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPullSubscriptionSpec(v1beta1.PullSubscriptionSpec{
+		kngcptesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 			Topic: topicName,
 			PubSubSpec: duckv1beta1.PubSubSpec{
 				IdentitySpec: duckv1beta1.IdentitySpec{
