@@ -333,58 +333,41 @@ func TestAllCases(t *testing.T) {
 				patchFinalizers(testNS, channelName, true),
 			},
 		},
-		//{
-		//	Name: "subscriber already exists owned by other channel",
-		//	Objects: []runtime.Object{
-		//		NewChannel(channelName, testNS,
-		//			WithChannelUID(channelUID),
-		//			WithChannelSpec(v1beta1.ChannelSpec{
-		//				Project: testProject,
-		//			}),
-		//			WithInitChannelConditions,
-		//			WithChannelDefaults,
-		//			WithChannelTopic(testTopicID),
-		//			WithChannelAddress(topicURI),
-		//			WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
-		//				{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-		//			}),
-		//		),
-		//		newReadyTopic(),
-		//		newPullSubscriptionWithOwner(
-		//			eventingduckv1beta1.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-		//			NewChannel("other-channel", testNS, WithChannelUID("other-id"), WithInitChannelConditions),
-		//		),
-		//	},
-		//	Key: testNS + "/" + channelName,
-		//	WantEvents: []string{
-		//		Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
-		//		Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
-		//		Eventf(corev1.EventTypeWarning, reconciledSubscribersFailedReason, "Reconcile Subscribers failed with: channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
-		//	},
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewChannel(channelName, testNS,
-		//			WithChannelUID(channelUID),
-		//			WithChannelSpec(v1beta1.ChannelSpec{
-		//				Project: testProject,
-		//			}),
-		//			WithInitChannelConditions,
-		//			WithChannelDefaults,
-		//			WithChannelTopic(testTopicID),
-		//			WithChannelAddress(topicURI),
-		//			WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
-		//				{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-		//			}),
-		//			// Updates
-		//			WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{}),
-		//		),
-		//	}},
-		//	WantCreates: []runtime.Object{
-		//		newPullSubscription(eventingduckv1beta1.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
-		//	},
-		//	WantPatches: []clientgotesting.PatchActionImpl{
-		//		patchFinalizers(testNS, channelName, true),
-		//	},
-		//},
+		{
+			Name: "subscriber already exists owned by other channel",
+			Objects: []runtime.Object{
+				NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1beta1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelTopic(testTopicID),
+					WithChannelAddress(topicURI),
+					WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
+						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					}),
+				),
+				newReadyTopic(),
+				newPullSubscriptionWithOwner(
+					eventingduckv1beta1.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					NewChannel("other-channel", testNS, WithChannelUID("other-id"), WithInitChannelConditions),
+				),
+			},
+			Key: testNS + "/" + channelName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
+				Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
+				Eventf(corev1.EventTypeWarning, reconciledSubscribersFailedReason, "Reconcile Subscribers failed with: channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
+			},
+			WantCreates: []runtime.Object{
+				newPullSubscription(eventingduckv1beta1.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, channelName, true),
+			},
+		},
 		{
 			Name: "subscriber already exists in status owned by other channel",
 			Objects: []runtime.Object{
@@ -584,74 +567,4 @@ func newPullSubscriptionWithOwner(subscriber eventingduckv1beta1.SubscriberSpec,
 		Annotations: resources.GetPullSubscriptionAnnotations(channel.Name, channel.GetAnnotations()[duckv1beta1.ClusterNameAnnotation]),
 		Subscriber:  subscriber,
 	})
-}
-
-
-// TODO add a unit test for successfully creating a k8s service account, after issue https://github.com/google/knative-gcp/issues/657 gets solved.
-func TestDEBUG(t *testing.T) {
-	table := TableTest{ {
-		Name: "subscriber already exists owned by other channel",
-		Objects: []runtime.Object{
-			NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1beta1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
-					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				}),
-			),
-			newReadyTopic(),
-			newPullSubscriptionWithOwner(
-				eventingduckv1beta1.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				NewChannel("other-channel", testNS, WithChannelUID("other-id"), WithInitChannelConditions),
-			),
-		},
-		Key: testNS + "/" + channelName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
-			Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
-			Eventf(corev1.EventTypeWarning, reconciledSubscribersFailedReason, "Reconcile Subscribers failed with: channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1beta1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
-					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				}),
-				// Updates
-				WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus(nil)),
-
-			),
-		}},
-		WantCreates: []runtime.Object{
-			newPullSubscription(eventingduckv1beta1.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
-		},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, channelName, true),
-		},
-	}}
-
-	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
-		r := &Reconciler{
-			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
-			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
-			channelLister: listers.GetChannelLister(),
-			topicLister:   listers.GetTopicLister(),
-		}
-		return channel.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetChannelLister(), r.Recorder, r)
-	}))
-
 }
