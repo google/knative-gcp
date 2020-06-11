@@ -60,6 +60,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 			updater.MarkSubscriptionFailed("DeletedTopic", "Pull subscriptions must be recreated to work with recreated topic")
 			return nil, deletedTopicErr
 		}
+		updater.MarkSubscriptionReady()
 		return sub, nil
 	}
 
