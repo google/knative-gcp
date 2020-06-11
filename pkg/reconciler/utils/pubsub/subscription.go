@@ -54,7 +54,8 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 			return nil, err
 		}
 		if config.Topic != nil && config.Topic.String() == deletedTopic {
-			logger.Warn("Detected deleted topic. Going to recreate the pull subscription.")
+			logger.Error("Detected deleted topic. Going to recreate the pull subscription. Unacked messages will be lost.")
+			r.recorder.Eventf(obj, corev1.EventTypeWarning, topicDeleted, "Unexpected topic deletion detected for subscription: %q", sub.ID())
 			// Subscription with "_deleted-topic_" cannot pull from the new topic. In order to recover, we first delete
 			// the sub and then create it. Unacked messages will be lost.
 			if err := r.deleteSubscription(ctx, sub, obj); err != nil {

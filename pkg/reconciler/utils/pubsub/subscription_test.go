@@ -53,6 +53,7 @@ func TestReconcileSub(t *testing.T) {
 			// deletion, then recreate it to simulate topic reconciliation before sub reconciliation.
 			pre: []reconcilertesting.PubsubAction{reconcilertesting.TopicAndSub(topic, sub), deleteTopic, reconcilertesting.Topic(topic)},
 			wantEvents: []string{
+				`Warning TopicDeleted Unexpected topic deletion detected for subscription: "test-sub"`,
 				`Normal SubscriptionDeleted Deleted PubSub subscription "test-sub"`,
 				`Normal SubscriptionCreated Created PubSub subscription "test-sub"`,
 			},
