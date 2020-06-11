@@ -43,6 +43,7 @@ func (r *Reconciler) ReconcileTopic(ctx context.Context, id string, topicConfig 
 		return nil, err
 	}
 	if exists {
+		updater.MarkTopicReady()
 		return topic, nil
 	}
 
