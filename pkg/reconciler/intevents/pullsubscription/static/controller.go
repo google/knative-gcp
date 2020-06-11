@@ -19,6 +19,8 @@ package static
 import (
 	"context"
 
+	"knative.dev/pkg/injection"
+
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -61,20 +63,16 @@ type envConfig struct {
 	ReceiveAdapter string `envconfig:"PUBSUB_RA_IMAGE" required:"true"`
 }
 
-// NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
-func NewController(
-	ctx context.Context,
-	cmw configmap.Watcher,
-) *controller.Impl {
-	return newControllerWithIAMPolicyManager(
-		ctx,
-		cmw,
-		iam.DefaultIAMPolicyManager(),
-		identity.NewGCPAuthStore(ctx, cmw))
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a static CloudBuildSource controller.
+func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+	}
 }
 
-func newControllerWithIAMPolicyManager(
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,

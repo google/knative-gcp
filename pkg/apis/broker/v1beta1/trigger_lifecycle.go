@@ -65,11 +65,11 @@ func (ts *TriggerStatus) PropagateBrokerStatus(bs *BrokerStatus) {
 
 	switch {
 	case bc.Status == corev1.ConditionUnknown:
-		ts.MarkBrokerUnknown(bc.Reason, bc.Message)
+		ts.MarkBrokerUnknown("Broker/"+bc.Reason, bc.Message)
 	case bc.Status == corev1.ConditionTrue:
 		triggerCondSet.Manage(ts).MarkTrue(eventingv1beta1.TriggerConditionBroker)
 	case bc.Status == corev1.ConditionFalse:
-		ts.MarkBrokerFailed(bc.Reason, bc.Message)
+		ts.MarkBrokerFailed("Broker/"+bc.Reason, bc.Message)
 	default:
 		ts.MarkBrokerUnknown("BrokerUnknown", "The status of Broker is invalid: %v", bc.Status)
 	}

@@ -121,9 +121,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1alpha1.Topic) r
 
 	// Update the topic.
 	topic.Status.PropagatePublisherStatus(&svc.Status)
-	if svc.Status.IsReady() {
-		topic.Status.SetAddress(svc.Status.Address.URL)
-	}
 
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, topic.Namespace, topic.Name)
 }

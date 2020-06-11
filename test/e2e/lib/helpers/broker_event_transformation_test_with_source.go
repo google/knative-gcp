@@ -37,6 +37,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
@@ -102,6 +103,79 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 		client.T.Error("resp event didn't hit the target pod")
 		client.T.Failed()
 	}
+}
+
+func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID string, brokerURL url.URL, brokerName string) {
+	client.T.Helper()
+	start := time.Now()
+
+	senderName := helpers.AppendRandomString("sender")
+	targetName := helpers.AppendRandomString("target")
+
+	// Create a target Job to receive the events.
+	makeTargetJobOrDie(client, targetName)
+
+	// Create the Knative Service.
+	kserviceName := CreateKService(client, "receiver")
+
+	// Create a Trigger with the Knative Service subscriber.
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
+		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
+		map[string]interface{}{"type": lib.E2EDummyEventType})
+	trigger := createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
+
+	// Create a Trigger with the target Service subscriber.
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
+		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
+		map[string]interface{}{"type": lib.E2EDummyRespEventType})
+	respTrigger := createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
+
+	// Wait for ksvc, trigger ready.
+	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+
+	// Just to make sure all resources are ready.
+	time.Sleep(5 * time.Second)
+
+	// Create a sender Job to sender the event.
+	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
+		Name:  "BROKER_URL",
+		Value: brokerURL.String(),
+	}})
+	client.CreateJobOrFail(senderJob)
+
+	// Check if dummy CloudEvent is sent out.
+	if done := jobDone(client, senderName); !done {
+		client.T.Error("dummy event wasn't sent to broker")
+		client.T.Failed()
+	}
+	// Check if resp CloudEvent hits the target Service.
+	if done := jobDone(client, targetName); !done {
+		client.T.Error("resp event didn't hit the target pod")
+		client.T.Failed()
+	}
+	metrics.CheckAssertions(client.T,
+		lib.BrokerMetricAssertion{
+			ProjectID:       projectID,
+			BrokerName:      brokerName,
+			BrokerNamespace: client.Namespace,
+			StartTime:       start,
+			CountPerType: map[string]int64{
+				lib.E2EDummyEventType:     1,
+				lib.E2EDummyRespEventType: 1,
+			},
+		},
+		lib.TriggerMetricAssertion{
+			ProjectID:       projectID,
+			BrokerName:      brokerName,
+			BrokerNamespace: client.Namespace,
+			StartTime:       start,
+			CountPerTrigger: map[string]int64{
+				trigger.Name:     1,
+				respTrigger.Name: 1,
+			},
+		},
+	)
 }
 
 func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID string, brokerURL url.URL, brokerName string) {

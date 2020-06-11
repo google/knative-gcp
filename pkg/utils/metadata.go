@@ -20,8 +20,9 @@ import (
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 )
 
-var (
+const (
 	clusterNameAttr = "cluster-name"
+	ProjectIDEnvKey = "PROJECT_ID"
 )
 
 // ProjectID returns the project ID for a particular resource.
