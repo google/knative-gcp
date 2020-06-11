@@ -19,6 +19,7 @@ package handler
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
@@ -37,6 +38,11 @@ var (
 
 	DefaultHTTPClient = &http.Client{
 		Transport: &ochttp.Transport{
+			Base: &http.Transport{
+				MaxIdleConns:        1000,
+				MaxIdleConnsPerHost: 1000,
+				IdleConnTimeout:     30 * time.Second,
+			},
 			Propagation: &tracecontext.HTTPFormat{},
 		},
 	}
