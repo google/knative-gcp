@@ -19,8 +19,10 @@ package deliver
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -332,6 +334,7 @@ type NoReplyHandler struct{}
 
 func (NoReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
+	io.Copy(ioutil.Discard, req.Body)
 }
 
 func BenchmarkDeliveryNoReply(b *testing.B) {
@@ -343,7 +346,11 @@ func BenchmarkDeliveryNoReply(b *testing.B) {
 	targetSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
 	defer targetSvr.Close()
 
-	benchmarkNoReply(b, httpClient, targetSvr.URL)
+	for _, eventSize := range []int{0, 1000, 1000000} {
+		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
+			benchmarkNoReply(b, &httpClient, targetSvr.URL, eventSize)
+		})
+	}
 }
 
 type ReplyHandler struct {
@@ -352,17 +359,26 @@ type ReplyHandler struct {
 
 func (h ReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	cehttp.WriteResponseWriter(req.Context(), h.msg, http.StatusOK, w)
+	io.Copy(ioutil.Discard, req.Body)
 }
 
 func BenchmarkDeliveryWithReply(b *testing.B) {
 	httpClient := http.Client{Transport: &http.Transport{MaxIdleConnsPerHost: runtime.NumCPU()}}
 	ingressSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
 	defer ingressSvr.Close()
-	benchmarkWithReply(b, ingressSvr.URL, func(b *testing.B, reply *event.Event) (http.Client, string) {
-		targetSvr := httptest.NewServer(ReplyHandler{msg: binding.ToMessage(reply)})
-		b.Cleanup(targetSvr.Close)
-		return httpClient, targetSvr.URL
-	})
+	for _, eventSize := range []int{0, 1000, 1000000} {
+		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
+			benchmarkWithReply(b, ingressSvr.URL, eventSize,
+				func(b *testing.B, reply *event.Event) (http.Client, string) {
+					targetSvr := httptest.NewServer(ReplyHandler{
+						msg: binding.ToMessage(reply),
+					})
+					b.Cleanup(targetSvr.Close)
+					return httpClient, targetSvr.URL
+				},
+			)
+		})
+	}
 }
 
 type fakeRoundTripper map[string]*http.Response
@@ -391,7 +407,11 @@ func BenchmarkDeliveryNoReplyFakeClient(b *testing.B) {
 			},
 		}),
 	}
-	benchmarkNoReply(b, httpClient, targetAddress)
+	for _, eventSize := range []int{0, 1000, 1000000} {
+		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
+			benchmarkNoReply(b, &httpClient, targetAddress, eventSize)
+		})
+	}
 }
 
 type fakeBody struct {
@@ -436,17 +456,21 @@ func makeFakeTargetWithReply(b *testing.B, reply *event.Event) (httpClient http.
 // of the fake client helps to better isolate the performance of the processor itself and can
 // provide better profiling data.
 func BenchmarkDeliveryWithReplyFakeClient(b *testing.B) {
-	benchmarkWithReply(b, fakeIngressAddress, makeFakeTargetWithReply)
+	for _, eventSize := range []int{0, 1000, 1000000} {
+		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
+			benchmarkWithReply(b, fakeIngressAddress, eventSize, makeFakeTargetWithReply)
+		})
+	}
 }
 
-func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string) {
+func benchmarkNoReply(b *testing.B, httpClient *http.Client, targetAddress string, eventSize int) {
 	reportertest.ResetDeliveryMetrics()
 	statsReporter, err := metrics.NewDeliveryReporter("pod", "container")
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	sampleEvent := newSampleEvent()
+	sampleEvent := newSampleEventWithRandomData(b, eventSize)
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
@@ -459,9 +483,10 @@ func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string
 	ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 	p := &Processor{
-		DeliverClient: &httpClient,
-		Targets:       testTargets,
-		StatsReporter: statsReporter,
+		DeliverClient:  httpClient,
+		Targets:        testTargets,
+		StatsReporter:  statsReporter,
+		RetryOnFailure: false,
 	}
 
 	b.ResetTimer()
@@ -474,14 +499,14 @@ func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string
 	})
 }
 
-func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*testing.B, *event.Event) (httpClient http.Client, targetAdress string)) {
+func benchmarkWithReply(b *testing.B, ingressAddress string, eventSize int, makeTarget func(*testing.B, *event.Event) (httpClient http.Client, targetAdress string)) {
 	reportertest.ResetDeliveryMetrics()
 	statsReporter, err := metrics.NewDeliveryReporter("pod", "container")
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	sampleEvent := newSampleEvent()
+	sampleEvent := newSampleEventWithRandomData(b, eventSize)
 	sampleReply := sampleEvent.Clone()
 	sampleReply.SetID("reply")
 
@@ -548,4 +573,18 @@ func newSampleEvent() *event.Event {
 	sampleEvent.SetType("type")
 	sampleEvent.SetTime(time.Now())
 	return &sampleEvent
+}
+
+func newSampleEventWithRandomData(t testing.TB, size int) *event.Event {
+	event := newSampleEvent()
+	if size > 0 {
+		data := make([]byte, size)
+		_, err := rand.Read(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		event.DataEncoded = data
+		return event
+	}
+	return event
 }

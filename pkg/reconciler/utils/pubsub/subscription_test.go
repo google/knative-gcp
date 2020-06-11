@@ -23,7 +23,11 @@ import (
 	"testing"
 
 	"cloud.google.com/go/pubsub"
+	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/apis"
+
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	utilspubsubtesting "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub/testing"
 )
 
 const (
@@ -33,18 +37,25 @@ const (
 func TestReconcileSub(t *testing.T) {
 	tests := []testCase{
 		{
-			name:       "new sub created",
-			pre:        []reconcilertesting.PubsubAction{reconcilertesting.Topic(topic)},
-			wantEvents: []string{`Normal SubscriptionCreated Created PubSub subscription "test-sub"`},
+			name:             "new sub created",
+			pre:              []reconcilertesting.PubsubAction{reconcilertesting.Topic(topic)},
+			wantEvents:       []string{`Normal SubscriptionCreated Created PubSub subscription "test-sub"`},
+			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue,},
 		},
 		{
-			name: "sub already exists",
-			pre:  []reconcilertesting.PubsubAction{reconcilertesting.TopicAndSub(topic, sub)},
+			name:             "sub already exists",
+			pre:              []reconcilertesting.PubsubAction{reconcilertesting.TopicAndSub(topic, sub)},
+			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue,},
 		},
 		{
 			name:    "deleted topic",
 			pre:     []reconcilertesting.PubsubAction{reconcilertesting.TopicAndSub(topic, sub), deleteTopic},
 			wantErr: deletedTopicErr,
+			wantSubCondition: apis.Condition{
+				Status:  corev1.ConditionFalse,
+				Reason:  "DeletedTopic",
+				Message: `Pull subscriptions must be recreated to work with recreated topic`,
+			},
 		},
 	}
 	for _, tc := range tests {
@@ -52,10 +63,11 @@ func TestReconcileSub(t *testing.T) {
 			tr, cleanup := newTestRunner(t, tc)
 			defer cleanup()
 			r := NewReconciler(tr.client, tr.recorder)
+			su := &utilspubsubtesting.StatusUpdater{}
 			subConfig := pubsub.SubscriptionConfig{Topic: tr.client.Topic(topic)}
 			res, err := r.ReconcileSubscription(context.Background(), sub, subConfig, obj, su)
 
-			tr.verify(t, tc, err)
+			tr.verify(t, tc, su, err)
 			if res != nil {
 				verifySub(t, res, subConfig)
 			}
@@ -81,7 +93,7 @@ func TestDeleteSub(t *testing.T) {
 			defer cleanup()
 			r := NewReconciler(tr.client, tr.recorder)
 			err := r.DeleteSubscription(context.Background(), sub, obj)
-			tr.verify(t, tc, err)
+			tr.verify(t, tc, su, err)
 			exists, err := tr.client.Subscription(sub).Exists(context.Background())
 			if err != nil {
 				t.Fatalf("Failed to verify sub exists: %v", err)

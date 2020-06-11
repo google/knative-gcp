@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
+	"knative.dev/pkg/apis"
 
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	utilspubsubtesting "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub/testing"
@@ -45,12 +46,14 @@ var (
 func TestReconcileTopic(t *testing.T) {
 	tests := []testCase{
 		{
-			name:       "new topic created",
-			wantEvents: []string{`Normal TopicCreated Created PubSub topic "test-topic"`},
+			name:               "new topic created",
+			wantEvents:         []string{`Normal TopicCreated Created PubSub topic "test-topic"`},
+			wantTopicCondition: apis.Condition{Status: corev1.ConditionTrue,},
 		},
 		{
-			name: "topic already exists",
-			pre:  []reconcilertesting.PubsubAction{reconcilertesting.Topic(topic)},
+			name:               "topic already exists",
+			pre:                []reconcilertesting.PubsubAction{reconcilertesting.Topic(topic)},
+			wantTopicCondition: apis.Condition{Status: corev1.ConditionTrue,},
 		},
 	}
 	for _, tc := range tests {
@@ -58,9 +61,10 @@ func TestReconcileTopic(t *testing.T) {
 			tr, cleanup := newTestRunner(t, tc)
 			defer cleanup()
 			r := NewReconciler(tr.client, tr.recorder)
+			su := &utilspubsubtesting.StatusUpdater{}
 			res, err := r.ReconcileTopic(context.Background(), topic, &topicConfig, obj, su)
 
-			tr.verify(t, tc, err)
+			tr.verify(t, tc, su, err)
 			verifyTopic(t, res)
 		})
 	}
@@ -84,7 +88,7 @@ func TestDeleteTopic(t *testing.T) {
 			defer cleanup()
 			r := NewReconciler(tr.client, tr.recorder)
 			err := r.DeleteTopic(context.Background(), topic, obj)
-			tr.verify(t, tc, err)
+			tr.verify(t, tc, su, err)
 			exists, err := tr.client.Topic(topic).Exists(context.Background())
 			if err != nil {
 				t.Fatalf("Failed to verify topic exists: %v", err)
@@ -112,10 +116,12 @@ func verifyTopic(t *testing.T, got *pubsub.Topic) {
 }
 
 type testCase struct {
-	name       string
-	pre        []reconcilertesting.PubsubAction
-	wantEvents []string
-	wantErr    error
+	name               string
+	pre                []reconcilertesting.PubsubAction
+	wantEvents         []string
+	wantTopicCondition apis.Condition
+	wantSubCondition   apis.Condition
+	wantErr            error
 }
 
 // testRunner helps to setup resources such as pubsub client, as well as verify the common test case.
@@ -136,7 +142,7 @@ func newTestRunner(t *testing.T, tc testCase) (*testRunner, func()) {
 	}, close
 }
 
-func (r *testRunner) verify(t *testing.T, tc testCase, err error) {
+func (r *testRunner) verify(t *testing.T, tc testCase, su *utilspubsubtesting.StatusUpdater, err error) {
 	if tc.wantErr != err {
 		t.Fatalf("Expect error, got: %v, want: %v", err, tc.wantErr)
 	}
@@ -146,5 +152,13 @@ func (r *testRunner) verify(t *testing.T, tc testCase, err error) {
 		if got != event {
 			t.Errorf("Unexpected event recorded, got: %v, want: %v", got, event)
 		}
+	}
+
+	if diff := cmp.Diff(tc.wantTopicCondition, su.TopicCondition); diff != "" {
+		t.Errorf("Unexpected topic condition, diff: %s", diff)
+	}
+
+	if diff := cmp.Diff(tc.wantSubCondition, su.SubCondition); diff != "" {
+		t.Errorf("Unexpected subscription condition, diff: %s", diff)
 	}
 }

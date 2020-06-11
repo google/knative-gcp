@@ -19,7 +19,8 @@ metadata:
   namespace: cloud-run-events
   labels:
     events.cloud.google.com/release: devel
-
+  annotations:
+    knative.dev/example-checksum: 8544d216
 data:
   _example: |
     ################################
