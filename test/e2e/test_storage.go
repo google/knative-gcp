@@ -111,7 +111,7 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	if assertMetrics {
-		client.SetupStackDriverMetrics(t)
+		client.SetupStackDriverMetricsInNamespace(t)
 	}
 	defer lib.TearDown(client)
 
