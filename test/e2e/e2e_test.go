@@ -28,7 +28,7 @@ import (
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/logstream"
 
-	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -48,7 +48,7 @@ func TestSingleBinaryEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingBinary, "v1alpha1", "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingBinary, "v1beta1", "", channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestSingleStructuredEventForChannel(t *testing.T) {
@@ -58,7 +58,7 @@ func TestSingleStructuredEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingStructured, "v1alpha1", "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingStructured, "v1beta1", "", channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelClusterDefaulter(t *testing.T) {
@@ -146,7 +146,7 @@ func TestChannelTracing(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	conformancehelpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
-		APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
+		APIVersion: messagingv1beta1.SchemeGroupVersion.String(),
 		Kind:       "Channel",
 	}, func(client *eventingtestlib.Client) {
 		// This test is running based on code in knative/eventing, so it does not use the same
