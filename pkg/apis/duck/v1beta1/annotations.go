@@ -149,6 +149,9 @@ func validateAnnotation(annotations map[string]string, annotation string, minimu
 }
 
 func setDefaultAnnotationIfNotPresent(obj *metav1.ObjectMeta, annotation string, defaultValue string) {
+	if obj.Annotations == nil {
+		obj.Annotations = map[string]string{}
+	}
 	if _, ok := obj.Annotations[annotation]; !ok {
 		obj.Annotations[annotation] = defaultValue
 	}
