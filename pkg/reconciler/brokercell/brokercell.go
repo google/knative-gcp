@@ -224,7 +224,7 @@ func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.Au
 		ComponentName:     resources.IngressName,
 		BrokerCell:        bc,
 		AvgCPUUtilization: 95,
-		AvgMemoryUsage:    "450Mi",
+		AvgMemoryUsage:    "700Mi",
 		MaxReplicas:       10,
 	}
 }
@@ -246,8 +246,13 @@ func (r *Reconciler) makeFanoutHPAArgs(bc *intv1alpha1.BrokerCell) resources.Aut
 		ComponentName:     resources.FanoutName,
 		BrokerCell:        bc,
 		AvgCPUUtilization: 95,
-		AvgMemoryUsage:    "900Mi",
-		MaxReplicas:       20,
+		// The limit we set is 3000Mi which is mostly used to prevent surging
+		// memory usage causing OOM.
+		// Here we only set half of the limit so that in case of surging memory
+		// usage, HPA could have enough time to kick in.
+		// See: https://github.com/google/knative-gcp/issues/1265
+		AvgMemoryUsage: "1500Mi",
+		MaxReplicas:    10,
 	}
 }
 
@@ -268,8 +273,13 @@ func (r *Reconciler) makeRetryHPAArgs(bc *intv1alpha1.BrokerCell) resources.Auto
 		ComponentName:     resources.RetryName,
 		BrokerCell:        bc,
 		AvgCPUUtilization: 95,
-		AvgMemoryUsage:    "1400Mi",
-		MaxReplicas:       20,
+		// The limit we set is 3000Mi which is mostly used to prevent surging
+		// memory usage causing OOM.
+		// Here we only set half of the limit so that in case of surging memory
+		// usage, HPA could have enough time to kick in.
+		// See: https://github.com/google/knative-gcp/issues/1265
+		AvgMemoryUsage: "1500Mi",
+		MaxReplicas:    10,
 	}
 }
 
