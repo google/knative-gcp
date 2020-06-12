@@ -69,8 +69,7 @@ There are two scenarios to leverage Workload Identity for resources in the Data 
 * ***Non-default scenario:***
 
     Using the Google Cloud Service Account `cre-pubsub` you just created and using 
-    [Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity) 
-    in [Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md) 
+    [Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)  
     to configure Workload Identity in the namespace your resources will reside.
 
     You will have a Kubernetes Service Account after the above configuration, which 
