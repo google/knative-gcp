@@ -184,11 +184,6 @@ func (in *CloudBuildSourceList) DeepCopyObject() runtime.Object {
 func (in *CloudBuildSourceSpec) DeepCopyInto(out *CloudBuildSourceSpec) {
 	*out = *in
 	in.PubSubSpec.DeepCopyInto(&out.PubSubSpec)
-	if in.Topic != nil {
-		in, out := &in.Topic, &out.Topic
-		*out = new(string)
-		**out = **in
-	}
 	return
 }
 
