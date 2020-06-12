@@ -40,12 +40,12 @@ func TestReconcileSub(t *testing.T) {
 			name:             "new sub created",
 			pre:              []reconcilertesting.PubsubAction{reconcilertesting.Topic(topic)},
 			wantEvents:       []string{`Normal SubscriptionCreated Created PubSub subscription "test-sub"`},
-			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue,},
+			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue},
 		},
 		{
 			name:             "sub already exists",
 			pre:              []reconcilertesting.PubsubAction{reconcilertesting.TopicAndSub(topic, sub)},
-			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue,},
+			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue},
 		},
 		{
 			name: "deleted topic",

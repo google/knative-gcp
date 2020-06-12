@@ -48,12 +48,12 @@ func TestReconcileTopic(t *testing.T) {
 		{
 			name:               "new topic created",
 			wantEvents:         []string{`Normal TopicCreated Created PubSub topic "test-topic"`},
-			wantTopicCondition: apis.Condition{Status: corev1.ConditionTrue,},
+			wantTopicCondition: apis.Condition{Status: corev1.ConditionTrue},
 		},
 		{
 			name:               "topic already exists",
 			pre:                []reconcilertesting.PubsubAction{reconcilertesting.Topic(topic)},
-			wantTopicCondition: apis.Condition{Status: corev1.ConditionTrue,},
+			wantTopicCondition: apis.Condition{Status: corev1.ConditionTrue},
 		},
 	}
 	for _, tc := range tests {

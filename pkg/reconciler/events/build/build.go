@@ -18,6 +18,7 @@ package build
 
 import (
 	"context"
+
 	"github.com/google/knative-gcp/pkg/apis/events"
 
 	"go.uber.org/zap"

@@ -506,7 +506,7 @@ func TestAllCases(t *testing.T) {
 						"receive-adapter": receiveAdapterName,
 						SourceLabelKey:    schedulerName}),
 					WithPullSubscriptionAnnotations(map[string]string{
-						"metrics-resource-group":           resourceGroup,
+						"metrics-resource-group":          resourceGroup,
 						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
