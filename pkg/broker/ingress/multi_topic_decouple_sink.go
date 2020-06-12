@@ -109,10 +109,9 @@ func (m *multiTopicDecoupleSink) updateTopicForBroker(broker types.NamespacedNam
 		if topic.ID() == topicID {
 			// Topic already updated.
 			return topic, nil
-		} else {
-			// Stop old topic.
-			m.topics[broker].Stop()
 		}
+		// Stop old topic.
+		m.topics[broker].Stop()
 	}
 	topic := m.pubsub.Topic(topicID)
 	m.topics[broker] = topic
