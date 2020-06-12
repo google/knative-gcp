@@ -25,3 +25,6 @@ var ErrNotFound = errors.New("not found")
 // ErrIncomplete is the error when a broker entry exists in the configmap but its decouple queue is nil or empty.
 // This should never happen unless there is a bug in the controller.
 var ErrIncomplete = errors.New("incomplete config")
+
+// ErrNotReady is the error when a broker is not ready.
+var ErrNotReady = errors.New("not ready")

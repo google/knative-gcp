@@ -165,6 +165,8 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		statusCode = nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {
 			statusCode = nethttp.StatusNotFound
+		} else if errors.Is(res, ErrNotReady) {
+			statusCode = nethttp.StatusServiceUnavailable
 		}
 		nethttp.Error(response, msg, statusCode)
 		return

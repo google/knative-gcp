@@ -52,7 +52,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "happy path single broker",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
+					"test_ns_1/test_broker_1": {State: config.State_READY, DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
 				},
 			},
 			cases: []brokerTestCase{
@@ -67,8 +67,8 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "happy path multiple brokers",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
-					"test_ns_2/test_broker_2": {DecoupleQueue: &config.Queue{Topic: "test_topic_2"}},
+					"test_ns_1/test_broker_1": {State: config.State_READY, DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
+					"test_ns_2/test_broker_2": {State: config.State_READY, DecoupleQueue: &config.Queue{Topic: "test_topic_2"}},
 				},
 			},
 			cases: []brokerTestCase{
@@ -88,7 +88,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "client returns error",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
+					"test_ns_1/test_broker_1": {State: config.State_READY, DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
 				},
 			},
 			cases: []brokerTestCase{
@@ -114,10 +114,26 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 		},
 		{
+			name: "broker is not ready",
+			brokerConfig: &config.TargetsConfig{
+				Brokers: map[string]*config.Broker{
+					"test_ns_1/test_broker_1": {State: config.State_UNKNOWN, DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
+				},
+			},
+			cases: []brokerTestCase{
+				{
+					ns:      "test_ns_1",
+					broker:  "test_broker_1",
+					topic:   "test_topic_1",
+					wantErr: true,
+				},
+			},
+		},
+		{
 			name: "decouple queue is nil for broker",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: nil},
+					"test_ns_1/test_broker_1": {State: config.State_READY, DecoupleQueue: nil},
 				},
 			},
 			cases: []brokerTestCase{
@@ -133,7 +149,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "empty topic for broker",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: ""}},
+					"test_ns_1/test_broker_1": {State: config.State_READY, DecoupleQueue: &config.Queue{Topic: ""}},
 				},
 			},
 			cases: []brokerTestCase{
