@@ -43,7 +43,8 @@ func NewMultiTopicDecoupleSink(ctx context.Context, brokerConfig config.Readonly
 		logger:       logging.FromContext(ctx),
 		pubsub:       client,
 		brokerConfig: brokerConfig,
-		topics:       make(map[types.NamespacedName]*pubsub.Topic),
+		// TODO(#1118): remove Topic when broker config is removed
+		topics: make(map[types.NamespacedName]*pubsub.Topic),
 	}
 }
 
