@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"context"
-	"knative.dev/pkg/ptr"
 	"net/url"
 	"testing"
 
@@ -39,7 +38,6 @@ var (
 		ObjectMeta: completeObjectMeta,
 		Spec: CloudBuildSourceSpec{
 			PubSubSpec:          completePubSubSpec,
-			Topic:               ptr.String(DefaultTopic),
 		},
 		Status: CloudBuildSourceStatus{
 			PubSubStatus: completePubSubStatus,

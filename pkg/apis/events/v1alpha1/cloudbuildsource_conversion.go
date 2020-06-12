@@ -19,7 +19,6 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-
 	"github.com/google/knative-gcp/pkg/apis/convert"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"knative.dev/pkg/apis"
