@@ -61,7 +61,7 @@ ko apply -f ./config
 Currently, we support two methods: Workload Identity and Kubernetes Secret. 
 The configuration steps have been automated by the scripts below. If
 wish to configure the auth manually, refer to
-[Authentication Mechanism for GCP](./authentication-mechanisms-gcp.md).
+[Manually Configure Authentication Mechanism for the Control Plane](./authentication-mechanisms-gcp.md/#authentication-mechanism-for-the-control-plane).
 
 Before applying initialization scripts, make sure:
 
