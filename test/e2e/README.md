@@ -125,7 +125,8 @@ You can directly edit the ConfigMap by:
 ```shell
 kubectl edit configmap config-gcp-auth -n cloud-run-events
 ```
-and replace the `clusterDefaults` part with: 
+
+and replace the `clusterDefaults` part with:
 
 ```shell
     clusterDefaults:
@@ -133,11 +134,11 @@ and replace the `clusterDefaults` part with:
       workloadIdentityMapping:
         test-default-ksa: $PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com
 ```
+
 `$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the Pub/Sub
 enabled Google Cloud Service Account.
 
-Then, add `-workloadIndentity=true` and
-`-serviceAccountName=test-default-ksa`
+Then, add `-workloadIndentity=true` and `-serviceAccountName=test-default-ksa`
 to the `go test` command.
 
 For example,
