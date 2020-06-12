@@ -68,18 +68,16 @@ Service Account.
 There are two scenarios to leverage Workload Identity for resources in the Data Plane:
 * ***Non-default scenario:***
 
-    Using the Google Cloud Service Account `cre-pubsub` you just created and checking
-[Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
-in
-[Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md)
-to configure Workload Identity in the namespace your resources will reside.
+    Using the Google Cloud Service Account `cre-pubsub` you just created and using 
+    [Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity) 
+    in [Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md) 
+    to configure Workload Identity in the namespace your resources will reside.
 
-    You will have a Kubernetes Service Account after the above configuration, which
-is bound to the Google Cloud Service Account `cre-pubsub`. Remember to put
-this Kubernetes Service Account name under `spec.serviceAccountName` when you
-follow
-[example](https://github.com/google/knative-gcp/tree/master/docs/examples) to
-use resource.
+    You will have a Kubernetes Service Account after the above configuration, which 
+    is bound to the Google Cloud Service Account `cre-pubsub`. Remember to put
+    this Kubernetes Service Account name as the `spec.serviceAccountName` when you
+    create resources in the [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
+    
 * ***Default scenario:***
     
     Instead of manually configuring Workload Identity with [Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md), 
@@ -88,42 +86,44 @@ use resource.
     You need to grant `iam.serviceAccountAdmin` permission of the Google Cloud Service Account `cre-pubsub` you just created to 
     the Control Plane's Google Cloud Service Account `cloud-run-events` by:
     
-   ```shell
-   gcloud iam service-accounts add-iam-policy-binding \
-    cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com  \
-    --member='serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com' \
-    --role='roles/iam.serviceAccountAdmin'
-   ```
+    ```shell
+    gcloud iam service-accounts add-iam-policy-binding \
+     cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com  \
+     --member='serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com' \
+     --role='roles/iam.serviceAccountAdmin'
+    ```
   
-  Then, modify `clusterDefaults` in ConfigMap `config-gcp-auth`.
+    Then, modify `clusterDefaults` in ConfigMap `config-gcp-auth`.
   
-  You can directly edit the ConfigMap by:
+    You can directly edit the ConfigMap by:
   
-  ```shell
-  kubectl edit configmap config-gcp-auth -n cloud-run-events
-  ```
-  and replace the `clusterDefaults` part with: 
+    ```shell
+    kubectl edit configmap config-gcp-auth -n cloud-run-events
+    ```
+    and replace the `clusterDefaults` part with: 
   
-  ```shell
+    ```shell
       clusterDefaults:
         workloadIdentityMapping:
           default-cre-pubsub: cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
-  ```
+    ```
   
-  Here, `default-cre-pubsub` refers to a Kubernetes Service Account bound to the Google Cloud Service Account `cre-pubsub`. 
-  Remember to put
-  `default-cre-pubsub` under `spec.serviceAccountName` when you
-  follow
-  [example](https://github.com/google/knative-gcp/tree/master/docs/examples) to
-  use resource.
+    Here, `default-cre-pubsub` refers to a Kubernetes Service Account bound to the Google Cloud Service Account `cre-pubsub`. 
+    Remember to put this Kubernetes Service Account name as the `spec.serviceAccountName` when you
+    create resources in the [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
   
-  Kubernetes Service Account `default-cre-pubsub` doesn't need to exist in a specific namespace. 
-  Once it is set in the ConfigMap `config-gcp-auth`,
-  the Control Plane will create it for you and configure corresponding Workload Identity relationship between `default-cre-pubsub` 
-  and `cre-pubsub` when you create resources.
+    Kubernetes Service Account `default-cre-pubsub` doesn't need to exist in a specific namespace. 
+    Once it is set in the ConfigMap `config-gcp-auth`， 
+    the Control Plane will create it for you and configure the corresponding Workload Identity relationship between 
+    the Kubernetes Service Account `default-cre-pubsub` 
+    and the Google Cloud Service Account `cre-pubsub` when you create resources using the Kubernetes Service Account `default-cre-pubsub`.
   
-  ***Note:*** The Controller currently doesn’t perform any access control checks, as a result, any user who can create a resource 
+    ***Note:*** The Controller currently doesn’t perform any access control checks, as a result, any user who can create a resource 
     can get access to the Google Cloud Service Account which grants the `iam.serviceAccountAdmin` permission to the Controller.
+    As an example, if you followed the instructions above, then any user that can make a Knative-GCP source or Channel 
+    (e.g. `CloudAuditLogsSource`, `CloudPubSubSource`, etc.) can cause the Kubernetes Service Account `default-cre-pubsub` 
+    to be created. If they can also create Pods in that namespace, 
+    then they can make a Pod that uses the Google Service Account `cre-pubsub` credentials.
     
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 

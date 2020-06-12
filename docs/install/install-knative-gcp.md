@@ -71,7 +71,7 @@ Before applying initialization scripts, make sure:
 1. Your gcloud `CLI` are up to date. You may use `gcloud components update` to
    update it.
 
-###Option 1 (Recommended): Use Workload Identity. 
+### Option 1 (Recommended): Use Workload Identity. 
 
 Workload Identity is the recommended way to access Google Cloud services from
 within GKE due to its improved security properties and manageability. For more
@@ -102,7 +102,7 @@ Optional parameters available:
   1. `PROJECT_ID`: an optional parameter to specify the project to use, default
      to `gcloud config get-value project`.
 
-  Here is an example for specifying the parameters instead of using the default ones:
+  Here is an example specifying the parameters instead of using the default ones:
 
   ```shell
   ./hack/init_control_plane_gke.sh [CLUSTER_NAME] [CLUSTER_LOCATION] [CLUSTER_LOCATION_TYPE] [PROJECT_ID]
