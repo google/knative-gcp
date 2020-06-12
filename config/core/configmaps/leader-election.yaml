@@ -19,6 +19,8 @@ metadata:
   namespace: cloud-run-events
   labels:
     events.cloud.google.com/release: devel
+  annotations:
+    knative.dev/example-checksum: 5544de73
 data:
   # An inactive but valid configuration follows; see example.
   resourceLock: "leases"

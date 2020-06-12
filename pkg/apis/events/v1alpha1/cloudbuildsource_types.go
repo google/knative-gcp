@@ -15,17 +15,16 @@ package v1alpha1
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis/duck"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // CloudBuildSource is a specification for a CloudBuildSource resource
@@ -40,12 +39,16 @@ type CloudBuildSource struct {
 	Status CloudBuildSourceStatus `json:"status,omitempty"`
 }
 
+// Verify that CloudBuildSource matches various duck types.
 var (
+	_ apis.Convertible             = (*CloudBuildSource)(nil)
+	_ apis.Defaultable             = (*CloudBuildSource)(nil)
+	_ apis.Validatable             = (*CloudBuildSource)(nil)
+	_ runtime.Object               = (*CloudBuildSource)(nil)
 	_ kmeta.OwnerRefable           = (*CloudBuildSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudBuildSource)(nil)
-	_ kngcpduck.PubSubable         = (*CloudBuildSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudBuildSource)(nil)
-	_                              = duck.VerifyType(&CloudBuildSource{}, &duckv1.Conditions{})
+	_ kngcpduck.PubSubable         = (*CloudBuildSource)(nil)
 )
 
 // CloudBuildSourceSpec defines the desired state of the CloudBuildSource.

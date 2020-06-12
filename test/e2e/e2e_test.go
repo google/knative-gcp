@@ -28,7 +28,7 @@ import (
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/logstream"
 
-	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -48,7 +48,7 @@ func TestSingleBinaryEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingBinary, "v1alpha1", "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingBinary, "v1beta1", "", channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestSingleStructuredEventForChannel(t *testing.T) {
@@ -58,7 +58,7 @@ func TestSingleStructuredEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingStructured, "v1alpha1", "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingStructured, "v1beta1", "", channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelClusterDefaulter(t *testing.T) {
@@ -136,7 +136,7 @@ func TestChannelTracing(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	conformancehelpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
-		APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
+		APIVersion: messagingv1beta1.SchemeGroupVersion.String(),
 		Kind:       "Channel",
 	}, func(client *eventingtestlib.Client) {
 		// This test is running based on code in knative/eventing, so it does not use the same
@@ -194,18 +194,7 @@ func TestBrokerWithPubSubChannel(t *testing.T) {
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	BrokerWithPubSubChannelTestImpl(t, authConfig, false /* assertMetrics */)
-}
-
-// TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
-func TestBrokerWithPubSubChannelStackdriverMetrics(t *testing.T) {
-	t.Skip("Stackdriver currently not working without patch. See https://github.com/google/knative-gcp/issues/317")
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-	BrokerWithPubSubChannelTestImpl(t, authConfig, true /* assertMetrics */)
+	BrokerWithPubSubChannelTestImpl(t, authConfig)
 }
 
 // TestCloudPubSubSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudPubSubSource.
@@ -313,7 +302,14 @@ func TestSmokeGCPBroker(t *testing.T) {
 func TestGCPBroker(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	GCPBrokerTestImpl(t, authConfig, false /* assertMetrics */)
+	GCPBrokerTestImpl(t, authConfig)
+}
+
+// TestGCPBrokerMetrics tests we can knock a Knative Service from a GCP broker and the GCP Broker correctly reports its metrics to StackDriver.
+func TestGCPBrokerMetrics(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	GCPBrokerMetricsTestImpl(t, authConfig)
 }
 
 // TestGCPBroker tests we can knock a Knative Service from a gcp broker.

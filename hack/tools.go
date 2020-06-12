@@ -20,6 +20,7 @@ limitations under the License.
 package tools
 
 import (
+	_ "knative.dev/pkg/configmap/hash-gen"
 	_ "knative.dev/pkg/hack"
 
 	_ "knative.dev/eventing/test/test_images/event-sender"

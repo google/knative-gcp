@@ -104,6 +104,11 @@ func (c *Client) SetupStackDriverMetrics(t *testing.T) {
 			t.Fatalf("Unable to set the ConfigMap: %v", err)
 		}
 	})
+}
+
+func (c *Client) SetupStackDriverMetricsInNamespace(t *testing.T) {
+	t.Helper()
+	c.SetupStackDriverMetrics(t)
 	_ = c.Core.CreateConfigMapOrFail("eventing-config-observability", c.Namespace, map[string]string{
 		"metrics.allow-stackdriver-custom-metrics":     "true",
 		"metrics.backend-destination":                  "stackdriver",
