@@ -40,7 +40,8 @@ var (
 		Transport: &ochttp.Transport{
 			Base: &http.Transport{
 				MaxIdleConns:        1000,
-				MaxIdleConnsPerHost: 1000,
+				MaxIdleConnsPerHost: 500,
+				MaxConnsPerHost:     500,
 				IdleConnTimeout:     30 * time.Second,
 			},
 			Propagation: &tracecontext.HTTPFormat{},
