@@ -103,9 +103,10 @@ There are two scenarios to leverage Workload Identity for resources in the Data 
     ```shell
     kubectl edit configmap config-gcp-auth -n cloud-run-events
     ```
-    and replace the `clusterDefaults` part with: 
+    and add `workloadIdentityMapping` in `clusterDefaults`: 
   
     ```shell
+    default-auth-config: |
       clusterDefaults:
         workloadIdentityMapping:
           default-cre-pubsub: cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com

@@ -126,9 +126,10 @@ You can directly edit the ConfigMap by:
 kubectl edit configmap config-gcp-auth -n cloud-run-events
 ```
 
-and replace the `clusterDefaults` part with:
+and replace the `default-auth-config:` part with:
 
 ```shell
+  default-auth-config: |
     clusterDefaults:
       serviceAccountName: test-default-ksa
       workloadIdentityMapping:
