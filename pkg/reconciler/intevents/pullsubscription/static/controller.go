@@ -22,9 +22,9 @@ import (
 	"knative.dev/pkg/injection"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -35,7 +35,7 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
 
-	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/pullsubscription"
+	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/pullsubscription"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
@@ -113,7 +113,7 @@ func newController(
 	// Whenever we introduce a new way of scaling, this code will have to be updated to not just exclude Keda, but the others.
 	// Might be useful to use pkgreconciler.ChainFilterFuncs and move them somewhere else.
 	// TODO revisit once we introduce new scaling strategies.
-	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duckv1alpha1.AutoscalingClassAnnotation, duckv1alpha1.KEDA, false)
+	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duckv1beta1.AutoscalingClassAnnotation, duckv1beta1.KEDA, false)
 	notKedaScaler := pkgreconciler.Not(onlyKedaScaler)
 
 	pullSubscriptionHandler := cache.FilteringResourceEventHandler{
@@ -128,7 +128,7 @@ func newController(
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Pullsubscription")),
+		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("Pullsubscription")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

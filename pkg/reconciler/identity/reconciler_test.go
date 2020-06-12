@@ -43,8 +43,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
@@ -91,7 +91,7 @@ func TestKSACreates(t *testing.T) {
 			},
 			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
+					APIVersion:         "events.cloud.google.com/v1beta1",
 					Kind:               "CloudPubSubSource",
 					UID:                "test-pubsub-uid",
 					Name:               identifiableName,
@@ -108,7 +108,7 @@ func TestKSACreates(t *testing.T) {
 			config: ConfigMapFromTestFile(t, "config-gcp-auth", "default-auth-config"),
 			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
+					APIVersion:         "events.cloud.google.com/v1beta1",
 					Kind:               "CloudPubSubSource",
 					UID:                "test-pubsub-uid",
 					Name:               identifiableName,
@@ -141,7 +141,7 @@ func TestKSACreates(t *testing.T) {
 			identifiable := NewCloudPubSubSource(identifiableName, testNS)
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
 			identifiable.SetAnnotations(map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			})
 
 			arl := pkgtesting.ActionRecorderList{cs}
@@ -200,7 +200,7 @@ func TestKSADeletes(t *testing.T) {
 			objects: []runtime.Object{
 				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
 					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-						APIVersion:         "events.cloud.google.com/v1alpha1",
+						APIVersion:         "events.cloud.google.com/v1beta1",
 						Kind:               "CloudPubSubSource",
 						UID:                "test-pubsub-uid",
 						Name:               identifiableName,
@@ -216,14 +216,14 @@ func TestKSADeletes(t *testing.T) {
 			objects: []runtime.Object{
 				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
 					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-						APIVersion:         "events.cloud.google.com/v1alpha1",
+						APIVersion:         "events.cloud.google.com/v1beta1",
 						Kind:               "CloudPubSubSource",
 						UID:                "test-pubsub-uid1",
 						Name:               identifiableName,
 						Controller:         &falseVal,
 						BlockOwnerDeletion: &trueVal,
 					}, {
-						APIVersion:         "events.cloud.google.com/v1alpha1",
+						APIVersion:         "events.cloud.google.com/v1beta1",
 						Kind:               "CloudPubSubSource",
 						UID:                "test-pubsub-uid2",
 						Name:               identifiableName + "new",
@@ -257,7 +257,7 @@ func TestKSADeletes(t *testing.T) {
 				WithCloudPubSubSourceServiceAccountName(kServiceAccountName))
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
 			identifiable.SetAnnotations(map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			})
 
 			arl := pkgtesting.ActionRecorderList{cs}
@@ -303,14 +303,14 @@ func TestKSADeletes(t *testing.T) {
 
 func TestOwnerReferenceExists(t *testing.T) {
 	t.Parallel()
-	source := &v1alpha1.CloudSchedulerSource{
+	source := &v1beta1.CloudSchedulerSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "scheduler-name",
 			Namespace: "scheduler-namespace",
 			UID:       "scheduler-uid",
 		},
-		Spec: v1alpha1.CloudSchedulerSourceSpec{
-			PubSubSpec: duckv1alpha1.PubSubSpec{
+		Spec: v1beta1.CloudSchedulerSourceSpec{
+			PubSubSpec: duckv1beta1.PubSubSpec{
 				Project: "project-123",
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{

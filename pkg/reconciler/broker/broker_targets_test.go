@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -104,7 +105,7 @@ func TestUpdateTargetsConfig(t *testing.T) {
 				if diff := cmp.Diff(want.Data, got.Data); diff != "" {
 					t.Errorf("unexpected Data (-want, +got) = %v", diff)
 				}
-				if diff := cmp.Diff(want.BinaryData, got.BinaryData); diff != "" {
+				if diff := cmp.Diff(want.BinaryData, got.BinaryData, cmpopts.EquateEmpty()); diff != "" {
 					t.Errorf("unexpected BinaryData (-want, +got) = %v", diff)
 				}
 			}

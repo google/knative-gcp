@@ -31,7 +31,7 @@ spec:
     kind: Deployment
     name: test-brokercell-brokercell-retry
   minReplicas: 1
-  maxReplicas: 20
+  maxReplicas: 10
   metrics:
   - type: Resource
     resource:
@@ -44,4 +44,4 @@ spec:
       name: memory
       target:
         type: AverageValue
-        averageValue: 1400Mi
+        averageValue: 1500Mi

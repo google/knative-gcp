@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"k8s.io/api/apps/v1"
@@ -28,21 +28,21 @@ import (
 	"knative.dev/pkg/apis"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 )
 
 func newAnnotations() map[string]string {
 	return map[string]string{
-		duckv1alpha1.AutoscalingClassAnnotation:                duckv1alpha1.KEDA,
-		duckv1alpha1.AutoscalingMinScaleAnnotation:             "0",
-		duckv1alpha1.AutoscalingMaxScaleAnnotation:             "3",
-		duckv1alpha1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
-		duckv1alpha1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
-		duckv1alpha1.KedaAutoscalingPollingIntervalAnnotation:  "30",
+		duckv1beta1.AutoscalingClassAnnotation:                duckv1beta1.KEDA,
+		duckv1beta1.AutoscalingMinScaleAnnotation:             "0",
+		duckv1beta1.AutoscalingMaxScaleAnnotation:             "3",
+		duckv1beta1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
+		duckv1beta1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
+		duckv1beta1.KedaAutoscalingPollingIntervalAnnotation:  "30",
 	}
 }
 
-func newPullSubscription() *v1alpha1.PullSubscription {
+func newPullSubscription() *v1beta1.PullSubscription {
 	return NewPullSubscription("psname", "psnamespace",
 		WithPullSubscriptionUID("psuid"),
 		WithPullSubscriptionAnnotations(newAnnotations()),
@@ -50,7 +50,7 @@ func newPullSubscription() *v1alpha1.PullSubscription {
 	)
 }
 
-func newReceiveAdapter(ps *v1alpha1.PullSubscription) *v1.Deployment {
+func newReceiveAdapter(ps *v1beta1.PullSubscription) *v1.Deployment {
 	raArgs := &resources.ReceiveAdapterArgs{
 		Image:            "image",
 		PullSubscription: ps,
@@ -68,7 +68,7 @@ func TestMakeScaledObject(t *testing.T) {
 
 	want := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "keda.k8s.io/v1alpha1",
+			"apiVersion": "keda.k8s.io/v1beta1",
 			"kind":       "ScaledObject",
 			"metadata": map[string]interface{}{
 				"namespace": "psnamespace",
@@ -79,7 +79,7 @@ func TestMakeScaledObject(t *testing.T) {
 				},
 				"ownerReferences": []interface{}{
 					map[string]interface{}{
-						"apiVersion":         "internal.events.cloud.google.com/v1alpha1",
+						"apiVersion":         "internal.events.cloud.google.com/v1beta1",
 						"kind":               "PullSubscription",
 						"blockOwnerDeletion": true,
 						"controller":         true,

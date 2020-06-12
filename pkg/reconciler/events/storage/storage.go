@@ -29,9 +29,9 @@ import (
 
 	. "cloud.google.com/go/storage"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
-	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudstoragesource"
+	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1beta1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
@@ -56,10 +56,10 @@ const (
 var (
 	// Mapping of the storage source CloudEvent types to google storage types.
 	storageEventTypes = map[string]string{
-		v1alpha1.CloudStorageSourceFinalize:       "OBJECT_FINALIZE",
-		v1alpha1.CloudStorageSourceArchive:        "OBJECT_ARCHIVE",
-		v1alpha1.CloudStorageSourceDelete:         "OBJECT_DELETE",
-		v1alpha1.CloudStorageSourceMetadataUpdate: "OBJECT_METADATA_UPDATE",
+		v1beta1.CloudStorageSourceFinalize:       "OBJECT_FINALIZE",
+		v1beta1.CloudStorageSourceArchive:        "OBJECT_ARCHIVE",
+		v1beta1.CloudStorageSourceDelete:         "OBJECT_DELETE",
+		v1beta1.CloudStorageSourceMetadataUpdate: "OBJECT_METADATA_UPDATE",
 	}
 )
 
@@ -80,7 +80,7 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface.
 var _ cloudstoragesourcereconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1alpha1.CloudStorageSource) reconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1beta1.CloudStorageSource) reconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("storage", storage)))
 
 	storage.Status.InitializeConditions()
@@ -109,7 +109,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1alpha1.CloudS
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudStorageSource reconciled: "%s/%s"`, storage.Namespace, storage.Name)
 }
 
-func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.CloudStorageSource) (string, error) {
+func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1beta1.CloudStorageSource) (string, error) {
 	if storage.Status.ProjectID == "" {
 		projectID, err := utils.ProjectID(storage.Spec.Project, metadataClient.NewDefaultMetadataClient())
 		if err != nil {
@@ -185,7 +185,7 @@ func (r *Reconciler) toCloudStorageSourceEventTypes(eventTypes []string) []strin
 // deleteNotification looks at the status.NotificationID and if non-empty,
 // hence indicating that we have created a notification successfully
 // in the CloudStorageSource, remove it.
-func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.CloudStorageSource) error {
+func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1beta1.CloudStorageSource) error {
 	if storage.Status.NotificationID == "" {
 		return nil
 	}
@@ -240,7 +240,7 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.C
 	return nil
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1alpha1.CloudStorageSource) reconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1beta1.CloudStorageSource) reconciler.Event {
 	// If k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
 	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.

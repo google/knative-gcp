@@ -28,9 +28,9 @@ import (
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudschedulersource"
-	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudschedulersource"
+	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1beta1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
@@ -66,7 +66,7 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface.
 var _ cloudschedulersourcereconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1alpha1.CloudSchedulerSource) reconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1beta1.CloudSchedulerSource) reconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("scheduler", scheduler)))
 
 	scheduler.Status.InitializeConditions()
@@ -95,7 +95,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1alpha1.Clou
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudSchedulerSource reconciled: "%s/%s"`, scheduler.Namespace, scheduler.Name)
 }
 
-func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.CloudSchedulerSource, topic, jobName string) error {
+func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1beta1.CloudSchedulerSource, topic, jobName string) error {
 	if scheduler.Status.ProjectID == "" {
 		projectID, err := utils.ProjectID(scheduler.Spec.Project, metadataClient.NewDefaultMetadataClient())
 		if err != nil {
@@ -125,8 +125,8 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Cloud
 			// Add our own converter type, jobName, and schedulerName as customAttributes.
 			customAttributes := map[string]string{
 				converters.KnativeGCPConverter:       converters.CloudSchedulerConverter,
-				v1alpha1.CloudSchedulerSourceJobName: jobName,
-				v1alpha1.CloudSchedulerSourceName:    scheduler.GetName(),
+				v1beta1.CloudSchedulerSourceJobName: jobName,
+				v1beta1.CloudSchedulerSourceName:    scheduler.GetName(),
 			}
 			_, err = client.CreateJob(ctx, &schedulerpb.CreateJobRequest{
 				Parent: parent,
@@ -157,7 +157,7 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Cloud
 // deleteJob looks at the status.JobName and if non-empty,
 // hence indicating that we have created a job successfully
 // in the Scheduler, remove it.
-func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1alpha1.CloudSchedulerSource) error {
+func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1beta1.CloudSchedulerSource) error {
 	if scheduler.Status.JobName == "" {
 		return nil
 	}
@@ -184,7 +184,7 @@ func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1alpha1.CloudSch
 	return nil
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, scheduler *v1alpha1.CloudSchedulerSource) reconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, scheduler *v1beta1.CloudSchedulerSource) reconciler.Event {
 	// If k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
 	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
