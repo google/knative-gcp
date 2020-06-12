@@ -23,12 +23,6 @@ import (
 
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-
-	"knative.dev/pkg/ptr"
-)
-
-const (
-	DefaultTopic = "cloud-builds"
 )
 
 func (bs *CloudBuildSource) SetDefaults(ctx context.Context) {
@@ -40,9 +34,4 @@ func (bs *CloudBuildSource) SetDefaults(ctx context.Context) {
 
 func (bss *CloudBuildSourceSpec) SetDefaults(ctx context.Context) {
 	bss.SetPubSubDefaults(ctx)
-	if bss.Topic == nil {
-		topic := DefaultTopic
-		bss.Topic = ptr.String(topic)
-	}
-
 }

@@ -30,11 +30,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/ptr"
 )
 
 var (
-	topic           = DefaultTopic
 	buildSourceSpec = CloudBuildSourceSpec{
 		PubSubSpec: duckv1beta1.PubSubSpec{
 			Secret: &corev1.SecretKeySelector{
@@ -55,7 +53,6 @@ var (
 			},
 			Project: "my-eventing-project",
 		},
-		Topic: ptr.String(topic),
 	}
 )
 
@@ -67,22 +64,6 @@ func TestCloudBuildSourceCheckValidationFields(t *testing.T) {
 		"ok": {
 			spec:  buildSourceSpec,
 			error: false,
-		},
-		"no topic": {
-			spec: func() CloudBuildSourceSpec {
-				obj := buildSourceSpec.DeepCopy()
-				obj.Topic = nil
-				return *obj
-			}(),
-			error: false,
-		},
-		"bad topic": {
-			spec: func() CloudBuildSourceSpec {
-				obj := buildSourceSpec.DeepCopy()
-				obj.Topic = ptr.String("test-build")
-				return *obj
-			}(),
-			error: true,
 		},
 		"bad sink, name": {
 			spec: func() CloudBuildSourceSpec {
@@ -239,7 +220,6 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 						Sink: buildSourceSpec.Sink,
 					},
 				},
-				Topic: buildSourceSpec.Topic,
 			},
 			allowed: false,
 		},
@@ -258,7 +238,6 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 						Sink: buildSourceSpec.Sink,
 					},
 				},
-				Topic: buildSourceSpec.Topic,
 			},
 			allowed: false,
 		},
@@ -277,7 +256,6 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 						Sink: buildSourceSpec.Sink,
 					},
 				},
-				Topic: buildSourceSpec.Topic,
 			},
 			allowed: false,
 		},
@@ -298,26 +276,6 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 						Sink: buildSourceSpec.Sink,
 					},
 				},
-				Topic: buildSourceSpec.Topic,
-			},
-			allowed: false,
-		},
-		"Topic changed": {
-			orig: &buildSourceSpec,
-			updated: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: buildSourceSpec.Secret.Name,
-						},
-						Key: buildSourceSpec.Secret.Key,
-					},
-					Project: buildSourceSpec.Project,
-					SourceSpec: duckv1.SourceSpec{
-						Sink: buildSourceSpec.Sink,
-					},
-				},
-				Topic: ptr.String("test-build"),
 			},
 			allowed: false,
 		},
@@ -343,7 +301,6 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: buildSourceSpec.Topic,
 			},
 			allowed: true,
 		},
@@ -369,7 +326,6 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: buildSourceSpec.Topic,
 			},
 			allowed: true,
 		},
@@ -395,7 +351,6 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: buildSourceSpec.Topic,
 			},
 			allowed: true,
 		},
@@ -421,7 +376,6 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: buildSourceSpec.Topic,
 			},
 			allowed: true,
 		},

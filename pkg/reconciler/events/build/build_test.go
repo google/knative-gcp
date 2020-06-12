@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/knative-gcp/pkg/apis/events"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -54,7 +55,7 @@ const (
 	sinkName  = "sink"
 
 	testNS                                     = "testnamespace"
-	testTopicID                                = v1beta1.DefaultTopic
+	testTopicID                                = events.CloudBuildTopic
 	generation                                 = 1
 	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
@@ -161,7 +162,6 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithCloudBuildSourceAnnotations(map[string]string{
 						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
@@ -175,7 +175,6 @@ func TestAllCases(t *testing.T) {
 				Object: NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceStatusObservedGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
@@ -222,7 +221,6 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
 				NewPullSubscriptionWithNoDefaults(buildName, testNS,
@@ -243,7 +241,6 @@ func TestAllCases(t *testing.T) {
 				Object: NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceStatusObservedGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
@@ -262,7 +259,6 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
 				NewPullSubscriptionWithNoDefaults(buildName, testNS,
@@ -283,7 +279,6 @@ func TestAllCases(t *testing.T) {
 				Object: NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceStatusObservedGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
@@ -302,7 +297,6 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
 				NewPullSubscriptionWithNoDefaults(buildName, testNS,
@@ -334,7 +328,6 @@ func TestAllCases(t *testing.T) {
 				Object: NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceStatusObservedGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourcePullSubscriptionReady(),
@@ -345,7 +338,6 @@ func TestAllCases(t *testing.T) {
 				Object: NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceStatusObservedGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourcePullSubscriptionReady(),

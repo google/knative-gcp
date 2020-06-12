@@ -32,7 +32,6 @@ func (source *CloudBuildSource) ConvertTo(_ context.Context, to apis.Convertible
 	case *v1beta1.CloudBuildSource:
 		sink.ObjectMeta = source.ObjectMeta
 		sink.Spec.PubSubSpec = convert.ToV1beta1PubSubSpec(source.Spec.PubSubSpec)
-		sink.Spec.Topic = source.Spec.Topic
 		sink.Status.PubSubStatus = convert.ToV1beta1PubSubStatus(source.Status.PubSubStatus)
 		return nil
 	default:
@@ -48,7 +47,6 @@ func (sink *CloudBuildSource) ConvertFrom(_ context.Context, from apis.Convertib
 	case *v1beta1.CloudBuildSource:
 		sink.ObjectMeta = source.ObjectMeta
 		sink.Spec.PubSubSpec = convert.FromV1beta1PubSubSpec(source.Spec.PubSubSpec)
-		sink.Spec.Topic = source.Spec.Topic
 		sink.Status.PubSubStatus = convert.FromV1beta1PubSubStatus(source.Status.PubSubStatus)
 		return nil
 	default:

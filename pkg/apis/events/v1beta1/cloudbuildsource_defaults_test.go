@@ -21,7 +21,6 @@ import (
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
-	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
@@ -32,7 +31,6 @@ import (
 )
 
 func TestBuildSourceDefaults(t *testing.T) {
-	defaultTopic := DefaultTopic
 	tests := []struct {
 		name  string
 		start *CloudBuildSource
@@ -54,7 +52,6 @@ func TestBuildSourceDefaults(t *testing.T) {
 						Key: "test.json",
 					},
 				},
-				Topic: ptr.String(defaultTopic),
 			},
 		},
 		want: &CloudBuildSource{
@@ -72,7 +69,6 @@ func TestBuildSourceDefaults(t *testing.T) {
 						Key: "test.json",
 					},
 				},
-				Topic: ptr.String(defaultTopic),
 			},
 		},
 	}, {
@@ -96,7 +92,6 @@ func TestBuildSourceDefaults(t *testing.T) {
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					Secret: &gcpauthtesthelper.Secret,
 				},
-				Topic: ptr.String(defaultTopic),
 			},
 		},
 	}}
@@ -129,7 +124,6 @@ func TestCloudBuildSourceDefaults_NoChange(t *testing.T) {
 					Key: "test.json",
 				},
 			},
-			Topic: ptr.String(DefaultTopic),
 		},
 	}
 

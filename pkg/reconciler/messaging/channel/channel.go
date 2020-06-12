@@ -104,13 +104,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1beta1.Channel
 }
 
 func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Channel) error {
-	//if equality.Semantic.DeepEqual(channel.Status.SubscribableStatus, eventingduckv1beta1.SubscribableStatus{}) {
-	//	channel.Status.SubscribableStatus = eventingduckv1beta1.SubscribableStatus{
-	//		Subscribers: make([]eventingduckv1beta1.SubscriberStatus, 0),
-	//	}
-	//} else if channel.Status.SubscribableStatus.Subscribers == nil {
-	//	channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)
-	//}
 	if channel.Status.SubscribableStatus.Subscribers == nil {
 		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)
 	}
@@ -264,13 +257,6 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 }
 
 func (r *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1beta1.Channel) error {
-	//if equality.Semantic.DeepEqual(channel.Status.SubscribableStatus, eventingduckv1beta1.SubscribableStatus{}){
-	//	channel.Status.SubscribableStatus = eventingduckv1beta1.SubscribableStatus{
-	//		Subscribers: make([]eventingduckv1beta1.SubscriberStatus, 0),
-	//	}
-	//} else if channel.Status.SubscribableStatus.Subscribers == nil {
-	//	channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)
-	//}
 	if channel.Status.SubscribableStatus.Subscribers == nil {
 		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)}
 

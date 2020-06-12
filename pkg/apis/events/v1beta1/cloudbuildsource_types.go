@@ -54,13 +54,6 @@ type CloudBuildSourceSpec struct {
 	// Sink, CloudEventOverrides, Secret, and Project
 	duckv1beta1.PubSubSpec `json:",inline"`
 
-	// Topic is the ID of the PubSub Topic to Subscribe to. It must
-	// be in the form of the unique identifier within the project, not the
-	// entire name. E.g. it must be 'laconia', not
-	// 'projects/my-proj/topics/laconia'.
-	// It is optional. Defaults to 'cloud-builds' and the topic must be 'cloud-builds'
-	// +optional
-	Topic *string `json:"topic,omitempty"`
 }
 
 const (

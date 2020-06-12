@@ -61,7 +61,7 @@ func TestCloudBuildSourceStatusIsReady(t *testing.T) {
 			s: func() *CloudBuildSourceStatus {
 				s := &CloudBuildSource{}
 				s.Status.InitializeConditions()
-				s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), "PullSubscriptionUnknonw", "status unknown test message")
+				s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), "PullSubscriptionUnknown", "status unknown test message")
 				return &s.Status
 			}(),
 			wantConditionStatus: corev1.ConditionUnknown,

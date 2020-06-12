@@ -15,8 +15,6 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
-
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -34,10 +32,6 @@ func (current *CloudBuildSource) Validate(ctx context.Context) *apis.FieldError 
 
 func (current *CloudBuildSourceSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
-
-	if current.Topic != nil && (!equality.Semantic.DeepEqual(*current.Topic, DefaultTopic)) {
-		errs = errs.Also(apis.ErrGeneric(fmt.Sprintf("topic should be omitted or must be equal to %q", DefaultTopic), "topic"))
-	}
 
 	// Sink [required]
 	if equality.Semantic.DeepEqual(current.Sink, duckv1.Destination{}) {

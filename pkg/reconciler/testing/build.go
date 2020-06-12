@@ -21,8 +21,6 @@ import (
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
-	"knative.dev/pkg/ptr"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/apis"
@@ -70,12 +68,6 @@ func WithCloudBuildSourceDeletionTimestamp(s *v1beta1.CloudBuildSource) {
 func WithCloudBuildSourceProject(project string) CloudBuildSourceOption {
 	return func(s *v1beta1.CloudBuildSource) {
 		s.Spec.Project = project
-	}
-}
-
-func WithCloudBuildSourceTopic(topicID string) CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.Spec.Topic = ptr.String(topicID)
 	}
 }
 
