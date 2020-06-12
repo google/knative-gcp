@@ -26,6 +26,14 @@ type CloudAuditLogsSourceListerExpansion interface{}
 // CloudAuditLogsSourceNamespaceLister.
 type CloudAuditLogsSourceNamespaceListerExpansion interface{}
 
+// CloudBuildSourceListerExpansion allows custom methods to be added to
+// CloudBuildSourceLister.
+type CloudBuildSourceListerExpansion interface{}
+
+// CloudBuildSourceNamespaceListerExpansion allows custom methods to be added to
+// CloudBuildSourceNamespaceLister.
+type CloudBuildSourceNamespaceListerExpansion interface{}
+
 // CloudPubSubSourceListerExpansion allows custom methods to be added to
 // CloudPubSubSourceLister.
 type CloudPubSubSourceListerExpansion interface{}

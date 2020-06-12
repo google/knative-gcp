@@ -23,12 +23,12 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 )
 
 func TestGenerateTopicID(t *testing.T) {
 	want := "cre-chan_default_foo_a-uid"
-	got := GenerateTopicID(&v1alpha1.Channel{
+	got := GenerateTopicID(&v1beta1.Channel{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "default",
@@ -43,7 +43,7 @@ func TestGenerateTopicID(t *testing.T) {
 
 func TestGeneratePublisherName(t *testing.T) {
 	want := "cre-foo-chan"
-	got := GeneratePublisherName(&v1alpha1.Channel{
+	got := GeneratePublisherName(&v1beta1.Channel{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "foo",
 		},
@@ -56,7 +56,7 @@ func TestGeneratePublisherName(t *testing.T) {
 
 func TestGeneratePublisherNameFromChannel(t *testing.T) {
 	want := "cre-foo-chan"
-	got := GeneratePublisherName(&v1alpha1.Channel{
+	got := GeneratePublisherName(&v1beta1.Channel{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "cre-foo",
 		},

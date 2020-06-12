@@ -38,6 +38,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/metrics"
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
+	kgcptesting "github.com/google/knative-gcp/pkg/testing"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/api/option"
@@ -317,10 +318,14 @@ func TestHandler(t *testing.T) {
 }
 
 func BenchmarkIngressHandler(b *testing.B) {
-	// Set parallelism to 32 so that the benchmark is not limited by the Pub/Sub publish latency
-	// over gRPC.
-	b.SetParallelism(32)
+	for _, eventSize := range kgcptesting.BenchmarkEventSizes {
+		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
+			runIngressHandlerBenchmark(b, eventSize)
+		})
+	}
+}
 
+func runIngressHandlerBenchmark(b *testing.B, eventSize int) {
 	reportertest.ResetIngressMetrics()
 
 	ctx := logging.WithLogger(context.Background(),
@@ -347,13 +352,16 @@ func BenchmarkIngressHandler(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	req := httptest.NewRequest("POST", "/ns1/broker1", nil)
-	message := binding.ToMessage(createTestEvent("test-event"))
-	http.WriteRequest(ctx, message, req)
+	message := binding.ToMessage(kgcptesting.NewTestEvent(b, eventSize))
 
+	// Set parallelism to 32 so that the benchmark is not limited by the Pub/Sub publish latency
+	// over gRPC.
+	b.SetParallelism(32)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
+			req := httptest.NewRequest("POST", "/ns1/broker1", nil)
+			http.WriteRequest(ctx, message, req)
 			w := httptest.NewRecorder()
 			h.ServeHTTP(w, req)
 			if res := w.Result(); w.Result().StatusCode != nethttp.StatusAccepted {

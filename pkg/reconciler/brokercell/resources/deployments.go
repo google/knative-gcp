@@ -48,11 +48,11 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 		InitialDelaySeconds: 5,
 		PeriodSeconds:       2,
 		SuccessThreshold:    1,
-		TimeoutSeconds:      1,
+		TimeoutSeconds:      5,
 	}
 	container.Resources = corev1.ResourceRequirements{
 		Limits: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse("500Mi"),
+			corev1.ResourceMemory: resource.MustParse("1000Mi"),
 		},
 		Requests: corev1.ResourceList{
 			corev1.ResourceMemory: resource.MustParse("500Mi"),
@@ -67,10 +67,10 @@ func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 	container := containerTemplate(args.Args)
 	container.Resources = corev1.ResourceRequirements{
 		Limits: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse("1000Mi"),
+			corev1.ResourceMemory: resource.MustParse("3000Mi"),
 		},
 		Requests: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse("1000Mi"),
+			corev1.ResourceMemory: resource.MustParse("500Mi"),
 			corev1.ResourceCPU:    resource.MustParse("1500m"),
 		},
 	}
@@ -80,6 +80,10 @@ func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 			ContainerPort: handler.DefaultHealthCheckPort,
 		},
 	)
+	container.Env = append(container.Env, corev1.EnvVar{
+		Name:  "MAX_CONCURRENCY_PER_EVENT",
+		Value: "100",
+	})
 	container.LivenessProbe = &corev1.Probe{
 		Handler: corev1.Handler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -92,7 +96,7 @@ func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 		InitialDelaySeconds: 15,
 		PeriodSeconds:       15,
 		SuccessThreshold:    1,
-		TimeoutSeconds:      1,
+		TimeoutSeconds:      5,
 	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
@@ -102,10 +106,10 @@ func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 	container := containerTemplate(args.Args)
 	container.Resources = corev1.ResourceRequirements{
 		Limits: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse("1500Mi"),
+			corev1.ResourceMemory: resource.MustParse("3000Mi"),
 		},
 		Requests: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse("1500Mi"),
+			corev1.ResourceMemory: resource.MustParse("500Mi"),
 			corev1.ResourceCPU:    resource.MustParse("1000m"),
 		},
 	}
@@ -127,7 +131,7 @@ func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 		InitialDelaySeconds: 15,
 		PeriodSeconds:       15,
 		SuccessThreshold:    1,
-		TimeoutSeconds:      1,
+		TimeoutSeconds:      5,
 	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }

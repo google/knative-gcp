@@ -25,18 +25,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 func TestMakePublisher(t *testing.T) {
-	topic := &v1alpha1.Topic{
+	topic := &v1beta1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "topic-name",
 			Namespace: "topic-namespace",
 		},
-		Spec: v1alpha1.TopicSpec{
+		Spec: v1beta1.TopicSpec{
 			Project: "eventing-name",
 			Topic:   "topic-name",
 			Secret: &corev1.SecretKeySelector{
@@ -69,7 +69,7 @@ func TestMakePublisher(t *testing.T) {
     },
     "ownerReferences": [
       {
-        "apiVersion": "internal.events.cloud.google.com/v1alpha1",
+        "apiVersion": "internal.events.cloud.google.com/v1beta1",
         "kind": "Topic",
         "name": "topic-name",
         "uid": "",
@@ -140,18 +140,18 @@ func TestMakePublisher(t *testing.T) {
 
 func TestMakePublisherWithServiceAccount(t *testing.T) {
 	serviceAccountName := "test"
-	topic := &v1alpha1.Topic{
+	topic := &v1beta1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "topic-name",
 			Namespace: "topic-namespace",
 			Annotations: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				duckv1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			},
 		},
-		Spec: v1alpha1.TopicSpec{
+		Spec: v1beta1.TopicSpec{
 			Project: "eventing-name",
 			Topic:   "topic-name",
-			IdentitySpec: duckv1alpha1.IdentitySpec{
+			IdentitySpec: duckv1beta1.IdentitySpec{
 				ServiceAccountName: serviceAccountName,
 			},
 		},
@@ -175,7 +175,7 @@ func TestMakePublisherWithServiceAccount(t *testing.T) {
 				"internal.events.cloud.google.com/topic":      "topic-name",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "internal.events.cloud.google.com/v1alpha1",
+				APIVersion:         "internal.events.cloud.google.com/v1beta1",
 				Kind:               "Topic",
 				Name:               "topic-name",
 				Controller:         &yes,

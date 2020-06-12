@@ -19,7 +19,6 @@ package deliver
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -38,6 +37,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/go-cmp/cmp"
+	kgcptesting "github.com/google/knative-gcp/pkg/testing"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/api/option"
@@ -407,7 +407,7 @@ func BenchmarkDeliveryNoReplyFakeClient(b *testing.B) {
 			},
 		}),
 	}
-	for _, eventSize := range []int{0, 1000, 1000000} {
+	for _, eventSize := range kgcptesting.BenchmarkEventSizes {
 		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
 			benchmarkNoReply(b, &httpClient, targetAddress, eventSize)
 		})
@@ -456,7 +456,7 @@ func makeFakeTargetWithReply(b *testing.B, reply *event.Event) (httpClient http.
 // of the fake client helps to better isolate the performance of the processor itself and can
 // provide better profiling data.
 func BenchmarkDeliveryWithReplyFakeClient(b *testing.B) {
-	for _, eventSize := range []int{0, 1000, 1000000} {
+	for _, eventSize := range kgcptesting.BenchmarkEventSizes {
 		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
 			benchmarkWithReply(b, fakeIngressAddress, eventSize, makeFakeTargetWithReply)
 		})
@@ -470,7 +470,7 @@ func benchmarkNoReply(b *testing.B, httpClient *http.Client, targetAddress strin
 		b.Fatal(err)
 	}
 
-	sampleEvent := newSampleEventWithRandomData(b, eventSize)
+	sampleEvent := kgcptesting.NewTestEvent(b, eventSize)
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
@@ -506,7 +506,7 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, eventSize int, make
 		b.Fatal(err)
 	}
 
-	sampleEvent := newSampleEventWithRandomData(b, eventSize)
+	sampleEvent := kgcptesting.NewTestEvent(b, eventSize)
 	sampleReply := sampleEvent.Clone()
 	sampleReply.SetID("reply")
 
@@ -573,18 +573,4 @@ func newSampleEvent() *event.Event {
 	sampleEvent.SetType("type")
 	sampleEvent.SetTime(time.Now())
 	return &sampleEvent
-}
-
-func newSampleEventWithRandomData(t testing.TB, size int) *event.Event {
-	event := newSampleEvent()
-	if size > 0 {
-		data := make([]byte, size)
-		_, err := rand.Read(data)
-		if err != nil {
-			t.Fatal(err)
-		}
-		event.DataEncoded = data
-		return event
-	}
-	return event
 }

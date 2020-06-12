@@ -28,17 +28,17 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 
-	cloudauditlogssourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudauditlogssource"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
-	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/topic"
-	cloudauditlogssourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudauditlogssource"
+	cloudauditlogssourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1beta1/cloudauditlogssource"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
+	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
+	cloudauditlogssourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudauditlogssource"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 )
@@ -90,17 +90,17 @@ func newController(
 		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudAuditLogsSource")),
+		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("CloudAuditLogsSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudAuditLogsSource")),
+		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("CloudAuditLogsSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("CloudAuditLogsSource")),
+		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("CloudAuditLogsSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

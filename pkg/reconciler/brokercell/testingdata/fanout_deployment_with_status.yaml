@@ -50,7 +50,7 @@ spec:
           initialDelaySeconds: 15
           periodSeconds: 15
           successThreshold: 1
-          timeoutSeconds: 1
+          timeoutSeconds: 5
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/secrets/google/key.json        
@@ -66,6 +66,8 @@ spec:
           value: config-observability
         - name: METRICS_DOMAIN
           value: knative.dev/internal/eventing
+        - name: MAX_CONCURRENCY_PER_EVENT
+          value: "100"
         volumeMounts:
         - name: broker-config
           mountPath: /var/run/cloud-run-events/broker
@@ -73,10 +75,10 @@ spec:
           mountPath: /var/secrets/google          
         resources:
           limits:
-            memory: 1000Mi
+            memory: 3000Mi
           requests:
             cpu: 1500m
-            memory: 1000Mi
+            memory: 500Mi
         ports:
         - name: metrics
           containerPort: 9090

@@ -30,15 +30,15 @@ import (
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 
-	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/topic"
-	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/topic"
+	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
+	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/topic"
 	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
 )
@@ -102,12 +102,12 @@ func newController(
 	topicInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
+		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("Topic")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
+		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("Topic")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

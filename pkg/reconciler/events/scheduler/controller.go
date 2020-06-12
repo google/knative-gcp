@@ -22,7 +22,7 @@ import (
 	"knative.dev/pkg/injection"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -32,10 +32,10 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	cloudschedulersourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudschedulersource"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
-	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/topic"
-	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudschedulersource"
+	cloudschedulersourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1beta1/cloudschedulersource"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
+	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
+	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudschedulersource"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 )
 
@@ -83,17 +83,17 @@ func newController(
 	cloudschedulersourceInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
+		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
+		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
+		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

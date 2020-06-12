@@ -22,8 +22,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
 	v1 "k8s.io/api/apps/v1"
@@ -34,13 +34,13 @@ import (
 )
 
 func TestMakeMinimumReceiveAdapter(t *testing.T) {
-	ps := &v1alpha1.PullSubscription{
+	ps := &v1beta1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testname",
 			Namespace: "testnamespace",
 		},
-		Spec: v1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckv1alpha1.PubSubSpec{
+		Spec: v1beta1.PullSubscriptionSpec{
+			PubSubSpec: duckv1beta1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -79,7 +79,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "internal.events.cloud.google.com/v1alpha1",
+				APIVersion:         "internal.events.cloud.google.com/v1beta1",
 				Kind:               "PullSubscription",
 				Name:               "testname",
 				Controller:         &yes,
@@ -179,7 +179,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 }
 
 func TestMakeFullReceiveAdapter(t *testing.T) {
-	ps := &v1alpha1.PullSubscription{
+	ps := &v1beta1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testname",
 			Namespace: "testnamespace",
@@ -187,8 +187,8 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 				"metrics-resource-group": "test-resource-group",
 			},
 		},
-		Spec: v1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckv1alpha1.PubSubSpec{
+		Spec: v1beta1.PullSubscriptionSpec{
+			PubSubSpec: duckv1beta1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -236,7 +236,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "internal.events.cloud.google.com/v1alpha1",
+				APIVersion:         "internal.events.cloud.google.com/v1beta1",
 				Kind:               "PullSubscription",
 				Name:               "testname",
 				Controller:         &yes,
@@ -343,18 +343,18 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 
 func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 	serviceAccountName := "test"
-	ps := &v1alpha1.PullSubscription{
+	ps := &v1beta1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testname",
 			Namespace: "testnamespace",
 			Annotations: map[string]string{
 				"metrics-resource-group":           "test-resource-group",
-				duckv1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				duckv1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			},
 		},
-		Spec: v1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckv1alpha1.PubSubSpec{
-				IdentitySpec: duckv1alpha1.IdentitySpec{
+		Spec: v1beta1.PullSubscriptionSpec{
+			PubSubSpec: duckv1beta1.PubSubSpec{
+				IdentitySpec: duckv1beta1.IdentitySpec{
 					ServiceAccountName: serviceAccountName,
 				},
 				Project: "eventing-name",
@@ -398,7 +398,7 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "internal.events.cloud.google.com/v1alpha1",
+				APIVersion:         "internal.events.cloud.google.com/v1beta1",
 				Kind:               "PullSubscription",
 				Name:               "testname",
 				Controller:         &yes,
