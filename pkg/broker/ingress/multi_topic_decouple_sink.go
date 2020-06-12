@@ -73,7 +73,7 @@ func (m *multiTopicDecoupleSink) getTopicForBroker(ns, broker string) (string, e
 	}
 	if brokerConfig.State != config.State_READY {
 		m.logger.Debug("broker is not ready", zap.Any("ns", ns), zap.Any("broker", broker))
-		return "", fmt.Errorf("%q/%q is not ready: %w", ns, broker, ErrNotFound)
+		return "", fmt.Errorf("%q/%q: %w", ns, broker, ErrNotReady)
 	}
 	if brokerConfig.DecoupleQueue == nil || brokerConfig.DecoupleQueue.Topic == "" {
 		m.logger.Error("DecoupleQueue or topic missing for broker, this should NOT happen.", zap.Any("brokerConfig", brokerConfig))
