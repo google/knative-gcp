@@ -40,8 +40,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	fakePubsubClient "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -99,7 +99,7 @@ var (
 // Returns an ownerref for the test object
 func ownerRef() metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "events.cloud.google.com/v1alpha1",
+		APIVersion:         "events.cloud.google.com/v1beta1",
 		Kind:               "CloudStorageSource",
 		Name:               name,
 		UID:                "test-storage-uid",
@@ -112,15 +112,15 @@ func TestCreates(t *testing.T) {
 	testCases := []struct {
 		name          string
 		objects       []runtime.Object
-		expectedTopic *inteventsv1alpha1.Topic
-		expectedPS    *inteventsv1alpha1.PullSubscription
+		expectedTopic *inteventsv1beta1.Topic
+		expectedPS    *inteventsv1beta1.PullSubscription
 		expectedErr   string
 		wantCreates   []runtime.Object
 		wantUpdates   []clientgotesting.UpdateActionImpl
 	}{{
 		name: "topic does not exist, created, not yet been reconciled",
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -131,7 +131,7 @@ func TestCreates(t *testing.T) {
 				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicAnnotations(map[string]string{
-				v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
@@ -139,7 +139,7 @@ func TestCreates(t *testing.T) {
 		expectedErr: fmt.Sprintf("Topic %q has not yet been reconciled", name),
 		wantCreates: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Secret:            &secret,
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
@@ -150,7 +150,7 @@ func TestCreates(t *testing.T) {
 					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicAnnotations(map[string]string{
-					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+					v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -159,7 +159,7 @@ func TestCreates(t *testing.T) {
 		name: "topic exists but is not yet been reconciled",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -172,7 +172,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -190,7 +190,7 @@ func TestCreates(t *testing.T) {
 		name: "topic exists and is ready but no projectid",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -205,7 +205,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -226,7 +226,7 @@ func TestCreates(t *testing.T) {
 		name: "topic exists and the status of topic is false",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -241,7 +241,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -262,7 +262,7 @@ func TestCreates(t *testing.T) {
 		name: "topic exists and the status of topic is unknown",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -277,7 +277,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -298,7 +298,7 @@ func TestCreates(t *testing.T) {
 		name: "topic exists and is ready but no topicid",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -314,7 +314,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -336,7 +336,7 @@ func TestCreates(t *testing.T) {
 		name: "topic updated due to different secret, pullsubscription created, not yet been reconciled",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Secret:            &oldSecret,
 					Topic:             testTopicID,
 					PropagationPolicy: "CreatDelete",
@@ -347,7 +347,7 @@ func TestCreates(t *testing.T) {
 					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicAnnotations(map[string]string{
-					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+					v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -356,7 +356,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -367,7 +367,7 @@ func TestCreates(t *testing.T) {
 				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicAnnotations(map[string]string{
-				v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReadyAndPublisherDeployed(testTopicID),
@@ -376,9 +376,9 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
-				PubSubSpec: v1alpha1.PubSubSpec{
+				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: sink,
@@ -391,16 +391,16 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
 				"metrics-resource-group":       resourceGroup,
-				v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedErr: fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, name),
 		wantCreates: []runtime.Object{
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: v1alpha1.PubSubSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: sink,
@@ -413,14 +413,14 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group":       resourceGroup,
-					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+					v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 				}),
 				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
 		},
 		wantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Secret:            &secret,
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
@@ -431,7 +431,7 @@ func TestCreates(t *testing.T) {
 					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicAnnotations(map[string]string{
-					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+					v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicReadyAndPublisherDeployed(testTopicID),
@@ -444,7 +444,7 @@ func TestCreates(t *testing.T) {
 		name: "topic exists and is ready, pullsubscription created, not yet been reconciled",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -454,7 +454,7 @@ func TestCreates(t *testing.T) {
 					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicAnnotations(map[string]string{
-					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+					v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -463,7 +463,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -474,7 +474,7 @@ func TestCreates(t *testing.T) {
 				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicAnnotations(map[string]string{
-				v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReadyAndPublisherDeployed(testTopicID),
@@ -483,9 +483,9 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
-				PubSubSpec: v1alpha1.PubSubSpec{
+				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: sink,
@@ -498,16 +498,16 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
 				"metrics-resource-group":       resourceGroup,
-				v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedErr: fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, name),
 		wantCreates: []runtime.Object{
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: v1alpha1.PubSubSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: sink,
@@ -520,7 +520,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group":       resourceGroup,
-					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+					v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 				}),
 				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -529,7 +529,7 @@ func TestCreates(t *testing.T) {
 		name: "topic exists and is ready, pullsubscription exists, not yet been reconciled",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -544,9 +544,9 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicAddress(testTopicURI),
 			),
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: v1alpha1.PubSubSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: sink,
@@ -564,7 +564,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -581,9 +581,9 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
-				PubSubSpec: v1alpha1.PubSubSpec{
+				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: sink,
@@ -604,7 +604,7 @@ func TestCreates(t *testing.T) {
 		name: "topic exists and is ready, pullsubscription exists and the status is false",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -619,9 +619,9 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicAddress(testTopicURI),
 			),
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: v1alpha1.PubSubSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: sink,
@@ -640,7 +640,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -657,9 +657,9 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
-				PubSubSpec: v1alpha1.PubSubSpec{
+				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: sink,
@@ -681,7 +681,7 @@ func TestCreates(t *testing.T) {
 		name: "topic exists and is ready, pullsubscription exists and the status is unknown",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -696,9 +696,9 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicAddress(testTopicURI),
 			),
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: v1alpha1.PubSubSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: sink,
@@ -717,7 +717,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -734,9 +734,9 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
-				PubSubSpec: v1alpha1.PubSubSpec{
+				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: sink,
@@ -758,7 +758,7 @@ func TestCreates(t *testing.T) {
 		name: "topic exists and is ready, pullsubscription is updated due to different sink",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
-				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -773,9 +773,9 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicAddress(testTopicURI),
 			),
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: v1alpha1.PubSubSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: oldSink,
@@ -794,7 +794,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
-			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+			rectesting.WithTopicSpec(inteventsv1beta1.TopicSpec{
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
@@ -811,9 +811,9 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
-				PubSubSpec: v1alpha1.PubSubSpec{
+				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: sink,
@@ -833,9 +833,9 @@ func TestCreates(t *testing.T) {
 		),
 		wantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: v1alpha1.PubSubSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: sink,
@@ -1028,14 +1028,14 @@ func TestDeletes(t *testing.T) {
 				ActionImpl: clientgotesting.ActionImpl{
 					Namespace: testNS,
 					Verb:      "delete",
-					Resource:  schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "topics"},
+					Resource:  schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1beta1", Resource: "topics"},
 				},
 				Name: name,
 			}, {
 				ActionImpl: clientgotesting.ActionImpl{
 					Namespace: testNS,
 					Verb:      "delete",
-					Resource:  schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"},
+					Resource:  schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1beta1", Resource: "pullsubscriptions"},
 				},
 				Name: name,
 			},

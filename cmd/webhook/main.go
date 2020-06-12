@@ -213,6 +213,14 @@ func newConversionController(ctx context.Context, _ configmap.Watcher, gcpas *gc
 					eventsv1beta1_:  &eventsv1beta1.CloudStorageSource{},
 				},
 			},
+			eventsv1alpha1.Kind("CloudBuildSource"): {
+				DefinitionName: events.CloudBuildSourcesResource.String(),
+				HubVersion:     eventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					eventsv1alpha1_: &eventsv1alpha1.CloudBuildSource{},
+					eventsv1beta1_:  &eventsv1beta1.CloudBuildSource{},
+				},
+			},
 			// intevents
 			inteventsv1alpha1.Kind("PullSubscription"): {
 				DefinitionName: intevents.PullSubscriptionsResource.String(),

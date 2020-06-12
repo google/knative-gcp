@@ -23,7 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"k8s.io/api/apps/v1"
 	"knative.dev/pkg/apis"
 
@@ -46,9 +46,9 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
 
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
-	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/pullsubscription"
+	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1beta1/resource"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
@@ -91,13 +91,13 @@ var (
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
-		Version: "v1alpha1",
+		Version: "v1beta1",
 		Kind:    "Sink",
 	}
 
 	transformerGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
-		Version: "v1alpha1",
+		Version: "v1beta1",
 		Kind:    "Transformer",
 	}
 
@@ -111,7 +111,7 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = pubsubv1alpha1.AddToScheme(scheme.Scheme)
+	_ = pubsubv1beta1.AddToScheme(scheme.Scheme)
 }
 
 func newSecret() *corev1.Secret {
@@ -126,14 +126,14 @@ func newSecret() *corev1.Secret {
 	}
 }
 
-func newPullSubscription(subscriptionId string) *pubsubv1alpha1.PullSubscription {
+func newPullSubscription(subscriptionId string) *pubsubv1beta1.PullSubscription {
 	return NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionAnnotations(newAnnotations()),
 		WithPullSubscriptionObjectMetaGeneration(generation),
-		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+		WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
 			Topic: testTopicID,
-			PubSubSpec: v1alpha1.PubSubSpec{
+			PubSubSpec: v1beta1.PubSubSpec{
 				Secret:  &secret,
 				Project: testProject,
 			},
@@ -148,7 +148,7 @@ func newPullSubscription(subscriptionId string) *pubsubv1alpha1.PullSubscription
 func newSink() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.google.com/v1alpha1",
+			"apiVersion": "testing.cloud.google.com/v1beta1",
 			"kind":       "Sink",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -165,19 +165,19 @@ func newSink() *unstructured.Unstructured {
 
 func newAnnotations() map[string]string {
 	return map[string]string{
-		v1alpha1.AutoscalingClassAnnotation:                v1alpha1.KEDA,
-		v1alpha1.AutoscalingMinScaleAnnotation:             "0",
-		v1alpha1.AutoscalingMaxScaleAnnotation:             "3",
-		v1alpha1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
-		v1alpha1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
-		v1alpha1.KedaAutoscalingPollingIntervalAnnotation:  "30",
+		v1beta1.AutoscalingClassAnnotation:                v1beta1.KEDA,
+		v1beta1.AutoscalingMinScaleAnnotation:             "0",
+		v1beta1.AutoscalingMaxScaleAnnotation:             "3",
+		v1beta1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
+		v1beta1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
+		v1beta1.KedaAutoscalingPollingIntervalAnnotation:  "30",
 	}
 }
 
 func newTransformer() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.google.com/v1alpha1",
+			"apiVersion": "testing.cloud.google.com/v1beta1",
 			"kind":       "Transformer",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -207,8 +207,8 @@ func TestAllCases(t *testing.T) {
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -222,7 +222,7 @@ func TestAllCases(t *testing.T) {
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
 			Eventf(corev1.EventTypeWarning, "InvalidSink",
-				`InvalidSink: failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
+				`InvalidSink: failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1beta1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, resourceGroup),
@@ -231,8 +231,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -252,8 +252,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -282,8 +282,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -307,8 +307,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -339,8 +339,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -364,8 +364,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -396,8 +396,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -421,8 +421,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -453,8 +453,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -478,8 +478,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -511,8 +511,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -557,8 +557,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -586,8 +586,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -619,8 +619,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -647,8 +647,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -690,8 +690,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -718,8 +718,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -756,8 +756,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: v1alpha1.PubSubSpec{
+				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+					PubSubSpec: v1beta1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
@@ -821,15 +821,15 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 	ps := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionAnnotations(map[string]string{
-			v1alpha1.AutoscalingClassAnnotation:                v1alpha1.KEDA,
-			v1alpha1.AutoscalingMinScaleAnnotation:             "0",
-			v1alpha1.AutoscalingMaxScaleAnnotation:             "3",
-			v1alpha1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
-			v1alpha1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
-			v1alpha1.KedaAutoscalingPollingIntervalAnnotation:  "30",
+			v1beta1.AutoscalingClassAnnotation:                v1beta1.KEDA,
+			v1beta1.AutoscalingMinScaleAnnotation:             "0",
+			v1beta1.AutoscalingMaxScaleAnnotation:             "3",
+			v1beta1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
+			v1beta1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
+			v1beta1.KedaAutoscalingPollingIntervalAnnotation:  "30",
 		}),
-		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-			PubSubSpec: v1alpha1.PubSubSpec{
+		WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+			PubSubSpec: v1beta1.PubSubSpec{
 				Secret:  &secret,
 				Project: testProject,
 			},
@@ -846,7 +846,7 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 	return resources.MakeReceiveAdapter(ctx, args)
 }
 
-func newScaledObject(ps *pubsubv1alpha1.PullSubscription) runtime.Object {
+func newScaledObject(ps *pubsubv1beta1.PullSubscription) runtime.Object {
 	ctx := context.Background()
 	ra := newReceiveAdapter(ctx, testImage, nil)
 	d, _ := ra.(*v1.Deployment)

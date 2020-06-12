@@ -26,15 +26,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 )
 
 // TopicOption enables further configuration of a Topic.
-type TopicOption func(*v1alpha1.Topic)
+type TopicOption func(*v1beta1.Topic)
 
 // NewTopic creates a Topic with TopicOptions
-func NewTopic(name, namespace string, so ...TopicOption) *v1alpha1.Topic {
-	s := &v1alpha1.Topic{
+func NewTopic(name, namespace string, so ...TopicOption) *v1beta1.Topic {
+	s := &v1beta1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -48,45 +48,45 @@ func NewTopic(name, namespace string, so ...TopicOption) *v1alpha1.Topic {
 }
 
 func WithTopicUID(uid types.UID) TopicOption {
-	return func(s *v1alpha1.Topic) {
+	return func(s *v1beta1.Topic) {
 		s.UID = uid
 	}
 }
 
 // WithInitTopicConditions initializes the Topics's conditions.
-func WithInitTopicConditions(s *v1alpha1.Topic) {
+func WithInitTopicConditions(s *v1beta1.Topic) {
 	s.Status.InitializeConditions()
 }
 
 func WithTopicTopicID(topicID string) TopicOption {
-	return func(s *v1alpha1.Topic) {
+	return func(s *v1beta1.Topic) {
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
 	}
 }
 
 func WithTopicPropagationPolicy(policy string) TopicOption {
-	return func(s *v1alpha1.Topic) {
-		s.Spec.PropagationPolicy = v1alpha1.PropagationPolicyType(policy)
+	return func(s *v1beta1.Topic) {
+		s.Spec.PropagationPolicy = v1beta1.PropagationPolicyType(policy)
 	}
 }
 
 func WithTopicTopicDeleted(topicID string) TopicOption {
-	return func(s *v1alpha1.Topic) {
+	return func(s *v1beta1.Topic) {
 		s.Status.MarkNoTopic("Deleted", "Successfully deleted topic %q.", topicID)
 		s.Status.TopicID = ""
 	}
 }
 
 func WithTopicJobFailure(topicID, reason, message string) TopicOption {
-	return func(s *v1alpha1.Topic) {
+	return func(s *v1beta1.Topic) {
 		s.Status.TopicID = topicID
 		s.Status.MarkNoTopic(reason, message)
 	}
 }
 
 func WithTopicAddress(uri string) TopicOption {
-	return func(s *v1alpha1.Topic) {
+	return func(s *v1beta1.Topic) {
 		if uri != "" {
 			u, _ := apis.ParseURL(uri)
 			s.Status.SetAddress(u)
@@ -96,42 +96,42 @@ func WithTopicAddress(uri string) TopicOption {
 	}
 }
 
-func WithTopicSpec(spec v1alpha1.TopicSpec) TopicOption {
-	return func(s *v1alpha1.Topic) {
+func WithTopicSpec(spec v1beta1.TopicSpec) TopicOption {
+	return func(s *v1beta1.Topic) {
 		s.Spec = spec
 	}
 }
 
-func WithTopicPublisherDeployed(s *v1alpha1.Topic) {
+func WithTopicPublisherDeployed(s *v1beta1.Topic) {
 	s.Status.MarkPublisherDeployed()
 }
 
 func WithTopicPublisherNotDeployed(reason, message string) TopicOption {
-	return func(t *v1alpha1.Topic) {
+	return func(t *v1beta1.Topic) {
 		t.Status.MarkPublisherNotDeployed(reason, message)
 	}
 }
 
 func WithTopicPublisherUnknown(reason, message string) TopicOption {
-	return func(t *v1alpha1.Topic) {
+	return func(t *v1beta1.Topic) {
 		t.Status.MarkPublisherUnknown(reason, message)
 	}
 }
 
 func WithTopicPublisherNotConfigured() TopicOption {
-	return func(t *v1alpha1.Topic) {
+	return func(t *v1beta1.Topic) {
 		t.Status.MarkPublisherNotConfigured()
 	}
 }
 
 func WithTopicProjectID(projectID string) TopicOption {
-	return func(s *v1alpha1.Topic) {
+	return func(s *v1beta1.Topic) {
 		s.Status.ProjectID = projectID
 	}
 }
 
 func WithTopicReady(topicID string) TopicOption {
-	return func(s *v1alpha1.Topic) {
+	return func(s *v1beta1.Topic) {
 		s.Status.InitializeConditions()
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
@@ -139,7 +139,7 @@ func WithTopicReady(topicID string) TopicOption {
 }
 
 func WithTopicReadyAndPublisherDeployed(topicID string) TopicOption {
-	return func(s *v1alpha1.Topic) {
+	return func(s *v1beta1.Topic) {
 		s.Status.InitializeConditions()
 		s.Status.MarkPublisherDeployed()
 		s.Status.MarkTopicReady()
@@ -148,55 +148,55 @@ func WithTopicReadyAndPublisherDeployed(topicID string) TopicOption {
 }
 
 func WithTopicFailed() TopicOption {
-	return func(s *v1alpha1.Topic) {
+	return func(s *v1beta1.Topic) {
 		s.Status.InitializeConditions()
 		s.Status.MarkNoTopic("TopicFailed", "test message")
 	}
 }
 
 func WithTopicUnknown() TopicOption {
-	return func(s *v1alpha1.Topic) {
+	return func(s *v1beta1.Topic) {
 		s.Status.InitializeConditions()
 	}
 }
 
-func WithTopicDeleted(t *v1alpha1.Topic) {
+func WithTopicDeleted(t *v1beta1.Topic) {
 	tt := metav1.NewTime(time.Unix(1e9, 0))
 	t.ObjectMeta.SetDeletionTimestamp(&tt)
 }
 
 func WithTopicOwnerReferences(ownerReferences []metav1.OwnerReference) TopicOption {
-	return func(c *v1alpha1.Topic) {
+	return func(c *v1beta1.Topic) {
 		c.ObjectMeta.OwnerReferences = ownerReferences
 	}
 }
 
 func WithTopicLabels(labels map[string]string) TopicOption {
-	return func(c *v1alpha1.Topic) {
+	return func(c *v1beta1.Topic) {
 		c.ObjectMeta.Labels = labels
 	}
 }
 
 func WithTopicNoTopic(reason, message string) TopicOption {
-	return func(t *v1alpha1.Topic) {
+	return func(t *v1beta1.Topic) {
 		t.Status.MarkNoTopic(reason, message)
 	}
 }
 
 func WithTopicFinalizers(finalizers ...string) TopicOption {
-	return func(s *v1alpha1.Topic) {
+	return func(s *v1beta1.Topic) {
 		s.Finalizers = finalizers
 	}
 }
 
 func WithTopicAnnotations(annotations map[string]string) TopicOption {
-	return func(c *v1alpha1.Topic) {
+	return func(c *v1beta1.Topic) {
 		c.ObjectMeta.Annotations = annotations
 	}
 }
 
 func WithTopicDefaultGCPAuth() TopicOption {
-	return func(t *v1alpha1.Topic) {
+	return func(t *v1beta1.Topic) {
 		t.Spec.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }

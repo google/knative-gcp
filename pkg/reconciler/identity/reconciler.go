@@ -33,7 +33,7 @@ import (
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	duck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
+	duck "github.com/google/knative-gcp/pkg/duck/v1beta1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"

@@ -26,7 +26,7 @@ import (
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/utils"
 
@@ -39,7 +39,7 @@ import (
 // Adapter. Every field is required.
 type ReceiveAdapterArgs struct {
 	Image            string
-	PullSubscription *v1alpha1.PullSubscription
+	PullSubscription *v1beta1.PullSubscription
 	Labels           map[string]string
 	SubscriptionID   string
 	SinkURI          *apis.URL
@@ -71,11 +71,11 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 
 	var mode converters.ModeType
 	switch args.PullSubscription.PubSubMode() {
-	case "", v1alpha1.ModeCloudEventsBinary:
+	case "", v1beta1.ModeCloudEventsBinary:
 		mode = converters.Binary
-	case v1alpha1.ModeCloudEventsStructured:
+	case v1beta1.ModeCloudEventsStructured:
 		mode = converters.Structured
-	case v1alpha1.ModePushCompatible:
+	case v1beta1.ModePushCompatible:
 		mode = converters.Push
 	}
 

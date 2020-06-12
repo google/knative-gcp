@@ -22,8 +22,8 @@ import (
 
 	"knative.dev/pkg/kmeta"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 )
 
 // TopicArgs are the arguments needed to create a Channel Topic.
@@ -41,8 +41,8 @@ type TopicArgs struct {
 }
 
 // MakeInvoker generates (but does not insert into K8s) the Topic for Channels.
-func MakeTopic(args *TopicArgs) *v1alpha1.Topic {
-	return &v1alpha1.Topic{
+func MakeTopic(args *TopicArgs) *v1beta1.Topic {
+	return &v1beta1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Owner.GetObjectMeta().GetNamespace(),
 			Name:            args.Name,
@@ -50,14 +50,14 @@ func MakeTopic(args *TopicArgs) *v1alpha1.Topic {
 			Annotations:     args.Annotations,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
-		Spec: v1alpha1.TopicSpec{
+		Spec: v1beta1.TopicSpec{
 			IdentitySpec: duckv1alpha1.IdentitySpec{
 				ServiceAccountName: args.ServiceAccountName,
 			},
 			Secret:            args.Secret,
 			Project:           args.Project,
 			Topic:             args.Topic,
-			PropagationPolicy: v1alpha1.TopicPolicyCreateDelete,
+			PropagationPolicy: v1beta1.TopicPolicyCreateDelete,
 		},
 	}
 }

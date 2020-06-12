@@ -20,22 +20,22 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGenerateJobName(t *testing.T) {
 	want := "projects/project/locations/location/" + JobPrefix + "-uid"
-	got := GenerateJobName(&v1alpha1.CloudSchedulerSource{
+	got := GenerateJobName(&v1beta1.CloudSchedulerSource{
 		ObjectMeta: metav1.ObjectMeta{
 			UID: "uid",
 		},
-		Spec: v1alpha1.CloudSchedulerSourceSpec{
+		Spec: v1beta1.CloudSchedulerSourceSpec{
 			Location: "location",
 		},
-		Status: v1alpha1.CloudSchedulerSourceStatus{
-			PubSubStatus: duckv1alpha1.PubSubStatus{
+		Status: v1beta1.CloudSchedulerSourceStatus{
+			PubSubStatus: duckv1beta1.PubSubStatus{
 				ProjectID: "project",
 			},
 		},
@@ -64,7 +64,7 @@ func TestExtractJobId(t *testing.T) {
 
 func TestGenerateTopicName(t *testing.T) {
 	want := "cre-src_mynamespace_myname_uid"
-	got := GenerateTopicName(&v1alpha1.CloudSchedulerSource{
+	got := GenerateTopicName(&v1beta1.CloudSchedulerSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
 			Namespace: "mynamespace",
@@ -79,9 +79,9 @@ func TestGenerateTopicName(t *testing.T) {
 
 func TestGeneratePubSubTargetTopic(t *testing.T) {
 	want := "projects/project/topics/topic"
-	got := GeneratePubSubTargetTopic(&v1alpha1.CloudSchedulerSource{
-		Status: v1alpha1.CloudSchedulerSourceStatus{
-			PubSubStatus: duckv1alpha1.PubSubStatus{
+	got := GeneratePubSubTargetTopic(&v1beta1.CloudSchedulerSource{
+		Status: v1beta1.CloudSchedulerSourceStatus{
+			PubSubStatus: duckv1beta1.PubSubStatus{
 				ProjectID: "project",
 			},
 		},

@@ -29,11 +29,11 @@ import (
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake"
 
 	// Fake injection informers
-	_ "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1alpha1/fake"
+	_ "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1beta1/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/client/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudschedulersource/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/topic/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1beta1/cloudschedulersource/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic/fake"
 	_ "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
