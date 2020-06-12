@@ -118,18 +118,34 @@ E2E_PROJECT_ID=<project name> \
 
 ### Running E2E tests with authentication mechanism using Workload Identity.
 
-Add `-workloadIndentity=true` and
-`-pubsubServiceAccount=$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com`
-to the `go test` command, where
+First, you'll have to modify `clusterDefaults` in ConfigMap `config-gcp-auth`.
+
+You can directly edit the ConfigMap by:
+
+```shell
+kubectl edit configmap config-gcp-auth -n cloud-run-events
+```
+and replace the `clusterDefaults` part with: 
+
+```shell
+    clusterDefaults:
+      serviceAccountName: test-default-ksa
+      workloadIdentityMapping:
+        test-default-ksa: $PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com
+```
 `$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the Pub/Sub
 enabled Google Cloud Service Account.
+
+Then, add `-workloadIndentity=true` and
+`-serviceAccountName=test-default-ksa`
+to the `go test` command.
 
 For example,
 
 ```shell
 E2E_PROJECT_ID=<project name> go test --tags=e2e \
   -workloadIndentity=true \
-  -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
+  -serviceAccountName=test-default-ksa\
   ./test/e2e/...
 ```
 
