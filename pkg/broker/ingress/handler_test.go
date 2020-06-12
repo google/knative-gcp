@@ -337,10 +337,7 @@ func runIngressHandlerBenchmark(b *testing.B, eventSize int) {
 	psSrv := pstest.NewServer()
 	defer psSrv.Close()
 
-	psClient, err := NewPubsubDecoupleClient(ctx, createPubsubClient(ctx, b, psSrv))
-	if err != nil {
-		b.Fatal(err)
-	}
+	psClient := createPubsubClient(ctx, b, psSrv)
 	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), psClient)
 	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
 	if err != nil {
@@ -348,7 +345,7 @@ func runIngressHandlerBenchmark(b *testing.B, eventSize int) {
 	}
 	h := NewHandler(ctx, nil, decouple, statsReporter)
 
-	if _, err := createPubsubClient(ctx, b, psSrv).CreateTopic(ctx, topicID); err != nil {
+	if _, err := psClient.CreateTopic(ctx, topicID); err != nil {
 		b.Fatal(err)
 	}
 
@@ -412,11 +409,7 @@ func setupTestReceiver(ctx context.Context, t testing.TB, psSrv *pstest.Server) 
 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
 func createAndStartIngress(ctx context.Context, t testing.TB, psSrv *pstest.Server) string {
-	client, err := NewPubsubDecoupleClient(ctx, createPubsubClient(ctx, t, psSrv))
-	if err != nil {
-		t.Fatal(err)
-	}
-	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), client)
+	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), createPubsubClient(ctx, t, psSrv))
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
 	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
@@ -477,6 +470,7 @@ func verifyMetrics(t *testing.T, tc testCase) {
 
 func assertTraceID(id string) eventAssertion {
 	return func(t *testing.T, e *cloudevents.Event) {
+		t.Helper()
 		dt, ok := extensions.GetDistributedTracingExtension(*e)
 		if !ok {
 			t.Errorf("event missing distributed tracing extensions: %v", e)

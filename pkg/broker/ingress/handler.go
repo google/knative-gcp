@@ -62,7 +62,6 @@ var HandlerSet wire.ProviderSet = wire.NewSet(
 	NewMultiTopicDecoupleSink,
 	wire.Bind(new(DecoupleSink), new(*multiTopicDecoupleSink)),
 	NewPubsubClient,
-	NewPubsubDecoupleClient,
 	metrics.NewIngressReporter,
 )
 
