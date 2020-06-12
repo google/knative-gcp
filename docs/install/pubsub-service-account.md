@@ -56,27 +56,75 @@ its improved security properties and manageability. For more information about
 Workload Identity see
 [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
 
-**_Note:_** If you install the Knative-GCP Constructs with v0.14.0 or older
+**_Note:_** 
+1. If you install the Knative-GCP Constructs with v0.14.0 or older
 release, please use option 2.  
-**_Note:_** `spec.googleServiceAccount` in v0.14.0 is deprecated for security
+2. `spec.googleServiceAccount` in v0.14.0 is deprecated for security
 implications. It has not been promoted to v1beta1 and is expected to be removed
 from v1alpha1 in the v0.16.0 release. Instead, `spec.serviceAccountName` has
 been introduced for Workload Identity in v0.15.0, whose value is a Kubernetes
 Service Account.
 
-Using the Google Cloud Service Account you just created and checking
+There are two scenarios to leverage Workload Identity for resources in the Data Plane:
+* ***Non-default scenario:***
+
+    Using the Google Cloud Service Account `cre-pubsub` you just created and checking
 [Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
 in
-[Manually Configure Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md)
+[Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md)
 to configure Workload Identity in the namespace your resources will reside.
 
-You will have a Kubernetes Service Account after the above configuration, which
-is bound to the Google Cloud Service Account you just created. Remember to put
+    You will have a Kubernetes Service Account after the above configuration, which
+is bound to the Google Cloud Service Account `cre-pubsub`. Remember to put
 this Kubernetes Service Account name under `spec.serviceAccountName` when you
 follow
 [example](https://github.com/google/knative-gcp/tree/master/docs/examples) to
 use resource.
-
+* ***Default scenario:***
+    
+    Instead of manually configuring Workload Identity with [Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md), 
+    you can authorize the Controller to configure Workload Identity for you.
+    
+    You need to grant `iam.serviceAccountAdmin` permission of the Google Cloud Service Account `cre-pubsub` you just created to 
+    the Control Plane's Google Cloud Service Account `cloud-run-events` by:
+    
+   ```shell
+   gcloud iam service-accounts add-iam-policy-binding \
+    cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com  \
+    --member='serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com' \
+    --role='roles/iam.serviceAccountAdmin'
+   ```
+  
+  Then, modify `clusterDefaults` in ConfigMap `config-gcp-auth`.
+  
+  You can directly edit the ConfigMap by:
+  
+  ```shell
+  kubectl edit configmap config-gcp-auth -n cloud-run-events
+  ```
+  and replace the `clusterDefaults` part with: 
+  
+  ```shell
+      clusterDefaults:
+        workloadIdentityMapping:
+          default-cre-pubsub: cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+  ```
+  
+  Here, `default-cre-pubsub` refers to a Kubernetes Service Account bound to the Google Cloud Service Account `cre-pubsub`. 
+  Remember to put
+  `default-cre-pubsub` under `spec.serviceAccountName` when you
+  follow
+  [example](https://github.com/google/knative-gcp/tree/master/docs/examples) to
+  use resource.
+  
+  Kubernetes Service Account `default-cre-pubsub` doesn't need to exist in a specific namespace. 
+  Once it is set in the ConfigMap `config-gcp-auth`,
+  the Control Plane will create it for you and configure corresponding Workload Identity relationship between `default-cre-pubsub` 
+  and `cre-pubsub` when you create resources.
+  
+  ***Note:*** The Controller currently doesn’t perform any access control checks, as a result, any user who can create a resource 
+    can get access to the Google Cloud Service Account which grants the `iam.serviceAccountAdmin` permission to the Controller.
+    
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 
 1. Download a new JSON private key for that Service Account. **Be sure not to

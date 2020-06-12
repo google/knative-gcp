@@ -58,13 +58,12 @@ ko apply -f ./config
 
 ## Configure the Authentication Mechanism for GCP (the Control Plane)
 
-Currently, we support two methods: Workload Identity and Kubernetes Secret.
-Workload Identity is the recommended way to access Google Cloud services from
-within GKE due to its improved security properties and manageability. For more
-information about Workload Identity, please see
-[here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
+Currently, we support two methods: Workload Identity and Kubernetes Secret. 
+The configuration steps have been automated by the scripts below. If
+wish to configure the auth manually, refer to
+[Authentication Mechanism for GCP](./authentication-mechanisms-gcp.md).
 
-**_Note_**: Before applying initialization scripts, make sure:
+Before applying initialization scripts, make sure:
 
 1. Your default zone is set to be the same as your current cluster. You may use
    `gcloud container clusters describe $CLUSTER_NAME` to get zone and apply
@@ -72,11 +71,14 @@ information about Workload Identity, please see
 1. Your gcloud `CLI` are up to date. You may use `gcloud components update` to
    update it.
 
-**_Note_**: The configuration steps have been automated by the scripts below. If
-wish to configure the auth manually, refer to
-[manually configure authentication for GCP](./authentication-mechanisms-gcp.md),
+###Option 1 (Recommended): Use Workload Identity. 
 
-- Option 1 (Recommended): Use Workload Identity. **_Note:_** If you install the
+Workload Identity is the recommended way to access Google Cloud services from
+within GKE due to its improved security properties and manageability. For more
+information about Workload Identity, please see
+[here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
+
+**_Note:_** If you install the
   Knative-GCP Constructs with v0.14.0 or older releases, please use option 2.
 
   Apply [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
@@ -88,7 +90,7 @@ wish to configure the auth manually, refer to
   **_Note_**: If you didn't enable Workload Identity when you created your
   cluster, this step may take a long time to finish.
 
-  **_Note_**: Optional parameters available.
+Optional parameters available:
 
   1. `CLUSTER_NAME`: an optional parameter to specify the cluster to use,
      default to `gcloud config get-value run/cluster`
@@ -100,20 +102,21 @@ wish to configure the auth manually, refer to
   1. `PROJECT_ID`: an optional parameter to specify the project to use, default
      to `gcloud config get-value project`.
 
-  If you want to specify the parameters instead of using the default ones,
+  Here is an example for specifying the parameters instead of using the default ones:
 
   ```shell
   ./hack/init_control_plane_gke.sh [CLUSTER_NAME] [CLUSTER_LOCATION] [CLUSTER_LOCATION_TYPE] [PROJECT_ID]
   ```
 
-* Option 2: Export service account keys and store them as Kubernetes Secrets.
+### Option 2: Export service account keys and store them as Kubernetes Secrets.
+
   Apply [init_control_plane.sh](../../hack/init_control_plane.sh):
 
   ```shell
   ./hack/init_control_plane.sh
   ```
 
-  **_Note_**: Optional parameters available.
+Optional parameters available:
 
   1.  `PROJECT_ID`: an optional parameter to specify the project to use, default
       to `gcloud config get-value project`. If you want to specify the parameter
