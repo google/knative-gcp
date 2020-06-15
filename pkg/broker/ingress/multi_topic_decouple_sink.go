@@ -19,11 +19,17 @@ package ingress
 import (
 	"context"
 	"fmt"
+	"sync"
 
+	"cloud.google.com/go/pubsub"
+	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/types"
 
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cev2 "github.com/cloudevents/sdk-go/v2"
-	cecontext "github.com/cloudevents/sdk-go/v2/context"
+	"github.com/cloudevents/sdk-go/v2/binding"
+	"github.com/cloudevents/sdk-go/v2/extensions"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"knative.dev/eventing/pkg/logging"
@@ -32,19 +38,24 @@ import (
 const projectEnvKey = "PROJECT_ID"
 
 // NewMultiTopicDecoupleSink creates a new multiTopicDecoupleSink.
-func NewMultiTopicDecoupleSink(ctx context.Context, brokerConfig config.ReadonlyTargets, client cev2.Client) *multiTopicDecoupleSink {
+func NewMultiTopicDecoupleSink(ctx context.Context, brokerConfig config.ReadonlyTargets, client *pubsub.Client) *multiTopicDecoupleSink {
 	return &multiTopicDecoupleSink{
 		logger:       logging.FromContext(ctx),
-		client:       client,
+		pubsub:       client,
 		brokerConfig: brokerConfig,
+		// TODO(#1118): remove Topic when broker config is removed
+		topics: make(map[types.NamespacedName]*pubsub.Topic),
 	}
 }
 
 // multiTopicDecoupleSink implements DecoupleSink and routes events to pubsub topics corresponding
 // to the broker to which the events are sent.
 type multiTopicDecoupleSink struct {
-	// client talks to pubsub.
-	client cev2.Client
+	// pubsub talks to pubsub.
+	pubsub *pubsub.Client
+	// map from brokers to topics
+	topics    map[types.NamespacedName]*pubsub.Topic
+	topicsMut sync.RWMutex
 	// brokerConfig holds configurations for all brokers. It's a view of a configmap populated by
 	// the broker controller.
 	brokerConfig config.ReadonlyTargets
@@ -53,27 +64,84 @@ type multiTopicDecoupleSink struct {
 
 // Send sends incoming event to its corresponding pubsub topic based on which broker it belongs to.
 func (m *multiTopicDecoupleSink) Send(ctx context.Context, ns, broker string, event cev2.Event) protocol.Result {
-	topic, err := m.getTopicForBroker(ns, broker)
+	topic, err := m.getTopicForBroker(types.NamespacedName{Namespace: ns, Name: broker})
 	if err != nil {
 		return err
 	}
-	ctx = cecontext.WithTopic(ctx, topic)
-	return m.client.Send(ctx, event)
+
+	dt := extensions.FromSpanContext(trace.FromContext(ctx).SpanContext())
+	msg := new(pubsub.Message)
+	if err := cepubsub.WritePubSubMessage(ctx, binding.ToMessage(&event), msg, dt.WriteTransformer()); err != nil {
+		return err
+	}
+
+	_, err = topic.Publish(ctx, msg).Get(ctx)
+	return err
 }
 
 // getTopicForBroker finds the corresponding decouple topic for the broker from the mounted broker configmap volume.
-func (m *multiTopicDecoupleSink) getTopicForBroker(ns, broker string) (string, error) {
-	brokerConfig, ok := m.brokerConfig.GetBroker(ns, broker)
+func (m *multiTopicDecoupleSink) getTopicForBroker(broker types.NamespacedName) (*pubsub.Topic, error) {
+	topicID, err := m.getTopicIDForBroker(broker)
+	if err != nil {
+		return nil, err
+	}
+
+	if topic, ok := m.getExistingTopic(broker); ok {
+		// Check that the broker's topic ID hasn't changed.
+		if topic.ID() == topicID {
+			return topic, nil
+		}
+	}
+
+	// Topic needs to be created or updated.
+	return m.updateTopicForBroker(broker)
+}
+
+func (m *multiTopicDecoupleSink) updateTopicForBroker(broker types.NamespacedName) (*pubsub.Topic, error) {
+	m.topicsMut.Lock()
+	defer m.topicsMut.Unlock()
+	// Fetch latest decouple topic ID under lock.
+	topicID, err := m.getTopicIDForBroker(broker)
+	if err != nil {
+		return nil, err
+	}
+
+	if topic, ok := m.topics[broker]; ok {
+		if topic.ID() == topicID {
+			// Topic already updated.
+			return topic, nil
+		}
+		// Stop old topic.
+		m.topics[broker].Stop()
+	}
+	topic := m.pubsub.Topic(topicID)
+	m.topics[broker] = topic
+	return topic, nil
+}
+
+func (m *multiTopicDecoupleSink) getTopicIDForBroker(broker types.NamespacedName) (string, error) {
+	brokerConfig, ok := m.brokerConfig.GetBroker(broker.Namespace, broker.Name)
 	if !ok {
 		// There is an propagation delay between the controller reconciles the broker config and
 		// the config being pushed to the configmap volume in the ingress pod. So sometimes we return
 		// an error even if the request is valid.
-		m.logger.Warn("config is not found for", zap.Any("ns", ns), zap.Any("broker", broker))
-		return "", fmt.Errorf("%q/%q: %w", ns, broker, ErrNotFound)
+		m.logger.Warn("config is not found for", zap.String("broker", broker.String()))
+		return "", fmt.Errorf("%q: %w", broker, ErrNotFound)
+	}
+	if brokerConfig.State != config.State_READY {
+		m.logger.Debug("broker is not ready", zap.Any("ns", broker.Namespace), zap.Any("broker", broker))
+		return "", fmt.Errorf("%q: %w", broker, ErrNotReady)
 	}
 	if brokerConfig.DecoupleQueue == nil || brokerConfig.DecoupleQueue.Topic == "" {
 		m.logger.Error("DecoupleQueue or topic missing for broker, this should NOT happen.", zap.Any("brokerConfig", brokerConfig))
-		return "", fmt.Errorf("decouple queue of %q/%q: %w", ns, broker, ErrIncomplete)
+		return "", fmt.Errorf("decouple queue of %q: %w", broker, ErrIncomplete)
 	}
 	return brokerConfig.DecoupleQueue.Topic, nil
+}
+
+func (m *multiTopicDecoupleSink) getExistingTopic(broker types.NamespacedName) (*pubsub.Topic, bool) {
+	m.topicsMut.RLock()
+	defer m.topicsMut.RUnlock()
+	topic, ok := m.topics[broker]
+	return topic, ok
 }

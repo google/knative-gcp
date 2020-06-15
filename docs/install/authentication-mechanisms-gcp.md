@@ -1,5 +1,6 @@
-# Manually Configure Authentication Mechanism for GCP
+# Configure Authentication Mechanism for GCP
 
+## Authentication Mechanism for the Control Plane
 For both methods (Workload Identity and Kubernetes Secret), the first manual
 step is creating a
 [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
@@ -41,7 +42,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 --role roles/owner
 ```
 
-## Option 1 (Recommended): Workload Identity
+### Option 1 (Recommended): Workload Identity
 
 1. Enable Workload Identity.
 
@@ -112,7 +113,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
    can replace `ksa-namespace` with `cloud-run-events`, `ksa-name` with
    `controller`, and `gsa-name` with `cloud-run-events`
 
-## Option 2: Kubernetes Secrets
+### Option 2: Kubernetes Secrets
 
 1. Download a new JSON private key for that Service Account. **Be sure not to
    check this key into source control!**
@@ -131,7 +132,11 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
    Note that `google-cloud-key` and `key.json` are default values expected by
    our control plane.
-
+   
+## Authentication Mechanism for the Data Plane
+ 
+Please check [Installing Pub/Sub Enabled Service Account](../install/pubsub-service-account.md).
+ 
 ## Troubleshooting
 
 ### Workload Identity
@@ -156,7 +161,7 @@ and a Kubernetes Service Account (KSA), you need to check:
    
     By running the following command: 
     ```shell
-    kubectl get serviceaccount ksa-name -o yaml -n ksa-namespace
+    kubectl get serviceaccount ksa-name -n ksa-namespace -o yaml 
     ```
     if the annotation exists, you'll find an annotation similar to:
     ```shell
@@ -168,10 +173,15 @@ and a Kubernetes Service Account (KSA), you need to check:
 ### Kubernetes Secrets
 
 To ensure kubernetes Secret correctly configured in a namespace, you need to check if a Kubernetes Secret 
-named `google-cloud-key` is in desired namespace by running the following command: 
+with the correct name is in the namespace. 
+
+By default, this secret is named `google-cloud-key`, but it could
+be set to something else either in the custom object itself (e.g. the Source's `spec.secret`) or 
+in the `config-gcp-auth` ConfigMap. Verify that a secret with the correct name is in the same namespace 
+as the custom object by running the following command:
 
 ```shell
-kubectl get secret -n secret-namespace
+kubectl get secret -n namespace
 ```
 
 ### Common Issues
@@ -182,7 +192,8 @@ kubectl get secret -n secret-namespace
    you are likely to get `PermissionDenied` error for `User not authorized to perform this action`
    (for Workload Identity, the error might look like `IAM returned 403 Forbidden: The caller does not have permission`).
    
-   This error indicates that the Control Plane may not configure authentication properly. You can find it in a resource instance by:
+   This error indicates that the Control Plane may not configure authentication properly. 
+   You can find it in a resource instance by:
    
    ```shell
    kubectl describe resource-name resource-instance-name -n resource-instance-namespace
@@ -208,32 +219,45 @@ kubectl get secret -n secret-namespace
    ***Note:*** For Kubernetes Secret, it is also possible that the JSON private key is no longer existing under your Google Cloud Service Account 
    `cloud-run-events`. Then, even the Google Cloud Service Account `cloud-run-events` has all required permissions, and 
    the corresponding Kubernetes Secret `google-cloud-key ` is in namespace `cloud-run-events`, you still get `PermissionDenied` error. 
-   To such case, you have to re-download the JSON private key and re-create the Kubernetes Secret.
+   To such case, you have to re-download the JSON private key and re-create the Kubernetes Secret, refer 
+   [here](./authentication-mechanisms-gcp.md/#option-2-kubernetes-secrets) for instructions.
      
-* ***Resources are READY, but can't receive Event***
+* ***Resources are READY, but can't receive Events***
 
-   Sometimes, a resource instance is READY, but it can't receive Event. It might be authentication configuration problem, 
-   if the underlying `deployment` doesn't have minimum availability.
+   Sometimes, a resource instance is READY, but it can't receive Events. It might be an authentication configuration problem, 
+   if the underlying `Deployment` doesn't have minimum availability.
+    
+   Typically, the name of an 
+   underlying `Deployment` for a resource instance could be a truncated version of 
+   `(prefix)-(resource-instance-name)-(uid)`. 
+   1. If the resource instance is a `Source`, the prefix is `cre-src`. 
+   1. If the resource instance is a `Channel`, the prefix is `cre-chan`. 
+   1. If the resource instance is a `Pullsubscription`, the prefix is `cre-ps`
    
-   You can use the following command to check a `deployment`'s available pod is zero.
+   You can use the following command to check if the underlying `Deployment`'s available pod is zero.
    
    ```shell
    kubectl get deployment -n resource-instance-namespace
    ```
-   
-   To solve this issue, you can:
+   Here is an example checking a CloudAuditlogsSource `test` in namespace `default`:
+     
+   ```shell
+   kubectl describe cloudauditlogssource test -n default
+   ```
+      
+   ***To solve this issue***, you can:
    - Check the Google Cloud Service Account `cre-pubsub` for the Data Plane has all required permissions.
    - Check authentication configuration is correct for this resource instance. 
      - If you are using Workload Identity for this resource instance, 
      refer [here](./authentication-mechanisms-gcp.md/#workload-identity) to check the
      Google Cloud Service Account `cre-pubsub`, 
-     and the Kubernetes Service Account in namespace where this resource instance resides.
+     and the Kubernetes Service Account in the namespace where this resource instance resides.
      - If you are using Kubernetes Secret for this resource instance, 
      refer [here](./authentication-mechanisms-gcp.md/#kubernetes-secrets) to check the 
-     Kubernetes Secret `google-cloud-key` in namespace where this resource instance resides.
+     Kubernetes Secret in namespace where this resource instance resides.
      
    ***Note:*** For Workload Identity, there is a known issue [#759](https://github.com/google/knative-gcp/issues/759) 
-   for credential sync delay (~1min) in resources' underlying components. You'll probably encounter this issue, 
+   for credential sync delay (~1 min) in resources' underlying components. You'll probably encounter this issue, 
    if you immediately send Events after you finish Workload Identity setup for a resource instance.
    
 * ***Resources are not READY, due to WorkloadIdentityReconcileFailed***
@@ -243,7 +267,7 @@ kubectl get secret -n secret-namespace
    ```shell
    kubectl describe resource-name resource-instance-name -n resource-instance-namespace
    ```
-   If the reason related on permission denied, refer to common issue ***Resources are not READY*** for solution.
+   If the reason related on permission denied, refer to [Common Issues](./authentication-mechanisms-gcp.md/#common-issues) ***Resources are not READY*** for solution.
    
    If the reason related on concurrency issue, the controller will retry it in the next reconciliation loop 
    (the maximum retry period is 5 min). You can also use [non-default scenario](../install/pubsub-service-account.md) 

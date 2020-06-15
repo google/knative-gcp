@@ -275,7 +275,6 @@ github.com/openzipkin/zipkin-go/propagation
 github.com/openzipkin/zipkin-go/reporter
 github.com/openzipkin/zipkin-go/reporter/http
 # github.com/pkg/errors v0.9.1 => github.com/pkg/errors v0.8.1
-## explicit
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
@@ -1026,7 +1025,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.15.1-0.20200610152122-1873f64a57fb
+# knative.dev/eventing v0.15.1-0.20200611140922-6287d03b0423
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1114,11 +1113,11 @@ knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sendevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/networking v0.0.0-20200607161819-2086ac6759c2
+# knative.dev/networking v0.0.0-20200611155523-bd13675bcf70
 knative.dev/networking/pkg/apis/config
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
-# knative.dev/pkg v0.0.0-20200609184032-fef70cc2616b
+# knative.dev/pkg v0.0.0-20200614232523-aec2008e6656
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1223,7 +1222,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.15.1-0.20200610170822-42e22bad6559
+# knative.dev/serving v0.15.1-0.20200615083925-19a458c63ede
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
@@ -1262,8 +1261,7 @@ knative.dev/serving/pkg/client/listers/autoscaling/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200610141822-fd009ecf10fe
-## explicit
+# knative.dev/test-infra v0.0.0-20200612191923-a4dd434e085b
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 ## explicit

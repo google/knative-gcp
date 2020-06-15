@@ -25,11 +25,7 @@ func InitializeHandler(ctx context.Context, port ingress.Port, projectID ingress
 	if err != nil {
 		return nil, err
 	}
-	clientClient, err := ingress.NewPubsubDecoupleClient(ctx, client)
-	if err != nil {
-		return nil, err
-	}
-	multiTopicDecoupleSink := ingress.NewMultiTopicDecoupleSink(ctx, readonlyTargets, clientClient)
+	multiTopicDecoupleSink := ingress.NewMultiTopicDecoupleSink(ctx, readonlyTargets, client)
 	ingressReporter, err := metrics.NewIngressReporter(podName, containerName)
 	if err != nil {
 		return nil, err
