@@ -31,6 +31,7 @@ type testTopic struct {
 	handleData testiam.TestHandleData
 	id         string
 	config     *pubsub.TopicConfig
+	topicString string
 }
 
 // TestTopicData is the data used to configure the test Topic.
@@ -58,4 +59,8 @@ func (t *testTopic) IAM() iam.Handle {
 
 func (t *testTopic) ID() string {
 	return t.id
+}
+
+func (t *testTopic) String() string {
+	return t.topicString
 }
