@@ -131,3 +131,121 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
    Note that `google-cloud-key` and `key.json` are default values expected by
    our control plane.
+
+## Troubleshooting
+
+### Workload Identity
+
+To ensure Workload Identity correctly configured for a Google Cloud Service Account (GSA), 
+and a Kubernetes Service Account (KSA), you need to check:
+
+1. If the Google Cloud Service Account has the desired `iam-policy-binding`.
+   
+   By running the following command: 
+   ```shell
+   gcloud iam service-accounts get-iam-policy gsa-name@$PROJECT_ID.iam.gserviceaccount.com
+   ```
+   if the `iam-policy-binding` is correct, you'll find a `iam-policy-binding` similar to:
+   ```shell
+    bindings:
+    - members:
+      - serviceAccount:$PROJECT_ID.svc.id.goog[ksa-namespace/ksa-name]
+      role: roles/iam.workloadIdentityUser
+   ```
+ 2. If the Kubernetes Service Account has the desired annotation.
+   
+    By running the following command: 
+    ```shell
+    kubectl get serviceaccount ksa-name -o yaml -n ksa-namespace
+    ```
+    if the annotation exists, you'll find an annotation similar to:
+    ```shell
+    metadata:
+      annotations:
+        iam.gke.io/gcp-service-account: gsa-name@$PROJECT_ID.iam.gserviceaccount.com
+    ```
+
+### Kubernetes Secrets
+
+To ensure kubernetes Secret correctly configured in a namespace, you need to check if a Kubernetes Secret 
+named `google-cloud-key` is in desired namespace by running the following command: 
+
+```shell
+kubectl get secret -n secret-namespace
+```
+
+### Common Issues
+
+* ***Resources are not READY***
+
+   If a resource instance is not READY due to authentication configuration problem, 
+   you are likely to get `PermissionDenied` error for `User not authorized to perform this action`
+   (for Workload Identity, the error might look like `IAM returned 403 Forbidden: The caller does not have permission`).
+   
+   This error indicates that the Control Plane may not configure authentication properly. You can find it in a resource instance by:
+   
+   ```shell
+   kubectl describe resource-name resource-instance-name -n resource-instance-namespace
+   ```
+   
+   Here is an example checking a CloudAuditlogsSource `test` in namespace `default`:
+      
+   ```shell
+   kubectl describe cloudauditlogssource test -n default
+   ```
+   
+   To solve this issue, you can:
+   - Check the Google Cloud Service Account `cloud-run-events` for the Control Plane has all required permissions.
+   - Check authentication configuration is correct for the Control Plane. 
+     - If you are using Workload Identity for the Control Plane, 
+     refer [here](./authentication-mechanisms-gcp.md/#workload-identity) to check the
+     Google Cloud Service Account `cloud-run-events`, 
+     and the Kubernetes Service Account `controller` in namespace `cloud-run-events`.
+     - If you are using Kubernetes Secret for the Control Plane, 
+     refer [here](./authentication-mechanisms-gcp.md/#kubernetes-secrets) to check the 
+     Kubernetes Secret `google-cloud-key` in namespace `cloud-run-events`.
+     
+   ***Note:*** For Kubernetes Secret, it is also possible that the JSON private key is no longer existing under your Google Cloud Service Account 
+   `cloud-run-events`. Then, even the Google Cloud Service Account `cloud-run-events` has all required permissions, and 
+   the corresponding Kubernetes Secret `google-cloud-key ` is in namespace `cloud-run-events`, you still get `PermissionDenied` error. 
+   To such case, you have to re-download the JSON private key and re-create the Kubernetes Secret.
+     
+* ***Resources are READY, but can't receive Event***
+
+   Sometimes, a resource instance is READY, but it can't receive Event. It might be authentication configuration problem, 
+   if the underlying `deployment` doesn't have minimum availability.
+   
+   You can use the following command to check a `deployment`'s available pod is zero.
+   
+   ```shell
+   kubectl get deployment -n resource-instance-namespace
+   ```
+   
+   To solve this issue, you can:
+   - Check the Google Cloud Service Account `cre-pubsub` for the Data Plane has all required permissions.
+   - Check authentication configuration is correct for this resource instance. 
+     - If you are using Workload Identity for this resource instance, 
+     refer [here](./authentication-mechanisms-gcp.md/#workload-identity) to check the
+     Google Cloud Service Account `cre-pubsub`, 
+     and the Kubernetes Service Account in namespace where this resource instance resides.
+     - If you are using Kubernetes Secret for this resource instance, 
+     refer [here](./authentication-mechanisms-gcp.md/#kubernetes-secrets) to check the 
+     Kubernetes Secret `google-cloud-key` in namespace where this resource instance resides.
+     
+   ***Note:*** For Workload Identity, there is a known issue [#759](https://github.com/google/knative-gcp/issues/759) 
+   for credential sync delay (~1min) in resources' underlying components. You'll probably encounter this issue, 
+   if you immediately send Events after you finish Workload Identity setup for a resource instance.
+   
+* ***Resources are not READY, due to WorkloadIdentityReconcileFailed***
+   
+   This error only exists when you use default scenario for Workload Identity. 
+   You can find detail failure reason by:
+   ```shell
+   kubectl describe resource-name resource-instance-name -n resource-instance-namespace
+   ```
+   If the reason related on permission denied, refer to common issue ***Resources are not READY*** for solution.
+   
+   If the reason related on concurrency issue, the controller will retry it in the next reconciliation loop 
+   (the maximum retry period is 5 min). You can also use [non-default scenario](../install/pubsub-service-account.md) 
+   if this error least for a long time.
+   
