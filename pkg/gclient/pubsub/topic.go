@@ -48,3 +48,7 @@ func (t *pubsubTopic) IAM() iam.Handle {
 func (t *pubsubTopic) ID() string {
 	return t.topic.ID()
 }
+
+func (t *pubsubTopic) String() string {
+	return t.topic.String()
+}

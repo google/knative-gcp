@@ -62,6 +62,10 @@ const (
 	reconciledDataPlaneFailedReason = "DataPlaneReconcileFailed"
 	reconciledSuccessReason         = "PullSubscriptionReconciled"
 	workloadIdentityFailed          = "WorkloadIdentityReconcileFailed"
+
+	// If the topic of the subscription has been deleted, the value of its topic becomes "_deleted-topic_".
+	// See https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#subscription
+	deletedTopic = "_deleted-topic_"
 )
 
 // Base implements the core controller logic for pullsubscription.
@@ -217,9 +221,28 @@ func (r *Base) reconcileSubscription(ctx context.Context, ps *v1beta1.PullSubscr
 		subConfig.RetentionDuration = retentionDuration
 	}
 
-	// If the subscription doesn't exist, create it.
-	if !subExists {
-		// Create a new subscription to the previous topic with the given name.
+	// Check if the topic of the subscription is "_deleted-topic_"
+	if subExists {
+		config, err := sub.Config(ctx)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to get Pub/Sub subscription Config", zap.Error(err))
+			return "", err
+		}
+		if config.Topic != nil && config.Topic.String() == deletedTopic {
+			logging.FromContext(ctx).Desugar().Error("Detected deleted topic. Going to recreate the pull subscription. Unacked messages will be lost.")
+			// Subscription with "_deleted-topic_" cannot pull from the new topic. In order to recover, we first delete
+			// the sub and then create it. Unacked messages will be lost.
+			if err := sub.Delete(ctx); err != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to delete the _deleted-topic_ susbscription", zap.Error(err))
+				return "", fmt.Errorf("failed to delete the _deleted-topic_ susbscription: %v", err)
+			}
+			sub, err = client.CreateSubscription(ctx, subID, subConfig)
+			if err != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to create subscription", zap.Error(err))
+				return "", err
+			}
+		}
+	} else {
 		sub, err = client.CreateSubscription(ctx, subID, subConfig)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create subscription", zap.Error(err))
@@ -255,10 +278,7 @@ func (r *Base) deleteSubscription(ctx context.Context, ps *v1beta1.PullSubscript
 		return err
 	}
 	if exists {
-		if err := sub.Delete(ctx); err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub subscription", zap.Error(err))
-			return err
-		}
+		sub.Delete(ctx)
 	}
 	return nil
 }
