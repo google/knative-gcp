@@ -278,7 +278,10 @@ func (r *Base) deleteSubscription(ctx context.Context, ps *v1beta1.PullSubscript
 		return err
 	}
 	if exists {
-		sub.Delete(ctx)
+		if err := sub.Delete(ctx); err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub subscription", zap.Error(err))
+			return err
+		}
 	}
 	return nil
 }
