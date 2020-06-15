@@ -121,7 +121,6 @@ type testCase struct {
 	wantEvents         []string
 	wantTopicCondition apis.Condition
 	wantSubCondition   apis.Condition
-	wantErr            error
 }
 
 // testRunner helps to setup resources such as pubsub client, as well as verify the common test case.
@@ -143,10 +142,6 @@ func newTestRunner(t *testing.T, tc testCase) (*testRunner, func()) {
 }
 
 func (r *testRunner) verify(t *testing.T, tc testCase, su *utilspubsubtesting.StatusUpdater, err error) {
-	if tc.wantErr != err {
-		t.Fatalf("Expect error, got: %v, want: %v", err, tc.wantErr)
-	}
-
 	for _, event := range tc.wantEvents {
 		got := <-r.recorder.Events
 		if got != event {

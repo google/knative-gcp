@@ -26,11 +26,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
-	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/pullsubscription"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1beta1/resource"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
+	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -113,7 +113,7 @@ func newController(
 	impl := pullsubscriptionreconciler.NewImpl(ctx, r)
 
 	pubsubBase.Logger.Info("Setting up event handlers")
-	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duckv1alpha1.AutoscalingClassAnnotation, duckv1alpha1.KEDA, false)
+	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duckv1beta1.AutoscalingClassAnnotation, duckv1beta1.KEDA, false)
 
 	pullSubscriptionHandler := cache.FilteringResourceEventHandler{
 		FilterFunc: onlyKedaScaler,
@@ -127,7 +127,7 @@ func newController(
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Pullsubscription")),
+		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("Pullsubscription")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

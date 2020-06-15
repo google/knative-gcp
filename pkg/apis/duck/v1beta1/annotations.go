@@ -19,6 +19,9 @@ package v1beta1
 import (
 	"context"
 	"fmt"
+	"github.com/google/go-cmp/cmp"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/utils"
 	"math"
 	"strconv"
 
@@ -33,6 +36,8 @@ const (
 	// AutoscalingClassAnnotation is the annotation for the explicit class of
 	// scaler that a particular resource has opted into.
 	AutoscalingClassAnnotation = Autoscaling + "/class"
+	// ClusterNameAnnotation is the annotation for the cluster Name.
+	ClusterNameAnnotation = "cluster-name"
 
 	// AutoscalingMinScaleAnnotation is the annotation to specify the minimum number of pods to scale to.
 	AutoscalingMinScaleAnnotation = Autoscaling + "/minScale"
@@ -144,6 +149,9 @@ func validateAnnotation(annotations map[string]string, annotation string, minimu
 }
 
 func setDefaultAnnotationIfNotPresent(obj *metav1.ObjectMeta, annotation string, defaultValue string) {
+	if obj.Annotations == nil {
+		obj.Annotations = map[string]string{}
+	}
 	if _, ok := obj.Annotations[annotation]; !ok {
 		obj.Annotations[annotation] = defaultValue
 	}
@@ -158,6 +166,31 @@ func deleteAnnotationIfPresent(obj *metav1.ObjectMeta, annotation string) {
 func validateAnnotationNotExists(annotations map[string]string, annotation string, errs *apis.FieldError) *apis.FieldError {
 	if _, ok := annotations[annotation]; ok {
 		errs = errs.Also(apis.ErrDisallowedFields(fmt.Sprintf("metadata.annotations[%s]", annotation)))
+	}
+	return errs
+}
+
+// SetClusterNameAnnotation sets the cluster-name annotation when running on GKE or GCE.
+func SetClusterNameAnnotation(obj *metav1.ObjectMeta, client metadataClient.Client) {
+	if _, ok := obj.Annotations[ClusterNameAnnotation]; !ok && client.OnGCE() {
+		clusterName, err := utils.ClusterName(obj.Annotations[ClusterNameAnnotation], client)
+		// If metadata access is disabled for some reason, leave the annotation to be empty.
+		if err == nil {
+			setDefaultAnnotationIfNotPresent(obj, ClusterNameAnnotation, clusterName)
+		}
+	}
+}
+
+// CheckImmutableClusterNameAnnotation checks non-empty cluster-name annotation is immutable.
+func CheckImmutableClusterNameAnnotation(current *metav1.ObjectMeta, original *metav1.ObjectMeta, errs *apis.FieldError) *apis.FieldError {
+	if _, ok := original.Annotations[ClusterNameAnnotation]; ok {
+		if diff := cmp.Diff(original.Annotations[ClusterNameAnnotation], current.Annotations[ClusterNameAnnotation]); diff != "" {
+			return errs.Also(&apis.FieldError{
+				Message: "Immutable fields changed (-old +new)",
+				Paths:   []string{fmt.Sprintf("metadata.annotations[%s]", ClusterNameAnnotation)},
+				Details: diff,
+			})
+		}
 	}
 	return errs
 }

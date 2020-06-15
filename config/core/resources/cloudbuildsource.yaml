@@ -40,6 +40,12 @@ spec:
   subresources:
     status: {}
   preserveUnknownFields: false
+  conversion:
+    strategy: Webhook
+    webhookClientConfig:
+      service:
+        name: webhook
+        namespace: cloud-run-events
   additionalPrinterColumns:
     - name: Ready
       type: string
@@ -52,6 +58,9 @@ spec:
       JSONPath: .metadata.creationTimestamp
   versions:
     - name: v1alpha1
+      served: true
+      storage: false
+    - name: v1beta1
       served: true
       storage: true
   validation:
@@ -125,11 +134,6 @@ spec:
               description: >
                 Google Cloud Project ID of the project into which the topic should be created. If omitted uses
                 the Project ID from the GKE cluster metadata service.
-            topic:
-              type: string
-              description: >
-                ID of the Cloud Pub/Sub Topic to Subscribe to. It must be `cloud-builds` if
-                specified. Defaults to `cloud-builds`.
         status:
           type: object
           properties:

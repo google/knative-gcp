@@ -62,7 +62,6 @@ var HandlerSet wire.ProviderSet = wire.NewSet(
 	NewMultiTopicDecoupleSink,
 	wire.Bind(new(DecoupleSink), new(*multiTopicDecoupleSink)),
 	NewPubsubClient,
-	NewPubsubDecoupleClient,
 	metrics.NewIngressReporter,
 )
 
@@ -165,6 +164,8 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		statusCode = nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {
 			statusCode = nethttp.StatusNotFound
+		} else if errors.Is(res, ErrNotReady) {
+			statusCode = nethttp.StatusServiceUnavailable
 		}
 		nethttp.Error(response, msg, statusCode)
 		return

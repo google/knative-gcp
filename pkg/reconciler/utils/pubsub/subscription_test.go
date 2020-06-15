@@ -48,14 +48,16 @@ func TestReconcileSub(t *testing.T) {
 			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue,},
 		},
 		{
-			name:    "deleted topic",
-			pre:     []reconcilertesting.PubsubAction{reconcilertesting.TopicAndSub(topic, sub), deleteTopic},
-			wantErr: deletedTopicErr,
-			wantSubCondition: apis.Condition{
-				Status:  corev1.ConditionFalse,
-				Reason:  "DeletedTopic",
-				Message: `Pull subscriptions must be recreated to work with recreated topic`,
+			name: "deleted topic",
+			// First create the topic and sub to simulate a stable state. Then delete the topic to simulate manual topic
+			// deletion, then recreate it to simulate topic reconciliation before sub reconciliation.
+			pre: []reconcilertesting.PubsubAction{reconcilertesting.TopicAndSub(topic, sub), deleteTopic, reconcilertesting.Topic(topic)},
+			wantEvents: []string{
+				`Warning TopicDeleted Unexpected topic deletion detected for subscription: "test-sub"`,
+				`Normal SubscriptionDeleted Deleted PubSub subscription "test-sub"`,
+				`Normal SubscriptionCreated Created PubSub subscription "test-sub"`,
 			},
+			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue},
 		},
 	}
 	for _, tc := range tests {

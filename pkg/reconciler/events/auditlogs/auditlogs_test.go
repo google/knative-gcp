@@ -41,9 +41,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudauditlogssource"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudauditlogssource"
 	testiam "github.com/google/knative-gcp/pkg/gclient/iam/testing"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
 	glogadmintesting "github.com/google/knative-gcp/pkg/gclient/logging/logadmin/testing"
@@ -85,7 +85,7 @@ var (
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
-		Version: "v1alpha1",
+		Version: "v1beta1",
 		Kind:    "Sink",
 	}
 
@@ -107,7 +107,7 @@ var (
 
 func sourceOwnerRef(name string, uid types.UID) metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "events.cloud.google.com/v1alpha1",
+		APIVersion:         "events.cloud.google.com/v1beta1",
 		Kind:               "CloudAuditLogsSource",
 		Name:               name,
 		UID:                uid,
@@ -132,7 +132,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 func newSinkDestination() duckv1.Destination {
 	return duckv1.Destination{
 		Ref: &duckv1.KReference{
-			APIVersion: "testing.cloud.google.com/v1alpha1",
+			APIVersion: "testing.cloud.google.com/v1beta1",
 			Kind:       "Sink",
 			Name:       sinkName,
 		},
@@ -159,7 +159,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				})),
 		},
 		Key: testNS + "/" + sourceName,
@@ -172,12 +172,12 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				})),
 		}},
 		WantCreates: []runtime.Object{
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -188,7 +188,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithTopicOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
 				WithTopicAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 			),
 		},
@@ -208,11 +208,11 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -229,7 +229,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				})),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -249,7 +249,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -286,7 +286,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -324,7 +324,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -362,7 +362,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -397,7 +397,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -431,12 +431,12 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudAuditLogsSourceDefaultGCPAuth(),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -458,7 +458,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudAuditLogsSourceDefaultGCPAuth(),
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
@@ -466,9 +466,9 @@ func TestAllCases(t *testing.T) {
 		}},
 		WantCreates: []runtime.Object{
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 					},
 					AdapterType: converters.CloudAuditLogsConverter,
@@ -480,7 +480,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group":           resourceGroup,
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
 				WithPullSubscriptionDefaultGCPAuth(),
@@ -503,7 +503,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -513,9 +513,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicProjectID(testProject),
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -554,7 +554,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -564,9 +564,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicProjectID(testProject),
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS, WithPullSubscriptionFailed(),
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -585,7 +585,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
-				WithCloudAuditLogsSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
+				WithCloudAuditLogsSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1beta1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -605,7 +605,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -615,9 +615,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicProjectID(testProject),
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS, WithPullSubscriptionUnknown(),
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -656,7 +656,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -667,9 +667,9 @@ func TestAllCases(t *testing.T) {
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -716,7 +716,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -727,9 +727,9 @@ func TestAllCases(t *testing.T) {
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -776,7 +776,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -787,9 +787,9 @@ func TestAllCases(t *testing.T) {
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -836,7 +836,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -847,9 +847,9 @@ func TestAllCases(t *testing.T) {
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -897,7 +897,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName)),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -908,9 +908,9 @@ func TestAllCases(t *testing.T) {
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -968,7 +968,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName)),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -979,9 +979,9 @@ func TestAllCases(t *testing.T) {
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -1039,7 +1039,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName)),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -1050,9 +1050,9 @@ func TestAllCases(t *testing.T) {
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -1105,7 +1105,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
-				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
@@ -1116,9 +1116,9 @@ func TestAllCases(t *testing.T) {
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1alpha1.PubSubSpec{
+					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -1263,11 +1263,11 @@ func TestAllCases(t *testing.T) {
 		}},
 		WantDeletes: []clientgotesting.DeleteActionImpl{
 			{ActionImpl: clientgotesting.ActionImpl{
-				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "topics"}},
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1beta1", Resource: "topics"}},
 				Name: sourceName,
 			},
 			{ActionImpl: clientgotesting.ActionImpl{
-				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1beta1", Resource: "pullsubscriptions"}},
 				Name: sourceName,
 			},
 		},
@@ -1318,11 +1318,11 @@ func TestAllCases(t *testing.T) {
 		}},
 		WantDeletes: []clientgotesting.DeleteActionImpl{
 			{ActionImpl: clientgotesting.ActionImpl{
-				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "topics"}},
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1beta1", Resource: "topics"}},
 				Name: sourceName,
 			},
 			{ActionImpl: clientgotesting.ActionImpl{
-				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1beta1", Resource: "pullsubscriptions"}},
 				Name: sourceName,
 			},
 		},

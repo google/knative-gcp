@@ -45,19 +45,19 @@ Workload Identity see
     Service Account. The scope of this role is only for this specific Google
     Cloud Service Account. It is equivalent to this command:
 
-        ```shell
-        gcloud iam service-accounts add-iam-policy-binding \
-        --role roles/iam.workloadIdentityUser \
-        --member serviceAccount:$PROJECT_ID.svc.id.goog[cloud-run-events/broker] \
-        cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
-        ```
+    ```shell
+    gcloud iam service-accounts add-iam-policy-binding \
+     --role roles/iam.workloadIdentityUser \
+     --member serviceAccount:$PROJECT_ID.svc.id.goog[cloud-run-events/broker] \
+     cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+    ```
 
 1.  Annotate the `broker` Kubernetes Service Account with
     `iam.gke.io/gcp-service-account=cre-pubsub@PROJECT_ID.iam.gserviceaccount.com`
 
-        ```shell
-        kubectl --namespace cloud-run-events  annotate serviceaccount broker iam.gke.io/gcp-service-account=cre-pubsub@${PROJECT_ID}.iam.gserviceaccount.com
-        ```
+    ```shell
+    kubectl --namespace cloud-run-events  annotate serviceaccount broker iam.gke.io/gcp-service-account=cre-pubsub@${PROJECT_ID}.iam.gserviceaccount.com
+    ```
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 
