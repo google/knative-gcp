@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/api/apps/v1"
 	"strings"
 	"testing"
 
@@ -548,7 +549,7 @@ func TestAllCases(t *testing.T) {
 				// Updates
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed,
+				WithPullSubscriptionMarkNoDeployed(deploymentName(), testNS),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -612,7 +613,7 @@ func TestAllCases(t *testing.T) {
 				// Updates
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed,
+				WithPullSubscriptionMarkNoDeployed(deploymentName(), testNS),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -678,7 +679,7 @@ func TestAllCases(t *testing.T) {
 				// Updates
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed,
+				WithPullSubscriptionMarkNoDeployed(deploymentName(), testNS),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -701,7 +702,7 @@ func TestAllCases(t *testing.T) {
 			),
 			newSink(),
 			newSecret(),
-			newReceiveAdapter(context.Background(), testImage, nil),
+			newAvailableReceiveAdapter(context.Background(), testImage, nil),
 		},
 		OtherTestData: map[string]interface{}{
 			"ps": gpubsub.TestClientData{
@@ -733,7 +734,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed,
+				WithPullSubscriptionMarkDeployed(deploymentName(), testNS),
 				WithPullSubscriptionMarkSink(sinkURI),
 				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
 				WithPullSubscriptionTransformerURI(nil),
@@ -801,7 +802,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionTransformer(transformerGVK, transformerName),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed,
+				WithPullSubscriptionMarkNoDeployed(deploymentName(), testNS),
 				WithPullSubscriptionMarkSink(sinkURI),
 				WithPullSubscriptionMarkTransformer(transformerURI),
 				WithPullSubscriptionStatusObservedGeneration(generation),
@@ -822,7 +823,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed,
+				WithPullSubscriptionMarkDeployed(deploymentName(), testNS),
 				WithPullSubscriptionMarkSink(sinkURI),
 				WithPullSubscriptionDeleted,
 			),
@@ -860,7 +861,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed,
+				WithPullSubscriptionMarkDeployed(deploymentName(), testNS),
 				WithPullSubscriptionMarkSink(sinkURI),
 				WithPullSubscriptionDeleted,
 			),
@@ -903,16 +904,13 @@ func TestAllCases(t *testing.T) {
 	}))
 }
 
+func deploymentName() string {
+	ps := newPullSubscription()
+	return resources.GenerateReceiveAdapterName(ps)
+}
+
 func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL) runtime.Object {
-	ps := NewPullSubscription(sourceName, testNS,
-		WithPullSubscriptionUID(sourceUID),
-		WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-			PubSubSpec: duckv1beta1.PubSubSpec{
-				Secret:  &secret,
-				Project: testProject,
-			},
-			Topic: testTopicID,
-		}))
+	ps := newPullSubscription()
 	args := &resources.ReceiveAdapterArgs{
 		Image:            image,
 		PullSubscription: ps,
@@ -921,7 +919,27 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 		SinkURI:          sinkURI,
 		TransformerURI:   transformer,
 	}
-	return resources.MakeReceiveAdapter(ctx, args)
+	ra := resources.MakeReceiveAdapter(ctx, args)
+	return ra
+}
+
+func newAvailableReceiveAdapter(ctx context.Context, image string, transformer *apis.URL) runtime.Object {
+	obj := newReceiveAdapter(ctx, image, transformer)
+	ra := obj.(*v1.Deployment)
+	WithDeploymentAvailable()(ra)
+	return obj
+}
+
+func newPullSubscription() *pubsubv1beta1.PullSubscription {
+	return NewPullSubscription(sourceName, testNS,
+		WithPullSubscriptionUID(sourceUID),
+		WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+			PubSubSpec: duckv1beta1.PubSubSpec{
+				Secret:  &secret,
+				Project: testProject,
+			},
+			Topic: testTopicID,
+		}))
 }
 
 func receiveAdapterGVR() schema.GroupVersionResource {

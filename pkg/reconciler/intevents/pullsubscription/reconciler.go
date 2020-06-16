@@ -147,10 +147,8 @@ func (r *Base) ReconcileKind(ctx context.Context, ps *v1beta1.PullSubscription) 
 
 	err = r.reconcileDataPlaneResources(ctx, ps, r.ReconcileDataPlaneFn)
 	if err != nil {
-		ps.Status.MarkNotDeployed(reconciledDataPlaneFailedReason, "Failed to reconcile Data Plane resource(s): %s", err.Error())
 		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledDataPlaneFailedReason, "Failed to reconcile Data Plane resource(s): %s", err.Error())
 	}
-	ps.Status.MarkDeployed()
 
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `PullSubscription reconciled: "%s/%s"`, ps.Namespace, ps.Name)
 }
