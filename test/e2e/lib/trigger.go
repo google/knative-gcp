@@ -3,7 +3,6 @@ package lib
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -21,6 +20,7 @@ type TriggerMetricAssertion struct {
 	BrokerName      string
 	StartTime       time.Time
 	CountPerTrigger map[string]int64
+	ResponseCode    int
 }
 
 func (a TriggerMetricAssertion) Assert(client *monitoring.MetricClient) error {
@@ -36,7 +36,7 @@ func (a TriggerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 	return nil
 }
 
-func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, metric string, accF func(map[string]int64, *monitoringpb.TimeSeries) error) error {
+func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, metric string, accF func(map[string]int64, *monitoringpb.TimeSeries, int) error) error {
 	ctx := context.Background()
 	start, err := ptypes.TimestampProto(a.StartTime)
 	if err != nil {
@@ -61,45 +61,47 @@ func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, me
 		if err != nil {
 			return err
 		}
-		if err := accF(gotCount, ts); err != nil {
+		if err := accF(gotCount, ts, a.ResponseCode); err != nil {
 			return err
 		}
 	}
 	if diff := cmp.Diff(a.CountPerTrigger, gotCount); diff != "" {
-		return fmt.Errorf("unexpected metric %q count (-want, +got) = %v", metric, diff)
+		return fmt.Errorf("unexpected metric %q (resp code = %v) count (-want, +got) = %v", metric, a.ResponseCode, diff)
 	}
 	return nil
 }
 
-func accumEventCount(accum map[string]int64, ts *monitoringpb.TimeSeries) error {
+func accumEventCount(accum map[string]int64, ts *monitoringpb.TimeSeries, respCode int) error {
 	triggerName := ts.GetResource().GetLabels()["trigger_name"]
 	labels := ts.GetMetric().GetLabels()
 	code, err := strconv.Atoi(labels["response_code"])
 	if err != nil {
 		return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
 	}
-	if code != http.StatusAccepted && code != http.StatusOK {
-		return fmt.Errorf("metric has unexpected response code: %v", ts.GetMetric())
+	if code != respCode {
+		// Matching response code.
+		return nil
 	}
 	accum[triggerName] = accum[triggerName] + metrics.SumCumulative(ts)
 	return nil
 }
 
-func accumDispatchLatency(accum map[string]int64, ts *monitoringpb.TimeSeries) error {
+func accumDispatchLatency(accum map[string]int64, ts *monitoringpb.TimeSeries, respCode int) error {
 	triggerName := ts.GetResource().GetLabels()["trigger_name"]
 	labels := ts.GetMetric().GetLabels()
 	code, err := strconv.Atoi(labels["response_code"])
 	if err != nil {
 		return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
 	}
-	if code != http.StatusAccepted && code != http.StatusOK {
-		return fmt.Errorf("metric has unexpected response code: %v", ts.GetMetric())
+	if code != respCode {
+		// Matching response code.
+		return nil
 	}
 	accum[triggerName] = accum[triggerName] + metrics.SumDistCount(ts)
 	return nil
 }
 
-func accumProcessingLatency(accum map[string]int64, ts *monitoringpb.TimeSeries) error {
+func accumProcessingLatency(accum map[string]int64, ts *monitoringpb.TimeSeries, respCode int) error {
 	triggerName := ts.GetResource().GetLabels()["trigger_name"]
 	accum[triggerName] = accum[triggerName] + metrics.SumDistCount(ts)
 	return nil
