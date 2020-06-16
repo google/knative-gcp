@@ -18,7 +18,6 @@ package static
 
 import (
 	"context"
-
 	"go.uber.org/zap"
 
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
@@ -49,12 +48,14 @@ func (r *Reconciler) ReconcileDeployment(ctx context.Context, ra *appsv1.Deploym
 	}
 	if !equality.Semantic.DeepEqual(ra.Spec, existing.Spec) {
 		existing.Spec = ra.Spec
-		_, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
+		existing, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Error updating Receive Adapter", zap.Error(err))
 			return err
 		}
 	}
+
+	src.Status.PropagateDeploymentAvailability(existing)
 	return nil
 }
 

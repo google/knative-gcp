@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
+	"knative.dev/eventing/pkg/apis/duck"
 	"knative.dev/pkg/apis"
 )
 
@@ -70,16 +72,6 @@ func (s *PullSubscriptionStatus) MarkNoTransformer(reason, messageFormat string,
 	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionTransformerProvided, reason, messageFormat, messageA...)
 }
 
-// MarkDeployed sets the condition that the source has been deployed.
-func (s *PullSubscriptionStatus) MarkDeployed() {
-	pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionDeployed)
-}
-
-// MarkNotDeployed sets the condition that the source has not been deployed.
-func (s *PullSubscriptionStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{}) {
-	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionDeployed, reason, messageFormat, messageA...)
-}
-
 // MarkSubscribed sets the condition that the subscription has been created.
 func (s *PullSubscriptionStatus) MarkSubscribed(subscriptionID string) {
 	s.SubscriptionID = subscriptionID
@@ -89,4 +81,16 @@ func (s *PullSubscriptionStatus) MarkSubscribed(subscriptionID string) {
 // MarkNoSubscription sets the condition that the subscription does not exist.
 func (s *PullSubscriptionStatus) MarkNoSubscription(reason, messageFormat string, messageA ...interface{}) {
 	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionSubscribed, reason, messageFormat, messageA...)
+}
+
+// PropagateDeploymentAvailability uses the availability of the provided Deployment to determine if
+// PullSubscriptionConditionDeployed should be marked as true or false.
+func (s *PullSubscriptionStatus) PropagateDeploymentAvailability(d *appsv1.Deployment) {
+	if duck.DeploymentIsAvailable(&d.Status, false) {
+		pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionDeployed)
+	} else {
+		// I don't know how to propagate the status well, so just give the name of the Deployment
+		// for now.
+		pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionDeployed, "DeploymentUnavailable", "The Deployment '%s' is unavailable.", d.Name)
+	}
 }
