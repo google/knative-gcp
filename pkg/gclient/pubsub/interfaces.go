@@ -66,4 +66,6 @@ type Topic interface {
 	IAM() iam.Handle
 	// ID see https://godoc.org/cloud.google.com/go/pubsub#Topic.ID
 	ID() string
+	// String see https://godoc.org/cloud.google.com/go/pubsub#Topic.String
+	String() string
 }

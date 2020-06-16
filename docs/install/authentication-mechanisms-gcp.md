@@ -1,4 +1,6 @@
-# Manually Configure Authentication Mechanism for GCP
+# Configure Authentication Mechanism for GCP
+
+## Authentication Mechanism for the Control Plane
 
 For both methods (Workload Identity and Kubernetes Secret), the first manual
 step is creating a
@@ -41,7 +43,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 --role roles/owner
 ```
 
-## Option 1 (Recommended): Workload Identity
+### Option 1 (Recommended): Workload Identity
 
 1. Enable Workload Identity.
 
@@ -112,7 +114,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
    can replace `ksa-namespace` with `cloud-run-events`, `ksa-name` with
    `controller`, and `gsa-name` with `cloud-run-events`
 
-## Option 2: Kubernetes Secrets
+### Option 2: Kubernetes Secrets
 
 1. Download a new JSON private key for that Service Account. **Be sure not to
    check this key into source control!**
@@ -131,3 +133,12 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
    Note that `google-cloud-key` and `key.json` are default values expected by
    our control plane.
+
+## Authentication Mechanism for the Data Plane
+
+Please check
+[Installing Pub/Sub Enabled Service Account](../install/pubsub-service-account.md).
+
+## Troubleshooting
+
+(TODO)

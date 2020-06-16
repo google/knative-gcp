@@ -103,7 +103,7 @@ func CheckAssertions(t *testing.T, assertions ...Assertion) {
 		t.Error(err)
 		return
 	}
-	timeout := time.After(5 * time.Minute)
+	timeout := time.After(8 * time.Minute)
 	for {
 		errors := make([]error, 0, len(assertions))
 		for _, assertion := range assertions {
@@ -121,7 +121,8 @@ func CheckAssertions(t *testing.T, assertions ...Assertion) {
 				t.Error(err)
 			}
 			return
-		case <-time.After(5 * time.Second):
+		default:
+			time.Sleep(5 * time.Second)
 		}
 	}
 }

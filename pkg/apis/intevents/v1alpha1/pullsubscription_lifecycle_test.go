@@ -19,11 +19,40 @@ package v1alpha1
 import (
 	"testing"
 
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
+)
+
+var (
+	availableDeployment = &appsv1.Deployment{
+		Status: appsv1.DeploymentStatus{
+			Conditions: []appsv1.DeploymentCondition{
+				{
+					Type:   appsv1.DeploymentAvailable,
+					Status: corev1.ConditionTrue,
+				},
+			},
+		},
+	}
+
+	unavailableDeployment = &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-deployment",
+		},
+		Status: appsv1.DeploymentStatus{
+			Conditions: []appsv1.DeploymentCondition{
+				{
+					Type:   appsv1.DeploymentAvailable,
+					Status: corev1.ConditionFalse,
+				},
+			},
+		},
+	}
 )
 
 func TestPubSubStatusIsReady(t *testing.T) {
@@ -50,7 +79,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			return s
 		}(),
 		wantConditionStatus: corev1.ConditionUnknown,
@@ -81,7 +110,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("example"))
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			return s
 		}(),
 		wantConditionStatus: corev1.ConditionUnknown,
@@ -92,7 +121,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("example"))
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			s.MarkSubscribed("subID")
 			return s
 		}(),
@@ -104,7 +133,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("example"))
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			s.MarkSubscribed("subID")
 			s.MarkNoSink("Testing", "")
 			return s
@@ -117,9 +146,9 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("example"))
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			s.MarkSubscribed("subID")
-			s.MarkNotDeployed("Testing", "")
+			s.PropagateDeploymentAvailability(unavailableDeployment)
 			return s
 		}(),
 		wantConditionStatus: corev1.ConditionFalse,
@@ -131,8 +160,8 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("example"))
 			s.MarkSubscribed("subID")
-			s.MarkNotDeployed("MarkNotDeployed", "")
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(unavailableDeployment)
+			s.PropagateDeploymentAvailability(availableDeployment)
 			return s
 		}(),
 		wantConditionStatus: corev1.ConditionTrue,
@@ -143,7 +172,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(nil)
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			s.MarkSubscribed("subID")
 			return s
 		}(),
@@ -155,7 +184,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(nil)
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			s.MarkSubscribed("subID")
 			s.MarkSink(apis.HTTP("example"))
 			return s
@@ -168,7 +197,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(&apis.URL{})
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			s.MarkSubscribed("subID")
 			s.MarkSink(apis.HTTP("example"))
 			return s
@@ -221,7 +250,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
@@ -319,7 +348,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("example"))
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
@@ -333,7 +362,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("example"))
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			s.MarkSubscribed("subID")
 			return s
 		}(),
@@ -348,7 +377,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("example"))
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			s.MarkSubscribed("subID")
 			s.MarkNoSink("Testing", "hi")
 			return s
@@ -366,17 +395,17 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("example"))
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			s.MarkSubscribed("subID")
-			s.MarkNotDeployed("Testing", "hi")
+			s.PropagateDeploymentAvailability(unavailableDeployment)
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
 		want: &apis.Condition{
 			Type:    PullSubscriptionConditionReady,
 			Status:  corev1.ConditionFalse,
-			Reason:  "Testing",
-			Message: "hi",
+			Reason:  "DeploymentUnavailable",
+			Message: "The Deployment 'test-deployment' is unavailable.",
 		},
 	}, {
 		name: "mark sink nil and deployed and subscribed",
@@ -384,7 +413,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(nil)
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			s.MarkSubscribed("subID")
 			return s
 		}(),
@@ -401,7 +430,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
 			s.MarkSink(nil)
-			s.MarkDeployed()
+			s.PropagateDeploymentAvailability(availableDeployment)
 			s.MarkSubscribed("subID")
 			s.MarkSink(apis.HTTP("example"))
 			return s
