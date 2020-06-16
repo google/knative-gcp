@@ -140,16 +140,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 Please check
 [Installing Pub/Sub Enabled Service Account](../install/pubsub-service-account.md).
-
-## Troubleshooting
-
-(TODO)
-
    
-## Authentication Mechanism for the Data Plane
- 
-Please check [Installing Pub/Sub Enabled Service Account](../install/pubsub-service-account.md).
- 
 ## Troubleshooting
 
 ### Workload Identity
