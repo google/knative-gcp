@@ -36,9 +36,7 @@ import (
 )
 
 const (
-	targetsCMName = "broker-targets"
-	targetsCMKey  = "targets"
-	configFailed  = "BrokerTargetsCofigFailed"
+	configFailed  = "BrokerTargetsConfigFailed"
 )
 
 func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.BrokerCell) error {
@@ -133,11 +131,11 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context, bc *intv1alpha1.Br
 		return fmt.Errorf("error creating targets config: %w", err)
 	}
 
-	r.Logger.Debug("Current targets config", zap.Any("targetsConfig", brokerTargets.String()))
+	logging.FromContext(ctx).Debug("Current targets config", zap.Any("targetsConfig", brokerTargets.String()))
 
 	handlerFuncs := cache.ResourceEventHandlerFuncs{
-		AddFunc:    func(obj interface{}) { r.refreshPodVolume(bc) },
-		UpdateFunc: func(oldObj, newObj interface{}) { r.refreshPodVolume(bc) },
+		AddFunc:    func(obj interface{}) { r.refreshPodVolume(ctx, bc) },
+		UpdateFunc: func(oldObj, newObj interface{}) { r.refreshPodVolume(ctx, bc) },
 		DeleteFunc: nil,
 	}
 
@@ -145,11 +143,11 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context, bc *intv1alpha1.Br
 	return err
 }
 
-func (r *Reconciler) refreshPodVolume(bc *intv1alpha1.BrokerCell) {
+func (r *Reconciler) refreshPodVolume(ctx context.Context, bc *intv1alpha1.BrokerCell) {
 	if err := volume.UpdateVolumeGeneration(r.KubeClientSet, r.podLister, bc.Namespace, resources.CommonLabels(bc.Name)); err != nil {
 		// Failing to update the annotation on the data plane pods means there
 		// may be a longer propagation delay for the configmap volume to be
 		// refreshed. But this is not treated as an error.
-		r.Logger.Warnf("Error reconciling data plane deployments: %v", err)
+		logging.FromContext(ctx).Warn("Error updating annotation for data plane pods", zap.Error(err))
 	}
 }
