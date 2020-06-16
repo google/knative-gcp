@@ -135,6 +135,16 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
    Note that `google-cloud-key` and `key.json` are default values expected by
    our control plane.
+
+## Authentication Mechanism for the Data Plane
+
+Please check
+[Installing Pub/Sub Enabled Service Account](../install/pubsub-service-account.md).
+
+## Troubleshooting
+
+(TODO)
+
    
 ## Authentication Mechanism for the Data Plane
  
