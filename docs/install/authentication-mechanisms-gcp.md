@@ -398,14 +398,14 @@ kubectl get secret -n namespace
 1. ***Resources are not READY, due to WorkloadIdentityReconcileFailed***
    
    This error only exists when you use default scenario for Workload Identity. 
-   You can find detail failure reason by:
+   You can find detailed failure message by:
    ```shell
    kubectl describe resource-name resource-instance-name -n resource-instance-namespace
    ```
    ***To solve this issue***, you can:
    * Make sure the `workloadIdentityMapping` under `default-auth-config` in `ConfigMap` `config-gcp-auth` is correct 
      (a correct Kubernetes Service Account paired with a correct Google Cloud Service Account).
-   * If the reason related on permission like this:
+   * If the `Condition` `Ready` has permission related error message like this:
      ```shell
      type: Ready
      status: "False"
@@ -415,9 +415,9 @@ kubectl get secret -n namespace
      ```
      it is most likely that you didn't grant `iam.serviceAccountAdmin` permission of the Google Cloud Service Account to 
      the Control Plane's Google Cloud Service Account `cloud-run-events`, refer 
-     [Default scenario](../install/pubsub-service-account.md) to grant permission.
+     [default scenario](../install/pubsub-service-account.md/#option-1-use-workload-identity) to grant permission.
         
-   * If the reason related on concurrency like this:
+   * If the  `Condition` `Ready` has concurrency related error message  like this:
      ```shell
      type: Ready
      status: "False"
@@ -426,6 +426,6 @@ kubectl get secret -n namespace
      reason: WorkloadIdentityFailed
      ```
      the controller will retry it in the next reconciliation loop 
-     (the maximum retry period is 5 min). You can also use [Non-default scenario](../install/pubsub-service-account.md) 
+     (the maximum retry period is 5 min). You can also use [non-default scenario](../install/pubsub-service-account.md/#option-1-use-workload-identity) 
      if this error least for a long time.
    
