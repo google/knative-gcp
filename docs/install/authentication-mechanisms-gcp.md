@@ -1,6 +1,9 @@
 # Configure Authentication Mechanism for GCP
 
 ## Authentication Mechanism for the Control Plane
+This is the manual auth configuration for the Control Plane. 
+Refer [installation guide](./install-knative-gcp.md) for automated scripts.
+
 For both methods (Workload Identity and Kubernetes Secret), the first manual
 step is creating a
 [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
@@ -186,10 +189,10 @@ kubectl get secret -n namespace
 
 ### Common Issues
 
-* ***Resources are not READY***
+1. ***Resources are not READY***
 
-   If a resource instance is not READY due to authentication configuration problem, 
-   you are likely to get `PermissionDenied` error for `User not authorized to perform this action`
+   If a resource instance is not READY due to an authentication configuration problem, 
+   you are likely to get permission related error for `User not authorized to perform this action`
    (for Workload Identity, the error might look like `IAM returned 403 Forbidden: The caller does not have permission`).
    
    This error indicates that the Control Plane may not configure authentication properly. 
@@ -198,14 +201,64 @@ kubectl get secret -n namespace
    ```shell
    kubectl describe resource-name resource-instance-name -n resource-instance-namespace
    ```
+    
+   ---
+   Here is a detailed example checking a CloudAuditlogsSource `test` in namespace `default`:
+     
+   After running the following command, you will find a couple of `Condition`s 
+   under this CloudAuditLogsSource's `Status`.
    
-   Here is an example checking a CloudAuditlogsSource `test` in namespace `default`:
-      
    ```shell
    kubectl describe cloudauditlogssource test -n default
    ```
    
-   To solve this issue, you can:
+   * If this CloudAuditLogsSource failed due to a missing Kubernetes Secret (for Kubernetes Secret authentication configuration), 
+     or a missing Kubernetes Service Account annotation (for Workload Identity authentication configuration), 
+     the `Condition` `Ready` would look like:
+     
+     ```shell
+     Type:     Ready
+     Status:   False
+     Message:  Failed to reconcile Pub/Sub topic: rpc error: code = PermissionDenied desc = User not authorized to perform this action.
+     Reason:   TopicReconcileFailed
+     ```
+       
+   * If this CloudAuditLogsSource failed due to the JSON private key stored in  Kubernetes Secret having been revoked
+     (for Kubernetes Secret authentication configuration), the `Condition` `Ready` would look like:
+     
+     ```shell
+     Type:     Ready
+     Status:   False
+     Message:  Failed to reconcile Pub/Sub topic: rpc error: code = Unauthenticated desc = transport: oauth2: cannot fetch token: 400 Bad Request
+               Response: {"error":"invalid_grant","error_description":"Invalid JWT Signature."}
+     Reason:   TopicReconcileFailed
+     ```         
+     
+   * If this CloudAuditLogsSource failed due to the GSA has insufficient permissions
+     (for either Kubernetes Secret authentication configuration or Workload Identity authentication configuration), 
+     the `Condition` `Ready` would look like:
+     
+     ```shell
+     Type:     Ready
+     Status:   False
+     Message:  Failed to ensure creation of logging sink: rpc error: code = PermissionDenied desc = The caller does not have permission
+     Reason:   SinkCreateFailed
+     ```          
+   
+   * If this CloudAuditLogsSource failed due to the `iam-policy-binding` being setup incorrectly (for Workload Identity authentication configuration), 
+     the `Condition` `Ready` would look like:
+     
+     ```shell
+     Type:     Ready
+     Status:   False
+     Message:  Failed to reconcile Pub/Sub topic: rpc error: code = Unauthenticated desc = transport: compute: Received 403 `
+               unable to generate token; IAM returned 403 Forbidden: The caller does not have permission
+               his error could be caused by a missing IAM policy binding on the target IAM service account.
+     Reason:   TopicReconcileFailed
+     ```
+       
+     ---
+   ***To solve this issue***, you can:
    - Check the Google Cloud Service Account `cloud-run-events` for the Control Plane has all required permissions.
    - Check authentication configuration is correct for the Control Plane. 
      - If you are using Workload Identity for the Control Plane, 
@@ -216,13 +269,13 @@ kubectl get secret -n namespace
      refer [here](./authentication-mechanisms-gcp.md/#kubernetes-secrets) to check the 
      Kubernetes Secret `google-cloud-key` in namespace `cloud-run-events`.
      
-   ***Note:*** For Kubernetes Secret, it is also possible that the JSON private key is no longer existing under your Google Cloud Service Account 
+   ***Note:*** For Kubernetes Secret, if the JSON private key is no longer existing under your Google Cloud Service Account 
    `cloud-run-events`. Then, even the Google Cloud Service Account `cloud-run-events` has all required permissions, and 
-   the corresponding Kubernetes Secret `google-cloud-key ` is in namespace `cloud-run-events`, you still get `PermissionDenied` error. 
+   the corresponding Kubernetes Secret `google-cloud-key ` is in namespace `cloud-run-events`, you still get permission related error. 
    To such case, you have to re-download the JSON private key and re-create the Kubernetes Secret, refer 
    [here](./authentication-mechanisms-gcp.md/#option-2-kubernetes-secrets) for instructions.
      
-* ***Resources are READY, but can't receive Events***
+1. ***Resources are READY, but can't receive Events***
 
    Sometimes, a resource instance is READY, but it can't receive Events. It might be an authentication configuration problem, 
    if the underlying `Deployment` doesn't have minimum availability.
@@ -239,12 +292,93 @@ kubectl get secret -n namespace
    ```shell
    kubectl get deployment -n resource-instance-namespace
    ```
-   Here is an example checking a CloudAuditlogsSource `test` in namespace `default`:
+    
+   ---  
+   Here is a detailed example checking a CloudAuditlogsSource `test`'s underlying `Deployment` in namespace `default`:
      
+   After running the following command, you will find a `Deployment` named as 
+   `cre-src-cloudauditlogssource-te(UID)`.
+        
    ```shell
-   kubectl describe cloudauditlogssource test -n default
+   kubectl get deployment test -n default
    ```
       
+   * If this `Deployment` doesn't have minimum availability due to a missing Kubernetes Secret
+     (for Kubernetes Secret authentication configuration), the `Pod` which belongs to this `Deployment` 
+     (`Pod`'s name will have the same prefix `cre-src-cloudauditlogssource-` as the `Deployment`'s name) will block at `ContainerCreating` status. 
+     Using `kubectl describe pod pod-name -n namespace`, you can find a Warning Event like this:
+     
+     ```shell
+     Warning  FailedMount  27s (x2 over 2m40s)   kubelet, gke-knative-1-default-pool-73d30583-c1hv  
+     Unable to mount volumes for pod "cre-src-cloudauditlogssource-tef1a55bfca8e1d5620e0c4199495mwk6k_default(f35883bd-ee66-4497-94fa-05196a6043fe)": 
+     timeout expired waiting for volumes to attach or mount for pod "default"/"cre-src-cloudauditlogssource-tef1a55bfca8e1d5620e0c4199495mwk6k". 
+     list of unmounted volumes=[google-cloud-key]. list of unattached volumes=[google-cloud-key default-token-dd9cd]
+     ```
+       
+   * If this `Deployment` doesn't have minimum availability due to the JSON private key stored in the Kubernetes Secret having been revoked
+     (for Kubernetes Secret authentication configuration), the `Pod` which belongs to this `Deployment` 
+     (`Pod`'s name will have the same prefix `cre-src-cloudauditlogssource-` as the `Deployment`'s name) will block at `Error` status. 
+     Using `kubectl log pod-name -n namespace`, you can find a Log containing information like this:                                                        
+     
+     ```shell
+     "msg":"failed to start adapter: ",
+     "commit":"9e8388f",
+     "error":"unable to create sunscription \"cre-src_default_cloudauditlogssource-test_a2ca50b7-c951-4682-b8f0-e902a449dbb1\", 
+     rpc error: code = Unauthenticated desc = transport: oauth2: cannot fetch token: 400 Bad Request\nResponse: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid JWT Signature.\"}"
+     ```
+   
+   * If this `Deployment` doesn't have minimum availability due to the GSA has insufficient permissions
+     (for either Kubernetes Secret authentication configuration or Workload Identity authentication configuration), 
+     the `Pod` which belongs to this `Deployment` 
+     (`Pod`'s name will have the same prefix `cre-src-cloudauditlogssource-` as the `Deployment`'s name) will block at `Error` status. 
+     Using `kubectl log pod-name -n namespace`, you can find a Log containing information like this:
+     
+     ```shell
+     "msg":"failed to start adapter: ",
+     "commit":"9e8388f",
+     "error":"unable to create sunscription \"cre-src_default_cloudauditlogssource-test_663a7f95-8b82-46aa-85b8-8fee4e65b26f\", 
+     rpc error: code = PermissionDenied desc = User not authorized to perform this action.
+     ```
+     
+   * If this `Deployment` doesn't have minimum availability due to a missing Kubernetes Service Account
+     (for Workload Identity authentication configuration), the `Deployment` can't create any `Pod`. 
+     Using `kubectl describe deployment-name -n namespace`, you can find a `Condition` `ReplicaFailure` under `Status` like this:
+     
+     ```shell
+     type: ReplicaFailure
+     status: "True"
+     reason: FailedCreate
+     message: 'pods "cre-src-cloudauditlogssource-tebc146e4349a11efaf078c20f8ab65089-6b6b57997d-"
+       is forbidden: error looking up service account default/test1: serviceaccount
+       "test1" not found'
+     ```      
+           
+   * If this `Deployment` doesn't have minimum availability due to a missing Kubernetes Service Account annotation
+     (for Workload Identity authentication configuration), the `Pod` which belongs to this `Deployment` 
+     (`Pod`'s name will have the same prefix `cre-src-cloudauditlogssource-` as the `Deployment`'s name) will block at `Error` status. 
+     Using `kubectl log pod-name -n namespace`, you can find a Log containing information like this:
+     
+     ```shell
+     "msg":"failed to start adapter: ",
+     "commit":"9e8388f",
+     "error":"unable to create sunscription \"cre-src_default_cloudauditlogssource-test_663a7f95-8b82-46aa-85b8-8fee4e65b26f\", 
+     rpc error: code = PermissionDenied desc = User not authorized to perform this action.
+     ```      
+           
+   * If this `Deployment` doesn't have minimum availability due to the `iam-policy-binding` being setup incorrectly
+     (for Workload Identity authentication configuration), the `Pod` which belongs to this `Deployment` 
+     (`Pod`'s name will have the same prefix `cre-src-cloudauditlogssource-` as the `Deployment`'s name) will block at `Error` status. 
+     Using `kubectl log pod-name -n namespace`, you can find a Log containing information like this:
+     
+     ```shell
+     "msg":"failed to start adapter: ",
+     "commit":"9e8388f",
+     "error":"unable to create sunscription \"cre-src_default_cloudauditlogssource-test_4daeacfe-6155-4f69-8d52-64745fa0591d\", 
+     rpc error: code = Unauthenticated desc = transport: compute: Received 403 `\nUnable to generate token; IAM returned 403 Forbidden: 
+     The caller does not have permission\n\nThis error could be caused by a missing IAM policy binding on the target IAM service account.
+     ```      
+      
+     ---  
    ***To solve this issue***, you can:
    - Check the Google Cloud Service Account `cre-pubsub` for the Data Plane has all required permissions.
    - Check authentication configuration is correct for this resource instance. 
@@ -260,16 +394,37 @@ kubectl get secret -n namespace
    for credential sync delay (~1 min) in resources' underlying components. You'll probably encounter this issue, 
    if you immediately send Events after you finish Workload Identity setup for a resource instance.
    
-* ***Resources are not READY, due to WorkloadIdentityReconcileFailed***
+1. ***Resources are not READY, due to WorkloadIdentityReconcileFailed***
    
    This error only exists when you use default scenario for Workload Identity. 
    You can find detail failure reason by:
    ```shell
    kubectl describe resource-name resource-instance-name -n resource-instance-namespace
    ```
-   If the reason related on permission denied, refer to [Common Issues](./authentication-mechanisms-gcp.md/#common-issues) ***Resources are not READY*** for solution.
-   
-   If the reason related on concurrency issue, the controller will retry it in the next reconciliation loop 
-   (the maximum retry period is 5 min). You can also use [non-default scenario](../install/pubsub-service-account.md) 
-   if this error least for a long time.
+   ***To solve this issue***, you can:
+   * Make sure the `workloadIdentityMapping` under `default-auth-config` in `ConfigMap` `config-gcp-auth` is correct 
+     (a correct Kubernetes Service Account paired with a correct Google Cloud Service Account).
+   * If the reason related on permission like this:
+     ```shell
+     type: Ready
+     status: "False"
+     message: 'rpc error: code = PermissionDenied desc = Permission iam.serviceAccounts.setIamPolicy
+       is required to perform this operation on service account projects/-/serviceAccounts/cre-pubsub@PROJECT_ID.iam.gserviceaccount.com.'
+     reason: WorkloadIdentityFailed
+     ```
+     it is most likely that you didn't grant `iam.serviceAccountAdmin` permission of the Google Cloud Service Account to 
+     the Control Plane's Google Cloud Service Account `cloud-run-events`, refer 
+     [Default scenario](../install/pubsub-service-account.md) to grant permission.
+        
+   * If the reason related on concurrency like this:
+     ```shell
+     type: Ready
+     status: "False"
+     message: 'adding iam policy binding failed with: failed to set iam policy: googleapi: Error 409: There were concurrent policy changes. 
+       Please retry the whole read-modify-write with exponential backoff'
+     reason: WorkloadIdentityFailed
+     ```
+     the controller will retry it in the next reconciliation loop 
+     (the maximum retry period is 5 min). You can also use [Non-default scenario](../install/pubsub-service-account.md) 
+     if this error least for a long time.
    

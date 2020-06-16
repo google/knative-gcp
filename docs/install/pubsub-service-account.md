@@ -121,7 +121,9 @@ There are two scenarios to leverage Workload Identity for resources in the Data 
     the Control Plane will create it for you and configure the corresponding Workload Identity relationship between 
     the Kubernetes Service Account `default-cre-pubsub` 
     and the Google Cloud Service Account `cre-pubsub` when you create resources using the Kubernetes Service Account `default-cre-pubsub`.
-  
+    
+    A `Condition` `WorkloadIdentityConfigured` will show up under resources' `Status`, indicating the Workload Identity configuration status.
+    
     ***Note:*** The Controller currently doesn’t perform any access control checks, as a result, any user who can create a resource 
     can get access to the Google Cloud Service Account which grants the `iam.serviceAccountAdmin` permission to the Controller.
     As an example, if you followed the instructions above, then any user that can make a Knative-GCP source or Channel 
