@@ -186,7 +186,7 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 			CountPerTrigger: map[string]int64{
 				trigger.Name: 2,
 			},
-			ResponseCode: http.StatusServiceUnavailable,
+			ResponseCode: http.StatusBadRequest,
 		},
 	)
 }

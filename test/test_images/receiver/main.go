@@ -67,7 +67,8 @@ func main() {
 
 func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) {
 	if r.shouldReturnErr() {
-		resp.Status = http.StatusServiceUnavailable
+		// Ksvc seems to auto retry 5xx. So use 4xx for predictability.
+		resp.Error(http.StatusBadRequest, "Seeding failure receiver response with 400")
 		return
 	}
 
