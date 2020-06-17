@@ -18,7 +18,7 @@ require (
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
-	go.opencensus.io v0.22.4-0.20200604162333-785d8992f1ac
+	go.opencensus.io v0.22.4
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
