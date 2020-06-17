@@ -14,10 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ingress
+package clients
 
 import (
 	"context"
+	nethttp "net/http"
+	"time"
+
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 
 	"cloud.google.com/go/pubsub"
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
@@ -27,6 +32,7 @@ import (
 
 type Port int
 type ProjectID string
+type MaxConnsPerHost int
 
 // NewHTTPMessageReceiver wraps kncloudevents.NewHttpMessageReceiver with type-safe options.
 func NewHTTPMessageReceiver(port Port) *kncloudevents.HttpMessageReceiver {
@@ -38,9 +44,8 @@ func NewPubsubClient(ctx context.Context, projectID ProjectID) (*pubsub.Client, 
 	return pubsub.NewClient(ctx, string(projectID))
 }
 
-// NewPubsubDecoupleClient creates a pubsub Cloudevents client to use to publish events to decouple queues.
-func NewPubsubDecoupleClient(ctx context.Context, client *pubsub.Client) (cev2.Client, error) {
-	// Make a pubsub protocol for the CloudEvents client.
+// NewObservedPubsubClient creates a pubsub Cloudevents client with observability support.
+func NewObservedPubsubClient(ctx context.Context, client *pubsub.Client) (cev2.Client, error) {
 	p, err := cepubsub.New(ctx, cepubsub.WithClient(client))
 	if err != nil {
 		return nil, err
@@ -52,4 +57,18 @@ func NewPubsubDecoupleClient(ctx context.Context, client *pubsub.Client) (cev2.C
 		cev2.WithTimeNow(),
 		cev2.WithTracePropagation,
 	)
+}
+
+func NewHTTPClient(ctx context.Context, maxConnsPerHost MaxConnsPerHost) *nethttp.Client {
+	return &nethttp.Client{
+		Transport: &ochttp.Transport{
+			Base: &nethttp.Transport{
+				MaxIdleConns:        1000,
+				MaxIdleConnsPerHost: int(maxConnsPerHost),
+				MaxConnsPerHost:     int(maxConnsPerHost),
+				IdleConnTimeout:     30 * time.Second,
+			},
+			Propagation: &tracecontext.HTTPFormat{},
+		},
+	}
 }

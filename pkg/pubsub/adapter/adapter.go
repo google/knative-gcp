@@ -18,187 +18,105 @@ package adapter
 
 import (
 	"context"
-	"fmt"
-
+	"errors"
 	nethttp "net/http"
+	"time"
 
-	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	"github.com/google/knative-gcp/pkg/kncloudevents"
+	"cloud.google.com/go/pubsub"
+	"github.com/cloudevents/sdk-go/v2/binding"
+	ceclient "github.com/cloudevents/sdk-go/v2/client"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	"github.com/google/knative-gcp/pkg/utils"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/pkg/logging"
-)
-
-var (
-	channelGVR = schema.GroupVersionResource{
-		Group:    "messaging.cloud.google.com",
-		Version:  "v1alpha1",
-		Resource: "channels",
-	}
+	"go.opencensus.io/trace"
+	"knative.dev/eventing/pkg/logging"
 )
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
 // pre-existing topic/subscription to a Sink.
 type Adapter struct {
-	// Environment variable containing project id.
-	Project string `envconfig:"PROJECT_ID"`
+	// subscription is the pubsub subscription used to receive messages from pubsub.
+	subscription *pubsub.Subscription
 
-	// Environment variable containing the sink URI.
-	Sink string `envconfig:"SINK_URI" required:"true"`
+	// outbound is the client used to send events to.
+	outbound *nethttp.Client
 
-	// Environment variable containing the transformer URI.
-	Transformer string `envconfig:"TRANSFORMER_URI"`
+	// sinkURI is the URI where to sink events to.
+	sinkURI string
 
-	// Environment variable specifying the type of adapter to use.
-	AdapterType string `envconfig:"ADAPTER_TYPE"`
-
-	// Topic is the environment variable containing the PubSub Topic being
-	// subscribed to's name. In the form that is unique within the project.
-	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
-	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
-
-	// Subscription is the environment variable containing the name of the
-	// subscription to use.
-	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
-
-	// ExtensionsBase64 is a based64 encoded json string of a map of
-	// CloudEvents extensions (key-value pairs) override onto the outbound
-	// event.
-	ExtensionsBase64 string `envconfig:"K_CE_EXTENSIONS" required:"true"`
+	// transformerURI is the URI for the transformer.
+	// Used for channels.
+	transformerURI string
 
 	// extensions is the converted ExtensionsBased64 value.
 	extensions map[string]string
 
-	// SendMode describes how the adapter sends events.
-	// One of [binary, structured, push]. Default: binary
-	SendMode converters.ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
-
-	// MetricsConfigJson is a json string of metrics.ExporterOptions.
-	// This is used to configure the metrics exporter options, the config is
-	// stored in a config map inside the controllers namespace and copied here.
-	MetricsConfigJson string `envconfig:"K_METRICS_CONFIG" required:"true"`
-
-	// LoggingConfigJson is a json string of logging.Config.
-	// This is used to configure the logging config, the config is stored in
-	// a config map inside the controllers namespace and copied here.
-	LoggingConfigJson string `envconfig:"K_LOGGING_CONFIG" required:"true"`
-
-	// TracingConfigJson is a JSON string of tracing.Config. This is used to configure tracing. The
-	// original config is stored in a ConfigMap inside the controller's namespace. Its value is
-	// copied here as a JSON string.
-	TracingConfigJson string `envconfig:"K_TRACING_CONFIG" required:"true"`
-
-	// Environment variable containing the namespace.
-	Namespace string `envconfig:"NAMESPACE" required:"true"`
-
-	// Environment variable containing the name.
-	Name string `envconfig:"NAME" required:"true"`
-
-	// Environment variable containing the resource group. E.g., storages.events.cloud.google.com.
-	ResourceGroup string `envconfig:"RESOURCE_GROUP" default:"pullsubscriptions.pubsub.cloud.google.com" required:"true"`
-
-	// inbound is the cloudevents client to use to receive events.
-	inbound cloudevents.Client
-
-	// outbound is the cloudevents client to use to send events.
-	outbound cloudevents.Client
-
-	// transformer is the cloudevents client to transform received events before sending.
-	transformer cloudevents.Client
+	adapterType string
 
 	// reporter reports metrics to the configured backend.
 	reporter StatsReporter
+
+	logger *zap.Logger
 }
 
-// Start starts the adapter. Note: Only call once, not thread safe.
+// NewAdapter creates a new adapter.
+func NewAdapter(
+	ctx context.Context,
+	subscription *pubsub.Subscription,
+	outbound *nethttp.Client,
+	reporter StatsReporter,
+	sinkURI SinkURI,
+	transformerURI TransformerURI,
+	adapterType AdapterType,
+	extensions map[string]string) *Adapter {
+	return &Adapter{
+		subscription:   subscription,
+		outbound:       outbound,
+		reporter:       reporter,
+		sinkURI:        string(sinkURI),
+		transformerURI: string(transformerURI),
+		adapterType:    string(adapterType),
+		extensions:     extensions,
+		logger:         logging.FromContext(ctx),
+	}
+}
+
 func (a *Adapter) Start(ctx context.Context) error {
-	var err error
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	if a.SendMode == "" {
-		a.SendMode = converters.DefaultSendMode
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- a.subscription.Receive(ctx, a.receive)
+	}()
+
+	// Stop either if the adapter stops (sending to errCh) or if the context Done channel is closed.
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		break
 	}
 
-	// Convert base64 encoded json map to extensions map.
-	a.extensions, err = utils.Base64ToMap(a.ExtensionsBase64)
-	if err != nil {
-		fmt.Printf("[warn] failed to convert base64 extensions to map: %v", err)
+	// Done channel has been closed, we need to gracefully shutdown. The cancel() method will start its
+	// shutdown, if it hasn't finished in a reasonable amount of time, just return an error.
+	cancel()
+	select {
+	case err := <-errCh:
+		return err
+	case <-time.After(30 * time.Second):
+		return errors.New("timeout shutting down adapter")
 	}
-
-	// Receive Events on Pub/Sub.
-	if a.inbound == nil {
-		if a.inbound, err = a.newPubSubClient(ctx); err != nil {
-			return fmt.Errorf("failed to create inbound cloudevent client: %w", err)
-		}
-	}
-
-	// Send events on HTTP.
-	if a.outbound == nil {
-		if a.outbound, err = a.newHTTPClient(ctx, a.Sink); err != nil {
-			return fmt.Errorf("failed to create outbound cloudevent client: %w", err)
-		}
-	}
-
-	if a.reporter == nil {
-		a.reporter = NewStatsReporter()
-	}
-
-	// Make the transformer client in case the TransformerURI has been set.
-	if a.Transformer != "" {
-		if a.transformer == nil {
-			if a.transformer, err = kncloudevents.NewDefaultClient(a.Transformer); err != nil {
-				return fmt.Errorf("failed to create transformer cloudevent client: %w", err)
-			}
-		}
-	}
-
-	return a.inbound.StartReceiver(ctx, a.receive)
 }
 
-func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
-	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()), zap.Any("sink", a.Sink))
-
-	// TODO Name and ResourceGroup might cause problems in the near future, as we might use a single receive-adapter
-	//  for multiple source objects. Same with Namespace, when doing multi-tenancy.
-	args := &ReportArgs{
-		Name:          a.Name,
-		Namespace:     a.Namespace,
-		EventType:     event.Type(),
-		EventSource:   event.Source(),
-		ResourceGroup: a.ResourceGroup,
-	}
-
-	var err error
-	// If a transformer has been configured, then transform the message.
-	// Note that this path in the code will be executed when using the receive adapter as part of the underlying Channel
-	// of a Broker. We currently set the TransformerURI to be the address of the Broker filter pod.
-	// TODO consider renaming transformer as it is confusing.
-	if a.transformer != nil {
-		transformedCTX, transformedEvent, err := a.transformer.Send(ctx, event)
-		rtctx := cloudevents.HTTPTransportContextFrom(transformedCTX)
-		if err != nil {
-			logger.Errorf("error transforming cloud event %q", event.ID())
-			a.reporter.ReportEventCount(args, rtctx.StatusCode)
-			return err
-		}
-		if transformedEvent == nil {
-			// This doesn't mean there was an error. E.g., the Broker filter pod might not return a response.
-			// Report the returned Status Code and return.
-			logger.Debugf("cloud event %q was not transformed", event.ID())
-			a.reporter.ReportEventCount(args, rtctx.StatusCode)
-			return nil
-		}
-		// Update the event with the transformed one.
-		event = *transformedEvent
-		// Update the tracing information to use the span returned by the transformer.
-		ctx = trace.NewContext(ctx, trace.FromContext(transformedCTX))
+func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
+	event, err := converters.Convert(ctx, msg, a.adapterType)
+	if err != nil {
+		a.logger.Debug("Failed to convert received message to an event, check the msg format: %w", zap.Error(err))
+		// Ack the message so it won't be retried
+		msg.Ack()
+		return
 	}
 
 	// Apply CloudEvent override extensions to the outbound event.
@@ -206,65 +124,96 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		event.SetExtension(k, v)
 	}
 
-	// Send the event and report the count.
-	rctx, r, err := a.outbound.Send(ctx, event)
-	rtctx := cloudevents.HTTPTransportContextFrom(rctx)
-	a.reporter.ReportEventCount(args, rtctx.StatusCode)
+	args := &ReportArgs{
+		EventType:   event.Type(),
+		EventSource: event.Source(),
+	}
+
+	message := (*binding.EventMessage)(event)
+
+	// If a transformer has been configured, then transform the message.
+	// Note that this path in the code will be executed when using the receive adapter as part of the underlying Channel
+	// of a Broker. We currently set the TransformerURI to be the address of the Broker filter pod.
+	// TODO consider renaming transformer as it is confusing. And see if we can get rid of this.
+	if a.transformerURI != "" {
+		resp, err := a.sendMsg(ctx, a.transformerURI, message)
+		if err != nil {
+			a.logger.Error("Failed to send message to transformer", zap.String("address", a.transformerURI), zap.Error(err))
+			msg.Nack()
+			return
+		}
+
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				a.logger.Warn("Failed to close response body", zap.Error(err))
+			}
+		}()
+
+		a.reporter.ReportEventCount(args, resp.StatusCode)
+
+		if resp.StatusCode/100 != 2 {
+			a.logger.Error("Event delivery failed", zap.Int("StatusCode", resp.StatusCode))
+			msg.Nack()
+			return
+		}
+
+		respMsg := cehttp.NewMessageFromHttpResponse(resp)
+		if respMsg.ReadEncoding() == binding.EncodingUnknown {
+			// This doesn't mean there was an error. E.g., the Broker filter pod might not return a response.
+			msg.Ack()
+			return
+		}
+
+		e, err := binding.ToEvent(ctx, respMsg)
+		if err != nil {
+			a.logger.Error("Failed to convert response message to event",
+				zap.Any("response", respMsg), zap.Error(err))
+			msg.Ack()
+			return
+		}
+
+		// TODO check if this is OK
+		// Update the tracing information to use the span returned by the transformer.
+		// ctx = trace.NewContext(ctx, trace.FromContext(transformedCTX))
+		if span := trace.FromContext(ctx); span.IsRecordingEvents() {
+			span.Annotate(ceclient.EventTraceAttributes(e),
+				"Event reply",
+			)
+		}
+
+		// Update the message with the transformed one.
+		message = (*binding.EventMessage)(e)
+	}
+
+	resp, err := a.sendMsg(ctx, a.sinkURI, message)
 	if err != nil {
-		return err
-	} else if r != nil {
-		resp.RespondWith(nethttp.StatusOK, r)
+		a.logger.Error("Failed to send message to sink", zap.String("address", a.sinkURI), zap.Error(err))
+		msg.Nack()
+		return
 	}
-	return nil
+
+	a.reporter.ReportEventCount(args, resp.StatusCode)
+
+	if resp.StatusCode/100 != 2 {
+		a.logger.Error("Event delivery failed", zap.Int("StatusCode", resp.StatusCode))
+		msg.Nack()
+		return
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		a.logger.Warn("Failed to close response body", zap.Error(err))
+	}
+
+	msg.Ack()
 }
 
-func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
-	logger := logging.FromContext(ctx)
-	logger.Debug("Converting event from transport.")
-
-	if msg, ok := m.(*cepubsub.Message); ok {
-		return converters.Convert(ctx, msg, a.SendMode, a.AdapterType)
-	}
-	return nil, err
-}
-
-func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, error) {
-	tOpts := []cepubsub.Option{
-		cepubsub.WithProjectID(a.Project),
-		cepubsub.WithTopicID(a.Topic),
-		cepubsub.WithSubscriptionAndTopicID(a.Subscription, a.Topic),
-	}
-
-	// Make a pubsub transport for the CloudEvents client.
-	t, err := cepubsub.New(ctx, tOpts...)
+func (a *Adapter) sendMsg(ctx context.Context, address string, msg binding.Message) (*nethttp.Response, error) {
+	req, err := nethttp.NewRequestWithContext(ctx, nethttp.MethodPost, address, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	// Use the transport to make a new CloudEvents client.
-	return cloudevents.NewClient(t,
-		cloudevents.WithConverterFn(a.convert),
-	)
-}
-
-func (a *Adapter) newHTTPClient(ctx context.Context, target string) (cloudevents.Client, error) {
-	tOpts := []http.Option{
-		cloudevents.WithTarget(target),
-	}
-
-	switch a.SendMode {
-	case converters.Binary, converters.Push:
-		tOpts = append(tOpts, cloudevents.WithBinaryEncoding())
-	case converters.Structured:
-		tOpts = append(tOpts, cloudevents.WithStructuredEncoding())
-	}
-
-	// Make an http transport for the CloudEvents client.
-	t, err := cloudevents.NewHTTPTransport(tOpts...)
-	if err != nil {
+	if err := cehttp.WriteRequest(ctx, msg, req); err != nil {
 		return nil, err
 	}
-
-	// Use the transport to make a new CloudEvents client.
-	return cloudevents.NewClient(t)
+	return a.outbound.Do(req)
 }

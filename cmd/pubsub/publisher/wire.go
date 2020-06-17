@@ -21,23 +21,19 @@ package main
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/broker/config/volume"
-	"github.com/google/knative-gcp/pkg/broker/ingress"
-	"github.com/google/knative-gcp/pkg/metrics"
+	"github.com/google/knative-gcp/pkg/pubsub/publisher"
 	"github.com/google/knative-gcp/pkg/utils/clients"
+
 	"github.com/google/wire"
 )
 
-func InitializeHandler(
+func InitializePublisher(
 	ctx context.Context,
 	port clients.Port,
 	projectID clients.ProjectID,
-	podName metrics.PodName,
-	containerName metrics.ContainerName,
-) (*ingress.Handler, error) {
+	topicID publisher.TopicID,
+) (*publisher.Publisher, error) {
 	panic(wire.Build(
-		ingress.HandlerSet,
-		wire.Value([]volume.Option(nil)),
-		volume.NewTargetsFromFile,
+		publisher.PublisherSet,
 	))
 }

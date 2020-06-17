@@ -22,13 +22,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	"cloud.google.com/go/pubsub"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	auditpb "google.golang.org/genproto/googleapis/cloud/audit"
 	logpb "google.golang.org/genproto/googleapis/logging/v2"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -73,22 +72,22 @@ func TestConvertAuditLog(t *testing.T) {
 	if err := new(jsonpb.Marshaler).Marshal(&buf, &logEntry); err != nil {
 		t.Fatalf("Failed to marshal AuditLog pb: %v", err)
 	}
-	msg := cepubsub.Message{
+	msg := pubsub.Message{
 		Data: buf.Bytes(),
 	}
 
-	e, err := Convert(context.Background(), &msg, "", CloudAuditLogsConverter)
+	e, err := Convert(context.Background(), &msg, CloudAuditLogsConverter)
 
 	if err != nil {
 		t.Fatalf("conversion failed: %v", err)
 	}
-	if id := v1alpha1.CloudAuditLogsSourceEventID(insertID, logName, testTs); e.ID() != id {
+	if id := v1beta1.CloudAuditLogsSourceEventID(insertID, logName, testTs); e.ID() != id {
 		t.Errorf("ID '%s' != '%s'", e.ID(), id)
 	}
 	if !e.Time().Equal(testTime) {
 		t.Errorf("Time '%v' != '%v'", e.Time(), testTime)
 	}
-	if want := v1alpha1.CloudAuditLogsSourceEventSource("test-service-name", "projects/test-project"); e.Source() != want {
+	if want := v1beta1.CloudAuditLogsSourceEventSource("test-service-name", "projects/test-project"); e.Source() != want {
 		t.Errorf("Source %q != %q", e.Source(), want)
 	}
 	if e.Type() != "com.google.cloud.auditlog.event" {
@@ -97,18 +96,16 @@ func TestConvertAuditLog(t *testing.T) {
 	if want := "test-resource-name"; e.Subject() != want {
 		t.Errorf("Subject %q != %q", e.Subject(), want)
 	}
-	if data, err := e.DataBytes(); err != nil {
-		t.Errorf("Unable to get event data: %q", err)
+
+	var actualLogEntry logpb.LogEntry
+	if err = jsonpb.Unmarshal(bytes.NewReader(e.Data()), &actualLogEntry); err != nil {
+		t.Errorf("Unable to unmarshal event data to LogEntry: %q", err)
 	} else {
-		var actualLogEntry logpb.LogEntry
-		if err = jsonpb.Unmarshal(bytes.NewReader(data), &actualLogEntry); err != nil {
-			t.Errorf("Unable to unmarshal event data to LogEntry: %q", err)
-		} else {
-			if diff := cmp.Diff(logEntry, actualLogEntry, protocmp.Transform()); diff != "" {
-				t.Errorf("unexpected LogEntry (-want, +got) = %v", diff)
-			}
+		if diff := cmp.Diff(logEntry, actualLogEntry, protocmp.Transform()); diff != "" {
+			t.Errorf("unexpected LogEntry (-want, +got) = %v", diff)
 		}
 	}
+
 	wantExtensions := map[string]interface{}{
 		"servicename":  "test-service-name",
 		"methodname":   "test-method-name",
@@ -143,11 +140,11 @@ func TestConvertTextPayload(t *testing.T) {
 	if err := new(jsonpb.Marshaler).Marshal(&buf, &logEntry); err != nil {
 		t.Fatalf("Failed to marshal AuditLog pb: %v", err)
 	}
-	msg := cepubsub.Message{
+	msg := pubsub.Message{
 		Data: buf.Bytes(),
 	}
 
-	_, err = Convert(context.Background(), &msg, "", CloudAuditLogsConverter)
+	_, err = Convert(context.Background(), &msg, CloudAuditLogsConverter)
 
 	if err == nil {
 		t.Errorf("Expected error when converting non-AuditLog LogEntry.")

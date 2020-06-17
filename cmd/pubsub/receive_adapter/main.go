@@ -19,35 +19,98 @@ package main
 import (
 	"flag"
 	"fmt"
-
-	"knative.dev/eventing/pkg/tracing"
-
-	"cloud.google.com/go/compute/metadata"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter"
-	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
-	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
+	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
+
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	. "github.com/google/knative-gcp/pkg/pubsub/adapter"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/context"
+	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
+	"github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"github.com/google/knative-gcp/pkg/utils/clients"
+	"github.com/kelseyhightower/envconfig"
 )
 
 const (
-	component = "PullSubscription::ReceiveAdapter"
+	component = "receive_adapter"
+
+	// TODO make this configurable
+	maxConnectionsPerHost = 1000
 )
 
+// TODO we should refactor this and reduce the number of environment variables.
+//  most of them are due to metrics, which has to change anyways.
+type envConfig struct {
+	// Environment variable containing project id.
+	Project string `envconfig:"PROJECT_ID"`
+
+	// Environment variable containing the sink URI.
+	Sink string `envconfig:"SINK_URI" required:"true"`
+
+	// Environment variable containing the transformer URI.
+	Transformer string `envconfig:"TRANSFORMER_URI"`
+
+	// Environment variable specifying the type of adapter to use.
+	AdapterType string `envconfig:"ADAPTER_TYPE"`
+
+	// Topic is the environment variable containing the PubSub Topic being
+	// subscribed to's name. In the form that is unique within the project.
+	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
+	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
+
+	// Subscription is the environment variable containing the name of the
+	// subscription to use.
+	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
+
+	// ExtensionsBase64 is a based64 encoded json string of a map of
+	// CloudEvents extensions (key-value pairs) override onto the outbound
+	// event.
+	ExtensionsBase64 string `envconfig:"K_CE_EXTENSIONS" required:"true"`
+
+	// MetricsConfigJson is a json string of metrics.ExporterOptions.
+	// This is used to configure the metrics exporter options, the config is
+	// stored in a config map inside the controllers namespace and copied here.
+	MetricsConfigJson string `envconfig:"K_METRICS_CONFIG" required:"true"`
+
+	// LoggingConfigJson is a json string of logging.Config.
+	// This is used to configure the logging config, the config is stored in
+	// a config map inside the controllers namespace and copied here.
+	LoggingConfigJson string `envconfig:"K_LOGGING_CONFIG" required:"true"`
+
+	// TracingConfigJson is a JSON string of tracing.Config. This is used to configure tracing. The
+	// original config is stored in a ConfigMap inside the controller's namespace. Its value is
+	// copied here as a JSON string.
+	TracingConfigJson string `envconfig:"K_TRACING_CONFIG" required:"true"`
+
+	// Environment variable containing the namespace.
+	Namespace string `envconfig:"NAMESPACE" required:"true"`
+
+	// Environment variable containing the name.
+	Name string `envconfig:"NAME" required:"true"`
+
+	// Environment variable containing the resource group. E.g., storages.events.cloud.google.com.
+	ResourceGroup string `envconfig:"RESOURCE_GROUP" default:"pullsubscriptions.internal.pubsub.cloud.google.com" required:"true"`
+}
+
+// TODO try to use the common main from broker.
 func main() {
+	appcredentials.MustExistOrUnsetEnv()
+
 	flag.Parse()
 
-	startable := adapter.Adapter{}
-	if err := envconfig.Process("", &startable); err != nil {
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
 		panic(fmt.Sprintf("Failed to process env var: %s", err))
 	}
 
 	// Convert json logging.Config to logging.Config.
-	loggingConfig, err := logging.JsonToLoggingConfig(startable.LoggingConfigJson)
+	loggingConfig, err := logging.JsonToLoggingConfig(env.LoggingConfigJson)
 	if err != nil {
-		fmt.Printf("[ERROR] filed to process logging config: %s", err.Error())
+		fmt.Printf("Failed to process logging config: %s", err.Error())
 		// Use default logging config.
 		if loggingConfig, err = logging.NewConfigFromMap(map[string]string{}); err != nil {
 			// If this fails, there is no recovering.
@@ -61,7 +124,7 @@ func main() {
 	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
 
 	// Convert json metrics.ExporterOptions to metrics.ExporterOptions.
-	metricsConfig, err := metrics.JsonToMetricsOptions(startable.MetricsConfigJson)
+	metricsConfig, err := metrics.JsonToMetricsOptions(env.MetricsConfigJson)
 	if err != nil {
 		logger.Error("Failed to process metrics options", zap.Error(err))
 	}
@@ -72,7 +135,7 @@ func main() {
 		}
 	}
 
-	tracingConfig, err := tracingconfig.JSONToConfig(startable.TracingConfigJson)
+	tracingConfig, err := tracingconfig.JSONToConfig(env.TracingConfigJson)
 	if err != nil {
 		logger.Error("Failed to process tracing options", zap.Error(err))
 	}
@@ -80,18 +143,45 @@ func main() {
 		logger.Error("Failed to setup tracing", zap.Error(err), zap.Any("tracingConfig", tracingConfig))
 	}
 
-	if startable.Project == "" {
-		project, err := metadata.ProjectID()
-		if err != nil {
-			logger.Fatal("failed to find project id. ", zap.Error(err))
-		}
-		startable.Project = project
+	projectID, err := utils.ProjectID(env.Project, metadataClient.NewDefaultMetadataClient())
+	if err != nil {
+		logger.Fatal("Failed to retrieve project id", zap.Error(err))
 	}
 
-	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Any("adapter", startable))
-	if err := startable.Start(ctx); err != nil {
-		logger.Fatal("failed to start adapter: ", zap.Error(err))
+	// Convert base64 encoded json map to extensions map.
+	extensions, err := utils.Base64ToMap(env.ExtensionsBase64)
+	if err != nil {
+		logger.Error("Failed to convert base64 extensions to map: %v", zap.Error(err))
 	}
+
+	ctx = context.WithProjectKey(ctx, projectID)
+	ctx = context.WithTopicKey(ctx, env.Topic)
+	ctx = context.WithSubscriptionKey(ctx, env.Subscription)
+
+	logger.Info("Initializing adapter", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription))
+
+	adapter, err := InitializeAdapter(
+		ctx,
+		clients.ProjectID(projectID),
+		SubscriptionID(env.Subscription),
+		clients.MaxConnsPerHost(maxConnectionsPerHost),
+		Name(env.Name),
+		Namespace(env.Namespace),
+		ResourceGroup(env.ResourceGroup),
+		AdapterType(env.AdapterType),
+		SinkURI(env.Sink),
+		TransformerURI(env.Transformer),
+		extensions)
+
+	if err != nil {
+		logger.Fatal("Unable to create adapter", zap.Error(err))
+	}
+
+	logger.Info("Starting Receive Adapter.", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription))
+	if err := adapter.Start(ctx); err != nil {
+		logging.FromContext(ctx).Error("Adapter has stopped with error", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription), zap.Error(err))
+	}
+
 }
 
 func flush(logger *zap.Logger) {

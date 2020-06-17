@@ -22,8 +22,8 @@ import (
 	"context"
 	"fmt"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	"cloud.google.com/go/pubsub"
+	cev2 "github.com/cloudevents/sdk-go/v2"
 )
 
 // ModeType is the type for mode enum.
@@ -42,7 +42,7 @@ const (
 	KnativeGCPConverter = "knative-gcp"
 )
 
-type converterFn func(context.Context, *cepubsub.Message, ModeType) (*cloudevents.Event, error)
+type converterFn func(context.Context, *pubsub.Message) (*cev2.Event, error)
 
 // converters is the map for handling Source specific event
 // conversions. For example, a GCS event will need to be
@@ -64,14 +64,14 @@ func init() {
 // Convert converts a message off the pubsub format to a source specific if
 // there's a registered handler for the type in the converters map.
 // If there's no registered handler, a default Pubsub one will be used.
-func Convert(ctx context.Context, msg *cepubsub.Message, sendMode ModeType, converterType string) (*cloudevents.Event, error) {
+func Convert(ctx context.Context, msg *pubsub.Message, converterType string) (*cev2.Event, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("nil pubsub message")
 	}
 	// Try the converterType, if specified.
 	if converterType != "" {
 		if c, ok := converters[converterType]; ok {
-			return c(ctx, msg, sendMode)
+			return c(ctx, msg)
 		}
 	}
 	// Try the generic KnativeGCPConverter attribute, if present.
@@ -79,11 +79,11 @@ func Convert(ctx context.Context, msg *cepubsub.Message, sendMode ModeType, conv
 		if val, ok := msg.Attributes[KnativeGCPConverter]; ok {
 			delete(msg.Attributes, KnativeGCPConverter)
 			if c, ok := converters[val]; ok {
-				return c(ctx, msg, sendMode)
+				return c(ctx, msg)
 			}
 		}
 	}
 
 	// No converter, PubSub is the default one.
-	return convertPubSub(ctx, msg, sendMode)
+	return convertPubSub(ctx, msg)
 }

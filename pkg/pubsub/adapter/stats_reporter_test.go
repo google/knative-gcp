@@ -27,17 +27,12 @@ import (
 )
 
 func TestStatsReporter(t *testing.T) {
-	setup()
-
 	args := &ReportArgs{
-		Namespace:     "testns",
-		EventType:     "dev.knative.event",
-		EventSource:   "unit-test",
-		Name:          "testobject",
-		ResourceGroup: "testresourcegroup",
+		EventType:   "dev.knative.event",
+		EventSource: "unit-test",
 	}
 
-	r := NewStatsReporter()
+	r, _ := NewStatsReporter("testobject", "testns", "testresourcegroup")
 
 	wantTags := map[string]string{
 		metricskey.LabelNamespaceName:     "testns",
@@ -64,14 +59,4 @@ func expectSuccess(t *testing.T, f func() error) {
 	if err := f(); err != nil {
 		t.Errorf("Reporter expected success but got error: %v", err)
 	}
-}
-
-func setup() {
-	resetMetrics()
-}
-
-func resetMetrics() {
-	// OpenCensus metrics carry global state that need to be reset between unit tests.
-	metricstest.Unregister("event_count")
-	register()
 }
