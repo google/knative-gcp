@@ -27,10 +27,10 @@ import (
 
 // TestTopic is a test Pub/Sub topic.
 type testTopic struct {
-	data       TestTopicData
-	handleData testiam.TestHandleData
-	id         string
-	config     *pubsub.TopicConfig
+	data        TestTopicData
+	handleData  testiam.TestHandleData
+	id          string
+	config      *pubsub.TopicConfig
 	topicString string
 }
 
