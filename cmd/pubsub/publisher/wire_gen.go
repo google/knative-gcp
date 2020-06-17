@@ -20,6 +20,6 @@ func InitializePublisher(ctx context.Context, port clients.Port, projectID clien
 		return nil, err
 	}
 	topic := publisher.NewPubSubTopic(ctx, client, topicID)
-	publisherPublisher := publisher.NewPublisher(ctx, httpMessageReceiver, client, topic)
+	publisherPublisher := publisher.NewPublisher(ctx, httpMessageReceiver, topic)
 	return publisherPublisher, nil
 }
