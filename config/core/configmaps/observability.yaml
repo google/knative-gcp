@@ -59,3 +59,5 @@ data:
     # If not specified, the default is set to "knative.dev".
     # If metrics.backend-destination is not Stackdriver, this is ignored.
     metrics.stackdriver-custom-metrics-subdomain: "<your subdomain>"
+  "metrics.backend-destination":                  "stackdriver",
+  "metrics.reporting-period-seconds":             "60",
