@@ -20,7 +20,7 @@ metadata:
   labels:
     events.cloud.google.com/release: devel
   annotations:
-    knative.dev/example-checksum: 2e88be56
+    knative.dev/example-checksum: 8544d216
 data:
   metrics.backend-destination: stackdriver
   metrics.reporting-period-seconds: 60
@@ -60,4 +60,4 @@ data:
     # stackdriver-custom-metrics-subdomain is the subdomain to use when sending custom metrics to StackDriver.
     # If not specified, the default is set to "knative.dev".
     # If metrics.backend-destination is not Stackdriver, this is ignored.
-    metrics.stackdriver-custom-metrics-subdomain: "<your subdomain>
+    metrics.stackdriver-custom-metrics-subdomain: "<your subdomain>"
