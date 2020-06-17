@@ -52,6 +52,12 @@ type envConfig struct {
 	Sink string `envconfig:"SINK_URI" required:"true"`
 
 	// Environment variable containing the transformer URI.
+	// This environment variable is only set if we configure both subscriber and reply
+	// in Channel's subscribers.
+	// If subscriber and reply are used, we map:
+	//   Transformer to sub.subscriber
+	//	 Sink to sub.reply
+	// Otherwise, only Sink is used (for either the sub.reply or sub.reply)
 	Transformer string `envconfig:"TRANSFORMER_URI"`
 
 	// Environment variable specifying the type of adapter to use.

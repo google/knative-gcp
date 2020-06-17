@@ -52,6 +52,7 @@ type Adapter struct {
 	// extensions is the converted ExtensionsBased64 value.
 	extensions map[string]string
 
+	// adapterType use to select which converter to use.
 	adapterType string
 
 	// reporter reports metrics to the configured backend.
@@ -59,6 +60,9 @@ type Adapter struct {
 
 	// converter used to convert pubsub messages to CE.
 	converter converters.Converter
+
+	// cancel is function to stop pulling messages.
+	cancel context.CancelFunc
 
 	logger *zap.Logger
 }
@@ -88,8 +92,8 @@ func NewAdapter(
 }
 
 func (a *Adapter) Start(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	ctx, a.cancel = context.WithCancel(ctx)
+	defer a.cancel()
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -106,7 +110,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 
 	// Done channel has been closed, we need to gracefully shutdown. The cancel() method will start its
 	// shutdown, if it hasn't finished in a reasonable amount of time, just return an error.
-	cancel()
+	a.cancel()
 	select {
 	case err := <-errCh:
 		return err
@@ -115,6 +119,13 @@ func (a *Adapter) Start(ctx context.Context) error {
 	}
 }
 
+// Stop stops the adapter.
+func (a *Adapter) Stop() {
+	a.cancel()
+}
+
+// TODO refactor this method. As our RA code is used both for Sources and our Channel, it also supports replies
+//  (in the case of Channels) and the logic is more convoluted.
 func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
 	event, err := a.converter.Convert(ctx, msg, a.adapterType)
 	if err != nil {
@@ -124,24 +135,20 @@ func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
 		return
 	}
 
-	// Apply CloudEvent override extensions to the outbound event.
-	for k, v := range a.extensions {
-		event.SetExtension(k, v)
-	}
-
 	args := &ReportArgs{
 		EventType:   event.Type(),
 		EventSource: event.Source(),
 	}
 
-	message := (*binding.EventMessage)(event)
+	// Using this variable to check whether the event came from a reply or not.
+	reply := false
 
-	// If a transformer has been configured, then transform the message.
-	// Note that this path in the code will be executed when using the receive adapter as part of the underlying Channel
-	// of a Broker. We currently set the TransformerURI to be the address of the Broker filter pod.
-	// TODO consider renaming transformer as it is confusing. And see if we can get rid of this.
+	// If a transformer has been configured, then "transform" the message.
+	// Note that currently this path of the code will be executed when using the receive adapter as part of the underlying Channel,
+	// in case both subscriber and reply are set. The transformer would act as the subscriber and the sink will be where
+	// we will send the reply.
 	if a.transformerURI != "" {
-		resp, err := a.sendMsg(ctx, a.transformerURI, message)
+		resp, err := a.sendMsg(ctx, a.transformerURI, (*binding.EventMessage)(event))
 		if err != nil {
 			a.logger.Error("Failed to send message to transformer", zap.String("address", a.transformerURI), zap.Error(err))
 			msg.Nack()
@@ -164,12 +171,14 @@ func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
 
 		respMsg := cehttp.NewMessageFromHttpResponse(resp)
 		if respMsg.ReadEncoding() == binding.EncodingUnknown {
-			// This doesn't mean there was an error. E.g., the Broker filter pod might not return a response.
+			// No reply
 			msg.Ack()
 			return
 		}
 
-		e, err := binding.ToEvent(ctx, respMsg)
+		// If there was a reply, we need to send it to the sink.
+		// We then overwrite the initial event we sent.
+		event, err = binding.ToEvent(ctx, respMsg)
 		if err != nil {
 			a.logger.Error("Failed to convert response message to event",
 				zap.Any("response", respMsg), zap.Error(err))
@@ -181,16 +190,24 @@ func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
 		// Update the tracing information to use the span returned by the transformer.
 		// ctx = trace.NewContext(ctx, trace.FromContext(transformedCTX))
 		if span := trace.FromContext(ctx); span.IsRecordingEvents() {
-			span.Annotate(ceclient.EventTraceAttributes(e),
+			span.Annotate(ceclient.EventTraceAttributes(event),
 				"Event reply",
 			)
 		}
 
-		// Update the message with the transformed one.
-		message = (*binding.EventMessage)(e)
+		reply = true
 	}
 
-	resp, err := a.sendMsg(ctx, a.sinkURI, message)
+	// Only if the message is not from a reply, then we should add the override extensions.
+	if !reply {
+		// Apply CloudEvent override extensions to the outbound event.
+		// This code will be mainly executed by Sources.
+		for k, v := range a.extensions {
+			event.SetExtension(k, v)
+		}
+	}
+
+	resp, err := a.sendMsg(ctx, a.sinkURI, (*binding.EventMessage)(event))
 	if err != nil {
 		a.logger.Error("Failed to send message to sink", zap.String("address", a.sinkURI), zap.Error(err))
 		msg.Nack()
