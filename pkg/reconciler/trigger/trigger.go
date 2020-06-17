@@ -187,6 +187,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 		if err != nil {
 			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
 			trig.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
+			trig.Status.MarkSubscriptionUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
 			return err
 		}
 		defer client.Close()
@@ -240,6 +241,8 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
+		trig.Status.MarkTopicUnknown("FinalizeTopicUnknown", "Failed to find project id: %w", err)
+		trig.Status.MarkSubscriptionUnknown("FinalizeSubscriptionUnknown", "Failed to find project id: %w", err)
 		return err
 	}
 
@@ -248,6 +251,8 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 		client, err := pubsub.NewClient(ctx, projectID)
 		if err != nil {
 			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
+			trig.Status.MarkTopicUnknown("FinalizeTopicUnknown", "Failed to create Pub/Sub client: %w", err)
+			trig.Status.MarkSubscriptionUnknown("FinalizeSubscriptionUnknown", "Failed to create Pub/Sub client: %w", err)
 			return err
 		}
 		defer client.Close()
@@ -257,10 +262,10 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 	// Delete topic if it exists. Pull subscriptions continue pulling from the
 	// topic until deleted themselves.
 	topicID := resources.GenerateRetryTopicName(trig)
-	err = multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, trig))
+	err = multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, trig, &trig.Status))
 	// Delete pull subscription if it exists.
 	subID := resources.GenerateRetrySubscriptionName(trig)
-	err = multierr.Append(nil, pubsubReconciler.DeleteSubscription(ctx, subID, trig))
+	err = multierr.Append(nil, pubsubReconciler.DeleteSubscription(ctx, subID, trig, &trig.Status))
 	return err
 }
 

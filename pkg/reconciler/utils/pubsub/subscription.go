@@ -58,7 +58,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 			r.recorder.Eventf(obj, corev1.EventTypeWarning, topicDeleted, "Unexpected topic deletion detected for subscription: %q", sub.ID())
 			// Subscription with "_deleted-topic_" cannot pull from the new topic. In order to recover, we first delete
 			// the sub and then create it. Unacked messages will be lost.
-			if err := r.deleteSubscription(ctx, sub, obj); err != nil {
+			if err := r.deleteSubscription(ctx, sub, obj, updater); err != nil {
 				updater.MarkSubscriptionFailed("SubscriptionDeletionFailed", "topic of the subscription has been deleted, need to recreate the subscription: %v", err)
 				return nil, fmt.Errorf("topic of the subscription has been deleted, need to recreate the subscription: %v", err)
 			}
@@ -71,7 +71,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 	return r.createSubscription(ctx, id, subConfig, obj, updater)
 }
 
-func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runtime.Object) error {
+func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runtime.Object, updater StatusUpdater) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Deleting decoupling sub")
 
@@ -79,16 +79,19 @@ func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runt
 	exists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
+		updater.MarkSubscriptionUnknown("FinalizeSubscriptionUnknown", "failed to verify Pub/Sub subscription exists: %w", err)
 		return err
 	}
 	if exists {
-		return r.deleteSubscription(ctx, sub, obj)
+		if err = r.deleteSubscription(ctx, sub, obj, updater); err != nil {
+			updater.MarkSubscriptionFailed("FinalizeSubscriptionFailed", "failed to delete Pub/Sub subscription: %w", err)
+			return err
+		}
 	}
-
 	return nil
 }
 
-func (r *Reconciler) deleteSubscription(ctx context.Context, sub *pubsub.Subscription, obj runtime.Object) error {
+func (r *Reconciler) deleteSubscription(ctx context.Context, sub *pubsub.Subscription, obj runtime.Object, updater StatusUpdater) error {
 	logger := logging.FromContext(ctx)
 	if err := sub.Delete(ctx); err != nil {
 		logger.Error("Failed to delete Pub/Sub subscription", zap.Error(err))
