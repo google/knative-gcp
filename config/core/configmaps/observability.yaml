@@ -23,7 +23,7 @@ metadata:
     knative.dev/example-checksum: 8544d216
 data:
   metrics.backend-destination: stackdriver
-  metrics.reporting-period-seconds: 60
+  metrics.reporting-period-seconds: "60"
   _example: |
     ################################
     #                              #
