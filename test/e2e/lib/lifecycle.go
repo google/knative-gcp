@@ -95,7 +95,7 @@ func (c *Client) SetupStackDriverMetrics(t *testing.T) {
 	t.Helper()
 	setStackDriverConfigOnce.Do(func() {
 		err := c.Core.Kube.UpdateConfigMap("cloud-run-events", "config-observability", map[string]string{
-			"metrics.allow-stackdriver-custom-metrics":     "true",
+			"metrics.allow-stackdriver-custom-metrics":     "false",
 			"metrics.backend-destination":                  "stackdriver",
 			"metrics.stackdriver-custom-metrics-subdomain": "cloud.google.com",
 			"metrics.reporting-period-seconds":             "60",
