@@ -135,6 +135,9 @@ Plane:
   you create resources using the Kubernetes Service Account
   `default-cre-pubsub`.
 
+ A `Condition` `WorkloadIdentityConfigured` will show up under resources' `Status`, 
+ indicating the Workload Identity configuration status.
+    
   **_Note:_** The Controller currently doesn’t perform any access control
   checks, as a result, any user who can create a resource can get access to the
   Google Cloud Service Account which grants the `iam.serviceAccountAdmin`
