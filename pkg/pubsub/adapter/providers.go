@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/pubsub"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/wire"
 )
@@ -24,6 +25,7 @@ var AdapterSet wire.ProviderSet = wire.NewSet(
 	NewAdapter,
 	clients.NewPubsubClient,
 	NewPubSubSubscription,
+	converters.NewPubSubConverter,
 	NewStatsReporter,
 	clients.NewHTTPClient,
 )

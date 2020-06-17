@@ -44,33 +44,41 @@ const (
 
 type converterFn func(context.Context, *pubsub.Message) (*cev2.Event, error)
 
-// converters is the map for handling Source specific event
-// conversions. For example, a GCS event will need to be
-// converted differently from the PubSub. The key into
-// this map will be "knative-gcp" CloudEvent attribute.
-// If there's no such attribute, we assume it's a native
-// PubSub message and a default one will be used.
-var converters map[string]converterFn
+type Converter interface {
+	Convert(ctx context.Context, msg *pubsub.Message, converterType string) (*cev2.Event, error)
+}
 
-func init() {
-	converters = map[string]converterFn{
-		CloudAuditLogsConverter: convertCloudAuditLogs,
-		CloudStorageConverter:   convertCloudStorage,
-		CloudSchedulerConverter: convertCloudScheduler,
-		CloudBuildConverter:     convertCloudBuild,
+type PubSubConverter struct {
+	// converters is the map for handling Source specific event
+	// conversions. For example, a GCS event will need to be
+	// converted differently from the PubSub. The key into
+	// this map will be "knative-gcp" CloudEvent attribute.
+	// If there's no such attribute, we assume it's a native
+	// PubSub message and a default one will be used.
+	converters map[string]converterFn
+}
+
+func NewPubSubConverter() Converter {
+	return &PubSubConverter{
+		converters: map[string]converterFn{
+			CloudAuditLogsConverter: convertCloudAuditLogs,
+			CloudStorageConverter:   convertCloudStorage,
+			CloudSchedulerConverter: convertCloudScheduler,
+			CloudBuildConverter:     convertCloudBuild,
+		},
 	}
 }
 
 // Convert converts a message off the pubsub format to a source specific if
 // there's a registered handler for the type in the converters map.
 // If there's no registered handler, a default Pubsub one will be used.
-func Convert(ctx context.Context, msg *pubsub.Message, converterType string) (*cev2.Event, error) {
+func (c *PubSubConverter) Convert(ctx context.Context, msg *pubsub.Message, converterType string) (*cev2.Event, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("nil pubsub message")
 	}
 	// Try the converterType, if specified.
 	if converterType != "" {
-		if c, ok := converters[converterType]; ok {
+		if c, ok := c.converters[converterType]; ok {
 			return c(ctx, msg)
 		}
 	}
@@ -78,7 +86,7 @@ func Convert(ctx context.Context, msg *pubsub.Message, converterType string) (*c
 	if msg.Attributes != nil {
 		if val, ok := msg.Attributes[KnativeGCPConverter]; ok {
 			delete(msg.Attributes, KnativeGCPConverter)
-			if c, ok := converters[val]; ok {
+			if c, ok := c.converters[val]; ok {
 				return c(ctx, msg)
 			}
 		}

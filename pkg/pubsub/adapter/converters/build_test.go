@@ -95,7 +95,7 @@ func TestConvertCloudBuild(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := WithProjectKey(context.Background(), "testproject")
-			gotEvent, err := Convert(ctx, test.message, CloudBuildConverter)
+			gotEvent, err := NewPubSubConverter().Convert(ctx, test.message, CloudBuildConverter)
 			if err != nil {
 				if !test.wantErr {
 					t.Errorf("converters.convertBuild got error %v want error=%v", err, test.wantErr)

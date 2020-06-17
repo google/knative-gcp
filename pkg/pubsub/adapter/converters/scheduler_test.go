@@ -83,7 +83,7 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 
-			gotEvent, err := Convert(context.Background(), test.message, "")
+			gotEvent, err := NewPubSubConverter().Convert(context.Background(), test.message, "")
 
 			if test.wantErr != "" || err != nil {
 				var gotErr string

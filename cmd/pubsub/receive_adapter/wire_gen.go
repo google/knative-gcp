@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 )
 
@@ -20,10 +21,11 @@ func InitializeAdapter(ctx context.Context, projectID clients.ProjectID, subscri
 	}
 	pubsubSubscription := adapter.NewPubSubSubscription(ctx, client, subscription)
 	httpClient := clients.NewHTTPClient(ctx, maxConnsPerHost)
+	converter := converters.NewPubSubConverter()
 	statsReporter, err := adapter.NewStatsReporter(name, namespace, resourceGroup)
 	if err != nil {
 		return nil, err
 	}
-	adapterAdapter := adapter.NewAdapter(ctx, pubsubSubscription, httpClient, statsReporter, sinkURI, transformerURI, adapterType, extensions)
+	adapterAdapter := adapter.NewAdapter(ctx, pubsubSubscription, httpClient, converter, statsReporter, sinkURI, transformerURI, adapterType, extensions)
 	return adapterAdapter, nil
 }

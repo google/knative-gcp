@@ -57,6 +57,9 @@ type Adapter struct {
 	// reporter reports metrics to the configured backend.
 	reporter StatsReporter
 
+	// converter used to convert pubsub messages to CE.
+	converter converters.Converter
+
 	logger *zap.Logger
 }
 
@@ -65,6 +68,7 @@ func NewAdapter(
 	ctx context.Context,
 	subscription *pubsub.Subscription,
 	outbound *nethttp.Client,
+	converter converters.Converter,
 	reporter StatsReporter,
 	sinkURI SinkURI,
 	transformerURI TransformerURI,
@@ -73,6 +77,7 @@ func NewAdapter(
 	return &Adapter{
 		subscription:   subscription,
 		outbound:       outbound,
+		converter:      converter,
 		reporter:       reporter,
 		sinkURI:        string(sinkURI),
 		transformerURI: string(transformerURI),
@@ -111,7 +116,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 }
 
 func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
-	event, err := converters.Convert(ctx, msg, a.adapterType)
+	event, err := a.converter.Convert(ctx, msg, a.adapterType)
 	if err != nil {
 		a.logger.Debug("Failed to convert received message to an event, check the msg format: %w", zap.Error(err))
 		// Ack the message so it won't be retried
