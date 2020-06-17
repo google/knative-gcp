@@ -108,9 +108,6 @@ github.com/cloudevents/sdk-go/pkg/cloudevents/extensions
 github.com/cloudevents/sdk-go/pkg/cloudevents/observability
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http
-github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub
-github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context
-github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/internal
 github.com/cloudevents/sdk-go/pkg/cloudevents/types
 # github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
 ## explicit
