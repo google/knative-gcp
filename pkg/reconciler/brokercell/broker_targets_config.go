@@ -113,6 +113,8 @@ func (r *Reconciler) addToConfig(ctx context.Context, b *brokerv1beta1.Broker, t
 				if t.Spec.Filter != nil && t.Spec.Filter.Attributes != nil {
 					target.FilterAttributes = t.Spec.Filter.Attributes
 				}
+				// TODO(#939) May need to use "data plane readiness" for trigger in stead of the
+				//  overall status, see https://github.com/google/knative-gcp/issues/939#issuecomment-644337937
 				if t.Status.IsReady() {
 					target.State = config.State_READY
 				} else {
