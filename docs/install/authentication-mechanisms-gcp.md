@@ -176,7 +176,7 @@ and a Kubernetes Service Account (KSA), you need to check:
 
 ### Kubernetes Secrets
 
-To ensure kubernetes Secret correctly are configured in a namespace, you need to check if a Kubernetes Secret 
+To ensure kubernetes Secrets correctly are configured in a namespace, you need to check if a Kubernetes Secret 
 with the correct name is in the namespace. 
 
 By default, this secret is named `google-cloud-key`, but it could
