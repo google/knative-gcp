@@ -77,7 +77,7 @@ func (r *Reconciler) DeleteTopic(ctx context.Context, id string, obj runtime.Obj
 	if exists {
 		if err := topic.Delete(ctx); err != nil {
 			logger.Error("Failed to delete Pub/Sub topic", zap.Error(err))
-			updater.MarkTopicFailed("FinalizeTopicFailed", "failed to delete Pub/Sub topic: %w", err)
+			updater.MarkTopicUnknown("FinalizeTopicDeletionFailed", "failed to delete Pub/Sub topic: %w", err)
 			return err
 		}
 		logger.Info("Deleted PubSub topic", zap.String("name", topic.ID()))

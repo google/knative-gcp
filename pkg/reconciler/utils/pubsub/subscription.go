@@ -84,7 +84,7 @@ func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runt
 	}
 	if exists {
 		if err = r.deleteSubscription(ctx, sub, obj, updater); err != nil {
-			updater.MarkSubscriptionFailed("FinalizeSubscriptionFailed", "failed to delete Pub/Sub subscription: %w", err)
+			updater.MarkSubscriptionUnknown("FinalizeSubscriptionDeletionFailed", "failed to delete Pub/Sub subscription: %w", err)
 			return err
 		}
 	}
