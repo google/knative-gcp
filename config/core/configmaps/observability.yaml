@@ -20,8 +20,10 @@ metadata:
   labels:
     events.cloud.google.com/release: devel
   annotations:
-    knative.dev/example-checksum: 8544d216
+    knative.dev/example-checksum: 4df07073
 data:
+  metrics.backend-destination: stackdriver
+  metrics.reporting-period-seconds: "60"
   _example: |
     ################################
     #                              #

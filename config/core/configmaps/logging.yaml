@@ -20,7 +20,7 @@ metadata:
   labels:
     events.cloud.google.com/release: devel
   annotations:
-    knative.dev/example-checksum: e08b5dde
+    knative.dev/example-checksum: 17b5ff48
 data:
   _example: |
     ################################

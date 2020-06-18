@@ -135,18 +135,16 @@ Plane:
   you create resources using the Kubernetes Service Account
   `default-cre-pubsub`.
 
- A `Condition` `WorkloadIdentityConfigured` will show up under resources' `Status`, 
- indicating the Workload Identity configuration status.
-    
-  **_Note:_** The Controller currently doesn’t perform any access control
-  checks, as a result, any user who can create a resource can get access to the
-  Google Cloud Service Account which grants the `iam.serviceAccountAdmin`
-  permission to the Controller. As an example, if you followed the instructions
-  above, then any user that can make a Knative-GCP source or Channel (e.g.
-  `CloudAuditLogsSource`, `CloudPubSubSource`, etc.) can cause the Kubernetes
-  Service Account `default-cre-pubsub` to be created. If they can also create
-  Pods in that namespace, then they can make a Pod that uses the Google Service
-  Account `cre-pubsub` credentials.
+A `Condition` `WorkloadIdentityConfigured` will show up under resources'
+`Status`, indicating the Workload Identity configuration status.   
+ **_Note:_** The Controller currently doesn’t perform any access control checks,
+as a result, any user who can create a resource can get access to the Google Cloud
+Service Account which grants the `iam.serviceAccountAdmin` permission to the Controller.
+As an example, if you followed the instructions above, then any user that can make
+a Knative-GCP source or Channel (e.g. `CloudAuditLogsSource`, `CloudPubSubSource`,
+etc.) can cause the Kubernetes Service Account `default-cre-pubsub` to be created.
+If they can also create Pods in that namespace, then they can make a Pod that uses
+the Google Service Account `cre-pubsub` credentials.
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 

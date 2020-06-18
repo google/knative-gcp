@@ -19,11 +19,12 @@ package v1beta1
 import (
 	"context"
 	"fmt"
+	"math"
+	"strconv"
+
 	"github.com/google/go-cmp/cmp"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/utils"
-	"math"
-	"strconv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
