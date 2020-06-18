@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/api/apps/v1"
 	"strings"
 	"testing"
 
