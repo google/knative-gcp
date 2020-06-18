@@ -25,6 +25,7 @@ import (
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 
 	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -121,6 +122,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 							Name: "TRANSFORMER_URI",
 						}, {
 							Name: "ADAPTER_TYPE",
+							Value: string(converters.PubSubPull),
 						}, {
 							Name:  "SEND_MODE",
 							Value: "binary",
@@ -205,7 +207,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 				},
 			},
 			Topic:       "topic",
-			AdapterType: "adapter-type",
+			AdapterType: string(converters.PubSubPull),
 		},
 	}
 
@@ -279,7 +281,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 							Value: "http://transformer-uri",
 						}, {
 							Name:  "ADAPTER_TYPE",
-							Value: "adapter-type",
+							Value: string(converters.PubSubPull),
 						}, {
 							Name:  "SEND_MODE",
 							Value: "binary",
@@ -442,7 +444,7 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 							Value: "http://transformer-uri",
 						}, {
 							Name:  "ADAPTER_TYPE",
-							Value: "adapter-type",
+							Value: string(converters.PubSubPull),
 						}, {
 							Name:  "SEND_MODE",
 							Value: "binary",

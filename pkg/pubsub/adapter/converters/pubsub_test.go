@@ -37,7 +37,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 		wantEventFn func() *cev2.Event
 		wantErr     bool
 	}{{
-		name: "non valid alphanumeric attribute",
+		name: "non alphanumeric attribute",
 		message: &pubsub.Message{
 			ID: "id",
 			Data: []byte("\"test data\""), // Data passed in quotes for it to be marshalled properly

@@ -38,8 +38,6 @@ const (
 	Structured ModeType = "structured"
 	// Push mode emulates Pub/Sub push encoding.
 	Push ModeType = "push"
-	// DefaultSendMode is the default choice.
-	DefaultSendMode = Binary
 )
 
 type ConverterType string
@@ -51,6 +49,7 @@ const (
 	CloudAuditLogs ConverterType = "auditlogs"
 	CloudScheduler ConverterType = "scheduler"
 	CloudBuild     ConverterType = "build"
+	PubSubPull     ConverterType = "pubsub_pull"
 )
 
 type converterFn func(context.Context, *pubsub.Message) (*cev2.Event, error)
@@ -77,6 +76,7 @@ func NewPubSubConverter() Converter {
 			CloudStorage:   convertCloudStorage,
 			CloudScheduler: convertCloudScheduler,
 			CloudBuild:     convertCloudBuild,
+			PubSubPull:     convertPubSubPull,
 		},
 	}
 }
