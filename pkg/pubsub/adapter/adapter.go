@@ -26,7 +26,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/cloudevents/sdk-go/v2/binding"
-	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"go.opencensus.io/trace"
@@ -186,14 +185,9 @@ func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
 			return
 		}
 
-		// TODO check if this is OK
 		// Update the tracing information to use the span returned by the transformer.
-		// ctx = trace.NewContext(ctx, trace.FromContext(transformedCTX))
-		if span := trace.FromContext(ctx); span.IsRecordingEvents() {
-			span.Annotate(ceclient.EventTraceAttributes(event),
-				"Event reply",
-			)
-		}
+		// TODO how to get the span returned by the transformer?
+		ctx = trace.NewContext(ctx, trace.FromContext(ctx))
 
 		reply = true
 	}
