@@ -61,7 +61,7 @@ func (r *Reconciler) ReconcileTopic(ctx context.Context, id string, topicConfig 
 	return topic, nil
 }
 
-func (r *Reconciler) DeleteTopic(ctx context.Context, id string, obj runtime.Object) error {
+func (r *Reconciler) DeleteTopic(ctx context.Context, id string, obj runtime.Object, updater StatusUpdater) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Deleting decoupling topic")
 
@@ -71,11 +71,13 @@ func (r *Reconciler) DeleteTopic(ctx context.Context, id string, obj runtime.Obj
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
+		updater.MarkTopicUnknown("FinalizeTopicVerificationFailed", "failed to verify Pub/Sub topic exists: %w", err)
 		return err
 	}
 	if exists {
 		if err := topic.Delete(ctx); err != nil {
 			logger.Error("Failed to delete Pub/Sub topic", zap.Error(err))
+			updater.MarkTopicUnknown("FinalizeTopicDeletionFailed", "failed to delete Pub/Sub topic: %w", err)
 			return err
 		}
 		logger.Info("Deleted PubSub topic", zap.String("name", topic.ID()))

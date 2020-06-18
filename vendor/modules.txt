@@ -304,7 +304,7 @@ github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/tsenart/vegeta v12.7.1-0.20190725001342-b5f4fca92137+incompatible
 github.com/tsenart/vegeta/lib
-# go.opencensus.io v0.22.4-0.20200604162333-785d8992f1ac
+# go.opencensus.io v0.22.4
 ## explicit
 go.opencensus.io
 go.opencensus.io/internal
@@ -1010,7 +1010,6 @@ k8s.io/gengo/types
 # k8s.io/klog v1.0.0
 k8s.io/klog
 # k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29 => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
-k8s.io/kube-openapi/cmd/openapi-gen
 k8s.io/kube-openapi/cmd/openapi-gen/args
 k8s.io/kube-openapi/pkg/common
 k8s.io/kube-openapi/pkg/generators
@@ -1022,7 +1021,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.15.1-0.20200611140922-6287d03b0423
+# knative.dev/eventing v0.15.1-0.20200617151224-2025007875e9
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1093,7 +1092,6 @@ knative.dev/eventing/test/conformance/helpers
 knative.dev/eventing/test/conformance/helpers/tracing
 knative.dev/eventing/test/e2e/helpers
 knative.dev/eventing/test/lib
-knative.dev/eventing/test/lib/cloudevents
 knative.dev/eventing/test/lib/duck
 knative.dev/eventing/test/lib/recordevents
 knative.dev/eventing/test/lib/resources
@@ -1105,16 +1103,14 @@ knative.dev/eventing/test/performance/infra/event_state
 knative.dev/eventing/test/performance/infra/receiver
 knative.dev/eventing/test/performance/infra/sender
 knative.dev/eventing/test/test_images/event-sender
-knative.dev/eventing/test/test_images/logevents
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
-knative.dev/eventing/test/test_images/sendevents
 knative.dev/eventing/test/test_images/transformevents
 # knative.dev/networking v0.0.0-20200611155523-bd13675bcf70
 knative.dev/networking/pkg/apis/config
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
-# knative.dev/pkg v0.0.0-20200614232523-aec2008e6656
+# knative.dev/pkg v0.0.0-20200617175025-6826f2137c31
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1219,7 +1215,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.15.1-0.20200615083925-19a458c63ede
+# knative.dev/serving v0.15.1-0.20200617164325-1b08e8665241
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
@@ -1258,7 +1254,8 @@ knative.dev/serving/pkg/client/listers/autoscaling/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200612191923-a4dd434e085b
+# knative.dev/test-infra v0.0.0-20200617170025-a5ea4989665f
+## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 ## explicit

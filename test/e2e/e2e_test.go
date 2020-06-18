@@ -22,13 +22,11 @@ import (
 	"testing"
 
 	"github.com/cloudevents/sdk-go/v2/binding"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conformancehelpers "knative.dev/eventing/test/conformance/helpers"
 	e2ehelpers "knative.dev/eventing/test/e2e/helpers"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/logstream"
 
-	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -135,19 +133,18 @@ func TestChannelTracing(t *testing.T) {
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	conformancehelpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
-		APIVersion: messagingv1beta1.SchemeGroupVersion.String(),
-		Kind:       "Channel",
-	}, func(client *eventingtestlib.Client) {
-		// This test is running based on code in knative/eventing, so it does not use the same
-		// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
-		// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
-		// repo whose functionality we need to copy here.
+	conformancehelpers.ChannelTracingTestHelperWithChannelTestRunner(t,
+		channelTestRunner,
+		func(client *eventingtestlib.Client) {
+			// This test is running based on code in knative/eventing, so it does not use the same
+			// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
+			// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
+			// repo whose functionality we need to copy here.
 
-		// Copy the secret from the default namespace to the namespace used in the test.
-		lib.GetCredential(client, authConfig.WorkloadIdentity)
-		lib.SetTracingToZipkin(client)
-	})
+			// Copy the secret from the default namespace to the namespace used in the test.
+			lib.GetCredential(client, authConfig.WorkloadIdentity)
+			lib.SetTracingToZipkin(client)
+		})
 }
 
 // TestSmokePullSubscription makes sure we can run tests on PullSubscriptions.

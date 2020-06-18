@@ -18,7 +18,7 @@ require (
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
-	go.opencensus.io v0.22.4-0.20200604162333-785d8992f1ac
+	go.opencensus.io v0.22.4
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
@@ -31,9 +31,10 @@ require (
 	k8s.io/api v0.18.1
 	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.15.1-0.20200611140922-6287d03b0423
-	knative.dev/pkg v0.0.0-20200614232523-aec2008e6656
-	knative.dev/serving v0.15.1-0.20200615083925-19a458c63ede
+	knative.dev/eventing v0.15.1-0.20200617151224-2025007875e9
+	knative.dev/pkg v0.0.0-20200617175025-6826f2137c31
+	knative.dev/serving v0.15.1-0.20200617164325-1b08e8665241
+	knative.dev/test-infra v0.0.0-20200617170025-a5ea4989665f // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
