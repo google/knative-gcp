@@ -16,7 +16,11 @@ limitations under the License.
 
 package tracing
 
-import "knative.dev/eventing/pkg/tracing"
+import (
+	"fmt"
+	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/eventing/pkg/tracing"
+)
 
 const (
 	PubSubProtocol = "Pub/Sub"
@@ -25,3 +29,7 @@ const (
 var (
 	PubSubProtocolAttribute = tracing.MessagingProtocolAttribute(PubSubProtocol)
 )
+
+func ChannelMessagingDestination(c types.NamespacedName) string {
+	return fmt.Sprintf("channel:%s.%s", c.Name, c.Namespace)
+}

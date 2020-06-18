@@ -25,11 +25,16 @@ import (
 	"go.uber.org/zap"
 
 	"cloud.google.com/go/pubsub"
+	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
+	"github.com/cloudevents/sdk-go/v2/extensions"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/tracing"
 	"go.opencensus.io/trace"
+	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/logging"
+	kntracing "knative.dev/eventing/pkg/tracing"
 )
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
@@ -64,6 +69,9 @@ type Adapter struct {
 	cancel context.CancelFunc
 
 	logger *zap.Logger
+
+	// name of the resource this receive adapter belong to.
+	namespacedResourceName types.NamespacedName
 }
 
 // NewAdapter creates a new adapter.
@@ -73,20 +81,23 @@ func NewAdapter(
 	outbound *nethttp.Client,
 	converter converters.Converter,
 	reporter StatsReporter,
+	namespace Namespace,
+	name Name,
 	sinkURI SinkURI,
 	transformerURI TransformerURI,
 	converterType converters.ConverterType,
 	extensions map[string]string) *Adapter {
 	return &Adapter{
-		subscription:   subscription,
-		outbound:       outbound,
-		converter:      converter,
-		reporter:       reporter,
-		sinkURI:        string(sinkURI),
-		transformerURI: string(transformerURI),
-		converterType:  converterType,
-		extensions:     extensions,
-		logger:         logging.FromContext(ctx),
+		subscription:           subscription,
+		outbound:               outbound,
+		converter:              converter,
+		reporter:               reporter,
+		sinkURI:                string(sinkURI),
+		transformerURI:         string(transformerURI),
+		namespacedResourceName: types.NamespacedName{Name: string(name), Namespace: string(namespace)},
+		converterType:          converterType,
+		extensions:             extensions,
+		logger:                 logging.FromContext(ctx),
 	}
 }
 
@@ -186,9 +197,9 @@ func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
 		}
 
 		// Update the tracing information to use the span returned by the transformer.
-		// TODO how to get the span returned by the transformer?
-		ctx = trace.NewContext(ctx, trace.FromContext(ctx))
-
+		var span *trace.Span
+		ctx, span = a.startSpan(ctx, event)
+		defer span.End()
 		reply = true
 	}
 
@@ -232,4 +243,21 @@ func (a *Adapter) sendMsg(ctx context.Context, address string, msg binding.Messa
 		return nil, err
 	}
 	return a.outbound.Do(req)
+}
+
+func (a *Adapter) startSpan(ctx context.Context, event *cev2.Event) (context.Context, *trace.Span) {
+	var span *trace.Span
+	if dt, ok := extensions.GetDistributedTracingExtension(*event); ok {
+		ctx, span = dt.StartChildSpan(ctx, tracing.ChannelMessagingDestination(a.namespacedResourceName))
+	} else {
+		ctx, span = trace.StartSpan(ctx, tracing.ChannelMessagingDestination(a.namespacedResourceName))
+	}
+	if span.IsRecordingEvents() {
+		span.AddAttributes(
+			kntracing.MessagingSystemAttribute,
+			tracing.PubSubProtocolAttribute,
+			kntracing.MessagingMessageIDAttribute(event.ID()),
+		)
+	}
+	return ctx, span
 }
