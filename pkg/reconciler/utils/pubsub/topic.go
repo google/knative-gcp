@@ -71,7 +71,7 @@ func (r *Reconciler) DeleteTopic(ctx context.Context, id string, obj runtime.Obj
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
-		updater.MarkTopicUnknown("FinalizeTopicUnknown", "failed to verify Pub/Sub topic exists: %w", err)
+		updater.MarkTopicUnknown("FinalizeTopicVerificationFailed", "failed to verify Pub/Sub topic exists: %w", err)
 		return err
 	}
 	if exists {

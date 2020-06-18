@@ -58,7 +58,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 			r.recorder.Eventf(obj, corev1.EventTypeWarning, topicDeleted, "Unexpected topic deletion detected for subscription: %q", sub.ID())
 			// Subscription with "_deleted-topic_" cannot pull from the new topic. In order to recover, we first delete
 			// the sub and then create it. Unacked messages will be lost.
-			if err := r.deleteSubscription(ctx, sub, obj, updater); err != nil {
+			if err := r.deleteSubscription(ctx, sub, obj); err != nil {
 				updater.MarkSubscriptionFailed("SubscriptionDeletionFailed", "topic of the subscription has been deleted, need to recreate the subscription: %v", err)
 				return nil, fmt.Errorf("topic of the subscription has been deleted, need to recreate the subscription: %v", err)
 			}
@@ -79,11 +79,11 @@ func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runt
 	exists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
-		updater.MarkSubscriptionUnknown("FinalizeSubscriptionUnknown", "failed to verify Pub/Sub subscription exists: %w", err)
+		updater.MarkSubscriptionUnknown("FinalizeSubscriptionVerificationFailed", "failed to verify Pub/Sub subscription exists: %w", err)
 		return err
 	}
 	if exists {
-		if err = r.deleteSubscription(ctx, sub, obj, updater); err != nil {
+		if err = r.deleteSubscription(ctx, sub, obj); err != nil {
 			updater.MarkSubscriptionUnknown("FinalizeSubscriptionDeletionFailed", "failed to delete Pub/Sub subscription: %w", err)
 			return err
 		}
@@ -91,7 +91,7 @@ func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runt
 	return nil
 }
 
-func (r *Reconciler) deleteSubscription(ctx context.Context, sub *pubsub.Subscription, obj runtime.Object, updater StatusUpdater) error {
+func (r *Reconciler) deleteSubscription(ctx context.Context, sub *pubsub.Subscription, obj runtime.Object) error {
 	logger := logging.FromContext(ctx)
 	if err := sub.Delete(ctx); err != nil {
 		logger.Error("Failed to delete Pub/Sub subscription", zap.Error(err))

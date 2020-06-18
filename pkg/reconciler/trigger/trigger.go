@@ -241,8 +241,8 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
-		trig.Status.MarkTopicUnknown("FinalizeTopicUnknown", "Failed to find project id: %w", err)
-		trig.Status.MarkSubscriptionUnknown("FinalizeSubscriptionUnknown", "Failed to find project id: %w", err)
+		trig.Status.MarkTopicUnknown("FinalizeTopicProjectIdNotFound", "Failed to find project id: %w", err)
+		trig.Status.MarkSubscriptionUnknown("FinalizeSubscriptionProjectIdNotFound", "Failed to find project id: %w", err)
 		return err
 	}
 
@@ -251,8 +251,8 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 		client, err := pubsub.NewClient(ctx, projectID)
 		if err != nil {
 			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-			trig.Status.MarkTopicUnknown("FinalizeTopicUnknown", "Failed to create Pub/Sub client: %w", err)
-			trig.Status.MarkSubscriptionUnknown("FinalizeSubscriptionUnknown", "Failed to create Pub/Sub client: %w", err)
+			trig.Status.MarkTopicUnknown("FinalizeTopicPubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
+			trig.Status.MarkSubscriptionUnknown("FinalizeSubscriptionPubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
 			return err
 		}
 		defer client.Close()
