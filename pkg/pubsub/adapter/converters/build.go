@@ -27,7 +27,6 @@ import (
 )
 
 const (
-	CloudBuildConverter = "com.google.cloud.build"
 	buildSchemaUrl      = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/build/schema.json"
 )
 

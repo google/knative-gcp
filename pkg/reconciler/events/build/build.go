@@ -18,7 +18,6 @@ package build
 
 import (
 	"context"
-	"github.com/google/knative-gcp/pkg/apis/events"
 
 	"go.uber.org/zap"
 
@@ -28,6 +27,7 @@ import (
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
+	"github.com/google/knative-gcp/pkg/apis/events"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	cloudbuildsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudbuildsource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1beta1"
@@ -72,7 +72,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, build *v1beta1.CloudBuil
 			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile CloudBuildSource workload identity: %s", err.Error())
 		}
 	}
-	_, event := r.PubSubBase.ReconcilePullSubscription(ctx, build, events.CloudBuildTopic, resourceGroup, false)
+	_, event := r.PubSubBase.ReconcilePullSubscription(ctx, build, events.CloudBuildTopic, resourceGroup)
 	if event != nil {
 		return event
 	}

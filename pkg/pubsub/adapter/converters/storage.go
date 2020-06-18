@@ -40,7 +40,6 @@ const (
 	// TODO find the public google endpoint we should use to point to the schema and avoid hosting it ourselves.
 	//  The link above is tied to the go-client, and it seems not to be a valid json schema.
 	storageSchemaUrl      = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
-	CloudStorageConverter = "com.google.cloud.storage"
 )
 
 func convertCloudStorage(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {

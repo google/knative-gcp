@@ -33,7 +33,6 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1beta1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
@@ -122,9 +121,8 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1beta1.CloudS
 		} else if st.Code() == codes.NotFound {
 			// Create the job as it does not exist. For creation, we need a parent, extract it from the jobName.
 			parent := resources.ExtractParentName(jobName)
-			// Add our own converter type, jobName, and schedulerName as customAttributes.
+			// Add our jobName, and schedulerName as customAttributes.
 			customAttributes := map[string]string{
-				converters.KnativeGCPConverter:       converters.CloudSchedulerConverter,
 				v1beta1.CloudSchedulerSourceJobName: jobName,
 				v1beta1.CloudSchedulerSourceName:    scheduler.GetName(),
 			}

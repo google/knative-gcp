@@ -26,7 +26,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
-	v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -348,7 +348,7 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 			Name:      "testname",
 			Namespace: "testnamespace",
 			Annotations: map[string]string{
-				"metrics-resource-group":           "test-resource-group",
+				"metrics-resource-group":          "test-resource-group",
 				duckv1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			},
 		},

@@ -43,6 +43,7 @@ import (
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudpubsubsource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -191,15 +192,15 @@ func TestAllCases(t *testing.T) {
 					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 					},
+					AdapterType: string(converters.CloudPubSub),
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMode(inteventsv1beta1.ModePushCompatible),
 				WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": pubsubName,
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group":           resourceGroup,
+					"metrics-resource-group":          resourceGroup,
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
@@ -230,7 +231,7 @@ func TestAllCases(t *testing.T) {
 							Sink: newSinkDestination(),
 						},
 					},
-					Mode: inteventsv1beta1.ModePushCompatible,
+					AdapterType: string(converters.CloudPubSub),
 				}),
 				WithPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
 			newSink(),
@@ -271,7 +272,7 @@ func TestAllCases(t *testing.T) {
 							Sink: newSinkDestination(),
 						},
 					},
-					Mode: inteventsv1beta1.ModePushCompatible,
+					AdapterType: string(converters.CloudPubSub),
 				}),
 				WithPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
 			newSink(),
@@ -312,7 +313,7 @@ func TestAllCases(t *testing.T) {
 							Sink: newSinkDestination(),
 						},
 					},
-					Mode: inteventsv1beta1.ModePushCompatible,
+					AdapterType: string(converters.CloudPubSub),
 				}),
 				WithPullSubscriptionReady(sinkURI),
 				WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
@@ -365,7 +366,13 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			PubSubBase:   intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			PubSubBase: intevents.NewPubSubBase(ctx,
+				&intevents.PubSubBaseArgs{
+					ControllerAgentName: controllerAgentName,
+					ReceiveAdapterName:  receiveAdapterName,
+					ReceiveAdapterType:  string(converters.CloudPubSub),
+					ConfigWatcher:       cmw,
+				}),
 			Identity:     identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			pubsubLister: listers.GetCloudPubSubSourceLister(),
 		}

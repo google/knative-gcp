@@ -23,7 +23,9 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cev2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
 )
 
 // ModeType is the type for mode enum.
@@ -38,33 +40,43 @@ const (
 	Push ModeType = "push"
 	// DefaultSendMode is the default choice.
 	DefaultSendMode = Binary
-	// The key used in the message attributes which defines the converter type.
-	KnativeGCPConverter = "knative-gcp"
+)
+
+type ConverterType string
+
+const (
+	// The different type of Converters for the different sources.
+	CloudPubSub    ConverterType = "pubsub"
+	CloudStorage   ConverterType = "storage"
+	CloudAuditLogs ConverterType = "auditlogs"
+	CloudScheduler ConverterType = "scheduler"
+	CloudBuild     ConverterType = "build"
 )
 
 type converterFn func(context.Context, *pubsub.Message) (*cev2.Event, error)
 
 type Converter interface {
-	Convert(ctx context.Context, msg *pubsub.Message, converterType string) (*cev2.Event, error)
+	Convert(ctx context.Context, msg *pubsub.Message, converterType ConverterType) (*cev2.Event, error)
 }
 
 type PubSubConverter struct {
 	// converters is the map for handling Source specific event
 	// conversions. For example, a GCS event will need to be
-	// converted differently from the PubSub. The key into
-	// this map will be "knative-gcp" CloudEvent attribute.
-	// If there's no such attribute, we assume it's a native
-	// PubSub message and a default one will be used.
-	converters map[string]converterFn
+	// converted differently than a PubSub one. The key into
+	// this map will be the adapter type. If not present,
+	// we assume it's a native PubSub message and a default
+	// one will be used.
+	converters map[ConverterType]converterFn
 }
 
 func NewPubSubConverter() Converter {
 	return &PubSubConverter{
-		converters: map[string]converterFn{
-			CloudAuditLogsConverter: convertCloudAuditLogs,
-			CloudStorageConverter:   convertCloudStorage,
-			CloudSchedulerConverter: convertCloudScheduler,
-			CloudBuildConverter:     convertCloudBuild,
+		converters: map[ConverterType]converterFn{
+			CloudPubSub:    convertCloudPubSub,
+			CloudAuditLogs: convertCloudAuditLogs,
+			CloudStorage:   convertCloudStorage,
+			CloudScheduler: convertCloudScheduler,
+			CloudBuild:     convertCloudBuild,
 		},
 	}
 }
@@ -72,7 +84,7 @@ func NewPubSubConverter() Converter {
 // Convert converts a message off the pubsub format to a source specific if
 // there's a registered handler for the type in the converters map.
 // If there's no registered handler, a default Pubsub one will be used.
-func (c *PubSubConverter) Convert(ctx context.Context, msg *pubsub.Message, converterType string) (*cev2.Event, error) {
+func (c *PubSubConverter) Convert(ctx context.Context, msg *pubsub.Message, converterType ConverterType) (*cev2.Event, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("nil pubsub message")
 	}
@@ -82,16 +94,8 @@ func (c *PubSubConverter) Convert(ctx context.Context, msg *pubsub.Message, conv
 			return c(ctx, msg)
 		}
 	}
-	// Try the generic KnativeGCPConverter attribute, if present.
-	if msg.Attributes != nil {
-		if val, ok := msg.Attributes[KnativeGCPConverter]; ok {
-			delete(msg.Attributes, KnativeGCPConverter)
-			if c, ok := c.converters[val]; ok {
-				return c(ctx, msg)
-			}
-		}
-	}
 
 	// No converter, PubSub is the default one.
-	return convertPubSub(ctx, msg)
+	return binding.ToEvent(ctx, cepubsub.NewMessage(msg))
+
 }

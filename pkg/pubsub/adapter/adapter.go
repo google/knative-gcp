@@ -52,8 +52,8 @@ type Adapter struct {
 	// extensions is the converted ExtensionsBased64 value.
 	extensions map[string]string
 
-	// adapterType use to select which converter to use.
-	adapterType string
+	// converterType use to select which converter to use.
+	converterType converters.ConverterType
 
 	// reporter reports metrics to the configured backend.
 	reporter StatsReporter
@@ -76,7 +76,7 @@ func NewAdapter(
 	reporter StatsReporter,
 	sinkURI SinkURI,
 	transformerURI TransformerURI,
-	adapterType AdapterType,
+	converterType converters.ConverterType,
 	extensions map[string]string) *Adapter {
 	return &Adapter{
 		subscription:   subscription,
@@ -85,7 +85,7 @@ func NewAdapter(
 		reporter:       reporter,
 		sinkURI:        string(sinkURI),
 		transformerURI: string(transformerURI),
-		adapterType:    string(adapterType),
+		converterType:  converterType,
 		extensions:     extensions,
 		logger:         logging.FromContext(ctx),
 	}
@@ -127,7 +127,7 @@ func (a *Adapter) Stop() {
 // TODO refactor this method. As our RA code is used both for Sources and our Channel, it also supports replies
 //  (in the case of Channels) and the logic is more convoluted.
 func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
-	event, err := a.converter.Convert(ctx, msg, a.adapterType)
+	event, err := a.converter.Convert(ctx, msg, a.converterType)
 	if err != nil {
 		a.logger.Debug("Failed to convert received message to an event, check the msg format: %w", zap.Error(err))
 		// Ack the message so it won't be retried

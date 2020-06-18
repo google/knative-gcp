@@ -70,7 +70,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 			ctx = WithTopicKey(ctx, "testtopic")
 			ctx = WithSubscriptionKey(ctx, "testsubscription")
 
-			gotEvent, err := NewPubSubConverter().Convert(ctx, test.message, "")
+			gotEvent, err := NewPubSubConverter().Convert(ctx, test.message, CloudPubSub)
 			if err != nil {
 				if !test.wantErr {
 					t.Errorf("converters.convertPubsub got error %v want error=%v", err, test.wantErr)

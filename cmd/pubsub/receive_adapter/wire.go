@@ -22,6 +22,7 @@ import (
 	"context"
 
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 
 	"github.com/google/wire"
@@ -35,7 +36,7 @@ func InitializeAdapter(
 	name adapter.Name,
 	namespace adapter.Namespace,
 	resourceGroup adapter.ResourceGroup,
-	adapterType adapter.AdapterType,
+	converterType converters.ConverterType,
 	sinkURI adapter.SinkURI,
 	transformerURI adapter.TransformerURI,
 	extensions map[string]string,

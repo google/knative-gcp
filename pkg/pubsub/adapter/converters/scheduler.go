@@ -27,10 +27,6 @@ import (
 	cev2 "github.com/cloudevents/sdk-go/v2"
 )
 
-const (
-	CloudSchedulerConverter = "com.google.cloud.scheduler"
-)
-
 func convertCloudScheduler(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {
 	event := cev2.NewEvent(cev2.VersionV1)
 	event.SetID(msg.ID)

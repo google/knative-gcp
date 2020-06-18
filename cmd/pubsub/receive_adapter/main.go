@@ -28,6 +28,7 @@ import (
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/context"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
@@ -61,6 +62,7 @@ type envConfig struct {
 	Transformer string `envconfig:"TRANSFORMER_URI"`
 
 	// Environment variable specifying the type of adapter to use.
+	// Used for CE conversion.
 	AdapterType string `envconfig:"ADAPTER_TYPE"`
 
 	// Topic is the environment variable containing the PubSub Topic being
@@ -174,7 +176,7 @@ func main() {
 		Name(env.Name),
 		Namespace(env.Namespace),
 		ResourceGroup(env.ResourceGroup),
-		AdapterType(env.AdapterType),
+		converters.ConverterType(env.AdapterType),
 		SinkURI(env.Sink),
 		TransformerURI(env.Transformer),
 		extensions)

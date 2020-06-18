@@ -26,7 +26,7 @@ import (
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
 )
 
-func convertPubSub(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {
+func convertCloudPubSub(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {
 	event := cev2.NewEvent(cev2.VersionV1)
 	event.SetID(msg.ID)
 	event.SetTime(msg.PublishTime)

@@ -48,9 +48,6 @@ func TestConvertCloudStorageSource(t *testing.T) {
 		name: "no attributes",
 		message: &pubsub.Message{
 			Data: []byte("test data"),
-			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-			},
 		},
 		wantEventFn: func() *cev2.Event {
 			return storageCloudEvent()
@@ -61,10 +58,9 @@ func TestConvertCloudStorageSource(t *testing.T) {
 		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-				"eventType":   eventType,
-				"attribute1":  "value1",
-				"attribute2":  "value2",
+				"eventType":  eventType,
+				"attribute1": "value1",
+				"attribute2": "value2",
 			},
 		},
 		wantEventFn: func() *cev2.Event {
@@ -76,9 +72,8 @@ func TestConvertCloudStorageSource(t *testing.T) {
 		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-				"bucketId":    bucket,
-				"objectId":    objectId,
+				"bucketId": bucket,
+				"objectId": objectId,
 			},
 		},
 		wantEventFn: func() *cev2.Event {
@@ -90,10 +85,9 @@ func TestConvertCloudStorageSource(t *testing.T) {
 		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-				"eventType":   "RANDOM_EVENT",
-				"bucketId":    bucket,
-				"objectId":    objectId,
+				"eventType": "RANDOM_EVENT",
+				"bucketId":  bucket,
+				"objectId":  objectId,
 			},
 		},
 		wantEventFn: func() *cev2.Event {
@@ -105,9 +99,8 @@ func TestConvertCloudStorageSource(t *testing.T) {
 		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-				"bucketId":    bucket,
-				"eventType":   eventType,
+				"bucketId":  bucket,
+				"eventType": eventType,
 			},
 		},
 		wantEventFn: func() *cev2.Event {
@@ -117,14 +110,13 @@ func TestConvertCloudStorageSource(t *testing.T) {
 	}, {
 		name: "valid message",
 		message: &pubsub.Message{
-			ID:   "id",
+			ID:          "id",
 			PublishTime: storagePublishTime,
-			Data: []byte("test data"),
+			Data:        []byte("test data"),
 			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-				"bucketId":    bucket,
-				"eventType":   eventType,
-				"objectId":    objectId,
+				"bucketId":  bucket,
+				"eventType": eventType,
+				"objectId":  objectId,
 			},
 		},
 		wantEventFn: func() *cev2.Event {
@@ -134,7 +126,7 @@ func TestConvertCloudStorageSource(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			gotEvent, err := NewPubSubConverter().Convert(context.Background(), test.message, "")
+			gotEvent, err := NewPubSubConverter().Convert(context.Background(), test.message, CloudStorage)
 
 			if err != nil {
 				if !test.wantErr {

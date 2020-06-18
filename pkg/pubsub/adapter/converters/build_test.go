@@ -56,10 +56,7 @@ func TestConvertCloudBuild(t *testing.T) {
 			},
 		},
 		wantEventFn: func() *cev2.Event {
-			return buildCloudEvent(map[string]string{
-				"buildId": buildID,
-				"status":  buildStatus,
-			}, buildID, buildStatus)
+			return buildCloudEvent(buildID, buildStatus)
 		},
 	},
 		{
@@ -95,7 +92,7 @@ func TestConvertCloudBuild(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := WithProjectKey(context.Background(), "testproject")
-			gotEvent, err := NewPubSubConverter().Convert(ctx, test.message, CloudBuildConverter)
+			gotEvent, err := NewPubSubConverter().Convert(ctx, test.message, CloudBuild)
 			if err != nil {
 				if !test.wantErr {
 					t.Errorf("converters.convertBuild got error %v want error=%v", err, test.wantErr)
@@ -124,7 +121,7 @@ func TestConvertCloudBuild(t *testing.T) {
 	}
 }
 
-func buildCloudEvent(extensions map[string]string, buildID, buildStatus string) *cev2.Event {
+func buildCloudEvent(buildID, buildStatus string) *cev2.Event {
 	e := cev2.NewEvent(cev2.VersionV1)
 	e.SetID("id")
 	e.SetTime(buildPublishTime)

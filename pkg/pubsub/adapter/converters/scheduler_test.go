@@ -39,7 +39,7 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 	}{{
 		name: "valid attributes",
 		message: &pubsub.Message{
-			ID: "id",
+			ID:   "id",
 			Data: []byte("test data"),
 			Attributes: map[string]string{
 				"knative-gcp":   "com.google.cloud.scheduler",
@@ -83,7 +83,7 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 
-			gotEvent, err := NewPubSubConverter().Convert(context.Background(), test.message, "")
+			gotEvent, err := NewPubSubConverter().Convert(context.Background(), test.message, CloudScheduler)
 
 			if test.wantErr != "" || err != nil {
 				var gotErr string

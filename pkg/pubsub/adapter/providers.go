@@ -14,7 +14,6 @@ import (
 type Name string
 type Namespace string
 type ResourceGroup string
-type AdapterType string
 
 type SinkURI string
 type TransformerURI string

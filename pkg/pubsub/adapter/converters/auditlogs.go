@@ -39,8 +39,6 @@ import (
 )
 
 const (
-	CloudAuditLogsConverter = "com.google.cloud.auditlogs"
-
 	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
 
 	parentResourcePattern = `^(:?projects|organizations|billingAccounts|folders)/[^/]+`
