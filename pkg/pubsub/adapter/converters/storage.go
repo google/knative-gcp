@@ -69,7 +69,7 @@ func convertCloudStorage(ctx context.Context, msg *pubsub.Message) (*cev2.Event,
 		return nil, errors.New("received event did not have eventType")
 	}
 
-	if err := event.SetData(cev2.ApplicationJSON, msg); err != nil {
+	if err := event.SetData(cev2.ApplicationJSON, msg.Data); err != nil {
 		return nil, err
 	}
 	return &event, nil
