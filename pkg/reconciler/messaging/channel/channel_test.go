@@ -32,7 +32,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
-	
+
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 
 	. "knative.dev/pkg/reconciler/testing"

@@ -15,6 +15,7 @@ package v1beta1
 
 import (
 	"context"
+
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"

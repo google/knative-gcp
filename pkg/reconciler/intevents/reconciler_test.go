@@ -390,7 +390,7 @@ func TestCreates(t *testing.T) {
 				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
-				"metrics-resource-group":       resourceGroup,
+				"metrics-resource-group":      resourceGroup,
 				v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
@@ -412,7 +412,7 @@ func TestCreates(t *testing.T) {
 					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group":       resourceGroup,
+					"metrics-resource-group":      resourceGroup,
 					v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 				}),
 				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
@@ -497,7 +497,7 @@ func TestCreates(t *testing.T) {
 				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
-				"metrics-resource-group":       resourceGroup,
+				"metrics-resource-group":      resourceGroup,
 				v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
@@ -519,7 +519,7 @@ func TestCreates(t *testing.T) {
 					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group":       resourceGroup,
+					"metrics-resource-group":      resourceGroup,
 					v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 				}),
 				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
