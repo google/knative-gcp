@@ -20,7 +20,7 @@ package events
 import "k8s.io/apimachinery/pkg/runtime/schema"
 
 const (
-	GroupName = "events.cloud.google.com"
+	GroupName       = "events.cloud.google.com"
 	CloudBuildTopic = "cloud-builds"
 )
 

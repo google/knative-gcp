@@ -258,7 +258,8 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 
 func (r *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1beta1.Channel) error {
 	if channel.Status.SubscribableStatus.Subscribers == nil {
-		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)}
+		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)
+	}
 
 	// Make a map of subscriber name to PullSubscription for lookup.
 	pullsubs := make(map[string]inteventsv1beta1.PullSubscription)

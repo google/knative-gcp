@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/knative-gcp/pkg/apis/convert"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"knative.dev/pkg/apis"
@@ -52,4 +53,3 @@ func (sink *CloudBuildSource) ConvertFrom(_ context.Context, from apis.Convertib
 		return fmt.Errorf("unknown conversion, got: %T", source)
 	}
 }
-
