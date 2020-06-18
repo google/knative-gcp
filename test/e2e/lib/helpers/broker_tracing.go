@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"cloud.google.com/go/trace/apiv1"
+	trace "cloud.google.com/go/trace/apiv1"
 	"google.golang.org/genproto/googleapis/devtools/cloudtrace/v1"
 )
 

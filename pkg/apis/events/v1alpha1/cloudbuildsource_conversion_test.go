@@ -37,7 +37,7 @@ var (
 	completeCloudBuildSource = &CloudBuildSource{
 		ObjectMeta: completeObjectMeta,
 		Spec: CloudBuildSourceSpec{
-			PubSubSpec:          completePubSubSpec,
+			PubSubSpec: completePubSubSpec,
 		},
 		Status: CloudBuildSourceStatus{
 			PubSubStatus: completePubSubStatus,
@@ -97,4 +97,3 @@ func TestClouBuildSourceConversion(t *testing.T) {
 		}
 	}
 }
-

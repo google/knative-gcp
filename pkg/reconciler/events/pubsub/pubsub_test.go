@@ -199,7 +199,7 @@ func TestAllCases(t *testing.T) {
 					"events.cloud.google.com/source-name": pubsubName,
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group":           resourceGroup,
+					"metrics-resource-group":          resourceGroup,
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),

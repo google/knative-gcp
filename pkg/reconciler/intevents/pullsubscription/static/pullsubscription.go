@@ -18,6 +18,7 @@ package static
 
 import (
 	"context"
+
 	"go.uber.org/zap"
 
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"

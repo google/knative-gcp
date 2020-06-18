@@ -20,8 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/apis/events"
 	"testing"
+
+	"github.com/google/knative-gcp/pkg/apis/events"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -202,7 +203,7 @@ func TestAllCases(t *testing.T) {
 						"events.cloud.google.com/source-name": buildName,
 					}),
 					WithPullSubscriptionAnnotations(map[string]string{
-						"metrics-resource-group":           resourceGroup,
+						"metrics-resource-group":          resourceGroup,
 						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),

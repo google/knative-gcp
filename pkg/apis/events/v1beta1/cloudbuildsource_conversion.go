@@ -32,4 +32,3 @@ func (*CloudBuildSource) ConvertTo(_ context.Context, to apis.Convertible) error
 func (*CloudBuildSource) ConvertFrom(_ context.Context, from apis.Convertible) error {
 	return fmt.Errorf("v1beta1 is the highest known version, got: %T", from)
 }
-

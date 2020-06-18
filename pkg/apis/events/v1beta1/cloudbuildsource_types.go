@@ -53,7 +53,6 @@ type CloudBuildSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, and Project
 	duckv1beta1.PubSubSpec `json:",inline"`
-
 }
 
 const (
