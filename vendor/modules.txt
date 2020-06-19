@@ -48,7 +48,7 @@ github.com/BurntSushi/toml
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
-# github.com/aws/aws-sdk-go v1.30.5 => github.com/aws/aws-sdk-go v1.25.1
+# github.com/aws/aws-sdk-go v1.30.5
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/awserr
 github.com/aws/aws-sdk-go/aws/awsutil
@@ -67,12 +67,15 @@ github.com/aws/aws-sdk-go/aws/endpoints
 github.com/aws/aws-sdk-go/aws/request
 github.com/aws/aws-sdk-go/aws/session
 github.com/aws/aws-sdk-go/aws/signer/v4
+github.com/aws/aws-sdk-go/internal/context
 github.com/aws/aws-sdk-go/internal/ini
 github.com/aws/aws-sdk-go/internal/sdkio
 github.com/aws/aws-sdk-go/internal/sdkmath
 github.com/aws/aws-sdk-go/internal/sdkrand
 github.com/aws/aws-sdk-go/internal/sdkuri
 github.com/aws/aws-sdk-go/internal/shareddefaults
+github.com/aws/aws-sdk-go/internal/strings
+github.com/aws/aws-sdk-go/internal/sync/singleflight
 github.com/aws/aws-sdk-go/private/protocol
 github.com/aws/aws-sdk-go/private/protocol/json/jsonutil
 github.com/aws/aws-sdk-go/private/protocol/query
@@ -1271,7 +1274,6 @@ sigs.k8s.io/yaml
 # k8s.io/client-go => k8s.io/client-go v0.17.6
 # k8s.io/code-generator => k8s.io/code-generator v0.17.6
 # k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
-# github.com/aws/aws-sdk-go => github.com/aws/aws-sdk-go v1.25.1
 # github.com/blang/semver => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
 # github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.0
 # github.com/imdario/mergo => github.com/imdario/mergo v0.3.7
