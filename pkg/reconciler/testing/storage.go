@@ -49,7 +49,6 @@ func NewCloudStorageSource(name, namespace string, so ...CloudStorageSourceOptio
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 

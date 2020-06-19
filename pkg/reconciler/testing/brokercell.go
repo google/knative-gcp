@@ -17,7 +17,6 @@ limitations under the License.
 package testing
 
 import (
-	"context"
 	"time"
 
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -39,7 +38,6 @@ func NewBrokerCell(name, namespace string, o ...BrokerCellOption) *intv1alpha1.B
 	for _, opt := range o {
 		opt(bc)
 	}
-	bc.SetDefaults(context.Background())
 	return bc
 }
 

@@ -180,6 +180,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
+				WithCloudStorageSourceDefaultGCPAuth(),
 			),
 			newSink(),
 		},
@@ -195,6 +196,7 @@ func TestAllCases(t *testing.T) {
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudStorageSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
+				WithCloudStorageSourceDefaultGCPAuth(),
 			),
 		}},
 		WantCreates: []runtime.Object{
@@ -212,6 +214,7 @@ func TestAllCases(t *testing.T) {
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				WithTopicDefaultGCPAuth(),
 			),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -236,6 +239,7 @@ func TestAllCases(t *testing.T) {
 					EnablePublisher:   &falseVal,
 				}),
 				WithTopicUnknown(),
+				WithTopicDefaultGCPAuth(),
 			),
 			newSink(),
 		},
