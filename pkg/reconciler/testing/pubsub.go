@@ -44,7 +44,6 @@ func NewCloudPubSubSource(name, namespace string, so ...CloudPubSubSourceOption)
 	for _, opt := range so {
 		opt(ps)
 	}
-	ps.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return ps
 }
 

@@ -160,7 +160,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				})),
+				}),
+				WithCloudAuditLogsSourceDefaultGCPAuth(),
+			),
 		},
 		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -173,7 +175,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				})),
+				}),
+				WithCloudAuditLogsSourceDefaultGCPAuth(),
+			),
 		}},
 		WantCreates: []runtime.Object{
 			NewTopic(sourceName, testNS,
@@ -190,6 +194,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
+				WithTopicDefaultGCPAuth(),
 			),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -218,6 +223,7 @@ func TestAllCases(t *testing.T) {
 					EnablePublisher:   &falseVal,
 				}),
 				WithTopicUnknown(),
+				WithTopicDefaultGCPAuth(),
 			),
 		},
 		Key: testNS + "/" + sourceName,

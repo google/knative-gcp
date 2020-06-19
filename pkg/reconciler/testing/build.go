@@ -44,7 +44,6 @@ func NewCloudBuildSource(name, namespace string, so ...CloudBuildSourceOption) *
 	for _, opt := range so {
 		opt(bs)
 	}
-	bs.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return bs
 }
 

@@ -44,7 +44,6 @@ func NewCloudSchedulerSource(name, namespace string, so ...CloudSchedulerSourceO
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 

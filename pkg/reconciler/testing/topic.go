@@ -42,7 +42,6 @@ func NewTopic(name, namespace string, so ...TopicOption) *v1beta1.Topic {
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 

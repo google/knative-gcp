@@ -41,7 +41,6 @@ func NewCloudAuditLogsSource(name, namespace string, opts ...CloudAuditLogsSourc
 	for _, opt := range opts {
 		opt(cal)
 	}
-	cal.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return cal
 }
 

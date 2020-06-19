@@ -49,7 +49,6 @@ func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
@@ -78,7 +77,6 @@ func NewPullSubscriptionWithoutNamespace(name string, so ...PullSubscriptionOpti
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
@@ -186,7 +184,6 @@ func WithPullSubscriptionMarkNoDeployed(name, namespace string) PullSubscription
 func WithPullSubscriptionSpec(spec v1beta1.PullSubscriptionSpec) PullSubscriptionOption {
 	return func(s *v1beta1.PullSubscription) {
 		s.Spec = spec
-		s.Spec.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }
 

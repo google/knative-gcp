@@ -46,7 +46,6 @@ func NewChannel(name, namespace string, so ...ChannelOption) *v1beta1.Channel {
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
@@ -60,7 +59,6 @@ func NewChannelWithoutNamespace(name string, so ...ChannelOption) *v1beta1.Chann
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 

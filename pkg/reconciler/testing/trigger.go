@@ -17,7 +17,6 @@ limitations under the License.
 package testing
 
 import (
-	"context"
 	"time"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
@@ -51,7 +50,6 @@ func NewTrigger(name, namespace, broker string, to ...TriggerOption) *brokerv1be
 	for _, opt := range to {
 		opt(t)
 	}
-	t.SetDefaults(context.Background())
 	return t
 }
 
