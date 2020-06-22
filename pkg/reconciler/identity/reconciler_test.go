@@ -138,7 +138,8 @@ func TestKSACreates(t *testing.T) {
 				policyManager: m,
 				gcpAuthStore:  NewGCPAuthTestStore(t, tc.config),
 			}
-			identifiable := NewCloudPubSubSource(identifiableName, testNS)
+			identifiable := NewCloudPubSubSource(identifiableName, testNS,
+				WithCloudPubSubSourceSetDefaults)
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
 			identifiable.SetAnnotations(map[string]string{
 				duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
@@ -254,7 +255,9 @@ func TestKSADeletes(t *testing.T) {
 				gcpAuthStore:  NewGCPAuthTestStore(t, tc.config),
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
-				WithCloudPubSubSourceServiceAccountName(kServiceAccountName))
+				WithCloudPubSubSourceServiceAccountName(kServiceAccountName),
+				WithCloudPubSubSourceSetDefaults,
+			)
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
 			identifiable.SetAnnotations(map[string]string{
 				duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,

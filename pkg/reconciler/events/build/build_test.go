@@ -167,7 +167,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceAnnotations(map[string]string{
 						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
-					WithCloudBuildSourceDefaultGCPAuth(),
+					WithCloudBuildSourceSetDefault,
 				),
 				newSink(),
 			},
@@ -182,13 +182,13 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceAnnotations(map[string]string{
 						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
-					WithCloudBuildSourceDefaultGCPAuth(),
+					WithCloudBuildSourceSetDefault,
 					WithCloudBuildSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
 				),
 			}},
 			WantCreates: []runtime.Object{
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+				NewPullSubscription(buildName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
 						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
@@ -207,7 +207,7 @@ func TestAllCases(t *testing.T) {
 						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
-					WithPullSubscriptionDefaultGCPAuth(),
+					WithPullSubscriptionDefaultGCPAuth,
 				),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -223,9 +223,10 @@ func TestAllCases(t *testing.T) {
 				NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
+					WithCloudBuildSourceSetDefault,
 				),
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+				NewPullSubscription(buildName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
 						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
@@ -246,6 +247,7 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourcePullSubscriptionFailed("PullSubscriptionFalse", "status false test message"),
+					WithCloudBuildSourceSetDefault,
 				),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -261,9 +263,10 @@ func TestAllCases(t *testing.T) {
 				NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
+					WithCloudBuildSourceSetDefault,
 				),
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+				NewPullSubscription(buildName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
 						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
@@ -284,6 +287,7 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourcePullSubscriptionUnknown("PullSubscriptionUnknown", "status unknown test message"),
+					WithCloudBuildSourceSetDefault,
 				),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -299,9 +303,10 @@ func TestAllCases(t *testing.T) {
 				NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
+					WithCloudBuildSourceSetDefault,
 				),
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+				NewPullSubscription(buildName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
 						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
@@ -334,6 +339,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourcePullSubscriptionReady(),
 					WithCloudBuildSourceSinkURI(pubsubSinkURL),
 					WithCloudBuildSourceSubscriptionID(SubscriptionID),
+					WithCloudBuildSourceSetDefault,
 				),
 			}, {
 				Object: NewCloudBuildSource(buildName, testNS,
@@ -345,6 +351,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceSinkURI(pubsubSinkURL),
 					WithCloudBuildSourceSubscriptionID(SubscriptionID),
 					WithCloudBuildSourceFinalizers("cloudbuildsources.events.cloud.google.com"),
+					WithCloudBuildSourceSetDefault,
 				),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{

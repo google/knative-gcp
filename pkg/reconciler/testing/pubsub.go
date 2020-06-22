@@ -44,7 +44,6 @@ func NewCloudPubSubSource(name, namespace string, so ...CloudPubSubSourceOption)
 	for _, opt := range so {
 		opt(ps)
 	}
-	ps.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return ps
 }
 
@@ -90,14 +89,14 @@ func WithInitCloudPubSubSourceConditions(ps *v1beta1.CloudPubSubSource) {
 
 // WithCloudPubSubSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
 func WithCloudPubSubSourceServiceAccountName(name string) CloudPubSubSourceOption {
-	return func(s *v1beta1.CloudPubSubSource) {
-		s.Status.ServiceAccountName = name
+	return func(ps *v1beta1.CloudPubSubSource) {
+		ps.Status.ServiceAccountName = name
 	}
 }
 
 func WithCloudPubSubSourceWorkloadIdentityFailed(reason, message string) CloudPubSubSourceOption {
-	return func(s *v1beta1.CloudPubSubSource) {
-		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
+	return func(ps *v1beta1.CloudPubSubSource) {
+		ps.Status.MarkWorkloadIdentityFailed(ps.ConditionSet(), reason, message)
 	}
 }
 
@@ -119,10 +118,8 @@ func WithCloudPubSubSourcePullSubscriptionUnknown(reason, message string) CloudP
 
 // WithCloudPubSubSourcePullSubscriptionReady marks the condition that the
 // topic is not ready
-func WithCloudPubSubSourcePullSubscriptionReady() CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
-		ps.Status.MarkPullSubscriptionReady(ps.ConditionSet())
-	}
+func WithCloudPubSubSourcePullSubscriptionReady(ps *v1beta1.CloudPubSubSource) {
+	ps.Status.MarkPullSubscriptionReady(ps.ConditionSet())
 }
 
 // WithCloudPubSubSourceSinkURI sets the status for sink URI
@@ -157,13 +154,11 @@ func WithCloudPubSubSourceObjectMetaGeneration(generation int64) CloudPubSubSour
 }
 
 func WithCloudPubSubSourceAnnotations(Annotations map[string]string) CloudPubSubSourceOption {
-	return func(s *v1beta1.CloudPubSubSource) {
-		s.ObjectMeta.Annotations = Annotations
+	return func(ps *v1beta1.CloudPubSubSource) {
+		ps.ObjectMeta.Annotations = Annotations
 	}
 }
 
-func WithCloudPubSubSourceDefaultGCPAuth() CloudPubSubSourceOption {
-	return func(s *v1beta1.CloudPubSubSource) {
-		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
-	}
+func WithCloudPubSubSourceSetDefaults(ps *v1beta1.CloudPubSubSource) {
+	ps.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }

@@ -51,7 +51,6 @@ func NewTrigger(name, namespace, broker string, to ...TriggerOption) *brokerv1be
 	for _, opt := range to {
 		opt(t)
 	}
-	t.SetDefaults(context.Background())
 	return t
 }
 
@@ -96,14 +95,14 @@ func WithInitTriggerConditions(t *brokerv1beta1.Trigger) {
 }
 
 func WithTriggerGeneration(gen int64) TriggerOption {
-	return func(s *brokerv1beta1.Trigger) {
-		s.Generation = gen
+	return func(t *brokerv1beta1.Trigger) {
+		t.Generation = gen
 	}
 }
 
 func WithTriggerStatusObservedGeneration(gen int64) TriggerOption {
-	return func(s *brokerv1beta1.Trigger) {
-		s.Status.ObservedGeneration = gen
+	return func(t *brokerv1beta1.Trigger) {
+		t.Status.ObservedGeneration = gen
 	}
 }
 
@@ -207,4 +206,8 @@ func WithTriggerFinalizers(finalizers ...string) TriggerOption {
 	return func(t *brokerv1beta1.Trigger) {
 		t.Finalizers = finalizers
 	}
+}
+
+func WithTriggerSetDefaults(t *brokerv1beta1.Trigger) {
+	t.SetDefaults(context.Background())
 }

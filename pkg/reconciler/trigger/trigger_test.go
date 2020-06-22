@@ -95,7 +95,8 @@ func TestAllCasesTrigger(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerDeletionTimestamp,
-					WithTriggerFinalizers(finalizerName)),
+					WithTriggerFinalizers(finalizerName),
+					WithTriggerSetDefaults),
 			},
 			WantEvents: []string{
 				triggerFinalizerUpdatedEvent,
@@ -110,7 +111,9 @@ func TestAllCasesTrigger(t *testing.T) {
 			Name: "Trigger without finalizer is being deleted, no topic or sub exists",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewTrigger(triggerName, testNS, brokerName, WithTriggerDeletionTimestamp),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerDeletionTimestamp,
+					WithTriggerSetDefaults),
 			},
 		},
 		{
@@ -120,7 +123,8 @@ func TestAllCasesTrigger(t *testing.T) {
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerDeletionTimestamp,
 					WithTriggerUID(testUID),
-					WithTriggerFinalizers(finalizerName)),
+					WithTriggerFinalizers(finalizerName),
+					WithTriggerSetDefaults),
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`),
@@ -143,7 +147,8 @@ func TestAllCasesTrigger(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(testUID),
-					WithTriggerFinalizers(finalizerName)),
+					WithTriggerFinalizers(finalizerName),
+					WithTriggerSetDefaults),
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`),
@@ -161,10 +166,13 @@ func TestAllCasesTrigger(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerDeletionTimestamp),
+					WithBrokerDeletionTimestamp,
+					WithBrokerSetDefaults,
+				),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(testUID),
-					WithTriggerFinalizers(finalizerName)),
+					WithTriggerFinalizers(finalizerName),
+					WithTriggerSetDefaults),
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`),
@@ -181,10 +189,14 @@ func TestAllCasesTrigger(t *testing.T) {
 			Name: "Switched to other brokerclass, Trigger with finalizer should be finalized",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBroker(brokerName, testNS, WithBrokerClass("some-other-brokerclass")),
+				NewBroker(brokerName, testNS,
+					WithBrokerClass("some-other-brokerclass"),
+					WithBrokerSetDefaults,
+				),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(testUID),
-					WithTriggerFinalizers(finalizerName)),
+					WithTriggerFinalizers(finalizerName),
+					WithTriggerSetDefaults),
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`),
@@ -203,11 +215,14 @@ func TestAllCasesTrigger(t *testing.T) {
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerv1beta1.BrokerClass),
-					WithInitBrokerConditions),
+					WithInitBrokerConditions,
+					WithBrokerSetDefaults,
+				),
 				makeSubscriberAddressableAsUnstructured(),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(testUID),
-					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerSetDefaults),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
@@ -219,6 +234,7 @@ func TestAllCasesTrigger(t *testing.T) {
 					WithTriggerDependencyReady,
 					WithTriggerSubscriberResolvedSucceeded,
 					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -244,10 +260,13 @@ func TestAllCasesTrigger(t *testing.T) {
 					WithBrokerClass(brokerv1beta1.BrokerClass),
 					WithInitBrokerConditions,
 					WithBrokerReady("url"),
-					WithBrokerConfigReady),
+					WithBrokerConfigReady,
+					WithBrokerSetDefaults,
+				),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(testUID),
-					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerSetDefaults),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
@@ -256,6 +275,7 @@ func TestAllCasesTrigger(t *testing.T) {
 					WithInitTriggerConditions,
 					WithTriggerBrokerReady,
 					WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's URI", `failed to get ref &ObjectReference{Kind:Service,Namespace:testnamespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}: services.serving.knative.dev "subscriber-name" not found`),
+					WithTriggerSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -275,11 +295,14 @@ func TestAllCasesTrigger(t *testing.T) {
 					WithBrokerClass(brokerv1beta1.BrokerClass),
 					WithInitBrokerConditions,
 					WithBrokerReady("url"),
-					WithBrokerConfigReady),
+					WithBrokerConfigReady,
+					WithBrokerSetDefaults,
+				),
 				makeSubscriberAddressableAsUnstructured(),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(testUID),
-					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerSetDefaults),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
@@ -291,6 +314,7 @@ func TestAllCasesTrigger(t *testing.T) {
 					WithTriggerDependencyReady,
 					WithTriggerSubscriberResolvedSucceeded,
 					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerSetDefaults,
 				),
 			}},
 			WantEvents: []string{

@@ -41,7 +41,6 @@ func NewCloudAuditLogsSource(name, namespace string, opts ...CloudAuditLogsSourc
 	for _, opt := range opts {
 		opt(cal)
 	}
-	cal.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return cal
 }
 
@@ -111,10 +110,8 @@ func WithCloudAuditLogsSourceSinkNotReady(reason, messageFmt string, messageA ..
 	}
 }
 
-func WithCloudAuditLogsSourceSinkReady() CloudAuditLogsSourceOption {
-	return func(s *v1beta1.CloudAuditLogsSource) {
-		s.Status.MarkSinkReady()
-	}
+func WithCloudAuditLogsSourceSinkReady(s *v1beta1.CloudAuditLogsSource) {
+	s.Status.MarkSinkReady()
 }
 
 func WithCloudAuditLogsSourceSink(gvk metav1.GroupVersionKind, name string) CloudAuditLogsSourceOption {
@@ -200,8 +197,6 @@ func WithCloudAuditLogsSourceAnnotations(Annotations map[string]string) CloudAud
 	}
 }
 
-func WithCloudAuditLogsSourceDefaultGCPAuth() CloudAuditLogsSourceOption {
-	return func(s *v1beta1.CloudAuditLogsSource) {
-		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
-	}
+func WithCloudAuditLogsSourceSetDefaults(s *v1beta1.CloudAuditLogsSource) {
+	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }

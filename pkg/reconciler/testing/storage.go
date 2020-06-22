@@ -49,7 +49,6 @@ func NewCloudStorageSource(name, namespace string, so ...CloudStorageSourceOptio
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
@@ -223,11 +222,9 @@ func WithCloudStorageSourceObjectMetaGeneration(generation int64) CloudStorageSo
 	}
 }
 
-func WithDeletionTimestamp() CloudStorageSourceOption {
-	return func(s *v1beta1.CloudStorageSource) {
-		ts := metav1.NewTime(time.Unix(1e9, 0))
-		s.DeletionTimestamp = &ts
-	}
+func WithDeletionTimestamp(s *v1beta1.CloudStorageSource) {
+	ts := metav1.NewTime(time.Unix(1e9, 0))
+	s.DeletionTimestamp = &ts
 }
 
 func WithCloudStorageSourceAnnotations(Annotations map[string]string) CloudStorageSourceOption {
@@ -236,8 +233,6 @@ func WithCloudStorageSourceAnnotations(Annotations map[string]string) CloudStora
 	}
 }
 
-func WithCloudStorageSourceDefaultGCPAuth() CloudStorageSourceOption {
-	return func(s *v1beta1.CloudStorageSource) {
-		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
-	}
+func WithCloudStorageSourceSetDefaults(s *v1beta1.CloudStorageSource) {
+	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }
