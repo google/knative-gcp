@@ -53,6 +53,7 @@ import (
 var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	// For group messaging.cloud.google.com.
 	messagingv1alpha1.SchemeGroupVersion.WithKind("Channel"): &messagingv1alpha1.Channel{},
+	messagingv1beta1.SchemeGroupVersion.WithKind("Channel"):  &messagingv1beta1.Channel{},
 
 	// For group events.cloud.google.com.
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource"):   &eventsv1alpha1.CloudStorageSource{},
@@ -60,10 +61,17 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource"):    &eventsv1alpha1.CloudPubSubSource{},
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"): &eventsv1alpha1.CloudAuditLogsSource{},
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudBuildSource"):     &eventsv1alpha1.CloudBuildSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudStorageSource"):    &eventsv1beta1.CloudStorageSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudSchedulerSource"):  &eventsv1beta1.CloudSchedulerSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudPubSubSource"):     &eventsv1beta1.CloudPubSubSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"):  &eventsv1beta1.CloudAuditLogsSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudBuildSource"):      &eventsv1beta1.CloudBuildSource{},
 
 	// For group internal.events.cloud.google.com.
 	inteventsv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &inteventsv1alpha1.PullSubscription{},
 	inteventsv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &inteventsv1alpha1.Topic{},
+	inteventsv1beta1.SchemeGroupVersion.WithKind("PullSubscription"):  &inteventsv1beta1.PullSubscription{},
+	inteventsv1beta1.SchemeGroupVersion.WithKind("Topic"):             &inteventsv1beta1.Topic{},
 }
 
 type defaultingAdmissionController func(context.Context, configmap.Watcher) *controller.Impl

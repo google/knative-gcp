@@ -394,7 +394,6 @@ kubectl get secret -n namespace
       ```
 
 
-
     - If this `Deployment` doesn't have minimum availability due to a missing
       Kubernetes Service Account annotation (for Workload Identity
       authentication configuration), the `Pod` which belongs to this
