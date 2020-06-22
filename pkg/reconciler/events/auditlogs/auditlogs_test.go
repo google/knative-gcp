@@ -160,7 +160,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				})),
+				}),
+				WithCloudAuditLogsSourceSetDefaults(),
+			),
 		},
 		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -173,7 +175,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				})),
+				}),
+				WithCloudAuditLogsSourceSetDefaults(),
+			),
 		}},
 		WantCreates: []runtime.Object{
 			NewTopic(sourceName, testNS,
@@ -210,6 +214,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -230,7 +235,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				})),
+				}),
+				WithCloudAuditLogsSourceSetDefaults(),
+			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, true),
@@ -247,6 +254,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -266,6 +274,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", fmt.Sprintf(`Topic %q did not expose projectid`, sourceName)),
 			),
 		}},
@@ -284,6 +293,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -304,6 +314,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", fmt.Sprintf("Topic %q did not expose topicid", sourceName)),
 			),
 		}},
@@ -322,6 +333,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -342,6 +354,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", fmt.Sprintf(`Topic %q mismatch: expected %q got "garbaaaaage"`, sourceName, testTopicID)),
 			),
 		}},
@@ -360,6 +373,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -395,6 +409,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -413,7 +428,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceTopicUnknown("", "")),
+				WithCloudAuditLogsSourceTopicUnknown("", ""),
+				WithCloudAuditLogsSourceSetDefaults(),
+			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, true),
@@ -433,7 +450,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudAuditLogsSourceDefaultGCPAuth(),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -460,7 +477,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudAuditLogsSourceDefaultGCPAuth(),
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 			),
 		}},
@@ -501,6 +518,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -534,6 +552,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 			),
 		}},
@@ -552,6 +571,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -585,6 +605,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1beta1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
 			),
 		}},
@@ -603,6 +624,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -637,6 +659,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("", ""),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -654,6 +677,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -703,6 +727,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourceSinkNotReady("SinkCreateFailed", "%s: %s", failedToCreateSinkMsg, "create-client-induced-error"),
 			),
 		}},
@@ -714,6 +739,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -763,6 +789,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourceSinkNotReady("SinkCreateFailed", "%s: %s", failedToCreateSinkMsg, "create-client-induced-error"),
 			),
 		}},
@@ -774,6 +801,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -823,6 +851,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourceSinkNotReady("SinkCreateFailed", "%s: %s", failedToCreateSinkMsg, "create-client-induced-error"),
 			),
 		}},
@@ -834,6 +863,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -883,6 +913,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourceSinkNotReady("SinkNotPublisher", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
 			),
 		}},
@@ -895,7 +926,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceMethodName(testMethodName)),
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceSetDefaults(),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
@@ -954,6 +987,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourceSinkNotReady("SinkNotPublisher", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
 			),
 		}},
@@ -966,7 +1000,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceMethodName(testMethodName)),
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceSetDefaults(),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
@@ -1025,6 +1061,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
+				WithCloudAuditLogsSourceSetDefaults(),
 				WithCloudAuditLogsSourceSinkNotReady("SinkNotPublisher", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
 			),
 		}},
@@ -1037,7 +1074,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceMethodName(testMethodName)),
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceSetDefaults(),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
 					Topic:             testTopicID,
@@ -1093,6 +1132,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
 				WithCloudAuditLogsSourceSinkReady(),
 				WithCloudAuditLogsSourceSinkID(testSinkID),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 		}},
 	}, {
@@ -1103,6 +1143,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -1162,6 +1203,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
 				WithCloudAuditLogsSourceSinkReady(),
 				WithCloudAuditLogsSourceSinkID(testSinkID),
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 		}},
 	}, {
@@ -1180,6 +1222,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSinkReady(),
 				WithCloudAuditLogsSourceSinkID(testSinkID),
 				WithCloudAuditLogsSourceDeletionTimestamp,
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
@@ -1227,6 +1270,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSinkReady(),
 				WithCloudAuditLogsSourceSinkID(testSinkID),
 				WithCloudAuditLogsSourceDeletionTimestamp,
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
@@ -1259,6 +1303,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceTopicFailed("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", sourceName)),
 				WithCloudAuditLogsSourcePullSubscriptionFailed("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", sourceName)),
 				WithCloudAuditLogsSourceDeletionTimestamp,
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 		}},
 		WantDeletes: []clientgotesting.DeleteActionImpl{
@@ -1287,6 +1332,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSinkReady(),
 				WithCloudAuditLogsSourceSinkID(testSinkID),
 				WithCloudAuditLogsSourceDeletionTimestamp,
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
@@ -1314,6 +1360,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceTopicFailed("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", sourceName)),
 				WithCloudAuditLogsSourcePullSubscriptionFailed("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", sourceName)),
 				WithCloudAuditLogsSourceDeletionTimestamp,
+				WithCloudAuditLogsSourceSetDefaults(),
 			),
 		}},
 		WantDeletes: []clientgotesting.DeleteActionImpl{
