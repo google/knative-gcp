@@ -14,14 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package volume
 
 import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -30,10 +29,11 @@ import (
 )
 
 const (
-	testDeploymentNS = "test-ns"
-	testDeployment   = "test-deployment"
-	otherNS          = "some-other-ns"
+	testNS  = "test-ns"
+	otherNS = "some-other-ns"
 )
+
+var ls = map[string]string{"key": "value"}
 
 func pod(ns, name string, labels map[string]string, annotations map[string]string) *corev1.Pod {
 	return &corev1.Pod{
@@ -46,21 +46,8 @@ func pod(ns, name string, labels map[string]string, annotations map[string]strin
 	}
 }
 
-func deployment(ns, name string, matchLabels map[string]string) *appsv1.Deployment {
-	return &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: name},
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{MatchLabels: matchLabels},
-		},
-	}
-}
-
 func TestUpdateAnnotation(t *testing.T) {
 	var (
-		labels = map[string]string{
-			"app":  "cloud-run-events",
-			"role": "broker-component",
-		}
 		annotations = map[string]string{
 			"somekey":           "somevalue",
 			volumeGenerationKey: "1",
@@ -71,63 +58,48 @@ func TestUpdateAnnotation(t *testing.T) {
 		}
 	)
 	var tests = []struct {
-		name        string
-		pods        []runtime.Object
-		deployments []runtime.Object
-		wantPods    []corev1.Pod
-		wantErr     bool
+		name     string
+		pods     []runtime.Object
+		wantPods []corev1.Pod
+		wantErr  bool
 	}{
 		{
-			name:    "deployment not found",
-			wantErr: true,
+			name: "no pods",
 		},
 		{
-			name: "deployment has no pods",
-			deployments: []runtime.Object{
-				deployment(testDeploymentNS, testDeployment, labels),
-			},
-		},
-		{
-			name: "two pods match deployment selector but one of them in a different namespace",
+			name: "multiple pods, one matches both selector and namespace, one matches selector but in a different namespace, one doesn't match selector",
 			pods: []runtime.Object{
-				pod(testDeploymentNS, "sameNS", labels, annotations),
-				pod(otherNS, "differentNS", labels, annotations),
-			},
-			deployments: []runtime.Object{
-				deployment(testDeploymentNS, testDeployment, labels),
+				pod(testNS, "sameNS1", ls, annotations),
+				pod(testNS, "sameNS2", map[string]string{"someKey": "someValue"}, annotations),
+				pod(otherNS, "differentNS", ls, annotations),
 			},
 			wantPods: []corev1.Pod{
-				*pod(testDeploymentNS, "sameNS", labels, updatedAnnotations),
-				*pod(otherNS, "differentNS", labels, annotations),
+				*pod(testNS, "sameNS1", ls, updatedAnnotations),
+				*pod(testNS, "sameNS2", map[string]string{"someKey": "someValue"}, annotations),
+				*pod(otherNS, "differentNS", ls, annotations),
 			},
 		},
 		{
-			name: "deployment has multiple pods, one with nil annotation, one with empty annotation, one with annotation",
+			name: "multiple matching pods, one with nil annotation, one with empty annotation, one with annotation",
 			pods: []runtime.Object{
-				pod(testDeploymentNS, "pod1", labels, nil),
-				pod(testDeploymentNS, "pod2", labels, make(map[string]string)),
-				pod(testDeploymentNS, "pod3", labels, annotations),
-			},
-			deployments: []runtime.Object{
-				deployment(testDeploymentNS, testDeployment, labels),
+				pod(testNS, "pod1", ls, nil),
+				pod(testNS, "pod2", ls, make(map[string]string)),
+				pod(testNS, "pod3", ls, annotations),
 			},
 			wantPods: []corev1.Pod{
-				*pod(testDeploymentNS, "pod1", labels, map[string]string{volumeGenerationKey: "1"}),
-				*pod(testDeploymentNS, "pod2", labels, map[string]string{volumeGenerationKey: "1"}),
-				*pod(testDeploymentNS, "pod3", labels, updatedAnnotations),
+				*pod(testNS, "pod1", ls, map[string]string{volumeGenerationKey: "1"}),
+				*pod(testNS, "pod2", ls, map[string]string{volumeGenerationKey: "1"}),
+				*pod(testNS, "pod3", ls, updatedAnnotations),
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			objs := append(test.deployments, test.pods...)
-			client := fake.NewSimpleClientset(objs...)
-			listers := reconcilertesting.NewListers(objs)
-			dl := listers.GetDeploymentLister()
-			pl := listers.GetPodLister()
+			client := fake.NewSimpleClientset(test.pods...)
+			listers := reconcilertesting.NewListers(test.pods)
 
-			err := UpdateVolumeGenerationForDeployment(client, dl, pl, testDeploymentNS, testDeployment)
+			err := UpdateVolumeGeneration(client, listers.GetPodLister(), testNS, ls)
 			if !test.wantErr && err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -135,7 +107,7 @@ func TestUpdateAnnotation(t *testing.T) {
 				t.Fatalf("Expect error but got nil")
 			}
 
-			gotPods := getPods(t, client, testDeploymentNS, otherNS)
+			gotPods := getPods(t, client, testNS, otherNS)
 			if len(gotPods) != len(test.wantPods) {
 				t.Fatalf("Number of got pods is unexpected, got:%v, want:%v", len(gotPods), len(test.wantPods))
 			}
@@ -151,7 +123,7 @@ func TestUpdateAnnotation(t *testing.T) {
 
 // getPods returns pods from all given namespaces.
 func getPods(t *testing.T, client kubernetes.Interface, namespaces ...string) []corev1.Pod {
-	pods := []corev1.Pod{}
+	var pods []corev1.Pod
 	for _, namespace := range namespaces {
 		gotPods, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 		if err != nil {

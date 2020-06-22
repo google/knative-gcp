@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/system"
 )
@@ -154,7 +153,7 @@ func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deploy
 					Volumes: []corev1.Volume{
 						{
 							Name:         "broker-config",
-							VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: "broker-targets"}}},
+							VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: Name(args.BrokerCell.Name, targetsCMName)}}},
 						},
 						{
 							Name:         "google-broker-key",
