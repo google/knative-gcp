@@ -48,12 +48,12 @@ func TestReconcileTopic(t *testing.T) {
 		{
 			name:               "new topic created",
 			wantEvents:         []string{`Normal TopicCreated Created PubSub topic "test-topic"`},
-			wantTopicCondition: apis.Condition{Status: corev1.ConditionTrue,},
+			wantTopicCondition: apis.Condition{Status: corev1.ConditionTrue},
 		},
 		{
 			name:               "topic already exists",
 			pre:                []reconcilertesting.PubsubAction{reconcilertesting.Topic(topic)},
-			wantTopicCondition: apis.Condition{Status: corev1.ConditionTrue,},
+			wantTopicCondition: apis.Condition{Status: corev1.ConditionTrue},
 		},
 	}
 	for _, tc := range tests {
@@ -87,7 +87,8 @@ func TestDeleteTopic(t *testing.T) {
 			tr, cleanup := newTestRunner(t, tc)
 			defer cleanup()
 			r := NewReconciler(tr.client, tr.recorder)
-			err := r.DeleteTopic(context.Background(), topic, obj)
+			su := &utilspubsubtesting.StatusUpdater{}
+			err := r.DeleteTopic(context.Background(), topic, obj, su)
 			tr.verify(t, tc, su, err)
 			exists, err := tr.client.Topic(topic).Exists(context.Background())
 			if err != nil {

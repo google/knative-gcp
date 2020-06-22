@@ -230,7 +230,7 @@ Publish /some-topic
 }
 --- Data ---
 {
-  "specversion": "0.3-wip",
+  "specversion": "1.0",
   "type": "com.example.someevent",
   "time": "2018-04-05T03:56:24Z",
   "id": "1234-1234-1234",

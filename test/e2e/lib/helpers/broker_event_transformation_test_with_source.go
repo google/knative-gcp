@@ -146,13 +146,11 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 
 	// Check if dummy CloudEvent is sent out.
 	if done := jobDone(client, senderName); !done {
-		client.T.Error("dummy event wasn't sent to broker")
-		client.T.Failed()
+		client.T.Fatal("dummy event wasn't sent to broker")
 	}
 	// Check if resp CloudEvent hits the target Service.
 	if done := jobDone(client, targetName); !done {
-		client.T.Error("resp event didn't hit the target pod")
-		client.T.Failed()
+		client.T.Fatal("resp event didn't hit the target pod")
 	}
 	metrics.CheckAssertions(client.T,
 		lib.BrokerMetricAssertion{

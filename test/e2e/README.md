@@ -145,10 +145,10 @@ to the `go test` command.
 For example,
 
 ```shell
-E2E_PROJECT_ID=<project name> go test --tags=e2e \
+E2E_PROJECT_ID=<project name> go test --tags=e2e ./test/e2e/... \
   -workloadIndentity=true \
-  -serviceAccountName=test-default-ksa\
-  ./test/e2e/...
+  -serviceAccountName=test-default-ksa \
+  -run TestPullSubscription
 ```
 
 ## Running E2E Tests on an new cluster

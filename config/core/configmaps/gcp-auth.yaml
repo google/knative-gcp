@@ -20,7 +20,7 @@ metadata:
   labels:
     events.cloud.google.com/release: devel
   annotations:
-    knative.dev/example-checksum: ba2d0f5b
+    knative.dev/example-checksum: 6642f8a8
 data:
   default-auth-config: |
     clusterDefaults:

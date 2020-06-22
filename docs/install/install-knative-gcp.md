@@ -58,9 +58,9 @@ ko apply -f ./config
 
 ## Configure the Authentication Mechanism for GCP (the Control Plane)
 
-Currently, we support two methods: Workload Identity and Kubernetes Secret. 
-The configuration steps have been automated by the scripts below. If you
-wish to configure the auth manually, refer to
+Currently, we support two methods: Workload Identity and Kubernetes Secret. The
+configuration steps have been automated by the scripts below. If you wish to
+configure the auth manually, refer to
 [Manually Configure Authentication Mechanism for the Control Plane](./authentication-mechanisms-gcp.md/#authentication-mechanism-for-the-control-plane).
 
 Before applying initialization scripts, make sure:
@@ -71,57 +71,57 @@ Before applying initialization scripts, make sure:
 1. Your gcloud `CLI` are up to date. You may use `gcloud components update` to
    update it.
 
-### Option 1 (Recommended): Use Workload Identity. 
+### Option 1 (Recommended): Use Workload Identity.
 
 Workload Identity is the recommended way to access Google Cloud services from
 within GKE due to its improved security properties and manageability. For more
 information about Workload Identity, please see
 [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
 
-**_Note:_** If you install the
-  Knative-GCP Constructs with v0.14.0 or older releases, please use option 2.
+**_Note:_** If you install the Knative-GCP Constructs with v0.14.0 or older
+releases, please use option 2.
 
-  Apply [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
+Apply [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
 
-  ```shell
-  ./hack/init_control_plane_gke.sh
-  ```
+```shell
+./hack/init_control_plane_gke.sh
+```
 
-  **_Note_**: If you didn't enable Workload Identity when you created your
-  cluster, this step may take a long time to finish.
+**_Note_**: If you didn't enable Workload Identity when you created your
+cluster, this step may take a long time to finish.
 
 Optional parameters available:
 
-  1. `CLUSTER_NAME`: an optional parameter to specify the cluster to use,
-     default to `gcloud config get-value run/cluster`
-  1. `CLUSTER_LOCATION`: an optional parameter to specify the cluster location
-     to use, default to `gcloud config get-value run/cluster_location`
-  1. `CLUSTER_LOCATION_TYPE`: an optional parameter to specify the cluster
-     location type to use, default to `zonal`. CLUSTER_LOCATION_TYPE must be
-     `zonal` or `regional`.
-  1. `PROJECT_ID`: an optional parameter to specify the project to use, default
-     to `gcloud config get-value project`.
+1. `CLUSTER_NAME`: an optional parameter to specify the cluster to use, default
+   to `gcloud config get-value run/cluster`
+1. `CLUSTER_LOCATION`: an optional parameter to specify the cluster location to
+   use, default to `gcloud config get-value run/cluster_location`
+1. `CLUSTER_LOCATION_TYPE`: an optional parameter to specify the cluster
+   location type to use, default to `zonal`. CLUSTER_LOCATION_TYPE must be
+   `zonal` or `regional`.
+1. `PROJECT_ID`: an optional parameter to specify the project to use, default to
+   `gcloud config get-value project`.
 
-  Here is an example specifying the parameters instead of using the default ones:
+Here is an example specifying the parameters instead of using the default ones:
 
-  ```shell
-  ./hack/init_control_plane_gke.sh [CLUSTER_NAME] [CLUSTER_LOCATION] [CLUSTER_LOCATION_TYPE] [PROJECT_ID]
-  ```
+```shell
+./hack/init_control_plane_gke.sh [CLUSTER_NAME] [CLUSTER_LOCATION] [CLUSTER_LOCATION_TYPE] [PROJECT_ID]
+```
 
 ### Option 2: Export service account keys and store them as Kubernetes Secrets.
 
-  Apply [init_control_plane.sh](../../hack/init_control_plane.sh):
+Apply [init_control_plane.sh](../../hack/init_control_plane.sh):
 
-  ```shell
-  ./hack/init_control_plane.sh
-  ```
+```shell
+./hack/init_control_plane.sh
+```
 
 Optional parameters available:
 
-  1.  `PROJECT_ID`: an optional parameter to specify the project to use, default
-      to `gcloud config get-value project`. If you want to specify the parameter
-      `PROJECT_ID` instead of using the default one,
+1.  `PROJECT_ID`: an optional parameter to specify the project to use, default
+    to `gcloud config get-value project`. If you want to specify the parameter
+    `PROJECT_ID` instead of using the default one,
 
-  ```shell
-  ./hack/init_control_plane.sh [PROJECT_ID]
-  ```
+```shell
+./hack/init_control_plane.sh [PROJECT_ID]
+```

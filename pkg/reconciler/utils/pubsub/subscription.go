@@ -71,7 +71,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 	return r.createSubscription(ctx, id, subConfig, obj, updater)
 }
 
-func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runtime.Object) error {
+func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runtime.Object, updater StatusUpdater) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Deleting decoupling sub")
 
@@ -79,12 +79,15 @@ func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runt
 	exists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
+		updater.MarkSubscriptionUnknown("FinalizeSubscriptionVerificationFailed", "failed to verify Pub/Sub subscription exists: %w", err)
 		return err
 	}
 	if exists {
-		return r.deleteSubscription(ctx, sub, obj)
+		if err = r.deleteSubscription(ctx, sub, obj); err != nil {
+			updater.MarkSubscriptionUnknown("FinalizeSubscriptionDeletionFailed", "failed to delete Pub/Sub subscription: %w", err)
+			return err
+		}
 	}
-
 	return nil
 }
 

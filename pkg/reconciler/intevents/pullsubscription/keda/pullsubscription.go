@@ -60,7 +60,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, ps *v1beta1.PullSubscrip
 	return r.Base.ReconcileKind(ctx, ps)
 }
 
-// TODO upstream to pkg
 func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deployment, src *v1beta1.PullSubscription) error {
 	// Check whether KEDA is installed, if not, error out.
 	// Ideally this should be done in the webhook, thus not even allowing the creation of the object.
@@ -80,12 +79,15 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 	ra.Spec.Replicas = existing.Spec.Replicas
 	if !equality.Semantic.DeepEqual(ra.Spec, existing.Spec) {
 		existing.Spec = ra.Spec
-		_, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
+		existing, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Error updating Receive Adapter", zap.Error(err))
 			return err
 		}
 	}
+
+	src.Status.PropagateDeploymentAvailability(existing)
+
 	// Now we reconcile the ScaledObject.
 	gvr, _ := meta.UnsafeGuessKindToResource(resources.ScaledObjectGVK)
 	scaledObjectResourceInterface := r.DynamicClientSet.Resource(gvr).Namespace(src.Namespace)
@@ -130,6 +132,8 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 			return err
 		}
 	}
+
+	// TODO propagate ScaledObject status
 	return nil
 }
 

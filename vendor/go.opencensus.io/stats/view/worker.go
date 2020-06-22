@@ -20,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"go.opencensus.io/resource"
+
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats"
@@ -47,6 +49,7 @@ type worker struct {
 	c          chan command
 	quit, done chan bool
 	mu         sync.RWMutex
+	r          *resource.Resource
 
 	exportersMu sync.RWMutex
 	exporters   map[Exporter]struct{}
@@ -91,6 +94,10 @@ type Meter interface {
 	RegisterExporter(Exporter)
 	// UnregisterExporter unregisters an exporter.
 	UnregisterExporter(Exporter)
+	// SetResource may be used to set the Resource associated with this registry.
+	// This is intended to be used in cases where a single process exports metrics
+	// for multiple Resources, typically in a multi-tenant situation.
+	SetResource(*resource.Resource)
 
 	// Start causes the Meter to start processing Record calls and aggregating
 	// statistics as well as exporting data.
@@ -249,6 +256,14 @@ func NewMeter() Meter {
 	}
 }
 
+// SetResource associates all data collected by this Meter with the specified
+// resource. This resource is reported when using metricexport.ReadAndExport;
+// it is not provided when used with ExportView/RegisterExporter, because that
+// interface does not provide a means for reporting the Resource.
+func (w *worker) SetResource(r *resource.Resource) {
+	w.r = r
+}
+
 func (w *worker) Start() {
 	go w.start()
 }
@@ -262,7 +277,7 @@ func (w *worker) start() {
 		case cmd := <-w.c:
 			cmd.handleCommand(w)
 		case <-w.timer.C:
-			w.reportUsage(time.Now())
+			w.reportUsage()
 		case <-w.quit:
 			w.timer.Stop()
 			close(w.c)
@@ -309,6 +324,7 @@ func (w *worker) tryRegisterView(v *View) (*viewInternal, error) {
 		return x, nil
 	}
 	w.views[vi.view.Name] = vi
+	w.startTimes[vi] = time.Now()
 	ref := w.getMeasureRef(vi.view.Measure.Name())
 	ref.views[vi] = struct{}{}
 	return vi, nil
@@ -318,20 +334,17 @@ func (w *worker) unregisterView(v *viewInternal) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	delete(w.views, v.view.Name)
+	delete(w.startTimes, v)
 	if measure := w.measures[v.view.Measure.Name()]; measure != nil {
 		delete(measure.views, v)
 	}
 }
 
-func (w *worker) reportView(v *viewInternal, now time.Time) {
+func (w *worker) reportView(v *viewInternal) {
 	if !v.isSubscribed() {
 		return
 	}
 	rows := v.collectedRows()
-	_, ok := w.startTimes[v]
-	if !ok {
-		w.startTimes[v] = now
-	}
 	viewData := &Data{
 		View:  v.view,
 		Start: w.startTimes[v],
@@ -345,22 +358,17 @@ func (w *worker) reportView(v *viewInternal, now time.Time) {
 	}
 }
 
-func (w *worker) reportUsage(now time.Time) {
+func (w *worker) reportUsage() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	for _, v := range w.views {
-		w.reportView(v, now)
+		w.reportView(v)
 	}
 }
 
 func (w *worker) toMetric(v *viewInternal, now time.Time) *metricdata.Metric {
 	if !v.isSubscribed() {
 		return nil
-	}
-
-	_, ok := w.startTimes[v]
-	if !ok {
-		w.startTimes[v] = now
 	}
 
 	var startTime time.Time
@@ -371,7 +379,7 @@ func (w *worker) toMetric(v *viewInternal, now time.Time) *metricdata.Metric {
 		startTime = w.startTimes[v]
 	}
 
-	return viewToMetric(v, now, startTime)
+	return viewToMetric(v, w.r, now, startTime)
 }
 
 // Read reads all view data and returns them as metrics.

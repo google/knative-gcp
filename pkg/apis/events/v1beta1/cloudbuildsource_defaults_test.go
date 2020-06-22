@@ -21,7 +21,6 @@ import (
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
-
 	"github.com/google/go-cmp/cmp"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"

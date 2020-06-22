@@ -171,8 +171,16 @@ func WithPullSubscriptionMarkNoSubscription(reason, message string) PullSubscrip
 	}
 }
 
-func WithPullSubscriptionMarkDeployed(ps *v1beta1.PullSubscription) {
-	ps.Status.MarkDeployed()
+func WithPullSubscriptionMarkDeployed(name, namespace string) PullSubscriptionOption {
+	return func(s *v1beta1.PullSubscription) {
+		s.Status.PropagateDeploymentAvailability(NewDeployment(name, namespace, WithDeploymentAvailable()))
+	}
+}
+
+func WithPullSubscriptionMarkNoDeployed(name, namespace string) PullSubscriptionOption {
+	return func(s *v1beta1.PullSubscription) {
+		s.Status.PropagateDeploymentAvailability(NewDeployment(name, namespace))
+	}
 }
 
 func WithPullSubscriptionSpec(spec v1beta1.PullSubscriptionSpec) PullSubscriptionOption {
@@ -193,7 +201,7 @@ func WithPullSubscriptionReady(sink *apis.URL) PullSubscriptionOption {
 	return func(s *v1beta1.PullSubscription) {
 		s.Status.InitializeConditions()
 		s.Status.MarkSink(sink)
-		s.Status.MarkDeployed()
+		s.Status.PropagateDeploymentAvailability(NewDeployment("any", "any", WithDeploymentAvailable()))
 		s.Status.MarkSubscribed(SubscriptionID)
 	}
 }
