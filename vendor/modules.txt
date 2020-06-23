@@ -611,7 +611,7 @@ google.golang.org/protobuf/types/pluginpb
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.3.0 => gopkg.in/yaml.v2 v2.2.2
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
+# gopkg.in/yaml.v3 v3.0.0-20191026110619-0b21df46bc1d
 gopkg.in/yaml.v3
 # honnef.co/go/tools v0.0.1-2020.1.4 => honnef.co/go/tools v0.0.1-2019.2.3
 honnef.co/go/tools/arg
@@ -1026,12 +1026,13 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.15.1-0.20200619221325-e8ca69f837c7
+# knative.dev/eventing v0.15.1-0.20200623095326-e1e5e1a81ca8
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
 knative.dev/eventing/pkg/apis/configs/v1alpha1
 knative.dev/eventing/pkg/apis/duck
+knative.dev/eventing/pkg/apis/duck/v1
 knative.dev/eventing/pkg/apis/duck/v1alpha1
 knative.dev/eventing/pkg/apis/duck/v1beta1
 knative.dev/eventing/pkg/apis/eventing
@@ -1112,11 +1113,11 @@ knative.dev/eventing/test/test_images/event-sender
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/networking v0.0.0-20200619041525-1faac2ec5d38
+# knative.dev/networking v0.0.0-20200622163826-421cd312c651
 knative.dev/networking/pkg/apis/config
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
-# knative.dev/pkg v0.0.0-20200622015826-5e60b6f8633c
+# knative.dev/pkg v0.0.0-20200623024526-fb0320d9287e
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1221,7 +1222,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.15.1-0.20200621202726-40edbdd01f1c
+# knative.dev/serving v0.15.1-0.20200623132926-f3cdbb37c9d3
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
@@ -1260,7 +1261,8 @@ knative.dev/serving/pkg/client/listers/autoscaling/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200619200026-0b0587234302
+# knative.dev/test-infra v0.0.0-20200623005026-1f7e5f05c52b
+## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 ## explicit
