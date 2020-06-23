@@ -18,10 +18,12 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"log"
 	"net/http"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -42,19 +44,17 @@ func main() {
 	}
 }
 
-func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) {
-	// Check if the received event is the dummy event sent by sender pod.
+func (r *Receiver) Receive(event cloudevents.Event) (*cloudevents.Event, error) {
+	// Check if the received event is the dummy event sent by sender pod.&event, nil
 	// If it is, send back a response CloudEvent.
-	if event.ID() == lib.E2EDummyEventID {
-		resp.Status = http.StatusAccepted
+	if event.ID() != lib.E2EDummyEventID {
+		return nil, fmt.Errorf("unexpected cloud event id got=%s, want=%s", event.ID(), lib.E2EDummyEventID)
+	}
 		event = cloudevents.NewEvent(cloudevents.VersionV1)
 		event.SetID(lib.E2EDummyRespEventID)
 		event.SetType(lib.E2EDummyRespEventType)
 		event.SetSource(lib.E2EDummyRespEventSource)
-		event.SetDataContentType(cloudevents.ApplicationJSON)
-		event.SetData(`{"source": "receiver!"}`)
-		resp.Event = &event
-	} else {
-		resp.Status = http.StatusForbidden
-	}
+		event.SetData(cloudevents.ApplicationJSON, `{"source": "receiver!"}`)
+		return
+
 }

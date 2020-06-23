@@ -57,7 +57,7 @@ func (r *Receiver) Receive(event cloudevents.Event) (*cloudevents.Event, error) 
 	respEvent.SetType(lib.E2EStorageRespEventType)
 	respEvent.SetSource(event.Source())
 	respEvent.SetSubject(event.Subject())
-	respEvent.SetData(event.DataContentType(), `{"source": "storage"}`)
+	respEvent.SetData(cloudevents.ApplicationJSON, `{"source": "storage"}`)
 	fmt.Printf("context of respEvent is: %v\n", respEvent.Context.String())
 	return &respEvent, nil
 }

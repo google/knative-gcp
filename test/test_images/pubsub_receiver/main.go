@@ -57,7 +57,7 @@ func (r *Receiver) Receive(event cloudevents.Event) (*cloudevents.Event, error) 
 	respEvent.SetID(lib.E2EPubSubRespEventID)
 	respEvent.SetType(lib.E2EPubSubRespEventType)
 	respEvent.SetSource(event.Source())
-	respEvent.SetData(event.DataContentType(), `{"source": "pubsub"}`)
+	respEvent.SetData(cloudevents.ApplicationJSON, `{"source": "pubsub"}`)
 	fmt.Printf("context of respEvent is: %v\n", respEvent.Context.String())
 	return &respEvent, nil
 }
