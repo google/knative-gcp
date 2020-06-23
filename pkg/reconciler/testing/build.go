@@ -44,7 +44,6 @@ func NewCloudBuildSource(name, namespace string, so ...CloudBuildSourceOption) *
 	for _, opt := range so {
 		opt(bs)
 	}
-	bs.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return bs
 }
 
@@ -60,14 +59,14 @@ func WithCloudBuildSourceSink(gvk metav1.GroupVersionKind, name string) CloudBui
 	}
 }
 
-func WithCloudBuildSourceDeletionTimestamp(s *v1beta1.CloudBuildSource) {
+func WithCloudBuildSourceDeletionTimestamp(bs *v1beta1.CloudBuildSource) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
-	s.ObjectMeta.SetDeletionTimestamp(&t)
+	bs.ObjectMeta.SetDeletionTimestamp(&t)
 }
 
 func WithCloudBuildSourceProject(project string) CloudBuildSourceOption {
-	return func(s *v1beta1.CloudBuildSource) {
-		s.Spec.Project = project
+	return func(bs *v1beta1.CloudBuildSource) {
+		bs.Spec.Project = project
 	}
 }
 
@@ -78,14 +77,14 @@ func WithInitCloudBuildSourceConditions(bs *v1beta1.CloudBuildSource) {
 
 // WithCloudBuildSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
 func WithCloudBuildSourceServiceAccountName(name string) CloudBuildSourceOption {
-	return func(s *v1beta1.CloudBuildSource) {
-		s.Status.ServiceAccountName = name
+	return func(bs *v1beta1.CloudBuildSource) {
+		bs.Status.ServiceAccountName = name
 	}
 }
 
 func WithCloudBuildSourceWorkloadIdentityFailed(reason, message string) CloudBuildSourceOption {
-	return func(s *v1beta1.CloudBuildSource) {
-		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
+	return func(bs *v1beta1.CloudBuildSource) {
+		bs.Status.MarkWorkloadIdentityFailed(bs.ConditionSet(), reason, message)
 	}
 }
 
@@ -145,13 +144,11 @@ func WithCloudBuildSourceObjectMetaGeneration(generation int64) CloudBuildSource
 }
 
 func WithCloudBuildSourceAnnotations(Annotations map[string]string) CloudBuildSourceOption {
-	return func(s *v1beta1.CloudBuildSource) {
-		s.ObjectMeta.Annotations = Annotations
+	return func(bs *v1beta1.CloudBuildSource) {
+		bs.ObjectMeta.Annotations = Annotations
 	}
 }
 
-func WithCloudBuildSourceDefaultGCPAuth() CloudBuildSourceOption {
-	return func(s *v1beta1.CloudBuildSource) {
-		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
-	}
+func WithCloudBuildSourceSetDefault(bs *v1beta1.CloudBuildSource) {
+	bs.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }

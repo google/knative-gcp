@@ -30,7 +30,6 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	hpav2beta2listers "k8s.io/client-go/listers/autoscaling/v2beta2"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-
 	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler/names"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -51,29 +50,46 @@ type envConfig struct {
 	MetricsPort        int    `envconfig:"METRICS_PORT" default:"9090"`
 }
 
+type listers struct {
+	brokerLister     brokerlisters.BrokerLister
+	hpaLister        hpav2beta2listers.HorizontalPodAutoscalerLister
+	triggerLister    brokerlisters.TriggerLister
+	configMapLister  corev1listers.ConfigMapLister
+	serviceLister    corev1listers.ServiceLister
+	endpointsLister  corev1listers.EndpointsLister
+	deploymentLister appsv1listers.DeploymentLister
+	podLister        corev1listers.PodLister
+}
+
 // NewReconciler creates a new BrokerCell reconciler.
-func NewReconciler(base *reconciler.Base, brokerLister brokerlisters.BrokerLister, serviceLister corev1listers.ServiceLister, endpointsLister corev1listers.EndpointsLister, deploymentLister appsv1listers.DeploymentLister) (*Reconciler, error) {
+func NewReconciler(base *reconciler.Base, ls listers) (*Reconciler, error) {
 	var env envConfig
 	if err := envconfig.Process("BROKER_CELL", &env); err != nil {
 		return nil, err
 	}
 	svcRec := &reconciler.ServiceReconciler{
 		KubeClient:      base.KubeClientSet,
-		ServiceLister:   serviceLister,
-		EndpointsLister: endpointsLister,
+		ServiceLister:   ls.serviceLister,
+		EndpointsLister: ls.endpointsLister,
 		Recorder:        base.Recorder,
 	}
 	deploymentRec := &reconciler.DeploymentReconciler{
 		KubeClient: base.KubeClientSet,
-		Lister:     deploymentLister,
+		Lister:     ls.deploymentLister,
+		Recorder:   base.Recorder,
+	}
+	cmRec := &reconciler.ConfigMapReconciler{
+		KubeClient: base.KubeClientSet,
+		Lister:     ls.configMapLister,
 		Recorder:   base.Recorder,
 	}
 	r := &Reconciler{
 		Base:          base,
 		env:           env,
-		brokerLister:  brokerLister,
+		listers:       ls,
 		svcRec:        svcRec,
 		deploymentRec: deploymentRec,
+		cmRec:         cmRec,
 	}
 	return r, nil
 }
@@ -82,11 +98,11 @@ func NewReconciler(base *reconciler.Base, brokerLister brokerlisters.BrokerListe
 type Reconciler struct {
 	*reconciler.Base
 
-	brokerLister brokerlisters.BrokerLister
-	hpaLister    hpav2beta2listers.HorizontalPodAutoscalerLister
+	listers
 
 	svcRec        *reconciler.ServiceReconciler
 	deploymentRec *reconciler.DeploymentReconciler
+	cmRec         *reconciler.ConfigMapReconciler
 
 	env envConfig
 }
@@ -109,6 +125,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	}
 
 	bc.Status.InitializeConditions()
+
+	// Reconcile broker targets configmap first so that data plane pods are guaranteed to have the configmap volume
+	// mount available.
+	if err := r.reconcileConfig(ctx, bc); err != nil {
+		return err
+	}
 
 	// Reconcile ingress deployment, HPA and service.
 	ingressArgs := r.makeIngressArgs(bc)
@@ -167,10 +189,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		return err
 	}
 	bc.Status.PropagateRetryAvailability(rd)
-
-	// TODO Reconcile:
-	// - Configmap
-	bc.Status.MarkTargetsConfigReady()
 
 	bc.Status.ObservedGeneration = bc.Generation
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellReconciled", "BrokerCell reconciled: \"%s/%s\"", bc.Namespace, bc.Name)

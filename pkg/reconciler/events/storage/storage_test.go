@@ -181,6 +181,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
+				WithCloudStorageSourceSetDefaults,
 			),
 			newSink(),
 		},
@@ -196,6 +197,7 @@ func TestAllCases(t *testing.T) {
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudStorageSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
+				WithCloudStorageSourceSetDefaults,
 			),
 		}},
 		WantCreates: []runtime.Object{
@@ -213,6 +215,7 @@ func TestAllCases(t *testing.T) {
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				WithTopicSetDefaults,
 			),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -229,6 +232,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceSetDefaults,
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -236,7 +240,8 @@ func TestAllCases(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
 				}),
-				WithTopicUnknown(),
+				WithTopicUnknown,
+				WithTopicSetDefaults,
 			),
 			newSink(),
 		},
@@ -248,6 +253,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -264,6 +270,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceSetDefaults,
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -273,6 +280,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 		},
@@ -285,6 +293,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
 				WithCloudStorageSourceTopicFailed("TopicNotReady", `Topic "my-test-storage" did not expose projectid`),
+				WithCloudStorageSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -301,6 +310,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceSetDefaults,
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -311,6 +321,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(""),
 				WithTopicProjectID(testProject),
 				WithTopicAddress(testTopicURI),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 		},
@@ -323,6 +334,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
 				WithCloudStorageSourceTopicFailed("TopicNotReady", `Topic "my-test-storage" did not expose topicid`),
+				WithCloudStorageSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -339,6 +351,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceSetDefaults,
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -349,6 +362,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady("garbaaaaage"),
 				WithTopicProjectID(testProject),
 				WithTopicAddress(testTopicURI),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 		},
@@ -361,6 +375,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
 				WithCloudStorageSourceTopicFailed("TopicNotReady", fmt.Sprintf(`Topic "my-test-storage" mismatch: expected %q got "garbaaaaage"`, testTopicID)),
+				WithCloudStorageSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -377,6 +392,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceSetDefaults,
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -384,8 +400,9 @@ func TestAllCases(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
 				}),
-				WithTopicFailed(),
+				WithTopicFailed,
 				WithTopicProjectID(testProject),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 		},
@@ -398,6 +415,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
 				WithCloudStorageSourceTopicFailed("TopicFailed", "test message"),
+				WithCloudStorageSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -414,6 +432,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceSetDefaults,
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -421,8 +440,9 @@ func TestAllCases(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 					EnablePublisher:   &falseVal,
 				}),
-				WithTopicUnknown(),
+				WithTopicUnknown,
 				WithTopicProjectID(testProject),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 		},
@@ -435,6 +455,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
 				WithCloudStorageSourceTopicUnknown("", ""),
+				WithCloudStorageSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -454,7 +475,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudStorageSourceDefaultGCPAuth(),
+				WithCloudStorageSourceSetDefaults,
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -465,7 +486,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
-				WithTopicDefaultGCPAuth(),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 		},
@@ -482,13 +503,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudStorageSourceDefaultGCPAuth(),
+				WithCloudStorageSourceSetDefaults,
 				WithCloudStorageSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilepullSubscriptionMsg),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			NewPullSubscriptionWithNoDefaults(storageName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			NewPullSubscription(storageName, testNS,
+				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
@@ -521,6 +542,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceSetDefaults,
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -531,9 +553,10 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
+				WithTopicSetDefaults,
 			),
-			NewPullSubscriptionWithNoDefaults(storageName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			NewPullSubscription(storageName, testNS,
+				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
@@ -556,6 +579,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceTopicReady(testTopicID),
 				WithCloudStorageSourceProjectID(testProject),
 				WithCloudStorageSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilepullSubscriptionMsg),
+				WithCloudStorageSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -572,6 +596,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceSetDefaults,
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -582,9 +607,10 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
+				WithTopicSetDefaults,
 			),
-			NewPullSubscriptionWithNoDefaults(storageName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			NewPullSubscription(storageName, testNS,
+				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
@@ -606,6 +632,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceTopicReady(testTopicID),
 				WithCloudStorageSourceProjectID(testProject),
 				WithCloudStorageSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1beta1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
+				WithCloudStorageSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -622,6 +649,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceSetDefaults,
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -632,9 +660,10 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
+				WithTopicSetDefaults,
 			),
-			NewPullSubscriptionWithNoDefaults(storageName, testNS, WithPullSubscriptionUnknown(),
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			NewPullSubscription(storageName, testNS, WithPullSubscriptionUnknown(),
+				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
@@ -656,6 +685,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceTopicReady(testTopicID),
 				WithCloudStorageSourceProjectID(testProject),
 				WithCloudStorageSourcePullSubscriptionUnknown("", ""),
+				WithCloudStorageSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -674,6 +704,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithCloudStorageSourceEventTypes([]string{storagev1beta1.CloudStorageSourceFinalize}),
+				WithCloudStorageSourceSetDefaults,
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -685,9 +716,10 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
+				WithTopicSetDefaults,
 			),
-			NewPullSubscriptionWithNoDefaults(storageName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			NewPullSubscription(storageName, testNS,
+				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: duckv1beta1.PubSubSpec{
 						Project: testProject,
@@ -731,6 +763,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSubscriptionID(SubscriptionID),
 				WithCloudStorageSourceSinkURI(storageSinkURL),
 				WithCloudStorageSourceNotificationNotReady(reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "create-client-induced-error")),
+				WithCloudStorageSourceSetDefaults,
 			),
 		}},
 	},
@@ -743,6 +776,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceEventTypes([]string{storagev1beta1.CloudStorageSourceFinalize}),
+					WithCloudStorageSourceSetDefaults,
 				),
 				NewTopic(storageName, testNS,
 					WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -754,9 +788,10 @@ func TestAllCases(t *testing.T) {
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
+					WithTopicSetDefaults,
 				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+				NewPullSubscription(storageName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
 						PubSubSpec: duckv1beta1.PubSubSpec{
 							Project: testProject,
@@ -802,6 +837,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSubscriptionID(SubscriptionID),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
 					WithCloudStorageSourceNotificationNotReady(reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-notifications-induced-error")),
+					WithCloudStorageSourceSetDefaults,
 				),
 			}},
 		}, {
@@ -813,6 +849,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceEventTypes([]string{storagev1beta1.CloudStorageSourceFinalize}),
+					WithCloudStorageSourceSetDefaults,
 				),
 				NewTopic(storageName, testNS,
 					WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -824,9 +861,10 @@ func TestAllCases(t *testing.T) {
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
+					WithTopicSetDefaults,
 				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+				NewPullSubscription(storageName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
 						PubSubSpec: duckv1beta1.PubSubSpec{
 							Project: testProject,
@@ -872,6 +910,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSubscriptionID(SubscriptionID),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
 					WithCloudStorageSourceNotificationNotReady(reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-add-notification-induced-error")),
+					WithCloudStorageSourceSetDefaults,
 				),
 			}},
 		}, {
@@ -883,6 +922,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceEventTypes([]string{storagev1beta1.CloudStorageSourceFinalize}),
+					WithCloudStorageSourceSetDefaults,
 				),
 				NewTopic(storageName, testNS,
 					WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -894,9 +934,10 @@ func TestAllCases(t *testing.T) {
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
+					WithTopicSetDefaults,
 				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+				NewPullSubscription(storageName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
 						PubSubSpec: duckv1beta1.PubSubSpec{
 							Project: testProject,
@@ -942,6 +983,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSubscriptionID(SubscriptionID),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
 					WithCloudStorageSourceNotificationNotReady(reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "storage: bucket doesn't exist")),
+					WithCloudStorageSourceSetDefaults,
 				),
 			}},
 		}, {
@@ -953,6 +995,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceEventTypes([]string{storagev1beta1.CloudStorageSourceFinalize}),
+					WithCloudStorageSourceSetDefaults,
 				),
 				NewTopic(storageName, testNS,
 					WithTopicSpec(inteventsv1beta1.TopicSpec{
@@ -964,9 +1007,10 @@ func TestAllCases(t *testing.T) {
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
+					WithTopicSetDefaults,
 				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+				NewPullSubscription(storageName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
 						PubSubSpec: duckv1beta1.PubSubSpec{
 							Project: testProject,
@@ -1011,7 +1055,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourcePullSubscriptionReady(),
 					WithCloudStorageSourceSubscriptionID(SubscriptionID),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
-					WithCloudStorageSourceNotificationReady(notificationId)),
+					WithCloudStorageSourceNotificationReady(notificationId),
+					WithCloudStorageSourceSetDefaults,
+				),
 			}},
 		},
 		{
@@ -1026,14 +1072,16 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSinkURI(storageSinkURL),
 					WithCloudStorageSourceNotificationReady(notificationId),
 					WithCloudStorageSourceTopicReady(testTopicID),
-					WithDeletionTimestamp(),
+					WithDeletionTimestamp,
+					WithCloudStorageSourceSetDefaults,
 				),
 				NewTopic(storageName, testNS,
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
+					WithTopicSetDefaults,
 				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				NewPullSubscription(storageName, testNS,
 					WithPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
@@ -1067,14 +1115,16 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSinkURI(storageSinkURL),
 					WithCloudStorageSourceNotificationReady(notificationId),
 					WithCloudStorageSourceTopicReady(testTopicID),
-					WithDeletionTimestamp(),
+					WithDeletionTimestamp,
+					WithCloudStorageSourceSetDefaults,
 				),
 				NewTopic(storageName, testNS,
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
+					WithTopicSetDefaults,
 				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				NewPullSubscription(storageName, testNS,
 					WithPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
@@ -1107,14 +1157,16 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceEventTypes([]string{storagev1beta1.CloudStorageSourceFinalize}),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
 					WithCloudStorageSourceTopicReady(testTopicID),
-					WithDeletionTimestamp(),
+					WithDeletionTimestamp,
+					WithCloudStorageSourceSetDefaults,
 				),
 				NewTopic(storageName, testNS,
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
+					WithTopicSetDefaults,
 				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				NewPullSubscription(storageName, testNS,
 					WithPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
@@ -1147,7 +1199,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceObjectMetaGeneration(generation),
 					WithCloudStorageSourceTopicFailed("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", storageName)),
 					WithCloudStorageSourcePullSubscriptionFailed("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", storageName)),
-					WithDeletionTimestamp()),
+					WithDeletionTimestamp,
+					WithCloudStorageSourceSetDefaults,
+				),
 			}},
 		},
 		{
@@ -1161,14 +1215,16 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceEventTypes([]string{storagev1beta1.CloudStorageSourceFinalize}),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
 					WithCloudStorageSourceTopicReady(testTopicID),
-					WithDeletionTimestamp(),
+					WithDeletionTimestamp,
+					WithCloudStorageSourceSetDefaults,
 				),
 				NewTopic(storageName, testNS,
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
+					WithTopicSetDefaults,
 				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				NewPullSubscription(storageName, testNS,
 					WithPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
@@ -1205,7 +1261,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceObjectMetaGeneration(generation),
 					WithCloudStorageSourceTopicFailed("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", storageName)),
 					WithCloudStorageSourcePullSubscriptionFailed("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", storageName)),
-					WithDeletionTimestamp()),
+					WithDeletionTimestamp,
+					WithCloudStorageSourceSetDefaults,
+				),
 			}},
 		},
 	}

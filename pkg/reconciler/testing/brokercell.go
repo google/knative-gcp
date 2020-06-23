@@ -39,7 +39,6 @@ func NewBrokerCell(name, namespace string, o ...BrokerCellOption) *intv1alpha1.B
 	for _, opt := range o {
 		opt(bc)
 	}
-	bc.SetDefaults(context.Background())
 	return bc
 }
 
@@ -133,4 +132,8 @@ func WithTargetsCofigFailed(reason, msg string) BrokerCellOption {
 	return func(bc *intv1alpha1.BrokerCell) {
 		bc.Status.MarkTargetsConfigFailed(reason, msg)
 	}
+}
+
+func WithBrokerCellSetDefaults(bc *intv1alpha1.BrokerCell) {
+	bc.SetDefaults(context.Background())
 }

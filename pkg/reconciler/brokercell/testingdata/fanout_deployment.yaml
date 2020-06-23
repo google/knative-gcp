@@ -86,7 +86,7 @@ spec:
       volumes:
       - name: broker-config
         configMap:
-          name: broker-targets
+          name: test-brokercell-brokercell-broker-targets
       - name: google-broker-key
         secret:
           secretName: google-broker-key
