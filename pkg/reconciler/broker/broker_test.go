@@ -88,7 +88,9 @@ func TestAllCases(t *testing.T) {
 			NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithInitBrokerConditions,
-				WithBrokerDeletionTimestamp),
+				WithBrokerDeletionTimestamp,
+				WithBrokerSetDefaults,
+			),
 		},
 		WantEvents: []string{
 			brokerFinalizedEvent,
@@ -108,7 +110,9 @@ func TestAllCases(t *testing.T) {
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithInitBrokerConditions,
-				WithBrokerDeletionTimestamp),
+				WithBrokerDeletionTimestamp,
+				WithBrokerSetDefaults,
+			),
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-bkr_testnamespace_test-broker_abc123"`),
@@ -130,14 +134,18 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
-				WithBrokerUID(testUID)),
-			NewBrokerCell(resources.DefaultBrokerCellName, systemNS, WithBrokerCellReady),
+				WithBrokerUID(testUID),
+				WithBrokerSetDefaults),
+			NewBrokerCell(resources.DefaultBrokerCellName, systemNS,
+				WithBrokerCellReady,
+				WithBrokerCellSetDefaults),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerReadyURI(brokerAddress),
+				WithBrokerSetDefaults,
 			),
 		}},
 		WantEvents: []string{
@@ -162,8 +170,13 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
-				WithBrokerUID(testUID)),
-			NewBrokerCell(resources.DefaultBrokerCellName, systemNS, WithBrokerCellIngressFailed("", "")),
+				WithBrokerUID(testUID),
+				WithBrokerSetDefaults,
+			),
+			NewBrokerCell(resources.DefaultBrokerCellName, systemNS,
+				WithBrokerCellIngressFailed("", ""),
+				WithBrokerCellSetDefaults,
+			),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewBroker(brokerName, testNS,
@@ -171,6 +184,7 @@ func TestAllCases(t *testing.T) {
 				WithBrokerUID(testUID),
 				WithBrokerReadyURI(brokerAddress),
 				WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
+				WithBrokerSetDefaults,
 			),
 		}},
 		WantEvents: []string{
@@ -195,7 +209,9 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
-				WithBrokerUID(testUID)),
+				WithBrokerUID(testUID),
+				WithBrokerSetDefaults,
+			),
 		},
 		WithReactors: []clientgotesting.ReactionFunc{
 			InduceFailure("create", "brokercells"),
@@ -207,6 +223,7 @@ func TestAllCases(t *testing.T) {
 					WithBrokerUID(testUID),
 					WithInitBrokerConditions,
 					WithBrokerBrokerCellFailed("BrokerCellCreationFailed", "Failed to create knative-testing/default"),
+					WithBrokerSetDefaults,
 				),
 			},
 		},
@@ -226,7 +243,9 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
-				WithBrokerUID(testUID)),
+				WithBrokerUID(testUID),
+				WithBrokerSetDefaults,
+			),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 			{
@@ -235,6 +254,7 @@ func TestAllCases(t *testing.T) {
 					WithBrokerUID(testUID),
 					WithBrokerReadyURI(brokerAddress),
 					WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
+					WithBrokerSetDefaults,
 				),
 			},
 		},

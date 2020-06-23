@@ -45,7 +45,6 @@ func NewBroker(name, namespace string, o ...BrokerOption) *brokerv1beta1.Broker 
 	for _, opt := range o {
 		opt(b)
 	}
-	b.SetDefaults(context.Background())
 	return b
 }
 
@@ -155,4 +154,8 @@ func WithBrokerClass(bc string) BrokerOption {
 		annotations[eventingv1beta1.BrokerClassAnnotationKey] = bc
 		b.SetAnnotations(annotations)
 	}
+}
+
+func WithBrokerSetDefaults(b *brokerv1beta1.Broker) {
+	b.SetDefaults(context.Background())
 }

@@ -44,7 +44,6 @@ func NewCloudSchedulerSource(name, namespace string, so ...CloudSchedulerSourceO
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
@@ -157,10 +156,8 @@ func WithCloudSchedulerSourcePullSubscriptionUnknown(reason, message string) Clo
 
 // WithCloudSchedulerSourcePullSubscriptionReady marks the condition that the
 // topic is ready.
-func WithCloudSchedulerSourcePullSubscriptionReady() CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
-		s.Status.MarkPullSubscriptionReady(s.ConditionSet())
-	}
+func WithCloudSchedulerSourcePullSubscriptionReady(s *v1beta1.CloudSchedulerSource) {
+	s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 }
 
 // WithCloudSchedulerSourceJobNotReady marks the condition that the
@@ -211,8 +208,6 @@ func WithCloudSchedulerSourceAnnotations(Annotations map[string]string) CloudSch
 	}
 }
 
-func WithCloudSchedulerSourceDefaultGCPAuth() CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
-		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
-	}
+func WithCloudSchedulerSourceSetDefaults(s *v1beta1.CloudSchedulerSource) {
+	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }
