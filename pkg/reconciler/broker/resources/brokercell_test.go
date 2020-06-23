@@ -16,7 +16,11 @@ limitations under the License.
 
 package resources
 
-import "testing"
+import (
+	"testing"
+
+	_ "knative.dev/pkg/system/testing"
+)
 
 // This is already tested in broker_test.go, this test is just to make coverage tool happy.
 func TestBrokerCellCreation(t *testing.T) {

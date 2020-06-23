@@ -34,7 +34,6 @@ func (t testHelper) ReadyBrokerStatus() *BrokerStatus {
 	bs.MarkSubscriptionReady()
 	bs.MarkTopicReady()
 	bs.MarkBrokerCellReady()
-	bs.MarkConfigReady()
 	return bs
 }
 

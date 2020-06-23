@@ -123,7 +123,7 @@ func TestAllCases(t *testing.T) {
 				WithChannelSpec(v1beta1.ChannelSpec{
 					Project: testProject,
 				}),
-				WithChannelDefaults,
+				WithChannelSetDefaults,
 				WithChannelAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
@@ -141,7 +141,7 @@ func TestAllCases(t *testing.T) {
 				WithChannelSpec(v1beta1.ChannelSpec{
 					Project: testProject,
 				}),
-				WithChannelDefaults,
+				WithChannelSetDefaults,
 				// Updates
 				WithInitChannelConditions,
 				WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus(nil)),
@@ -167,7 +167,7 @@ func TestAllCases(t *testing.T) {
 					Project: testProject,
 				}),
 				WithInitChannelConditions,
-				WithChannelDefaults,
+				WithChannelSetDefaults,
 			),
 			newReadyTopic(),
 		},
@@ -183,7 +183,7 @@ func TestAllCases(t *testing.T) {
 					Project: testProject,
 				}),
 				WithInitChannelConditions,
-				WithChannelDefaults,
+				WithChannelSetDefaults,
 				WithChannelTopic(testTopicID),
 				// Updates
 				WithChannelAddress(topicURI),
@@ -202,7 +202,7 @@ func TestAllCases(t *testing.T) {
 					Project: testProject,
 				}),
 				WithInitChannelConditions,
-				WithChannelDefaults,
+				WithChannelSetDefaults,
 			),
 			newFalseTopic(),
 		},
@@ -218,7 +218,7 @@ func TestAllCases(t *testing.T) {
 					Project: testProject,
 				}),
 				WithInitChannelConditions,
-				WithChannelDefaults,
+				WithChannelSetDefaults,
 				WithChannelTopic(testTopicID),
 				// Updates
 				WithChannelAddress(topicURI),
@@ -239,7 +239,7 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					}),
 					WithInitChannelConditions,
-					WithChannelDefaults,
+					WithChannelSetDefaults,
 					WithChannelTopic(testTopicID),
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
@@ -261,7 +261,7 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					}),
 					WithInitChannelConditions,
-					WithChannelDefaults,
+					WithChannelSetDefaults,
 					WithChannelTopic(testTopicID),
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
@@ -288,7 +288,7 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					}),
 					WithInitChannelConditions,
-					WithChannelDefaults,
+					WithChannelSetDefaults,
 					WithChannelTopic(testTopicID),
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
@@ -314,7 +314,7 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					}),
 					WithInitChannelConditions,
-					WithChannelDefaults,
+					WithChannelSetDefaults,
 					WithChannelTopic(testTopicID),
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
@@ -342,7 +342,7 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					}),
 					WithInitChannelConditions,
-					WithChannelDefaults,
+					WithChannelSetDefaults,
 					WithChannelTopic(testTopicID),
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
@@ -352,7 +352,10 @@ func TestAllCases(t *testing.T) {
 				newReadyTopic(),
 				newPullSubscriptionWithOwner(
 					eventingduckv1beta1.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-					NewChannel("other-channel", testNS, WithChannelUID("other-id"), WithInitChannelConditions),
+					NewChannel("other-channel", testNS, WithChannelUID("other-id"),
+						WithInitChannelConditions,
+						WithChannelSetDefaults,
+					),
 				),
 			},
 			Key: testNS + "/" + channelName,
@@ -377,7 +380,7 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					}),
 					WithInitChannelConditions,
-					WithChannelDefaults,
+					WithChannelSetDefaults,
 					WithChannelTopic(testTopicID),
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
@@ -390,7 +393,10 @@ func TestAllCases(t *testing.T) {
 				newReadyTopic(),
 				newPullSubscriptionWithOwner(
 					eventingduckv1beta1.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-					NewChannel("other-channel", testNS, WithChannelUID("other-id"), WithInitChannelConditions),
+					NewChannel("other-channel", testNS, WithChannelUID("other-id"),
+						WithInitChannelConditions,
+						WithChannelSetDefaults,
+					),
 				),
 			},
 			Key: testNS + "/" + channelName,
@@ -414,7 +420,7 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					}),
 					WithInitChannelConditions,
-					WithChannelDefaults,
+					WithChannelSetDefaults,
 					WithChannelTopic(testTopicID),
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{
@@ -447,7 +453,7 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					}),
 					WithInitChannelConditions,
-					WithChannelDefaults,
+					WithChannelSetDefaults,
 					WithChannelTopic(testTopicID),
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{}),
@@ -471,7 +477,7 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					}),
 					WithInitChannelConditions,
-					WithChannelDefaults,
+					WithChannelSetDefaults,
 					WithChannelTopic(testTopicID),
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduckv1beta1.SubscriberSpec{}),
@@ -511,7 +517,7 @@ func newTopic() *inteventsv1beta1.Topic {
 		}),
 		WithInitChannelConditions,
 		WithChannelTopic(testTopicID),
-		WithChannelDefaults)
+		WithChannelSetDefaults)
 
 	return resources.MakeTopic(&resources.TopicArgs{
 		Owner:   channel,
@@ -551,7 +557,7 @@ func newPullSubscription(subscriber eventingduckv1beta1.SubscriberSpec) *inteven
 		}),
 		WithInitChannelConditions,
 		WithChannelTopic(testTopicID),
-		WithChannelDefaults)
+		WithChannelSetDefaults)
 
 	return newPullSubscriptionWithOwner(subscriber, channel)
 }

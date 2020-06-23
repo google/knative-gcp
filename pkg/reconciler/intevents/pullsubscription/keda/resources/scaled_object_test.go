@@ -47,6 +47,7 @@ func newPullSubscription() *v1beta1.PullSubscription {
 		WithPullSubscriptionUID("psuid"),
 		WithPullSubscriptionAnnotations(newAnnotations()),
 		WithPullSubscriptionSubscriptionID("subscriptionId"),
+		WithPullSubscriptionSetDefaults,
 	)
 }
 

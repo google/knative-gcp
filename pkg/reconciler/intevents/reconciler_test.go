@@ -87,7 +87,7 @@ var (
 
 	pubsubable = rectesting.NewCloudStorageSource(name, testNS,
 		rectesting.WithCloudStorageSourceSinkDestination(sink),
-		rectesting.WithCloudStorageSourceDefaultGCPAuth())
+		rectesting.WithCloudStorageSourceSetDefaults)
 
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
 		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
@@ -134,6 +134,7 @@ func TestCreates(t *testing.T) {
 				v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
 		expectedPS:  nil,
 		expectedErr: fmt.Sprintf("Topic %q has not yet been reconciled", name),
@@ -153,6 +154,7 @@ func TestCreates(t *testing.T) {
 					v1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicSetDefaults,
 			),
 		},
 	}, {
@@ -169,6 +171,7 @@ func TestCreates(t *testing.T) {
 					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicSetDefaults,
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
@@ -183,6 +186,7 @@ func TestCreates(t *testing.T) {
 				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
 		expectedPS:  nil,
 		expectedErr: fmt.Sprintf("Topic %q has not yet been reconciled", name),
@@ -202,6 +206,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicReadyAndPublisherDeployed(testTopicID),
 				rectesting.WithTopicAddress(testTopicURI),
+				rectesting.WithTopicSetDefaults,
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
@@ -219,6 +224,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicReadyAndPublisherDeployed(testTopicID),
 			rectesting.WithTopicAddress(testTopicURI),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
 		expectedPS:  nil,
 		expectedErr: fmt.Sprintf("Topic %q did not expose projectid", name),
@@ -237,7 +243,8 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
-				rectesting.WithTopicFailed(),
+				rectesting.WithTopicFailed,
+				rectesting.WithTopicSetDefaults,
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
@@ -252,9 +259,10 @@ func TestCreates(t *testing.T) {
 				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
-			rectesting.WithTopicFailed(),
+			rectesting.WithTopicFailed,
 			rectesting.WithTopicProjectID(testProjectID),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
 		expectedPS:  nil,
 		expectedErr: fmt.Sprintf("the status of Topic %q is False", name),
@@ -273,7 +281,8 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
-				rectesting.WithTopicUnknown(),
+				rectesting.WithTopicUnknown,
+				rectesting.WithTopicSetDefaults,
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
@@ -288,9 +297,10 @@ func TestCreates(t *testing.T) {
 				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
-			rectesting.WithTopicUnknown(),
+			rectesting.WithTopicUnknown,
 			rectesting.WithTopicProjectID(testProjectID),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
 		expectedPS:  nil,
 		expectedErr: fmt.Sprintf("the status of Topic %q is Unknown", name),
@@ -311,6 +321,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicProjectID(testProjectID),
 				rectesting.WithTopicReadyAndPublisherDeployed(""),
 				rectesting.WithTopicAddress(testTopicURI),
+				rectesting.WithTopicSetDefaults,
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
@@ -329,6 +340,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicProjectID(testProjectID),
 			rectesting.WithTopicAddress(testTopicURI),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
 		expectedPS:  nil,
 		expectedErr: fmt.Sprintf("Topic %q did not expose topicid", name),
@@ -353,6 +365,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicProjectID(testProjectID),
 				rectesting.WithTopicReadyAndPublisherDeployed(testTopicID),
 				rectesting.WithTopicAddress(testTopicURI),
+				rectesting.WithTopicSetDefaults,
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
@@ -374,9 +387,10 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicProjectID(testProjectID),
 			rectesting.WithTopicAddress(testTopicURI),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
-		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+		expectedPS: rectesting.NewPullSubscription(name, testNS,
+			rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
 				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
@@ -397,8 +411,8 @@ func TestCreates(t *testing.T) {
 		),
 		expectedErr: fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, name),
 		wantCreates: []runtime.Object{
-			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			rectesting.NewPullSubscription(name, testNS,
+				rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
@@ -438,6 +452,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicProjectID(testProjectID),
 				rectesting.WithTopicAddress(testTopicURI),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicSetDefaults,
 			),
 		}},
 	}, {
@@ -460,6 +475,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicProjectID(testProjectID),
 				rectesting.WithTopicReadyAndPublisherDeployed(testTopicID),
 				rectesting.WithTopicAddress(testTopicURI),
+				rectesting.WithTopicSetDefaults,
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
@@ -481,9 +497,10 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicProjectID(testProjectID),
 			rectesting.WithTopicAddress(testTopicURI),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
-		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+		expectedPS: rectesting.NewPullSubscription(name, testNS,
+			rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
 				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
@@ -504,8 +521,8 @@ func TestCreates(t *testing.T) {
 		),
 		expectedErr: fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, name),
 		wantCreates: []runtime.Object{
-			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			rectesting.NewPullSubscription(name, testNS,
+				rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
@@ -542,9 +559,10 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicProjectID(testProjectID),
 				rectesting.WithTopicReadyAndPublisherDeployed(testTopicID),
 				rectesting.WithTopicAddress(testTopicURI),
+				rectesting.WithTopicSetDefaults,
 			),
-			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			rectesting.NewPullSubscription(name, testNS,
+				rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
@@ -579,9 +597,10 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicProjectID(testProjectID),
 			rectesting.WithTopicAddress(testTopicURI),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
-		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+		expectedPS: rectesting.NewPullSubscription(name, testNS,
+			rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
 				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
@@ -617,9 +636,10 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicProjectID(testProjectID),
 				rectesting.WithTopicReadyAndPublisherDeployed(testTopicID),
 				rectesting.WithTopicAddress(testTopicURI),
+				rectesting.WithTopicSetDefaults,
 			),
-			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			rectesting.NewPullSubscription(name, testNS,
+				rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
@@ -655,9 +675,10 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicProjectID(testProjectID),
 			rectesting.WithTopicAddress(testTopicURI),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
-		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+		expectedPS: rectesting.NewPullSubscription(name, testNS,
+			rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
 				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
@@ -694,9 +715,10 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicProjectID(testProjectID),
 				rectesting.WithTopicReadyAndPublisherDeployed(testTopicID),
 				rectesting.WithTopicAddress(testTopicURI),
+				rectesting.WithTopicSetDefaults,
 			),
-			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			rectesting.NewPullSubscription(name, testNS,
+				rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
@@ -732,9 +754,10 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicProjectID(testProjectID),
 			rectesting.WithTopicAddress(testTopicURI),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
-		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+		expectedPS: rectesting.NewPullSubscription(name, testNS,
+			rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
 				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
@@ -771,9 +794,10 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicProjectID(testProjectID),
 				rectesting.WithTopicReadyAndPublisherDeployed(testTopicID),
 				rectesting.WithTopicAddress(testTopicURI),
+				rectesting.WithTopicSetDefaults,
 			),
-			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			rectesting.NewPullSubscription(name, testNS,
+				rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,
@@ -809,9 +833,10 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicProjectID(testProjectID),
 			rectesting.WithTopicAddress(testTopicURI),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicSetDefaults,
 		),
-		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+		expectedPS: rectesting.NewPullSubscription(name, testNS,
+			rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 				Topic: testTopicID,
 				PubSubSpec: v1beta1.PubSubSpec{
 					Secret: &secret,
@@ -832,8 +857,8 @@ func TestCreates(t *testing.T) {
 			rectesting.WithPullSubscriptionReady(oldSink.URI),
 		),
 		wantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
-				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			Object: rectesting.NewPullSubscription(name, testNS,
+				rectesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: v1beta1.PubSubSpec{
 						Secret: &secret,

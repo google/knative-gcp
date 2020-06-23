@@ -21,8 +21,10 @@ import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ktesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
+	"knative.dev/pkg/reconciler"
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -82,6 +84,11 @@ func MakeFactory(ctor Ctor) Factory {
 		// Set up our Controller from the fakes.
 		c := ctor(ctx, &ls, configmap.NewStaticWatcher(), r.OtherTestData)
 
+		// If the reconcilers is leader aware, then promote it.
+		if la, ok := c.(reconciler.LeaderAware); ok {
+			la.Promote(reconciler.UniversalBucket(), func(reconciler.Bucket, types.NamespacedName) {})
+		}
+
 		for _, reactor := range r.WithReactors {
 			kubeClient.PrependReactor("*", "*", reactor)
 			client.PrependReactor("*", "*", reactor)
@@ -91,12 +98,10 @@ func MakeFactory(ctor Ctor) Factory {
 
 		// Validate all Create operations through the serving client.
 		client.PrependReactor("create", "*", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-			// TODO(n3wscott): context.Background is the best we can do at the moment, but it should be set-able.
-			return ValidateCreates(context.Background(), action)
+			return ValidateCreates(ctx, action)
 		})
 		client.PrependReactor("update", "*", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-			// TODO(n3wscott): context.Background is the best we can do at the moment, but it should be set-able.
-			return ValidateUpdates(context.Background(), action)
+			return ValidateUpdates(ctx, action)
 		})
 
 		actionRecorderList := ActionRecorderList{dynamicClient, client, kubeClient, servingclient}

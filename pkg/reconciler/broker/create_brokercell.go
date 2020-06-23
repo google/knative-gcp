@@ -40,7 +40,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 	var bc *inteventsv1alpha1.BrokerCell
 	var err error
 	// TODO(#866) Get brokercell based on the label (or annotation) on the broker.
-	bc, err = r.brokerCellLister.BrokerCells(system.Namespace()).Get(resources.DefaultBroekrCellName)
+	bc, err = r.brokerCellLister.BrokerCells(system.Namespace()).Get(resources.DefaultBrokerCellName)
 
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Error reconciling brokercell", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
