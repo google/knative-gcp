@@ -164,43 +164,35 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 				lib.E2EDummyRespEventType: 1,
 			},
 		},
-		lib.TriggerMetricWithRespCodeAssertion{
-			TriggerMetricAssertion: lib.TriggerMetricAssertion{
-				ProjectID:       projectID,
-				BrokerName:      brokerName,
-				BrokerNamespace: client.Namespace,
-				StartTime:       start,
-				CountPerTrigger: map[string]int64{
-					trigger.Name:     1,
-					respTrigger.Name: 1,
-				},
+		lib.TriggerMetricAssertion{
+			ProjectID:       projectID,
+			BrokerName:      brokerName,
+			BrokerNamespace: client.Namespace,
+			StartTime:       start,
+			CountPerTrigger: map[string]int64{
+				lib.TriggerNameWithRespCode(trigger.Name, http.StatusAccepted):     1,
+				lib.TriggerNameWithRespCode(respTrigger.Name, http.StatusAccepted): 1,
 			},
-			ResponseCode: http.StatusAccepted,
 		},
 		// Metric from first two delivery attempts (which would fail).
-		lib.TriggerMetricWithRespCodeAssertion{
-			TriggerMetricAssertion: lib.TriggerMetricAssertion{
-				ProjectID:       projectID,
-				BrokerName:      brokerName,
-				BrokerNamespace: client.Namespace,
-				StartTime:       start,
-				CountPerTrigger: map[string]int64{
-					trigger.Name: 2,
-				},
+		lib.TriggerMetricAssertion{
+			ProjectID:       projectID,
+			BrokerName:      brokerName,
+			BrokerNamespace: client.Namespace,
+			StartTime:       start,
+			CountPerTrigger: map[string]int64{
+				lib.TriggerNameWithRespCode(trigger.Name, http.StatusBadRequest): 2,
 			},
-			ResponseCode: http.StatusBadRequest,
 		},
 		// For metrics without response code, we expect 3 trigger deliveries (first 2 from delivery failures).
-		lib.TriggerMetricNoRespCodeAssertion{
-			TriggerMetricAssertion: lib.TriggerMetricAssertion{
-				ProjectID:       projectID,
-				BrokerName:      brokerName,
-				BrokerNamespace: client.Namespace,
-				StartTime:       start,
-				CountPerTrigger: map[string]int64{
-					trigger.Name:     3,
-					respTrigger.Name: 1,
-				},
+		lib.TriggerMetricAssertion{
+			ProjectID:       projectID,
+			BrokerName:      brokerName,
+			BrokerNamespace: client.Namespace,
+			StartTime:       start,
+			CountPerTrigger: map[string]int64{
+				trigger.Name:     3,
+				respTrigger.Name: 1,
 			},
 		},
 	)
