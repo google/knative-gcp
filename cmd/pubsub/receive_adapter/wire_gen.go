@@ -14,18 +14,18 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeAdapter(ctx context.Context, projectID clients.ProjectID, subscription adapter.SubscriptionID, maxConnsPerHost clients.MaxConnsPerHost, namespace adapter.Namespace, name adapter.Name, resourceGroup adapter.ResourceGroup, converterType converters.ConverterType, sinkURI adapter.SinkURI, transformerURI adapter.TransformerURI, extensions map[string]string) (*adapter.Adapter, error) {
+func InitializeAdapter(ctx context.Context, maxConnsPerHost clients.MaxConnsPerHost, projectID clients.ProjectID, subscriptionID adapter.SubscriptionID, namespace adapter.Namespace, name adapter.Name, resourceGroup adapter.ResourceGroup, args *adapter.AdapterArgs) (*adapter.Adapter, error) {
 	client, err := clients.NewPubsubClient(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
-	pubsubSubscription := adapter.NewPubSubSubscription(ctx, client, subscription)
+	subscription := adapter.NewPubSubSubscription(ctx, client, subscriptionID)
 	httpClient := clients.NewHTTPClient(ctx, maxConnsPerHost)
 	converter := converters.NewPubSubConverter()
 	statsReporter, err := adapter.NewStatsReporter(name, namespace, resourceGroup)
 	if err != nil {
 		return nil, err
 	}
-	adapterAdapter := adapter.NewAdapter(ctx, pubsubSubscription, httpClient, converter, statsReporter, namespace, name, sinkURI, transformerURI, converterType, extensions)
+	adapterAdapter := adapter.NewAdapter(ctx, projectID, namespace, name, resourceGroup, subscription, httpClient, converter, statsReporter, args)
 	return adapterAdapter, nil
 }

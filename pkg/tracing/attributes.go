@@ -30,6 +30,10 @@ var (
 	PubSubProtocolAttribute = tracing.MessagingProtocolAttribute(PubSubProtocol)
 )
 
-func ChannelMessagingDestination(c types.NamespacedName) string {
+func ChannelDestination(c types.NamespacedName) string {
 	return fmt.Sprintf("channel:%s.%s", c.Name, c.Namespace)
+}
+
+func SourceDestination(s types.NamespacedName) string {
+	return fmt.Sprintf("source:%s.%s", s.Name, s.Namespace)
 }

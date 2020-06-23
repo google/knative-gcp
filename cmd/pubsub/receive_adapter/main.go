@@ -27,7 +27,6 @@ import (
 
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter/context"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -162,24 +161,24 @@ func main() {
 		logger.Error("Failed to convert base64 extensions to map: %v", zap.Error(err))
 	}
 
-	ctx = context.WithProjectKey(ctx, projectID)
-	ctx = context.WithTopicKey(ctx, env.Topic)
-	ctx = context.WithSubscriptionKey(ctx, env.Subscription)
-
 	logger.Info("Initializing adapter", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription))
 
-	adapter, err := InitializeAdapter(
-		ctx,
+	args := &AdapterArgs{
+		TopicID:        env.Topic,
+		ConverterType:  converters.ConverterType(env.AdapterType),
+		SinkURI:        env.Sink,
+		TransformerURI: env.Transformer,
+		Extensions:     extensions,
+	}
+
+	adapter, err := InitializeAdapter(ctx,
+		clients.MaxConnsPerHost(maxConnectionsPerHost),
 		clients.ProjectID(projectID),
 		SubscriptionID(env.Subscription),
-		clients.MaxConnsPerHost(maxConnectionsPerHost),
 		Namespace(env.Namespace),
 		Name(env.Name),
 		ResourceGroup(env.ResourceGroup),
-		converters.ConverterType(env.AdapterType),
-		SinkURI(env.Sink),
-		TransformerURI(env.Transformer),
-		extensions)
+		args)
 
 	if err != nil {
 		logger.Fatal("Unable to create adapter", zap.Error(err))

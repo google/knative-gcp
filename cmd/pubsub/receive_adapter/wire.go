@@ -22,7 +22,6 @@ import (
 	"context"
 
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 
 	"github.com/google/wire"
@@ -30,17 +29,13 @@ import (
 
 func InitializeAdapter(
 	ctx context.Context,
-	projectID clients.ProjectID,
-	subscription adapter.SubscriptionID,
 	maxConnsPerHost clients.MaxConnsPerHost,
+	projectID clients.ProjectID,
+	subscriptionID adapter.SubscriptionID,
 	namespace adapter.Namespace,
 	name adapter.Name,
 	resourceGroup adapter.ResourceGroup,
-	converterType converters.ConverterType,
-	sinkURI adapter.SinkURI,
-	transformerURI adapter.TransformerURI,
-	extensions map[string]string,
-) (*adapter.Adapter, error) {
+	args *adapter.AdapterArgs) (*adapter.Adapter, error) {
 	panic(wire.Build(
 		adapter.AdapterSet,
 	))

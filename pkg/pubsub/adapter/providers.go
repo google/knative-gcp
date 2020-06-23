@@ -18,6 +18,7 @@ type ResourceGroup string
 type SinkURI string
 type TransformerURI string
 type SubscriptionID string
+type TopicID string
 
 // AdapterSet provides an adapter with a PubSub client and HTTP client.
 var AdapterSet wire.ProviderSet = wire.NewSet(

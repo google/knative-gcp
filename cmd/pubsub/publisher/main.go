@@ -102,6 +102,6 @@ func main() {
 
 	logger.Info("Starting publisher", zap.Any("publisher", publisher))
 	if err := publisher.Start(ctx); err != nil {
-		logger.Fatal("Failed to start publisher", zap.Error(err))
+		logger.Error("Publisher has stopped with error", zap.String("Project ID", projectID), zap.String("Topic ID", topicID), zap.Error(err))
 	}
 }

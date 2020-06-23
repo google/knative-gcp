@@ -19,6 +19,7 @@ package adapter
 import (
 	"context"
 	"errors"
+	"github.com/google/knative-gcp/pkg/apis/messaging"
 	nethttp "net/http"
 	"time"
 
@@ -29,13 +30,34 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/extensions"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/tracing"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 	"go.opencensus.io/trace"
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/logging"
 	kntracing "knative.dev/eventing/pkg/tracing"
 )
+
+// AdapterArgs has a bundle of arguments needed to create an Adapter.
+type AdapterArgs struct {
+	// TopicID is the id of the Pub/Sub topic.
+	TopicID string
+
+	// SinkURI is the URI where to sink events to.
+	SinkURI string
+
+	// TransformerURI is the URI for the transformer.
+	// Used for channels.
+	TransformerURI string
+
+	// Extensions is the converted ExtensionsBased64 value.
+	Extensions map[string]string
+
+	// ConverterType use to select which converter to use.
+	ConverterType converters.ConverterType
+}
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
 // pre-existing topic/subscription to a Sink.
@@ -46,64 +68,63 @@ type Adapter struct {
 	// outbound is the client used to send events to.
 	outbound *nethttp.Client
 
-	// sinkURI is the URI where to sink events to.
-	sinkURI string
-
-	// transformerURI is the URI for the transformer.
-	// Used for channels.
-	transformerURI string
-
-	// extensions is the converted ExtensionsBased64 value.
-	extensions map[string]string
-
-	// converterType use to select which converter to use.
-	converterType converters.ConverterType
-
 	// reporter reports metrics to the configured backend.
 	reporter StatsReporter
 
 	// converter used to convert pubsub messages to CE.
 	converter converters.Converter
 
+	// projectID is the id of the GCP project.
+	projectID string
+
+	// namespacedName is the namespaced name of the resource this receive adapter belong to.
+	namespacedName types.NamespacedName
+
+	// resourceGroup is the resource group name this receive adapter belong to.
+	resourceGroup string
+
+	// args holds a set of arguments used to configure the Adapter.
+	args *AdapterArgs
+
 	// cancel is function to stop pulling messages.
 	cancel context.CancelFunc
 
 	logger *zap.Logger
-
-	// name of the resource this receive adapter belong to.
-	namespacedResourceName types.NamespacedName
 }
 
 // NewAdapter creates a new adapter.
 func NewAdapter(
 	ctx context.Context,
+	projectID clients.ProjectID,
+	namespace Namespace,
+	name Name,
+	resourceGroup ResourceGroup,
 	subscription *pubsub.Subscription,
 	outbound *nethttp.Client,
 	converter converters.Converter,
 	reporter StatsReporter,
-	namespace Namespace,
-	name Name,
-	sinkURI SinkURI,
-	transformerURI TransformerURI,
-	converterType converters.ConverterType,
-	extensions map[string]string) *Adapter {
+	args *AdapterArgs) *Adapter {
 	return &Adapter{
-		subscription:           subscription,
-		outbound:               outbound,
-		converter:              converter,
-		reporter:               reporter,
-		sinkURI:                string(sinkURI),
-		transformerURI:         string(transformerURI),
-		namespacedResourceName: types.NamespacedName{Name: string(name), Namespace: string(namespace)},
-		converterType:          converterType,
-		extensions:             extensions,
-		logger:                 logging.FromContext(ctx),
+		subscription:   subscription,
+		projectID:      string(projectID),
+		namespacedName: types.NamespacedName{Namespace: string(namespace), Name: string(name)},
+		resourceGroup:  string(resourceGroup),
+		outbound:       outbound,
+		converter:      converter,
+		reporter:       reporter,
+		args:           args,
+		logger:         logging.FromContext(ctx),
 	}
 }
 
 func (a *Adapter) Start(ctx context.Context) error {
 	ctx, a.cancel = context.WithCancel(ctx)
 	defer a.cancel()
+
+	// Augment context so that we can use it to create CE attributes.
+	ctx = WithProjectKey(ctx, a.projectID)
+	ctx = WithTopicKey(ctx, a.args.TopicID)
+	ctx = WithSubscriptionKey(ctx, a.subscription.ID())
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -137,13 +158,16 @@ func (a *Adapter) Stop() {
 // TODO refactor this method. As our RA code is used both for Sources and our Channel, it also supports replies
 //  (in the case of Channels) and the logic is more convoluted.
 func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
-	event, err := a.converter.Convert(ctx, msg, a.converterType)
+	event, err := a.converter.Convert(ctx, msg, a.args.ConverterType)
 	if err != nil {
 		a.logger.Debug("Failed to convert received message to an event, check the msg format: %w", zap.Error(err))
-		// Ack the message so it won't be retried
+		// Ack the message so it won't be retried, we consider all errors to be non-retryable.
 		msg.Ack()
 		return
 	}
+
+	ctx, span := a.startSpan(ctx, event)
+	defer span.End()
 
 	args := &ReportArgs{
 		EventType:   event.Type(),
@@ -157,10 +181,10 @@ func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
 	// Note that currently this path of the code will be executed when using the receive adapter as part of the underlying Channel,
 	// in case both subscriber and reply are set. The transformer would act as the subscriber and the sink will be where
 	// we will send the reply.
-	if a.transformerURI != "" {
-		resp, err := a.sendMsg(ctx, a.transformerURI, (*binding.EventMessage)(event))
+	if a.args.TransformerURI != "" {
+		resp, err := a.sendMsg(ctx, a.args.TransformerURI, (*binding.EventMessage)(event))
 		if err != nil {
-			a.logger.Error("Failed to send message to transformer", zap.String("address", a.transformerURI), zap.Error(err))
+			a.logger.Error("Failed to send message to transformer", zap.String("address", a.args.TransformerURI), zap.Error(err))
 			msg.Nack()
 			return
 		}
@@ -192,14 +216,10 @@ func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
 		if err != nil {
 			a.logger.Error("Failed to convert response message to event",
 				zap.Any("response", respMsg), zap.Error(err))
-			msg.Ack()
+			msg.Nack()
 			return
 		}
 
-		// Update the tracing information to use the span returned by the transformer.
-		var span *trace.Span
-		ctx, span = a.startSpan(ctx, event)
-		defer span.End()
 		reply = true
 	}
 
@@ -207,28 +227,30 @@ func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
 	if !reply {
 		// Apply CloudEvent override extensions to the outbound event.
 		// This code will be mainly executed by Sources.
-		for k, v := range a.extensions {
+		for k, v := range a.args.Extensions {
 			event.SetExtension(k, v)
 		}
 	}
 
-	resp, err := a.sendMsg(ctx, a.sinkURI, (*binding.EventMessage)(event))
+	response, err := a.sendMsg(ctx, a.args.SinkURI, (*binding.EventMessage)(event))
 	if err != nil {
-		a.logger.Error("Failed to send message to sink", zap.String("address", a.sinkURI), zap.Error(err))
+		a.logger.Error("Failed to send message to sink", zap.String("address", a.args.SinkURI), zap.Error(err))
 		msg.Nack()
 		return
 	}
 
-	a.reporter.ReportEventCount(args, resp.StatusCode)
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			a.logger.Warn("Failed to close response body", zap.Error(err))
+		}
+	}()
 
-	if resp.StatusCode/100 != 2 {
-		a.logger.Error("Event delivery failed", zap.Int("StatusCode", resp.StatusCode))
+	a.reporter.ReportEventCount(args, response.StatusCode)
+
+	if response.StatusCode/100 != 2 {
+		a.logger.Error("Event delivery failed", zap.Int("StatusCode", response.StatusCode))
 		msg.Nack()
 		return
-	}
-
-	if err := resp.Body.Close(); err != nil {
-		a.logger.Warn("Failed to close response body", zap.Error(err))
 	}
 
 	msg.Ack()
@@ -246,11 +268,17 @@ func (a *Adapter) sendMsg(ctx context.Context, address string, msg binding.Messa
 }
 
 func (a *Adapter) startSpan(ctx context.Context, event *cev2.Event) (context.Context, *trace.Span) {
+	spanName := tracing.SourceDestination(a.namespacedName)
+	// This receive adapter code is used both for Sources and Channels.
+	// An ugly way to identify whether it was created from a Channel is to look at the resourceGroup.
+	if a.resourceGroup == messaging.ChannelsResource.String() {
+		spanName = tracing.ChannelDestination(a.namespacedName)
+	}
 	var span *trace.Span
 	if dt, ok := extensions.GetDistributedTracingExtension(*event); ok {
-		ctx, span = dt.StartChildSpan(ctx, tracing.ChannelMessagingDestination(a.namespacedResourceName))
+		ctx, span = dt.StartChildSpan(ctx, spanName)
 	} else {
-		ctx, span = trace.StartSpan(ctx, tracing.ChannelMessagingDestination(a.namespacedResourceName))
+		ctx, span = trace.StartSpan(ctx, spanName)
 	}
 	if span.IsRecordingEvents() {
 		span.AddAttributes(
