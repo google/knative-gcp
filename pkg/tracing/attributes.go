@@ -18,6 +18,7 @@ package tracing
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/tracing"
 )
@@ -34,6 +35,10 @@ func ChannelDestination(c types.NamespacedName) string {
 	return fmt.Sprintf("channel:%s.%s", c.Name, c.Namespace)
 }
 
-func SourceDestination(s types.NamespacedName) string {
-	return fmt.Sprintf("source:%s.%s", s.Name, s.Namespace)
+func SourceDestination(resourceGroup string, src types.NamespacedName) string {
+	// resourceGroup is of the form <resource>.events.cloud.google.com,
+	// where resource can be for example cloudpubsubsources.
+	// We keep with the resource piece.
+	gr := schema.ParseGroupResource(resourceGroup)
+	return fmt.Sprintf("%s:%s.%s", gr.Resource, src.Name, src.Namespace)
 }

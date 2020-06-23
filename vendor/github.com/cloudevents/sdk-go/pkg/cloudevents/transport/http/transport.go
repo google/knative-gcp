@@ -13,8 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.uber.org/zap"
 
 	"github.com/cloudevents/sdk-go/pkg/cloudevents"
@@ -48,10 +46,9 @@ type Transport struct {
 
 	// Sending
 
-	// Deprecated - setting http client will override use of the
-	// HTTP transport set with WithHTTPTransport.
+	// Client is the http client that will be used to send requests.
+	// If nil, the Transport will create a one.
 	Client *http.Client
-
 	// Req is the base http request that is used for http.Do.
 	// Only .Method, .URL, .Close, and .Header is considered.
 	// If not set, Req.Method defaults to POST.
@@ -93,10 +90,6 @@ type Transport struct {
 	reMu sync.Mutex
 
 	middleware []Middleware
-
-	// transport is the http client transport that will be used to send requests.
-	// If nil, the default transport will be used.
-	transport http.RoundTripper
 }
 
 func New(opts ...Option) (*Transport, error) {
@@ -107,12 +100,6 @@ func New(opts ...Option) (*Transport, error) {
 	}
 	if err := t.applyOptions(opts...); err != nil {
 		return nil, err
-	}
-	t.transport = &ochttp.Transport{
-		Base:           t.transport,
-		Propagation:    &tracecontext.HTTPFormat{},
-		NewClientTrace: ochttp.NewSpanAnnotatingClientTrace,
-		FormatSpanName: formatSpanName,
 	}
 	return t, nil
 }
@@ -181,6 +168,14 @@ func (t *Transport) Send(ctx context.Context, event cloudevents.Event) (context.
 }
 
 func (t *Transport) obsSend(ctx context.Context, event cloudevents.Event) (context.Context, *cloudevents.Event, error) {
+	if t.Client == nil {
+		t.crMu.Lock()
+		if t.Client == nil {
+			t.Client = &http.Client{}
+		}
+		t.crMu.Unlock()
+	}
+
 	req := http.Request{
 		Header: HeaderFrom(ctx),
 	}
@@ -208,11 +203,7 @@ func (t *Transport) obsSend(ctx context.Context, event cloudevents.Event) (conte
 
 	if m, ok := msg.(*Message); ok {
 		m.ToRequest(&req)
-		client := t.Client
-		if client == nil {
-			client = &http.Client{Transport: t.transport}
-		}
-		return httpDo(ctx, client, &req, func(resp *http.Response, err error) (context.Context, *cloudevents.Event, error) {
+		return httpDo(ctx, t.Client, &req, func(resp *http.Response, err error) (context.Context, *cloudevents.Event, error) {
 			rctx := WithTransportContext(ctx, NewTransportContextFromResponse(resp))
 			if err != nil {
 				return rctx, nil, err
@@ -329,12 +320,8 @@ func (t *Transport) StartReceiver(ctx context.Context) error {
 	}
 
 	t.server = &http.Server{
-		Addr: addr.String(),
-		Handler: &ochttp.Handler{
-			Propagation:    &tracecontext.HTTPFormat{},
-			Handler:        attachMiddleware(t.Handler, t.middleware),
-			FormatSpanName: formatSpanName,
-		},
+		Addr:    addr.String(),
+		Handler: attachMiddleware(t.Handler, t.middleware),
 	}
 
 	// Shutdown
@@ -364,11 +351,6 @@ func (t *Transport) StartReceiver(ctx context.Context) error {
 	case err := <-errChan:
 		return err
 	}
-}
-
-// HasTracePropagation implements Transport.HasTracePropagation
-func (t *Transport) HasTracePropagation() bool {
-	return true
 }
 
 func (t *Transport) longPollStart(ctx context.Context) error {
@@ -472,10 +454,6 @@ func attachMiddleware(h http.Handler, middleware []Middleware) http.Handler {
 		h = m(h)
 	}
 	return h
-}
-
-func formatSpanName(r *http.Request) string {
-	return "cloudevents.http." + r.URL.Path
 }
 
 type eventError struct {

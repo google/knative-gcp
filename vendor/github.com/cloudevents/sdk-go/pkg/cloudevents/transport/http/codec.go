@@ -37,6 +37,8 @@ var _ transport.Codec = (*Codec)(nil)
 
 func (c *Codec) loadCodec(encoding Encoding) (transport.Codec, error) {
 	switch encoding {
+	case Default:
+		fallthrough
 	case BinaryV01, StructuredV01:
 		c._v01.Do(func() {
 			c.v01 = &CodecV01{DefaultEncoding: c.Encoding}
@@ -52,7 +54,7 @@ func (c *Codec) loadCodec(encoding Encoding) (transport.Codec, error) {
 			c.v03 = &CodecV03{DefaultEncoding: c.Encoding}
 		})
 		return c.v03, nil
-	case BinaryV1, StructuredV1, BatchedV1, Default:
+	case BinaryV1, StructuredV1, BatchedV1:
 		c._v1.Do(func() {
 			c.v1 = &CodecV1{DefaultEncoding: c.Encoding}
 		})

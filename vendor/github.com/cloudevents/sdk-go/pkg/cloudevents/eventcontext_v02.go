@@ -85,21 +85,7 @@ func (ec *EventContextV02) SetExtension(name string, value interface{}) error {
 
 // Clone implements EventContextConverter.Clone
 func (ec EventContextV02) Clone() EventContext {
-	ec02 := ec.AsV02()
-	ec02.Extensions = ec02.cloneExtensions()
-	return ec02
-}
-
-func (ec *EventContextV02) cloneExtensions() map[string]interface{} {
-	old := ec.Extensions
-	if old == nil {
-		return nil
-	}
-	new := make(map[string]interface{}, len(ec.Extensions))
-	for k, v := range old {
-		new[k] = v
-	}
-	return new
+	return ec.AsV02()
 }
 
 // AsV01 implements EventContextConverter.AsV01

@@ -36,6 +36,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 		message     *pubsub.Message
 		wantEventFn func() *cev2.Event
 		wantErr     bool
+		wantInvalidContext bool
 	}{{
 		name: "non alphanumeric attribute",
 		message: &pubsub.Message{
@@ -62,13 +63,26 @@ func TestConvertCloudPubSub(t *testing.T) {
 		wantEventFn: func() *cev2.Event {
 			return pubSubCloudEvent(nil, "\"InRlc3QgZGF0YSI=\"")
 		},
+	}, {
+		name: "invalid context",
+		message: &pubsub.Message{
+			ID: "id",
+			Data:       []byte("\"test data\""), // Data passed in quotes for it to be marshalled properly
+			Attributes: map[string]string{},
+		},
+		wantInvalidContext: true,
+		wantErr: true,
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := WithProjectKey(context.Background(), "testproject")
-			ctx = WithTopicKey(ctx, "testtopic")
-			ctx = WithSubscriptionKey(ctx, "testsubscription")
+			ctx := context.Background()
+			// TODO add flags to test each of the keys
+			if !test.wantInvalidContext {
+				ctx = WithProjectKey(context.Background(), "testproject")
+				ctx = WithTopicKey(ctx, "testtopic")
+				ctx = WithSubscriptionKey(ctx, "testsubscription")
+			}
 
 			gotEvent, err := NewPubSubConverter().Convert(ctx, test.message, CloudPubSub)
 			if err != nil {

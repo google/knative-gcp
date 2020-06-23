@@ -23,11 +23,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -39,6 +40,9 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testname",
 			Namespace: "testnamespace",
+			Labels: map[string]string{
+				intevents.SourceLabelKey: "my-source-name",
+			},
 		},
 		Spec: v1beta1.PullSubscriptionSpec{
 			PubSubSpec: duckv1beta1.PubSubSpec{
@@ -50,7 +54,8 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 				},
 				Project: "eventing-name",
 			},
-			Topic: "topic",
+			Topic:       "topic",
+			AdapterType: "source-adapter-type",
 		},
 	}
 
@@ -73,7 +78,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   "testnamespace",
-			Name:        "cre-ps-testname-",
+			Name:        "cre-src-testname-",
 			Annotations: nil,
 			Labels: map[string]string{
 				"test-key1": "test-value1",
@@ -121,8 +126,8 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 						}, {
 							Name: "TRANSFORMER_URI",
 						}, {
-							Name: "ADAPTER_TYPE",
-							Value: string(converters.PubSubPull),
+							Name:  "ADAPTER_TYPE",
+							Value: "source-adapter-type",
 						}, {
 							Name:  "SEND_MODE",
 							Value: "binary",
