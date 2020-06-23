@@ -75,9 +75,14 @@ type AutoscalingArgs struct {
 // Labels generates the labels present on all resources representing the
 // component of the given BrokerCell.
 func Labels(brokerCellName, componentName string) map[string]string {
+	cl := CommonLabels(brokerCellName)
+	cl["role"] = componentName
+	return cl
+}
+
+func CommonLabels(brokerCellName string) map[string]string {
 	return map[string]string{
 		"app":              "cloud-run-events",
-		"role":             componentName,
 		BrokerCellLabelKey: brokerCellName,
 	}
 }

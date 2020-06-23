@@ -14,14 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package volume
 
 import (
 	"fmt"
 	"strconv"
 
+	"go.uber.org/multierr"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 )
 
 // volumeGenerationKey is the annotation key for broker data plane pods whose
@@ -29,9 +32,27 @@ import (
 // trigger immediate configmap volume refresh without restarting the pod.
 const volumeGenerationKey = "volumeGeneration"
 
-// UpdateVolumeGeneration updates the volume generation annotation on the pod to
+// UpdateVolumeGeneration updates the volume generation annotation
+// for all pods matching the selector. This technique is used to trigger immediate
+// configmap volume refresh without restarting the pod, see
+// https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#mounted-configmaps-are-updated-automatically
+// NOTE: update spec.template.metadata.annotations on the deployment resource
+// causes pods to be recreated.
+func UpdateVolumeGeneration(kubeClient kubernetes.Interface, pl corev1listers.PodLister, ns string, ls map[string]string) error {
+	pods, err := pl.Pods(ns).List(labels.SelectorFromSet(ls))
+	if err != nil {
+		return fmt.Errorf("error listing pods in namespace %v with labels %v: %w", ns, ls, err)
+	}
+
+	for _, pod := range pods {
+		err = multierr.Append(err, updateVolumeGeneration(kubeClient, pod))
+	}
+	return err
+}
+
+// updateVolumeGeneration updates the volume generation annotation on the pod to
 // trigger volume mount refresh (for configmap).
-func UpdateVolumeGeneration(kubeClientSet kubernetes.Interface, p *corev1.Pod) error {
+func updateVolumeGeneration(kubeClientSet kubernetes.Interface, p *corev1.Pod) error {
 	pod := p.DeepCopy()
 	annotations := pod.GetAnnotations()
 	if annotations == nil {

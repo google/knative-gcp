@@ -26,7 +26,6 @@ var brokerCondSet = apis.NewLivingConditionSet(
 	BrokerConditionBrokerCell,
 	BrokerConditionTopic,
 	BrokerConditionSubscription,
-	BrokerConditionConfig,
 )
 
 const (
@@ -38,9 +37,6 @@ const (
 	// BrokerConditionSubscription reports the status of the Broker's PubSub
 	// subscription. This condition is specific to the Google Cloud Broker.
 	BrokerConditionSubscription apis.ConditionType = "SubscriptionReady"
-	// BrokerConditionConfig reports the status of reconstructing and updating the data entry
-	// for the Broker. This condition is specific to the Google Cloud Broker.
-	BrokerConditionConfig apis.ConditionType = "ConfigReady"
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
@@ -108,16 +104,4 @@ func (bs *BrokerStatus) MarkSubscriptionUnknown(reason, format string, args ...i
 
 func (bs *BrokerStatus) MarkSubscriptionReady() {
 	brokerCondSet.Manage(bs).MarkTrue(BrokerConditionSubscription)
-}
-
-func (bs *BrokerStatus) MarkConfigFailed(reason, format string, args ...interface{}) {
-	brokerCondSet.Manage(bs).MarkFalse(BrokerConditionConfig, reason, format, args...)
-}
-
-func (bs *BrokerStatus) MarkConfigUnknown(reason, format string, args ...interface{}) {
-	brokerCondSet.Manage(bs).MarkUnknown(BrokerConditionConfig, reason, format, args...)
-}
-
-func (bs *BrokerStatus) MarkConfigReady() {
-	brokerCondSet.Manage(bs).MarkTrue(BrokerConditionConfig)
 }

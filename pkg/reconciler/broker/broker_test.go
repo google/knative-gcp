@@ -35,7 +35,6 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -61,7 +60,7 @@ var (
 	brokerFinalizerUpdatedEvent = Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`)
 	brokerReconciledEvent       = Eventf(corev1.EventTypeNormal, "BrokerReconciled", `Broker reconciled: "testnamespace/test-broker"`)
 	brokerFinalizedEvent        = Eventf(corev1.EventTypeNormal, "BrokerFinalized", `Broker finalized: "testnamespace/test-broker"`)
-	ingressServiceName          = brokercellresources.Name(resources.DefaultBroekrCellName, brokercellresources.IngressName)
+	ingressServiceName          = brokercellresources.Name(resources.DefaultBrokerCellName, brokercellresources.IngressName)
 
 	brokerAddress = &apis.URL{
 		Scheme: "http",
@@ -76,7 +75,6 @@ func init() {
 }
 
 func TestAllCases(t *testing.T) {
-	// TODO Add tests cases for broker with triggers and verify the target-config content.
 	table := TableTest{{
 		Name: "bad workqueue key",
 		Key:  "too/many/parts",
@@ -137,19 +135,16 @@ func TestAllCases(t *testing.T) {
 			NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
-				WithBrokerSetDefaults,
-			),
-			NewBrokerCell(resources.DefaultBroekrCellName, systemNS,
+				WithBrokerSetDefaults),
+			NewBrokerCell(resources.DefaultBrokerCellName, systemNS,
 				WithBrokerCellReady,
-				WithBrokerCellSetDefaults,
-			),
+				WithBrokerCellSetDefaults),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerReadyURI(brokerAddress),
-				WithBrokerConfigReady,
 				WithBrokerSetDefaults,
 			),
 		}},
@@ -178,7 +173,7 @@ func TestAllCases(t *testing.T) {
 				WithBrokerUID(testUID),
 				WithBrokerSetDefaults,
 			),
-			NewBrokerCell(resources.DefaultBroekrCellName, systemNS,
+			NewBrokerCell(resources.DefaultBrokerCellName, systemNS,
 				WithBrokerCellIngressFailed("", ""),
 				WithBrokerCellSetDefaults,
 			),
@@ -188,7 +183,6 @@ func TestAllCases(t *testing.T) {
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerReadyURI(brokerAddress),
-				WithBrokerConfigReady,
 				WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
 				WithBrokerSetDefaults,
 			),
@@ -233,7 +227,7 @@ func TestAllCases(t *testing.T) {
 				),
 			},
 		},
-		WantCreates:             []runtime.Object{resources.CreateBrokerCell(nil) /*Currently brokercell doesn't require broker information*/},
+		WantCreates:             []runtime.Object{resources.CreateBrokerCell(nil) /*Currently brokercell doesn't require broker information*/ },
 		SkipNamespaceValidation: true, // The brokercell resource is created in a different namespace (system namespace) than the broker
 		WantEvents: []string{
 			brokerFinalizerUpdatedEvent,
@@ -259,13 +253,12 @@ func TestAllCases(t *testing.T) {
 					WithBrokerClass(brokerv1beta1.BrokerClass),
 					WithBrokerUID(testUID),
 					WithBrokerReadyURI(brokerAddress),
-					WithBrokerConfigReady,
 					WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
 					WithBrokerSetDefaults,
 				),
 			},
 		},
-		WantCreates:             []runtime.Object{resources.CreateBrokerCell(nil) /*Currently brokercell doesn't require broker information*/},
+		WantCreates:             []runtime.Object{resources.CreateBrokerCell(nil) /*Currently brokercell doesn't require broker information*/ },
 		SkipNamespaceValidation: true, // The brokercell resource is created in a different namespace (system namespace) than the broker
 		WantEvents: []string{
 			brokerFinalizerUpdatedEvent,
@@ -304,17 +297,10 @@ func TestAllCases(t *testing.T) {
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
 		r := &Reconciler{
-			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-			triggerLister:      listers.GetTriggerLister(),
-			configMapLister:    listers.GetConfigMapLister(),
-			endpointsLister:    listers.GetEndpointsLister(),
-			deploymentLister:   listers.GetDeploymentLister(),
-			podLister:          listers.GetPodLister(),
-			brokerCellLister:   listers.GetBrokerCellLister(),
-			targetsConfig:      memory.NewEmptyTargets(),
-			targetsNeedsUpdate: make(chan struct{}),
-			projectID:          testProject,
-			pubsubClient:       psclient,
+			Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
+			brokerCellLister: listers.GetBrokerCellLister(),
+			projectID:        testProject,
+			pubsubClient:     psclient,
 		}
 		return brokerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerLister(), r.Recorder, r, brokerv1beta1.BrokerClass)
 	}))
