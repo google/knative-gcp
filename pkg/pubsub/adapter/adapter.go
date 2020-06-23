@@ -18,10 +18,7 @@ package adapter
 
 import (
 	"context"
-	"errors"
-	"github.com/google/knative-gcp/pkg/apis/messaging"
 	nethttp "net/http"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -30,6 +27,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/extensions"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/google/knative-gcp/pkg/apis/messaging"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/tracing"
@@ -117,37 +115,17 @@ func NewAdapter(
 	}
 }
 
-func (a *Adapter) Start(ctx context.Context) error {
+func (a *Adapter) Start(ctx context.Context, done func(error)) {
 	ctx, a.cancel = context.WithCancel(ctx)
-	defer a.cancel()
 
 	// Augment context so that we can use it to create CE attributes.
 	ctx = WithProjectKey(ctx, a.projectID)
 	ctx = WithTopicKey(ctx, a.args.TopicID)
 	ctx = WithSubscriptionKey(ctx, a.subscription.ID())
 
-	errCh := make(chan error, 1)
 	go func() {
-		errCh <- a.subscription.Receive(ctx, a.receive)
+		done(a.subscription.Receive(ctx, a.receive))
 	}()
-
-	// Stop either if the adapter stops (sending to errCh) or if the context Done channel is closed.
-	select {
-	case err := <-errCh:
-		return err
-	case <-ctx.Done():
-		break
-	}
-
-	// Done channel has been closed, we need to gracefully shutdown. The cancel() method will start its
-	// shutdown, if it hasn't finished in a reasonable amount of time, just return an error.
-	a.cancel()
-	select {
-	case err := <-errCh:
-		return err
-	case <-time.After(30 * time.Second):
-		return errors.New("timeout shutting down adapter")
-	}
 }
 
 // Stop stops the adapter.

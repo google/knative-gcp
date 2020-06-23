@@ -65,9 +65,9 @@ type Publisher struct {
 // NewPublisher creates a new publisher.
 func NewPublisher(ctx context.Context, inbound HttpMessageReceiver, topic *pubsub.Topic) *Publisher {
 	return &Publisher{
-		inbound:  inbound,
-		topic:    topic,
-		logger:   logging.FromContext(ctx),
+		inbound: inbound,
+		topic:   topic,
+		logger:  logging.FromContext(ctx),
 	}
 }
 
@@ -100,7 +100,7 @@ func (p *Publisher) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.
 	statusCode := nethttp.StatusAccepted
 	ctx, cancel := context.WithTimeout(ctx, sinkTimeout)
 	defer cancel()
-	if res := p.Publish(ctx, *event); !cev2.IsACK(res) {
+	if res := p.Publish(ctx, event); !cev2.IsACK(res) {
 		msg := fmt.Sprintf("Error publishing to PubSub. event: %+v, err: %v.", event, res)
 		p.logger.Error(msg)
 		statusCode = nethttp.StatusInternalServerError
@@ -111,10 +111,10 @@ func (p *Publisher) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.
 }
 
 // Publish publishes an incoming event to a pubsub topic.
-func (p *Publisher) Publish(ctx context.Context, event cev2.Event) protocol.Result {
+func (p *Publisher) Publish(ctx context.Context, event *cev2.Event) protocol.Result {
 	dt := extensions.FromSpanContext(trace.FromContext(ctx).SpanContext())
 	msg := new(pubsub.Message)
-	if err := cepubsub.WritePubSubMessage(ctx, binding.ToMessage(&event), msg, dt.WriteTransformer()); err != nil {
+	if err := cepubsub.WritePubSubMessage(ctx, binding.ToMessage(event), msg, dt.WriteTransformer()); err != nil {
 		return err
 	}
 	_, err := p.topic.Publish(ctx, msg).Get(ctx)

@@ -19,6 +19,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
+
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/logging"
@@ -185,9 +187,18 @@ func main() {
 	}
 
 	logger.Info("Starting Receive Adapter.", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription))
-	if err := adapter.Start(ctx); err != nil {
-		logging.FromContext(ctx).Error("Adapter has stopped with error", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription), zap.Error(err))
-	}
+	adapter.Start(ctx, func(err error) {
+		if err != nil {
+			logger.Error("Adapter has stopped with error", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription), zap.Error(err))
+		} else {
+			logger.Error("Adapter has stopped", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription), zap.Error(err))
+		}
+	})
+
+	<-ctx.Done()
+	// Wait a grace period for the handlers to shutdown.
+	time.Sleep(30 * time.Second)
+	logger.Info("Exiting...")
 
 }
 
