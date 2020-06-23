@@ -41,7 +41,6 @@ const (
 )
 
 type ConverterType string
-type ErrMissingAttribute error
 
 const (
 	// The different type of Converters for the different sources.
