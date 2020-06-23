@@ -43,7 +43,7 @@ type DeliveryReporter struct {
 }
 
 func (r *DeliveryReporter) register() error {
-	return view.Register(
+	return metrics.RegisterResourceView(
 		&view.View{
 			Name:        "event_count",
 			Description: "Number of events delivered to a Trigger subscriber",

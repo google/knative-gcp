@@ -111,7 +111,7 @@ func register() {
 		responseCodeClassKey}
 
 	// Create view to see our measurements.
-	if err := view.Register(
+	if err := metrics.RegisterResourceView(
 		&view.View{
 			Description: eventCountM.Description(),
 			Measure:     eventCountM,
