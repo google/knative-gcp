@@ -21,11 +21,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/google/knative-gcp/pkg/kncloudevents"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"go.opencensus.io/trace"
 )
@@ -37,41 +35,46 @@ const (
 func main() {
 	brokerURL := os.Getenv(brokerURLEnvVar)
 
-	ceClient, err := kncloudevents.NewDefaultClient(brokerURL)
+	t, err := cloudevents.NewHTTP(cloudevents.WithTarget(brokerURL))
 	if err != nil {
-		fmt.Printf("Unable to create ceClient: %s ", err)
+		fmt.Printf("Unable to create transport: %v ", err)
+		os.Exit(1)
+	}
+
+	c, err := cloudevents.NewClient(t,
+		cloudevents.WithTimeNow(),
+		cloudevents.WithUUIDs(),
+	)
+
+	if err != nil {
+		fmt.Printf("Unable to create client: %v", err)
+		os.Exit(1)
 	}
 
 	ctx, span := trace.StartSpan(context.Background(), "sender", trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 
-	ctx, _, err = ceClient.Send(ctx, dummyCloudEvent())
-	rtctx := cloudevents.HTTPTransportContextFrom(ctx)
-	if err != nil {
-		fmt.Print(err)
-	}
+	event := cloudevents.NewEvent(cloudevents.VersionV1)
+	event.SetID(lib.E2EDummyEventID)
+	event.SetType(lib.E2EDummyEventType)
+	event.SetSource(lib.E2EDummyEventSource)
+	event.SetDataContentType(cloudevents.ApplicationJSON)
+	event.SetData(cloudevents.ApplicationJSON, `{"source": "sender!"}`)
+
 	var success bool
-	if rtctx.StatusCode >= http.StatusOK && rtctx.StatusCode < http.StatusBadRequest {
-		success = true
-	} else {
+	if res := c.Send(ctx, event); !cloudevents.IsACK(res) {
+		fmt.Printf("Failed to send event to %s: %s\n", brokerURL, res.Error())
 		success = false
+	} else {
+		success = true
 	}
+
 	if err := writeTerminationMessage(map[string]interface{}{
 		"success": success,
 		"traceid": span.SpanContext().TraceID.String(),
 	}); err != nil {
 		fmt.Printf("failed to write termination message, %s.\n", err)
 	}
-}
-
-func dummyCloudEvent() cloudevents.Event {
-	event := cloudevents.NewEvent(cloudevents.VersionV1)
-	event.SetID(lib.E2EDummyEventID)
-	event.SetType(lib.E2EDummyEventType)
-	event.SetSource(lib.E2EDummyEventSource)
-	event.SetDataContentType(cloudevents.ApplicationJSON)
-	event.SetData(`{"source": "sender!"}`)
-	return event
 }
 
 func writeTerminationMessage(result interface{}) error {
