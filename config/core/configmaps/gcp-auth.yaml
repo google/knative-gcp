@@ -20,6 +20,7 @@ metadata:
   labels:
     events.cloud.google.com/release: devel
   annotations:
+    events.cloud.google.com/initialized: "false"
     knative.dev/example-checksum: 6642f8a8
 data:
   default-auth-config: |
