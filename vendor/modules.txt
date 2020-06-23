@@ -166,7 +166,7 @@ github.com/go-openapi/spec
 github.com/go-openapi/swag
 # github.com/gobuffalo/envy v1.7.1
 github.com/gobuffalo/envy
-# github.com/gogo/protobuf v1.3.1 => github.com/gogo/protobuf v1.3.0
+# github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
 # github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
@@ -1276,7 +1276,6 @@ sigs.k8s.io/yaml
 # k8s.io/code-generator => k8s.io/code-generator v0.17.6
 # k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 # github.com/blang/semver => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
-# github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.0
 # github.com/imdario/mergo => github.com/imdario/mergo v0.3.7
 # github.com/jmespath/go-jmespath => github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 # github.com/json-iterator/go => github.com/json-iterator/go v1.1.7
