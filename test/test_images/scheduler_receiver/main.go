@@ -20,11 +20,9 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-
-	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -45,25 +43,22 @@ func main() {
 	}
 }
 
-func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) {
+func (r *Receiver) Receive(event cloudevents.Event) (*cloudevents.Event, error) {
 	// Check if the received event is the event sent by CloudSchedulerSource.
 	// If it is, send back a response CloudEvent.
 	// Print out event received to log
 	fmt.Printf("scheduler receiver received event\n")
 	fmt.Printf("context of event is: %v\n", event.Context.String())
 
-	if event.Type() == v1beta1.CloudSchedulerSourceExecute {
-		resp.Status = http.StatusAccepted
-		respEvent := cloudevents.NewEvent(cloudevents.VersionV1)
-		respEvent.SetID(lib.E2ESchedulerRespEventID)
-		respEvent.SetType(lib.E2ESchedulerRespType)
-		respEvent.SetSource(event.Source())
-		respEvent.SetSubject(event.Subject())
-		respEvent.SetData(event.Data)
-		respEvent.SetDataContentType(event.DataContentType())
-		fmt.Printf("context of respEvent is: %v\n", respEvent.Context.String())
-		resp.Event = &respEvent
-	} else {
-		resp.Status = http.StatusForbidden
+	if event.Type() != v1beta1.CloudSchedulerSourceExecute {
+		return nil, fmt.Errorf("unexpected cloud event type got=%s, want=%s", event.Type(), v1beta1.CloudSchedulerSourceExecute)
 	}
+	respEvent := cloudevents.NewEvent(cloudevents.VersionV1)
+	respEvent.SetID(lib.E2ESchedulerRespEventID)
+	respEvent.SetType(lib.E2ESchedulerRespType)
+	respEvent.SetSource(event.Source())
+	respEvent.SetSubject(event.Subject())
+	respEvent.SetData(event.DataContentType(), event.Data)
+	fmt.Printf("context of respEvent is: %v\n", respEvent.Context.String())
+	return &respEvent, nil
 }
