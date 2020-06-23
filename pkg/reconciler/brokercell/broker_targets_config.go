@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	configFailed  = "BrokerTargetsConfigFailed"
+	configFailed = "BrokerTargetsConfigFailed"
 )
 
 func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.BrokerCell) error {
