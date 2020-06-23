@@ -94,3 +94,20 @@ func TestChannelConditionSet(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestChannel_GetConditionSet(t *testing.T) {
+	c := &Channel{}
+
+	if got, want := c.GetConditionSet().GetTopLevelConditionType(), apis.ConditionReady; got != want {
+		t.Errorf("GetTopLevelCondition=%v, want=%v", got, want)
+	}
+}
+
+func TestChannel_GetStatus(t *testing.T) {
+	c := &Channel{
+		Status: ChannelStatus{},
+	}
+	if got, want := c.GetStatus(), &c.Status.Status; got != want {
+		t.Errorf("GetStatus=%v, want=%v", got, want)
+	}
+}

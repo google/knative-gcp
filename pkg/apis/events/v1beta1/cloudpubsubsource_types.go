@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
@@ -54,6 +55,7 @@ var (
 	_ resourcesemantics.GenericCRD = (*CloudPubSubSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudPubSubSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudPubSubSource)(nil)
+	_ duckv1.KRShaped              = (*CloudPubSubSource)(nil)
 )
 
 // CloudPubSubSourceSpec defines the desired state of the CloudPubSubSource.
@@ -173,4 +175,14 @@ func (ps *CloudPubSubSource) PubSubSpec() *duckv1beta1.PubSubSpec {
 
 func (s *CloudPubSubSource) PubSubStatus() *duckv1beta1.PubSubStatus {
 	return &s.Status.PubSubStatus
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*CloudPubSubSource) GetConditionSet() apis.ConditionSet {
+	return pubSubCondSet
+}
+
+// GetStatus retrieves the status of the CloudPubSubSource. Implements the KRShaped interface.
+func (s *CloudPubSubSource) GetStatus() *duckv1.Status {
+	return &s.Status.Status
 }

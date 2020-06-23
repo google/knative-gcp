@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
@@ -53,6 +54,7 @@ var (
 	_ resourcesemantics.GenericCRD = (*CloudAuditLogsSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudAuditLogsSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudAuditLogsSource)(nil)
+	_ duckv1.KRShaped              = (*CloudAuditLogsSource)(nil)
 )
 
 const (
@@ -143,4 +145,14 @@ type CloudAuditLogsSourceList struct {
 	metav1.ListMeta
 
 	Items []CloudAuditLogsSource `json:"items"`
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*CloudAuditLogsSource) GetConditionSet() apis.ConditionSet {
+	return auditLogsSourceCondSet
+}
+
+// GetStatus retrieves the status of the CloudAuditLogsSource. Implements the KRShaped interface.
+func (s *CloudAuditLogsSource) GetStatus() *duckv1.Status {
+	return &s.Status.Status
 }

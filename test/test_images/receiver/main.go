@@ -19,9 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"log"
-	"net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/test/e2e/lib"
@@ -50,11 +48,11 @@ func (r *Receiver) Receive(event cloudevents.Event) (*cloudevents.Event, error) 
 	if event.ID() != lib.E2EDummyEventID {
 		return nil, fmt.Errorf("unexpected cloud event id got=%s, want=%s", event.ID(), lib.E2EDummyEventID)
 	}
-		event = cloudevents.NewEvent(cloudevents.VersionV1)
-		event.SetID(lib.E2EDummyRespEventID)
-		event.SetType(lib.E2EDummyRespEventType)
-		event.SetSource(lib.E2EDummyRespEventSource)
-		event.SetData(cloudevents.ApplicationJSON, `{"source": "receiver!"}`)
-		return
+	event = cloudevents.NewEvent(cloudevents.VersionV1)
+	event.SetID(lib.E2EDummyRespEventID)
+	event.SetType(lib.E2EDummyRespEventType)
+	event.SetSource(lib.E2EDummyRespEventSource)
+	event.SetData(cloudevents.ApplicationJSON, `{"source": "receiver!"}`)
+	return &event, nil
 
 }
