@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 )
 
@@ -66,6 +67,9 @@ var (
 
 	// Check that we can create OwnerReferences to a Trigger.
 	_ kmeta.OwnerRefable = (*Trigger)(nil)
+
+	// Check that we implement KRShaped.
+	_ duckv1.KRShaped = (*Trigger)(nil)
 )
 
 // TriggerStatus represents the current state of a Trigger.
@@ -108,4 +112,14 @@ func (t *Trigger) GetGroupVersionKind() schema.GroupVersionKind {
 // GetUntypedSpec returns the spec of the Trigger.
 func (t *Trigger) GetUntypedSpec() interface{} {
 	return t.Spec
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*Trigger) GetConditionSet() apis.ConditionSet {
+	return triggerCondSet
+}
+
+// GetStatus retrieves the status of the Trigger. Implements the KRShaped interface.
+func (t *Trigger) GetStatus() *duckv1.Status {
+	return &t.Status.Status
 }

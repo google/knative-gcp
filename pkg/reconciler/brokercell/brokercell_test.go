@@ -26,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-
 	clientgotesting "k8s.io/client-go/testing"
 
 	"knative.dev/pkg/configmap"
@@ -75,6 +74,10 @@ var (
 	serviceUpdateFailedEvent      = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update services")
 	hpaCreationFailedEvent        = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create horizontalpodautoscalers")
 	hpaUpdateFailedEvent          = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update horizontalpodautoscalers")
+	configmapCreationFailedEvent  = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create configmaps")
+	configmapUpdateFailedEvent    = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update configmaps")
+	configmapCreatedEvent         = Eventf(corev1.EventTypeNormal, "ConfigMapCreated", "Created configmap testnamespace/test-brokercell-brokercell-broker-targets")
+	configmapUpdatedEvent         = Eventf(corev1.EventTypeNormal, "ConfigMapUpdated", "Updated configmap testnamespace/test-brokercell-brokercell-broker-targets")
 )
 
 func init() {
@@ -98,14 +101,57 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
-					WithBrokerCellDeletionTimestamp),
+					WithBrokerCellDeletionTimestamp,
+					WithBrokerCellSetDefaults,
+				),
 			},
+		},
+		{
+			Name: "ConfigMap.Create error",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{InduceFailure("create", "configmaps")},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBrokerCell(brokerCellName, testNS,
+					WithInitBrokerCellConditions,
+					WithTargetsCofigFailed(configFailed, "failed to update configmap: inducing failure for create configmaps"),
+					WithBrokerCellSetDefaults,
+				),
+			}},
+			WantEvents:  []string{configmapCreationFailedEvent},
+			WantCreates: []runtime.Object{testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults))},
+			WantErr:     true,
+		},
+		{
+			Name: "ConfigMap.Update error",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
+				NewBroker("broker", testNS, WithBrokerSetDefaults),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{InduceFailure("update", "configmaps")},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBrokerCell(brokerCellName, testNS,
+					WithInitBrokerCellConditions,
+					WithTargetsCofigFailed(configFailed, "failed to update configmap: inducing failure for update configmaps"),
+					WithBrokerCellSetDefaults,
+				),
+			}},
+			WantEvents:  []string{configmapUpdateFailedEvent},
+			WantUpdates: []clientgotesting.UpdateActionImpl{{Object: testingdata.Config(t,
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				NewBroker("broker", testNS, WithBrokerSetDefaults))}},
+			WantErr:     true,
 		},
 		{
 			Name: "Ingress Deployment.Create error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				InduceFailure("create", "deployments"),
@@ -113,7 +159,9 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressFailed("IngressDeploymentFailed", `Failed to reconcile ingress deployment: inducing failure for create deployments`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -128,7 +176,7 @@ func TestAllCases(t *testing.T) {
 			Name: "Ingress Deployment.Update error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
 				// Create an deployment such that only the spec is different from expected deployment to trigger an update.
 				NewDeployment(brokerCellName+"-brokercell-ingress", testNS,
 					func(d *appsv1.Deployment) {
@@ -136,6 +184,7 @@ func TestAllCases(t *testing.T) {
 						d.ObjectMeta = testingdata.IngressDeployment(t).ObjectMeta
 					},
 				),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				InduceFailure("update", "deployments"),
@@ -143,7 +192,9 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressFailed("IngressDeploymentFailed", `Failed to reconcile ingress deployment: inducing failure for update deployments`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -158,7 +209,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Ingress HorizontalPodAutoscaler.Create error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				testingdata.IngressDeploymentWithStatus(t),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
@@ -167,7 +219,9 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile ingress HorizontalPodAutoscaler: inducing failure for create horizontalpodautoscalers`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -182,7 +236,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Ingress HorizontalPodAutoscaler.Update error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				testingdata.IngressDeploymentWithStatus(t),
 				emptyHPASpec(testingdata.IngressHPA(t)),
 			},
@@ -192,7 +247,9 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile ingress HorizontalPodAutoscaler: inducing failure for update horizontalpodautoscalers`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -207,7 +264,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Ingress Service.Create error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				testingdata.IngressDeploymentWithStatus(t),
 				testingdata.IngressHPA(t),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
@@ -219,7 +277,9 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressFailed("IngressServiceFailed", `Failed to reconcile ingress service: inducing failure for create services`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -234,7 +294,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Ingress Service.Update error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				testingdata.IngressDeploymentWithStatus(t),
 				testingdata.IngressHPA(t),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
@@ -251,7 +312,9 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressFailed("IngressServiceFailed", `Failed to reconcile ingress service: inducing failure for update services`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -266,7 +329,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Fanout Deployment.Create error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				testingdata.IngressHPA(t),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -279,9 +343,11 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutFailed("FanoutDeploymentFailed", `Failed to reconcile fanout deployment: inducing failure for create deployments`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -296,7 +362,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Fanout Deployment.Update error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				testingdata.IngressHPA(t),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -316,9 +383,11 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutFailed("FanoutDeploymentFailed", `Failed to reconcile fanout deployment: inducing failure for update deployments`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -333,7 +402,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Fanout HorizontalPodAutoscaler.Create error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				testingdata.IngressHPA(t),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -347,9 +417,11 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile fanout HorizontalPodAutoscaler: inducing failure for create horizontalpodautoscalers`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -364,7 +436,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Fanout HorizontalPodAutoscaler.Update error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				testingdata.IngressHPA(t),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -379,9 +452,11 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile fanout HorizontalPodAutoscaler: inducing failure for update horizontalpodautoscalers`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -396,7 +471,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Retry Deployment.Create error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				testingdata.IngressDeploymentWithStatus(t),
@@ -411,10 +487,12 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutAvailable(),
 					WithBrokerCellRetryFailed("RetryDeploymentFailed", `Failed to reconcile retry deployment: inducing failure for create deployments`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -430,7 +508,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Retry Deployment.Update error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				testingdata.IngressDeploymentWithStatus(t),
@@ -452,10 +531,12 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutAvailable(),
 					WithBrokerCellRetryFailed("RetryDeploymentFailed", `Failed to reconcile retry deployment: inducing failure for update deployments`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -470,7 +551,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Retry HorizontalPodAutoscaler.Create error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				testingdata.IngressDeploymentWithStatus(t),
@@ -486,10 +568,12 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutAvailable(),
 					WithBrokerCellRetryFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile retry HorizontalPodAutoscaler: inducing failure for create horizontalpodautoscalers`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -504,7 +588,8 @@ func TestAllCases(t *testing.T) {
 			Name: "Retry HorizontalPodAutoscaler.Update error",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				testingdata.IngressDeploymentWithStatus(t),
@@ -521,10 +606,12 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutAvailable(),
 					WithBrokerCellRetryFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile retry HorizontalPodAutoscaler: inducing failure for update horizontalpodautoscalers`),
+					WithBrokerCellSetDefaults,
 				),
 			}},
 			WantEvents: []string{
@@ -536,13 +623,14 @@ func TestAllCases(t *testing.T) {
 			WantErr: true,
 		},
 		{
-			Name: "BrokerCell created, resources created but resource status not ready",
+			Name: "BrokerCell created, resources created but some resource status not ready",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS),
 			},
 			WantCreates: []runtime.Object{
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				testingdata.IngressDeployment(t),
 				testingdata.IngressHPA(t),
 				testingdata.IngressService(t),
@@ -562,9 +650,11 @@ func TestAllCases(t *testing.T) {
 					WithBrokerCellFanoutFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
 					WithBrokerCellRetryFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+					WithBrokerCellSetDefaults,
 				)},
 			},
 			WantEvents: []string{
+				configmapCreatedEvent,
 				ingressDeploymentCreatedEvent,
 				ingressHPACreatedEvent,
 				ingressServiceCreatedEvent,
@@ -576,10 +666,13 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		{
-			Name: "BrokerCell created, resources updated but resource status not ready",
+			Name: "BrokerCell created, resources updated but some resource status not ready",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				NewBroker("broker", testNS, WithBrokerSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS),
 				NewDeployment(brokerCellName+"-brokercell-ingress", testNS,
 					func(d *appsv1.Deployment) {
@@ -609,6 +702,9 @@ func TestAllCases(t *testing.T) {
 				emptyHPASpec(testingdata.RetryHPA(t)),
 			},
 			WantUpdates: []clientgotesting.UpdateActionImpl{
+				{Object: testingdata.Config(t,
+					NewBrokerCell(brokerCellName, testNS,WithBrokerCellSetDefaults),
+					NewBroker("broker", testNS, WithBrokerSetDefaults))},
 				{Object: testingdata.IngressDeployment(t)},
 				{Object: testingdata.IngressHPA(t)},
 				{Object: testingdata.IngressService(t)},
@@ -628,9 +724,11 @@ func TestAllCases(t *testing.T) {
 					WithBrokerCellFanoutFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
 					WithBrokerCellRetryFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+					WithBrokerCellSetDefaults,
 				)},
 			},
 			WantEvents: []string{
+				configmapUpdatedEvent,
 				ingressDeploymentUpdatedEvent,
 				ingressHPAUpdatedEvent,
 				ingressServiceUpdatedEvent,
@@ -645,7 +743,8 @@ func TestAllCases(t *testing.T) {
 			Name: "BrokerCell created successfully but status update failed",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				testingdata.IngressDeploymentWithStatus(t),
@@ -663,6 +762,7 @@ func TestAllCases(t *testing.T) {
 				{Object: NewBrokerCell(brokerCellName, testNS,
 					WithBrokerCellReady,
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+					WithBrokerCellSetDefaults,
 				)},
 			},
 			WantEvents: []string{
@@ -674,7 +774,8 @@ func TestAllCases(t *testing.T) {
 			Name: "BrokerCell created successfully",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS),
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				testingdata.IngressDeploymentWithStatus(t),
@@ -689,6 +790,7 @@ func TestAllCases(t *testing.T) {
 				{Object: NewBrokerCell(brokerCellName, testNS,
 					WithBrokerCellReady,
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+					WithBrokerCellSetDefaults,
 				)},
 			},
 			WantEvents: []string{
@@ -696,11 +798,50 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		{
+			Name: "BrokerCell created successfully, broker targets config should be updated with broker and triggers",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+				NewBroker("broker", testNS, WithBrokerSetDefaults),
+				NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
+				NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults),
+				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
+					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+				testingdata.IngressDeploymentWithStatus(t),
+				testingdata.IngressServiceWithStatus(t),
+				testingdata.FanoutDeploymentWithStatus(t),
+				testingdata.RetryDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
+				testingdata.FanoutHPA(t),
+				testingdata.RetryHPA(t),
+			},
+			WantCreates: []runtime.Object{
+				testingdata.Config(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+					NewBroker("broker", testNS, WithBrokerSetDefaults),
+					NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
+					NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults)),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+				{Object: NewBrokerCell(brokerCellName, testNS,
+					WithBrokerCellReady,
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+				)},
+			},
+			WantEvents: []string{
+				configmapCreatedEvent,
+				brokerCellReconciledEvent,
+			},
+		},
+		{
 			Name: "googlecloud created BrokerCell shouldn't be gc'ed because there are brokers",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS, WithBrokerCellAnnotations(creatorAnnotation)),
-				NewBroker("broker", testNS),
+				NewBrokerCell(brokerCellName, testNS,
+					WithBrokerCellAnnotations(creatorAnnotation),
+					WithBrokerCellSetDefaults),
+				testingdata.Config(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+					NewBroker("broker", testNS, WithBrokerSetDefaults)),
+				NewBroker("broker", testNS, WithBrokerSetDefaults),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				testingdata.IngressDeploymentWithStatus(t),
@@ -716,6 +857,7 @@ func TestAllCases(t *testing.T) {
 					WithBrokerCellAnnotations(creatorAnnotation),
 					WithBrokerCellReady,
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+					WithBrokerCellSetDefaults,
 				)},
 			},
 			WantEvents: []string{
@@ -725,7 +867,11 @@ func TestAllCases(t *testing.T) {
 		{
 			Name:         "googlecloud created BrokerCell should be gc'ed if there is no broker, but deletion fails",
 			Key:          testKey,
-			Objects:      []runtime.Object{NewBrokerCell(brokerCellName, testNS, WithBrokerCellAnnotations(creatorAnnotation))},
+			Objects:      []runtime.Object{NewBrokerCell(brokerCellName, testNS,
+				WithBrokerCellAnnotations(creatorAnnotation),
+				WithBrokerCellSetDefaults,
+				WithInitBrokerCellConditions,
+			)},
 			WithReactors: []clientgotesting.ReactionFunc{InduceFailure("delete", "brokercells")},
 			WantDeletes: []clientgotesting.DeleteActionImpl{
 				{
@@ -743,7 +889,11 @@ func TestAllCases(t *testing.T) {
 		{
 			Name:    "googlecloud created BrokerCell is gc'ed successfully",
 			Key:     testKey,
-			Objects: []runtime.Object{NewBrokerCell(brokerCellName, testNS, WithBrokerCellAnnotations(creatorAnnotation))},
+			Objects: []runtime.Object{NewBrokerCell(brokerCellName, testNS,
+				WithBrokerCellAnnotations(creatorAnnotation),
+				WithBrokerCellSetDefaults,
+				WithInitBrokerCellConditions,
+			)},
 			WantDeletes: []clientgotesting.DeleteActionImpl{
 				{
 					Name: brokerCellName,
@@ -759,15 +909,25 @@ func TestAllCases(t *testing.T) {
 	}
 
 	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
+	table.Test(t, MakeFactory(func(ctx context.Context, testingListers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		setReconcilerEnv()
 		base := reconciler.NewBase(ctx, controllerAgentName, cmw)
-		r, err := NewReconciler(base, listers.GetBrokerLister(), listers.GetK8sServiceLister(), listers.GetEndpointsLister(), listers.GetDeploymentLister())
+		ls := listers{
+			brokerLister:     testingListers.GetBrokerLister(),
+			hpaLister:        testingListers.GetHPALister(),
+			triggerLister:    testingListers.GetTriggerLister(),
+			configMapLister:  testingListers.GetConfigMapLister(),
+			serviceLister:    testingListers.GetK8sServiceLister(),
+			endpointsLister:  testingListers.GetEndpointsLister(),
+			deploymentLister: testingListers.GetDeploymentLister(),
+			podLister:        testingListers.GetPodLister(),
+		}
+
+		r, err := NewReconciler(base, ls)
 		if err != nil {
 			t.Fatalf("Failed to created BrokerCell reconciler: %v", err)
 		}
-		r.hpaLister = listers.GetHPALister()
-		return bcreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerCellLister(), r.Recorder, r)
+		return bcreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, testingListers.GetBrokerCellLister(), r.Recorder, r)
 	}))
 }
 

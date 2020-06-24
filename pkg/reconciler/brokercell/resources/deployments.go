@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/system"
 )
@@ -36,6 +35,19 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 	// Decorate the container template with ingress port.
 	container.Env = append(container.Env, corev1.EnvVar{Name: "PORT", Value: strconv.Itoa(args.Port)})
 	container.Ports = append(container.Ports, corev1.ContainerPort{Name: "http", ContainerPort: int32(args.Port)})
+	container.ReadinessProbe = &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/healthz",
+				Port:   intstr.FromInt(args.Port),
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		FailureThreshold: 3,
+		PeriodSeconds:    2,
+		SuccessThreshold: 1,
+		TimeoutSeconds:   5,
+	}
 	container.LivenessProbe = &corev1.Probe{
 		Handler: corev1.Handler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -154,7 +166,7 @@ func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deploy
 					Volumes: []corev1.Volume{
 						{
 							Name:         "broker-config",
-							VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: "broker-targets"}}},
+							VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: Name(args.BrokerCell.Name, targetsCMName)}}},
 						},
 						{
 							Name:         "google-broker-key",

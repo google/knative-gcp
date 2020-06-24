@@ -19,8 +19,6 @@ package reconciler
 import (
 	"testing"
 
-	"k8s.io/client-go/tools/record"
-
 	"github.com/google/go-cmp/cmp"
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	appsv1 "k8s.io/api/apps/v1"
@@ -29,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/record"
 	pkgreconcilertesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -37,6 +36,8 @@ const (
 	deploymentUpdatedEvent = "Normal DeploymentUpdated Updated deployment testns/test"
 	serviceCreatedEvent    = "Normal ServiceCreated Created service testns/test"
 	serviceUpdatedEvent    = "Normal ServiceUpdated Updated service testns/test"
+	configmapCreatedEvent  = "Normal ConfigMapCreated Created configmap testns/test"
+	configmapUpdatedEvent  = "Normal ConfigMapUpdated Updated configmap testns/test"
 )
 
 var (
@@ -64,10 +65,28 @@ var (
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 	}
 
+	cm = &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Data:       map[string]string{"data": "value"},
+		BinaryData: map[string][]byte{"binary": {'b'}},
+	}
+	cmDifferentData = &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Data:       map[string]string{"data": "different value"},
+		BinaryData: map[string][]byte{"binary": {'b'}},
+	}
+	cmDifferentBinaryData = &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Data:       map[string]string{"data": "different value"},
+		BinaryData: map[string][]byte{"binary": {'d'}},
+	}
+
 	deploymentCreateFailure = pkgreconcilertesting.InduceFailure("create", "deployments")
 	deploymentUpdateFailure = pkgreconcilertesting.InduceFailure("update", "deployments")
 	serviceCreateFailure    = pkgreconcilertesting.InduceFailure("create", "services")
 	serviceUpdateFailure    = pkgreconcilertesting.InduceFailure("update", "services")
+	configmapCreateFailure  = pkgreconcilertesting.InduceFailure("create", "configmaps")
+	configmapUpdateFailure  = pkgreconcilertesting.InduceFailure("update", "configmaps")
 
 	tr = &testRunner{}
 )
@@ -214,6 +233,86 @@ func TestServiceReconciler(t *testing.T) {
 				Recorder:        tr.recorder,
 			}
 			out, err := rec.ReconcileService(obj, test.in)
+
+			tr.verify(t, test.commonCase, err)
+
+			if diff := cmp.Diff(out, test.want); diff != "" {
+				t.Errorf("Unexpected reconciler result (-got, +want): %s", diff)
+				return
+			}
+		})
+	}
+}
+
+func TestConfigMapReconciler(t *testing.T) {
+	var tests = []struct {
+		commonCase
+		in   *corev1.ConfigMap
+		want *corev1.ConfigMap
+	}{
+		{
+			commonCase: commonCase{
+				name:     "configmap exists, nothing to do",
+				existing: []runtime.Object{cm},
+			},
+			in:   cm,
+			want: cm,
+		},
+		{
+			commonCase: commonCase{
+				name:       "cofigmap created",
+				wantEvents: []string{configmapCreatedEvent},
+			},
+			in:   cm,
+			want: cm,
+		},
+		{
+			commonCase: commonCase{
+				name:      "configmap creation error",
+				reactions: []clientgotesting.ReactionFunc{configmapCreateFailure},
+				wantErr:   true,
+			},
+			in: cm,
+		},
+		{
+			commonCase: commonCase{
+				name:       "cofigmap updated - different data",
+				existing:   []runtime.Object{cmDifferentData},
+				wantEvents: []string{configmapUpdatedEvent},
+			},
+			in:   cm,
+			want: cm,
+		},
+		{
+			commonCase: commonCase{
+				name:       "cofigmap updated - different binary data",
+				existing:   []runtime.Object{cmDifferentBinaryData},
+				wantEvents: []string{configmapUpdatedEvent},
+			},
+			in:   cm,
+			want: cm,
+		},
+		{
+			commonCase: commonCase{
+				name:      "configmap update error",
+				reactions: []clientgotesting.ReactionFunc{configmapUpdateFailure},
+				existing:  []runtime.Object{cmDifferentData},
+				wantErr:   true,
+			},
+			in: cm,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tr.setup(test.commonCase)
+
+			rec := ConfigMapReconciler{
+				KubeClient: tr.client,
+				Lister:     tr.listers.GetConfigMapLister(),
+				Recorder:   tr.recorder,
+			}
+			out, err := rec.ReconcileConfigMap(obj, test.in)
 
 			tr.verify(t, test.commonCase, err)
 

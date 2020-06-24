@@ -49,22 +49,6 @@ func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
-	return s
-}
-
-// NewPullSubscriptionWithNoDefaults creates a PullSubscription with
-// PullSubscriptionOptions but does not set defaults.
-func NewPullSubscriptionWithNoDefaults(name, namespace string, so ...PullSubscriptionOption) *v1beta1.PullSubscription {
-	s := &v1beta1.PullSubscription{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-	for _, opt := range so {
-		opt(s)
-	}
 	return s
 }
 
@@ -78,7 +62,6 @@ func NewPullSubscriptionWithoutNamespace(name string, so ...PullSubscriptionOpti
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
@@ -186,14 +169,6 @@ func WithPullSubscriptionMarkNoDeployed(name, namespace string) PullSubscription
 func WithPullSubscriptionSpec(spec v1beta1.PullSubscriptionSpec) PullSubscriptionOption {
 	return func(s *v1beta1.PullSubscription) {
 		s.Spec = spec
-		s.Spec.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
-	}
-}
-
-// Same as withPullSubscriptionSpec but does not set defaults
-func WithPullSubscriptionSpecWithNoDefaults(spec v1beta1.PullSubscriptionSpec) PullSubscriptionOption {
-	return func(s *v1beta1.PullSubscription) {
-		s.Spec = spec
 	}
 }
 
@@ -293,8 +268,10 @@ func WithPullSubscriptionMode(mode v1beta1.ModeType) PullSubscriptionOption {
 	}
 }
 
-func WithPullSubscriptionDefaultGCPAuth() PullSubscriptionOption {
-	return func(s *v1beta1.PullSubscription) {
-		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
-	}
+func WithPullSubscriptionDefaultGCPAuth(s *v1beta1.PullSubscription) {
+	s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
+}
+
+func WithPullSubscriptionSetDefaults(s *v1beta1.PullSubscription) {
+	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/tracing"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/wire"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
@@ -57,11 +58,11 @@ const (
 // HandlerSet provides a handler with a real HTTPMessageReceiver and pubsub MultiTopicDecoupleSink.
 var HandlerSet wire.ProviderSet = wire.NewSet(
 	NewHandler,
-	NewHTTPMessageReceiver,
+	clients.NewHTTPMessageReceiver,
 	wire.Bind(new(HttpMessageReceiver), new(*kncloudevents.HttpMessageReceiver)),
 	NewMultiTopicDecoupleSink,
 	wire.Bind(new(DecoupleSink), new(*multiTopicDecoupleSink)),
-	NewPubsubClient,
+	clients.NewPubsubClient,
 	metrics.NewIngressReporter,
 )
 

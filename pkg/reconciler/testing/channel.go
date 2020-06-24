@@ -46,27 +46,26 @@ func NewChannel(name, namespace string, so ...ChannelOption) *v1beta1.Channel {
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
 // NewChannelWithoutNamespace creates a Channel with ChannelOptions but without a specific namespace
-func NewChannelWithoutNamespace(name string, so ...ChannelOption) *v1beta1.Channel {
-	s := &v1beta1.Channel{
+func NewChannelWithoutNamespace(name string, co ...ChannelOption) *v1beta1.Channel {
+	c := &v1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 	}
-	for _, opt := range so {
-		opt(s)
+	for _, opt := range co {
+		opt(c)
 	}
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
-	return s
+	c.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
+	return c
 }
 
 func WithChannelUID(uid types.UID) ChannelOption {
-	return func(s *v1beta1.Channel) {
-		s.UID = uid
+	return func(c *v1beta1.Channel) {
+		c.UID = uid
 	}
 }
 
@@ -77,33 +76,33 @@ func WithChannelGenerateName(generateName string) ChannelOption {
 }
 
 // WithInitChannelConditions initializes the Channels's conditions.
-func WithInitChannelConditions(s *v1beta1.Channel) {
-	s.Status.InitializeConditions()
+func WithInitChannelConditions(c *v1beta1.Channel) {
+	c.Status.InitializeConditions()
 }
 
 // WithChannelServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
 func WithChannelServiceAccountName(name string) ChannelOption {
-	return func(s *v1beta1.Channel) {
-		s.Status.ServiceAccountName = name
+	return func(c *v1beta1.Channel) {
+		c.Status.ServiceAccountName = name
 	}
 }
 
 func WithChannelWorkloadIdentityFailed(reason, message string) ChannelOption {
-	return func(s *v1beta1.Channel) {
-		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
+	return func(c *v1beta1.Channel) {
+		c.Status.MarkWorkloadIdentityFailed(c.ConditionSet(), reason, message)
 	}
 }
 
 func WithChannelTopic(topicID string) ChannelOption {
-	return func(s *v1beta1.Channel) {
-		s.Status.MarkTopicReady()
-		s.Status.TopicID = topicID
+	return func(c *v1beta1.Channel) {
+		c.Status.MarkTopicReady()
+		c.Status.TopicID = topicID
 	}
 }
 
 func WithChannelTopicID(topicID string) ChannelOption {
-	return func(s *v1beta1.Channel) {
-		s.Status.TopicID = topicID
+	return func(c *v1beta1.Channel) {
+		c.Status.TopicID = topicID
 	}
 }
 
@@ -120,38 +119,38 @@ func WithChannelTopicUnknown(reason, message string) ChannelOption {
 }
 
 func WithChannelSpec(spec v1beta1.ChannelSpec) ChannelOption {
-	return func(s *v1beta1.Channel) {
-		s.Spec = spec
+	return func(c *v1beta1.Channel) {
+		c.Spec = spec
 	}
 }
 
-func WithChannelDefaults(s *v1beta1.Channel) {
-	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
+func WithChannelSetDefaults(c *v1beta1.Channel) {
+	c.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }
 
 func WithChannelServiceAccount(kServiceAccount string) ChannelOption {
-	return func(ps *v1beta1.Channel) {
-		ps.Spec.ServiceAccountName = kServiceAccount
+	return func(c *v1beta1.Channel) {
+		c.Spec.ServiceAccountName = kServiceAccount
 	}
 }
 
-func WithChannelDeletionTimestamp(s *v1beta1.Channel) {
+func WithChannelDeletionTimestamp(c *v1beta1.Channel) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
-	s.ObjectMeta.SetDeletionTimestamp(&t)
+	c.ObjectMeta.SetDeletionTimestamp(&t)
 }
 
 func WithChannelReady(topicID string) ChannelOption {
-	return func(s *v1beta1.Channel) {
-		s.Status.InitializeConditions()
-		s.Status.MarkTopicReady()
-		s.Status.TopicID = topicID
+	return func(c *v1beta1.Channel) {
+		c.Status.InitializeConditions()
+		c.Status.MarkTopicReady()
+		c.Status.TopicID = topicID
 	}
 }
 
 func WithChannelAddress(url string) ChannelOption {
-	return func(s *v1beta1.Channel) {
+	return func(c *v1beta1.Channel) {
 		u, _ := apis.ParseURL(url)
-		s.Status.SetAddress(u)
+		c.Status.SetAddress(u)
 	}
 }
 

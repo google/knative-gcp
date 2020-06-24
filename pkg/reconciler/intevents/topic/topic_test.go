@@ -141,6 +141,7 @@ func TestAllCases(t *testing.T) {
 					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -170,7 +171,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-client-induced-error"))),
+				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-client-induced-error")),
+				WithTopicSetDefaults,
+			),
 		}},
 	}, {
 		Name: "verify topic exists fails",
@@ -183,6 +186,7 @@ func TestAllCases(t *testing.T) {
 					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -214,7 +218,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "topic-exists-induced-error"))),
+				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "topic-exists-induced-error")),
+				WithTopicSetDefaults,
+			),
 		}},
 	}, {
 		Name: "topic does not exist and propagation policy is NoCreateNoDelete",
@@ -227,6 +233,7 @@ func TestAllCases(t *testing.T) {
 					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -251,7 +258,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist and the topic policy doesn't allow creation", failedToReconcileTopicMsg, testTopicID))),
+				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist and the topic policy doesn't allow creation", failedToReconcileTopicMsg, testTopicID)),
+				WithTopicSetDefaults,
+			),
 		}},
 	}, {
 		Name: "create topic fails",
@@ -264,6 +273,7 @@ func TestAllCases(t *testing.T) {
 					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("CreateNoDelete"),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -293,7 +303,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("CreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-topic-induced-error"))),
+				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-topic-induced-error")),
+				WithTopicSetDefaults,
+			),
 		}},
 	}, {
 		Name: "topic created with EnablePublisher = false",
@@ -307,6 +319,7 @@ func TestAllCases(t *testing.T) {
 					EnablePublisher: &falseVal,
 				}),
 				WithTopicPropagationPolicy("CreateNoDelete"),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -332,7 +345,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("CreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicReady(testTopicID)),
+				WithTopicReady(testTopicID),
+				WithTopicSetDefaults,
+			),
 		}},
 	}, {
 		Name: "publisher has not yet been reconciled",
@@ -345,6 +360,7 @@ func TestAllCases(t *testing.T) {
 					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("CreateNoDelete"),
+				WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -373,7 +389,9 @@ func TestAllCases(t *testing.T) {
 				// Updates
 				WithInitTopicConditions,
 				WithTopicReadyAndPublisherDeployed(testTopicID),
-				WithTopicPublisherNotConfigured()),
+				WithTopicPublisherNotConfigured,
+				WithTopicSetDefaults,
+			),
 		}},
 	},
 		{
@@ -387,6 +405,7 @@ func TestAllCases(t *testing.T) {
 						Secret:  &secret,
 					}),
 					WithTopicPropagationPolicy("CreateNoDelete"),
+					WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -418,7 +437,9 @@ func TestAllCases(t *testing.T) {
 					// Updates
 					WithInitTopicConditions,
 					WithTopicReadyAndPublisherDeployed(testTopicID),
-					WithTopicPublisherNotDeployed("PublisherNotDeployed", "PublisherNotDeployed")),
+					WithTopicPublisherNotDeployed("PublisherNotDeployed", "PublisherNotDeployed"),
+					WithTopicSetDefaults,
+				),
 			}},
 		}, {
 			Name: "the status of publisher is unknown",
@@ -431,6 +452,7 @@ func TestAllCases(t *testing.T) {
 						Secret:  &secret,
 					}),
 					WithTopicPropagationPolicy("CreateNoDelete"),
+					WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -462,7 +484,9 @@ func TestAllCases(t *testing.T) {
 					// Updates
 					WithInitTopicConditions,
 					WithTopicReadyAndPublisherDeployed(testTopicID),
-					WithTopicPublisherUnknown("PublisherUnknown", "PublisherUnknown")),
+					WithTopicPublisherUnknown("PublisherUnknown", "PublisherUnknown"),
+					WithTopicSetDefaults,
+				),
 			}},
 		}, {
 			Name: "topic successfully reconciles and is ready",
@@ -475,6 +499,7 @@ func TestAllCases(t *testing.T) {
 						Secret:  &secret,
 					}),
 					WithTopicPropagationPolicy("CreateNoDelete"),
+					WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -507,7 +532,9 @@ func TestAllCases(t *testing.T) {
 					WithInitTopicConditions,
 					WithTopicReadyAndPublisherDeployed(testTopicID),
 					WithTopicPublisherDeployed,
-					WithTopicAddress(testTopicURI)),
+					WithTopicAddress(testTopicURI),
+					WithTopicSetDefaults,
+				),
 			}},
 		}, {
 			Name: "topic successfully reconciles and reuses existing publisher",
@@ -520,6 +547,7 @@ func TestAllCases(t *testing.T) {
 						Secret:  &secret,
 					}),
 					WithTopicPropagationPolicy("CreateNoDelete"),
+					WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -552,7 +580,9 @@ func TestAllCases(t *testing.T) {
 					WithInitTopicConditions,
 					WithTopicReadyAndPublisherDeployed(testTopicID),
 					WithTopicPublisherDeployed,
-					WithTopicAddress(testTopicURI)),
+					WithTopicAddress(testTopicURI),
+					WithTopicSetDefaults,
+				),
 			}},
 		}, {
 			Name: "delete topic - policy CreateNoDelete",
@@ -566,6 +596,7 @@ func TestAllCases(t *testing.T) {
 					}),
 					WithTopicPropagationPolicy("CreateNoDelete"),
 					WithTopicDeleted,
+					WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -586,6 +617,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicPropagationPolicy("CreateDelete"),
 					WithTopicTopicID(topicName),
 					WithTopicDeleted,
+					WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -606,6 +638,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicPropagationPolicy("CreateDelete"),
 					WithTopicTopicID(topicName),
 					WithTopicDeleted,
+					WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -735,7 +768,9 @@ func newPublisher() *servingv1.Service {
 			Project: testProject,
 			Topic:   testTopicID,
 			Secret:  &secret,
-		}))
+		}),
+		WithTopicSetDefaults,
+	)
 	args := &resources.PublisherArgs{
 		Image:  testImage,
 		Topic:  t,

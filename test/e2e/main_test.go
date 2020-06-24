@@ -32,17 +32,17 @@ import (
 	"knative.dev/pkg/test/zipkin"
 )
 
-var channelTestRunner eventingtestlib.ChannelTestRunner
+var channelTestRunner eventingtestlib.ComponentsTestRunner
 var authConfig lib.AuthConfig
 
 func TestMain(m *testing.M) {
 	os.Exit(func() int {
 		test.InitializeFlags()
 		eventingtest.InitializeEventingFlags()
-		channelTestRunner = eventingtestlib.ChannelTestRunner{
+		channelTestRunner = eventingtestlib.ComponentsTestRunner{
 			// ChannelFeatureMap saves the channel-features mapping.
 			// Each pair means the channel support the given list of features.
-			ChannelFeatureMap: map[metav1.TypeMeta][]eventingtestlib.Feature{
+			ComponentFeatureMap: map[metav1.TypeMeta][]eventingtestlib.Feature{
 				{
 					APIVersion: resources.MessagingAPIVersion,
 					Kind:       "Channel",
@@ -60,7 +60,7 @@ func TestMain(m *testing.M) {
 					eventingtestlib.FeaturePersistence,
 				},
 			},
-			ChannelsToTest: eventingtest.EventingFlags.Channels,
+			ComponentsToTest: eventingtest.EventingFlags.Channels,
 		}
 		authConfig.WorkloadIdentity = test.Flags.WorkloadIdentity
 		// The format of a Google Cloud Service Account is: service-account-name@project-id.iam.gserviceaccount.com.

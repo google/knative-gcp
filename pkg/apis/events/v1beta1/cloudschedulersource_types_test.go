@@ -107,3 +107,20 @@ func TestCloudSchedulerSourceIdentityStatus(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestCloudSchedulerSource_GetConditionSet(t *testing.T) {
+	s := &CloudSchedulerSource{}
+
+	if got, want := s.GetConditionSet().GetTopLevelConditionType(), apis.ConditionReady; got != want {
+		t.Errorf("GetTopLevelCondition=%v, want=%v", got, want)
+	}
+}
+
+func TestCloudSchedulerSource_GetStatus(t *testing.T) {
+	s := &CloudSchedulerSource{
+		Status: CloudSchedulerSourceStatus{},
+	}
+	if got, want := s.GetStatus(), &s.Status.Status; got != want {
+		t.Errorf("GetStatus=%v, want=%v", got, want)
+	}
+}

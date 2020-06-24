@@ -46,6 +46,7 @@ var (
 	_ kngcpduck.PubSubable         = (*CloudBuildSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudBuildSource)(nil)
 	_                              = duck.VerifyType(&CloudBuildSource{}, &duckv1.Conditions{})
+	_ duckv1.KRShaped              = (*CloudBuildSource)(nil)
 )
 
 // CloudBuildSourceSpec defines the desired state of the CloudBuildSource.
@@ -122,4 +123,14 @@ func (bs *CloudBuildSource) PubSubStatus() *duckv1beta1.PubSubStatus {
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (bs *CloudBuildSource) ConditionSet() *apis.ConditionSet {
 	return &buildCondSet
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*CloudBuildSource) GetConditionSet() apis.ConditionSet {
+	return buildCondSet
+}
+
+// GetStatus retrieves the status of the CloudBuildSource. Implements the KRShaped interface.
+func (s *CloudBuildSource) GetStatus() *duckv1.Status {
+	return &s.Status.Status
 }

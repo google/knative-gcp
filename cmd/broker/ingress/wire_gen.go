@@ -10,18 +10,19 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
 	"github.com/google/knative-gcp/pkg/metrics"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 )
 
 // Injectors from wire.go:
 
-func InitializeHandler(ctx context.Context, port ingress.Port, projectID ingress.ProjectID, podName metrics.PodName, containerName metrics.ContainerName) (*ingress.Handler, error) {
-	httpMessageReceiver := ingress.NewHTTPMessageReceiver(port)
+func InitializeHandler(ctx context.Context, port clients.Port, projectID clients.ProjectID, podName metrics.PodName, containerName metrics.ContainerName) (*ingress.Handler, error) {
+	httpMessageReceiver := clients.NewHTTPMessageReceiver(port)
 	v := _wireValue
 	readonlyTargets, err := volume.NewTargetsFromFile(v...)
 	if err != nil {
 		return nil, err
 	}
-	client, err := ingress.NewPubsubClient(ctx, projectID)
+	client, err := clients.NewPubsubClient(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}

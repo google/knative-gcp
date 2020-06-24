@@ -51,7 +51,7 @@ func (r *IngressReporter) register() error {
 	}
 
 	// Create view to see our measurements.
-	return view.Register(
+	return metrics.RegisterResourceView(
 		&view.View{
 			Name:        r.eventCountM.Name(),
 			Description: r.eventCountM.Description(),

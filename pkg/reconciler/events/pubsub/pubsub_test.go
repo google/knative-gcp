@@ -43,6 +43,7 @@ import (
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudpubsubsource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -164,7 +165,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudPubSubSourceDefaultGCPAuth(),
+				WithCloudPubSubSourceSetDefaults,
 			),
 			newSink(),
 		},
@@ -180,20 +181,20 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceAnnotations(map[string]string{
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudPubSubSourceDefaultGCPAuth(),
+				WithCloudPubSubSourceSetDefaults,
 				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			NewPullSubscription(pubsubName, testNS,
+				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 					},
+					AdapterType: string(converters.CloudPubSub),
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMode(inteventsv1beta1.ModePushCompatible),
 				WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": pubsubName,
@@ -203,7 +204,7 @@ func TestAllCases(t *testing.T) {
 					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
-				WithPullSubscriptionDefaultGCPAuth(),
+				WithPullSubscriptionDefaultGCPAuth,
 			),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -220,9 +221,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceSetDefaults,
 			),
-			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			NewPullSubscription(pubsubName, testNS,
+				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
@@ -230,7 +232,7 @@ func TestAllCases(t *testing.T) {
 							Sink: newSinkDestination(),
 						},
 					},
-					Mode: inteventsv1beta1.ModePushCompatible,
+					AdapterType: string(converters.CloudPubSub),
 				}),
 				WithPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
 			newSink(),
@@ -245,6 +247,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudPubSubSourceConditions,
 				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourcePullSubscriptionFailed("PullSubscriptionFalse", "status false test message"),
+				WithCloudPubSubSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -261,9 +264,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceSetDefaults,
 			),
-			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			NewPullSubscription(pubsubName, testNS,
+				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
@@ -271,7 +275,7 @@ func TestAllCases(t *testing.T) {
 							Sink: newSinkDestination(),
 						},
 					},
-					Mode: inteventsv1beta1.ModePushCompatible,
+					AdapterType: string(converters.CloudPubSub),
 				}),
 				WithPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
 			newSink(),
@@ -286,6 +290,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudPubSubSourceConditions,
 				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionUnknown", "status unknown test message"),
+				WithCloudPubSubSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -302,9 +307,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceSetDefaults,
 			),
-			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(inteventsv1beta1.PullSubscriptionSpec{
+			NewPullSubscription(pubsubName, testNS,
+				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 					Topic: testTopicID,
 					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
@@ -312,7 +318,7 @@ func TestAllCases(t *testing.T) {
 							Sink: newSinkDestination(),
 						},
 					},
-					Mode: inteventsv1beta1.ModePushCompatible,
+					AdapterType: string(converters.CloudPubSub),
 				}),
 				WithPullSubscriptionReady(sinkURI),
 				WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
@@ -336,9 +342,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourcePullSubscriptionReady(),
+				WithCloudPubSubSourcePullSubscriptionReady,
 				WithCloudPubSubSourceSinkURI(pubsubSinkURL),
 				WithCloudPubSubSourceSubscriptionID(SubscriptionID),
+				WithCloudPubSubSourceSetDefaults,
 			),
 		}, {
 			Object: NewCloudPubSubSource(pubsubName, testNS,
@@ -347,10 +354,11 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourcePullSubscriptionReady(),
+				WithCloudPubSubSourcePullSubscriptionReady,
 				WithCloudPubSubSourceSinkURI(pubsubSinkURL),
 				WithCloudPubSubSourceSubscriptionID(SubscriptionID),
 				WithCloudPubSubSourceFinalizers("cloudpubsubsources.events.cloud.google.com"),
+				WithCloudPubSubSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -365,7 +373,13 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			PubSubBase:   intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			PubSubBase: intevents.NewPubSubBase(ctx,
+				&intevents.PubSubBaseArgs{
+					ControllerAgentName: controllerAgentName,
+					ReceiveAdapterName:  receiveAdapterName,
+					ReceiveAdapterType:  string(converters.CloudPubSub),
+					ConfigWatcher:       cmw,
+				}),
 			Identity:     identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			pubsubLister: listers.GetCloudPubSubSourceLister(),
 		}

@@ -91,3 +91,20 @@ func TestTopicConditionSet(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestTopic_GetConditionSet(t *testing.T) {
+	tp := &Topic{}
+
+	if got, want := tp.GetConditionSet().GetTopLevelConditionType(), apis.ConditionReady; got != want {
+		t.Errorf("GetTopLevelCondition=%v, want=%v", got, want)
+	}
+}
+
+func TestTopic_GetStatus(t *testing.T) {
+	tp := &Topic{
+		Status: TopicStatus{},
+	}
+	if got, want := tp.GetStatus(), &tp.Status.Status; got != want {
+		t.Errorf("GetStatus=%v, want=%v", got, want)
+	}
+}

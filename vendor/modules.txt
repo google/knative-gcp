@@ -111,9 +111,6 @@ github.com/cloudevents/sdk-go/pkg/cloudevents/extensions
 github.com/cloudevents/sdk-go/pkg/cloudevents/observability
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http
-github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub
-github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context
-github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/internal
 github.com/cloudevents/sdk-go/pkg/cloudevents/types
 # github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
 ## explicit
@@ -166,8 +163,7 @@ github.com/go-openapi/spec
 github.com/go-openapi/swag
 # github.com/gobuffalo/envy v1.7.1
 github.com/gobuffalo/envy
-# github.com/gogo/protobuf v1.3.1 => github.com/gogo/protobuf v1.3.0
-## explicit
+# github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
 # github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
@@ -612,7 +608,7 @@ google.golang.org/protobuf/types/pluginpb
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.3.0 => gopkg.in/yaml.v2 v2.2.2
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
+# gopkg.in/yaml.v3 v3.0.0-20191026110619-0b21df46bc1d
 gopkg.in/yaml.v3
 # honnef.co/go/tools v0.0.1-2020.1.4 => honnef.co/go/tools v0.0.1-2019.2.3
 honnef.co/go/tools/arg
@@ -642,7 +638,7 @@ honnef.co/go/tools/unused
 honnef.co/go/tools/version
 # k8s.io/api v0.18.1 => k8s.io/api v0.17.6
 ## explicit
-k8s.io/api/admission/v1beta1
+k8s.io/api/admission/v1
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1
@@ -1027,15 +1023,17 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.15.1-0.20200618135024-d77f1c5b17ce
+# knative.dev/eventing v0.15.1-0.20200623172931-13e513727e77
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
 knative.dev/eventing/pkg/apis/configs/v1alpha1
 knative.dev/eventing/pkg/apis/duck
+knative.dev/eventing/pkg/apis/duck/v1
 knative.dev/eventing/pkg/apis/duck/v1alpha1
 knative.dev/eventing/pkg/apis/duck/v1beta1
 knative.dev/eventing/pkg/apis/eventing
+knative.dev/eventing/pkg/apis/eventing/v1
 knative.dev/eventing/pkg/apis/eventing/v1beta1
 knative.dev/eventing/pkg/apis/flows
 knative.dev/eventing/pkg/apis/flows/v1beta1
@@ -1050,6 +1048,8 @@ knative.dev/eventing/pkg/client/clientset/versioned/fake
 knative.dev/eventing/pkg/client/clientset/versioned/scheme
 knative.dev/eventing/pkg/client/clientset/versioned/typed/configs/v1alpha1
 knative.dev/eventing/pkg/client/clientset/versioned/typed/configs/v1alpha1/fake
+knative.dev/eventing/pkg/client/clientset/versioned/typed/eventing/v1
+knative.dev/eventing/pkg/client/clientset/versioned/typed/eventing/v1/fake
 knative.dev/eventing/pkg/client/clientset/versioned/typed/eventing/v1beta1
 knative.dev/eventing/pkg/client/clientset/versioned/typed/eventing/v1beta1/fake
 knative.dev/eventing/pkg/client/clientset/versioned/typed/flows/v1beta1
@@ -1064,6 +1064,7 @@ knative.dev/eventing/pkg/client/informers/externalversions
 knative.dev/eventing/pkg/client/informers/externalversions/configs
 knative.dev/eventing/pkg/client/informers/externalversions/configs/v1alpha1
 knative.dev/eventing/pkg/client/informers/externalversions/eventing
+knative.dev/eventing/pkg/client/informers/externalversions/eventing/v1
 knative.dev/eventing/pkg/client/informers/externalversions/eventing/v1beta1
 knative.dev/eventing/pkg/client/informers/externalversions/flows
 knative.dev/eventing/pkg/client/informers/externalversions/flows/v1beta1
@@ -1079,6 +1080,7 @@ knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/broker
 knative.dev/eventing/pkg/client/injection/informers/factory
 knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker
 knative.dev/eventing/pkg/client/listers/configs/v1alpha1
+knative.dev/eventing/pkg/client/listers/eventing/v1
 knative.dev/eventing/pkg/client/listers/eventing/v1beta1
 knative.dev/eventing/pkg/client/listers/flows/v1beta1
 knative.dev/eventing/pkg/client/listers/messaging/v1beta1
@@ -1097,6 +1099,7 @@ knative.dev/eventing/test
 knative.dev/eventing/test/conformance/helpers
 knative.dev/eventing/test/conformance/helpers/tracing
 knative.dev/eventing/test/e2e/helpers
+knative.dev/eventing/test/flags
 knative.dev/eventing/test/lib
 knative.dev/eventing/test/lib/duck
 knative.dev/eventing/test/lib/recordevents
@@ -1112,11 +1115,11 @@ knative.dev/eventing/test/test_images/event-sender
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/networking v0.0.0-20200617160325-c5b1bddf865c
+# knative.dev/networking v0.0.0-20200622163826-421cd312c651
 knative.dev/networking/pkg/apis/config
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
-# knative.dev/pkg v0.0.0-20200618002824-96c250871fac
+# knative.dev/pkg v0.0.0-20200623173527-5658d93fb07e
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1126,7 +1129,7 @@ knative.dev/pkg/apis/duck/v1beta1
 knative.dev/pkg/apis/testing/fuzzer
 knative.dev/pkg/changeset
 knative.dev/pkg/client/injection/apiextensions/client
-knative.dev/pkg/client/injection/apiextensions/informers/apiextensions/v1beta1/customresourcedefinition
+knative.dev/pkg/client/injection/apiextensions/informers/apiextensions/v1/customresourcedefinition
 knative.dev/pkg/client/injection/apiextensions/informers/factory
 knative.dev/pkg/client/injection/ducks/duck/v1/addressable
 knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake
@@ -1134,8 +1137,8 @@ knative.dev/pkg/client/injection/ducks/duck/v1/conditions
 knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake
 knative.dev/pkg/client/injection/kube/client
 knative.dev/pkg/client/injection/kube/client/fake
-knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration
-knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/validatingwebhookconfiguration
+knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/mutatingwebhookconfiguration
+knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/validatingwebhookconfiguration
 knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment
 knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake
 knative.dev/pkg/client/injection/kube/informers/batch/v1/job
@@ -1211,6 +1214,8 @@ knative.dev/pkg/testutils/clustermanager/perf-tests/pkg
 knative.dev/pkg/third_party/mako/proto/quickstore_go_proto
 knative.dev/pkg/tracing
 knative.dev/pkg/tracing/config
+knative.dev/pkg/tracing/propagation
+knative.dev/pkg/tracing/propagation/tracecontextb3
 knative.dev/pkg/tracker
 knative.dev/pkg/version
 knative.dev/pkg/webhook
@@ -1221,7 +1226,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.15.1-0.20200618034425-c99ed421d333
+# knative.dev/serving v0.15.1-0.20200623190335-3459a76f9976
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
@@ -1260,7 +1265,7 @@ knative.dev/serving/pkg/client/listers/autoscaling/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200617235125-6382dba95484
+# knative.dev/test-infra v0.0.0-20200623184427-74a5e5b3bd23
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
@@ -1275,7 +1280,6 @@ sigs.k8s.io/yaml
 # k8s.io/code-generator => k8s.io/code-generator v0.17.6
 # k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 # github.com/blang/semver => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
-# github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.0
 # github.com/imdario/mergo => github.com/imdario/mergo v0.3.7
 # github.com/jmespath/go-jmespath => github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 # github.com/json-iterator/go => github.com/json-iterator/go v1.1.7
