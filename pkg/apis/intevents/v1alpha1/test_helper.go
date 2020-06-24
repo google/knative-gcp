@@ -56,7 +56,7 @@ func (t testHelper) AvailableDeployment() *appsv1.Deployment {
 	d.Status.Conditions = []appsv1.DeploymentCondition{
 		{
 			Type:   appsv1.DeploymentAvailable,
-			Status: "True",
+			Status: corev1.ConditionTrue,
 		},
 	}
 	return d
@@ -68,7 +68,7 @@ func (t testHelper) UnavailableDeployment() *appsv1.Deployment {
 	d.Status.Conditions = []appsv1.DeploymentCondition{
 		{
 			Type:   appsv1.DeploymentAvailable,
-			Status: "False",
+			Status: corev1.ConditionFalse,
 		},
 	}
 	return d
@@ -80,7 +80,7 @@ func (t testHelper) UnknownDeployment() *appsv1.Deployment {
 	d.Status.Conditions = []appsv1.DeploymentCondition{
 		{
 			Type:   appsv1.DeploymentAvailable,
-			Status: "Unknown",
+			Status: corev1.ConditionUnknown,
 		},
 	}
 	return d
