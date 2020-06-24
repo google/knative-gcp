@@ -31,8 +31,8 @@ var (
 	PubSubProtocolAttribute = tracing.MessagingProtocolAttribute(PubSubProtocol)
 )
 
-func ChannelDestination(c types.NamespacedName) string {
-	return fmt.Sprintf("channel:%s.%s", c.Name, c.Namespace)
+func SubscriptionDestination(s string) string {
+	return fmt.Sprintf("subscription:%s", s)
 }
 
 func SourceDestination(resourceGroup string, src types.NamespacedName) string {

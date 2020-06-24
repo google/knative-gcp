@@ -250,7 +250,7 @@ func (a *Adapter) startSpan(ctx context.Context, event *cev2.Event) (context.Con
 	// This receive adapter code is used both for Sources and Channels.
 	// An ugly way to identify whether it was created from a Channel is to look at the resourceGroup.
 	if a.resourceGroup == messaging.ChannelsResource.String() {
-		spanName = tracing.ChannelDestination(a.namespacedName)
+		spanName = tracing.SubscriptionDestination(a.subscription.ID())
 	}
 	var span *trace.Span
 	if dt, ok := extensions.GetDistributedTracingExtension(*event); ok {
