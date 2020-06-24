@@ -19,11 +19,12 @@ type TriggerMetricAssertion struct {
 	BrokerNamespace string
 	BrokerName      string
 	StartTime       time.Time
-	CountPerTrigger map[TriggerName]int64
+	CountPerTrigger map[TriggerAssertionKey]int64
 }
 
-type TriggerName struct {
-	Name     string
+type TriggerAssertionKey struct {
+	Name string
+	// If not provided, it means the assertion doesn't care about response code.
 	RespCode int
 }
 
@@ -40,7 +41,7 @@ func (a TriggerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 	return nil
 }
 
-func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, metric string, accF func(map[TriggerName]int64, *monitoringpb.TimeSeries) error) error {
+func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, metric string, accF func(map[TriggerAssertionKey]int64, *monitoringpb.TimeSeries) error) error {
 	ctx := context.Background()
 	start, err := ptypes.TimestampProto(a.StartTime)
 	if err != nil {
@@ -56,7 +57,7 @@ func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, me
 		Interval: &monitoringpb.TimeInterval{StartTime: start, EndTime: end},
 		View:     monitoringpb.ListTimeSeriesRequest_FULL,
 	})
-	gotCount := make(map[TriggerName]int64)
+	gotCount := make(map[TriggerAssertionKey]int64)
 	for {
 		ts, err := it.Next()
 		if err == iterator.Done {
@@ -75,14 +76,14 @@ func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, me
 	return nil
 }
 
-func accumEventCount(accum map[TriggerName]int64, ts *monitoringpb.TimeSeries) error {
+func accumEventCount(accum map[TriggerAssertionKey]int64, ts *monitoringpb.TimeSeries) error {
 	triggerName := ts.GetResource().GetLabels()["trigger_name"]
 	labels := ts.GetMetric().GetLabels()
 	code, err := strconv.Atoi(labels["response_code"])
 	if err != nil {
 		return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
 	}
-	tn := TriggerName{
+	tn := TriggerAssertionKey{
 		Name:     triggerName,
 		RespCode: code,
 	}
@@ -90,14 +91,14 @@ func accumEventCount(accum map[TriggerName]int64, ts *monitoringpb.TimeSeries) e
 	return nil
 }
 
-func accumDispatchLatency(accum map[TriggerName]int64, ts *monitoringpb.TimeSeries) error {
+func accumDispatchLatency(accum map[TriggerAssertionKey]int64, ts *monitoringpb.TimeSeries) error {
 	triggerName := ts.GetResource().GetLabels()["trigger_name"]
 	labels := ts.GetMetric().GetLabels()
 	code, err := strconv.Atoi(labels["response_code"])
 	if err != nil {
 		return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
 	}
-	tn := TriggerName{
+	tn := TriggerAssertionKey{
 		Name:     triggerName,
 		RespCode: code,
 	}
@@ -105,9 +106,9 @@ func accumDispatchLatency(accum map[TriggerName]int64, ts *monitoringpb.TimeSeri
 	return nil
 }
 
-func accumProcessingLatency(accum map[TriggerName]int64, ts *monitoringpb.TimeSeries) error {
+func accumProcessingLatency(accum map[TriggerAssertionKey]int64, ts *monitoringpb.TimeSeries) error {
 	triggerName := ts.GetResource().GetLabels()["trigger_name"]
-	tn := TriggerName{
+	tn := TriggerAssertionKey{
 		Name: triggerName,
 	}
 	accum[tn] = accum[tn] + metrics.SumDistCount(ts)

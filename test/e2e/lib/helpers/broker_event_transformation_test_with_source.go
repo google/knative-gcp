@@ -169,7 +169,7 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 			BrokerName:      brokerName,
 			BrokerNamespace: client.Namespace,
 			StartTime:       start,
-			CountPerTrigger: map[lib.TriggerName]int64{
+			CountPerTrigger: map[lib.TriggerAssertionKey]int64{
 				// For metrics with response code.
 				{Name: trigger.Name, RespCode: http.StatusAccepted}:     1,
 				{Name: respTrigger.Name, RespCode: http.StatusAccepted}: 1,
