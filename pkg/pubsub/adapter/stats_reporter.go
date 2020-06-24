@@ -117,7 +117,7 @@ func (r *reporter) register() error {
 		responseCodeClassKey}
 
 	// Create view to see our measurements.
-	return view.Register(
+	return metrics.RegisterResourceView(
 		&view.View{
 			Description: eventCountM.Description(),
 			Measure:     eventCountM,

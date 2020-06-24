@@ -50,8 +50,6 @@ replace (
 
 replace github.com/blang/semver => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
 
-replace github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.0
-
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.7
 
 replace github.com/jmespath/go-jmespath => github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af

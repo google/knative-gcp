@@ -68,7 +68,7 @@ var (
 	cm = &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 		Data:       map[string]string{"data": "value"},
-		BinaryData: map[string][]byte{"binary": []byte{'b'}},
+		BinaryData: map[string][]byte{"binary": {'b'}},
 	}
 	cmDifferentData = &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
