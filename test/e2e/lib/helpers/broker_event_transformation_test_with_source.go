@@ -169,28 +169,14 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 			BrokerName:      brokerName,
 			BrokerNamespace: client.Namespace,
 			StartTime:       start,
-			CountPerTrigger: map[string]int64{
+			CountPerTriggerWithRespCode: map[string]int64{
 				lib.TriggerNameWithRespCode(trigger.Name, http.StatusAccepted):     1,
 				lib.TriggerNameWithRespCode(respTrigger.Name, http.StatusAccepted): 1,
-			},
-		},
-		// Metric from first two delivery attempts (which would fail).
-		lib.TriggerMetricAssertion{
-			ProjectID:       projectID,
-			BrokerName:      brokerName,
-			BrokerNamespace: client.Namespace,
-			StartTime:       start,
-			CountPerTrigger: map[string]int64{
+				// Metric from first two delivery attempts (which would fail).
 				lib.TriggerNameWithRespCode(trigger.Name, http.StatusBadRequest): 2,
 			},
-		},
-		// For metrics without response code, we expect 3 trigger deliveries (first 2 from delivery failures).
-		lib.TriggerMetricAssertion{
-			ProjectID:       projectID,
-			BrokerName:      brokerName,
-			BrokerNamespace: client.Namespace,
-			StartTime:       start,
-			CountPerTrigger: map[string]int64{
+			CountPerTriggerNoRespCode: map[string]int64{
+				// For metrics without response code, we expect 3 trigger deliveries (first 2 from delivery failures).
 				trigger.Name:     3,
 				respTrigger.Name: 1,
 			},

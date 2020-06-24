@@ -15,11 +15,12 @@ import (
 )
 
 type TriggerMetricAssertion struct {
-	ProjectID       string
-	BrokerNamespace string
-	BrokerName      string
-	StartTime       time.Time
-	CountPerTrigger map[string]int64
+	ProjectID                   string
+	BrokerNamespace             string
+	BrokerName                  string
+	StartTime                   time.Time
+	CountPerTriggerWithRespCode map[string]int64
+	CountPerTriggerNoRespCode   map[string]int64
 }
 
 func TriggerNameWithRespCode(name string, respCode int) string {
@@ -27,19 +28,19 @@ func TriggerNameWithRespCode(name string, respCode int) string {
 }
 
 func (a TriggerMetricAssertion) Assert(client *monitoring.MetricClient) error {
-	if err := a.assertMetric(client, TriggerEventCountMetricType, accumEventCount); err != nil {
+	if err := a.assertMetric(client, TriggerEventCountMetricType, a.CountPerTriggerWithRespCode, accumEventCount); err != nil {
 		return err
 	}
-	if err := a.assertMetric(client, TriggerEventDispatchLatencyType, accumDispatchLatency); err != nil {
+	if err := a.assertMetric(client, TriggerEventDispatchLatencyType, a.CountPerTriggerWithRespCode, accumDispatchLatency); err != nil {
 		return err
 	}
-	if err := a.assertMetric(client, TriggerEventProcessingLatencyType, accumProcessingLatency); err != nil {
+	if err := a.assertMetric(client, TriggerEventProcessingLatencyType, a.CountPerTriggerNoRespCode, accumProcessingLatency); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, metric string, accF func(map[string]int64, *monitoringpb.TimeSeries) error) error {
+func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, metric string, wantCount map[string]int64, accF func(map[string]int64, *monitoringpb.TimeSeries) error) error {
 	ctx := context.Background()
 	start, err := ptypes.TimestampProto(a.StartTime)
 	if err != nil {
@@ -68,7 +69,7 @@ func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, me
 			return err
 		}
 	}
-	if diff := cmp.Diff(a.CountPerTrigger, gotCount); diff != "" {
+	if diff := cmp.Diff(wantCount, gotCount); diff != "" {
 		return fmt.Errorf("unexpected metric %q count (-want, +got) = %v", metric, diff)
 	}
 	return nil
