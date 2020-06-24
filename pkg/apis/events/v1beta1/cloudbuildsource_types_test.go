@@ -100,3 +100,20 @@ func TestCloudBuildSourceConditionSet(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestCloudBuildSource_GetConditionSet(t *testing.T) {
+	s := &CloudBuildSource{}
+
+	if got, want := s.GetConditionSet().GetTopLevelConditionType(), apis.ConditionReady; got != want {
+		t.Errorf("GetTopLevelCondition=%v, want=%v", got, want)
+	}
+}
+
+func TestCloudBuildSource_GetStatus(t *testing.T) {
+	s := &CloudBuildSource{
+		Status: CloudBuildSourceStatus{},
+	}
+	if got, want := s.GetStatus(), &s.Status.Status; got != want {
+		t.Errorf("GetStatus=%v, want=%v", got, want)
+	}
+}

@@ -67,7 +67,13 @@ func newController(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:           intevents.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudBuildConverter, cmw),
+		PubSubBase: intevents.NewPubSubBase(ctx,
+			&intevents.PubSubBaseArgs{
+				ControllerAgentName: controllerAgentName,
+				ReceiveAdapterName:  receiveAdapterName,
+				ReceiveAdapterType:  string(converters.CloudBuild),
+				ConfigWatcher:       cmw,
+			}),
 		Identity:             identity.NewIdentity(ctx, ipm, gcpas),
 		buildLister:          cloudbuildsourceInformer.Lister(),
 		serviceAccountLister: serviceAccountInformer.Lister(),

@@ -18,6 +18,7 @@ package adapter
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"go.opencensus.io/stats/view"
@@ -51,15 +52,8 @@ var (
 )
 
 type ReportArgs struct {
-	Namespace     string
-	EventType     string
-	EventSource   string
-	Name          string
-	ResourceGroup string
-}
-
-func init() {
-	register()
+	EventType   string
+	EventSource string
 }
 
 // StatsReporter defines the interface for sending metrics.
@@ -72,11 +66,23 @@ var _ StatsReporter = (*reporter)(nil)
 var emptyContext = context.Background()
 
 // reporter holds cached metric objects to report metrics.
-type reporter struct{}
+type reporter struct {
+	name          string
+	namespace     string
+	resourceGroup string
+}
 
 // NewStatsReporter creates a reporter that collects and reports metrics.
-func NewStatsReporter() StatsReporter {
-	return &reporter{}
+func NewStatsReporter(name Name, namespace Namespace, resourceGroup ResourceGroup) (StatsReporter, error) {
+	r := &reporter{
+		name:          string(name),
+		namespace:     string(namespace),
+		resourceGroup: string(resourceGroup),
+	}
+	if err := r.register(); err != nil {
+		return nil, fmt.Errorf("failed to register stats: %w", err)
+	}
+	return r, nil
 }
 
 func (r *reporter) ReportEventCount(args *ReportArgs, responseCode int) error {
@@ -91,16 +97,16 @@ func (r *reporter) ReportEventCount(args *ReportArgs, responseCode int) error {
 func (r *reporter) generateTag(args *ReportArgs, responseCode int) (context.Context, error) {
 	return tag.New(
 		emptyContext,
-		tag.Insert(namespaceKey, args.Namespace),
+		tag.Insert(namespaceKey, r.namespace),
 		tag.Insert(eventSourceKey, args.EventSource),
 		tag.Insert(eventTypeKey, args.EventType),
-		tag.Insert(nameKey, args.Name),
-		tag.Insert(resourceGroupKey, args.ResourceGroup),
+		tag.Insert(nameKey, r.name),
+		tag.Insert(resourceGroupKey, r.resourceGroup),
 		tag.Insert(responseCodeKey, strconv.Itoa(responseCode)),
 		tag.Insert(responseCodeClassKey, metrics.ResponseCodeClass(responseCode)))
 }
 
-func register() {
+func (r *reporter) register() error {
 	tagKeys := []tag.Key{
 		namespaceKey,
 		eventSourceKey,
@@ -111,14 +117,12 @@ func register() {
 		responseCodeClassKey}
 
 	// Create view to see our measurements.
-	if err := view.Register(
+	return metrics.RegisterResourceView(
 		&view.View{
 			Description: eventCountM.Description(),
 			Measure:     eventCountM,
 			Aggregation: view.Count(),
 			TagKeys:     tagKeys,
 		},
-	); err != nil {
-		panic(err)
-	}
+	)
 }

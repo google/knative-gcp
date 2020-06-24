@@ -19,9 +19,9 @@ package eventutil
 import (
 	"context"
 
-	cetypes "github.com/cloudevents/sdk-go/pkg/cloudevents/types"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/event"
+	cetypes "github.com/cloudevents/sdk-go/v2/types"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
 )

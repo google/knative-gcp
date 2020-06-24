@@ -26,8 +26,6 @@ import (
 	"regexp"
 	"strings"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -35,12 +33,12 @@ import (
 	auditpb "google.golang.org/genproto/googleapis/cloud/audit"
 	logpb "google.golang.org/genproto/googleapis/logging/v2"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"cloud.google.com/go/pubsub"
+	cev2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 )
 
 const (
-	CloudAuditLogsConverter = "com.google.cloud.auditlogs"
-
 	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
 
 	parentResourcePattern = `^(:?projects|organizations|billingAccounts|folders)/[^/]+`
@@ -103,10 +101,7 @@ func resolveAnyUnknowns(typeURL string) (proto.Message, error) {
 	return reflect.New(mt.Elem()).Interface().(proto.Message), nil
 }
 
-func convertCloudAuditLogs(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
-	if msg == nil {
-		return nil, fmt.Errorf("nil pubsub message")
-	}
+func convertCloudAuditLogs(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {
 	entry := logpb.LogEntry{}
 	if err := jsonpbUnmarshaller.Unmarshal(bytes.NewReader(msg.Data), &entry); err != nil {
 		return nil, fmt.Errorf("failed to decode LogEntry: %w", err)
@@ -118,16 +113,15 @@ func convertCloudAuditLogs(ctx context.Context, msg *cepubsub.Message, sendMode 
 	}
 
 	// Make a new event and convert the message payload.
-	event := cloudevents.NewEvent(cloudevents.VersionV1)
-	event.SetID(v1alpha1.CloudAuditLogsSourceEventID(entry.InsertId, entry.LogName, ptypes.TimestampString(entry.Timestamp)))
+	event := cev2.NewEvent(cev2.VersionV1)
+	event.SetID(v1beta1.CloudAuditLogsSourceEventID(entry.InsertId, entry.LogName, ptypes.TimestampString(entry.Timestamp)))
 	if timestamp, err := ptypes.Timestamp(entry.Timestamp); err != nil {
 		return nil, fmt.Errorf("invalid LogEntry timestamp: %w", err)
 	} else {
 		event.SetTime(timestamp)
 	}
-	event.SetData(msg.Data)
+	event.SetData(cev2.ApplicationJSON, msg.Data)
 	event.SetDataSchema(logEntrySchema)
-	event.SetDataContentType(cloudevents.ApplicationJSON)
 
 	switch payload := entry.Payload.(type) {
 	case *logpb.LogEntry_ProtoPayload:
@@ -137,8 +131,8 @@ func convertCloudAuditLogs(ctx context.Context, msg *cepubsub.Message, sendMode 
 		}
 		switch proto := unpacked.Message.(type) {
 		case *auditpb.AuditLog:
-			event.SetType(v1alpha1.CloudAuditLogsSourceEvent)
-			event.SetSource(v1alpha1.CloudAuditLogsSourceEventSource(proto.ServiceName, parentResource))
+			event.SetType(v1beta1.CloudAuditLogsSourceEvent)
+			event.SetSource(v1beta1.CloudAuditLogsSourceEventSource(proto.ServiceName, parentResource))
 			event.SetSubject(proto.ResourceName)
 			event.SetExtension(serviceNameExtension, proto.ServiceName)
 			event.SetExtension(methodNameExtension, proto.MethodName)

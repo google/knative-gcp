@@ -28,6 +28,7 @@ import (
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
 
 	"go.uber.org/zap"
@@ -81,7 +82,7 @@ func main() {
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
 	syncPool, err := InitializeSyncPool(
 		ctx,
-		handler.ProjectID(projectID),
+		clients.ProjectID(projectID),
 		metrics.PodName(env.PodName),
 		metrics.ContainerName(component),
 		[]volume.Option{

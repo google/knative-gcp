@@ -30,7 +30,6 @@ import (
 
 // CloudBuildSource is a specification for a CloudBuildSource resource
 // +genclient
-// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type CloudBuildSource struct {
 	metav1.TypeMeta   `json:",inline"`

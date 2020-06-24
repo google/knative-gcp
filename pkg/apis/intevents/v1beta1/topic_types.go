@@ -59,6 +59,9 @@ var _ resourcesemantics.GenericCRD = (*Topic)(nil)
 // Check that Topic implements the Conditions duck type.
 var _ = duck.VerifyType(&Topic{}, &duckv1.Conditions{})
 
+// Check that Topic implements the KRShaped duck type.
+var _ duckv1.KRShaped = (*Topic)(nil)
+
 // TopicSpec defines parameters for creating or publishing to a Cloud Pub/Sub
 // Topic depending on the PropagationPolicy.
 type TopicSpec struct {
@@ -169,16 +172,26 @@ func (t *Topic) GetGroupVersionKind() schema.GroupVersionKind {
 
 // Methods for identifiable interface.
 // IdentitySpec returns the IdentitySpec portion of the Spec.
-func (s *Topic) IdentitySpec() *v1beta1.IdentitySpec {
-	return &s.Spec.IdentitySpec
+func (t *Topic) IdentitySpec() *v1beta1.IdentitySpec {
+	return &t.Spec.IdentitySpec
 }
 
 // IdentityStatus returns the IdentityStatus portion of the Status.
-func (s *Topic) IdentityStatus() *v1beta1.IdentityStatus {
-	return &s.Status.IdentityStatus
+func (t *Topic) IdentityStatus() *v1beta1.IdentityStatus {
+	return &t.Status.IdentityStatus
 }
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
-func (ps *Topic) ConditionSet() *apis.ConditionSet {
+func (t *Topic) ConditionSet() *apis.ConditionSet {
 	return &topicCondSet
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*Topic) GetConditionSet() apis.ConditionSet {
+	return topicCondSet
+}
+
+// GetStatus retrieves the status of the Topic. Implements the KRShaped interface.
+func (t *Topic) GetStatus() *duckv1.Status {
+	return &t.Status.Status
 }

@@ -64,7 +64,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pubsub *v1beta1.CloudPub
 		}
 	}
 
-	_, event := r.PubSubBase.ReconcilePullSubscription(ctx, pubsub, pubsub.Spec.Topic, resourceGroup, true)
+	_, event := r.PubSubBase.ReconcilePullSubscription(ctx, pubsub, pubsub.Spec.Topic, resourceGroup)
 	if event != nil {
 		return event
 	}

@@ -26,6 +26,7 @@ import (
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -94,6 +95,15 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 		transformerURI = args.TransformerURI.String()
 	}
 
+	adapterType := args.PullSubscription.Spec.AdapterType
+	// If the PullSubscription has no Channel nor Source label, means that users created a PullSubscription manually.
+	// Then we set the adapter type to be PubSubPull.
+	_, isFromSource := args.PullSubscription.Labels[intevents.SourceLabelKey]
+	_, isFromChannel := args.PullSubscription.Labels[intevents.ChannelLabelKey]
+	if !isFromSource && !isFromChannel {
+		adapterType = string(converters.PubSubPull)
+	}
+
 	receiveAdapterContainer := corev1.Container{
 		Name:  "receive-adapter",
 		Image: args.Image,
@@ -114,7 +124,7 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 			Value: transformerURI,
 		}, {
 			Name:  "ADAPTER_TYPE",
-			Value: args.PullSubscription.Spec.AdapterType,
+			Value: adapterType,
 		}, {
 			Name:  "SEND_MODE",
 			Value: string(mode),

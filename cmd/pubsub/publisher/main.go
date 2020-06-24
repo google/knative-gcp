@@ -21,17 +21,22 @@ import (
 	"flag"
 	"log"
 
-	"cloud.google.com/go/compute/metadata"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	. "github.com/google/knative-gcp/pkg/pubsub/publisher"
+	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
+	"github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"knative.dev/eventing/pkg/tracing"
-
-	"github.com/google/knative-gcp/pkg/pubsub/publisher"
-	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
 )
 
 type envConfig struct {
+	// Environment variable containing the port for the publisher.
+	Port int `envconfig:"PORT" default:"8080"`
+
 	// Environment variable containing project id.
 	Project string `envconfig:"PROJECT_ID"`
 
@@ -47,6 +52,8 @@ type envConfig struct {
 }
 
 func main() {
+	appcredentials.MustExistOrUnsetEnv()
+
 	flag.Parse()
 
 	ctx := context.Background()
@@ -62,15 +69,15 @@ func main() {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	if env.Project == "" {
-		project, err := metadata.ProjectID()
-		if err != nil {
-			logger.Fatal("failed to find project id. ", zap.Error(err))
-		}
-		env.Project = project
+	projectID, err := utils.ProjectID(env.Project, metadataClient.NewDefaultMetadataClient())
+	if err != nil {
+		logger.Fatal("Failed to retrieve project id", zap.Error(err))
 	}
 
-	logger.Info("Using project.", zap.String("project", env.Project))
+	topicID := env.Topic
+	if topicID == "" {
+		logger.Fatal("Failed to retrieve topic id", zap.Error(err))
+	}
 
 	tracingConfig, err := tracingconfig.JSONToConfig(env.TracingConfigJson)
 	if err != nil {
@@ -80,13 +87,21 @@ func main() {
 		logger.Error("Failed to setup tracing", zap.Error(err), zap.Any("tracingConfig", tracingConfig))
 	}
 
-	startable := &publisher.Publisher{
-		ProjectID: env.Project,
-		TopicID:   env.Topic,
+	logger.Info("Initializing publisher", zap.String("Project ID", projectID), zap.String("Topic ID", topicID))
+
+	publisher, err := InitializePublisher(
+		ctx,
+		clients.Port(env.Port),
+		clients.ProjectID(projectID),
+		TopicID(topicID),
+	)
+
+	if err != nil {
+		logger.Fatal("Unable to create publisher", zap.Error(err))
 	}
 
-	logger.Info("Starting Pub/Sub Publisher.", zap.Any("publisher", startable))
-	if err := startable.Start(ctx); err != nil {
-		logger.Fatal("failed to start publisher: ", zap.Error(err))
+	logger.Info("Starting publisher", zap.Any("publisher", publisher))
+	if err := publisher.Start(ctx); err != nil {
+		logger.Error("Publisher has stopped with error", zap.String("Project ID", projectID), zap.String("Topic ID", topicID), zap.Error(err))
 	}
 }
