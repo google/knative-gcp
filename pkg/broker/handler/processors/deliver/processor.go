@@ -82,12 +82,20 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	if !ok {
 		// If the broker no longer exists, then there is nothing to process.
 		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.String("broker", bk))
+		trace.FromContext(ctx).Annotate(
+			ceclient.EventTraceAttributes(event),
+			"event dropped: broker config no longer exists",
+		)
 		return nil
 	}
 	target, ok := p.Targets.GetTargetByKey(tk)
 	if !ok {
 		// If the target no longer exists, then there is nothing to process.
 		logging.FromContext(ctx).Warn("target no longer exist in the config", zap.String("target", tk))
+		trace.FromContext(ctx).Annotate(
+			ceclient.EventTraceAttributes(event),
+			"event dropped: trigger config no longer exists",
+		)
 		return nil
 	}
 
@@ -116,6 +124,10 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		}
 
 		logging.FromContext(ctx).Warn("target delivery failed", zap.String("target", tk), zap.Error(err))
+		trace.FromContext(ctx).Annotate(
+			[]trace.Attribute{trace.StringAttribute("error_message", err.Error())},
+			"enqueueing for retry",
+		)
 		return p.sendToRetryTopic(ctx, target, event)
 	}
 	// For post-delivery processing.
@@ -144,6 +156,12 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	if respMsg.ReadEncoding() == binding.EncodingUnknown {
 		// No reply
 		return nil
+	}
+
+	if span := trace.FromContext(ctx); span.IsRecordingEvents() {
+		span.Annotate([]trace.Attribute{
+			trace.StringAttribute("cloudevents.encoding", respMsg.ReadEncoding().String()),
+		}, "event reply received")
 	}
 
 	if hops <= 0 {
