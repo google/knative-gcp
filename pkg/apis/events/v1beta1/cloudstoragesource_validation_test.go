@@ -73,7 +73,7 @@ var (
 	// Bucket, Sink, Secret, Event Type and Project, ObjectNamePrefix and PayloadFormat
 	storageSourceSpec = CloudStorageSourceSpec{
 		Bucket:           "my-test-bucket",
-		EventTypes:       []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+		EventTypes:       []string{CloudStorageSourceObjectFinalizedEventType, CloudStorageSourceObjectDeletedEventType},
 		ObjectNamePrefix: "test-prefix",
 		PayloadFormat:    cloudevents.ApplicationJSON,
 		PubSubSpec: duckv1beta1.PubSubSpec{
@@ -366,7 +366,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			orig: &storageSourceSpec,
 			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
-				EventTypes:       []string{CloudStorageSourceMetadataUpdate},
+				EventTypes:       []string{CloudStorageSourceObjectMetadataUpdatedEventType},
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
 				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec:       storageSourceSpec.PubSubSpec,

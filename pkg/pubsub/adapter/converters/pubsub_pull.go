@@ -17,9 +17,10 @@ limitations under the License.
 package converters
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
 	"fmt"
+
+	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	. "github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
@@ -41,7 +42,7 @@ func convertPubSubPull(ctx context.Context, msg *pubsub.Message) (*cev2.Event, e
 	}
 
 	event.SetSource(v1beta1.CloudPubSubSourceEventSource(project, topic))
-	event.SetType(v1beta1.CloudPubSubSourcePublish)
+	event.SetType(v1beta1.CloudPubSubSourceMessagePublishedEventType)
 
 	// We promote attributes to extensions. If there is at least one attribute that cannot be promoted, we fail.
 	if msg.Attributes != nil && len(msg.Attributes) > 0 {

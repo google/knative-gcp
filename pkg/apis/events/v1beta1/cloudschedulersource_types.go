@@ -58,15 +58,18 @@ var (
 
 const (
 	// CloudEvent types used by CloudSchedulerSource.
-	CloudSchedulerSourceExecute = "com.google.cloud.scheduler.job.execute"
+	// ref: https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/scheduler/v1/events.proto#L26
+	// TODO: somehow reference the proto values directly.
+	CloudSchedulerSourceJobExecutedEventType = "google.cloud.scheduler.job.v1.executed"
+	CloudSchedulerSourceEventDataSchema      = "https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/scheduler/v1/events.proto"
 	// CloudSchedulerSourceJobName is the Pub/Sub message attribute key with the CloudSchedulerSource's job name.
 	CloudSchedulerSourceJobName = "jobName"
 	// CloudSchedulerSourceName is the Pub/Sub message attribute key with the CloudSchedulerSource's name.
 	CloudSchedulerSourceName = "schedulerName"
 )
 
-func CloudSchedulerSourceEventSource(parent, scheduler string) string {
-	return fmt.Sprintf("//cloudscheduler.googleapis.com/%s/schedulers/%s", parent, scheduler)
+func CloudSchedulerSourceEventSource(jobName string) string {
+	return fmt.Sprintf("//cloudscheduler.googleapis.com/%s", jobName)
 }
 
 // CloudSchedulerSourceSpec is the spec for a CloudSchedulerSource resource

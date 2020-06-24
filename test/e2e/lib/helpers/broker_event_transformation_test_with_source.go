@@ -247,7 +247,7 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter,
-		v1beta1.CloudPubSubSourcePublish,
+		v1beta1.CloudPubSubSourceMessagePublishedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
@@ -310,7 +310,7 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter,
-		v1beta1.CloudStorageSourceFinalize,
+		v1beta1.CloudStorageSourceObjectFinalizedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
@@ -362,7 +362,7 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter,
-		v1beta1.CloudAuditLogsSourceEvent,
+		v1beta1.CloudAuditLogsSourceLogWrittenEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
@@ -419,7 +419,7 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter,
-		v1beta1.CloudSchedulerSourceExecute,
+		v1beta1.CloudSchedulerSourceJobExecutedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 

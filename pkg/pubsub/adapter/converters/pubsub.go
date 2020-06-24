@@ -41,13 +41,14 @@ func convertCloudPubSub(ctx context.Context, msg *pubsub.Message) (*cev2.Event, 
 	}
 
 	event.SetSource(v1beta1.CloudPubSubSourceEventSource(project, topic))
-	event.SetType(v1beta1.CloudPubSubSourcePublish)
+	event.SetType(v1beta1.CloudPubSubSourceMessagePublishedEventType)
 
 	subscription, err := GetSubscriptionKey(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	// TODO: use struct generated from proto: https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/pubsub/v1/events.proto#L33
 	pushMessage := &PushMessage{
 		Subscription: subscription,
 		Message: &PubSubMessage{

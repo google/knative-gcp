@@ -94,7 +94,7 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakePubSubTargetJobOrDie(client, source, targetName, v1beta1.CloudPubSubSourcePublish)
+	lib.MakePubSubTargetJobOrDie(client, source, targetName, v1beta1.CloudPubSubSourceMessagePublishedEventType)
 
 	// Create the PubSub source.
 	lib.MakePubSubOrDie(client, lib.PubSubConfig{

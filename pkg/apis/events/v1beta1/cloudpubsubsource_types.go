@@ -116,8 +116,10 @@ func CloudPubSubSourceEventSource(googleCloudProject, topic string) string {
 }
 
 const (
-	// CloudPubSubSource CloudEvent type
-	CloudPubSubSourcePublish = "com.google.cloud.pubsub.topic.publish"
+	// ref: https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/pubsub/v1/events.proto#L26
+	// TODO: somehow reference the proto value directly.
+	CloudPubSubSourceMessagePublishedEventType = "google.cloud.pubsub.topic.v1.messagePublished"
+	CloudPubSubSourceEventDataSchema           = "https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/pubsub/v1/events.proto"
 )
 
 const (

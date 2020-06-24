@@ -47,7 +47,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 		},
 		"defaults present": {
 			orig: &CloudStorageSourceSpec{
-				EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+				EventTypes: []string{CloudStorageSourceObjectFinalizedEventType, CloudStorageSourceObjectDeletedEventType},
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -58,7 +58,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &CloudStorageSourceSpec{
-				EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+				EventTypes: []string{CloudStorageSourceObjectFinalizedEventType, CloudStorageSourceObjectDeletedEventType},
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{

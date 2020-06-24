@@ -55,10 +55,10 @@ const (
 var (
 	// Mapping of the storage source CloudEvent types to google storage types.
 	storageEventTypes = map[string]string{
-		v1beta1.CloudStorageSourceFinalize:       "OBJECT_FINALIZE",
-		v1beta1.CloudStorageSourceArchive:        "OBJECT_ARCHIVE",
-		v1beta1.CloudStorageSourceDelete:         "OBJECT_DELETE",
-		v1beta1.CloudStorageSourceMetadataUpdate: "OBJECT_METADATA_UPDATE",
+		v1beta1.CloudStorageSourceObjectFinalizedEventType:       "OBJECT_FINALIZE",
+		v1beta1.CloudStorageSourceObjectArchivedEventType:        "OBJECT_ARCHIVE",
+		v1beta1.CloudStorageSourceObjectDeletedEventType:         "OBJECT_DELETE",
+		v1beta1.CloudStorageSourceObjectMetadataUpdatedEventType: "OBJECT_METADATA_UPDATE",
 	}
 )
 

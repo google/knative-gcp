@@ -51,7 +51,7 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *c
 	fmt.Printf("storage receiver received event\n")
 	fmt.Printf("context of event is: %v\n", event.Context.String())
 
-	if event.Type() == v1beta1.CloudStorageSourceFinalize {
+	if event.Type() == v1beta1.CloudStorageSourceObjectFinalizedEventType {
 		resp.Status = http.StatusAccepted
 		respEvent := cloudevents.NewEvent(cloudevents.VersionV1)
 		respEvent.SetID(lib.E2EStorageRespEventID)

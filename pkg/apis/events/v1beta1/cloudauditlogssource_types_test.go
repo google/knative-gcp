@@ -69,12 +69,20 @@ func TestAuditLogsConditionSet(t *testing.T) {
 }
 
 func TestCloudAuditLogsSourceEventSource(t *testing.T) {
-	want := "//pubsub.googleapis.com/projects/PROJECT"
+	want := "//cloudaudit.googleapis.com/projects/PROJECT/activity"
 
-	got := CloudAuditLogsSourceEventSource("pubsub.googleapis.com", "projects/PROJECT")
+	got := CloudAuditLogsSourceEventSource("projects/PROJECT", "activity")
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestCloudAuditLogsSourceEventSubject(t *testing.T) {
+	want := "pubsub.googleapis.com/projects/PROJECT/topics/TOPIC"
+	got := CloudAuditLogsSourceEventSubject("pubsub.googleapis.com", "projects/PROJECT/topics/TOPIC")
+	if got != want {
+		t.Errorf("CloudAuditLogsSourceEventSubject got=%s, want=%s", got, want)
 	}
 }
 

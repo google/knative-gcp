@@ -78,7 +78,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakePubSubTargetJobOrDie(client, source, targetName, eventsv1beta1.CloudPubSubSourcePublish)
+	lib.MakePubSubTargetJobOrDie(client, source, targetName, eventsv1beta1.CloudPubSubSourceMessagePublishedEventType)
 
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,

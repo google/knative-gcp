@@ -52,7 +52,7 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *c
 	fmt.Printf("pubsub receiver received event\n")
 	fmt.Printf("context of event is: %v\n", event.Context.String())
 
-	if event.Type() == v1beta1.CloudPubSubSourcePublish {
+	if event.Type() == v1beta1.CloudPubSubSourceMessagePublishedEventType {
 		resp.Status = http.StatusAccepted
 		respEvent := cloudevents.NewEvent(cloudevents.VersionV1)
 		respEvent.SetID(lib.E2EPubSubRespEventID)

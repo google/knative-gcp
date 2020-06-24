@@ -82,10 +82,12 @@ type CloudStorageSourceSpec struct {
 
 const (
 	// CloudEvent types used by CloudStorageSource.
-	CloudStorageSourceFinalize       = "com.google.cloud.storage.object.finalize"
-	CloudStorageSourceArchive        = "com.google.cloud.storage.object.archive"
-	CloudStorageSourceDelete         = "com.google.cloud.storage.object.delete"
-	CloudStorageSourceMetadataUpdate = "com.google.cloud.storage.object.metadataUpdate"
+	// TODO: somehow reference the proto values directly.
+	CloudStorageSourceObjectFinalizedEventType       = "google.cloud.storage.object.v1.finalized"
+	CloudStorageSourceObjectArchivedEventType        = "google.cloud.storage.object.v1.archived"
+	CloudStorageSourceObjectDeletedEventType         = "google.cloud.storage.object.v1.deleted"
+	CloudStorageSourceObjectMetadataUpdatedEventType = "google.cloud.storage.object.v1.metadataUpdated"
+	CloudStorageSourceEventDataSchema                = "https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/storage/v1/events.proto"
 
 	// CloudEvent source prefix.
 	storageSourcePrefix = "//storage.googleapis.com/buckets"

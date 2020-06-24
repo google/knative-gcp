@@ -24,7 +24,7 @@ import (
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 )
 
-var allEventTypes = []string{CloudStorageSourceFinalize, CloudStorageSourceDelete, CloudStorageSourceArchive, CloudStorageSourceMetadataUpdate}
+var allEventTypes = []string{CloudStorageSourceObjectFinalizedEventType, CloudStorageSourceObjectDeletedEventType, CloudStorageSourceObjectArchivedEventType, CloudStorageSourceObjectMetadataUpdatedEventType}
 
 func (s *CloudStorageSource) SetDefaults(ctx context.Context) {
 	ctx = apis.WithinParent(ctx, s.ObjectMeta)

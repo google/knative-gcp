@@ -119,7 +119,7 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 	source := v1beta1.CloudStorageSourceEventSource(bucketName)
 
 	// Create a storage_target Job to receive the events.
-	lib.MakeStorageJobOrDie(client, source, fileName, targetName, v1beta1.CloudStorageSourceFinalize)
+	lib.MakeStorageJobOrDie(client, source, fileName, targetName, v1beta1.CloudStorageSourceObjectFinalizedEventType)
 
 	// Create the Storage source.
 	lib.MakeStorageOrDie(client, lib.StorageConfig{

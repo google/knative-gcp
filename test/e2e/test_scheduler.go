@@ -99,7 +99,7 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 	// Create the target and scheduler
 	schedulerName := helpers.AppendRandomString("scheduler")
 	targetName := helpers.AppendRandomString(schedulerName + "-target")
-	lib.MakeSchedulerJobOrDie(client, data, targetName, v1beta1.CloudSchedulerSourceExecute)
+	lib.MakeSchedulerJobOrDie(client, data, targetName, v1beta1.CloudSchedulerSourceJobExecutedEventType)
 	lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
 		SinkGVK:            lib.ServiceGVK,
 		SchedulerName:      schedulerName,

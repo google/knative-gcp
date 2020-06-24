@@ -21,7 +21,6 @@ import (
 	"errors"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 
 	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
@@ -31,26 +30,22 @@ func convertCloudScheduler(ctx context.Context, msg *pubsub.Message) (*cev2.Even
 	event := cev2.NewEvent(cev2.VersionV1)
 	event.SetID(msg.ID)
 	event.SetTime(msg.PublishTime)
-	event.SetType(v1beta1.CloudSchedulerSourceExecute)
+	event.SetType(v1beta1.CloudSchedulerSourceJobExecutedEventType)
+	event.SetDataSchema(v1beta1.CloudSchedulerSourceEventDataSchema)
 
-	// Set the source and subject if it comes as an attribute.
-	// We added this attributes so that we could identify the scheduler.
-	// We should remove them here.
 	jobName, ok := msg.Attributes[v1beta1.CloudSchedulerSourceJobName]
 	if !ok {
 		return nil, errors.New("received event did not have jobName")
 	}
-	schedulerName, ok := msg.Attributes[v1beta1.CloudSchedulerSourceName]
-	if !ok {
-		return nil, errors.New("received event did not have schedulerName")
-	}
+	event.SetSource(v1beta1.CloudSchedulerSourceEventSource(jobName))
 
-	parentName := resources.ExtractParentName(jobName)
-	event.SetSource(v1beta1.CloudSchedulerSourceEventSource(parentName, schedulerName))
-	event.SetSubject(resources.ExtractJobID(jobName))
-
-	if err := event.SetData(cev2.ApplicationJSON, msg.Data); err != nil {
+	// TODO: use struct generated from proto: https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/scheduler/v1/events.proto#L33
+	if err := event.SetData(cev2.ApplicationJSON, &SchedulerData{CustomData: msg.Data}); err != nil {
 		return nil, err
 	}
 	return &event, nil
+}
+
+type SchedulerData struct {
+	CustomData []byte `json:"custom_data,omitempty"`
 }

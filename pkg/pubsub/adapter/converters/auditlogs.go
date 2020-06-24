@@ -39,8 +39,6 @@ import (
 )
 
 const (
-	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
-
 	parentResourcePattern = `^(:?projects|organizations|billingAccounts|folders)/[^/]+`
 
 	serviceNameExtension  = "servicename"
@@ -101,6 +99,16 @@ func resolveAnyUnknowns(typeURL string) (proto.Message, error) {
 	return reflect.New(mt.Elem()).Interface().(proto.Message), nil
 }
 
+// Log name, e.g. "organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity"
+func logActivity(logName string) string {
+	parts := strings.Split(logName, "%2F")
+	if len(parts) < 2 {
+		return ""
+	}
+	// Could be "activity" or "data_access"
+	return parts[1]
+}
+
 func convertCloudAuditLogs(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {
 	entry := logpb.LogEntry{}
 	if err := jsonpbUnmarshaller.Unmarshal(bytes.NewReader(msg.Data), &entry); err != nil {
@@ -111,6 +119,7 @@ func convertCloudAuditLogs(ctx context.Context, msg *pubsub.Message) (*cev2.Even
 	if parentResource == "" {
 		return nil, fmt.Errorf("invalid LogName: %q", entry.LogName)
 	}
+	logActivity := logActivity(entry.LogName)
 
 	// Make a new event and convert the message payload.
 	event := cev2.NewEvent(cev2.VersionV1)
@@ -120,8 +129,10 @@ func convertCloudAuditLogs(ctx context.Context, msg *pubsub.Message) (*cev2.Even
 	} else {
 		event.SetTime(timestamp)
 	}
+	event.SetType(v1beta1.CloudAuditLogsSourceLogWrittenEventType)
+	event.SetSource(v1beta1.CloudAuditLogsSourceEventSource(parentResource, logActivity))
+	event.SetDataSchema(v1beta1.CloudAuditLogsSourceEventDataSchema)
 	event.SetData(cev2.ApplicationJSON, msg.Data)
-	event.SetDataSchema(logEntrySchema)
 
 	switch payload := entry.Payload.(type) {
 	case *logpb.LogEntry_ProtoPayload:
@@ -131,9 +142,8 @@ func convertCloudAuditLogs(ctx context.Context, msg *pubsub.Message) (*cev2.Even
 		}
 		switch proto := unpacked.Message.(type) {
 		case *auditpb.AuditLog:
-			event.SetType(v1beta1.CloudAuditLogsSourceEvent)
-			event.SetSource(v1beta1.CloudAuditLogsSourceEventSource(proto.ServiceName, parentResource))
-			event.SetSubject(proto.ResourceName)
+			event.SetSubject(v1beta1.CloudAuditLogsSourceEventSubject(proto.ServiceName, proto.ResourceName))
+			// TODO: figure out if we want to keep these extensions.
 			event.SetExtension(serviceNameExtension, proto.ServiceName)
 			event.SetExtension(methodNameExtension, proto.MethodName)
 			event.SetExtension(resourceNameExtension, proto.ResourceName)

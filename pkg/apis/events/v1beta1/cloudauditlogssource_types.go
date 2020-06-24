@@ -68,18 +68,31 @@ var auditLogsSourceCondSet = apis.NewLivingConditionSet(
 )
 
 const (
-	CloudAuditLogsSourceEvent = "com.google.cloud.auditlog.event"
+	// Ref: https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/audit/v1/events.proto#L27
+	// TODO: somehow reference the proto value directly.
+	CloudAuditLogsSourceLogWrittenEventType = "google.cloud.audit.log.v1.written"
+	CloudAuditLogsSourceEventDataSchema     = "https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/audit/v1/events.proto"
 )
 
 // CloudAuditLogsSourceEventSource returns the Cloud Audit Logs CloudEvent source value.
-func CloudAuditLogsSourceEventSource(serviceName, parentResource string) string {
-	return fmt.Sprintf("//%s/%s", serviceName, parentResource)
+// Format e.g. //cloudaudit.googleapis.com/projects/project-id/[activity|data_access]
+func CloudAuditLogsSourceEventSource(parentResource, activity string) string {
+	src := fmt.Sprintf("//cloudaudit.googleapis.com/%s", parentResource)
+	if activity != "" {
+		src = src + "/" + activity
+	}
+	return src
 }
 
 // CloudAuditLogsSourceEventID returns the Cloud Audit Logs CloudEvent id value.
 func CloudAuditLogsSourceEventID(id, logName, timestamp string) string {
 	// Hash the concatenation of the three fields.
 	return fmt.Sprintf("%x", md5.Sum([]byte(id+logName+timestamp)))
+}
+
+// CloudAuditLogsSourceEventSubject returns the Cloud Audit Logs CloudEvent subject value.
+func CloudAuditLogsSourceEventSubject(serviceName, resourceName string) string {
+	return fmt.Sprintf("%s/%s", serviceName, resourceName)
 }
 
 type CloudAuditLogsSourceSpec struct {

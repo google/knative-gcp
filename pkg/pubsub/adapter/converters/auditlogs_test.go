@@ -35,15 +35,15 @@ import (
 
 const (
 	insertID = "test-insert-id"
-	logName  = "projects/test-project/test-log-name"
+	logName  = "projects/test-project/pubsub.googleapis.com%2Factivity"
 	testTs   = "2006-01-02T15:04:05Z"
 )
 
 func TestConvertAuditLog(t *testing.T) {
 	auditLog := auditpb.AuditLog{
-		ServiceName:  "test-service-name",
+		ServiceName:  "pubsub.googleapis.com",
 		MethodName:   "test-method-name",
-		ResourceName: "test-resource-name",
+		ResourceName: "projects/test-project/topics/test-topic",
 	}
 	payload, err := ptypes.MarshalAny(&auditLog)
 	if err != nil {
@@ -87,14 +87,17 @@ func TestConvertAuditLog(t *testing.T) {
 	if !e.Time().Equal(testTime) {
 		t.Errorf("Time '%v' != '%v'", e.Time(), testTime)
 	}
-	if want := v1beta1.CloudAuditLogsSourceEventSource("test-service-name", "projects/test-project"); e.Source() != want {
+	if want := v1beta1.CloudAuditLogsSourceEventSource("projects/test-project", "activity"); e.Source() != want {
 		t.Errorf("Source %q != %q", e.Source(), want)
 	}
-	if e.Type() != "com.google.cloud.auditlog.event" {
-		t.Errorf(`Type %q != "com.google.cloud.auditlog.event"`, e.Type())
+	if e.Type() != "google.cloud.audit.log.v1.written" {
+		t.Errorf(`Type %q != "google.cloud.audit.log.v1.written"`, e.Type())
 	}
-	if want := "test-resource-name"; e.Subject() != want {
+	if want := v1beta1.CloudAuditLogsSourceEventSubject("pubsub.googleapis.com", "projects/test-project/topics/test-topic"); e.Subject() != want {
 		t.Errorf("Subject %q != %q", e.Subject(), want)
+	}
+	if e.DataSchema() != v1beta1.CloudAuditLogsSourceEventDataSchema {
+		t.Errorf("DataSchema got=%s, want=%s", e.DataSchema(), v1beta1.CloudAuditLogsSourceEventDataSchema)
 	}
 
 	var actualLogEntry logpb.LogEntry
@@ -107,9 +110,9 @@ func TestConvertAuditLog(t *testing.T) {
 	}
 
 	wantExtensions := map[string]interface{}{
-		"servicename":  "test-service-name",
+		"servicename":  "pubsub.googleapis.com",
 		"methodname":   "test-method-name",
-		"resourcename": "test-resource-name",
+		"resourcename": "projects/test-project/topics/test-topic",
 	}
 	if diff := cmp.Diff(wantExtensions, e.Extensions()); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)

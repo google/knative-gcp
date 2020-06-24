@@ -121,14 +121,14 @@ func TestConvertCloudStorageSource(t *testing.T) {
 				if want := v1beta1.CloudStorageSourceEventSource("my-bucket"); gotEvent.Source() != want {
 					t.Errorf("Source %q != %q", gotEvent.Source(), want)
 				}
-				if gotEvent.Type() != v1beta1.CloudStorageSourceFinalize {
-					t.Errorf(`Type %q != %q`, gotEvent.Type(), v1beta1.CloudStorageSourceFinalize)
+				if gotEvent.Type() != v1beta1.CloudStorageSourceObjectFinalizedEventType {
+					t.Errorf(`Type %q != %q`, gotEvent.Type(), v1beta1.CloudStorageSourceObjectFinalizedEventType)
 				}
 				if gotEvent.Subject() != objectId {
 					t.Errorf("Subject %q != %q", gotEvent.Subject(), objectId)
 				}
-				if gotEvent.DataSchema() != storageSchemaUrl {
-					t.Errorf("DataSchema %q != %q", gotEvent.DataSchema(), storageSchemaUrl)
+				if gotEvent.DataSchema() != v1beta1.CloudStorageSourceEventDataSchema {
+					t.Errorf("DataSchema %q != %q", gotEvent.DataSchema(), v1beta1.CloudStorageSourceEventDataSchema)
 				}
 			}
 		})
