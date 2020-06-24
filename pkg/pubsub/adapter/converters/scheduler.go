@@ -37,15 +37,11 @@ func convertCloudScheduler(ctx context.Context, msg *pubsub.Message) (*cev2.Even
 	// We added this attributes so that we could identify the scheduler.
 	// We should remove them here.
 	jobName, ok := msg.Attributes[v1beta1.CloudSchedulerSourceJobName]
-	if ok {
-		delete(msg.Attributes, v1beta1.CloudSchedulerSourceJobName)
-	} else {
+	if !ok {
 		return nil, errors.New("received event did not have jobName")
 	}
 	schedulerName, ok := msg.Attributes[v1beta1.CloudSchedulerSourceName]
-	if ok {
-		delete(msg.Attributes, v1beta1.CloudSchedulerSourceName)
-	} else {
+	if !ok {
 		return nil, errors.New("received event did not have schedulerName")
 	}
 
