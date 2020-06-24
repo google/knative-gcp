@@ -27,10 +27,6 @@ type TriggerName struct {
 	RespCode int
 }
 
-func TriggerNameWithRespCode(name string, respCode int) string {
-	return fmt.Sprintf("%s|%d", name, respCode)
-}
-
 func (a TriggerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 	if err := a.assertMetric(client, TriggerEventCountMetricType, accumEventCount); err != nil {
 		return err
