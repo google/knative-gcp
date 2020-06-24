@@ -115,7 +115,7 @@ func NewAdapter(
 	}
 }
 
-func (a *Adapter) Start(ctx context.Context, done func(error)) {
+func (a *Adapter) Start(ctx context.Context) error {
 	ctx, a.cancel = context.WithCancel(ctx)
 
 	// Augment context so that we can use it to create CE attributes.
@@ -123,9 +123,7 @@ func (a *Adapter) Start(ctx context.Context, done func(error)) {
 	ctx = WithTopicKey(ctx, a.args.TopicID)
 	ctx = WithSubscriptionKey(ctx, a.subscription.ID())
 
-	go func() {
-		done(a.subscription.Receive(ctx, a.receive))
-	}()
+	return a.subscription.Receive(ctx, a.receive)
 }
 
 // Stop stops the adapter.

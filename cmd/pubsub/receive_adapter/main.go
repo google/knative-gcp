@@ -187,19 +187,15 @@ func main() {
 	}
 
 	logger.Info("Starting Receive Adapter.", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription))
-	adapter.Start(ctx, func(err error) {
-		if err != nil {
-			logger.Error("Adapter has stopped with error", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription), zap.Error(err))
-		} else {
-			logger.Error("Adapter has stopped", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription), zap.Error(err))
-		}
-	})
+	if err := adapter.Start(ctx); err != nil {
+		logger.Error("Adapter has stopped with error", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription), zap.Error(err))
+	} else {
+		logger.Error("Adapter has stopped", zap.String("projectID", projectID), zap.String("topicID", env.Topic), zap.String("subscriptionID", env.Subscription), zap.Error(err))
+	}
 
-	<-ctx.Done()
 	// Wait a grace period for the handlers to shutdown.
 	time.Sleep(30 * time.Second)
 	logger.Info("Exiting...")
-
 }
 
 func flush(logger *zap.Logger) {
