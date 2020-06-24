@@ -21,13 +21,12 @@ import (
 	nethttp "net/http"
 	"time"
 
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
-
 	"cloud.google.com/go/pubsub"
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cev2 "github.com/cloudevents/sdk-go/v2"
+	"go.opencensus.io/plugin/ochttp"
 	"knative.dev/eventing/pkg/kncloudevents"
+	"knative.dev/pkg/tracing/propagation/tracecontextb3"
 )
 
 type Port int
@@ -59,7 +58,7 @@ func NewObservedPubsubClient(ctx context.Context, client *pubsub.Client) (cev2.C
 	)
 }
 
-func NewHTTPClient(ctx context.Context, maxConnsPerHost MaxConnsPerHost) *nethttp.Client {
+func NewHTTPClient(_ context.Context, maxConnsPerHost MaxConnsPerHost) *nethttp.Client {
 	return &nethttp.Client{
 		Transport: &ochttp.Transport{
 			Base: &nethttp.Transport{
@@ -68,7 +67,7 @@ func NewHTTPClient(ctx context.Context, maxConnsPerHost MaxConnsPerHost) *nethtt
 				MaxConnsPerHost:     int(maxConnsPerHost),
 				IdleConnTimeout:     30 * time.Second,
 			},
-			Propagation: &tracecontext.HTTPFormat{},
+			Propagation: tracecontextb3.TraceContextEgress,
 		},
 	}
 }

@@ -28,6 +28,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.uber.org/zap"
+	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
@@ -73,7 +74,7 @@ func NewPublisher(ctx context.Context, inbound HttpMessageReceiver, topic *pubsu
 
 // Start blocks to receive events over HTTP.
 func (p *Publisher) Start(ctx context.Context) error {
-	return p.inbound.StartListen(ctx, p)
+	return p.inbound.StartListen(ctx, kncloudevents.CreateHandler(p))
 }
 
 // ServeHTTP implements net/http Publisher interface method.
