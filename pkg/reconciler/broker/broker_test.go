@@ -227,7 +227,7 @@ func TestAllCases(t *testing.T) {
 				),
 			},
 		},
-		WantCreates:             []runtime.Object{resources.CreateBrokerCell(nil) /*Currently brokercell doesn't require broker information*/ },
+		WantCreates:             []runtime.Object{resources.CreateBrokerCell(nil) /*Currently brokercell doesn't require broker information*/},
 		SkipNamespaceValidation: true, // The brokercell resource is created in a different namespace (system namespace) than the broker
 		WantEvents: []string{
 			brokerFinalizerUpdatedEvent,
@@ -258,7 +258,7 @@ func TestAllCases(t *testing.T) {
 				),
 			},
 		},
-		WantCreates:             []runtime.Object{resources.CreateBrokerCell(nil) /*Currently brokercell doesn't require broker information*/ },
+		WantCreates:             []runtime.Object{resources.CreateBrokerCell(nil) /*Currently brokercell doesn't require broker information*/},
 		SkipNamespaceValidation: true, // The brokercell resource is created in a different namespace (system namespace) than the broker
 		WantEvents: []string{
 			brokerFinalizerUpdatedEvent,

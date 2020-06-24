@@ -20,6 +20,7 @@ package brokercell
 
 import (
 	"context"
+
 	"go.uber.org/zap"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
