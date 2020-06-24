@@ -15,12 +15,16 @@ import (
 )
 
 type TriggerMetricAssertion struct {
-	ProjectID                   string
-	BrokerNamespace             string
-	BrokerName                  string
-	StartTime                   time.Time
-	CountPerTriggerWithRespCode map[string]int64
-	CountPerTriggerNoRespCode   map[string]int64
+	ProjectID       string
+	BrokerNamespace string
+	BrokerName      string
+	StartTime       time.Time
+	CountPerTrigger map[TriggerName]int64
+}
+
+type TriggerName struct {
+	Name     string
+	RespCode int
 }
 
 func TriggerNameWithRespCode(name string, respCode int) string {
@@ -28,19 +32,19 @@ func TriggerNameWithRespCode(name string, respCode int) string {
 }
 
 func (a TriggerMetricAssertion) Assert(client *monitoring.MetricClient) error {
-	if err := a.assertMetric(client, TriggerEventCountMetricType, a.CountPerTriggerWithRespCode, accumEventCount); err != nil {
+	if err := a.assertMetric(client, TriggerEventCountMetricType, accumEventCount); err != nil {
 		return err
 	}
-	if err := a.assertMetric(client, TriggerEventDispatchLatencyType, a.CountPerTriggerWithRespCode, accumDispatchLatency); err != nil {
+	if err := a.assertMetric(client, TriggerEventDispatchLatencyType, accumDispatchLatency); err != nil {
 		return err
 	}
-	if err := a.assertMetric(client, TriggerEventProcessingLatencyType, a.CountPerTriggerNoRespCode, accumProcessingLatency); err != nil {
+	if err := a.assertMetric(client, TriggerEventProcessingLatencyType, accumProcessingLatency); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, metric string, wantCount map[string]int64, accF func(map[string]int64, *monitoringpb.TimeSeries) error) error {
+func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, metric string, accF func(map[TriggerName]int64, *monitoringpb.TimeSeries) error) error {
 	ctx := context.Background()
 	start, err := ptypes.TimestampProto(a.StartTime)
 	if err != nil {
@@ -56,7 +60,7 @@ func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, me
 		Interval: &monitoringpb.TimeInterval{StartTime: start, EndTime: end},
 		View:     monitoringpb.ListTimeSeriesRequest_FULL,
 	})
-	gotCount := make(map[string]int64)
+	gotCount := make(map[TriggerName]int64)
 	for {
 		ts, err := it.Next()
 		if err == iterator.Done {
@@ -69,39 +73,48 @@ func (a TriggerMetricAssertion) assertMetric(client *monitoring.MetricClient, me
 			return err
 		}
 	}
-	if diff := cmp.Diff(wantCount, gotCount); diff != "" {
+	if diff := cmp.Diff(a.CountPerTrigger, gotCount); diff != "" {
 		return fmt.Errorf("unexpected metric %q count (-want, +got) = %v", metric, diff)
 	}
 	return nil
 }
 
-func accumEventCount(accum map[string]int64, ts *monitoringpb.TimeSeries) error {
+func accumEventCount(accum map[TriggerName]int64, ts *monitoringpb.TimeSeries) error {
 	triggerName := ts.GetResource().GetLabels()["trigger_name"]
 	labels := ts.GetMetric().GetLabels()
 	code, err := strconv.Atoi(labels["response_code"])
 	if err != nil {
 		return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
 	}
-	triggerNameWithRespCode := TriggerNameWithRespCode(triggerName, code)
-	accum[triggerNameWithRespCode] = accum[triggerNameWithRespCode] + metrics.SumCumulative(ts)
+	tn := TriggerName{
+		Name:     triggerName,
+		RespCode: code,
+	}
+	accum[tn] = accum[tn] + metrics.SumCumulative(ts)
 	return nil
 }
 
-func accumDispatchLatency(accum map[string]int64, ts *monitoringpb.TimeSeries) error {
+func accumDispatchLatency(accum map[TriggerName]int64, ts *monitoringpb.TimeSeries) error {
 	triggerName := ts.GetResource().GetLabels()["trigger_name"]
 	labels := ts.GetMetric().GetLabels()
 	code, err := strconv.Atoi(labels["response_code"])
 	if err != nil {
 		return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
 	}
-	triggerNameWithRespCode := TriggerNameWithRespCode(triggerName, code)
-	accum[triggerNameWithRespCode] = accum[triggerNameWithRespCode] + metrics.SumDistCount(ts)
+	tn := TriggerName{
+		Name:     triggerName,
+		RespCode: code,
+	}
+	accum[tn] = accum[tn] + metrics.SumDistCount(ts)
 	return nil
 }
 
-func accumProcessingLatency(accum map[string]int64, ts *monitoringpb.TimeSeries) error {
+func accumProcessingLatency(accum map[TriggerName]int64, ts *monitoringpb.TimeSeries) error {
 	triggerName := ts.GetResource().GetLabels()["trigger_name"]
-	accum[triggerName] = accum[triggerName] + metrics.SumDistCount(ts)
+	tn := TriggerName{
+		Name: triggerName,
+	}
+	accum[tn] = accum[tn] + metrics.SumDistCount(ts)
 	return nil
 }
 
