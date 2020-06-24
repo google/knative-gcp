@@ -19,11 +19,7 @@ package adapter
 import (
 	"context"
 	"fmt"
-
 	nethttp "net/http"
-
-	"go.opencensus.io/trace"
-	"go.uber.org/zap"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
@@ -32,9 +28,12 @@ import (
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/utils"
-
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/tracing/propagation/tracecontextb3"
 )
 
 var (
@@ -250,6 +249,9 @@ func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, erro
 func (a *Adapter) newHTTPClient(ctx context.Context, target string) (cloudevents.Client, error) {
 	tOpts := []http.Option{
 		cloudevents.WithTarget(target),
+		cloudevents.WithHTTPTransport(&ochttp.Transport{
+			Propagation: tracecontextb3.TraceContextEgress,
+		}),
 	}
 
 	switch a.SendMode {

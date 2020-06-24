@@ -3,11 +3,16 @@ package kncloudevents
 import (
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
+	"go.opencensus.io/plugin/ochttp"
+	"knative.dev/pkg/tracing/propagation/tracecontextb3"
 )
 
 func NewDefaultClient(target ...string) (cloudevents.Client, error) {
 	tOpts := []http.Option{
 		cloudevents.WithBinaryEncoding(),
+		cloudevents.WithHTTPTransport(&ochttp.Transport{
+			Propagation: tracecontextb3.TraceContextEgress,
+		}),
 	}
 	if len(target) > 0 && target[0] != "" {
 		tOpts = append(tOpts, cloudevents.WithTarget(target[0]))

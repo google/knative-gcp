@@ -26,7 +26,7 @@ import (
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"github.com/google/wire"
 	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
+	"knative.dev/pkg/tracing/propagation/tracecontextb3"
 )
 
 var (
@@ -44,7 +44,7 @@ var (
 				MaxConnsPerHost:     500,
 				IdleConnTimeout:     30 * time.Second,
 			},
-			Propagation: &tracecontext.HTTPFormat{},
+			Propagation: tracecontextb3.TraceContextEgress,
 		},
 	}
 
