@@ -178,7 +178,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 				s.MarkSubscribed("subID")
 				return s
 			}(),
-			wantConditionStatus: corev1.ConditionFalse,
+			wantConditionStatus: corev1.ConditionUnknown,
 			want:                false,
 		}, {
 			name: "mark sink and deployed and subscribed, then no sink",
