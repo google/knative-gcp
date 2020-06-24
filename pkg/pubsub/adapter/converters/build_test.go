@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
 )
@@ -38,10 +37,9 @@ var (
 func TestConvertCloudBuild(t *testing.T) {
 
 	tests := []struct {
-		name        string
-		message     *pubsub.Message
-		wantEventFn func() *cev2.Event
-		wantErr     bool
+		name    string
+		message *pubsub.Message
+		wantErr bool
 	}{{
 		name: "valid event",
 		message: &pubsub.Message{
@@ -54,9 +52,6 @@ func TestConvertCloudBuild(t *testing.T) {
 				"attribute1": "value1",
 				"attribute2": "value2",
 			},
-		},
-		wantEventFn: func() *cev2.Event {
-			return buildCloudEvent(buildID, buildStatus)
 		},
 	},
 		{
@@ -119,16 +114,4 @@ func TestConvertCloudBuild(t *testing.T) {
 			}
 		})
 	}
-}
-
-func buildCloudEvent(buildID, buildStatus string) *cev2.Event {
-	e := cev2.NewEvent(cev2.VersionV1)
-	e.SetID("id")
-	e.SetTime(buildPublishTime)
-	e.SetSource(v1beta1.CloudBuildSourceEventSource("testproject", buildID))
-	e.SetSubject(buildStatus)
-	e.SetData(cev2.ApplicationJSON, []byte("test data"))
-	e.SetType(v1beta1.CloudBuildSourceEvent)
-	e.SetDataSchema(buildSchemaUrl)
-	return &e
 }

@@ -23,8 +23,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-
-	cev2 "github.com/cloudevents/sdk-go/v2"
 )
 
 const (
@@ -40,17 +38,13 @@ var (
 func TestConvertCloudStorageSource(t *testing.T) {
 
 	tests := []struct {
-		name        string
-		message     *pubsub.Message
-		wantEventFn func() *cev2.Event
-		wantErr     bool
+		name    string
+		message *pubsub.Message
+		wantErr bool
 	}{{
 		name: "no attributes",
 		message: &pubsub.Message{
 			Data: []byte("test data"),
-		},
-		wantEventFn: func() *cev2.Event {
-			return storageCloudEvent()
 		},
 		wantErr: true,
 	}, {
@@ -63,9 +57,6 @@ func TestConvertCloudStorageSource(t *testing.T) {
 				"attribute2": "value2",
 			},
 		},
-		wantEventFn: func() *cev2.Event {
-			return storageCloudEvent()
-		},
 		wantErr: true,
 	}, {
 		name: "no eventType attribute",
@@ -75,9 +66,6 @@ func TestConvertCloudStorageSource(t *testing.T) {
 				"bucketId": bucket,
 				"objectId": objectId,
 			},
-		},
-		wantEventFn: func() *cev2.Event {
-			return storageCloudEvent()
 		},
 		wantErr: true,
 	}, {
@@ -90,9 +78,6 @@ func TestConvertCloudStorageSource(t *testing.T) {
 				"objectId":  objectId,
 			},
 		},
-		wantEventFn: func() *cev2.Event {
-			return storageCloudEvent()
-		},
 		wantErr: true,
 	}, {
 		name: "no objectId attribute",
@@ -102,9 +87,6 @@ func TestConvertCloudStorageSource(t *testing.T) {
 				"bucketId":  bucket,
 				"eventType": eventType,
 			},
-		},
-		wantEventFn: func() *cev2.Event {
-			return storageCloudEvent()
 		},
 		wantErr: true,
 	}, {
@@ -118,9 +100,6 @@ func TestConvertCloudStorageSource(t *testing.T) {
 				"eventType": eventType,
 				"objectId":  objectId,
 			},
-		},
-		wantEventFn: func() *cev2.Event {
-			return storageCloudEvent()
 		},
 	}}
 
@@ -154,16 +133,4 @@ func TestConvertCloudStorageSource(t *testing.T) {
 			}
 		})
 	}
-}
-
-func storageCloudEvent() *cev2.Event {
-	e := cev2.NewEvent(cev2.VersionV1)
-	e.SetID("id")
-	e.SetTime(storagePublishTime)
-	e.SetData(cev2.ApplicationJSON, []byte("test data"))
-	e.SetDataSchema(storageSchemaUrl)
-	e.SetSource(v1beta1.CloudStorageSourceEventSource(bucket))
-	e.SetType(v1beta1.CloudStorageSourceFinalize)
-	e.SetSubject(objectId)
-	return &e
 }

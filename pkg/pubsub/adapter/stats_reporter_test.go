@@ -32,7 +32,10 @@ func TestStatsReporter(t *testing.T) {
 		EventSource: "unit-test",
 	}
 
-	r, _ := NewStatsReporter("testobject", "testns", "testresourcegroup")
+	r, err := NewStatsReporter("testobject", "testns", "testresourcegroup")
+	if err != nil {
+		t.Fatalf("Error creating reporter: %v", err)
+	}
 
 	wantTags := map[string]string{
 		metricskey.LabelNamespaceName:     "testns",
