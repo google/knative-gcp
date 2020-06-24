@@ -91,10 +91,21 @@ func (bs *BrokerCellStatus) MarkIngressFailed(reason, format string, args ...int
 // to determine if BrokerCellConditionFanout should be marked as true or
 // false.
 func (bs *BrokerCellStatus) PropagateFanoutAvailability(d *appsv1.Deployment) {
-	if duck.DeploymentIsAvailable(&d.Status, false) {
-		brokerCellCondSet.Manage(bs).MarkTrue(BrokerCellConditionFanout)
-	} else {
-		brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionFanout, "DeploymentUnavailable", "Deployment %q is unavailable.", d.Name)
+	deploymentAvailableFound := false
+	for _, cond := range d.Status.Conditions {
+		if cond.Type == appsv1.DeploymentAvailable {
+			deploymentAvailableFound = true
+			if cond.Status == corev1.ConditionTrue {
+				brokerCellCondSet.Manage(bs).MarkTrue(BrokerCellConditionFanout)
+			} else if cond.Status == corev1.ConditionFalse {
+				brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionFanout, cond.Reason, cond.Message)
+			} else if cond.Status == corev1.ConditionUnknown {
+				brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionFanout, cond.Reason, cond.Message)
+			}
+		}
+	}
+	if !deploymentAvailableFound {
+		brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionFanout, "DeploymentUnavailable", "The Deployment %q is unavailable.", d.Name)
 	}
 }
 
@@ -106,10 +117,21 @@ func (bs *BrokerCellStatus) MarkFanoutFailed(reason, format string, args ...inte
 // to determine if BrokerCellConditionRetry should be marked as true or
 // unknown.
 func (bs *BrokerCellStatus) PropagateRetryAvailability(d *appsv1.Deployment) {
-	if duck.DeploymentIsAvailable(&d.Status, false) {
-		brokerCellCondSet.Manage(bs).MarkTrue(BrokerCellConditionRetry)
-	} else {
-		brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionRetry, "DeploymentUnavailable", "Deployment %q is unavailable.", d.Name)
+	deploymentAvailableFound := false
+	for _, cond := range d.Status.Conditions {
+		if cond.Type == appsv1.DeploymentAvailable {
+			deploymentAvailableFound = true
+			if cond.Status == corev1.ConditionTrue {
+				brokerCellCondSet.Manage(bs).MarkTrue(BrokerCellConditionRetry)
+			} else if cond.Status == corev1.ConditionFalse {
+				brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionRetry, cond.Reason, cond.Message)
+			} else if cond.Status == corev1.ConditionUnknown {
+				brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionRetry, cond.Reason, cond.Message)
+			}
+		}
+	}
+	if !deploymentAvailableFound {
+		brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionRetry, "DeploymentUnavailable", "The Deployment %q is unavailable.", d.Name)
 	}
 }
 

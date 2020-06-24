@@ -74,6 +74,18 @@ func (t testHelper) UnavailableDeployment() *appsv1.Deployment {
 	return d
 }
 
+func (t testHelper) UnknownDeployment() *appsv1.Deployment {
+	d := &appsv1.Deployment{}
+	d.Name = "unknown"
+	d.Status.Conditions = []appsv1.DeploymentCondition{
+		{
+			Type:   appsv1.DeploymentAvailable,
+			Status: "Unknown",
+		},
+	}
+	return d
+}
+
 func (t testHelper) ReadyBrokerCellStatus() *BrokerCellStatus {
 	bs := &BrokerCellStatus{}
 	bs.PropagateIngressAvailability(t.AvailableEndpoints())
