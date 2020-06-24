@@ -35,6 +35,19 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 	// Decorate the container template with ingress port.
 	container.Env = append(container.Env, corev1.EnvVar{Name: "PORT", Value: strconv.Itoa(args.Port)})
 	container.Ports = append(container.Ports, corev1.ContainerPort{Name: "http", ContainerPort: int32(args.Port)})
+	container.ReadinessProbe = &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/healthz",
+				Port:   intstr.FromInt(args.Port),
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		FailureThreshold: 3,
+		PeriodSeconds:    2,
+		SuccessThreshold: 1,
+		TimeoutSeconds:   5,
+	}
 	container.LivenessProbe = &corev1.Probe{
 		Handler: corev1.Handler{
 			HTTPGet: &corev1.HTTPGetAction{
