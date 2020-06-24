@@ -18,7 +18,7 @@ package v1beta1
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
-	"knative.dev/eventing/pkg/apis/duck"
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 )
 
@@ -86,11 +86,20 @@ func (s *PullSubscriptionStatus) MarkNoSubscription(reason, messageFormat string
 // PropagateDeploymentAvailability uses the availability of the provided Deployment to determine if
 // PullSubscriptionConditionDeployed should be marked as true or false.
 func (s *PullSubscriptionStatus) PropagateDeploymentAvailability(d *appsv1.Deployment) {
-	if duck.DeploymentIsAvailable(&d.Status, false) {
-		pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionDeployed)
-	} else {
-		// I don't know how to propagate the status well, so just give the name of the Deployment
-		// for now.
+	deploymentAvailableFound := false
+	for _, cond := range d.Status.Conditions {
+		if cond.Type == appsv1.DeploymentAvailable {
+			deploymentAvailableFound = true
+			if cond.Status == corev1.ConditionTrue {
+				pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionDeployed)
+			} else if cond.Status == corev1.ConditionFalse {
+				pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionDeployed, cond.Reason, cond.Message)
+			} else if cond.Status == corev1.ConditionUnknown {
+				pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionDeployed, cond.Reason, cond.Message)
+			}
+		}
+	}
+	if !deploymentAvailableFound {
 		pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionDeployed, "DeploymentUnavailable", "The Deployment '%s' is unavailable.", d.Name)
 	}
 }
