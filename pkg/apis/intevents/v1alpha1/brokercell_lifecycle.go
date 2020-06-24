@@ -105,12 +105,16 @@ func (bs *BrokerCellStatus) PropagateFanoutAvailability(d *appsv1.Deployment) {
 		}
 	}
 	if !deploymentAvailableFound {
-		brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionFanout, "DeploymentUnavailable", "The Deployment %q is unavailable.", d.Name)
+		brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionFanout, "DeploymentUnavailable", "Deployment %q is unavailable.", d.Name)
 	}
 }
 
 func (bs *BrokerCellStatus) MarkFanoutFailed(reason, format string, args ...interface{}) {
 	brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionFanout, reason, format, args...)
+}
+
+func (bs *BrokerCellStatus) MarkFanoutUnknown(reason, format string, args ...interface{}) {
+	brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionFanout, reason, format, args...)
 }
 
 // PropagateRetryAvailability uses the availability of the provided Deployment
@@ -131,12 +135,16 @@ func (bs *BrokerCellStatus) PropagateRetryAvailability(d *appsv1.Deployment) {
 		}
 	}
 	if !deploymentAvailableFound {
-		brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionRetry, "DeploymentUnavailable", "The Deployment %q is unavailable.", d.Name)
+		brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionRetry, "DeploymentUnavailable", "Deployment %q is unavailable.", d.Name)
 	}
 }
 
 func (bs *BrokerCellStatus) MarkRetryFailed(reason, format string, args ...interface{}) {
 	brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionRetry, reason, format, args...)
+}
+
+func (bs *BrokerCellStatus) MarkRetryUnknown(reason, format string, args ...interface{}) {
+	brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionRetry, reason, format, args...)
 }
 
 func (bs *BrokerCellStatus) MarkTargetsConfigReady() {
