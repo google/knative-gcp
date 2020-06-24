@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"knative.dev/pkg/apis"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -43,5 +44,22 @@ func TestBrokerCell_GetUntypedSpec(t *testing.T) {
 	s := bc.GetUntypedSpec()
 	if _, ok := s.(BrokerCellSpec); !ok {
 		t.Errorf("untyped spec was not a BrokerSpec")
+	}
+}
+
+func TestBrokerCell_GetConditionSet(t *testing.T) {
+	bc := &BrokerCell{}
+
+	if got, want := bc.GetConditionSet().GetTopLevelConditionType(), apis.ConditionReady; got != want {
+		t.Errorf("GetTopLevelCondition=%v, want=%v", got, want)
+	}
+}
+
+func TestBrokerCell_GetStatus(t *testing.T) {
+	bc := &BrokerCell{
+		Status: BrokerCellStatus{},
+	}
+	if got, want := bc.GetStatus(), &bc.Status.Status; got != want {
+		t.Errorf("GetStatus=%v, want=%v", got, want)
 	}
 }

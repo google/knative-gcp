@@ -16,169 +16,163 @@ limitations under the License.
 
 package adapter
 
+import (
+	"context"
+	"errors"
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
+	cev2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/utils/clients"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
 
-// TODO fix all
+	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/pstest"
+	"github.com/cloudevents/sdk-go/v2/event"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
+)
 
-//type mockStatsReporter struct {
-//	gotArgs *ReportArgs
-//	gotCode int
-//}
-//
-//func (r *mockStatsReporter) ReportEventCount(args *ReportArgs, responseCode int) error {
-//	r.gotArgs = args
-//	r.gotCode = responseCode
-//	return nil
-//}
-//
-//func TestStartAdapter(t *testing.T) {
-//	t.Skipf("need to fix the error from call to newPubSubClient: %s", `pubsub: google: could not find default credentials. See https://developers.google.com/accounts/docs/application-default-credentials for more information.`)
-//	a := Adapter{
-//		Project:          "proj",
-//		Topic:            "top",
-//		Subscription:     "sub",
-//		Sink:             "http://localhost:8081",
-//		Transformer:      "http://localhost:8080",
-//		ExtensionsBase64: "eyJrZXkxIjoidmFsdWUxIiwia2V5MiI6InZhbHVlMiJ9Cg==",
-//	}
-//	// This test only does sanity checks to see if all fields are
-//	// initialized.
-//	// In reality, Start should be a blocking function. Here, it's not
-//	// blocking because we expect it to fail as it shouldn't be able to
-//	// connect to pubsub.
-//	if err := a.Start(context.Background()); err == nil {
-//		t.Fatal("adapter.Start got nil want error")
-//	}
-//
-//	if a.SendMode == "" {
-//		t.Errorf("adapter.SendMode got %q want %q", a.SendMode, converters.DefaultSendMode)
-//	}
-//	if a.reporter == nil {
-//		t.Error("adapter.reporter got nil want a StatsReporter")
-//	}
-//	if a.inbound == nil {
-//		t.Error("adapter.inbound got nil want a cloudevents.Client")
-//	}
-//	if a.outbound == nil {
-//		t.Error("adapter.outbound got nil want a cloudevents.Client")
-//	}
-//	if a.transformer == nil {
-//		t.Error("adapter.transformer got nil want a cloudevents.Client")
-//	}
-//	wantExt := map[string]string{"key1": "value1", "key2": "value2"}
-//	if !cmp.Equal(wantExt, a.extensions) {
-//		t.Errorf("adapter.extensions got %v want %v", a.extensions, wantExt)
-//	}
-//}
-//
-//func TestInboundConvert(t *testing.T) {
-//	cases := []struct {
-//		name          string
-//		ctx           context.Context
-//		message       *cepubsub.Message
-//		wantMessageFn func() *cloudevents.Event
-//		wantErr       bool
-//	}{{
-//		name: "pubsub event",
-//		ctx: pubsubcontext.WithTransportContext(
-//			context.Background(),
-//			pubsubcontext.NewTransportContext(
-//				"proj", "topic", "sub", "test",
-//				&pubsub.Message{ID: "abc"},
-//			),
-//		),
-//		message: &cepubsub.Message{
-//			Data: []byte("some data"),
-//			Attributes: map[string]string{
-//				"schema": "http://example.com",
-//				"key1":   "value1",
-//			},
-//		},
-//		wantMessageFn: func() *cloudevents.Event {
-//			e := cloudevents.NewEvent(cloudevents.VersionV1)
-//			e.SetID("abc")
-//			e.SetSource(v1alpha1.CloudPubSubSourceEventSource("proj", "topic"))
-//			e.SetDataContentType("application/octet-stream")
-//			e.SetType(v1alpha1.CloudPubSubSourcePublish)
-//			e.SetDataSchema("http://example.com")
-//			e.SetExtension("knativecemode", string(converters.DefaultSendMode))
-//			e.Data = []byte("some data")
-//			e.DataEncoded = true
-//			e.SetExtension("key1", "value1")
-//			return &e
-//		},
-//	}, {
-//		name: "storage event",
-//		ctx: pubsubcontext.WithTransportContext(
-//			context.Background(),
-//			pubsubcontext.NewTransportContext(
-//				"proj", "topic", "sub", "test",
-//				&pubsub.Message{ID: "abc"},
-//			),
-//		),
-//		message: &cepubsub.Message{
-//			Data: []byte("some data"),
-//			Attributes: map[string]string{
-//				"knative-gcp": "com.google.cloud.storage",
-//				"bucketId":    "my-bucket",
-//				"objectId":    "my-obj",
-//				"key1":        "value1",
-//				"eventType":   "OBJECT_FINALIZE",
-//			},
-//		},
-//		wantMessageFn: func() *cloudevents.Event {
-//			e := cloudevents.NewEvent(cloudevents.VersionV1)
-//			e.SetID("abc")
-//			e.SetSource(v1alpha1.CloudStorageSourceEventSource("my-bucket"))
-//			e.SetSubject("my-obj")
-//			e.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-//			e.SetType("com.google.cloud.storage.object.finalize")
-//			e.SetDataSchema("https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json")
-//			e.Data = []byte("some data")
-//			e.DataEncoded = true
-//			e.SetExtension("key1", "value1")
-//			return &e
-//		},
-//	}, {
-//		name: "invalid storage event",
-//		ctx: pubsubcontext.WithTransportContext(
-//			context.Background(),
-//			pubsubcontext.NewTransportContext(
-//				"proj", "topic", "sub", "test",
-//				&pubsub.Message{ID: "abc"},
-//			),
-//		),
-//		message: &cepubsub.Message{
-//			Data: []byte("some data"),
-//			Attributes: map[string]string{
-//				"knative-gcp": "com.google.cloud.storage",
-//				"key1":        "value1",
-//				"eventType":   "OBJECT_FINALIZE",
-//			},
-//		},
-//		wantMessageFn: func() *cloudevents.Event { return nil },
-//		wantErr:       true,
-//	}}
-//
-//	for _, tc := range cases {
-//		t.Run(tc.name, func(t *testing.T) {
-//			a := Adapter{
-//				Project:      "proj",
-//				Topic:        "top",
-//				Subscription: "sub",
-//				SendMode:     converters.DefaultSendMode,
-//			}
-//			var err error
-//			gotEvent, err := a.convert(tc.ctx, tc.message, err)
-//			if (err != nil) != tc.wantErr {
-//				t.Errorf("adapter.convert got error %v want error=%v", err, tc.wantErr)
-//			}
-//			if diff := cmp.Diff(tc.wantMessageFn(), gotEvent); diff != "" {
-//				t.Errorf("adapter.convert got unexpeceted cloudevents.Event (-want +got) %s", diff)
-//			}
-//		})
-//	}
-//}
-//
+const (
+	testProjectID     = "test-testProjectID"
+	testTopic         = "test-testTopic"
+	testSub           = "test-testSub"
+	testName          = "test-testName"
+	testNamespace     = "test-testNamespace"
+	testResourceGroup = "test-testResourceGroup"
+	testConverterType = "test-testConverterType"
+)
+
+func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pubsub.Client, func()) {
+	t.Helper()
+	srv := pstest.NewServer()
+	conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatalf("failed to dial test pubsub connection: %v", err)
+	}
+	close := func() {
+		srv.Close()
+		conn.Close()
+	}
+	c, err := pubsub.NewClient(ctx, projectID, option.WithGRPCConn(conn))
+	if err != nil {
+		t.Fatalf("failed to create test pubsub client: %v", err)
+	}
+	return c, close
+}
+
+type mockStatsReporter struct {
+	gotArgs *ReportArgs
+	gotCode int
+}
+
+func (r *mockStatsReporter) ReportEventCount(args *ReportArgs, responseCode int) error {
+	r.gotArgs = args
+	r.gotCode = responseCode
+	return nil
+}
+
+type mockConverter struct {
+	wantErr   bool
+	wantEvent *cev2.Event
+}
+
+func (c *mockConverter) Convert(ctx context.Context, msg *pubsub.Message, converterType converters.ConverterType) (*cev2.Event, error) {
+	if c.wantErr {
+		return nil, errors.New("induced error")
+	}
+	return c.wantEvent, nil
+}
+
+func TestAdapter(t *testing.T) {
+	ctx := context.Background()
+	c, close := testPubsubClient(ctx, t, testProjectID)
+	defer close()
+
+	topic, err := c.CreateTopic(ctx, testTopic)
+	if err != nil {
+		t.Fatalf("failed to create topic: %v", err)
+	}
+	sub, err := c.CreateSubscription(ctx, testSub, pubsub.SubscriptionConfig{
+		Topic: topic,
+	})
+	if err != nil {
+		t.Fatalf("failed to create subscription: %v", err)
+	}
+
+	p, err := cepubsub.New(context.Background(),
+		cepubsub.WithClient(c),
+		cepubsub.WithProjectID(testProjectID),
+		cepubsub.WithTopicID(testTopic),
+	)
+	if err != nil {
+		t.Fatalf("failed to create cloudevents pubsub protocol: %v", err)
+	}
+
+	outbound := http.DefaultClient
+
+	sinkClient, err := cehttp.New()
+	if err != nil {
+		t.Fatalf("failed to create sink cloudevents client: %v", err)
+	}
+	sinkSvr := httptest.NewServer(sinkClient)
+	defer sinkSvr.Close()
+
+	converter := &mockConverter{}
+	reporter := &mockStatsReporter{}
+	args := &AdapterArgs{
+		TopicID:       testTopic,
+		SinkURI:       sinkSvr.URL,
+		Extensions:    map[string]string{},
+		ConverterType: converters.ConverterType(testConverterType),
+	}
+	adapter := NewAdapter(ctx,
+		clients.ProjectID(testProjectID),
+		Namespace(testNamespace),
+		Name(testName),
+		ResourceGroup(testResourceGroup),
+		sub,
+		outbound,
+		converter,
+		reporter,
+		args)
+
+	adapter.Start(ctx, func(_ error) {})
+	defer adapter.Stop()
+
+	testEvent := event.New()
+	testEvent.SetID("id")
+	testEvent.SetSource("source")
+	testEvent.SetSubject("subject")
+	testEvent.SetType("type")
+
+	rctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	go func() {
+		_, err := sinkClient.Receive(rctx)
+		if err != nil && err != io.EOF {
+			t.Errorf("unexpected error from sink receiving event: %v", err)
+		}
+	}()
+
+	if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
+		t.Fatalf("failed to seed event to pubsub: %v", err)
+	}
+
+	<-rctx.Done()
+
+	//res := topic.Publish(context.Background(), &pubsub.Message{ID: "testid"})
+	//if _, err := res.Get(context.Background()); err != nil {
+	//	t.Fatalf("Failed to publish a msg to topic: %v", err)
+	//}
+}
+
 //func TestReceive(t *testing.T) {
 //	cases := []struct {
 //		name           string
