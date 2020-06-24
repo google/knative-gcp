@@ -31,7 +31,6 @@ import (
 )
 
 // +genclient
-// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Topic is a resource representing a Topic backed by Google Cloud Pub/Sub.

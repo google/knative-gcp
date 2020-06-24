@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -72,7 +73,13 @@ func newController(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	c := &Reconciler{
-		PubSubBase:      intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		PubSubBase: intevents.NewPubSubBase(ctx,
+			&intevents.PubSubBaseArgs{
+				ControllerAgentName: controllerAgentName,
+				ReceiveAdapterName:  receiveAdapterName,
+				ReceiveAdapterType:  string(converters.CloudScheduler),
+				ConfigWatcher:       cmw,
+			}),
 		Identity:        identity.NewIdentity(ctx, ipm, gcpas),
 		schedulerLister: cloudschedulersourceInformer.Lister(),
 		createClientFn:  gscheduler.NewClient,

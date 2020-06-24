@@ -76,7 +76,13 @@ func newController(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:             intevents.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsConverter, cmw),
+		PubSubBase: intevents.NewPubSubBase(ctx,
+			&intevents.PubSubBaseArgs{
+				ControllerAgentName: controllerAgentName,
+				ReceiveAdapterName:  receiveAdapterName,
+				ReceiveAdapterType:  string(converters.CloudAuditLogs),
+				ConfigWatcher:       cmw,
+			}),
 		Identity:               identity.NewIdentity(ctx, ipm, gcpas),
 		auditLogsSourceLister:  cloudauditlogssourceInformer.Lister(),
 		logadminClientProvider: glogadmin.NewClient,

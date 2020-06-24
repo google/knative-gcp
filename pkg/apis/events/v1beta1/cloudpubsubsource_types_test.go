@@ -146,3 +146,20 @@ func TestCloudPubSubSourceConditionSet(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestCloudPubSubSource_GetConditionSet(t *testing.T) {
+	s := &CloudPubSubSource{}
+
+	if got, want := s.GetConditionSet().GetTopLevelConditionType(), apis.ConditionReady; got != want {
+		t.Errorf("GetTopLevelCondition=%v, want=%v", got, want)
+	}
+}
+
+func TestCloudPubSubSource_GetStatus(t *testing.T) {
+	s := &CloudPubSubSource{
+		Status: CloudPubSubSourceStatus{},
+	}
+	if got, want := s.GetStatus(), &s.Status.Status; got != want {
+		t.Errorf("GetStatus=%v, want=%v", got, want)
+	}
+}

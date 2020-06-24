@@ -870,6 +870,7 @@ func TestAllCases(t *testing.T) {
 			Objects:      []runtime.Object{NewBrokerCell(brokerCellName, testNS,
 				WithBrokerCellAnnotations(creatorAnnotation),
 				WithBrokerCellSetDefaults,
+				WithInitBrokerCellConditions,
 			)},
 			WithReactors: []clientgotesting.ReactionFunc{InduceFailure("delete", "brokercells")},
 			WantDeletes: []clientgotesting.DeleteActionImpl{
@@ -891,6 +892,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{NewBrokerCell(brokerCellName, testNS,
 				WithBrokerCellAnnotations(creatorAnnotation),
 				WithBrokerCellSetDefaults,
+				WithInitBrokerCellConditions,
 			)},
 			WantDeletes: []clientgotesting.DeleteActionImpl{
 				{

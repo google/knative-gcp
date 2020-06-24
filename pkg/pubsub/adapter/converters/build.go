@@ -20,57 +20,43 @@ import (
 	"context"
 	"errors"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	. "github.com/cloudevents/sdk-go/pkg/cloudevents"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
-
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"cloud.google.com/go/pubsub"
+	cev2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
 )
 
 const (
-	CloudBuildConverter = "com.google.cloud.build"
 	buildSchemaUrl      = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/build/schema.json"
 )
 
-func convertCloudBuild(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
-	tx := pubsubcontext.TransportContextFrom(ctx)
-	// Make a new event and convert the message payload.
-	event := cloudevents.NewEvent(cloudevents.VersionV1)
-	event.SetID(tx.ID)
-	event.SetTime(tx.PublishTime)
-	// We do not know the content type and we do not want to inspect the payload,
-	// thus we set this generic one.
-	event.SetDataContentType(cloudevents.ApplicationJSON)
-	event.SetType(v1alpha1.CloudBuildSourceEvent)
+func convertCloudBuild(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {
+	event := cev2.NewEvent(cev2.VersionV1)
+	event.SetID(msg.ID)
+	event.SetTime(msg.PublishTime)
+	event.SetType(v1beta1.CloudBuildSourceEvent)
 	event.SetDataSchema(buildSchemaUrl)
 
+	project, err := GetProjectKey(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// Set the source and subject if it comes as an attribute.
-	if buildId, ok := msg.Attributes[v1alpha1.CloudBuildSourceBuildId]; !ok {
+	if buildId, ok := msg.Attributes[v1beta1.CloudBuildSourceBuildId]; !ok {
 		return nil, errors.New("received event did not have buildId")
 	} else {
-		event.SetSource(v1alpha1.CloudBuildSourceEventSource(tx.Project, buildId))
+		event.SetSource(v1beta1.CloudBuildSourceEventSource(project, buildId))
 	}
-	if buildStatus, ok := msg.Attributes[v1alpha1.CloudBuildSourceBuildStatus]; !ok {
+	if buildStatus, ok := msg.Attributes[v1beta1.CloudBuildSourceBuildStatus]; !ok {
 		return nil, errors.New("received event did not have build status")
 	} else {
 		event.SetSubject(buildStatus)
 	}
 
-	// Set the mode to be an extension attribute.
-	event.SetExtension("knativecemode", string(sendMode))
-	event.Data = msg.Data
-	event.DataEncoded = true
-	// Attributes are extensions.
-	if msg.Attributes != nil && len(msg.Attributes) > 0 {
-		for k, v := range msg.Attributes {
-			// CloudEvents v1.0 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') as per
-			// the spec. It's not even possible for a conformant transport to allow non-base36 characters.
-			// Note `SetExtension` will make it lowercase so only `IsAlphaNumeric` needs to be checked here.
-			if IsAlphaNumeric(k) {
-				event.SetExtension(k, v)
-			}
-		}
+	if err := event.SetData(cev2.ApplicationJSON, msg); err != nil {
+		return nil, err
 	}
+
 	return &event, nil
 }

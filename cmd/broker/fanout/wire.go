@@ -24,6 +24,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler"
 	"github.com/google/knative-gcp/pkg/metrics"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/wire"
 )
 
@@ -31,7 +32,7 @@ import (
 // retry pool's pubsub client and uses targetsVolumeOpts to initialize the targets volume watcher.
 func InitializeSyncPool(
 	ctx context.Context,
-	projectID handler.ProjectID,
+	projectID clients.ProjectID,
 	podName metrics.PodName,
 	containerName metrics.ContainerName,
 	targetsVolumeOpts []volume.Option,
