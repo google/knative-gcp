@@ -155,11 +155,11 @@ func (r *DeliveryReporter) reportEventProcessingTime(ctx context.Context, end ti
 }
 
 func filterTypeValue(v string) string {
-	if v != "" {
-		return v
+	if v == "" {
+		// the default value if the filter attributes are empty.
+		return "any"
 	}
-	// the default value if the filter attributes are empty.
-	return "any"
+	return EventTypeMetricValue(v)
 }
 
 func (r *DeliveryReporter) AddTags(ctx context.Context) (context.Context, error) {

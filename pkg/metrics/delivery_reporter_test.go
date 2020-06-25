@@ -36,7 +36,7 @@ func TestReportEventDispatchTime(t *testing.T) {
 		metricskey.LabelNamespaceName:     "testns",
 		metricskey.LabelBrokerName:        "testbroker",
 		metricskey.LabelTriggerName:       "testtrigger",
-		metricskey.LabelFilterType:        "testeventtype",
+		metricskey.LabelFilterType:        "com.google.cloud.pubsub.topic.publish",
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
 		metricskey.PodName:                "testpod",
@@ -57,7 +57,7 @@ func TestReportEventDispatchTime(t *testing.T) {
 		Broker:    "testbroker",
 		Name:      "testtrigger",
 		FilterAttributes: map[string]string{
-			"type": "testeventtype",
+			"type": "com.google.cloud.pubsub.topic.publish",
 		},
 	})
 	if err != nil {
@@ -82,7 +82,7 @@ func TestReportEventProcessingTime(t *testing.T) {
 		metricskey.LabelNamespaceName: "testns",
 		metricskey.LabelBrokerName:    "testbroker",
 		metricskey.LabelTriggerName:   "testtrigger",
-		metricskey.LabelFilterType:    "testeventtype",
+		metricskey.LabelFilterType:    "com.google.cloud.pubsub.topic.publish",
 		metricskey.PodName:            "testpod",
 		metricskey.ContainerName:      "testcontainer",
 	}
@@ -100,7 +100,7 @@ func TestReportEventProcessingTime(t *testing.T) {
 		Broker:    "testbroker",
 		Name:      "testtrigger",
 		FilterAttributes: map[string]string{
-			"type": "testeventtype",
+			"type": "com.google.cloud.pubsub.topic.publish",
 		},
 	})
 	if err != nil {
@@ -122,6 +122,47 @@ func TestReportEventProcessingTime(t *testing.T) {
 	})
 
 	metricstest.CheckDistributionData(t, "event_processing_latencies", wantTags, 2, 1100.0, 9100.0)
+}
+
+func TestMetricsWithCustomFilterType(t *testing.T) {
+	reportertest.ResetDeliveryMetrics()
+
+	wantTags := map[string]string{
+		metricskey.LabelNamespaceName:     "testns",
+		metricskey.LabelBrokerName:        "testbroker",
+		metricskey.LabelTriggerName:       "testtrigger",
+		metricskey.LabelFilterType:        "custom", // Expects this to be "custom" instead of filter type
+		metricskey.LabelResponseCode:      "202",
+		metricskey.LabelResponseCodeClass: "2xx",
+		metricskey.PodName:                "testpod",
+		metricskey.ContainerName:          "testcontainer",
+	}
+
+	r, err := NewDeliveryReporter("testpod", "testcontainer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, err := r.AddTags(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, err = AddTargetTags(ctx, &config.Target{
+		Namespace: "testns",
+		Broker:    "testbroker",
+		Name:      "testtrigger",
+		FilterAttributes: map[string]string{
+			"type": "testeventtype",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reportertest.ExpectMetrics(t, func() error {
+		r.ReportEventDispatchTime(ctx, 1100*time.Millisecond, 202)
+		return nil
+	})
+	metricstest.CheckCountData(t, "event_count", wantTags, 1)
 }
 
 func TestMetricsWithEmptySourceAndTypeFilter(t *testing.T) {

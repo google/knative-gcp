@@ -33,13 +33,47 @@ func TestStatsReporter(t *testing.T) {
 	args := IngressReportArgs{
 		Namespace:    "testns",
 		Broker:       "testbroker",
+		EventType:    "com.google.cloud.scheduler.job.execute",
+		ResponseCode: 202,
+	}
+	wantTags := map[string]string{
+		metricskey.LabelNamespaceName:     "testns",
+		metricskey.LabelBrokerName:        "testbroker",
+		metricskey.LabelEventType:         "com.google.cloud.scheduler.job.execute",
+		metricskey.LabelResponseCode:      "202",
+		metricskey.LabelResponseCodeClass: "2xx",
+		metricskey.ContainerName:          "testcontainer",
+		metricskey.PodName:                "testpod",
+	}
+
+	r, err := NewIngressReporter(PodName("testpod"), ContainerName("testcontainer"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// test ReportEventCount
+	reportertest.ExpectMetrics(t, func() error {
+		return r.ReportEventCount(context.Background(), args)
+	})
+	reportertest.ExpectMetrics(t, func() error {
+		return r.ReportEventCount(context.Background(), args)
+	})
+	metricstest.CheckCountData(t, "event_count", wantTags, 2)
+}
+
+func TestStatsReporterWithCustomEventType(t *testing.T) {
+	reportertest.ResetIngressMetrics()
+
+	args := IngressReportArgs{
+		Namespace:    "testns",
+		Broker:       "testbroker",
 		EventType:    "testeventtype",
 		ResponseCode: 202,
 	}
 	wantTags := map[string]string{
 		metricskey.LabelNamespaceName:     "testns",
 		metricskey.LabelBrokerName:        "testbroker",
-		metricskey.LabelEventType:         "testeventtype",
+		metricskey.LabelEventType:         "custom",
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
 		metricskey.ContainerName:          "testcontainer",

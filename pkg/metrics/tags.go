@@ -17,6 +17,9 @@ limitations under the License.
 package metrics
 
 import (
+	"strings"
+
+	"github.com/google/knative-gcp/test/e2e/lib"
 	"go.opencensus.io/tag"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -43,3 +46,27 @@ var (
 	PodNameKey       = tag.MustNewKey(metricskey.PodName)
 	ContainerNameKey = tag.MustNewKey(metricskey.ContainerName)
 )
+
+var (
+	allowedEventTypes = []string{
+		lib.E2EDummyEventType,
+		lib.E2EDummyRespEventType,
+	}
+)
+
+// Stackdriver has a limit on the cardinality of fields on a metric, and event types can be any custom string. We're
+// reducing the allowable values on this field to be limited to GCP event types and defaulting everything else to
+// "custom".
+func EventTypeMetricValue(eventType string) string {
+	if strings.HasPrefix(eventType, "com.google.cloud") {
+		return eventType
+	}
+
+	for _, allowed := range allowedEventTypes {
+		if eventType == allowed {
+			return eventType
+		}
+	}
+
+	return "custom"
+}
