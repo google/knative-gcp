@@ -18,10 +18,12 @@ package lib
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/gclient/scheduler"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
 	"google.golang.org/grpc/codes"
@@ -62,7 +64,7 @@ func MakeSchedulerJobOrDie(client *Client, data, targetName, eventType string) {
 		},
 		{
 			Name:  "DATA",
-			Value: data,
+			Value: schedulerEventPayload(data),
 		},
 		{
 			Name:  "TYPE",
@@ -70,6 +72,12 @@ func MakeSchedulerJobOrDie(client *Client, data, targetName, eventType string) {
 		},
 	})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
+}
+
+func schedulerEventPayload(customData string) string {
+	jd := &schemasv1.JobExecutionData{CustomData: []byte(customData)}
+	b, _ := json.Marshal(jd)
+	return string(b)
 }
 
 func SchedulerJobExists(t *testing.T, jobName string) bool {

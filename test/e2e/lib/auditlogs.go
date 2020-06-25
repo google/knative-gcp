@@ -81,7 +81,7 @@ func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, se
 		Value: eventType,
 	}, {
 		Name:  "SOURCE",
-		Value: schemasv1.CloudAuditLogsEventSource(fmt.Sprintf("projects/%s", project), ""),
+		Value: schemasv1.CloudAuditLogsEventSource(fmt.Sprintf("projects/%s", project), "activity"),
 	}, {
 		Name:  "SUBJECT",
 		Value: schemasv1.CloudAuditLogsEventSubject(serviceName, resourceName),
