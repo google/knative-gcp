@@ -23,7 +23,7 @@ import (
 	"net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -51,7 +51,7 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *c
 	fmt.Printf("storage receiver received event\n")
 	fmt.Printf("context of event is: %v\n", event.Context.String())
 
-	if event.Type() == v1beta1.CloudStorageSourceObjectFinalizedEventType {
+	if event.Type() == schemasv1.CloudStorageObjectFinalizedEventType {
 		resp.Status = http.StatusAccepted
 		respEvent := cloudevents.NewEvent(cloudevents.VersionV1)
 		respEvent.SetID(lib.E2EStorageRespEventID)

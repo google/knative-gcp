@@ -27,7 +27,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	auditpb "google.golang.org/genproto/googleapis/cloud/audit"
 	logpb "google.golang.org/genproto/googleapis/logging/v2"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -81,23 +81,23 @@ func TestConvertAuditLog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("conversion failed: %v", err)
 	}
-	if id := v1beta1.CloudAuditLogsSourceEventID(insertID, logName, testTs); e.ID() != id {
+	if id := schemasv1.CloudAuditLogsEventID(insertID, logName, testTs); e.ID() != id {
 		t.Errorf("ID '%s' != '%s'", e.ID(), id)
 	}
 	if !e.Time().Equal(testTime) {
 		t.Errorf("Time '%v' != '%v'", e.Time(), testTime)
 	}
-	if want := v1beta1.CloudAuditLogsSourceEventSource("projects/test-project", "activity"); e.Source() != want {
+	if want := schemasv1.CloudAuditLogsEventSource("projects/test-project", "activity"); e.Source() != want {
 		t.Errorf("Source %q != %q", e.Source(), want)
 	}
 	if e.Type() != "google.cloud.audit.log.v1.written" {
 		t.Errorf(`Type %q != "google.cloud.audit.log.v1.written"`, e.Type())
 	}
-	if want := v1beta1.CloudAuditLogsSourceEventSubject("pubsub.googleapis.com", "projects/test-project/topics/test-topic"); e.Subject() != want {
+	if want := schemasv1.CloudAuditLogsEventSubject("pubsub.googleapis.com", "projects/test-project/topics/test-topic"); e.Subject() != want {
 		t.Errorf("Subject %q != %q", e.Subject(), want)
 	}
-	if e.DataSchema() != v1beta1.CloudAuditLogsSourceEventDataSchema {
-		t.Errorf("DataSchema got=%s, want=%s", e.DataSchema(), v1beta1.CloudAuditLogsSourceEventDataSchema)
+	if e.DataSchema() != schemasv1.CloudAuditLogsEventDataSchema {
+		t.Errorf("DataSchema got=%s, want=%s", e.DataSchema(), schemasv1.CloudAuditLogsEventDataSchema)
 	}
 
 	var actualLogEntry logpb.LogEntry

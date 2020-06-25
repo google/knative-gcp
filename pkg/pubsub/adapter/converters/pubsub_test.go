@@ -25,8 +25,8 @@ import (
 	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 func TestConvertCloudPubSub(t *testing.T) {
@@ -101,7 +101,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 func pubSubCloudEvent(attributes map[string]string, data string) *cev2.Event {
 	e := cev2.NewEvent(cev2.VersionV1)
 	e.SetID("id")
-	e.SetSource(v1beta1.CloudPubSubSourceEventSource("testproject", "testtopic"))
+	e.SetSource(schemasv1.CloudPubSubEventSource("testproject", "testtopic"))
 	at := ""
 	if attributes != nil {
 		ex, _ := json.Marshal(attributes)
@@ -109,7 +109,7 @@ func pubSubCloudEvent(attributes map[string]string, data string) *cev2.Event {
 	}
 	s := fmt.Sprintf(`{"subscription":"testsubscription","message":{"messageId":"id","data":%s,%s"publishTime":"0001-01-01T00:00:00Z"}}`, data, at)
 	e.SetData(cev2.ApplicationJSON, []byte(s))
-	e.SetType(v1beta1.CloudPubSubSourceMessagePublishedEventType)
+	e.SetType(schemasv1.CloudPubSubMessagePublishedEventType)
 	e.DataBase64 = false
 	return &e
 }

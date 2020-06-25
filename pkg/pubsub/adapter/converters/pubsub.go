@@ -18,12 +18,11 @@ package converters
 
 import (
 	"context"
-	"time"
 
 	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 func convertCloudPubSub(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {
@@ -40,18 +39,17 @@ func convertCloudPubSub(ctx context.Context, msg *pubsub.Message) (*cev2.Event, 
 		return nil, err
 	}
 
-	event.SetSource(v1beta1.CloudPubSubSourceEventSource(project, topic))
-	event.SetType(v1beta1.CloudPubSubSourceMessagePublishedEventType)
+	event.SetSource(schemasv1.CloudPubSubEventSource(project, topic))
+	event.SetType(schemasv1.CloudPubSubMessagePublishedEventType)
 
 	subscription, err := GetSubscriptionKey(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: use struct generated from proto: https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/pubsub/v1/events.proto#L33
-	pushMessage := &PushMessage{
+	pushMessage := &schemasv1.PushMessage{
 		Subscription: subscription,
-		Message: &PubSubMessage{
+		Message: &schemasv1.PubSubMessage{
 			ID:          msg.ID,
 			Attributes:  msg.Attributes,
 			PublishTime: msg.PublishTime,
@@ -63,32 +61,4 @@ func convertCloudPubSub(ctx context.Context, msg *pubsub.Message) (*cev2.Event, 
 		return nil, err
 	}
 	return &event, nil
-}
-
-// PushMessage represents the format Pub/Sub uses to push events.
-type PushMessage struct {
-	// Subscription is the subscription ID that received this Message.
-	Subscription string `json:"subscription"`
-	// Message holds the Pub/Sub message contents.
-	Message *PubSubMessage `json:"message,omitempty"`
-}
-
-// PubSubMessage matches the inner message format used by Push Subscriptions.
-type PubSubMessage struct {
-	// ID identifies this message. This ID is assigned by the server and is
-	// populated for Messages obtained from a subscription.
-	// This field is read-only.
-	ID string `json:"messageId,omitempty"`
-
-	// Data is the actual data in the message.
-	Data interface{} `json:"data,omitempty"`
-
-	// Attributes represents the key-value pairs the current message
-	// is labelled with.
-	Attributes map[string]string `json:"attributes,omitempty"`
-
-	// The time at which the message was published. This is populated by the
-	// server for Messages obtained from a subscription.
-	// This field is read-only.
-	PublishTime time.Time `json:"publishTime,omitempty"`
 }

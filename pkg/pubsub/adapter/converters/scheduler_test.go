@@ -23,7 +23,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
 )
@@ -105,9 +105,9 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 func schedulerCloudEvent(source string) *cev2.Event {
 	e := cev2.NewEvent(cev2.VersionV1)
 	e.SetID("id")
-	e.SetData(cev2.ApplicationJSON, &SchedulerData{CustomData: []byte("test data")})
-	e.SetType(v1beta1.CloudSchedulerSourceJobExecutedEventType)
-	e.SetDataSchema(v1beta1.CloudSchedulerSourceEventDataSchema)
+	e.SetData(cev2.ApplicationJSON, &schemasv1.JobExecutionData{CustomData: []byte("test data")})
+	e.SetType(schemasv1.CloudSchedulerJobExecutedEventType)
+	e.SetDataSchema(schemasv1.CloudSchedulerEventDataSchema)
 	e.SetSource(source)
 	return &e
 }

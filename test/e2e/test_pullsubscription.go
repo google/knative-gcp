@@ -28,9 +28,9 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -71,14 +71,14 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 
 	psName := topicName + "-sub"
 	targetName := topicName + "-target"
-	source := eventsv1beta1.CloudPubSubSourceEventSource(project, topicName)
+	source := schemasv1.CloudPubSubEventSource(project, topicName)
 	data := fmt.Sprintf(`{"topic":%s}`, topicName)
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakePubSubTargetJobOrDie(client, source, targetName, eventsv1beta1.CloudPubSubSourceMessagePublishedEventType)
+	lib.MakePubSubTargetJobOrDie(client, source, targetName, schemasv1.CloudPubSubMessagePublishedEventType)
 
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,

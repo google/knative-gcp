@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/gclient/scheduler"
-	kngcpresources "github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
@@ -60,10 +59,6 @@ func MakeSchedulerJobOrDie(client *Client, data, targetName, eventType string) {
 		{
 			Name:  "TIME",
 			Value: "6m",
-		},
-		{
-			Name:  "SUBJECT_PREFIX",
-			Value: kngcpresources.JobPrefix,
 		},
 		{
 			Name:  "DATA",

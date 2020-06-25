@@ -17,9 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"crypto/md5"
-	"fmt"
-
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,34 +63,6 @@ var auditLogsSourceCondSet = apis.NewLivingConditionSet(
 	duckv1beta1.TopicReady,
 	SinkReady,
 )
-
-const (
-	// Ref: https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/audit/v1/events.proto#L27
-	// TODO: somehow reference the proto value directly.
-	CloudAuditLogsSourceLogWrittenEventType = "google.cloud.audit.log.v1.written"
-	CloudAuditLogsSourceEventDataSchema     = "https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/audit/v1/events.proto"
-)
-
-// CloudAuditLogsSourceEventSource returns the Cloud Audit Logs CloudEvent source value.
-// Format e.g. //cloudaudit.googleapis.com/projects/project-id/[activity|data_access]
-func CloudAuditLogsSourceEventSource(parentResource, activity string) string {
-	src := fmt.Sprintf("//cloudaudit.googleapis.com/%s", parentResource)
-	if activity != "" {
-		src = src + "/" + activity
-	}
-	return src
-}
-
-// CloudAuditLogsSourceEventID returns the Cloud Audit Logs CloudEvent id value.
-func CloudAuditLogsSourceEventID(id, logName, timestamp string) string {
-	// Hash the concatenation of the three fields.
-	return fmt.Sprintf("%x", md5.Sum([]byte(id+logName+timestamp)))
-}
-
-// CloudAuditLogsSourceEventSubject returns the Cloud Audit Logs CloudEvent subject value.
-func CloudAuditLogsSourceEventSubject(serviceName, resourceName string) string {
-	return fmt.Sprintf("%s/%s", serviceName, resourceName)
-}
 
 type CloudAuditLogsSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:

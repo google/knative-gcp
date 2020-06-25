@@ -23,16 +23,16 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 var (
 	// Mapping of GCS eventTypes to CloudEvent types.
 	storageEventTypes = map[string]string{
-		"OBJECT_FINALIZE":        v1beta1.CloudStorageSourceObjectFinalizedEventType,
-		"OBJECT_ARCHIVE":         v1beta1.CloudStorageSourceObjectArchivedEventType,
-		"OBJECT_DELETE":          v1beta1.CloudStorageSourceObjectDeletedEventType,
-		"OBJECT_METADATA_UPDATE": v1beta1.CloudStorageSourceObjectMetadataUpdatedEventType,
+		"OBJECT_FINALIZE":        schemasv1.CloudStorageObjectFinalizedEventType,
+		"OBJECT_ARCHIVE":         schemasv1.CloudStorageObjectArchivedEventType,
+		"OBJECT_DELETE":          schemasv1.CloudStorageObjectDeletedEventType,
+		"OBJECT_METADATA_UPDATE": schemasv1.CloudStorageObjectMetadataUpdatedEventType,
 	}
 )
 
@@ -40,16 +40,16 @@ func convertCloudStorage(ctx context.Context, msg *pubsub.Message) (*cev2.Event,
 	event := cev2.NewEvent(cev2.VersionV1)
 	event.SetID(msg.ID)
 	event.SetTime(msg.PublishTime)
-	event.SetDataSchema(v1beta1.CloudStorageSourceEventDataSchema)
+	event.SetDataSchema(schemasv1.CloudStorageEventDataSchema)
 
 	// TODO: figure out if we want to continue to add these as extensions.
 	if val, ok := msg.Attributes["bucketId"]; ok {
-		event.SetSource(v1beta1.CloudStorageSourceEventSource(val))
+		event.SetSource(schemasv1.CloudStorageEventSource(val))
 	} else {
 		return nil, errors.New("received event did not have bucketId")
 	}
 	if val, ok := msg.Attributes["objectId"]; ok {
-		event.SetSubject(val)
+		event.SetSubject(schemasv1.CloudStorageEventSubject(val))
 	} else {
 		return nil, errors.New("received event did not have objectId")
 	}

@@ -25,8 +25,8 @@ import (
 	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 func TestConvertPubSubPull(t *testing.T) {
@@ -103,8 +103,8 @@ func TestConvertPubSubPull(t *testing.T) {
 func pubSubPull(extensions map[string]string) *cev2.Event {
 	e := cev2.NewEvent(cloudevents.VersionV1)
 	e.SetID("id")
-	e.SetSource(v1beta1.CloudPubSubSourceEventSource("testproject", "testtopic"))
-	e.SetType(v1beta1.CloudPubSubSourceMessagePublishedEventType)
+	e.SetSource(schemasv1.CloudPubSubEventSource("testproject", "testtopic"))
+	e.SetType(schemasv1.CloudPubSubMessagePublishedEventType)
 	e.SetData("application/octet-stream", []byte("test data"))
 	for k, v := range extensions {
 		e.SetExtension(k, v)

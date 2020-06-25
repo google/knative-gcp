@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/test/e2e/lib"
@@ -20,7 +19,6 @@ func mainWithExitCode() int {
 	if err := envconfig.Process("", r); err != nil {
 		panic(err)
 	}
-	fmt.Printf("SubjectPrefix to match: %q.\n", r.SubjectPrefix)
 	fmt.Printf("Data to match: %q.\n", r.Data)
 	fmt.Printf("Type to match: %q.\n", r.Type)
 
@@ -30,9 +28,8 @@ func mainWithExitCode() int {
 type schedulerReceiver struct {
 	knockdown.Config
 
-	SubjectPrefix string `envconfig:"SUBJECT_PREFIX" required:"true"`
-	Data          string `envconfig:"DATA" required:"true"`
-	Type          string `envconfig:"TYPE" required:"true"`
+	Data string `envconfig:"DATA" required:"true"`
+	Type string `envconfig:"TYPE" required:"true"`
 }
 
 func (r *schedulerReceiver) Knockdown(event cloudevents.Event) bool {
@@ -41,12 +38,6 @@ func (r *schedulerReceiver) Knockdown(event cloudevents.Event) bool {
 	fmt.Printf(event.Context.String())
 
 	incorrectAttributes := make(map[string]lib.PropPair)
-
-	// Check subject prefix
-	subject := event.Subject()
-	if !strings.HasPrefix(subject, r.SubjectPrefix) {
-		incorrectAttributes[lib.EventSubjectPrefix] = lib.PropPair{Expected: r.SubjectPrefix, Received: subject}
-	}
 
 	// Check type
 	evType := event.Type()

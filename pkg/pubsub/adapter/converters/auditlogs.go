@@ -35,7 +35,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 const (
@@ -123,15 +123,15 @@ func convertCloudAuditLogs(ctx context.Context, msg *pubsub.Message) (*cev2.Even
 
 	// Make a new event and convert the message payload.
 	event := cev2.NewEvent(cev2.VersionV1)
-	event.SetID(v1beta1.CloudAuditLogsSourceEventID(entry.InsertId, entry.LogName, ptypes.TimestampString(entry.Timestamp)))
+	event.SetID(schemasv1.CloudAuditLogsEventID(entry.InsertId, entry.LogName, ptypes.TimestampString(entry.Timestamp)))
 	if timestamp, err := ptypes.Timestamp(entry.Timestamp); err != nil {
 		return nil, fmt.Errorf("invalid LogEntry timestamp: %w", err)
 	} else {
 		event.SetTime(timestamp)
 	}
-	event.SetType(v1beta1.CloudAuditLogsSourceLogWrittenEventType)
-	event.SetSource(v1beta1.CloudAuditLogsSourceEventSource(parentResource, logActivity))
-	event.SetDataSchema(v1beta1.CloudAuditLogsSourceEventDataSchema)
+	event.SetType(schemasv1.CloudAuditLogsLogWrittenEventType)
+	event.SetSource(schemasv1.CloudAuditLogsEventSource(parentResource, logActivity))
+	event.SetDataSchema(schemasv1.CloudAuditLogsEventDataSchema)
 	event.SetData(cev2.ApplicationJSON, msg.Data)
 
 	switch payload := entry.Payload.(type) {
@@ -142,7 +142,7 @@ func convertCloudAuditLogs(ctx context.Context, msg *pubsub.Message) (*cev2.Even
 		}
 		switch proto := unpacked.Message.(type) {
 		case *auditpb.AuditLog:
-			event.SetSubject(v1beta1.CloudAuditLogsSourceEventSubject(proto.ServiceName, proto.ResourceName))
+			event.SetSubject(schemasv1.CloudAuditLogsEventSubject(proto.ServiceName, proto.ResourceName))
 			// TODO: figure out if we want to keep these extensions.
 			event.SetExtension(serviceNameExtension, proto.ServiceName)
 			event.SetExtension(methodNameExtension, proto.MethodName)

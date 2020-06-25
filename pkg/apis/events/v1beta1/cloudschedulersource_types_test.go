@@ -42,16 +42,6 @@ func TestCloudSchedulerSourceGetGroupVersionKind(t *testing.T) {
 	}
 }
 
-func TestCloudSchedulerSourceEventSource(t *testing.T) {
-	want := "//cloudscheduler.googleapis.com/JOB_NAME"
-
-	got := CloudSchedulerSourceEventSource("JOB_NAME")
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
-}
-
 func TestCloudSchedulerSourceConditionSet(t *testing.T) {
 	want := []apis.Condition{{
 		Type: JobReady,

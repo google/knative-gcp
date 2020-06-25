@@ -50,7 +50,7 @@ func MakeStorageOrDie(client *Client, config StorageConfig) {
 	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceTypeMeta)
 }
 
-func MakeStorageJobOrDie(client *Client, source, fileName, targetName, eventType string) {
+func MakeStorageJobOrDie(client *Client, source, subject, targetName, eventType string) {
 	client.T.Helper()
 	job := resources.StorageTargetJob(targetName, []v1.EnvVar{
 		{
@@ -63,7 +63,7 @@ func MakeStorageJobOrDie(client *Client, source, fileName, targetName, eventType
 		},
 		{
 			Name:  "SUBJECT",
-			Value: fileName,
+			Value: subject,
 		}, {
 			Name:  "TIME",
 			Value: "6m",
