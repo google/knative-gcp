@@ -36,11 +36,11 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/testingdata"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 
@@ -50,6 +50,7 @@ import (
 const (
 	testNS         = "testnamespace"
 	brokerCellName = "test-brokercell"
+	targetsCMName = "broker-targets"
 	targetsCMKey  = "targets"
 )
 
@@ -938,7 +939,7 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 	}
 	r, err := NewReconciler(base, ls)
 	if err != nil {
-		t.Fatalf("Failed to created BrokerCell reconciler: %v", err)
+		t.Fatalf("Failed to create BrokerCell reconciler: %v", err)
 	}
 	// here we only want to test the functionality of the reconcileConfig that it should create a brokerTargets config successfully
 	r.reconcileConfig(ctx, bc)
@@ -946,13 +947,9 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 		NewBroker("broker", testNS, WithBrokerSetDefaults),
 		NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
 		NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults))
-	mapList, err := client.CoreV1().ConfigMaps(testNS).List(metav1.ListOptions{})
-	if err != nil || len(mapList.Items) != 1 {
-		t.Fatalf("Failed to get configMap: %v", err)
-	}
-	gotMap := mapList.Items[0]
+	gotMap, err := client.CoreV1().ConfigMaps(testNS).Get(resources.Name(bc.Name, targetsCMName),metav1.GetOptions{})
 	// compare the ObjectMeta field
-	if diff := cmp.Diff(wantMap.ObjectMeta, gotMap.ObjectMeta, cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(wantMap.ObjectMeta, gotMap.ObjectMeta); diff != "" {
 		t.Fatalf("Unexpected ObjectMeta in ConfigMap(-want, +got): %s", diff)
 	}
 	// deserialize the binary data to a broker targets config proto
@@ -965,7 +962,7 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 		t.Fatalf("Failed to deserialize the binary data in configMap: %v", err)
 	}
 	// compare the broker targets config
-	if diff := cmp.Diff(wantBrokerTargets.String(), gotBrokerTargets.String(), cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(wantBrokerTargets.String(), gotBrokerTargets.String()); diff != "" {
 		t.Fatalf("Unexpected brokerTargets in ConfigMap(-want, +got): %s", diff)
 	}
 }
