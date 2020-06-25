@@ -24,8 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
@@ -174,8 +172,8 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 			"metric.type":                 lib.EventCountMetricType,
 			"resource.type":               lib.GlobalMetricResourceType,
 			"metric.label.resource_group": lib.StorageResourceGroup,
-			"metric.label.event_type":     v1alpha1.CloudStorageSourceFinalize,
-			"metric.label.event_source":   v1alpha1.CloudStorageSourceEventSource(bucketName),
+			"metric.label.event_type":     schemasv1.CloudStorageObjectFinalizedEventType,
+			"metric.label.event_source":   schemasv1.CloudStorageEventSource(bucketName),
 			"metric.label.namespace_name": client.Namespace,
 			"metric.label.name":           storageName,
 			// We exit the target image before sending a response, thus check for 500.
