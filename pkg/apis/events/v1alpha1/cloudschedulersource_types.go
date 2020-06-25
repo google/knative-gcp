@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
-
 	"k8s.io/apimachinery/pkg/runtime"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,19 +52,6 @@ var (
 	_ kngcpduck.Identifiable       = (*CloudSchedulerSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudSchedulerSource)(nil)
 )
-
-const (
-	// CloudEvent types used by CloudSchedulerSource.
-	CloudSchedulerSourceExecute = "com.google.cloud.scheduler.job.execute"
-	// CloudSchedulerSourceJobName is the Pub/Sub message attribute key with the CloudSchedulerSource's job name.
-	CloudSchedulerSourceJobName = "jobName"
-	// CloudSchedulerSourceName is the Pub/Sub message attribute key with the CloudSchedulerSource's name.
-	CloudSchedulerSourceName = "schedulerName"
-)
-
-func CloudSchedulerSourceEventSource(parent, scheduler string) string {
-	return fmt.Sprintf("//cloudscheduler.googleapis.com/%s/schedulers/%s", parent, scheduler)
-}
 
 // CloudSchedulerSourceSpec is the spec for a CloudSchedulerSource resource
 type CloudSchedulerSourceSpec struct {
