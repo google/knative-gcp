@@ -948,6 +948,9 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 		NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
 		NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults))
 	gotMap, err := client.CoreV1().ConfigMaps(testNS).Get(resources.Name(bc.Name, targetsCMName),metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Failed to get ConfigMap from client: %v", err)
+	}
 	// compare the ObjectMeta field
 	if diff := cmp.Diff(wantMap.ObjectMeta, gotMap.ObjectMeta); diff != "" {
 		t.Fatalf("Unexpected ObjectMeta in ConfigMap(-want, +got): %s", diff)
@@ -956,10 +959,10 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 	var wantBrokerTargets config.TargetsConfig
 	var gotBrokerTargets config.TargetsConfig
 	if err := proto.Unmarshal(wantMap.BinaryData[targetsCMKey], &wantBrokerTargets); err != nil {
-		t.Fatalf("Failed to deserialize the binary data in configMap: %v", err)
+		t.Fatalf("Failed to deserialize the binary data in ConfigMap: %v", err)
 	}
 	if err := proto.Unmarshal(gotMap.BinaryData[targetsCMKey], &gotBrokerTargets); err != nil {
-		t.Fatalf("Failed to deserialize the binary data in configMap: %v", err)
+		t.Fatalf("Failed to deserialize the binary data in ConfigMap: %v", err)
 	}
 	// compare the broker targets config
 	if diff := cmp.Diff(wantBrokerTargets.String(), gotBrokerTargets.String()); diff != "" {
