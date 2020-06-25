@@ -33,6 +33,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -107,6 +108,18 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 	receiveAdapterContainer := corev1.Container{
 		Name:  "receive-adapter",
 		Image: args.Image,
+		// Such resources setting should support tps with 1000/s
+		Resources: corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				// The memory limit we set is 600Mi which is mostly used to prevent surging memory usage causing OOM.
+				corev1.ResourceMemory: resource.MustParse("600Mi"),
+				corev1.ResourceCPU:    resource.MustParse("500m"),
+			},
+			Requests: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse("50Mi"),
+				corev1.ResourceCPU:    resource.MustParse("400m"),
+			},
+		},
 		Env: []corev1.EnvVar{{
 			Name:  "PROJECT_ID",
 			Value: args.PullSubscription.Spec.Project,

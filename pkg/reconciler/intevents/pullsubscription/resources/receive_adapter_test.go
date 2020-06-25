@@ -30,6 +30,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -111,6 +112,16 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: "test-image",
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("600Mi"),
+								corev1.ResourceCPU:    resource.MustParse("500m"),
+							},
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("50Mi"),
+								corev1.ResourceCPU:    resource.MustParse("400m"),
+							},
+						},
 						Env: []corev1.EnvVar{{
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
@@ -269,6 +280,16 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: "test-image",
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("600Mi"),
+								corev1.ResourceCPU:    resource.MustParse("500m"),
+							},
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("50Mi"),
+								corev1.ResourceCPU:    resource.MustParse("400m"),
+							},
+						},
 						Env: []corev1.EnvVar{{
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
@@ -432,6 +453,16 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: "test-image",
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("600Mi"),
+								corev1.ResourceCPU:    resource.MustParse("500m"),
+							},
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("50Mi"),
+								corev1.ResourceCPU:    resource.MustParse("400m"),
+							},
+						},
 						Env: []corev1.EnvVar{{
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
