@@ -49,6 +49,8 @@ var (
 				{
 					Type:   appsv1.DeploymentAvailable,
 					Status: corev1.ConditionFalse,
+					Reason:  "The status of Deployment is False",
+					Message: "False Status",
 				},
 			},
 		},
@@ -404,8 +406,8 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		want: &apis.Condition{
 			Type:    PullSubscriptionConditionReady,
 			Status:  corev1.ConditionFalse,
-			Reason:  "DeploymentUnavailable",
-			Message: "The Deployment 'test-deployment' is unavailable.",
+			Reason:  "The status of Deployment is False",
+			Message: "False Status",
 		},
 	}, {
 		name: "mark sink nil and deployed and subscribed",
