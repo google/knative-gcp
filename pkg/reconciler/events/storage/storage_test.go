@@ -48,6 +48,7 @@ import (
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudstoragesource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage/testing"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -513,6 +514,7 @@ func TestAllCases(t *testing.T) {
 					PubSubSpec: duckv1beta1.PubSubSpec{
 						Secret: &secret,
 					},
+					AdapterType: string(converters.CloudStorage),
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionLabels(map[string]string{
@@ -562,6 +564,7 @@ func TestAllCases(t *testing.T) {
 							Sink: newSinkDestination(),
 						},
 					},
+					AdapterType: string(converters.CloudStorage),
 				})),
 			newSink(),
 		},
@@ -615,6 +618,7 @@ func TestAllCases(t *testing.T) {
 							Sink: newSinkDestination(),
 						},
 					},
+					AdapterType: string(converters.CloudStorage),
 				}), WithPullSubscriptionFailed()),
 		},
 		Key: testNS + "/" + storageName,
@@ -667,6 +671,7 @@ func TestAllCases(t *testing.T) {
 							Sink: newSinkDestination(),
 						},
 					},
+					AdapterType: string(converters.CloudStorage),
 				})),
 		},
 		Key: testNS + "/" + storageName,
@@ -723,6 +728,7 @@ func TestAllCases(t *testing.T) {
 							Sink: newSinkDestination(),
 						},
 					},
+					AdapterType: string(converters.CloudStorage),
 				}),
 				WithPullSubscriptionReady(sinkURI),
 			),
@@ -794,6 +800,7 @@ func TestAllCases(t *testing.T) {
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudStorage),
 					}),
 					WithPullSubscriptionReady(sinkURI),
 				),
@@ -866,6 +873,7 @@ func TestAllCases(t *testing.T) {
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudStorage),
 					}),
 					WithPullSubscriptionReady(sinkURI),
 				),
@@ -938,6 +946,7 @@ func TestAllCases(t *testing.T) {
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudStorage),
 					}),
 					WithPullSubscriptionReady(sinkURI),
 				),
@@ -1010,6 +1019,7 @@ func TestAllCases(t *testing.T) {
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudStorage),
 					}),
 					WithPullSubscriptionReady(sinkURI),
 				),
@@ -1261,7 +1271,13 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			PubSubBase:     intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			PubSubBase: intevents.NewPubSubBase(ctx,
+				&intevents.PubSubBaseArgs{
+					ControllerAgentName: controllerAgentName,
+					ReceiveAdapterName:  receiveAdapterName,
+					ReceiveAdapterType:  string(converters.CloudStorage),
+					ConfigWatcher:       cmw,
+				}),
 			Identity:       identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			storageLister:  listers.GetCloudStorageSourceLister(),
 			createClientFn: gstorage.TestClientCreator(testData["storage"]),

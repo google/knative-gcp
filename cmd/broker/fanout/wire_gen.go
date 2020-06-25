@@ -10,16 +10,17 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler"
 	"github.com/google/knative-gcp/pkg/metrics"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 )
 
 // Injectors from wire.go:
 
-func InitializeSyncPool(ctx context.Context, projectID handler.ProjectID, podName metrics.PodName, containerName metrics.ContainerName, targetsVolumeOpts []volume.Option, opts ...handler.Option) (*handler.FanoutPool, error) {
+func InitializeSyncPool(ctx context.Context, projectID clients.ProjectID, podName metrics.PodName, containerName metrics.ContainerName, targetsVolumeOpts []volume.Option, opts ...handler.Option) (*handler.FanoutPool, error) {
 	readonlyTargets, err := volume.NewTargetsFromFile(targetsVolumeOpts...)
 	if err != nil {
 		return nil, err
 	}
-	client, err := handler.NewPubsubClient(ctx, projectID)
+	client, err := clients.NewPubsubClient(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}

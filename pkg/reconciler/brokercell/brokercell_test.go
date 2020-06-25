@@ -647,8 +647,8 @@ func TestAllCases(t *testing.T) {
 					// we don't have a controller in the tests to mark their statues ready.
 					// We only verify that they are created in the WantCreates.
 					WithBrokerCellIngressFailed("EndpointsUnavailable", `Endpoints "test-brokercell-brokercell-ingress" is unavailable.`),
-					WithBrokerCellFanoutFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
-					WithBrokerCellRetryFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
+					WithBrokerCellFanoutUnknown("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
+					WithBrokerCellRetryUnknown("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellSetDefaults,
 				)},
@@ -721,8 +721,8 @@ func TestAllCases(t *testing.T) {
 					// we don't have a controller in the tests to mark their statues ready.
 					// We only verify that they are created in the WantCreates.
 					WithBrokerCellIngressFailed("EndpointsUnavailable", `Endpoints "test-brokercell-brokercell-ingress" is unavailable.`),
-					WithBrokerCellFanoutFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
-					WithBrokerCellRetryFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
+					WithBrokerCellFanoutUnknown("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
+					WithBrokerCellRetryUnknown("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellSetDefaults,
 				)},
@@ -870,6 +870,7 @@ func TestAllCases(t *testing.T) {
 			Objects:      []runtime.Object{NewBrokerCell(brokerCellName, testNS,
 				WithBrokerCellAnnotations(creatorAnnotation),
 				WithBrokerCellSetDefaults,
+				WithInitBrokerCellConditions,
 			)},
 			WithReactors: []clientgotesting.ReactionFunc{InduceFailure("delete", "brokercells")},
 			WantDeletes: []clientgotesting.DeleteActionImpl{
@@ -891,6 +892,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{NewBrokerCell(brokerCellName, testNS,
 				WithBrokerCellAnnotations(creatorAnnotation),
 				WithBrokerCellSetDefaults,
+				WithInitBrokerCellConditions,
 			)},
 			WantDeletes: []clientgotesting.DeleteActionImpl{
 				{

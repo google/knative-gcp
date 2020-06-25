@@ -27,6 +27,8 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
+
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // +genclient
@@ -52,6 +54,7 @@ var (
 	_ resourcesemantics.GenericCRD = (*CloudStorageSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudStorageSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudStorageSource)(nil)
+	_ duckv1.KRShaped              = (*CloudStorageSource)(nil)
 )
 
 // CloudStorageSourceSpec is the spec for a CloudStorageSource resource
@@ -157,4 +160,14 @@ type CloudStorageSourceList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []CloudStorageSource `json:"items"`
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*CloudStorageSource) GetConditionSet() apis.ConditionSet {
+	return storageCondSet
+}
+
+// GetStatus retrieves the status of the CloudStorageSource. Implements the KRShaped interface.
+func (s *CloudStorageSource) GetStatus() *duckv1.Status {
+	return &s.Status.Status
 }

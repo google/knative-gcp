@@ -22,26 +22,24 @@ import (
 	"testing"
 
 	"cloud.google.com/go/pubsub"
-	cloudevents "github.com/cloudevents/sdk-go"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	cev2 "github.com/cloudevents/sdk-go/v2"
 )
 
 func TestConvertCloudSchedulerSource(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		message     *cepubsub.Message
+		message     *pubsub.Message
 		source      string
-		sendMode    ModeType
-		wantEventFn func() *cloudevents.Event
+		wantEventFn func() *cev2.Event
 		wantErr     string
 	}{{
 		name: "valid attributes",
-		message: &cepubsub.Message{
+		message: &pubsub.Message{
+			ID:   "id",
 			Data: []byte("test data"),
 			Attributes: map[string]string{
 				"knative-gcp":   "com.google.cloud.scheduler",
@@ -51,57 +49,14 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 				"attribute2":    "value2",
 			},
 		},
-		sendMode: Binary,
-		wantEventFn: func() *cloudevents.Event {
-			return schedulerCloudEvent(map[string]string{
-				"attribute1": "value1",
-				"attribute2": "value2"},
-				"//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/schedulers/scheduler-test",
-				"jobs/cre-scheduler-test")
-		},
-	}, {
-		name: "upper case attributes",
-		message: &cepubsub.Message{
-			Data: []byte("test data"),
-			Attributes: map[string]string{
-				"knative-gcp":   "com.google.cloud.scheduler",
-				"jobName":       "projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test",
-				"schedulerName": "scheduler-test",
-				"AttriBUte1":    "value1",
-				"AttrIbuTe2":    "value2",
-			},
-		},
-		sendMode: Binary,
-		wantEventFn: func() *cloudevents.Event {
-			return schedulerCloudEvent(map[string]string{
-				"attribute1": "value1",
-				"attribute2": "value2",
-			},
-				"//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/schedulers/scheduler-test",
-				"jobs/cre-scheduler-test")
-		},
-	}, {
-		name: "only setting valid alphanumeric attribute",
-		message: &cepubsub.Message{
-			Data: []byte("test data"),
-			Attributes: map[string]string{
-				"knative-gcp":       "com.google.cloud.scheduler",
-				"jobName":           "projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test",
-				"schedulerName":     "scheduler-test",
-				"attribute1":        "value1",
-				"Invalid-Attrib#$^": "value2",
-			},
-		},
-		sendMode: Binary,
-		wantEventFn: func() *cloudevents.Event {
-			return schedulerCloudEvent(map[string]string{
-				"attribute1": "value1"},
+		wantEventFn: func() *cev2.Event {
+			return schedulerCloudEvent(
 				"//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/schedulers/scheduler-test",
 				"jobs/cre-scheduler-test")
 		},
 	}, {
 		name: "missing jobName attribute",
-		message: &cepubsub.Message{
+		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
 				"knative-gcp":   "com.google.cloud.scheduler",
@@ -110,11 +65,10 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 				"attribute2":    "value2",
 			},
 		},
-		sendMode: Binary,
-		wantErr:  "received event did not have jobName",
+		wantErr: "received event did not have jobName",
 	}, {
 		name: "missing schedulerName attribute",
-		message: &cepubsub.Message{
+		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
 				"knative-gcp": "com.google.cloud.scheduler",
@@ -123,23 +77,13 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 				"attribute2":  "value2",
 			},
 		},
-		sendMode: Binary,
-		wantErr:  "received event did not have schedulerName",
+		wantErr: "received event did not have schedulerName",
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := pubsubcontext.WithTransportContext(context.Background(), pubsubcontext.NewTransportContext(
-				"testproject",
-				"testtopic",
-				"testsubscription",
-				"testmethod",
-				&pubsub.Message{
-					ID: "id",
-				},
-			))
 
-			gotEvent, err := Convert(ctx, test.message, test.sendMode, "")
+			gotEvent, err := NewPubSubConverter().Convert(context.Background(), test.message, CloudScheduler)
 
 			if test.wantErr != "" || err != nil {
 				var gotErr string
@@ -154,26 +98,18 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.wantEventFn(), gotEvent); diff != "" {
-				t.Errorf("converters.convertCloudScheduler got unexpeceted cloudevents.Event (-want +got) %s", diff)
+				t.Errorf("converters.convertCloudScheduler got unexpected cev2.Event (-want +got) %s", diff)
 			}
 		})
 	}
 }
 
-func schedulerCloudEvent(extensions map[string]string, source, subject string) *cloudevents.Event {
-	e := cloudevents.NewEvent(cloudevents.VersionV1)
+func schedulerCloudEvent(source, subject string) *cev2.Event {
+	e := cev2.NewEvent(cev2.VersionV1)
 	e.SetID("id")
-	e.SetDataContentType("application/octet-stream")
-	e.SetType(v1alpha1.CloudSchedulerSourceExecute)
-	e.SetExtension("knativecemode", string(Binary))
+	e.SetData(cev2.ApplicationJSON, []byte("test data"))
+	e.SetType(v1beta1.CloudSchedulerSourceExecute)
 	e.SetSource(source)
 	e.SetSubject(subject)
-	e.Data = []byte("test data")
-	e.DataEncoded = true
-	for k, v := range extensions {
-		if k != v1alpha1.CloudSchedulerSourceJobName {
-			e.SetExtension(k, v)
-		}
-	}
 	return &e
 }

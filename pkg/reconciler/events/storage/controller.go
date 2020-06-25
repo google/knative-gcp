@@ -21,6 +21,7 @@ import (
 
 	"knative.dev/pkg/injection"
 
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"k8s.io/client-go/tools/cache"
 	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
@@ -72,7 +73,13 @@ func newController(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:     intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		PubSubBase: intevents.NewPubSubBase(ctx,
+			&intevents.PubSubBaseArgs{
+				ControllerAgentName: controllerAgentName,
+				ReceiveAdapterName:  receiveAdapterName,
+				ReceiveAdapterType:  string(converters.CloudStorage),
+				ConfigWatcher:       cmw,
+			}),
 		Identity:       identity.NewIdentity(ctx, ipm, gcpas),
 		storageLister:  cloudstoragesourceInformer.Lister(),
 		createClientFn: gstorage.NewClient,

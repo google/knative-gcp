@@ -28,7 +28,13 @@ func TestNew(t *testing.T) {
 	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
 
-	c := NewPubSubBase(ctx, "test-controller", "test-ra", configmap.NewStaticWatcher())
+	args := &PubSubBaseArgs{
+		ControllerAgentName: "test-controller",
+		ReceiveAdapterName:  "test-ra",
+		ReceiveAdapterType:  "test-ra-type",
+		ConfigWatcher:       configmap.NewStaticWatcher(),
+	}
+	c := NewPubSubBase(ctx, args)
 
 	if c == nil {
 		t.Fatal("Expected NewPubSubBase to return a non-nil value")

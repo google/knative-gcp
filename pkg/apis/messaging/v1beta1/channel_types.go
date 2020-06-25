@@ -57,6 +57,7 @@ var (
 	_ runtime.Object               = (*Channel)(nil)
 	_ resourcesemantics.GenericCRD = (*Channel)(nil)
 	_ kngcpduck.Identifiable       = (*Channel)(nil)
+	_ duckv1.KRShaped              = (*Channel)(nil)
 )
 
 // ChannelSpec defines which subscribers have expressed interest in
@@ -152,4 +153,14 @@ type ChannelList struct {
 // GetGroupVersionKind returns GroupVersionKind for Pub/Sub backed Channel.
 func (c *Channel) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Channel")
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*Channel) GetConditionSet() apis.ConditionSet {
+	return channelCondSet
+}
+
+// GetStatus retrieves the status of the Channel. Implements the KRShaped interface.
+func (c *Channel) GetStatus() *duckv1.Status {
+	return &c.Status.Status
 }

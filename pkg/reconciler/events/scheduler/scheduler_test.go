@@ -46,6 +46,7 @@ import (
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudschedulersource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler/testing"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -521,6 +522,7 @@ func TestAllCases(t *testing.T) {
 						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
 						},
+						AdapterType: string(converters.CloudScheduler),
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionLabels(map[string]string{
@@ -570,6 +572,7 @@ func TestAllCases(t *testing.T) {
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudScheduler),
 					})),
 				newSink(),
 			},
@@ -623,6 +626,7 @@ func TestAllCases(t *testing.T) {
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudScheduler),
 					})),
 				newSink(),
 			},
@@ -676,6 +680,7 @@ func TestAllCases(t *testing.T) {
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudScheduler),
 					})),
 				newSink(),
 			},
@@ -733,6 +738,7 @@ func TestAllCases(t *testing.T) {
 							},
 							Project: testProject,
 						},
+						AdapterType: string(converters.CloudScheduler),
 					}),
 				),
 				newSink(),
@@ -800,6 +806,7 @@ func TestAllCases(t *testing.T) {
 							},
 							Project: testProject,
 						},
+						AdapterType: string(converters.CloudScheduler),
 					}),
 				),
 				newSink(),
@@ -867,6 +874,7 @@ func TestAllCases(t *testing.T) {
 							},
 							Project: testProject,
 						},
+						AdapterType: string(converters.CloudScheduler),
 					}),
 				),
 				newSink(),
@@ -934,6 +942,7 @@ func TestAllCases(t *testing.T) {
 							},
 							Project: testProject,
 						},
+						AdapterType: string(converters.CloudScheduler),
 					}),
 				),
 				newSink(),
@@ -1002,6 +1011,7 @@ func TestAllCases(t *testing.T) {
 							},
 							Project: testProject,
 						},
+						AdapterType: string(converters.CloudScheduler),
 					}),
 				),
 				newSink(),
@@ -1069,6 +1079,7 @@ func TestAllCases(t *testing.T) {
 							},
 							Project: testProject,
 						},
+						AdapterType: string(converters.CloudScheduler),
 					}),
 				),
 				newSink(),
@@ -1243,7 +1254,13 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			PubSubBase:      intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			PubSubBase: intevents.NewPubSubBase(ctx,
+				&intevents.PubSubBaseArgs{
+					ControllerAgentName: controllerAgentName,
+					ReceiveAdapterName:  receiveAdapterName,
+					ReceiveAdapterType:  string(converters.CloudScheduler),
+					ConfigWatcher:       cmw,
+				}),
 			Identity:        identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			schedulerLister: listers.GetCloudSchedulerSourceLister(),
 			createClientFn:  gscheduler.TestClientCreator(testData["scheduler"]),

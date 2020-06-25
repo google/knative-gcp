@@ -24,6 +24,7 @@ import (
 	"cloud.google.com/go/pubsub"
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/wire"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
@@ -54,22 +55,14 @@ var (
 	ProviderSet = wire.NewSet(
 		NewFanoutPool,
 		NewRetryPool,
-		NewPubsubClient,
+		clients.NewPubsubClient,
 		NewRetryClient,
 		wire.Value(DefaultHTTPClient),
 		wire.Value(DefaultCEClientOpts),
 	)
 )
 
-type (
-	ProjectID   string
-	RetryClient ceclient.Client
-)
-
-// NewPubsubClient provides a pubsub client for the supplied project ID.
-func NewPubsubClient(ctx context.Context, projectID ProjectID) (*pubsub.Client, error) {
-	return pubsub.NewClient(ctx, string(projectID))
-}
+type RetryClient ceclient.Client
 
 // NewRetryClient provides a retry CE client from a PubSub client and list of CE client options.
 func NewRetryClient(ctx context.Context, client *pubsub.Client, opts ...ceclient.Option) (RetryClient, error) {

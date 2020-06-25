@@ -18,26 +18,24 @@ package intevents
 
 import (
 	"context"
-
 	"knative.dev/pkg/configmap"
 
 	pubsubClient "github.com/google/knative-gcp/pkg/client/injection/client"
 	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
-func NewPubSubBase(ctx context.Context, controllerAgentName, receiveAdapterName string, cmw configmap.Watcher) *PubSubBase {
-	return &PubSubBase{
-		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-		pubsubClient:       pubsubClient.Get(ctx),
-		receiveAdapterName: receiveAdapterName,
-	}
+type PubSubBaseArgs struct {
+	ControllerAgentName string
+	ReceiveAdapterName  string
+	ReceiveAdapterType  string
+	ConfigWatcher       configmap.Watcher
 }
 
-func NewPubSubBaseWithAdapter(ctx context.Context, controllerAgentName, receiveAdapterName string, adapterType string, cmw configmap.Watcher) *PubSubBase {
+func NewPubSubBase(ctx context.Context, args *PubSubBaseArgs) *PubSubBase {
 	return &PubSubBase{
-		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+		Base:               reconciler.NewBase(ctx, args.ControllerAgentName, args.ConfigWatcher),
 		pubsubClient:       pubsubClient.Get(ctx),
-		receiveAdapterName: receiveAdapterName,
-		adapterType:        adapterType,
+		receiveAdapterName: args.ReceiveAdapterName,
+		receiveAdapterType: args.ReceiveAdapterType,
 	}
 }
