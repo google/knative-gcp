@@ -196,6 +196,10 @@ func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
 			return
 		}
 
+		// Update the arguments used to report metrics
+		args.EventType = event.Type()
+		args.EventSource = event.Source()
+
 		reply = true
 	}
 
