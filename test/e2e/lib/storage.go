@@ -144,6 +144,7 @@ func DeleteBucket(ctx context.Context, t *testing.T, bucketName string) {
 		// If the bucket was already deleted, we are good
 		if err == storage.ErrBucketNotExist {
 			t.Logf("Bucket %s already deleted", bucketName)
+			return
 		} else {
 			t.Errorf("Failed to fetch attrs of Bucket %s", bucketName)
 		}
