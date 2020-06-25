@@ -114,12 +114,12 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 						Image: "test-image",
 						Resources: corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
-								corev1.ResourceMemory: resource.MustParse("1000Mi"),
-								corev1.ResourceCPU:    resource.MustParse("1000m"),
+								corev1.ResourceMemory: resource.MustParse("600Mi"),
+								corev1.ResourceCPU:    resource.MustParse("500m"),
 							},
 							Requests: corev1.ResourceList{
 								corev1.ResourceMemory: resource.MustParse("50Mi"),
-								corev1.ResourceCPU:    resource.MustParse("600m"),
+								corev1.ResourceCPU:    resource.MustParse("400m"),
 							},
 						},
 						Env: []corev1.EnvVar{{
@@ -282,12 +282,12 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						Image: "test-image",
 						Resources: corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
-								corev1.ResourceMemory: resource.MustParse("1000Mi"),
-								corev1.ResourceCPU:    resource.MustParse("1000m"),
+								corev1.ResourceMemory: resource.MustParse("600Mi"),
+								corev1.ResourceCPU:    resource.MustParse("500m"),
 							},
 							Requests: corev1.ResourceList{
 								corev1.ResourceMemory: resource.MustParse("50Mi"),
-								corev1.ResourceCPU:    resource.MustParse("600m"),
+								corev1.ResourceCPU:    resource.MustParse("400m"),
 							},
 						},
 						Env: []corev1.EnvVar{{
@@ -455,12 +455,12 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 						Image: "test-image",
 						Resources: corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
-								corev1.ResourceMemory: resource.MustParse("1000Mi"),
-								corev1.ResourceCPU:    resource.MustParse("1000m"),
+								corev1.ResourceMemory: resource.MustParse("600Mi"),
+								corev1.ResourceCPU:    resource.MustParse("500m"),
 							},
 							Requests: corev1.ResourceList{
 								corev1.ResourceMemory: resource.MustParse("50Mi"),
-								corev1.ResourceCPU:    resource.MustParse("600m"),
+								corev1.ResourceCPU:    resource.MustParse("400m"),
 							},
 						},
 						Env: []corev1.EnvVar{{
