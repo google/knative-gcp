@@ -111,10 +111,8 @@ func (p *Processor) passFilter(ctx context.Context, attrs map[string]string, eve
 		"datacontentencoding": event.DeprecatedDataContentEncoding(),
 	}
 	ext := event.Extensions()
-	if ext != nil {
-		for k, v := range ext {
-			ce[k] = v
-		}
+	for k, v := range ext {
+		ce[k] = v
 	}
 
 	for k, v := range attrs {
@@ -123,11 +121,13 @@ func (p *Processor) passFilter(ctx context.Context, attrs map[string]string, eve
 		// If the attribute does not exist in the event, return false.
 		if !ok {
 			logging.FromContext(ctx).Debug("Attribute not found", zap.String("attribute", k))
+			trace.FromContext(ctx).Annotatef(nil, "event missing filter attribute %q", k)
 			return false
 		}
 		// If the attribute is not set to any and is different than the one from the event, return false.
 		if v != "" && v != value {
 			logging.FromContext(ctx).Debug("Attribute had non-matching value", zap.String("attribute", k), zap.String("filter", v), zap.Any("received", value))
+			trace.FromContext(ctx).Annotatef(nil, "event attribute %q does not match filter value %q", k, v)
 			return false
 		}
 	}

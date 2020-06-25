@@ -30,7 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -55,7 +55,7 @@ type PubSubBase struct {
 	receiveAdapterName string
 
 	// What type of receive adapter to use.
-	adapterType string
+	receiveAdapterType string
 }
 
 // ReconcilePubSub reconciles Topic / PullSubscription given a PubSubSpec.
@@ -69,7 +69,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 		return t, nil, err
 	}
 
-	ps, err := psb.ReconcilePullSubscription(ctx, pubsubable, topic, resourceGroup, false)
+	ps, err := psb.ReconcilePullSubscription(ctx, pubsubable, topic, resourceGroup)
 	if err != nil {
 		return t, ps, err
 	}
@@ -128,7 +128,7 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 	return t, nil
 }
 
-func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string, isPushCompatible bool) (*inteventsv1beta1.PullSubscription, pkgreconciler.Event) {
+func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*inteventsv1beta1.PullSubscription, pkgreconciler.Event) {
 	if pubsubable == nil {
 		logging.FromContext(ctx).Desugar().Error("Nil pubsubable passed in")
 		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, nilPubsubableReason, "nil pubsubable passed in")
@@ -147,13 +147,11 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 		Spec:        spec,
 		Owner:       pubsubable,
 		Topic:       topic,
-		AdapterType: psb.adapterType,
+		AdapterType: psb.receiveAdapterType,
 		Labels:      resources.GetLabels(psb.receiveAdapterName, name),
 		Annotations: resources.GetAnnotations(annotations, resourceGroup),
 	}
-	if isPushCompatible {
-		args.Mode = inteventsv1beta1.ModePushCompatible
-	}
+
 	newPS := resources.MakePullSubscription(args)
 
 	pullSubscriptions := psb.pubsubClient.InternalV1beta1().PullSubscriptions(namespace)

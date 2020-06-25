@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
@@ -52,6 +53,7 @@ var (
 	_ resourcesemantics.GenericCRD = (*CloudSchedulerSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudSchedulerSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudSchedulerSource)(nil)
+	_ duckv1.KRShaped              = (*CloudSchedulerSource)(nil)
 )
 
 const (
@@ -147,4 +149,14 @@ type CloudSchedulerSourceList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []CloudSchedulerSource `json:"items"`
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*CloudSchedulerSource) GetConditionSet() apis.ConditionSet {
+	return schedulerCondSet
+}
+
+// GetStatus retrieves the status of the CloudSchedulerSource. Implements the KRShaped interface.
+func (s *CloudSchedulerSource) GetStatus() *duckv1.Status {
+	return &s.Status.Status
 }

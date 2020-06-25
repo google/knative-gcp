@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/apis/events"
-
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -196,6 +196,7 @@ func TestAllCases(t *testing.T) {
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudBuild),
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionLabels(map[string]string{
@@ -234,6 +235,7 @@ func TestAllCases(t *testing.T) {
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudBuild),
 					}),
 					WithPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
 				newSink(),
@@ -274,6 +276,7 @@ func TestAllCases(t *testing.T) {
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudBuild),
 					}),
 					WithPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
 				newSink(),
@@ -314,6 +317,7 @@ func TestAllCases(t *testing.T) {
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudBuild),
 					}),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
@@ -366,7 +370,13 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			PubSubBase:           intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			PubSubBase: intevents.NewPubSubBase(ctx,
+				&intevents.PubSubBaseArgs{
+					ControllerAgentName: controllerAgentName,
+					ReceiveAdapterName:  receiveAdapterName,
+					ReceiveAdapterType:  string(converters.CloudBuild),
+					ConfigWatcher:       cmw,
+				}),
 			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			buildLister:          listers.GetCloudBuildSourceLister(),
 			serviceAccountLister: listers.GetServiceAccountLister(),

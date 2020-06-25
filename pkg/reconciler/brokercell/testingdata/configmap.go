@@ -93,4 +93,3 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 	cm, _ := resources.MakeTargetsConfig(bc, brokerTargets)
 	return cm
 }
-

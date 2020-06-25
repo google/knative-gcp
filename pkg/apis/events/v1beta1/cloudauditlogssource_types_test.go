@@ -117,3 +117,20 @@ func TestCloudAuditLogsSourceIdentityStatus(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestCloudAuditLogsSource_GetConditionSet(t *testing.T) {
+	s := &CloudAuditLogsSource{}
+
+	if got, want := s.GetConditionSet().GetTopLevelConditionType(), apis.ConditionReady; got != want {
+		t.Errorf("GetTopLevelCondition=%v, want=%v", got, want)
+	}
+}
+
+func TestCloudAuditLogsSource_GetStatus(t *testing.T) {
+	s := &CloudAuditLogsSource{
+		Status: CloudAuditLogsSourceStatus{},
+	}
+	if got, want := s.GetStatus(), &s.Status.Status; got != want {
+		t.Errorf("GetStatus=%v, want=%v", got, want)
+	}
+}

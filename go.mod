@@ -30,9 +30,10 @@ require (
 	k8s.io/api v0.18.1
 	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.15.1-0.20200619221325-e8ca69f837c7
-	knative.dev/pkg v0.0.0-20200622015826-5e60b6f8633c
-	knative.dev/serving v0.15.1-0.20200621202726-40edbdd01f1c
+	knative.dev/eventing v0.15.1-0.20200625112228-88aa030c747f
+	knative.dev/pkg v0.0.0-20200624210428-eb05e8dd5b5b
+	knative.dev/serving v0.15.1-0.20200625123828-2949259bd49e
+	knative.dev/test-infra v0.0.0-20200624184627-7eae2aae38e4 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -48,8 +49,6 @@ replace (
 )
 
 replace github.com/blang/semver => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
-
-replace github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.0
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.7
 

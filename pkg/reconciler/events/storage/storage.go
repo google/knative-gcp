@@ -34,7 +34,6 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1beta1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
@@ -152,18 +151,12 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1beta1
 
 	// If the notification does not exist, then create it.
 
-	// Add our own converter type as a customAttribute.
-	customAttributes := map[string]string{
-		converters.KnativeGCPConverter: converters.CloudStorageConverter,
-	}
-
 	nc := &Notification{
 		TopicProjectID:   storage.Status.ProjectID,
 		TopicID:          storage.Status.TopicID,
 		PayloadFormat:    JSONPayload,
 		EventTypes:       r.toCloudStorageSourceEventTypes(storage.Spec.EventTypes),
 		ObjectNamePrefix: storage.Spec.ObjectNamePrefix,
-		CustomAttributes: customAttributes,
 	}
 
 	notification, err := bucket.AddNotification(ctx, nc)
