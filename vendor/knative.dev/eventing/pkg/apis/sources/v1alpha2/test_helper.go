@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Google LLC.
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,41 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1alpha2
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type testHelper struct{}
 
 // TestHelper contains helpers for unit tests.
 var TestHelper = testHelper{}
-
-func (t testHelper) UnavailableEndpoints() *corev1.Endpoints {
-	ep := &corev1.Endpoints{}
-	ep.Name = "unavailable"
-	ep.Subsets = []corev1.EndpointSubset{{
-		NotReadyAddresses: []corev1.EndpointAddress{{
-			IP: "127.0.0.1",
-		}},
-	}}
-	return ep
-}
-func (t testHelper) AvailableEndpoints() *corev1.Endpoints {
-	return &corev1.Endpoints{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "available",
-		},
-		Subsets: []corev1.EndpointSubset{{
-			Addresses: []corev1.EndpointAddress{{
-				IP: "127.0.0.1",
-			}},
-		}},
-	}
-}
 
 func (t testHelper) AvailableDeployment() *appsv1.Deployment {
 	d := &appsv1.Deployment{}
@@ -84,14 +60,4 @@ func (t testHelper) UnknownDeployment() *appsv1.Deployment {
 		},
 	}
 	return d
-}
-
-func (t testHelper) ReadyBrokerCellStatus() *BrokerCellStatus {
-	bs := &BrokerCellStatus{}
-	bs.PropagateIngressAvailability(t.AvailableEndpoints())
-	bs.SetIngressTemplate("http://localhost")
-	bs.PropagateFanoutAvailability(t.AvailableDeployment())
-	bs.PropagateRetryAvailability(t.AvailableDeployment())
-	bs.MarkTargetsConfigReady()
-	return bs
 }

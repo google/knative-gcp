@@ -24,25 +24,34 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
+	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 
+	"github.com/google/go-cmp/cmp"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/broker/config"
 	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/testingdata"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
+
+	"google.golang.org/protobuf/proto"
 )
 
 const (
 	testNS         = "testnamespace"
 	brokerCellName = "test-brokercell"
+	targetsCMName = "broker-targets"
+	targetsCMKey  = "targets"
 )
 
 var (
@@ -647,8 +656,8 @@ func TestAllCases(t *testing.T) {
 					// we don't have a controller in the tests to mark their statues ready.
 					// We only verify that they are created in the WantCreates.
 					WithBrokerCellIngressFailed("EndpointsUnavailable", `Endpoints "test-brokercell-brokercell-ingress" is unavailable.`),
-					WithBrokerCellFanoutFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
-					WithBrokerCellRetryFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
+					WithBrokerCellFanoutUnknown("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
+					WithBrokerCellRetryUnknown("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellSetDefaults,
 				)},
@@ -721,8 +730,8 @@ func TestAllCases(t *testing.T) {
 					// we don't have a controller in the tests to mark their statues ready.
 					// We only verify that they are created in the WantCreates.
 					WithBrokerCellIngressFailed("EndpointsUnavailable", `Endpoints "test-brokercell-brokercell-ingress" is unavailable.`),
-					WithBrokerCellFanoutFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
-					WithBrokerCellRetryFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
+					WithBrokerCellFanoutUnknown("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
+					WithBrokerCellRetryUnknown("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellSetDefaults,
 				)},
@@ -794,41 +803,6 @@ func TestAllCases(t *testing.T) {
 				)},
 			},
 			WantEvents: []string{
-				brokerCellReconciledEvent,
-			},
-		},
-		{
-			Name: "BrokerCell created successfully, broker targets config should be updated with broker and triggers",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
-				NewBroker("broker", testNS, WithBrokerSetDefaults),
-				NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
-				NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults),
-				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
-					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-				testingdata.IngressDeploymentWithStatus(t),
-				testingdata.IngressServiceWithStatus(t),
-				testingdata.FanoutDeploymentWithStatus(t),
-				testingdata.RetryDeploymentWithStatus(t),
-				testingdata.IngressHPA(t),
-				testingdata.FanoutHPA(t),
-				testingdata.RetryHPA(t),
-			},
-			WantCreates: []runtime.Object{
-				testingdata.Config(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
-					NewBroker("broker", testNS, WithBrokerSetDefaults),
-					NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
-					NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults)),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-				{Object: NewBrokerCell(brokerCellName, testNS,
-					WithBrokerCellReady,
-					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
-				)},
-			},
-			WantEvents: []string{
-				configmapCreatedEvent,
 				brokerCellReconciledEvent,
 			},
 		},
@@ -934,4 +908,64 @@ func TestAllCases(t *testing.T) {
 func emptyHPASpec(template *hpav2beta2.HorizontalPodAutoscaler) *hpav2beta2.HorizontalPodAutoscaler {
 	template.Spec = hpav2beta2.HorizontalPodAutoscalerSpec{}
 	return template
+}
+
+// The unit test to test when the brokerCell created successfully, the broker targets config should be updated with broker
+// and trigger. Since the serialization order of the binary data of brokerTargets in the configMap is not guaranteed, we need
+// to deserialization the binary data to a brokerTargets proto to compare, so it should be rewritten without using the tableTest Utility.
+func TestBrokerTargetsReconcileConfig(t *testing.T) {
+	setReconcilerEnv()
+	bc := NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)
+	objects:= []runtime.Object{
+		bc,
+		NewBroker("broker", testNS, WithBrokerSetDefaults),
+		NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
+		NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults),
+	}
+	ctx, _ := SetupFakeContext(t)
+	cmw := configmap.NewStaticWatcher()
+	ctx, client := fakekubeclient.With(ctx,)
+	base := reconciler.NewBase(ctx, controllerAgentName, cmw)
+	testingListers := NewListers(objects)
+	ls := listers{
+		brokerLister:     testingListers.GetBrokerLister(),
+		hpaLister:        testingListers.GetHPALister(),
+		triggerLister:    testingListers.GetTriggerLister(),
+		configMapLister:  testingListers.GetConfigMapLister(),
+		serviceLister:    testingListers.GetK8sServiceLister(),
+		endpointsLister:  testingListers.GetEndpointsLister(),
+		deploymentLister: testingListers.GetDeploymentLister(),
+		podLister:        testingListers.GetPodLister(),
+	}
+	r, err := NewReconciler(base, ls)
+	if err != nil {
+		t.Fatalf("Failed to create BrokerCell reconciler: %v", err)
+	}
+	// here we only want to test the functionality of the reconcileConfig that it should create a brokerTargets config successfully
+	r.reconcileConfig(ctx, bc)
+	wantMap := testingdata.Config(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+		NewBroker("broker", testNS, WithBrokerSetDefaults),
+		NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
+		NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults))
+	gotMap, err := client.CoreV1().ConfigMaps(testNS).Get(resources.Name(bc.Name, targetsCMName),metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Failed to get ConfigMap from client: %v", err)
+	}
+	// compare the ObjectMeta field
+	if diff := cmp.Diff(wantMap.ObjectMeta, gotMap.ObjectMeta); diff != "" {
+		t.Fatalf("Unexpected ObjectMeta in ConfigMap(-want, +got): %s", diff)
+	}
+	// deserialize the binary data to a broker targets config proto
+	var wantBrokerTargets config.TargetsConfig
+	var gotBrokerTargets config.TargetsConfig
+	if err := proto.Unmarshal(wantMap.BinaryData[targetsCMKey], &wantBrokerTargets); err != nil {
+		t.Fatalf("Failed to deserialize the binary data in ConfigMap: %v", err)
+	}
+	if err := proto.Unmarshal(gotMap.BinaryData[targetsCMKey], &gotBrokerTargets); err != nil {
+		t.Fatalf("Failed to deserialize the binary data in ConfigMap: %v", err)
+	}
+	// compare the broker targets config
+	if diff := cmp.Diff(wantBrokerTargets.String(), gotBrokerTargets.String()); diff != "" {
+		t.Fatalf("Unexpected brokerTargets in ConfigMap(-want, +got): %s", diff)
+	}
 }

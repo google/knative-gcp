@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"time"
@@ -116,7 +117,7 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 	makeTargetJobOrDie(client, targetName)
 
 	// Create the Knative Service.
-	kserviceName := CreateKService(client, "receiver")
+	kserviceName := createFirstNErrsReceiver(client, 2)
 
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
@@ -168,9 +169,16 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 			BrokerName:      brokerName,
 			BrokerNamespace: client.Namespace,
 			StartTime:       start,
-			CountPerTrigger: map[string]int64{
-				trigger.Name:     1,
-				respTrigger.Name: 1,
+			CountPerTriggerWithRespCode: map[lib.TriggerAssertionKey]int64{
+				{Name: trigger.Name, RespCode: http.StatusAccepted}:     1,
+				{Name: respTrigger.Name, RespCode: http.StatusAccepted}: 1,
+				// Metric from first two delivery attempts (which would fail).
+				{Name: trigger.Name, RespCode: http.StatusBadRequest}: 2,
+			},
+			CountPerTriggerNoRespCode: map[lib.TriggerAssertionKey]int64{
+				// For metrics without response code, we expect 3 trigger deliveries (first 2 from delivery failures).
+				{Name: trigger.Name}:     3,
+				{Name: respTrigger.Name}: 1,
 			},
 		},
 	)
@@ -464,6 +472,16 @@ func CreateKService(client *lib.Client, imageName string) string {
 	client.CreateUnstructuredObjOrFail(kservice)
 	return kserviceName
 
+}
+
+func createFirstNErrsReceiver(client *lib.Client, firstNErrs int) string {
+	client.T.Helper()
+	kserviceName := helpers.AppendRandomString("kservice")
+	// Create the Knative Service.
+	kservice := resources.FirstNErrsReceiverKService(
+		kserviceName, client.Namespace, "receiver", firstNErrs)
+	client.CreateUnstructuredObjOrFail(kservice)
+	return kserviceName
 }
 
 func createTriggerWithKServiceSubscriber(client *lib.Client,
