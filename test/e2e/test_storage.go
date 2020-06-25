@@ -48,6 +48,7 @@ func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	project := os.Getenv(lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
+	defer lib.DeleteBucket(ctx, t, bucketName)
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	svcName := helpers.AppendRandomString(bucketName + "-event-display")
 
@@ -86,7 +87,7 @@ func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	deletedNotificationExists := lib.NotificationExists(t, bucketName, notificationID)
 	if deletedNotificationExists {
-		t.Errorf("Expected notification%q tto get deleted", notificationID)
+		t.Errorf("Expected notification%q to get deleted", notificationID)
 	}
 
 	deletedTopicExists := lib.TopicExists(t, topicID)
@@ -106,6 +107,7 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 	project := os.Getenv(lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
+	defer lib.DeleteBucket(ctx, t, bucketName)
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 
