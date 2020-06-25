@@ -141,6 +141,9 @@ func TestAdapter(t *testing.T) {
 	// TODO add reply failures and other cases
 
 	for _, tc := range cases {
+		// Shadowing the loop iteration variable inside the loop to avoid a race otherwise.
+		// TODO find a better fix
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := logtest.TestContextWithLogger(t)
 
