@@ -17,12 +17,20 @@ limitations under the License.
 package resources
 
 import (
+	"strconv"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	pkgTest "knative.dev/pkg/test"
 )
 
 // ReceiverKService creates a Knative Service as an event receiver.
 func ReceiverKService(name, namespace, imageName string) *unstructured.Unstructured {
+	return FirstNErrsReceiverKService(name, namespace, imageName, 0)
+}
+
+// FirstNErrsReceiverKService creates a Knative Service as an event receiver with its
+// first N responses being errors.
+func FirstNErrsReceiverKService(name, namespace, imageName string, firstN int) *unstructured.Unstructured {
 	obj := map[string]interface{}{
 		"apiVersion": "serving.knative.dev/v1",
 		"kind":       "Service",
@@ -35,6 +43,10 @@ func ReceiverKService(name, namespace, imageName string) *unstructured.Unstructu
 				"spec": map[string]interface{}{
 					"containers": []map[string]interface{}{{
 						"image": pkgTest.ImagePath(imageName),
+						"env": []map[string]interface{}{{
+							"name":  "FIRST_N_ERRS",
+							"value": strconv.Itoa(firstN),
+						}},
 					}},
 				},
 			},
