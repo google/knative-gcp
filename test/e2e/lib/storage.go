@@ -19,15 +19,16 @@ package lib
 import (
 	"context"
 	"fmt"
-	"knative.dev/pkg/test/helpers"
+
 	"testing"
 
 	"cloud.google.com/go/storage"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/api/iterator"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/test/helpers"
 )
 
 type StorageConfig struct {
@@ -105,7 +106,7 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
 	it := client.Buckets(ctx, project)
-	// Name should be between -63 characters. https://cloud.google.com/storage/docs/naming-buckets
+	// Name should be between 3-63 characters. https://cloud.google.com/storage/docs/naming-buckets
 	bucketName := helpers.AppendRandomString(fmt.Sprintf("storage-e2e-test-%s", project))
 	// Iterate buckets to check if there has a bucket for e2e test
 	for {
@@ -149,7 +150,7 @@ func DeleteBucket(ctx context.Context, t *testing.T, bucketName string) {
 	}
 
 	// If we fail to delete the bucket, we will fail the test so that users are aware that
-	// we leaked a bucket in project.
+	// we leaked a bucket in the project. If this makes the test flake, then we can revisit and maybe avoid failing.
 	if err := bucket.Delete(ctx); err != nil {
 		t.Errorf("Failed to delete Bucket %s", bucketName)
 	}
