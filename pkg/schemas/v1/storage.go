@@ -23,7 +23,7 @@ const (
 	CloudStorageObjectArchivedEventType        = "google.cloud.storage.object.v1.archived"
 	CloudStorageObjectDeletedEventType         = "google.cloud.storage.object.v1.deleted"
 	CloudStorageObjectMetadataUpdatedEventType = "google.cloud.storage.object.v1.metadataUpdated"
-	CloudStorageEventDataSchema                = "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/events.proto"
+	CloudStorageEventDataSchema                = "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto"
 )
 
 func CloudStorageEventSource(bucket string) string {

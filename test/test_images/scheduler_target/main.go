@@ -46,6 +46,7 @@ func (r *schedulerReceiver) Knockdown(event cloudevents.Event) bool {
 	}
 
 	// Check data
+	// TODO fix!
 	data := string(event.Data.([]uint8))
 	if data != r.Data {
 		incorrectAttributes[lib.EventData] = lib.PropPair{Expected: r.Data, Received: data}
