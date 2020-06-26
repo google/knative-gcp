@@ -17,12 +17,12 @@ to a synchronous call so that CEP can probe. It helps to measure the lantency an
 Concretely, the ProbeHelper is able to send and receive events. It exposes an HTTP endpoints which forwards
 probe requests to the broker, and waits for the event to be delivered back to the it,
 and returns the e2e latency as the response.
-															4. (event)
-							      ----------------------------------------------------
-								  |													  |
-								  v			 			       		         	      |
+                                                      4. (event)
+                                   ----------------------------------------------------
+                                  |                                                   |
+                                  v                                                   |
 	Probe ---(event)-----> ProbeHelper ----(event)-----> Broker ------> trigger ------
-				1.							2.					3. (blackbox)
+               1.                           2.             3. (blackbox)
 */
 package main
 
