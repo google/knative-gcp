@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
 
 const (
@@ -174,7 +174,7 @@ func (r *Receiver) Done() {
 	close(r.fullyDone)
 }
 
-func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) {
+func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) {
 	if event.Source() == r.receiveSource {
 		switch event.Type() {
 		case "event-trace-connect":

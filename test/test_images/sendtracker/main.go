@@ -25,7 +25,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/kncloudevents"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 )
 
 // Compare the ranges in sendResults and receiveResults.
@@ -82,8 +83,17 @@ func main() {
 		fmt.Printf("Invalid post stop wait seconds (%s)", postStopWaitSecsString)
 		os.Exit(1)
 	}
-	fmt.Printf("Opening connection to %s\n", sinkURI)
-	ceClient, err := kncloudevents.NewDefaultClient(sinkURI)
+	fmt.Printf("Opening client to %s\n", sinkURI)
+	httpOpts := []cehttp.Option{
+		cloudevents.WithTarget(sinkURI),
+	}
+	transport, err := cloudevents.NewHTTP(httpOpts...)
+	if err != nil {
+		fmt.Printf("failed to create transport: %v\n", err)
+		os.Exit(1)
+	}
+
+	ceClient, err := cloudevents.NewClient(transport)
 	if err != nil {
 		fmt.Printf("Unable to create ceClient: %s ", err)
 		os.Exit(1)

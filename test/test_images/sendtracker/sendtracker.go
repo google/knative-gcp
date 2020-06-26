@@ -24,7 +24,9 @@ import (
 	"sync"
 	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/protocol"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 )
 
 const doneSendTimeout = 5 * time.Minute
@@ -120,24 +122,27 @@ func (s *sendPacer) runConnect() error {
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
 	event.SetType("event-trace-connect")
 	event.SetSource(s.source)
-	event.SetDataContentType(cloudevents.ApplicationJSON)
-	event.SetData("{}")
+	event.SetData("{}", cloudevents.ApplicationJSON)
 	idNum := 0
 
 	connected := false
 	startConnectTime := time.Now()
 	for !connected {
+		var statusCode int
 		idNum++
 		event.SetID(strconv.Itoa(idNum))
-		rctx, _, err := s.client.Send(context.Background(), event)
-		rtctx := cloudevents.HTTPTransportContextFrom(rctx)
+		result := s.client.Send(context.Background(), event)
+		httpRes, ok := (result).(*cehttp.Result)
+		if ok {
+			statusCode = httpRes.StatusCode
+		}
 		time.Sleep(time.Second)
 		state := s.receiver.GetState()
 		if state == ReceiveStateReady {
 			connected = true
 		}
 		if !connected && time.Now().Sub(startConnectTime) > 2*time.Minute {
-			return fmt.Errorf("connection startup failed (timeout), send err %v, code %v", err, rtctx.StatusCode)
+			return fmt.Errorf("connection startup failed (timeout), send result %v, code %v", result, statusCode)
 		}
 	}
 	return nil
@@ -148,14 +153,14 @@ func (s *sendPacer) runMeasure() error {
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
 	event.SetType("event-trace-event")
 	event.SetSource(s.source)
-	event.SetDataContentType(cloudevents.ApplicationJSON)
-	event.SetData("{}")
+	event.SetData("{}", cloudevents.ApplicationJSON)
 	idNum := 0
 
 	startTime := time.Now()
 
 	ending := false
 	for !ending {
+		var statusCode int
 		idNum++
 
 		if s.delay > 0 {
@@ -163,17 +168,21 @@ func (s *sendPacer) runMeasure() error {
 		}
 		success := false
 		event.SetID(strconv.Itoa(idNum))
-		rctx, _, err := s.client.Send(context.Background(), event)
-		rtctx := cloudevents.HTTPTransportContextFrom(rctx)
-		if err == nil && rtctx.StatusCode >= http.StatusOK && rtctx.StatusCode < http.StatusMultipleChoices {
+		result := s.client.Send(context.Background(), event)
+		httpRes, ok := (result).(*cehttp.Result)
+		if ok {
+			statusCode = httpRes.StatusCode
+		}
+
+		if protocol.IsACK(result) && statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices {
 			success = true
 		} else {
 			success = false
 		}
-		if len(s.results) > 0 && s.results[len(s.results)-1].success == success && s.results[len(s.results)-1].statusCode == rtctx.StatusCode {
+		if len(s.results) > 0 && s.results[len(s.results)-1].success == success && s.results[len(s.results)-1].statusCode == statusCode {
 			s.results[len(s.results)-1].maxID = idNum
 		} else {
-			s.results = append(s.results, rangeResult{success: success, statusCode: rtctx.StatusCode, minID: idNum, maxID: idNum, startElapsed: time.Now().Sub(startTime)})
+			s.results = append(s.results, rangeResult{success: success, statusCode: statusCode, minID: idNum, maxID: idNum, startElapsed: time.Now().Sub(startTime)})
 		}
 		if s.getState() == SendStateFinishing {
 			ending = true
@@ -188,17 +197,20 @@ func (s *sendPacer) runDone() error {
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
 	event.SetType("event-trace-done")
 	event.SetSource(s.source)
-	event.SetDataContentType(cloudevents.ApplicationJSON)
-	event.SetData("{}")
+	event.SetData("{}", cloudevents.ApplicationJSON)
 	idNum := 0
 
 	done := false
 	startDoneTime := time.Now()
 	for !done {
+		var statusCode int
 		idNum++
 		event.SetID(strconv.Itoa(idNum))
-		rctx, _, err := s.client.Send(context.Background(), event)
-		rtctx := cloudevents.HTTPTransportContextFrom(rctx)
+		result := s.client.Send(context.Background(), event)
+		httpRes, ok := (result).(*cehttp.Result)
+		if ok {
+			statusCode = httpRes.StatusCode
+		}
 		time.Sleep(time.Second)
 		state := s.receiver.GetState()
 		if state >= ReceiveStateFinishing {
@@ -206,7 +218,7 @@ func (s *sendPacer) runDone() error {
 		}
 		if !done && time.Now().Sub(startDoneTime) > 2*time.Minute {
 			s.receiver.Done()
-			return fmt.Errorf("Done send failed (timeout), send err %v, code %v", err, rtctx.StatusCode)
+			return fmt.Errorf("Done send failed (timeout), send response %v, code %v", result, statusCode)
 		}
 	}
 	return nil
