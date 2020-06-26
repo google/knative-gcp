@@ -17,9 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"crypto/md5"
-	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -64,21 +61,6 @@ var auditLogsSourceCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.TopicReady,
 	SinkReady,
 )
-
-const (
-	CloudAuditLogsSourceEvent = "com.google.cloud.auditlog.event"
-)
-
-// CloudAuditLogsSourceEventSource returns the Cloud Audit Logs CloudEvent source value.
-func CloudAuditLogsSourceEventSource(serviceName, parentResource string) string {
-	return fmt.Sprintf("//%s/%s", serviceName, parentResource)
-}
-
-// CloudAuditLogsSourceEventID returns the Cloud Audit Logs CloudEvent id value.
-func CloudAuditLogsSourceEventID(id, logName, timestamp string) string {
-	// Hash the concatenation of the three fields.
-	return fmt.Sprintf("%x", md5.Sum([]byte(id+logName+timestamp)))
-}
 
 type CloudAuditLogsSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:

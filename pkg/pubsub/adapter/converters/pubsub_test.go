@@ -25,22 +25,22 @@ import (
 	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 func TestConvertCloudPubSub(t *testing.T) {
 
 	tests := []struct {
-		name        string
-		message     *pubsub.Message
-		wantEventFn func() *cev2.Event
-		wantErr     bool
+		name               string
+		message            *pubsub.Message
+		wantEventFn        func() *cev2.Event
+		wantErr            bool
 		wantInvalidContext bool
 	}{{
 		name: "non alphanumeric attribute",
 		message: &pubsub.Message{
-			ID: "id",
+			ID:   "id",
 			Data: []byte("\"test data\""), // Data passed in quotes for it to be marshalled properly
 			Attributes: map[string]string{
 				"attribute1":        "value1",
@@ -56,7 +56,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 	}, {
 		name: "no attributes",
 		message: &pubsub.Message{
-			ID: "id",
+			ID:         "id",
 			Data:       []byte("\"test data\""), // Data passed in quotes for it to be marshalled properly
 			Attributes: map[string]string{},
 		},
@@ -66,12 +66,12 @@ func TestConvertCloudPubSub(t *testing.T) {
 	}, {
 		name: "invalid context",
 		message: &pubsub.Message{
-			ID: "id",
+			ID:         "id",
 			Data:       []byte("\"test data\""), // Data passed in quotes for it to be marshalled properly
 			Attributes: map[string]string{},
 		},
 		wantInvalidContext: true,
-		wantErr: true,
+		wantErr:            true,
 	}}
 
 	for _, test := range tests {
@@ -101,7 +101,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 func pubSubCloudEvent(attributes map[string]string, data string) *cev2.Event {
 	e := cev2.NewEvent(cev2.VersionV1)
 	e.SetID("id")
-	e.SetSource(v1beta1.CloudPubSubSourceEventSource("testproject", "testtopic"))
+	e.SetSource(schemasv1.CloudPubSubEventSource("testproject", "testtopic"))
 	at := ""
 	if attributes != nil {
 		ex, _ := json.Marshal(attributes)
@@ -109,7 +109,7 @@ func pubSubCloudEvent(attributes map[string]string, data string) *cev2.Event {
 	}
 	s := fmt.Sprintf(`{"subscription":"testsubscription","message":{"messageId":"id","data":%s,%s"publishTime":"0001-01-01T00:00:00Z"}}`, data, at)
 	e.SetData(cev2.ApplicationJSON, []byte(s))
-	e.SetType(v1beta1.CloudPubSubSourcePublish)
+	e.SetType(schemasv1.CloudPubSubMessagePublishedEventType)
 	e.DataBase64 = false
 	return &e
 }

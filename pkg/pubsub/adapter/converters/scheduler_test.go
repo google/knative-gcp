@@ -23,7 +23,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
 )
@@ -50,9 +50,7 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 			},
 		},
 		wantEventFn: func() *cev2.Event {
-			return schedulerCloudEvent(
-				"//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/schedulers/scheduler-test",
-				"jobs/cre-scheduler-test")
+			return schedulerCloudEvent("//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test")
 		},
 	}, {
 		name: "missing jobName attribute",
@@ -104,12 +102,12 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 	}
 }
 
-func schedulerCloudEvent(source, subject string) *cev2.Event {
+func schedulerCloudEvent(source string) *cev2.Event {
 	e := cev2.NewEvent(cev2.VersionV1)
 	e.SetID("id")
-	e.SetData(cev2.ApplicationJSON, []byte("test data"))
-	e.SetType(v1beta1.CloudSchedulerSourceExecute)
+	e.SetData(cev2.ApplicationJSON, &schemasv1.SchedulerJobData{CustomData: []byte("test data")})
+	e.SetType(schemasv1.CloudSchedulerJobExecutedEventType)
+	e.SetDataSchema(schemasv1.CloudSchedulerEventDataSchema)
 	e.SetSource(source)
-	e.SetSubject(subject)
 	return &e
 }

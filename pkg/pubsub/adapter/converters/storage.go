@@ -17,47 +17,43 @@ limitations under the License.
 package converters
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
 	"errors"
 	"fmt"
+
+	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 var (
 	// Mapping of GCS eventTypes to CloudEvent types.
 	storageEventTypes = map[string]string{
-		"OBJECT_FINALIZE":        v1beta1.CloudStorageSourceFinalize,
-		"OBJECT_ARCHIVE":         v1beta1.CloudStorageSourceArchive,
-		"OBJECT_DELETE":          v1beta1.CloudStorageSourceDelete,
-		"OBJECT_METADATA_UPDATE": v1beta1.CloudStorageSourceMetadataUpdate,
+		"OBJECT_FINALIZE":        schemasv1.CloudStorageObjectFinalizedEventType,
+		"OBJECT_ARCHIVE":         schemasv1.CloudStorageObjectArchivedEventType,
+		"OBJECT_DELETE":          schemasv1.CloudStorageObjectDeletedEventType,
+		"OBJECT_METADATA_UPDATE": schemasv1.CloudStorageObjectMetadataUpdatedEventType,
 	}
-)
-
-const (
-	// Schema extracted from https://raw.githubusercontent.com/googleapis/google-api-go-client/master/storage/v1/storage-api.json.
-	// TODO find the public google endpoint we should use to point to the schema and avoid hosting it ourselves.
-	//  The link above is tied to the go-client, and it seems not to be a valid json schema.
-	storageSchemaUrl      = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
 )
 
 func convertCloudStorage(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {
 	event := cev2.NewEvent(cev2.VersionV1)
 	event.SetID(msg.ID)
 	event.SetTime(msg.PublishTime)
-	event.SetDataSchema(storageSchemaUrl)
+	event.SetDataSchema(schemasv1.CloudStorageEventDataSchema)
 
+	// TODO: figure out if we want to continue to add these as extensions.
 	if val, ok := msg.Attributes["bucketId"]; ok {
-		event.SetSource(v1beta1.CloudStorageSourceEventSource(val))
+		event.SetSource(schemasv1.CloudStorageEventSource(val))
 	} else {
 		return nil, errors.New("received event did not have bucketId")
 	}
 	if val, ok := msg.Attributes["objectId"]; ok {
-		event.SetSubject(val)
+		event.SetSubject(schemasv1.CloudStorageEventSubject(val))
 	} else {
 		return nil, errors.New("received event did not have objectId")
 	}
+
 	if val, ok := msg.Attributes["eventType"]; ok {
 		if eventType, ok := storageEventTypes[val]; ok {
 			event.SetType(eventType)

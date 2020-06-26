@@ -25,6 +25,7 @@ import (
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -77,7 +78,7 @@ var (
 	// Bucket, Sink, Secret, Event Type and Project, ObjectNamePrefix and PayloadFormat
 	storageSourceSpec = CloudStorageSourceSpec{
 		Bucket:           "my-test-bucket",
-		EventTypes:       []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+		EventTypes:       []string{schemasv1.CloudStorageObjectFinalizedEventType, schemasv1.CloudStorageObjectDeletedEventType},
 		ObjectNamePrefix: "test-prefix",
 		PayloadFormat:    cloudevents.ApplicationJSON,
 		PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -381,7 +382,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			orig: &storageSourceSpec,
 			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
-				EventTypes:       []string{CloudStorageSourceMetadataUpdate},
+				EventTypes:       []string{schemasv1.CloudStorageObjectMetadataUpdatedEventType},
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
 				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec:       storageSourceSpec.PubSubSpec,

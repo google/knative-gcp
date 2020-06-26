@@ -25,6 +25,7 @@ import (
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,7 +52,7 @@ func TestCloudStorageSourceSpec_SetDefaults(t *testing.T) {
 		},
 		"defaults present": {
 			orig: &CloudStorageSourceSpec{
-				EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+				EventTypes: []string{schemasv1.CloudStorageObjectFinalizedEventType, schemasv1.CloudStorageObjectDeletedEventType},
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -62,7 +63,7 @@ func TestCloudStorageSourceSpec_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &CloudStorageSourceSpec{
-				EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+				EventTypes: []string{schemasv1.CloudStorageObjectFinalizedEventType, schemasv1.CloudStorageObjectDeletedEventType},
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -106,10 +107,10 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 				},
 				Spec: CloudStorageSourceSpec{
 					EventTypes: []string{
-						"com.google.cloud.storage.object.finalize",
-						"com.google.cloud.storage.object.delete",
-						"com.google.cloud.storage.object.archive",
-						"com.google.cloud.storage.object.metadataUpdate",
+						schemasv1.CloudStorageObjectFinalizedEventType,
+						schemasv1.CloudStorageObjectDeletedEventType,
+						schemasv1.CloudStorageObjectArchivedEventType,
+						schemasv1.CloudStorageObjectMetadataUpdatedEventType,
 					},
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
@@ -148,10 +149,10 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 				},
 				Spec: CloudStorageSourceSpec{
 					EventTypes: []string{
-						"com.google.cloud.storage.object.finalize",
-						"com.google.cloud.storage.object.delete",
-						"com.google.cloud.storage.object.archive",
-						"com.google.cloud.storage.object.metadataUpdate",
+						schemasv1.CloudStorageObjectFinalizedEventType,
+						schemasv1.CloudStorageObjectDeletedEventType,
+						schemasv1.CloudStorageObjectArchivedEventType,
+						schemasv1.CloudStorageObjectMetadataUpdatedEventType,
 					},
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{

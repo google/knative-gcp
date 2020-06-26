@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -108,16 +107,6 @@ func (ps CloudPubSubSourceSpec) GetRetentionDuration() time.Duration {
 	}
 	return defaultRetentionDuration
 }
-
-// CloudPubSubSourceEventSource returns the Cloud Pub/Sub CloudEvent source value.
-func CloudPubSubSourceEventSource(googleCloudProject, topic string) string {
-	return fmt.Sprintf("//pubsub.googleapis.com/projects/%s/topics/%s", googleCloudProject, topic)
-}
-
-const (
-	// CloudPubSubSource CloudEvent type
-	CloudPubSubSourcePublish = "com.google.cloud.pubsub.topic.publish"
-)
 
 const (
 	// CloudPubSubSourceConditionReady has status True when the CloudPubSubSource is

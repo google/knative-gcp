@@ -22,7 +22,7 @@ metadata:
   annotations:
     registry.knative.dev/eventTypes: |
       [
-        { "type": "com.google.cloud.pubsub.topic.publish", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
+        { "type": "google.cloud.pubsub.topic.v1.messagePublished", "schema": "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/pubsub/v1/data.proto", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
       ]
   name: cloudpubsubsources.events.cloud.google.com
 spec:
