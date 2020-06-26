@@ -33,13 +33,13 @@ func TestStatsReporter(t *testing.T) {
 	args := IngressReportArgs{
 		Namespace:    "testns",
 		Broker:       "testbroker",
-		EventType:    "com.google.cloud.scheduler.job.execute",
+		EventType:    "google.cloud.scheduler.job.v1.executed",
 		ResponseCode: 202,
 	}
 	wantTags := map[string]string{
 		metricskey.LabelNamespaceName:     "testns",
 		metricskey.LabelBrokerName:        "testbroker",
-		metricskey.LabelEventType:         "com.google.cloud.scheduler.job.execute",
+		metricskey.LabelEventType:         "google.cloud.scheduler.job.v1.executed",
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
 		metricskey.ContainerName:          "testcontainer",

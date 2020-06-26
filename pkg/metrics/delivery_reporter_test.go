@@ -36,7 +36,7 @@ func TestReportEventDispatchTime(t *testing.T) {
 		metricskey.LabelNamespaceName:     "testns",
 		metricskey.LabelBrokerName:        "testbroker",
 		metricskey.LabelTriggerName:       "testtrigger",
-		metricskey.LabelFilterType:        "com.google.cloud.pubsub.topic.publish",
+		metricskey.LabelFilterType:        "google.cloud.scheduler.job.v1.executed",
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
 		metricskey.PodName:                "testpod",
@@ -57,7 +57,7 @@ func TestReportEventDispatchTime(t *testing.T) {
 		Broker:    "testbroker",
 		Name:      "testtrigger",
 		FilterAttributes: map[string]string{
-			"type": "com.google.cloud.pubsub.topic.publish",
+			"type": "google.cloud.scheduler.job.v1.executed",
 		},
 	})
 	if err != nil {
@@ -82,7 +82,7 @@ func TestReportEventProcessingTime(t *testing.T) {
 		metricskey.LabelNamespaceName: "testns",
 		metricskey.LabelBrokerName:    "testbroker",
 		metricskey.LabelTriggerName:   "testtrigger",
-		metricskey.LabelFilterType:    "com.google.cloud.pubsub.topic.publish",
+		metricskey.LabelFilterType:    "google.cloud.scheduler.job.v1.executed",
 		metricskey.PodName:            "testpod",
 		metricskey.ContainerName:      "testcontainer",
 	}
@@ -100,7 +100,7 @@ func TestReportEventProcessingTime(t *testing.T) {
 		Broker:    "testbroker",
 		Name:      "testtrigger",
 		FilterAttributes: map[string]string{
-			"type": "com.google.cloud.pubsub.topic.publish",
+			"type": "google.cloud.scheduler.job.v1.executed",
 		},
 	})
 	if err != nil {

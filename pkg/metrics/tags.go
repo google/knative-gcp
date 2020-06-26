@@ -24,6 +24,9 @@ import (
 	"knative.dev/pkg/metrics/metricskey"
 )
 
+const defaultEventType = "custom"
+const unspecifiedFilterType = "any"
+
 type PodName string
 type ContainerName string
 
@@ -48,9 +51,9 @@ var (
 )
 
 var (
-	allowedEventTypes = []string{
-		lib.E2EDummyEventType,
-		lib.E2EDummyRespEventType,
+	allowedEventTypes = map[string]struct{} {
+		lib.E2EDummyEventType: {},
+		lib.E2EDummyRespEventType: {},
 	}
 )
 
@@ -58,15 +61,12 @@ var (
 // reducing the allowable values on this field to be limited to GCP event types and defaulting everything else to
 // "custom".
 func EventTypeMetricValue(eventType string) string {
-	if strings.HasPrefix(eventType, "com.google.cloud") {
+	if strings.HasPrefix(eventType, "google.cloud") {
+		return eventType
+	}
+	if _, contains := allowedEventTypes[eventType]; contains {
 		return eventType
 	}
 
-	for _, allowed := range allowedEventTypes {
-		if eventType == allowed {
-			return eventType
-		}
-	}
-
-	return "custom"
+	return defaultEventType
 }

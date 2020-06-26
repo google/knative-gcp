@@ -26,15 +26,15 @@ func TestEventTypeMetricValue(t *testing.T) {
 		want  string
 	}{
 		// Current Supported GCP event types
-		{"com.google.cloud.auditlog.event", "com.google.cloud.auditlog.event"},
-		{"com.google.cloud.pubsub.topic.publish", "com.google.cloud.pubsub.topic.publish"},
-		{"com.google.cloud.scheduler.job.execute", "com.google.cloud.scheduler.job.execute"},
-		{"com.google.cloud.storage.object.archive", "com.google.cloud.storage.object.archive"},
-		{"com.google.cloud.storage.object.delete", "com.google.cloud.storage.object.delete"},
-		{"com.google.cloud.storage.object.finalize", "com.google.cloud.storage.object.finalize"},
-		{"com.google.cloud.storage.object.metadataUpdate", "com.google.cloud.storage.object.metadataUpdate"},
+		{"google.cloud.audit.log.v1.written", "google.cloud.audit.log.v1.written"},
+		{"google.cloud.pubsub.topic.v1.messagePublished", "google.cloud.pubsub.topic.v1.messagePublished"},
+		{"google.cloud.scheduler.job.v1.executed", "google.cloud.scheduler.job.v1.executed"},
+		{"google.cloud.storage.object.v1.archived", "google.cloud.storage.object.v1.archived"},
+		{"google.cloud.storage.object.v1.deleted", "google.cloud.storage.object.v1.deleted"},
+		{"google.cloud.storage.object.v1.finalized", "google.cloud.storage.object.v1.finalized"},
+		{"google.cloud.storage.object.v1.metadataUpdated", "google.cloud.storage.object.v1.metadataUpdated"},
 
-		{"com.google.cloud.some.newly.added.event", "com.google.cloud.some.newly.added.event"},
+		{"google.cloud.some.newly.added.event", "google.cloud.some.newly.added.event"},
 
 		{"some.custom.event", "custom"},
 		{"", "custom"},
