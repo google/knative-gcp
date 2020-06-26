@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"time"
 
-	"knative.dev/eventing/pkg/kncloudevents"
+	"github.com/google/knative-gcp/pkg/kncloudevents"
 )
 
 // Compare the ranges in sendResults and receiveResults.
