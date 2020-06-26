@@ -19,6 +19,7 @@ package lib
 import (
 	"context"
 	"fmt"
+
 	"testing"
 
 	"cloud.google.com/go/storage"
@@ -27,6 +28,7 @@ import (
 	"google.golang.org/api/iterator"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/test/helpers"
 )
 
 type StorageConfig struct {
@@ -104,7 +106,8 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
 	it := client.Buckets(ctx, project)
-	bucketName := "storage-e2e-test-" + project
+	// Name should be between 3-63 characters. https://cloud.google.com/storage/docs/naming-buckets
+	bucketName := helpers.AppendRandomString(fmt.Sprintf("storage-e2e-test-%s", project))
 	// Iterate buckets to check if there has a bucket for e2e test
 	for {
 		bucketAttrs, err := it.Next()
@@ -125,6 +128,33 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 		}
 	}
 	return bucketName
+}
+
+func DeleteBucket(ctx context.Context, t *testing.T, bucketName string) {
+	t.Helper()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		t.Fatalf("failed to create storage client, %s", err.Error())
+	}
+	// Load the Bucket.
+	bucket := client.Bucket(bucketName)
+
+	// Check whether bucket exists or not
+	if _, err := bucket.Attrs(ctx); err != nil {
+		// If the bucket was already deleted, we are good
+		if err == storage.ErrBucketNotExist {
+			t.Logf("Bucket %s already deleted", bucketName)
+			return
+		} else {
+			t.Errorf("Failed to fetch attrs of Bucket %s", bucketName)
+		}
+	}
+
+	// If we fail to delete the bucket, we will fail the test so that users are aware that
+	// we leaked a bucket in the project. If this makes the test flake, then we can revisit and maybe avoid failing.
+	if err := bucket.Delete(ctx); err != nil {
+		t.Errorf("Failed to delete Bucket %s", bucketName)
+	}
 }
 
 func getBucketHandle(ctx context.Context, t *testing.T, bucketName, project string) *storage.BucketHandle {

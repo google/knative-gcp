@@ -306,6 +306,7 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 	project := os.Getenv(lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, client.T, project)
+	defer lib.DeleteBucket(ctx, client.T, bucketName)
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 	source := schemasv1.CloudStorageEventSource(bucketName)
