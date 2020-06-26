@@ -30,7 +30,6 @@ import (
 )
 
 func TestReportEventDispatchTime(t *testing.T) {
-
 	reportertest.ResetDeliveryMetrics()
 
 	wantTags := map[string]string{
