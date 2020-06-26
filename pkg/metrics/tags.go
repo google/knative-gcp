@@ -19,7 +19,6 @@ package metrics
 import (
 	"strings"
 
-	"github.com/google/knative-gcp/test/e2e/lib"
 	"go.opencensus.io/tag"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -52,8 +51,8 @@ var (
 
 var (
 	allowedEventTypes = map[string]struct{} {
-		lib.E2EDummyEventType: {},
-		lib.E2EDummyRespEventType: {},
+		"e2e-dummy-event-type": {},
+		"e2e-testing-resp-event-type-dummy": {},
 	}
 )
 
