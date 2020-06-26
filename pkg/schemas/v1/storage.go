@@ -27,7 +27,7 @@ const (
 )
 
 func CloudStorageEventSource(bucket string) string {
-	return fmt.Sprintf("//storage.googleapis.com/buckets/%s", bucket)
+	return fmt.Sprintf("//storage.googleapis.com/projects/_/buckets/%s", bucket)
 }
 
 func CloudStorageEventSubject(object string) string {

@@ -24,6 +24,10 @@ import (
 const (
 	CloudAuditLogsLogWrittenEventType = "google.cloud.audit.log.v1.written"
 	CloudAuditLogsEventDataSchema     = "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/audit/v1/data.proto"
+
+	ServiceNameExtension  = "servicename"
+	MethodNameExtension   = "methodname"
+	ResourceNameExtension = "resourcename"
 )
 
 // CloudAuditLogsEventSource returns the Cloud Audit Logs CloudEvent source value.

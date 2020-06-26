@@ -27,6 +27,6 @@ func CloudSchedulerEventSource(jobName string) string {
 	return fmt.Sprintf("//cloudscheduler.googleapis.com/%s", jobName)
 }
 
-type JobExecutionData struct {
+type SchedulerJobData struct {
 	CustomData []byte `json:"custom_data,omitempty"`
 }

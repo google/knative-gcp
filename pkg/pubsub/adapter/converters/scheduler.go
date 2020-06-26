@@ -40,7 +40,7 @@ func convertCloudScheduler(ctx context.Context, msg *pubsub.Message) (*cev2.Even
 	}
 	event.SetSource(schemasv1.CloudSchedulerEventSource(jobName))
 
-	if err := event.SetData(cev2.ApplicationJSON, &schemasv1.JobExecutionData{CustomData: msg.Data}); err != nil {
+	if err := event.SetData(cev2.ApplicationJSON, &schemasv1.SchedulerJobData{CustomData: msg.Data}); err != nil {
 		return nil, err
 	}
 	return &event, nil

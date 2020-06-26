@@ -75,7 +75,7 @@ func MakeSchedulerJobOrDie(client *Client, data, targetName, eventType string) {
 }
 
 func schedulerEventPayload(customData string) string {
-	jd := &schemasv1.JobExecutionData{CustomData: []byte(customData)}
+	jd := &schemasv1.SchedulerJobData{CustomData: []byte(customData)}
 	b, _ := json.Marshal(jd)
 	return string(b)
 }

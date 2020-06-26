@@ -105,7 +105,7 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 func schedulerCloudEvent(source string) *cev2.Event {
 	e := cev2.NewEvent(cev2.VersionV1)
 	e.SetID("id")
-	e.SetData(cev2.ApplicationJSON, &schemasv1.JobExecutionData{CustomData: []byte("test data")})
+	e.SetData(cev2.ApplicationJSON, &schemasv1.SchedulerJobData{CustomData: []byte("test data")})
 	e.SetType(schemasv1.CloudSchedulerJobExecutedEventType)
 	e.SetDataSchema(schemasv1.CloudSchedulerEventDataSchema)
 	e.SetSource(source)

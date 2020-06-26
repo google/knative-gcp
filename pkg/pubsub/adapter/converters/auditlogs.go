@@ -40,10 +40,6 @@ import (
 
 const (
 	parentResourcePattern = `^(:?projects|organizations|billingAccounts|folders)/[^/]+`
-
-	serviceNameExtension  = "servicename"
-	methodNameExtension   = "methodname"
-	resourceNameExtension = "resourcename"
 )
 
 var (
@@ -99,7 +95,7 @@ func resolveAnyUnknowns(typeURL string) (proto.Message, error) {
 	return reflect.New(mt.Elem()).Interface().(proto.Message), nil
 }
 
-// Log name, e.g. "organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity"
+// Log name ref: https://cloud.google.com/logging/docs/audit#viewing_audit_logs
 func logActivity(logName string) string {
 	parts := strings.Split(logName, "%2F")
 	if len(parts) < 2 {
@@ -143,10 +139,9 @@ func convertCloudAuditLogs(ctx context.Context, msg *pubsub.Message) (*cev2.Even
 		switch proto := unpacked.Message.(type) {
 		case *auditpb.AuditLog:
 			event.SetSubject(schemasv1.CloudAuditLogsEventSubject(proto.ServiceName, proto.ResourceName))
-			// TODO: figure out if we want to keep these extensions.
-			event.SetExtension(serviceNameExtension, proto.ServiceName)
-			event.SetExtension(methodNameExtension, proto.MethodName)
-			event.SetExtension(resourceNameExtension, proto.ResourceName)
+			event.SetExtension(schemasv1.ServiceNameExtension, proto.ServiceName)
+			event.SetExtension(schemasv1.MethodNameExtension, proto.MethodName)
+			event.SetExtension(schemasv1.ResourceNameExtension, proto.ResourceName)
 		default:
 			return nil, fmt.Errorf("unhandled proto payload type: %T", proto)
 		}

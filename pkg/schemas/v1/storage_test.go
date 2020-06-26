@@ -21,7 +21,7 @@ import (
 )
 
 func TestCloudStorageEventSource(t *testing.T) {
-	want := "//storage.googleapis.com/buckets/bucket"
+	want := "//storage.googleapis.com/projects/_/buckets/bucket"
 	got := CloudStorageEventSource("bucket")
 	if got != want {
 		t.Errorf("CloudStorageEventSource got=%s, want=%s", got, want)

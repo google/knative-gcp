@@ -14,4 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package v1 defines constants and util functions for event v1 schemas.
+// TODO: Later most of the constants should be available in the Go package
+// generated from https://github.com/googleapis/google-cloudevents. We should
+// use that instead.
 package v1
