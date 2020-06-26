@@ -183,11 +183,11 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *c
 		case "event-trace-event":
 			id, err := strconv.Atoi(event.ID())
 			if err != nil {
-				fmt.Errorf("Bad ID Decoding: %v %s", err, event)
+				log.Fatalf("Bad ID Decoding: %v %s", err, event)
 			}
 
 			if id <= 0 {
-				fmt.Errorf("Invalid ID %d: %s", id, event)
+				log.Fatalf("Invalid ID %d: %s", id, event)
 			}
 
 			r.resultLock.Lock()
@@ -212,7 +212,7 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *c
 			}
 			return
 		default:
-			fmt.Errorf("Unexpected event type %s: %s", event.Type(), event)
+			log.Fatalf("Unexpected event type %s: %s", event.Type(), event)
 			return
 		}
 	}
