@@ -18,9 +18,9 @@ package converters
 
 import (
 	"context"
-	"github.com/cloudevents/sdk-go"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"testing"
+
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 
 	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
@@ -54,7 +54,7 @@ func TestConvertPubSubPull(t *testing.T) {
 	}, {
 		name: "upper case attributes",
 		message: &pubsub.Message{
-			ID: "id",
+			ID:   "id",
 			Data: []byte("test data"),
 			Attributes: map[string]string{
 				"AttriBUte1": "value1",

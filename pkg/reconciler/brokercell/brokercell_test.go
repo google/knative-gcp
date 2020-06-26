@@ -50,8 +50,8 @@ import (
 const (
 	testNS         = "testnamespace"
 	brokerCellName = "test-brokercell"
-	targetsCMName = "broker-targets"
-	targetsCMKey  = "targets"
+	targetsCMName  = "broker-targets"
+	targetsCMKey   = "targets"
 )
 
 var (
@@ -149,11 +149,11 @@ func TestAllCases(t *testing.T) {
 					WithBrokerCellSetDefaults,
 				),
 			}},
-			WantEvents:  []string{configmapUpdateFailedEvent},
+			WantEvents: []string{configmapUpdateFailedEvent},
 			WantUpdates: []clientgotesting.UpdateActionImpl{{Object: testingdata.Config(t,
 				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
 				NewBroker("broker", testNS, WithBrokerSetDefaults))}},
-			WantErr:     true,
+			WantErr: true,
 		},
 		{
 			Name: "Ingress Deployment.Create error",
@@ -712,7 +712,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantUpdates: []clientgotesting.UpdateActionImpl{
 				{Object: testingdata.Config(t,
-					NewBrokerCell(brokerCellName, testNS,WithBrokerCellSetDefaults),
+					NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
 					NewBroker("broker", testNS, WithBrokerSetDefaults))},
 				{Object: testingdata.IngressDeployment(t)},
 				{Object: testingdata.IngressHPA(t)},
@@ -839,9 +839,9 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		{
-			Name:         "googlecloud created BrokerCell should be gc'ed if there is no broker, but deletion fails",
-			Key:          testKey,
-			Objects:      []runtime.Object{NewBrokerCell(brokerCellName, testNS,
+			Name: "googlecloud created BrokerCell should be gc'ed if there is no broker, but deletion fails",
+			Key:  testKey,
+			Objects: []runtime.Object{NewBrokerCell(brokerCellName, testNS,
 				WithBrokerCellAnnotations(creatorAnnotation),
 				WithBrokerCellSetDefaults,
 				WithInitBrokerCellConditions,
@@ -861,8 +861,8 @@ func TestAllCases(t *testing.T) {
 			WantErr:    true,
 		},
 		{
-			Name:    "googlecloud created BrokerCell is gc'ed successfully",
-			Key:     testKey,
+			Name: "googlecloud created BrokerCell is gc'ed successfully",
+			Key:  testKey,
 			Objects: []runtime.Object{NewBrokerCell(brokerCellName, testNS,
 				WithBrokerCellAnnotations(creatorAnnotation),
 				WithBrokerCellSetDefaults,
@@ -916,7 +916,7 @@ func emptyHPASpec(template *hpav2beta2.HorizontalPodAutoscaler) *hpav2beta2.Hori
 func TestBrokerTargetsReconcileConfig(t *testing.T) {
 	setReconcilerEnv()
 	bc := NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)
-	objects:= []runtime.Object{
+	objects := []runtime.Object{
 		bc,
 		NewBroker("broker", testNS, WithBrokerSetDefaults),
 		NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
@@ -924,7 +924,7 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 	}
 	ctx, _ := SetupFakeContext(t)
 	cmw := configmap.NewStaticWatcher()
-	ctx, client := fakekubeclient.With(ctx,)
+	ctx, client := fakekubeclient.With(ctx)
 	base := reconciler.NewBase(ctx, controllerAgentName, cmw)
 	testingListers := NewListers(objects)
 	ls := listers{
@@ -947,7 +947,7 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 		NewBroker("broker", testNS, WithBrokerSetDefaults),
 		NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
 		NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults))
-	gotMap, err := client.CoreV1().ConfigMaps(testNS).Get(resources.Name(bc.Name, targetsCMName),metav1.GetOptions{})
+	gotMap, err := client.CoreV1().ConfigMaps(testNS).Get(resources.Name(bc.Name, targetsCMName), metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("Failed to get ConfigMap from client: %v", err)
 	}

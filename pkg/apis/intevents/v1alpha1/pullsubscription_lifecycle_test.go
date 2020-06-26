@@ -47,8 +47,8 @@ var (
 		Status: appsv1.DeploymentStatus{
 			Conditions: []appsv1.DeploymentCondition{
 				{
-					Type:   appsv1.DeploymentAvailable,
-					Status: corev1.ConditionFalse,
+					Type:    appsv1.DeploymentAvailable,
+					Status:  corev1.ConditionFalse,
 					Reason:  "The status of Deployment is False",
 					Message: "False Status",
 				},

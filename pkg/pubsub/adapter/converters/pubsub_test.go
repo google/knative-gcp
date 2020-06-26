@@ -32,15 +32,15 @@ import (
 func TestConvertCloudPubSub(t *testing.T) {
 
 	tests := []struct {
-		name        string
-		message     *pubsub.Message
-		wantEventFn func() *cev2.Event
-		wantErr     bool
+		name               string
+		message            *pubsub.Message
+		wantEventFn        func() *cev2.Event
+		wantErr            bool
 		wantInvalidContext bool
 	}{{
 		name: "non alphanumeric attribute",
 		message: &pubsub.Message{
-			ID: "id",
+			ID:   "id",
 			Data: []byte("\"test data\""), // Data passed in quotes for it to be marshalled properly
 			Attributes: map[string]string{
 				"attribute1":        "value1",
@@ -56,7 +56,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 	}, {
 		name: "no attributes",
 		message: &pubsub.Message{
-			ID: "id",
+			ID:         "id",
 			Data:       []byte("\"test data\""), // Data passed in quotes for it to be marshalled properly
 			Attributes: map[string]string{},
 		},
@@ -66,12 +66,12 @@ func TestConvertCloudPubSub(t *testing.T) {
 	}, {
 		name: "invalid context",
 		message: &pubsub.Message{
-			ID: "id",
+			ID:         "id",
 			Data:       []byte("\"test data\""), // Data passed in quotes for it to be marshalled properly
 			Attributes: map[string]string{},
 		},
 		wantInvalidContext: true,
-		wantErr: true,
+		wantErr:            true,
 	}}
 
 	for _, test := range tests {

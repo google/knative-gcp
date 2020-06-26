@@ -55,7 +55,6 @@ var _ = duck.VerifyType(&PullSubscription{}, &duckv1.Conditions{})
 // Check that PullSubscription implements the KRShaped duck type.
 var _ duckv1.KRShaped = (*PullSubscription)(nil)
 
-
 // PullSubscriptionSpec defines the desired state of the PullSubscription.
 type PullSubscriptionSpec struct {
 	v1beta1.PubSubSpec `json:",inline"`

@@ -17,9 +17,10 @@ limitations under the License.
 package converters
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
 	"fmt"
+
+	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	. "github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
