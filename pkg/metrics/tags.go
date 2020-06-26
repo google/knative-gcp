@@ -24,7 +24,6 @@ import (
 )
 
 const defaultEventType = "custom"
-const unspecifiedFilterType = "any"
 
 type PodName string
 type ContainerName string
