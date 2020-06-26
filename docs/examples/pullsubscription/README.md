@@ -112,7 +112,7 @@ service that this `PullSubscription` sinks to.
 1. Inspect the logs of the service:
 
    ```shell
-   kubectl logs --selector app=event-display -c user-container
+   kubectl logs --selector app=event-display -c user-container --tail=200
    ```
 
 You should see log lines similar to:
