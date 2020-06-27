@@ -59,7 +59,7 @@ const (
 
 	traceID = "4bf92f3577b34da6a3ce929d0e0e4736"
 
-	eventType = "test-event-type"
+	eventType = "google.cloud.scheduler.job.v1.executed"
 	pod       = "testpod"
 	container = "testcontainer"
 )
