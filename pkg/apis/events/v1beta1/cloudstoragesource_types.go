@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"fmt"
-
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,17 +79,6 @@ type CloudStorageSourceSpec struct {
 }
 
 const (
-	// CloudEvent types used by CloudStorageSource.
-	CloudStorageSourceFinalize       = "com.google.cloud.storage.object.finalize"
-	CloudStorageSourceArchive        = "com.google.cloud.storage.object.archive"
-	CloudStorageSourceDelete         = "com.google.cloud.storage.object.delete"
-	CloudStorageSourceMetadataUpdate = "com.google.cloud.storage.object.metadataUpdate"
-
-	// CloudEvent source prefix.
-	storageSourcePrefix = "//storage.googleapis.com/buckets"
-)
-
-const (
 	// CloudStorageSourceConditionReady has status True when the CloudStorageSource is ready to send events.
 	CloudStorageSourceConditionReady = apis.ConditionReady
 
@@ -99,10 +86,6 @@ const (
 	// send Notification events
 	NotificationReady apis.ConditionType = "NotificationReady"
 )
-
-func CloudStorageSourceEventSource(bucket string) string {
-	return fmt.Sprintf("%s/%s", storageSourcePrefix, bucket)
-}
 
 var storageCondSet = apis.NewLivingConditionSet(
 	duckv1beta1.PullSubscriptionReady,

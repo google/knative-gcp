@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -47,7 +48,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 		},
 		"defaults present": {
 			orig: &CloudStorageSourceSpec{
-				EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+				EventTypes: []string{schemasv1.CloudStorageObjectFinalizedEventType, schemasv1.CloudStorageObjectDeletedEventType},
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -58,7 +59,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &CloudStorageSourceSpec{
-				EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+				EventTypes: []string{schemasv1.CloudStorageObjectFinalizedEventType, schemasv1.CloudStorageObjectDeletedEventType},
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{

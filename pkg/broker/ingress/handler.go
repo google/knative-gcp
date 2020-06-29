@@ -27,6 +27,7 @@ import (
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
+	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/metrics"
@@ -69,7 +70,7 @@ var HandlerSet wire.ProviderSet = wire.NewSet(
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
 type DecoupleSink interface {
 	// Send sends the event from a broker to the corresponding decoupling sink.
-	Send(ctx context.Context, ns, broker string, event cev2.Event) protocol.Result
+	Send(ctx context.Context, broker types.NamespacedName, event cev2.Event) protocol.Result
 }
 
 // HttpMessageReceiver is an interface to listen on http requests.
@@ -77,7 +78,7 @@ type HttpMessageReceiver interface {
 	StartListen(ctx context.Context, handler nethttp.Handler) error
 }
 
-// handler receives events and persists them to storage (pubsub).
+// Handler receives events and persists them to storage (pubsub).
 type Handler struct {
 	// httpReceiver is an HTTP server to receive events.
 	httpReceiver HttpMessageReceiver
@@ -145,10 +146,13 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	defer span.End()
 	if span.IsRecordingEvents() {
 		span.AddAttributes(
-			kntracing.MessagingSystemAttribute,
-			tracing.PubSubProtocolAttribute,
-			kntracing.BrokerMessagingDestinationAttribute(broker),
-			kntracing.MessagingMessageIDAttribute(event.ID()),
+			append(
+				ceclient.EventTraceAttributes(event),
+				kntracing.MessagingSystemAttribute,
+				tracing.PubSubProtocolAttribute,
+				kntracing.BrokerMessagingDestinationAttribute(broker),
+				kntracing.MessagingMessageIDAttribute(event.ID()),
+			)...,
 		)
 	}
 
@@ -159,7 +163,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	ctx, cancel := context.WithTimeout(ctx, decoupleSinkTimeout)
 	defer cancel()
 	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode) }()
-	if res := h.decouple.Send(ctx, broker.Namespace, broker.Name, *event); !cev2.IsACK(res) {
+	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
 		msg := fmt.Sprintf("Error publishing to PubSub for broker %s. event: %+v, err: %v.", broker, event, res)
 		h.logger.Error(msg)
 		statusCode = nethttp.StatusInternalServerError

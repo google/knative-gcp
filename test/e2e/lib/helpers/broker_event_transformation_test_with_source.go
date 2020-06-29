@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"time"
@@ -35,7 +36,7 @@ import (
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
@@ -116,7 +117,7 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 	makeTargetJobOrDie(client, targetName)
 
 	// Create the Knative Service.
-	kserviceName := CreateKService(client, "receiver")
+	kserviceName := createFirstNErrsReceiver(client, 2)
 
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
@@ -168,9 +169,16 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 			BrokerName:      brokerName,
 			BrokerNamespace: client.Namespace,
 			StartTime:       start,
-			CountPerTrigger: map[string]int64{
-				trigger.Name:     1,
-				respTrigger.Name: 1,
+			CountPerTriggerWithRespCode: map[lib.TriggerAssertionKey]int64{
+				{Name: trigger.Name, RespCode: http.StatusAccepted}:     1,
+				{Name: respTrigger.Name, RespCode: http.StatusAccepted}: 1,
+				// Metric from first two delivery attempts (which would fail).
+				{Name: trigger.Name, RespCode: http.StatusBadRequest}: 2,
+			},
+			CountPerTriggerNoRespCode: map[lib.TriggerAssertionKey]int64{
+				// For metrics without response code, we expect 3 trigger deliveries (first 2 from delivery failures).
+				{Name: trigger.Name}:     3,
+				{Name: respTrigger.Name}: 1,
 			},
 		},
 	)
@@ -237,7 +245,7 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
 	targetName := helpers.AppendRandomString(topicName + "-target")
 	data := fmt.Sprintf(`{"topic":%s}`, topicName)
-	source := v1beta1.CloudPubSubSourceEventSource(project, topicName)
+	source := schemasv1.CloudPubSubEventSource(project, topicName)
 
 	// Create a target PubSub Job to receive the events.
 	lib.MakePubSubTargetJobOrDie(client, source, targetName, lib.E2EPubSubRespEventType)
@@ -247,7 +255,7 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter,
-		v1beta1.CloudPubSubSourcePublish,
+		schemasv1.CloudPubSubMessagePublishedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
@@ -298,19 +306,21 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 	project := os.Getenv(lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, client.T, project)
+	defer lib.DeleteBucket(ctx, client.T, bucketName)
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	targetName := helpers.AppendRandomString(bucketName + "-target")
-	source := v1beta1.CloudStorageSourceEventSource(bucketName)
+	source := schemasv1.CloudStorageEventSource(bucketName)
 	fileName := helpers.AppendRandomString("test-file-for-storage")
+	subject := schemasv1.CloudStorageEventSubject(fileName)
 	// Create a target StorageJob to receive the events.
-	lib.MakeStorageJobOrDie(client, source, fileName, targetName, lib.E2EStorageRespEventType)
+	lib.MakeStorageJobOrDie(client, source, subject, targetName, lib.E2EStorageRespEventType)
 	// Create the Knative Service.
 	kserviceName := CreateKService(client, "storage_receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter,
-		v1beta1.CloudStorageSourceFinalize,
+		schemasv1.CloudStorageObjectFinalizedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
@@ -362,7 +372,7 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter,
-		v1beta1.CloudAuditLogsSourceEvent,
+		schemasv1.CloudAuditLogsLogWrittenEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
@@ -419,7 +429,7 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter,
-		v1beta1.CloudSchedulerSourceExecute,
+		schemasv1.CloudSchedulerJobExecutedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
@@ -463,6 +473,16 @@ func CreateKService(client *lib.Client, imageName string) string {
 	client.CreateUnstructuredObjOrFail(kservice)
 	return kserviceName
 
+}
+
+func createFirstNErrsReceiver(client *lib.Client, firstNErrs int) string {
+	client.T.Helper()
+	kserviceName := helpers.AppendRandomString("kservice")
+	// Create the Knative Service.
+	kservice := resources.FirstNErrsReceiverKService(
+		kserviceName, client.Namespace, "receiver", firstNErrs)
+	client.CreateUnstructuredObjOrFail(kservice)
+	return kserviceName
 }
 
 func createTriggerWithKServiceSubscriber(client *lib.Client,

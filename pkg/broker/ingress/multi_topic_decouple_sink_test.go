@@ -24,6 +24,7 @@ import (
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
 	"github.com/google/uuid"
+	"k8s.io/apimachinery/pkg/types"
 
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -40,8 +41,7 @@ import (
 
 func TestMultiTopicDecoupleSink(t *testing.T) {
 	type brokerTestCase struct {
-		ns      string
-		broker  string
+		broker  types.NamespacedName
 		topic   string
 		wantErr bool
 	}
@@ -59,9 +59,11 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					ns:     "test_ns_1",
-					broker: "test_broker_1",
-					topic:  "test_topic_1",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
+					topic: "test_topic_1",
 				},
 			},
 		},
@@ -75,14 +77,18 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					ns:     "test_ns_1",
-					broker: "test_broker_1",
-					topic:  "test_topic_1",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
+					topic: "test_topic_1",
 				},
 				{
-					ns:     "test_ns_2",
-					broker: "test_broker_2",
-					topic:  "test_topic_2",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_2",
+						Name:      "test_broker_2",
+					},
+					topic: "test_topic_2",
 				},
 			},
 		},
@@ -91,8 +97,10 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			brokerConfig: &config.TargetsConfig{},
 			cases: []brokerTestCase{
 				{
-					ns:      "test_ns_1",
-					broker:  "test_broker_1",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -107,8 +115,10 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					ns:      "test_ns_1",
-					broker:  "test_broker_1",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -123,8 +133,10 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					ns:      "test_ns_1",
-					broker:  "test_broker_1",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -139,8 +151,10 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					ns:      "test_ns_1",
-					broker:  "test_broker_1",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -172,7 +186,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 				sink := NewMultiTopicDecoupleSink(ctx, brokerConfig, psClient)
 				// Send events
 				event := createTestEvent(uuid.New().String())
-				err = sink.Send(context.Background(), testCase.ns, testCase.broker, *event)
+				err = sink.Send(context.Background(), testCase.broker, *event)
 
 				// Verify results.
 				if testCase.wantErr && err == nil {

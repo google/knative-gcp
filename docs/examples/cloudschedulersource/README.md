@@ -71,7 +71,7 @@ service that this Scheduler job sinks to.
 1. Inspect the logs of the `Service`:
 
    ```shell
-   kubectl logs --selector app=event-display -c user-container
+   kubectl logs --selector app=event-display -c user-container --tail=200
    ```
 
 You should see log lines similar to:
