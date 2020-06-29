@@ -69,7 +69,7 @@ func TestConvertCloudStorageSource(t *testing.T) {
 		},
 		wantErr: true,
 	}, {
-		name: "unkown eventType attribute",
+		name: "unknown eventType attribute",
 		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
