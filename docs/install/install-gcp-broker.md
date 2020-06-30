@@ -80,11 +80,13 @@ Workload Identity see
 
 ## Deployment
 
-Apply GCP broker yamls:
+* For up to [v0.15.0](https://github.com/google/knative-gcp/tree/v0.15.0), apply GCP broker yamls:
 
-```shell
-ko apply -f ./config/broker/
-```
+  ```shell
+  ko apply -f ./config/broker/
+  ```
+* In the latest version, relevant components [will be created by BrokerCell on demand](https://github.com/google/knative-gcp/pull/1170), so, no broker-specific configs are needed at this point.
+
 
 ## Usage
 
@@ -127,7 +129,7 @@ kubectl create namespace ${NAMESPACE}
 
 Once the GCP broker is ready, you can use it by sending events to its `URL` and
 create Triggers to receive events from it, just like any Knative Eventing
-Brokers in [Broker and Trigge](https://knative.dev/docs/eventing/broker/).
+Brokers in [Broker and Trigger](https://knative.dev/docs/eventing/broker/).
 
 You can find demos of the GCP broker in the
 [examples](../examples/gcpbroker/README.md).
