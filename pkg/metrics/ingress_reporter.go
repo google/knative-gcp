@@ -93,7 +93,7 @@ func (r *IngressReporter) ReportEventCount(ctx context.Context, args IngressRepo
 		tag.Insert(ContainerNameKey, string(r.containerName)),
 		tag.Insert(NamespaceNameKey, args.Namespace),
 		tag.Insert(BrokerNameKey, args.Broker),
-		tag.Insert(EventTypeKey, args.EventType),
+		tag.Insert(EventTypeKey, EventTypeMetricValue(args.EventType)),
 		tag.Insert(ResponseCodeKey, strconv.Itoa(args.ResponseCode)),
 		tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(args.ResponseCode)),
 	)

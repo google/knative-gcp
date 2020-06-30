@@ -23,7 +23,7 @@ import (
 
 	"knative.dev/pkg/test/helpers"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
@@ -99,7 +99,7 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 	// Create the target and scheduler
 	schedulerName := helpers.AppendRandomString("scheduler")
 	targetName := helpers.AppendRandomString(schedulerName + "-target")
-	lib.MakeSchedulerJobOrDie(client, data, targetName, v1beta1.CloudSchedulerSourceExecute)
+	lib.MakeSchedulerJobOrDie(client, data, targetName, schemasv1.CloudSchedulerJobExecutedEventType)
 	lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
 		SinkGVK:            lib.ServiceGVK,
 		SchedulerName:      schedulerName,

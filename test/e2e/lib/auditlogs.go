@@ -25,8 +25,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	"cloud.google.com/go/logging/logadmin"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/grpc/codes"
 	v1 "k8s.io/api/core/v1"
@@ -81,10 +81,10 @@ func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, se
 		Value: eventType,
 	}, {
 		Name:  "SOURCE",
-		Value: v1alpha1.CloudAuditLogsSourceEventSource(serviceName, fmt.Sprintf("projects/%s", project)),
+		Value: schemasv1.CloudAuditLogsEventSource(fmt.Sprintf("projects/%s", project), "activity"),
 	}, {
 		Name:  "SUBJECT",
-		Value: resourceName,
+		Value: schemasv1.CloudAuditLogsEventSubject(serviceName, resourceName),
 	}, {
 		Name:  "TIME",
 		Value: "6m",

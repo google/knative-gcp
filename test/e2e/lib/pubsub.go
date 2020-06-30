@@ -24,8 +24,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,8 +82,8 @@ func AssertMetrics(t *testing.T, client *Client, topicName, psName string) {
 		"metric.type":                 EventCountMetricType,
 		"resource.type":               GlobalMetricResourceType,
 		"metric.label.resource_group": PubsubResourceGroup,
-		"metric.label.event_type":     v1alpha1.CloudPubSubSourcePublish,
-		"metric.label.event_source":   v1alpha1.CloudPubSubSourceEventSource(projectID, topicName),
+		"metric.label.event_type":     schemasv1.CloudPubSubMessagePublishedEventType,
+		"metric.label.event_source":   schemasv1.CloudPubSubEventSource(projectID, topicName),
 		"metric.label.namespace_name": client.Namespace,
 		"metric.label.name":           psName,
 		// We exit the target image before sending a response, thus check for 500.

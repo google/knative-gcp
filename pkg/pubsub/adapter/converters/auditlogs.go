@@ -35,17 +35,11 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 const (
-	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
-
 	parentResourcePattern = `^(:?projects|organizations|billingAccounts|folders)/[^/]+`
-
-	serviceNameExtension  = "servicename"
-	methodNameExtension   = "methodname"
-	resourceNameExtension = "resourcename"
 )
 
 var (
@@ -101,6 +95,16 @@ func resolveAnyUnknowns(typeURL string) (proto.Message, error) {
 	return reflect.New(mt.Elem()).Interface().(proto.Message), nil
 }
 
+// Log name ref: https://cloud.google.com/logging/docs/audit#viewing_audit_logs
+func logActivity(logName string) string {
+	parts := strings.Split(logName, "%2F")
+	if len(parts) < 2 {
+		return ""
+	}
+	// Could be "activity" or "data_access"
+	return parts[1]
+}
+
 func convertCloudAuditLogs(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {
 	entry := logpb.LogEntry{}
 	if err := jsonpbUnmarshaller.Unmarshal(bytes.NewReader(msg.Data), &entry); err != nil {
@@ -111,17 +115,20 @@ func convertCloudAuditLogs(ctx context.Context, msg *pubsub.Message) (*cev2.Even
 	if parentResource == "" {
 		return nil, fmt.Errorf("invalid LogName: %q", entry.LogName)
 	}
+	logActivity := logActivity(entry.LogName)
 
 	// Make a new event and convert the message payload.
 	event := cev2.NewEvent(cev2.VersionV1)
-	event.SetID(v1beta1.CloudAuditLogsSourceEventID(entry.InsertId, entry.LogName, ptypes.TimestampString(entry.Timestamp)))
+	event.SetID(schemasv1.CloudAuditLogsEventID(entry.InsertId, entry.LogName, ptypes.TimestampString(entry.Timestamp)))
 	if timestamp, err := ptypes.Timestamp(entry.Timestamp); err != nil {
 		return nil, fmt.Errorf("invalid LogEntry timestamp: %w", err)
 	} else {
 		event.SetTime(timestamp)
 	}
+	event.SetType(schemasv1.CloudAuditLogsLogWrittenEventType)
+	event.SetSource(schemasv1.CloudAuditLogsEventSource(parentResource, logActivity))
+	event.SetDataSchema(schemasv1.CloudAuditLogsEventDataSchema)
 	event.SetData(cev2.ApplicationJSON, msg.Data)
-	event.SetDataSchema(logEntrySchema)
 
 	switch payload := entry.Payload.(type) {
 	case *logpb.LogEntry_ProtoPayload:
@@ -131,12 +138,10 @@ func convertCloudAuditLogs(ctx context.Context, msg *pubsub.Message) (*cev2.Even
 		}
 		switch proto := unpacked.Message.(type) {
 		case *auditpb.AuditLog:
-			event.SetType(v1beta1.CloudAuditLogsSourceEvent)
-			event.SetSource(v1beta1.CloudAuditLogsSourceEventSource(proto.ServiceName, parentResource))
-			event.SetSubject(proto.ResourceName)
-			event.SetExtension(serviceNameExtension, proto.ServiceName)
-			event.SetExtension(methodNameExtension, proto.MethodName)
-			event.SetExtension(resourceNameExtension, proto.ResourceName)
+			event.SetSubject(schemasv1.CloudAuditLogsEventSubject(proto.ServiceName, proto.ResourceName))
+			event.SetExtension(schemasv1.ServiceNameExtension, proto.ServiceName)
+			event.SetExtension(schemasv1.MethodNameExtension, proto.MethodName)
+			event.SetExtension(schemasv1.ResourceNameExtension, proto.ResourceName)
 		default:
 			return nil, fmt.Errorf("unhandled proto payload type: %T", proto)
 		}
