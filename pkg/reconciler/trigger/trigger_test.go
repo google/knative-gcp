@@ -266,7 +266,7 @@ func TestAllCasesTrigger(t *testing.T) {
 					WithBrokerClass(brokerv1beta1.BrokerClass),
 					WithInitBrokerConditions,
 					WithBrokerReady("url"),
-					WithBrokerSetDefaults, ),
+					WithBrokerSetDefaults),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(testUID),
 					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),

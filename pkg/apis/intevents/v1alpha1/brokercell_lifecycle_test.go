@@ -251,7 +251,7 @@ func TestBrokerCellConditionStatus(t *testing.T) {
 		retryStatus:         TestHelper.AvailableDeployment(),
 		targetsStatus:       true,
 		wantConditionStatus: corev1.ConditionUnknown,
-	},{
+	}, {
 		name:                "ingress sad",
 		fanoutStatus:        TestHelper.AvailableDeployment(),
 		ingressStatus:       TestHelper.UnavailableEndpoints(),
@@ -272,7 +272,7 @@ func TestBrokerCellConditionStatus(t *testing.T) {
 		retryStatus:         TestHelper.UnknownDeployment(),
 		targetsStatus:       true,
 		wantConditionStatus: corev1.ConditionUnknown,
-	},{
+	}, {
 		name:                "targets sad",
 		fanoutStatus:        TestHelper.AvailableDeployment(),
 		ingressStatus:       TestHelper.AvailableEndpoints(),

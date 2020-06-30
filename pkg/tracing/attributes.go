@@ -18,6 +18,7 @@ package tracing
 
 import (
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/tracing"

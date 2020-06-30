@@ -49,8 +49,8 @@ var (
 )
 
 var (
-	allowedEventTypes = map[string]struct{} {
-		"e2e-dummy-event-type": {},
+	allowedEventTypes = map[string]struct{}{
+		"e2e-dummy-event-type":              {},
 		"e2e-testing-resp-event-type-dummy": {},
 	}
 )
