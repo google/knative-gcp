@@ -130,9 +130,9 @@ Data,
         "name": "projects/test-project/topics/test-auditlogs-source"
       },
       "requestMetadata": {
-        "callerIp": "192.168.61.78",
-        "callerNetwork": "//compute.googleapis.com/projects/google.com:cloudtop-prod/global/networks/__unknown__",
-        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/299.0.0 command/gcloud.pubsub.topics.create invocation-id/62e9c87fa2954f7fb2d7bdebbc7d8b38 environment/GCE environment-version/None interactive/True from-script/False python/3.7.7 term/screen-256color (Linux 5.6.14-2rodete2-amd64),gzip(gfe)",
+        "callerIp": "192.168.0.1",
+        "callerNetwork": "//compute.googleapis.com/projects/google.com:my-laptop/global/networks/__unknown__",
+        "callerSuppliedUserAgent": "google-cloud-sdk",
         "destinationAttributes": {},
         "requestAttributes": {
           "auth": {},
