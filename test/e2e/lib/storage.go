@@ -107,7 +107,7 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 	}
 	it := client.Buckets(ctx, project)
 	// Name should be between 3-63 characters. https://cloud.google.com/storage/docs/naming-buckets
-	bucketName := helpers.AppendRandomString(fmt.Sprintf("storage-e2e-test-%s", project))
+	bucketName := helpers.AppendRandomString("storage-e2e-test")
 	// Iterate buckets to check if there has a bucket for e2e test
 	for {
 		bucketAttrs, err := it.Next()
