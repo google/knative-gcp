@@ -81,22 +81,22 @@ You should see log lines similar to:
 Validation: valid
 Context Attributes,
   specversion: 1.0
-  type: com.google.cloud.pubsub.topic.publish
-  source: //pubsub.googleapis.com/projects/PROJECT_ID/topics/TOPIC_NAME
-  id: 951049449503068
-  time: 2020-01-24T18:29:36.874Z
+  type: google.cloud.pubsub.topic.v1.messagePublished
+  source: //pubsub.googleapis.com/projects/test-project/topics/testing
+  id: 1314133748793931
+  time: 2020-06-30T16:32:57.012Z
   datacontenttype: application/json
 Extensions,
-  knativearrivaltime: 2020-01-24T18:29:37.212883996Z
-  knativecemode: push
-  traceparent: 00-7e7fb503ae694cc0f1cbf84ea63354be-f8c4848c9c11e073-00
+  knativearrivaltime: 2020-06-30T16:32:58.016175839Z
+  knsourcetrigger: link0.13999342310482066
+  traceparent: 00-e9ce0f38d85d8333bd1a3334ead78b4d-acd063b2d3e93980-00
 Data,
   {
-    "subscription": "cre-pull-7b35a745-877f-4f1f-9434-74062631a958",
+    "subscription": "cre-src_rc3_source-for-knativegcp-test-pubsub-tr_fcdf7716-c4bd-43b9-8ccc-e6e8ff848cd4",
     "message": {
-      "messageId": "951049449503068",
-      "data": "eyJIZWxsbyI6ICJ3b3JsZCJ9Cg==",
-      "publishTime": "2020-01-24T18:29:36.874Z"
+      "messageId": "1314133748793931",
+      "data": "eyJIZWxsbyI6ICJ3b3JsZCJ9", // base64 encoded '{"Hello": "world"}'
+      "publishTime": "2020-06-30T16:32:57.012Z"
     }
   }
 ```
