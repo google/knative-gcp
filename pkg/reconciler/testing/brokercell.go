@@ -128,7 +128,6 @@ func WithBrokerCellRetryFailed(reason, msg string) BrokerCellOption {
 	}
 }
 
-
 func WithBrokerCellRetryUnknown(reason, msg string) BrokerCellOption {
 	return func(bc *intv1alpha1.BrokerCell) {
 		bc.Status.MarkRetryUnknown(reason, msg)
