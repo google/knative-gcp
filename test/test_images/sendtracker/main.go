@@ -18,6 +18,7 @@ package main
 import (
 	"crypto/rand"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 	"net/http"
@@ -68,20 +69,17 @@ func compareLogs(sendResults rangeResultArr, receiveResults rangeReceivedArr, se
 func main() {
 	sinkURI := os.Getenv("K_SINK")
 	if len(sinkURI) == 0 {
-		fmt.Printf("No SINK URI specified\n")
-		os.Exit(1)
+		log.Fatalf("No SINK URI specified\n")
 	}
 	delayMSString := os.Getenv("DELAY_MS")
 	delayMS, err := strconv.Atoi(delayMSString)
 	if err != nil || delayMS < 0 {
-		fmt.Printf("Invalid delay millisecond (%s)", delayMSString)
-		os.Exit(1)
+		log.Fatalf("Invalid delay millisecond (%s)", delayMSString)
 	}
 	postStopWaitSecsString := os.Getenv("POST_STOP_SECS")
 	postStopWaitSecs, err := strconv.Atoi(postStopWaitSecsString)
 	if err != nil || postStopWaitSecs < 1 {
-		fmt.Printf("Invalid post stop wait seconds (%s)", postStopWaitSecsString)
-		os.Exit(1)
+		log.Fatalf("Invalid post stop wait seconds (%s)", postStopWaitSecsString)
 	}
 	fmt.Printf("Opening client to %s\n", sinkURI)
 	httpOpts := []cehttp.Option{
@@ -89,21 +87,18 @@ func main() {
 	}
 	transport, err := cloudevents.NewHTTP(httpOpts...)
 	if err != nil {
-		fmt.Printf("failed to create transport: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("failed to create transport: %v\n", err)
 	}
 
 	ceClient, err := cloudevents.NewClient(transport)
 	if err != nil {
-		fmt.Printf("Unable to create ceClient: %s ", err)
-		os.Exit(1)
+		log.Fatalf("Unable to create ceClient: %s ", err)
 	}
 	fmt.Printf("Client created to %s\n", sinkURI)
 
 	bint, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
-		fmt.Printf("Error creating stracker random source id: %v", bint)
-		os.Exit(1)
+		log.Fatalf("Error creating stracker random source id: %v", bint)
 	}
 	source := fmt.Sprintf("stracker_%s", bint)
 	// Start the receive goroutine
@@ -143,7 +138,8 @@ func main() {
 		sendPacer.setState(SendStateDone)
 	}
 
-	// loop forever
+	// loop forever so that we don't exit and callers can still access the
+	// /results and /resultsready API's.
 	for {
 		time.Sleep(time.Minute)
 	}

@@ -46,7 +46,7 @@ type Receiver struct {
 	// now only compress the results after taking data.
 	// Revisit if memory is an issue.
 	resultMap map[int]struct{}
-	// Count of duplicates we see whan adding to map
+	// Count of duplicates we see when adding to map
 	resultDuplicates int
 	// sumarized results once we are in Done
 	resultList rangeReceivedArr
@@ -216,5 +216,4 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) {
 			return
 		}
 	}
-
 }

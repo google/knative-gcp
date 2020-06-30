@@ -5,7 +5,7 @@ This pod is used to measure unreceived (but accepted) message sends.
 This pod is designed to be both an event sender and an event receiver.  It
 sends a series of events through a single threaded sender, keeping track of the
 response code for each send.  The receiver maintains a list
-of received events.  When stopped, the receiver than waits several minutes
+of received events.  When stopped, the receiver then waits several minutes
 for all events to be delivered.
 
 The ranges of events successfully sent and received are then compared, with
@@ -19,7 +19,8 @@ are made, but reliable forwarders like the broker may forward some events more t
 once if they are unsure that the previous forward worked)
 
 The yaml's in this directory hard code it to send to the knative GCP
-broker for the default namespace and to receive events via a trigger.
+broker for the default namespace and to receive events via a trigger.  As a
+prerequisite, the broker must already be configured for this namespace.
 It must be run as a deployment with a single pod.  They can be deployed with
   ko apply -f .
 
@@ -33,7 +34,7 @@ or via a curl pod run inside the cluster.
 
 - curl sendtracker:8070/start
   starts sending events to the receiver.  After this is run, the user should then do whatever
-  perturbations are are desired to test (upgrades, failure injection, etc)
+  perturbations are desired to test (upgrades, failure injection, etc)
 
 - curl sendtracker:8070/stop
   stops sending events to the receiver, but waits a configurable time for events to be delivered
@@ -41,7 +42,7 @@ or via a curl pod run inside the cluster.
 - curl sendtracker:8070/resultsready
   returns "true" once the receiver has finished listening, and results are ready.
 
-- curl sendtracker:8070/ready
+- curl sendtracker:8070/results
   returns a human readable summary of the run.  The first line is "success" if no errors were seen
   and "failure" if errors were seen.  The following lines are human readable info about errors, warnings,
   all send results, all events received, and the number of duplicate events seen.

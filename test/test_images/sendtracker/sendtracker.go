@@ -176,8 +176,6 @@ func (s *sendPacer) runMeasure() error {
 
 		if protocol.IsACK(result) && statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices {
 			success = true
-		} else {
-			success = false
 		}
 		if len(s.results) > 0 && s.results[len(s.results)-1].success == success && s.results[len(s.results)-1].statusCode == statusCode {
 			s.results[len(s.results)-1].maxID = idNum
@@ -316,9 +314,8 @@ func (s *sendPacer) handleResults(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("%s\n", res)
 		w.Write([]byte(res))
 		return
-	} else {
-		w.Write([]byte(s.resultSummary))
 	}
+	w.Write([]byte(s.resultSummary))
 }
 
 func makeSender(client cloudevents.Client, receiver *Receiver, source string, delay time.Duration) *sendPacer {

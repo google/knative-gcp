@@ -3,7 +3,6 @@ kind: Trigger
 metadata:
   name: tracker-trigger
 spec:
-  filter:
   subscriber:
     ref:
       apiVersion: v1
