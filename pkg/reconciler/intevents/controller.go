@@ -18,6 +18,7 @@ package intevents
 
 import (
 	"context"
+
 	"knative.dev/pkg/configmap"
 
 	pubsubClient "github.com/google/knative-gcp/pkg/client/injection/client"
