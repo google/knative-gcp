@@ -29,9 +29,8 @@ import (
 	"knative.dev/eventing/pkg/utils"
 	tracinghelper "knative.dev/eventing/test/conformance/helpers/tracing"
 	testlib "knative.dev/eventing/test/lib"
-	"knative.dev/eventing/test/lib/recordevents"
 	"knative.dev/eventing/test/lib/resources"
-	"knative.dev/eventing/test/lib/resources/sender"
+	"knative.dev/eventing/test/lib/sender"
 )
 
 // BrokerTracingTestHelperWithChannelTestRunner runs the Broker tracing tests for all Channels in
@@ -205,7 +204,7 @@ func setupBrokerTracing(brokerClass string) SetupTracingTestInfrastructureFunc {
 		return expected, cetest.AllOf(
 			cetest.HasSource(senderName),
 			cetest.HasId(eventID),
-			recordevents.DataContains(eventBody),
+			cetest.DataContains(eventBody),
 		)
 	}
 }
