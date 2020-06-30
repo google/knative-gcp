@@ -24,12 +24,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
@@ -48,6 +46,7 @@ func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	project := os.Getenv(lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
+	defer lib.DeleteBucket(ctx, t, bucketName)
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	svcName := helpers.AppendRandomString(bucketName + "-event-display")
 
@@ -86,7 +85,7 @@ func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	deletedNotificationExists := lib.NotificationExists(t, bucketName, notificationID)
 	if deletedNotificationExists {
-		t.Errorf("Expected notification%q tto get deleted", notificationID)
+		t.Errorf("Expected notification%q to get deleted", notificationID)
 	}
 
 	deletedTopicExists := lib.TopicExists(t, topicID)
@@ -106,6 +105,7 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 	project := os.Getenv(lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
+	defer lib.DeleteBucket(ctx, t, bucketName)
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 
@@ -116,10 +116,11 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 	defer lib.TearDown(client)
 
 	fileName := helpers.AppendRandomString("test-file-for-storage")
-	source := v1beta1.CloudStorageSourceEventSource(bucketName)
+	source := schemasv1.CloudStorageEventSource(bucketName)
+	subject := schemasv1.CloudStorageEventSubject(fileName)
 
 	// Create a storage_target Job to receive the events.
-	lib.MakeStorageJobOrDie(client, source, fileName, targetName, v1beta1.CloudStorageSourceFinalize)
+	lib.MakeStorageJobOrDie(client, source, subject, targetName, schemasv1.CloudStorageObjectFinalizedEventType)
 
 	// Create the Storage source.
 	lib.MakeStorageOrDie(client, lib.StorageConfig{
@@ -173,8 +174,8 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 			"metric.type":                 lib.EventCountMetricType,
 			"resource.type":               lib.GlobalMetricResourceType,
 			"metric.label.resource_group": lib.StorageResourceGroup,
-			"metric.label.event_type":     v1alpha1.CloudStorageSourceFinalize,
-			"metric.label.event_source":   v1alpha1.CloudStorageSourceEventSource(bucketName),
+			"metric.label.event_type":     schemasv1.CloudStorageObjectFinalizedEventType,
+			"metric.label.event_source":   schemasv1.CloudStorageEventSource(bucketName),
 			"metric.label.namespace_name": client.Namespace,
 			"metric.label.name":           storageName,
 			// We exit the target image before sending a response, thus check for 500.

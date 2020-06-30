@@ -37,6 +37,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/pkg/utils"
 )
 
@@ -55,10 +56,10 @@ const (
 var (
 	// Mapping of the storage source CloudEvent types to google storage types.
 	storageEventTypes = map[string]string{
-		v1beta1.CloudStorageSourceFinalize:       "OBJECT_FINALIZE",
-		v1beta1.CloudStorageSourceArchive:        "OBJECT_ARCHIVE",
-		v1beta1.CloudStorageSourceDelete:         "OBJECT_DELETE",
-		v1beta1.CloudStorageSourceMetadataUpdate: "OBJECT_METADATA_UPDATE",
+		schemasv1.CloudStorageObjectFinalizedEventType:       "OBJECT_FINALIZE",
+		schemasv1.CloudStorageObjectArchivedEventType:        "OBJECT_ARCHIVE",
+		schemasv1.CloudStorageObjectDeletedEventType:         "OBJECT_DELETE",
+		schemasv1.CloudStorageObjectMetadataUpdatedEventType: "OBJECT_METADATA_UPDATE",
 	}
 )
 

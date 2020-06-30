@@ -124,7 +124,6 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1beta1.CloudS
 			// Add our jobName, and schedulerName as customAttributes.
 			customAttributes := map[string]string{
 				v1beta1.CloudSchedulerSourceJobName: jobName,
-				v1beta1.CloudSchedulerSourceName:    scheduler.GetName(),
 			}
 			_, err = client.CreateJob(ctx, &schedulerpb.CreateJobRequest{
 				Parent: parent,

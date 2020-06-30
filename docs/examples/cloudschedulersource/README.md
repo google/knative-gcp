@@ -71,7 +71,7 @@ service that this Scheduler job sinks to.
 1. Inspect the logs of the `Service`:
 
    ```shell
-   kubectl logs --selector app=event-display -c user-container
+   kubectl logs --selector app=event-display -c user-container --tail=200
    ```
 
 You should see log lines similar to:
@@ -81,16 +81,20 @@ You should see log lines similar to:
 Validation: valid
 Context Attributes,
   specversion: 1.0
-  type: com.google.cloud.scheduler.job.execute
-  source: //cloudscheduler.googleapis.com/projects/knative-gcp/locations/us-east4/schedulers/scheduler-test
-  subject: jobs/cre-scheduler-bfc82b00-11fd-42ec-b21a-011dddc2170b
-  id: 714614529367848
-  time: 2019-08-28T22:29:00.979Z
-  datacontenttype: application/octet-stream
+  type: google.cloud.scheduler.job.v1.executed
+  source: //cloudscheduler.googleapis.com/projects/test-project/locations/us-central1/jobs/cre-scheduler-a7155fae-895c-4d11-b555-b2cd5ed97666
+  id: 1313918157507406
+  time: 2020-06-30T16:21:00.861Z
+  dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/scheduler/v1/data.proto
+  datacontenttype: application/json
 Extensions,
-  knativecemode: binary
+  knativearrivaltime: 2020-06-30T16:21:01.401511767Z
+  knsourcetrigger: link0.16512790926262466
+  traceparent: 00-37bb197929fc15a684be311da682fce2-4af58d9f16415e4a-00
 Data,
-  my test data
+  {
+    "custom_data": "c2NoZWR1bGVyIGN1c3RvbSBkYXRh" // base64 encoded "scheduler custom data"
+  }
 ```
 
 ## What's Next

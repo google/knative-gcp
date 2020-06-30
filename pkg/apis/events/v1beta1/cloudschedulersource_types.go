@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"fmt"
-
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,17 +55,9 @@ var (
 )
 
 const (
-	// CloudEvent types used by CloudSchedulerSource.
-	CloudSchedulerSourceExecute = "com.google.cloud.scheduler.job.execute"
 	// CloudSchedulerSourceJobName is the Pub/Sub message attribute key with the CloudSchedulerSource's job name.
 	CloudSchedulerSourceJobName = "jobName"
-	// CloudSchedulerSourceName is the Pub/Sub message attribute key with the CloudSchedulerSource's name.
-	CloudSchedulerSourceName = "schedulerName"
 )
-
-func CloudSchedulerSourceEventSource(parent, scheduler string) string {
-	return fmt.Sprintf("//cloudscheduler.googleapis.com/%s/schedulers/%s", parent, scheduler)
-}
 
 // CloudSchedulerSourceSpec is the spec for a CloudSchedulerSource resource
 type CloudSchedulerSourceSpec struct {

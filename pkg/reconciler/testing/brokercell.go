@@ -110,6 +110,12 @@ func WithBrokerCellFanoutFailed(reason, msg string) BrokerCellOption {
 	}
 }
 
+func WithBrokerCellFanoutUnknown(reason, msg string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.MarkFanoutUnknown(reason, msg)
+	}
+}
+
 func WithBrokerCellRetryAvailable() BrokerCellOption {
 	return func(bc *intv1alpha1.BrokerCell) {
 		bc.Status.PropagateFanoutAvailability(v1alpha1.TestHelper.AvailableDeployment())
@@ -119,6 +125,12 @@ func WithBrokerCellRetryAvailable() BrokerCellOption {
 func WithBrokerCellRetryFailed(reason, msg string) BrokerCellOption {
 	return func(bc *intv1alpha1.BrokerCell) {
 		bc.Status.MarkRetryFailed(reason, msg)
+	}
+}
+
+func WithBrokerCellRetryUnknown(reason, msg string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.MarkRetryUnknown(reason, msg)
 	}
 }
 

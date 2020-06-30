@@ -164,7 +164,7 @@ that this Storage notification sinks to.
 1. Inspect the logs of the `Service`:
 
    ```shell
-   kubectl logs --selector app=event-display -c user-container
+   kubectl logs --selector app=event-display -c user-container --tail=200
    ```
 
 You should see log lines similar to:
@@ -174,32 +174,36 @@ You should see log lines similar to:
 Validation: valid
 Context Attributes,
   specversion: 1.0
-  type: com.google.cloud.storage.object.finalize
-  source: //storage.googleapis.com/buckets/vaikasvaikas-notification-test
-  subject: testfilehere
-  id: 710717795564381
-  time: 2019-08-27T16:35:03.742Z
-  schemaurl: https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json
+  type: google.cloud.storage.object.v1.finalized
+  source: //storage.googleapis.com/projects/_/buckets/knativegcp-rc1
+  subject: objects/myimage.jpeg
+  id: 1313899854146765
+  time: 2020-06-30T16:26:12.334Z
+  dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto
   datacontenttype: application/json
+Extensions,
+  knativearrivaltime: 2020-06-30T16:26:12.860787657Z
+  knsourcetrigger: link0.17754831512278457
+  traceparent: 00-dfa40189f717da88565d7f489e1cb356-fbe2f82875154c65-00
 Data,
   {
     "kind": "storage#object",
-    "id": "vaikasvaikas-notification-test/testfilehere/1566923702760643",
-    "selfLink": "https://www.googleapis.com/storage/v1/b/vaikasvaikas-notification-test/o/testfilehere",
-    "name": "testfilehere",
-    "bucket": "vaikasvaikas-notification-test",
-    "generation": "1566923702760643",
+    "id": "knativegcp-rc1/myimage.jpeg/1593534371944198",
+    "selfLink": "https://www.googleapis.com/storage/v1/b/knativegcp-rc1/o/myimage.jpeg",
+    "name": "myimage.jpeg",
+    "bucket": "knativegcp-rc1",
+    "generation": "1593534371944198",
     "metageneration": "1",
-    "contentType": "application/octet-stream",
-    "timeCreated": "2019-08-27T16:35:02.760Z",
-    "updated": "2019-08-27T16:35:02.760Z",
+    "contentType": "image/jpeg",
+    "timeCreated": "2020-06-30T16:26:11.943Z",
+    "updated": "2020-06-30T16:26:11.943Z",
     "storageClass": "STANDARD",
-    "timeStorageClassUpdated": "2019-08-27T16:35:02.760Z",
-    "size": "1432",
-    "md5Hash": "RZkejFFNPn0p4GZyPKnqUg==",
-    "mediaLink": "https://www.googleapis.com/download/storage/v1/b/vaikasvaikas-notification-test/o/testfilehere?generation=1566923702760643&alt=media",
-    "crc32c": "JUiU0w==",
-    "etag": "CMPpxdW9o+QCEAE="
+    "timeStorageClassUpdated": "2020-06-30T16:26:11.943Z",
+    "size": "12268",
+    "md5Hash": "Gpx8dT1pF2lbIvLll9Ynyw==",
+    "mediaLink": "https://www.googleapis.com/download/storage/v1/b/knativegcp-rc1/o/myimage.jpeg?generation=1593534371944198&alt=media",
+    "crc32c": "zO8qSQ==",
+    "etag": "CIautZH6qeoCEAE="
   }
 ```
 

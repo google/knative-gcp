@@ -22,7 +22,7 @@ metadata:
   annotations:
     registry.knative.dev/eventTypes: |
       [
-        {"type": "com.google.cloud.auditlog.event", "schema": "type.googleapis.com/google.logging.v2.LogEntry", "description": "Common audit log event type for all Google Cloud Platform API operations." }
+        {"type": "google.cloud.audit.log.v1.written", "schema": "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/audit/v1/data.proto", "description": "Common audit log event type for all Google Cloud Platform API operations." }
       ]
   name: cloudauditlogssources.events.cloud.google.com
 spec:

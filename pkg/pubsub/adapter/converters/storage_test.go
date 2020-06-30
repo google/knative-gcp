@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 const (
@@ -69,7 +69,7 @@ func TestConvertCloudStorageSource(t *testing.T) {
 		},
 		wantErr: true,
 	}, {
-		name: "unkown eventType attribute",
+		name: "unknown eventType attribute",
 		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
@@ -118,17 +118,17 @@ func TestConvertCloudStorageSource(t *testing.T) {
 				if !gotEvent.Time().Equal(storagePublishTime) {
 					t.Errorf("Time '%v' != '%v'", gotEvent.Time(), storagePublishTime)
 				}
-				if want := v1beta1.CloudStorageSourceEventSource("my-bucket"); gotEvent.Source() != want {
+				if want := schemasv1.CloudStorageEventSource("my-bucket"); gotEvent.Source() != want {
 					t.Errorf("Source %q != %q", gotEvent.Source(), want)
 				}
-				if gotEvent.Type() != v1beta1.CloudStorageSourceFinalize {
-					t.Errorf(`Type %q != %q`, gotEvent.Type(), v1beta1.CloudStorageSourceFinalize)
+				if gotEvent.Type() != schemasv1.CloudStorageObjectFinalizedEventType {
+					t.Errorf(`Type %q != %q`, gotEvent.Type(), schemasv1.CloudStorageObjectFinalizedEventType)
 				}
-				if gotEvent.Subject() != objectId {
+				if want := schemasv1.CloudStorageEventSubject(objectId); gotEvent.Subject() != want {
 					t.Errorf("Subject %q != %q", gotEvent.Subject(), objectId)
 				}
-				if gotEvent.DataSchema() != storageSchemaUrl {
-					t.Errorf("DataSchema %q != %q", gotEvent.DataSchema(), storageSchemaUrl)
+				if gotEvent.DataSchema() != schemasv1.CloudStorageEventDataSchema {
+					t.Errorf("DataSchema %q != %q", gotEvent.DataSchema(), schemasv1.CloudStorageEventDataSchema)
 				}
 			}
 		})

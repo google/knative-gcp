@@ -63,9 +63,15 @@ type multiTopicDecoupleSink struct {
 }
 
 // Send sends incoming event to its corresponding pubsub topic based on which broker it belongs to.
-func (m *multiTopicDecoupleSink) Send(ctx context.Context, ns, broker string, event cev2.Event) protocol.Result {
-	topic, err := m.getTopicForBroker(types.NamespacedName{Namespace: ns, Name: broker})
+func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.NamespacedName, event cev2.Event) protocol.Result {
+	topic, err := m.getTopicForBroker(broker)
 	if err != nil {
+		trace.FromContext(ctx).Annotate(
+			[]trace.Attribute{
+				trace.StringAttribute("error_message", err.Error()),
+			},
+			"unable to accept event",
+		)
 		return err
 	}
 
