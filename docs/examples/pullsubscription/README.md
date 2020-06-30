@@ -122,7 +122,7 @@ You should see log lines similar to:
 Validation: valid
  Context Attributes,
    specversion: 1.0
-   type: com.google.cloud.pubsub.topic.publish
+   type: google.cloud.pubsub.topic.v1.messagePublished
    source: //pubsub.googleapis.com/PROJECT_ID/topics/TOPIC_NAME
    id: 9f9b0968-a15f-4e74-ac58-e8a1c4fa587d
    time: 2019-06-10T17:52:36.73Z

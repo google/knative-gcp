@@ -91,75 +91,113 @@ You should see log lines similar to:
 Validation: valid
 Context Attributes,
   specversion: 1.0
-  type: com.google.cloud.auditlog.event
-  source: pubsub.googleapis.com/projects/test
-  subject: projects/test/topics/test-auditlogs-source
-  id: efdb9bf7d6fdfc922352530c1ba51242
-  time: 2020-01-07T20:56:30.516179081Z
-  dataschema: type.googleapis.com/google.logging.v2.LogEntry
+  type: google.cloud.audit.log.v1.written
+  source: //cloudaudit.googleapis.com/projects/test-project/logs/activity
+  subject: pubsub.googleapis.com/projects/test-project/topics/test-auditlogs-source
+  id: b2aaf4b545f42b4156d6f5fe7cca24b4
+  time: 2020-06-30T16:14:47.593398572Z
+  dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/audit/v1/data.proto
   datacontenttype: application/json
 Extensions,
+  knativearrivaltime: 2020-06-30T16:14:50.476091448Z
+  knsourcetrigger: link0.26303396786461575
   methodname: google.pubsub.v1.Publisher.CreateTopic
-  resourcename: projects/test/topics/test-auditlogs-source
+  resourcename: projects/test-project/topics/test-auditlogs-source
   servicename: pubsub.googleapis.com
+  traceparent: 00-e4e9a3d06604b0b080bf20f622f52d36-8b7a0438e6e607ba-00
 Data,
   {
-    "insertId": "8c2iznd54od",
-    "logName": "projects/test/logs/cloudaudit.googleapis.com%2Factivity",
+    "insertId": "9frck8cf9j",
+    "logName": "projects/test-project/logs/cloudaudit.googleapis.com%2Factivity",
     "protoPayload": {
       "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
       "authenticationInfo": {
-        "principalEmail": "test@google.com"
+        "principalEmail": "robot@test-project.iam.gserviceaccount.com",
+        "principalSubject": "user:robot@test-project.iam.gserviceaccount.com",
+        "serviceAccountKeyName": "//iam.googleapis.com/projects/test-project/serviceAccounts/robot@test-project.iam.gserviceaccount.com/keys/90f662482321f1ca8e82ea675b1a1c30c1fe681f"
       },
       "authorizationInfo": [
         {
           "granted": true,
           "permission": "pubsub.topics.create",
-          "resource": "projects/test",
+          "resource": "projects/test-project",
           "resourceAttributes": {}
         }
       ],
       "methodName": "google.pubsub.v1.Publisher.CreateTopic",
       "request": {
         "@type": "type.googleapis.com/google.pubsub.v1.Topic",
-        "kmsKeyName": "",
-        "name": "projects/test/topics/test-auditlogs-source"
+        "name": "projects/test-project/topics/test-auditlogs-source"
       },
       "requestMetadata": {
-        "callerIp": "2620:15c:10f:203:c404:c29d:a94d:dc1e",
-        "callerSuppliedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36,gzip(gfe)",
+        "callerIp": "192.168.61.78",
+        "callerNetwork": "//compute.googleapis.com/projects/google.com:cloudtop-prod/global/networks/__unknown__",
+        "callerSuppliedUserAgent": "google-cloud-sdk gcloud/299.0.0 command/gcloud.pubsub.topics.create invocation-id/62e9c87fa2954f7fb2d7bdebbc7d8b38 environment/GCE environment-version/None interactive/True from-script/False python/3.7.7 term/screen-256color (Linux 5.6.14-2rodete2-amd64),gzip(gfe)",
         "destinationAttributes": {},
         "requestAttributes": {
           "auth": {},
-          "time": "2020-01-07T20:56:30.520970037Z"
+          "time": "2020-06-30T16:14:47.600710407Z"
         }
       },
       "resourceLocation": {
         "currentLocations": [
-          "us-west2"
+          "asia-east1",
+          "asia-northeast1",
+          "asia-southeast1",
+          "australia-southeast1",
+          "europe-north1",
+          "europe-west1",
+          "europe-west2",
+          "europe-west3",
+          "europe-west4",
+          "us-central1",
+          "us-central2",
+          "us-east1",
+          "us-east4",
+          "us-west1",
+          "us-west2",
+          "us-west3",
+          "us-west4"
         ]
       },
-      "resourceName": "projects/test/topics/test-auditlogs-source",
+      "resourceName": "projects/test-project/topics/test-auditlogs-source",
       "response": {
         "@type": "type.googleapis.com/google.pubsub.v1.Topic",
         "messageStoragePolicy": {
-            "us-west2"
+          "allowedPersistenceRegions": [
+            "asia-east1",
+            "asia-northeast1",
+            "asia-southeast1",
+            "australia-southeast1",
+            "europe-north1",
+            "europe-west1",
+            "europe-west2",
+            "europe-west3",
+            "europe-west4",
+            "us-central1",
+            "us-central2",
+            "us-east1",
+            "us-east4",
+            "us-west1",
+            "us-west2",
+            "us-west3",
+            "us-west4"
           ]
         },
-        "name": "projects/test/topics/test-auditlogs-source"
+        "name": "projects/test-project/topics/test-auditlogs-source"
       },
       "serviceName": "pubsub.googleapis.com"
     },
-    "receiveTimestamp": "2020-01-07T20:56:59.919268372Z",
+    "receiveTimestamp": "2020-06-30T16:14:48.401489148Z",
     "resource": {
       "labels": {
-        "project_id": "test",
-        "topic_id": "projects/test/topics/test-auditlogs-source"
+        "project_id": "test-project",
+        "topic_id": "projects/test-project/topics/test-auditlogs-source"
       },
       "type": "pubsub_topic"
     },
     "severity": "NOTICE",
-    "timestamp": "2020-01-07T20:56:30.516179081Z"
+    "timestamp": "2020-06-30T16:14:47.593398572Z"
   }
 ```
 

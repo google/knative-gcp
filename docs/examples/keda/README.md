@@ -136,7 +136,7 @@ for x in {1..50}; do gcloud pubsub topics publish testing-keda --message "Test M
         Validation: valid
         Context Attributes,
           specversion: 1.0
-          type: com.google.cloud.pubsub.topic.publish
+          type: google.cloud.pubsub.topic.v1.messagePublished
           source: //pubsub.googleapis.com/projects/PROJECT_ID/topics/TOPIC_NAME
           id: 951049449503068
           time: 2020-01-24T18:29:36.874Z
