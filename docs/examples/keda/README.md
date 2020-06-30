@@ -5,7 +5,7 @@
 [KEDA](https://keda.sh/) is a Kubernetes-based Event Driven Autoscaler that
 drives scaling of any container in Kubernetes. It is especially interesting for
 our Pull-based Sources, as it has
-[native support](https://keda.sh/scalers/gcp-pub-sub/) for Pub/Sub.
+[native support](https://keda.sh/docs/1.4/scalers/gcp-pub-sub/) for Pub/Sub.
 
 In order to make any of the Knative-GCP Sources scale with KEDA, users need to
 create their Sources with the following annotation:
@@ -59,7 +59,7 @@ the `CloudPubSubSource` scalable. Note that you could do this for any of the
      --role roles/monitoring.viewer
    ```
 
-1. [Install KEDA](https://keda.sh/deploy/). Note that this example was tested
+1. [Install KEDA](https://keda.sh/docs/1.4/deploy/). Note that this example was tested
    using KEDA [v1.2.0](https://github.com/kedacore/keda/releases/tag/v1.2.0).
 
 ### Deployment
