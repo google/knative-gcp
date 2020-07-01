@@ -80,13 +80,16 @@ Workload Identity see
 
 ## Deployment
 
-* For up to [v0.15.0](https://github.com/google/knative-gcp/tree/v0.15.0), apply GCP broker yamls:
+- For up to [v0.15.0](https://github.com/google/knative-gcp/tree/v0.15.0), apply
+  GCP broker yamls:
 
   ```shell
   ko apply -f ./config/broker/
   ```
-* In the latest version, relevant components [will be created by BrokerCell on demand](https://github.com/google/knative-gcp/pull/1170), so, no broker-specific configs are needed at this point.
 
+- In the latest version, relevant components
+  [will be created by BrokerCell on demand](https://github.com/google/knative-gcp/pull/1170),
+  so, no broker-specific configs are needed at this point.
 
 ## Usage
 
