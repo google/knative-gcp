@@ -243,7 +243,8 @@ func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.Au
 		BrokerCell:        bc,
 		AvgCPUUtilization: 95,
 		AvgMemoryUsage:    "700Mi",
-		MaxReplicas:       10,
+		MaxReplicas:       *bc.Spec.Components.Ingress.MaxReplicas,
+		MinReplicas:       *bc.Spec.Components.Ingress.MinReplicas,
 	}
 }
 
@@ -270,7 +271,8 @@ func (r *Reconciler) makeFanoutHPAArgs(bc *intv1alpha1.BrokerCell) resources.Aut
 		// usage, HPA could have enough time to kick in.
 		// See: https://github.com/google/knative-gcp/issues/1265
 		AvgMemoryUsage: "1500Mi",
-		MaxReplicas:    10,
+		MaxReplicas:    *bc.Spec.Components.Fanout.MaxReplicas,
+		MinReplicas:    *bc.Spec.Components.Fanout.MinReplicas,
 	}
 }
 
@@ -297,7 +299,10 @@ func (r *Reconciler) makeRetryHPAArgs(bc *intv1alpha1.BrokerCell) resources.Auto
 		// usage, HPA could have enough time to kick in.
 		// See: https://github.com/google/knative-gcp/issues/1265
 		AvgMemoryUsage: "1500Mi",
-		MaxReplicas:    10,
+		//MaxReplicas:    5,
+		//MinReplicas:    2,
+		MaxReplicas: *bc.Spec.Components.Retry.MaxReplicas,
+		MinReplicas: *bc.Spec.Components.Retry.MinReplicas,
 	}
 }
 

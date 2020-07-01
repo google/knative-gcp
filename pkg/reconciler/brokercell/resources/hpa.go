@@ -27,7 +27,6 @@ import (
 
 // MakeHorizontalPodAutoscaler makes an HPA for the given arguments.
 func MakeHorizontalPodAutoscaler(deployment *appsv1.Deployment, args AutoscalingArgs) *hpav2beta2.HorizontalPodAutoscaler {
-	var one int32 = 1
 	memQuantity := resource.MustParse(args.AvgMemoryUsage)
 	return &hpav2beta2.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
@@ -43,7 +42,7 @@ func MakeHorizontalPodAutoscaler(deployment *appsv1.Deployment, args Autoscaling
 				Name:       deployment.Name,
 			},
 			MaxReplicas: args.MaxReplicas,
-			MinReplicas: &one,
+			MinReplicas: &args.MinReplicas,
 			Metrics: []hpav2beta2.MetricSpec{
 				{
 					Type: hpav2beta2.ResourceMetricSourceType,
