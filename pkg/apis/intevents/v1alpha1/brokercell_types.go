@@ -68,8 +68,29 @@ var (
 	_ duckv1.KRShaped = (*BrokerCell)(nil)
 )
 
+// ComponentParameters specifies scaling and resource parameters to be used
+// by a single component of a BrokerCell.
+type ComponentParameters struct {
+	// MinReplicas specifies the minimum replica count for the component.
+	MinReplicas *int32 `json:"minReplicas,omitempty`
+
+	// MaxReplicas specifies the maximum replica count for the component.
+	MaxReplicas *int32 `json:"maxReplicas,omitempty`
+}
+
+// ComponentsParametersSpec specifies separate parameters for each component
+// of a BrokerCell.
+type ComponentsParametersSpec struct {
+	Fanout  ComponentParameters `json:"fanout,omitempty"`
+	Ingress ComponentParameters `json:"ingress,omitempty"`
+	Retry   ComponentParameters `json:"retry,omitempty"`
+}
+
 // BrokerCellSpec defines the desired state of a Brokercell.
 type BrokerCellSpec struct {
+	// Components specifies parameters of each component (fanout, ingress,
+	// retry) of a BrokerCell.
+	Components ComponentsParametersSpec `json:"components,omitempty"`
 }
 
 // BrokerCellStatus represents the current state of a BrokerCell.

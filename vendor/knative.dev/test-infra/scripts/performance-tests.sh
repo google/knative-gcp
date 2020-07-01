@@ -22,13 +22,13 @@ source $(dirname ${BASH_SOURCE})/library.sh
 # Configurable parameters.
 # If not provided, they will fall back to the default values.
 readonly BENCHMARK_ROOT_PATH=${BENCHMARK_ROOT_PATH:-test/performance/benchmarks}
-readonly PROJECT_NAME=${PROJECT_NAME:-knative-performance}
-readonly SERVICE_ACCOUNT_NAME=${SERVICE_ACCOUNT_NAME:-mako-job@knative-performance.iam.gserviceaccount.com}
+readonly PROJECT_NAME=${PROJECT_NAME:-ngiraldo-knative-dev}
+readonly SERVICE_ACCOUNT_NAME=${SERVICE_ACCOUNT_NAME:-ngiraldo@google.com}
 
 # Setup env vars.
 export KO_DOCKER_REPO="gcr.io/${PROJECT_NAME}"
 # Constants
-readonly GOOGLE_APPLICATION_CREDENTIALS="/etc/performance-test/service-account.json"
+readonly GOOGLE_APPLICATION_CREDENTIALS="/usr/local/google/home/ngiraldo/temp/temp/robot.json"
 readonly GITHUB_TOKEN="/etc/performance-test/github-token"
 readonly SLACK_READ_TOKEN="/etc/performance-test/slack-read-token"
 readonly SLACK_WRITE_TOKEN="/etc/performance-test/slack-write-token"
@@ -63,10 +63,7 @@ EOF
   # Create secrets required for running benchmarks on the cluster
   echo ">> Creating secrets on cluster $1 in zone $2"
   kubectl create secret generic mako-secrets \
-    --from-file=robot.json=${GOOGLE_APPLICATION_CREDENTIALS} \
-    --from-file=github-token=${GITHUB_TOKEN} \
-    --from-file=slack-read-token=${SLACK_READ_TOKEN} \
-    --from-file=slack-write-token=${SLACK_WRITE_TOKEN}
+    --from-file=robot.json=${GOOGLE_APPLICATION_CREDENTIALS} 
   # Delete all benchmark jobs to avoid noise in the update process
   echo ">> Deleting all cronjobs and jobs on cluster $1 in zone $2"
   kubectl delete cronjob --all
@@ -137,10 +134,10 @@ function reconcile_benchmark_clusters() {
 }
 
 # Parse flags and excute the command.
-function main() {
-  if (( ! IS_PROW )); then
-    abort "this script should only be run by Prow since it needs secrets created on Prow cluster"
-  fi
+function main() { 
+  #if (( ! IS_PROW )); then
+  #  abort "this script should only be run by Prow since it needs secrets created on Prow cluster"
+  #fi
 
   # Set up the user credential for cluster operations
   setup_user || abort "failed to set up user"
