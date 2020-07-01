@@ -100,7 +100,7 @@ func NewHandler(ctx context.Context, httpReceiver HttpMessageReceiver, decouple 
 
 // Start blocks to receive events over HTTP.
 func (h *Handler) Start(ctx context.Context) error {
-	return h.httpReceiver.StartListen(ctx, kncloudevents.CreateHandler(h))
+	return h.httpReceiver.StartListen(ctx, h)
 }
 
 // ServeHTTP implements net/http Handler interface method.
