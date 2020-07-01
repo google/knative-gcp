@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: probe-helper
+  namespace: cloud-run-events-probe
+  labels:
+    app: probe-helper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: probe-helper
+  template:
+    metadata:
+      labels:
+        app: probe-helper
+    spec:
+      containers:
+        - name: probe-helper
+          image: ko://github.com/google/knative-gcp/test/test_images/probe_helper
+          env:
+            - name: K_SINK
+              value: "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"
+            - name: PROBE_PORT
+              value: "8070"
+            - name: RECEIVER_PORT
+              value: "8080"
+            - name: TIMEOUT_MINS
+              value: "30"
