@@ -72,7 +72,7 @@ func (r rangeResultArr) String() string {
 	return result
 }
 
-// Responsibile for sending events
+// Responsible for sending events
 type sendPacer struct {
 	client cloudevents.Client
 	// Sleep between event sends

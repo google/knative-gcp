@@ -32,7 +32,7 @@ import (
 
 // Compare the ranges in sendResults and receiveResults.
 // Create error strings for any entries that are successful in sendResults, but not receiveResults.
-// Create warning strings for any entries that are in receiveResults, but not successfull in sendResults.
+// Create warning strings for any entries that are in receiveResults, but not successful in sendResults.
 // Append an error string if sendError is not nil.
 func compareLogs(sendResults rangeResultArr, receiveResults rangeReceivedArr, sendError error) (errorLogs, warningLogs string) {
 	successSendRangeCount := 0
