@@ -18,6 +18,8 @@ import (
 	"log"
 	"time"
 
+	"knative.dev/pkg/signals"
+
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/kelseyhightower/envconfig"
@@ -35,18 +37,18 @@ type envConfig struct {
 	// Environment variable containing the port to receive the event from the trigger
 	ReceiverPort int `envconfig:"RECEIVER_PORT" default:"8080"`
 
-	// Environment variable containing the timeout period to wait for an event to be delivered back (in seconds)
-	Timeout int `envconfig:"TIMEOUT" default:"300"`
+	// Environment variable containing the timeout period to wait for an event to be delivered back (in minutes)
+	Timeout int `envconfig:"TIMEOUT_MINS" default:"30"`
 }
 
-func forwardFromProbe(c cloudevents.Client, receivedEvents map[string] chan bool, timeout int) cloudEventsFunc{
+func forwardFromProbe(ctx context.Context, c cloudevents.Client, receivedEvents map[string] chan bool, timeout int) cloudEventsFunc{
 	return func(event cloudevents.Event) protocol.Result{
 		eventID := event.ID()
 		log.Print("Sending the cloud event to the broker")
 		receivedEvents[eventID] = make(chan bool, 1)
-		ctx, _ := context.WithTimeout(context.Background(), time.Duration(timeout) * time.Second)
+		ctx, _ = context.WithTimeout(ctx, time.Duration(timeout) * time.Minute)
 		if res := c.Send(ctx, event); !cloudevents.IsACK(res) {
-			log.Fatalf("Failed to send cloudevent: %v", res)
+			return cloudevents.ResultNACK
 		}
 		select {
 		case <-receivedEvents[eventID]:
@@ -93,10 +95,11 @@ func runProbeHelper() {
 	if err != nil {
 		log.Fatal("Failed to create receiver client, ", err)
 	}
-	// make a channel for sync
+	// make a map to store the channel for each event
 	receivedEvents := make(map[string]chan bool)
-	// the goroutine to receive the event from probe and forward the event to the broker
-	go sc.StartReceiver(context.Background(), forwardFromProbe(sc, receivedEvents, timeout))
-	// the goroutine to receive the event from the trigger and return the result back to the probe
-	go rc.StartReceiver(context.Background(), receiveFromTrigger(receivedEvents))
+	ctx := signals.NewContext()
+	// start a goroutine to receive the event from probe and forward the event to the broker
+	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, receivedEvents, timeout))
+	// Receive the event from the trigger and return the result back to the probe
+	rc.StartReceiver(ctx, receiveFromTrigger(receivedEvents))
 }

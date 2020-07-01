@@ -53,12 +53,13 @@ func runDummyBroker(t * testing.T) {
 // The Unit test that test whether a cloud event sending to the probe helper can forward the event to the dummy broker
 // and receive the event from the dummy broker
 func TestDeliverEventsProbeHelper(t *testing.T) {
+	//t.Skip("Skip this test from running at on Prow as it is only for local development.")
 	// setup a dummy broker URL to be the receive component directly
 	os.Setenv("K_SINK", fmt.Sprintf("http://localhost:%d", dummyBrokerPort))
-	// start the dummy probe helper
-	runProbeHelper()
-	// start the dummy broker in a new goroutine
-	go	runDummyBroker(t)
+	// start a goroutine to run the dummy probe helper
+	go runProbeHelper()
+	// start a goroutine to run the dummy broker
+	go runDummyBroker(t)
 	probeHelperURL := fmt.Sprintf("http://localhost:%d", probeHelperPort)
 	p, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeHelperURL))
 	if err != nil {
