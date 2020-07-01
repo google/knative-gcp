@@ -289,7 +289,7 @@ consumers are back.
 1. Now let's bring the event consumers back:
 
    ```shell
-   kubectl delete -f event-consumers.yaml
+   kubectl apply -f event-consumers.yaml
    ```
 
    Wait a couple of seconds, and you should see the event delivered to the event

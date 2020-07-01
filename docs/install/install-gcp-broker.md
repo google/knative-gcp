@@ -9,7 +9,7 @@ GCP using [Cloud Pub/Sub](https://cloud.google.com/pubsub).
 Knative Eventing allows different Broker implementations via `BrokerClass`
 annotation. If annotated with
 `"eventing.knative.dev/broker.class": "googlecloud"`, the `Knative-GCP`
-contorller will create a GCP Broker. Compared to the default
+controller will create a GCP Broker. Compared to the default
 [MT Channel Based Broker](https://knative.dev/docs/eventing/broker/mt-channel-based-broker/),
 GCP Broker is more performant and cost-effective by reducing hops and Pub/Sub
 message consumption.
@@ -126,8 +126,8 @@ kubectl create namespace ${NAMESPACE}
    This shows the broker you just created like so:
 
    ```shell
-   NAME          READY   REASON   URL                                                                                             AGE
-   test-broker   True             http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   15s
+   NAME          READY   REASON   URL                                                                                                         AGE
+   test-broker   True             http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   15s
    ```
 
 Once the GCP broker is ready, you can use it by sending events to its `URL` and
