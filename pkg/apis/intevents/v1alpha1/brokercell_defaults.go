@@ -31,7 +31,6 @@ const (
 func (bc *BrokerCell) SetDefaults(ctx context.Context) {
 	// The BrokerCell doesn't have any default values.
 	bc.Spec.SetDefaults(ctx)
-
 }
 
 func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
@@ -41,19 +40,16 @@ func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 	if bcs.Components.Fanout.MaxReplicas == nil {
 		bcs.Components.Fanout.MaxReplicas = ptr.Int32(maxReplicas)
 	}
-
 	if bcs.Components.Retry.MinReplicas == nil {
 		bcs.Components.Retry.MinReplicas = ptr.Int32(minReplicas)
 	}
 	if bcs.Components.Retry.MaxReplicas == nil {
 		bcs.Components.Retry.MaxReplicas = ptr.Int32(maxReplicas)
 	}
-
 	if bcs.Components.Ingress.MinReplicas == nil {
 		bcs.Components.Ingress.MinReplicas = ptr.Int32(minReplicas)
 	}
 	if bcs.Components.Ingress.MaxReplicas == nil {
 		bcs.Components.Ingress.MaxReplicas = ptr.Int32(maxReplicas)
 	}
-
 }

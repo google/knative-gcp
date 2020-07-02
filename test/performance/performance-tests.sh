@@ -19,7 +19,7 @@
 # should NOT run it manually.
 
 # Setup env vars to override the default settings
-export PROJECT_NAME="ngiraldo-knative-dev"
+export PROJECT_NAME="knative-eventing-performance"
 export BENCHMARK_ROOT_PATH="test/performance/benchmarks"
 
 source vendor/knative.dev/test-infra/scripts/performance-tests.sh
@@ -38,7 +38,7 @@ function update_knative() {
   kubectl -n ${TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} \
     --from-file=key.json="${GOOGLE_APPLICATION_CREDENTIALS}"
 
-  # Create the control-plane namespace if it does not exist.
+  # Create the control-plane namespace if it does not exist. 
   kubectl get namespace ${CONTROL_PLANE_NAMESPACE} || \
     kubectl create namespace ${CONTROL_PLANE_NAMESPACE}
 
@@ -56,8 +56,8 @@ function update_benchmark() {
   # TODO(chizhg): add update_environment function in test-infra/scripts/performance-tests.sh and move the below code there
   echo ">> Updating configmap"
   kubectl delete configmap config-mako -n "${TEST_NAMESPACE}" --ignore-not-found=true
-  kubectl create configmap config-mako -n "${TEST_NAMESPACE}" --from-file="${benchmark_path}/dev.config" || abort "failed to create config-mako configmap"
-  kubectl patch configmap config-mako -n "${TEST_NAMESPACE}" -p '{"data":{"environment":"dev"}}' || abort "failed to patch config-mako configmap"
+  kubectl create configmap config-mako -n "${TEST_NAMESPACE}" --from-file="${benchmark_path}/prod.config" || abort "failed to create config-mako configmap"
+  kubectl patch configmap config-mako -n "${TEST_NAMESPACE}" -p '{"data":{"environment":"prod"}}' || abort "failed to patch config-mako configmap"
 
   echo ">> Updating benchmark $1"
   ko delete -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} --ignore-not-found=true --wait=false
