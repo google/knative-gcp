@@ -67,14 +67,21 @@ There are two ways to set up authentication mechanism.
 1.  (Optional) Note that if you plan on running metrics-related E2E tests using
     the StackDriver backend, you need to give your
     [Service Account](../../docs/install/pubsub-service-account.md) the
-    `Monitoring Editor` role on your Google Cloud project:
+    `monitoring.metricWriter` role on your Google Cloud project:
 
     ```shell
     gcloud projects add-iam-policy-binding $PROJECT_ID \
-      --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
-      --role roles/monitoring.editor
+      --member=serviceAccount:${your_service_account}@$PROJECT_ID.iam.gserviceaccount.com \
+      --role roles/monitoring.metricWriter
     ```
-
+    If you also plan on running tracing-related E2E tests using
+        the StackDriver backend, your [Service Account](../../docs/install/pubsub-service-account.md)
+    needs additional `cloudtrace.agent` role:
+    ```shell
+    gcloud projects add-iam-policy-binding $$PROJECT_ID \
+      --member=serviceAccount:"${your_service_account}"@$PROJECT_ID.iam.gserviceaccount.com \
+      --role roles/cloudtrace.agent
+    ```
 1.  (Optional) Note that if plan on running tracing-related E2E tests using the
     Zipkin backend, you need to install
     [zipkin-in-mem](https://github.com/knative/serving/tree/master/config/monitoring/tracing/zipkin-in-mem)
