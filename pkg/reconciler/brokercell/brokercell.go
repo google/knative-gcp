@@ -133,7 +133,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	}
 
 	// Reconcile ingress deployment, HPA and service.
-	r.Recorder.Eventf(bc, corev1.EventTypeNormal, "HPA TEST", "Values for MaxReplicas: Fanout: %s, Ingress: %s, Retry: %s", bc.Spec.Components.Fanout.MaxReplicas, bc.Spec.Components.Ingress.MaxReplicas, bc.Spec.Components.Retry.MaxReplicas)
 	ingressArgs := r.makeIngressArgs(bc)
 	ind, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeIngressDeployment(ingressArgs))
 	if err != nil {
@@ -142,9 +141,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		return err
 	}
 	ingressHPAargs := r.makeIngressHPAArgs(bc)
-	r.Recorder.Eventf(bc, corev1.EventTypeNormal, "HPA TEST2", "INGRESS hpa ARGS: MaxReplicas: %s", ingressHPAargs.MaxReplicas)
 	ingressHPA := resources.MakeHorizontalPodAutoscaler(ind, ingressHPAargs)
-	r.Recorder.Eventf(bc, corev1.EventTypeNormal, "HPA TEST3", "INGRESS hpa: MaxReplicas: %s", ingressHPA.Spec.MaxReplicas)
 	if err := r.reconcileAutoscaling(ctx, bc, ingressHPA); err != nil {
 		logging.FromContext(ctx).Error("Failed to reconcile ingress HPA", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkIngressFailed("HorizontalPodAutoscalerFailed", "Failed to reconcile ingress HorizontalPodAutoscaler: %v", err)
