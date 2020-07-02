@@ -140,6 +140,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		bc.Status.MarkIngressFailed("IngressDeploymentFailed", "Failed to reconcile ingress deployment: %v", err)
 		return err
 	}
+
 	ingressHPA := resources.MakeHorizontalPodAutoscaler(ind, r.makeIngressHPAArgs(bc))
 	if err := r.reconcileAutoscaling(ctx, bc, ingressHPA); err != nil {
 		logging.FromContext(ctx).Error("Failed to reconcile ingress HPA", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
@@ -318,6 +319,7 @@ func (r *Reconciler) reconcileAutoscaling(ctx context.Context, bc *intv1alpha1.B
 	if err != nil {
 		return err
 	}
+
 	if !equality.Semantic.DeepDerivative(desired.Spec, existing.Spec) {
 		// Don't modify the informers copy.
 		copy := existing.DeepCopy()

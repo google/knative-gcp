@@ -38,11 +38,11 @@ function update_knative() {
   kubectl -n ${TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} \
     --from-file=key.json="${GOOGLE_APPLICATION_CREDENTIALS}"
 
-  # Create the control-plane namespace if it does not exist. 
+  # Create the control-plane namespace if it does not exist.
   kubectl get namespace ${CONTROL_PLANE_NAMESPACE} || \
     kubectl create namespace ${CONTROL_PLANE_NAMESPACE}
 
-  # Create the secret for control-plane if it does not exist. 
+  # Create the secret for control-plane if it does not exist.
   kubectl -n ${CONTROL_PLANE_NAMESPACE} get secret ${CONTROL_PLANE_SECRET_NAME} || \
   kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${CONTROL_PLANE_SECRET_NAME} \
     --from-file=key.json="${GOOGLE_APPLICATION_CREDENTIALS}"
