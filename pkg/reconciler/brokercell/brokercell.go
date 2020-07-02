@@ -133,6 +133,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	}
 
 	// Reconcile ingress deployment, HPA and service.
+	r.Recorder.Eventf(bc, corev1.EventTypeNormal, "HPA TEST", "Values for MaxReplicas: Fanout: %s, Ingress: %s, Retry: %s", bc.Spec.Components.Fanout.MaxReplicas, bc.Spec.Components.Ingress.MaxReplicas, bc.Spec.Components.Retry.MaxReplicas)
 	ingressArgs := r.makeIngressArgs(bc)
 	ind, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeIngressDeployment(ingressArgs))
 	if err != nil {
@@ -140,8 +141,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		bc.Status.MarkIngressFailed("IngressDeploymentFailed", "Failed to reconcile ingress deployment: %v", err)
 		return err
 	}
-
-	ingressHPA := resources.MakeHorizontalPodAutoscaler(ind, r.makeIngressHPAArgs(bc))
+	ingressHPAargs := r.makeIngressHPAArgs(bc)
+	r.Recorder.Eventf(bc, corev1.EventTypeNormal, "HPA TEST2", "INGRESS hpa ARGS: MaxReplicas: %s", ingressHPAargs.MaxReplicas)
+	ingressHPA := resources.MakeHorizontalPodAutoscaler(ind, ingressHPAargs)
+	r.Recorder.Eventf(bc, corev1.EventTypeNormal, "HPA TEST3", "INGRESS hpa: MaxReplicas: %s", ingressHPA.Spec.MaxReplicas)
 	if err := r.reconcileAutoscaling(ctx, bc, ingressHPA); err != nil {
 		logging.FromContext(ctx).Error("Failed to reconcile ingress HPA", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkIngressFailed("HorizontalPodAutoscalerFailed", "Failed to reconcile ingress HorizontalPodAutoscaler: %v", err)
@@ -299,10 +302,8 @@ func (r *Reconciler) makeRetryHPAArgs(bc *intv1alpha1.BrokerCell) resources.Auto
 		// usage, HPA could have enough time to kick in.
 		// See: https://github.com/google/knative-gcp/issues/1265
 		AvgMemoryUsage: "1500Mi",
-		//MaxReplicas:    5,
-		//MinReplicas:    2,
-		MaxReplicas: *bc.Spec.Components.Retry.MaxReplicas,
-		MinReplicas: *bc.Spec.Components.Retry.MinReplicas,
+		MaxReplicas:    *bc.Spec.Components.Retry.MaxReplicas,
+		MinReplicas:    *bc.Spec.Components.Retry.MinReplicas,
 	}
 }
 
@@ -321,7 +322,7 @@ func (r *Reconciler) reconcileAutoscaling(ctx context.Context, bc *intv1alpha1.B
 	if err != nil {
 		return err
 	}
-
+	r.Recorder.Eventf(bc, corev1.EventTypeNormal, "HorizontalPodAutoscaler TEEEST", "HPA %s/%s is created, reconciling MaxReplicas old: %s, new:%s", desired.Namespace, desired.Name, desired.Spec.MaxReplicas, existing.Spec.MaxReplicas)
 	if !equality.Semantic.DeepDerivative(desired.Spec, existing.Spec) {
 		// Don't modify the informers copy.
 		copy := existing.DeepCopy()
