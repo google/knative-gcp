@@ -28,6 +28,10 @@ import (
 )
 
 func TestBrokerCell_SetDefaults(t *testing.T) {
+	defaultMinReplicas, defaultMaxRepicas := ptr.Int32(1), ptr.Int32(10)
+	ingressMinReplicas, ingressMaxReplicas := ptr.Int32(2), ptr.Int32(3)
+	fanoutMinReplicas, fanoutMaxReplicas := ptr.Int32(4), ptr.Int32(5)
+	retryMinReplicas, retryMaxReplicas := ptr.Int32(6), ptr.Int32(7)
 	tests := []struct {
 		name  string
 		start *BrokerCell
@@ -51,16 +55,16 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 			Spec: BrokerCellSpec{
 				ComponentsParametersSpec{
 					Fanout: ComponentParameters{
-						MaxReplicas: ptr.Int32(10),
-						MinReplicas: ptr.Int32(1),
+						MaxReplicas: defaultMaxRepicas,
+						MinReplicas: defaultMinReplicas,
 					},
 					Ingress: ComponentParameters{
-						MaxReplicas: ptr.Int32(10),
-						MinReplicas: ptr.Int32(1),
+						MaxReplicas: defaultMaxRepicas,
+						MinReplicas: defaultMinReplicas,
 					},
 					Retry: ComponentParameters{
-						MaxReplicas: ptr.Int32(10),
-						MinReplicas: ptr.Int32(1),
+						MaxReplicas: defaultMaxRepicas,
+						MinReplicas: defaultMinReplicas,
 					},
 				},
 			},
@@ -76,16 +80,16 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 			Spec: BrokerCellSpec{
 				ComponentsParametersSpec{
 					Fanout: ComponentParameters{
-						MaxReplicas: ptr.Int32(3),
-						MinReplicas: ptr.Int32(2),
+						MaxReplicas: fanoutMaxReplicas,
+						MinReplicas: fanoutMinReplicas,
 					},
 					Ingress: ComponentParameters{
-						MaxReplicas: ptr.Int32(5),
-						MinReplicas: ptr.Int32(4),
+						MaxReplicas: ingressMaxReplicas,
+						MinReplicas: ingressMinReplicas,
 					},
 					Retry: ComponentParameters{
-						MaxReplicas: ptr.Int32(7),
-						MinReplicas: ptr.Int32(6),
+						MaxReplicas: retryMaxReplicas,
+						MinReplicas: retryMinReplicas,
 					},
 				},
 			},
@@ -99,16 +103,16 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 			Spec: BrokerCellSpec{
 				ComponentsParametersSpec{
 					Fanout: ComponentParameters{
-						MaxReplicas: ptr.Int32(3),
-						MinReplicas: ptr.Int32(2),
+						MaxReplicas: fanoutMaxReplicas,
+						MinReplicas: fanoutMinReplicas,
 					},
 					Ingress: ComponentParameters{
-						MaxReplicas: ptr.Int32(5),
-						MinReplicas: ptr.Int32(4),
+						MaxReplicas: ingressMaxReplicas,
+						MinReplicas: ingressMinReplicas,
 					},
 					Retry: ComponentParameters{
-						MaxReplicas: ptr.Int32(7),
-						MinReplicas: ptr.Int32(6),
+						MaxReplicas: retryMaxReplicas,
+						MinReplicas: retryMinReplicas,
 					},
 				},
 			},

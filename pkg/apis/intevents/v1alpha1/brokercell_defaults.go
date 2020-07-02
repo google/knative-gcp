@@ -29,10 +29,11 @@ const (
 
 // SetDefaults sets the default field values for a BrokerCell.
 func (bc *BrokerCell) SetDefaults(ctx context.Context) {
-	// The BrokerCell doesn't have any default values.
+	// Set defaults for the Spec.Components values.
 	bc.Spec.SetDefaults(ctx)
 }
 
+// SetDefaults sets the default field values for a BrokerCellSpec.
 func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 	if bcs.Components.Fanout.MinReplicas == nil {
 		bcs.Components.Fanout.MinReplicas = ptr.Int32(minReplicas)
