@@ -72,10 +72,10 @@ var (
 // by a single component of a BrokerCell.
 type ComponentParameters struct {
 	// MinReplicas specifies the minimum replica count for the component.
-	MinReplicas *int32 `json:"minReplicas,omitempty`
+	MinReplicas *int32 `json:"minReplicas,omitempty"`
 
 	// MaxReplicas specifies the maximum replica count for the component.
-	MaxReplicas *int32 `json:"maxReplicas,omitempty`
+	MaxReplicas *int32 `json:"maxReplicas,omitempty"`
 }
 
 // ComponentsParametersSpec specifies separate parameters for each component
