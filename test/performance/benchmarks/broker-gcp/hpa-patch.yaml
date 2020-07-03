@@ -1,0 +1,17 @@
+[
+  {
+    "op": "replace",
+    "path": "/spec/components/fanout/maxReplicas",
+    "value": 2
+  },
+  {
+    "op": "replace",
+    "path": "/spec/components/ingress/maxReplicas",
+    "value": 2
+  },
+  {
+    "op": "replace",
+    "path": "/spec/components/retry/maxReplicas",
+    "value": 2
+  }
+]
