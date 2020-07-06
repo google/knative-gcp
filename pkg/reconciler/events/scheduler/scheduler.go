@@ -18,7 +18,7 @@ package scheduler
 
 import (
 	"context"
-
+	"fmt"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/logging"
@@ -91,6 +91,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1beta1.Cloud
 		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Job failed with: %s", err.Error())
 	}
 	scheduler.Status.MarkJobReady(jobName)
+
+	// TODO remove after 0.16 cut.
+	if err := r.deleteOldPubSubTopic(ctx, scheduler); err != nil {
+		return reconciler.NewEvent(corev1.EventTypeWarning, "DeletePubSubTopicFailed", "Failed to delete PubSub topic: %s", err.Error())
+	}
+
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudSchedulerSource reconciled: "%s/%s"`, scheduler.Namespace, scheduler.Name)
 }
 
@@ -201,4 +207,10 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, scheduler *v1beta1.CloudS
 	}
 
 	return nil
+}
+
+// TODO remove after 0.16 cut.
+func (c *Reconciler) deleteOldPubSubTopic(ctx context.Context, scheduler *v1beta1.CloudSchedulerSource) error {
+	oldTopicName := fmt.Sprintf("scheduler-%s", string(scheduler.UID))
+	return c.PubSubBase.DeleteOldPubSubTopic(ctx, scheduler, oldTopicName)
 }

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"encoding/json"
 	"go.uber.org/zap"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -173,6 +174,13 @@ func (r *Base) reconcileSubscription(ctx context.Context, ps *v1beta1.PullSubscr
 	}
 	defer client.Close()
 
+	// TODO remove after 0.16 cut.
+	err = r.deleteOldSubscription(ctx, ps, client)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub subscription", zap.Error(err))
+		return "", err
+	}
+
 	// Generate the subscription name
 	subID := resources.GenerateSubscriptionName(ps)
 
@@ -321,6 +329,13 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1beta1.Pull
 		TracingConfig:    tracingConfig,
 	})
 
+	// TODO remove after the 0.16 cut.
+	err = r.deleteOldReceiveAdapter(ctx, ps)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Error deleting old receive adapter", zap.Error(err))
+		return err
+	}
+
 	return f(ctx, desired, ps)
 }
 
@@ -436,6 +451,51 @@ func (r *Base) FinalizeKind(ctx context.Context, ps *v1beta1.PullSubscription) r
 	logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub subscription")
 	if err := r.deleteSubscription(ctx, ps); err != nil {
 		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailedReason, "Failed to delete Pub/Sub subscription: %s", err.Error())
+	}
+	return nil
+}
+
+// TODO remove after 0.16 is cut.
+func (r *Base) deleteOldReceiveAdapter(ctx context.Context, ps *v1beta1.PullSubscription) reconciler.Event {
+	// This is the old receive adapter name.
+	name := fmt.Sprintf("cre-pull-%s", string(ps.UID))
+	ra, err := r.KubeClientSet.AppsV1().Deployments(ps.Namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logging.FromContext(ctx).Desugar().Debug("Receive Adapter already deleted", zap.Error(err))
+			return nil
+		}
+		logging.FromContext(ctx).Desugar().Error("Failed to get old receive adapter", zap.Error(err))
+		return fmt.Errorf("failed to get receive adapter %q for ps %q", name, ps.Name)
+	} else if !metav1.IsControlledBy(ra, ps) {
+		adapter, _ := json.Marshal(ra)
+		logging.FromContext(ctx).Desugar().Error("PullSubscription does not own receive adapter", zap.Any("adapter", adapter))
+		return fmt.Errorf("PullSubscription %q does not own receive adapter: %q", ps.Name, name)
+	}
+
+	err = r.KubeClientSet.AppsV1().Deployments(ps.Namespace).Delete(name, &metav1.DeleteOptions{})
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to delete receive adapter", zap.Error(err))
+		return err
+	}
+	return nil
+}
+
+// TODO remove after 0.16 is cut.
+func (r *Base) deleteOldSubscription(ctx context.Context, ps *v1beta1.PullSubscription, client gpubsub.Client) reconciler.Event {
+	// This is the name of the old Pub/Sub subscription.
+	name := fmt.Sprintf("cre-pull-%s", string(ps.UID))
+	sub := client.Subscription(name)
+	exists, err := sub.Exists(ctx)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
+		return err
+	}
+	if exists {
+		if err := sub.Delete(ctx); err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub subscription", zap.Error(err))
+			return err
+		}
 	}
 	return nil
 }

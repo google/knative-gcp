@@ -47,6 +47,7 @@ import (
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudstoragesource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage/testing"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -1278,6 +1279,8 @@ func TestAllCases(t *testing.T) {
 					ReceiveAdapterName:  receiveAdapterName,
 					ReceiveAdapterType:  string(converters.CloudStorage),
 					ConfigWatcher:       cmw,
+					// TODO remove after 0.16 cut.
+					PubsubClientProvider: gpubsub.TestClientCreator(nil),
 				}),
 			Identity:       identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			storageLister:  listers.GetCloudStorageSourceLister(),

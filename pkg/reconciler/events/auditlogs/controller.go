@@ -82,6 +82,7 @@ func newController(
 				ReceiveAdapterName:  receiveAdapterName,
 				ReceiveAdapterType:  string(converters.CloudAuditLogs),
 				ConfigWatcher:       cmw,
+				PubsubClientProvider: gpubsub.NewClient,
 			}),
 		Identity:               identity.NewIdentity(ctx, ipm, gcpas),
 		auditLogsSourceLister:  cloudauditlogssourceInformer.Lister(),

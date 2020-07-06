@@ -18,7 +18,7 @@ package storage
 
 import (
 	"context"
-
+	"fmt"
 	"go.uber.org/zap"
 
 	"google.golang.org/grpc/codes"
@@ -105,6 +105,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1beta1.CloudSt
 		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledNotificationFailed, "Failed to reconcile CloudStorageSource notification: %s", err.Error())
 	}
 	storage.Status.MarkNotificationReady(notification)
+
+	// TODO remove after 0.16 cut.
+	if err := r.deleteOldPubSubTopic(ctx, storage); err != nil {
+		return reconciler.NewEvent(corev1.EventTypeWarning, "DeletePubSubTopicFailed", "Failed to delete PubSub topic: %s", err.Error())
+	}
 
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudStorageSource reconciled: "%s/%s"`, storage.Namespace, storage.Name)
 }
@@ -255,4 +260,10 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1beta1.CloudSto
 
 	// ok to remove finalizer.
 	return nil
+}
+
+// TODO remove after 0.16 cut.
+func (c *Reconciler) deleteOldPubSubTopic(ctx context.Context, storage *v1beta1.CloudStorageSource) error {
+	oldTopicName := fmt.Sprintf("storage-%s", string(storage.UID))
+	return c.PubSubBase.DeleteOldPubSubTopic(ctx, storage, oldTopicName)
 }

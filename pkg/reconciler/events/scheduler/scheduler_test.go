@@ -45,6 +45,7 @@ import (
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudschedulersource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler/testing"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -1260,6 +1261,8 @@ func TestAllCases(t *testing.T) {
 					ReceiveAdapterName:  receiveAdapterName,
 					ReceiveAdapterType:  string(converters.CloudScheduler),
 					ConfigWatcher:       cmw,
+					// TODO remove after 0.16 cut.
+					PubsubClientProvider: gpubsub.TestClientCreator(nil),
 				}),
 			Identity:        identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			schedulerLister: listers.GetCloudSchedulerSourceLister(),

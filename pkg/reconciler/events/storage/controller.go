@@ -33,6 +33,7 @@ import (
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
 	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudstoragesource"
+	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -75,10 +76,11 @@ func newController(
 	r := &Reconciler{
 		PubSubBase: intevents.NewPubSubBase(ctx,
 			&intevents.PubSubBaseArgs{
-				ControllerAgentName: controllerAgentName,
-				ReceiveAdapterName:  receiveAdapterName,
-				ReceiveAdapterType:  string(converters.CloudStorage),
-				ConfigWatcher:       cmw,
+				ControllerAgentName:  controllerAgentName,
+				ReceiveAdapterName:   receiveAdapterName,
+				ReceiveAdapterType:   string(converters.CloudStorage),
+				ConfigWatcher:        cmw,
+				PubsubClientProvider: gpubsub.NewClient,
 			}),
 		Identity:       identity.NewIdentity(ctx, ipm, gcpas),
 		storageLister:  cloudstoragesourceInformer.Lister(),

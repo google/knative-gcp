@@ -17,9 +17,9 @@ limitations under the License.
 package auditlogs
 
 import (
-	"context"
-
 	"cloud.google.com/go/logging/logadmin"
+	"context"
+	"fmt"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -92,6 +92,15 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1beta1.CloudAuditLog
 	}
 	s.Status.StackdriverSink = sink
 	s.Status.MarkSinkReady()
+
+	// TODO remove after 0.16 cut.
+	if err := c.deleteOldSink(ctx, s); err != nil {
+		return reconciler.NewEvent(corev1.EventTypeWarning, "DeleteSinkFailed", "Failed to delete StackDriver sink: %s", err.Error())
+	}
+	if err := c.deleteOldPubSubTopic(ctx, s); err != nil {
+		return reconciler.NewEvent(corev1.EventTypeWarning, "DeletePubSubTopicFailed", "Failed to delete PubSub topic: %s", err.Error())
+	}
+
 	c.Logger.Debugf("Reconciled Stackdriver sink: %+v", sink)
 
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudAuditLogsSource reconciled: "%s/%s"`, s.Namespace, s.Name)
@@ -203,4 +212,25 @@ func (c *Reconciler) FinalizeKind(ctx context.Context, s *v1beta1.CloudAuditLogs
 	}
 	s.Status.StackdriverSink = ""
 	return nil
+}
+
+// TODO remove after 0.16 cut.
+func (c *Reconciler) deleteOldSink(ctx context.Context, s *v1beta1.CloudAuditLogsSource) error {
+	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create LogAdmin client", zap.Error(err))
+		return err
+	}
+	oldSinkName := fmt.Sprintf("sink-%s", string(s.UID))
+	if err = logadminClient.DeleteSink(ctx, oldSinkName); status.Code(err) != codes.NotFound {
+		logging.FromContext(ctx).Desugar().Error("Failed to delete StackDriver sink", zap.String("sinkName", oldSinkName), zap.Error(err))
+		return err
+	}
+	return nil
+}
+
+// TODO remove after 0.16 cut.
+func (c *Reconciler) deleteOldPubSubTopic(ctx context.Context, s *v1beta1.CloudAuditLogsSource) error {
+	oldTopicName := fmt.Sprintf("cloudauditlogssource-%s", string(s.UID))
+	return c.PubSubBase.DeleteOldPubSubTopic(ctx, s, oldTopicName)
 }
