@@ -90,7 +90,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1beta1.Cloud
 		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Job failed with: %s", err.Error())
 	}
 	scheduler.Status.MarkJobReady(jobName)
-
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudSchedulerSource reconciled: "%s/%s"`, scheduler.Namespace, scheduler.Name)
 }
 

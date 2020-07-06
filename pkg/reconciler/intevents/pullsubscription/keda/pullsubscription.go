@@ -19,7 +19,6 @@ package keda
 import (
 	"context"
 	"fmt"
-	"k8s.io/client-go/dynamic"
 	"strings"
 
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
@@ -34,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/dynamic"
 	eventingduck "knative.dev/eventing/pkg/duck"
 
 	"knative.dev/pkg/logging"
