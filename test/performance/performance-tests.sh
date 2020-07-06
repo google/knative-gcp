@@ -72,6 +72,12 @@ function update_benchmark() {
 
   echo "Sleeping 2 min to wait for all resources to setup"
   sleep 120
+
+  local patch_file="${benchmark_path}"/${TEST_CONFIG_VARIANT}/patch.sh
+  if [ -f ${patch_file} ]; then
+    echo ">> A patch file exists for benchmark $1, applying it"
+    ${patch_file} "${benchmark_path}"/${TEST_CONFIG_VARIANT}
+  fi
   # In the current implementation, for some reason there can be error pods after the setup, but it does not necessarily
   # mean there is an error. Delete the error pods after the setup is done.
   # TODO(chizhg): remove it after there is no longer error pod.
