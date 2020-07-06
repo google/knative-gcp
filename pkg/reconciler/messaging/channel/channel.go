@@ -211,6 +211,22 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 				return err
 			}
 			r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", ps.Name)
+			// TODO remove this else if after 0.16 cut.
+		} else if ps.Spec.Topic != existingPs.Spec.Topic {
+			// We check whether the topic changed. This can only happen when updating to 0.16 as the spec.topic is immutable.
+			// We have to delete the old PS and create a new one here.
+			logging.FromContext(ctx).Desugar().Info("Deleting old PullSubscription", zap.Any("ps", existingPs))
+			err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Delete(existingPs.Name, nil)
+			if err != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to delete old PullSubscription", zap.Any("ps", existingPs), zap.Error(err))
+				return fmt.Errorf("failed to delete Pullsubscription: %w", err)
+			}
+			logging.FromContext(ctx).Desugar().Debug("Creating new PullSubscription", zap.Any("ps", ps))
+			ps, err = r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Create(ps)
+			if err != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", ps), zap.Error(err))
+				return fmt.Errorf("failed to create PullSubscription: %w", err)
+			}
 		} else if !equality.Semantic.DeepEqual(ps.Spec, existingPs.Spec) {
 			// Don't modify the informers copy.
 			desired := existingPs.DeepCopy()

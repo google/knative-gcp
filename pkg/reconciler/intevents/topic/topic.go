@@ -109,10 +109,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1beta1.Topic) re
 
 	// If enablePublisher is false, then skip creating the publisher.
 	if enablePublisher := topic.Spec.EnablePublisher; enablePublisher != nil && !*enablePublisher {
-		// TODO remove after 0.16 cut.
-		if err := r.deleteOldPublisher(ctx, topic); err != nil {
-			return reconciler.NewEvent(corev1.EventTypeWarning, "PublisherDeleteFailed", "Failed to delete publisher: %s", err.Error())
-		}
 		return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, topic.Namespace, topic.Name)
 	}
 
@@ -256,32 +252,6 @@ func (r *Reconciler) reconcilePublisher(ctx context.Context, topic *v1beta1.Topi
 		}
 	}
 	return nil, svc
-}
-
-// TODO remove after 0.16 cut.
-func (r *Reconciler) deleteOldPublisher(ctx context.Context, topic *v1beta1.Topic) error {
-	// We haven't changed the publisher name, so this can remain as is
-	name := resources.GeneratePublisherName(topic)
-	existing, err := r.serviceLister.Services(topic.Namespace).Get(name)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			logging.FromContext(ctx).Desugar().Debug("Publisher already deleted", zap.Error(err))
-			return nil
-		}
-		logging.FromContext(ctx).Desugar().Error("Failed to get publisher", zap.Error(err))
-		return fmt.Errorf("failed to get publisher %q for topic %q", name, topic.Name)
-	} else if !metav1.IsControlledBy(existing, topic) {
-		p, _ := json.Marshal(existing)
-		logging.FromContext(ctx).Desugar().Error("Topic does not own publisher service", zap.Any("publisher", p))
-		return fmt.Errorf("Topic %q does not own publisher service: %q", topic.Name, name)
-	}
-
-	err = r.ServingClientSet.ServingV1().Services(topic.Namespace).Delete(name, &metav1.DeleteOptions{})
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to delete publisher", zap.Error(err))
-		return err
-	}
-	return nil
 }
 
 func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {

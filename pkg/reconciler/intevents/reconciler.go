@@ -193,7 +193,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 			logging.FromContext(ctx).Desugar().Error("Failed to delete old PullSubscription", zap.Any("ps", ps), zap.Error(err))
 			return nil, fmt.Errorf("failed to delete Pullsubscription: %w", err)
 		}
-		logging.FromContext(ctx).Desugar().Debug("Creating new PullSubscription", zap.Any("topic", newPS))
+		logging.FromContext(ctx).Desugar().Debug("Creating new PullSubscription", zap.Any("ps", newPS))
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
