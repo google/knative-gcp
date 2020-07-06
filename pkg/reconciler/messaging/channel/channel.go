@@ -299,8 +299,6 @@ func (r *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1beta1
 }
 
 func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1beta1.Channel) (*inteventsv1beta1.Topic, error) {
-	topic, err := r.getTopic(ctx, channel)
-
 	clusterName := channel.GetAnnotations()[duckv1beta1.ClusterNameAnnotation]
 	name := resources.GeneratePublisherName(channel)
 	t := resources.MakeTopic(&resources.TopicArgs{
@@ -314,6 +312,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1beta1.Channe
 		Annotations:        resources.GetTopicAnnotations(clusterName),
 	})
 
+	topic, err := r.getTopic(ctx, channel)
 	if apierrs.IsNotFound(err) {
 		topic, err = r.RunClientSet.InternalV1beta1().Topics(channel.Namespace).Create(t)
 		if err != nil {

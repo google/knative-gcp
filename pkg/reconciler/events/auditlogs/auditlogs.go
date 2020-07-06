@@ -95,7 +95,7 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1beta1.CloudAuditLog
 
 	// TODO remove after 0.16 cut.
 	if err := c.deleteOldSink(ctx, s); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, "DeleteSinkFailed", "Failed to delete StackDriver sink: %s", err.Error())
+		return reconciler.NewEvent(corev1.EventTypeWarning, "DeleteOldSinkFailed", "Failed to delete old StackDriver sink: %s", err.Error())
 	}
 
 	c.Logger.Debugf("Reconciled Stackdriver sink: %+v", sink)
