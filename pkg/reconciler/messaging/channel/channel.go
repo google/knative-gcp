@@ -19,8 +19,6 @@ package channel
 import (
 	"context"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/utils"
-
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -37,8 +35,6 @@ import (
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1beta1/channel"
 	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1beta1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/messaging/v1beta1"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
@@ -63,9 +59,6 @@ type Reconciler struct {
 	// listers index properties about resources
 	channelLister listers.ChannelLister
 	topicLister   inteventslisters.TopicLister
-
-	// TODO remove after 0.16 cut.
-	pubsubClientProvider gpubsub.CreateFn
 }
 
 // Check that our Reconciler implements Interface.
@@ -103,11 +96,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1beta1.Channel
 	// 3. Sync all subscriptions statuses.
 	if err := r.syncSubscribersStatus(ctx, channel); err != nil {
 		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledSubscribersStatusFailedReason, "Reconcile Subscribers Status failed with: %s", err.Error())
-	}
-
-	// TODO remove after 0.16 cut.
-	if err := r.deleteOldPubSubTopic(ctx, channel); err != nil {
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, "DeletePubSubTopicFailed", "Failed to delete PubSub topic: %s", err.Error())
 	}
 
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, channel.Namespace, channel.Name)
@@ -325,6 +313,23 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1beta1.Channe
 	} else if !metav1.IsControlledBy(topic, channel) {
 		channel.Status.MarkTopicNotOwned("Topic %q is owned by another resource.", name)
 		return nil, fmt.Errorf("Channel: %s does not own Topic: %s", channel.Name, name)
+		// TODO remove this else if after 0.16 cut.
+	} else if t.Spec.Topic != topic.Spec.Topic {
+		// We check whether the topic changed. This can only happen when updating to 0.16 as the spec.topic is immutable.
+		// We have to delete the oldTopic and create a new one here.
+		logging.FromContext(ctx).Desugar().Info("Deleting old Topic", zap.Any("topic", topic))
+		err = r.RunClientSet.InternalV1beta1().Topics(channel.Namespace).Delete(topic.Name, nil)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to delete old Topic", zap.Any("topic", topic), zap.Error(err))
+			return nil, fmt.Errorf("failed to update Topic: %w", err)
+		}
+		logging.FromContext(ctx).Desugar().Debug("Creating new Topic", zap.Any("topic", t))
+		t, err = r.RunClientSet.InternalV1beta1().Topics(channel.Namespace).Create(t)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", t), zap.Error(err))
+			return nil, fmt.Errorf("failed to create Topic: %w", err)
+		}
+		return t, nil
 	} else if !equality.Semantic.DeepDerivative(t.Spec, topic.Spec) {
 		// Don't modify the informers copy.
 		desired := topic.DeepCopy()
@@ -401,38 +406,5 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, channel *v1beta1.Channel)
 		}
 	}
 
-	return nil
-}
-
-// TODO remove after 0.16 cut.
-func (r *Reconciler) deleteOldPubSubTopic(ctx context.Context, channel *v1beta1.Channel) error {
-	oldTopicName := fmt.Sprintf("cre-chan-%s", string(channel.UID))
-
-	projectID, err := utils.ProjectID(channel.Spec.Project, metadataClient.NewDefaultMetadataClient())
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
-		return err
-	}
-
-	client, err := r.pubsubClientProvider(ctx, projectID)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
-	}
-	defer client.Close()
-
-	t := client.Topic(oldTopicName)
-	exists, err := t.Exists(ctx)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub topic exists", zap.String("topic", oldTopicName), zap.Error(err))
-		return err
-	}
-	if exists {
-		// Delete the topic.
-		if err := t.Delete(ctx); err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub topic", zap.String("topic", oldTopicName), zap.Error(err))
-			return err
-		}
-	}
 	return nil
 }

@@ -31,7 +31,6 @@ import (
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
 	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1beta1/channel"
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1beta1/channel"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -69,11 +68,10 @@ func newController(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
-		Identity:             identity.NewIdentity(ctx, ipm, gcpas),
-		channelLister:        channelInformer.Lister(),
-		topicLister:          topicInformer.Lister(),
-		pubsubClientProvider: gpubsub.NewClient,
+		Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
+		Identity:      identity.NewIdentity(ctx, ipm, gcpas),
+		channelLister: channelInformer.Lister(),
+		topicLister:   topicInformer.Lister(),
 	}
 	impl := channelreconciler.NewImpl(ctx, r)
 

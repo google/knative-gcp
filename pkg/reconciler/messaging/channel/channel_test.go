@@ -42,7 +42,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1beta1/channel"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
@@ -500,11 +499,10 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
-			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
-			channelLister:        listers.GetChannelLister(),
-			topicLister:          listers.GetTopicLister(),
-			pubsubClientProvider: gpubsub.TestClientCreator(nil),
+			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
+			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
+			channelLister: listers.GetChannelLister(),
+			topicLister:   listers.GetTopicLister(),
 		}
 		return channel.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetChannelLister(), r.Recorder, r)
 	}))
