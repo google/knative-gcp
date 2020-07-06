@@ -114,7 +114,7 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 		err = topics.Delete(t.Name, nil)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to delete old Topic", zap.Any("topic", t), zap.Error(err))
-			return nil, fmt.Errorf("failed to update Topic: %w", err)
+			return nil, fmt.Errorf("failed to delete Topic: %w", err)
 		}
 		logging.FromContext(ctx).Desugar().Debug("Creating new Topic", zap.Any("topic", newTopic))
 		t, err = topics.Create(newTopic)
@@ -182,6 +182,22 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
 			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, pullSubscriptionCreateFailedReason, "Creating PullSubscription failed with: %s", err.Error())
+		}
+		// TODO remove this else if after 0.16 cut.
+	} else if newPS.Spec.Topic != ps.Spec.Topic {
+		// We check whether the topic changed. This can only happen when updating to 0.16 as the spec.topic is immutable.
+		// We have to delete the old PS and create a new one here.
+		logging.FromContext(ctx).Desugar().Info("Deleting old PullSubscription", zap.Any("ps", ps))
+		err = pullSubscriptions.Delete(ps.Name, nil)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to delete old PullSubscription", zap.Any("ps", ps), zap.Error(err))
+			return nil, fmt.Errorf("failed to delete Pullsubscription: %w", err)
+		}
+		logging.FromContext(ctx).Desugar().Debug("Creating new PullSubscription", zap.Any("topic", newPS))
+		ps, err = pullSubscriptions.Create(newPS)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
+			return nil, fmt.Errorf("failed to create PullSubscription: %w", err)
 		}
 		// Check whether the specs differ and update the PS if so.
 	} else if !equality.Semantic.DeepDerivative(newPS.Spec, ps.Spec) {
