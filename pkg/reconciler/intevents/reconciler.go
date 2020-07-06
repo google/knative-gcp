@@ -24,7 +24,6 @@ import (
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	duck "github.com/google/knative-gcp/pkg/duck/v1beta1"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/resources"
 	"go.uber.org/zap"
@@ -57,9 +56,6 @@ type PubSubBase struct {
 
 	// What type of receive adapter to use.
 	receiveAdapterType string
-
-	// TODO remove after 0.16 cut.
-	pubsubClientProvider gpubsub.CreateFn
 }
 
 // ReconcilePubSub reconciles Topic / PullSubscription given a PubSubSpec.
@@ -110,6 +106,22 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 	} else if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to get Topic", zap.Error(err))
 		return nil, fmt.Errorf("failed to get Topic: %w", err)
+		// TODO remove this else if after 0.16 cut.
+	} else if newTopic.Spec.Topic != t.Spec.Topic {
+		// We check whether the topic changed. This can only happen when updating to 0.16 as the spec.topic is immutable.
+		// We have to delete the oldTopic and create a new one here.
+		logging.FromContext(ctx).Desugar().Info("Deleting old Topic", zap.Any("topic", t))
+		err = topics.Delete(t.Name, nil)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to delete old Topic", zap.Any("topic", t), zap.Error(err))
+			return nil, fmt.Errorf("failed to update Topic: %w", err)
+		}
+		logging.FromContext(ctx).Desugar().Debug("Creating new Topic", zap.Any("topic", newTopic))
+		t, err = topics.Create(newTopic)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", newTopic), zap.Error(err))
+			return nil, fmt.Errorf("failed to create Topic: %w", err)
+		}
 		// Check whether the specs differ and update the Topic if so.
 	} else if !equality.Semantic.DeepDerivative(newTopic.Spec, t.Spec) {
 		// Don't modify the informers copy.
@@ -286,33 +298,3 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	status.SinkURI = nil
 	return nil
 }
-
-// TODO remove after 0.16 cut.
-func (psb *PubSubBase) DeleteOldPubSubTopic(ctx context.Context, pubsubable duck.PubSubable, topic string) error {
-	// At this point the project ID should have been populated in the status.
-	// Querying Pub/Sub as the topic could have been deleted outside the cluster (e.g, through gcloud).
-	status := pubsubable.PubSubStatus()
-	client, err := psb.pubsubClientProvider(ctx, status.ProjectID)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
-	}
-	defer client.Close()
-
-	t := client.Topic(topic)
-	exists, err := t.Exists(ctx)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub topic exists", zap.String("topic", topic), zap.Error(err))
-		return err
-	}
-	if exists {
-		// Delete the topic.
-		if err := t.Delete(ctx); err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub topic", zap.String("topic", topic), zap.Error(err))
-			return err
-		}
-	}
-	return nil
-}
-
-

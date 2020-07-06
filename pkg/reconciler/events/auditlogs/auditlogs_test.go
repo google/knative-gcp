@@ -1414,8 +1414,6 @@ func TestAllCases(t *testing.T) {
 								ReceiveAdapterName:  receiveAdapterName,
 								ReceiveAdapterType:  string(converters.CloudAuditLogs),
 								ConfigWatcher:       cmw,
-								// TODO remove after 0.16 cut.
-								PubsubClientProvider: gpubsub.TestClientCreator(nil),
 							}),
 						Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 						auditLogsSourceLister:  listers.GetCloudAuditLogsSourceLister(),

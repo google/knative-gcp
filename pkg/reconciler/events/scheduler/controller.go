@@ -37,7 +37,6 @@ import (
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
 	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudschedulersource"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 )
 
@@ -76,11 +75,10 @@ func newController(
 	c := &Reconciler{
 		PubSubBase: intevents.NewPubSubBase(ctx,
 			&intevents.PubSubBaseArgs{
-				ControllerAgentName:  controllerAgentName,
-				ReceiveAdapterName:   receiveAdapterName,
-				ReceiveAdapterType:   string(converters.CloudScheduler),
-				ConfigWatcher:        cmw,
-				PubsubClientProvider: gpubsub.NewClient,
+				ControllerAgentName: controllerAgentName,
+				ReceiveAdapterName:  receiveAdapterName,
+				ReceiveAdapterType:  string(converters.CloudScheduler),
+				ConfigWatcher:       cmw,
 			}),
 		Identity:        identity.NewIdentity(ctx, ipm, gcpas),
 		schedulerLister: cloudschedulersourceInformer.Lister(),

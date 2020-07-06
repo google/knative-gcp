@@ -97,9 +97,6 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1beta1.CloudAuditLog
 	if err := c.deleteOldSink(ctx, s); err != nil {
 		return reconciler.NewEvent(corev1.EventTypeWarning, "DeleteSinkFailed", "Failed to delete StackDriver sink: %s", err.Error())
 	}
-	if err := c.deleteOldPubSubTopic(ctx, s); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, "DeletePubSubTopicFailed", "Failed to delete PubSub topic: %s", err.Error())
-	}
 
 	c.Logger.Debugf("Reconciled Stackdriver sink: %+v", sink)
 
@@ -227,10 +224,4 @@ func (c *Reconciler) deleteOldSink(ctx context.Context, s *v1beta1.CloudAuditLog
 		return err
 	}
 	return nil
-}
-
-// TODO remove after 0.16 cut.
-func (c *Reconciler) deleteOldPubSubTopic(ctx context.Context, s *v1beta1.CloudAuditLogsSource) error {
-	oldTopicName := fmt.Sprintf("cloudauditlogssource-%s", string(s.UID))
-	return c.PubSubBase.DeleteOldPubSubTopic(ctx, s, oldTopicName)
 }

@@ -22,17 +22,14 @@ import (
 	"knative.dev/pkg/configmap"
 
 	pubsubClient "github.com/google/knative-gcp/pkg/client/injection/client"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
 type PubSubBaseArgs struct {
-	ControllerAgentName  string
-	ReceiveAdapterName   string
-	ReceiveAdapterType   string
-	ConfigWatcher        configmap.Watcher
-	// TODO remove after 0.16 cut.
-	PubsubClientProvider gpubsub.CreateFn
+	ControllerAgentName string
+	ReceiveAdapterName  string
+	ReceiveAdapterType  string
+	ConfigWatcher       configmap.Watcher
 }
 
 func NewPubSubBase(ctx context.Context, args *PubSubBaseArgs) *PubSubBase {
@@ -41,7 +38,5 @@ func NewPubSubBase(ctx context.Context, args *PubSubBaseArgs) *PubSubBase {
 		pubsubClient:       pubsubClient.Get(ctx),
 		receiveAdapterName: args.ReceiveAdapterName,
 		receiveAdapterType: args.ReceiveAdapterType,
-		// TODO remove after 0.16 cut.
-		pubsubClientProvider: args.PubsubClientProvider,
 	}
 }
