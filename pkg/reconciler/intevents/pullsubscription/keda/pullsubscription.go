@@ -33,7 +33,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
 	eventingduck "knative.dev/eventing/pkg/duck"
 
 	"knative.dev/pkg/logging"
@@ -134,36 +133,10 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 		}
 	}
 
-	// TODO remove after 0.16 cut.
-	if err := r.deleteOldScaledObject(ctx, src, scaledObjectResourceInterface); err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to delete old ScaledObject", zap.Error(err))
-		return err
-	}
-
 	// TODO propagate ScaledObject status
 	return nil
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, ps *v1beta1.PullSubscription) reconciler.Event {
 	return r.Base.FinalizeKind(ctx, ps)
-}
-
-// TODO remove after 0.16 cut.
-func (r *Reconciler) deleteOldScaledObject(ctx context.Context, ps *v1beta1.PullSubscription, soResourceInterface dynamic.ResourceInterface) error {
-	oldName := fmt.Sprintf("cre-so-%s", string(ps.UID))
-	_, err := soResourceInterface.Get(oldName, metav1.GetOptions{})
-	if err != nil {
-		if apierrs.IsNotFound(err) {
-			logging.FromContext(ctx).Desugar().Debug("ScaledObject already deleted", zap.String("so", oldName))
-			return nil
-		}
-		logging.FromContext(ctx).Desugar().Error("Failed to get ScaledObject", zap.String("so", oldName), zap.Error(err))
-		return err
-	}
-	err = soResourceInterface.Delete(oldName, &metav1.DeleteOptions{})
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to delete ScaledObject", zap.String("so", oldName), zap.Error(err))
-		return err
-	}
-	return nil
 }
