@@ -29,6 +29,10 @@ func PubSubTargetJob(name string, envVars []corev1.EnvVar) *batchv1.Job {
 	return baseJob(name, "pubsub_target", envVars)
 }
 
+func BuildTargetJob(name string, envVars []corev1.EnvVar) *batchv1.Job {
+	return baseJob(name, "build_target", envVars)
+}
+
 func StorageTargetJob(name string, envVars []corev1.EnvVar) *batchv1.Job {
 	return baseJob(name, "storage_target", envVars)
 }

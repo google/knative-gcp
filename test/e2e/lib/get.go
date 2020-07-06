@@ -32,6 +32,16 @@ func (c *Client) GetPubSubOrFail(name string) *eventsv1alpha1.CloudPubSubSource 
 	return existing
 }
 
+func (c *Client) GetBuildOrFail(name string) *eventsv1alpha1.CloudBuildSource {
+	c.T.Helper()
+	builds := c.KnativeGCP.EventsV1alpha1().CloudBuildSources(c.Namespace)
+	existing, err := builds.Get(name, metav1.GetOptions{})
+	if err != nil {
+		c.T.Fatalf("Failed to get build %s/%s: %v", c.Namespace, name, err)
+	}
+	return existing
+}
+
 func (c *Client) GetSchedulerOrFail(name string) *eventsv1alpha1.CloudSchedulerSource {
 	c.T.Helper()
 	schedulers := c.KnativeGCP.EventsV1alpha1().CloudSchedulerSources(c.Namespace)

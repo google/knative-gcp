@@ -29,6 +29,15 @@ func (c *Client) DeletePubSubOrFail(name string) {
 	}
 }
 
+func (c *Client) DeleteBuildOrFail(name string) {
+	c.T.Helper()
+	builds := c.KnativeGCP.EventsV1alpha1().CloudBuildSources(c.Namespace)
+	err := builds.Delete(name, &metav1.DeleteOptions{})
+	if err != nil {
+		c.T.Fatalf("Failed to delete build %s/%s: %v", c.Namespace, name, err)
+	}
+}
+
 func (c *Client) DeleteSchedulerOrFail(name string) {
 	c.T.Helper()
 	schedulers := c.KnativeGCP.EventsV1alpha1().CloudSchedulerSources(c.Namespace)
