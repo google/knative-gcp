@@ -19,15 +19,12 @@ package v1alpha1
 import (
 	"context"
 
-	"knative.dev/eventing/pkg/logging"
-
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-
-	"knative.dev/pkg/apis"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 
+	"knative.dev/pkg/apis"
+	"knative.dev/eventing/pkg/logging"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
@@ -39,7 +36,7 @@ var (
 func (t *Topic) SetDefaults(ctx context.Context) {
 	ctx = apis.WithinParent(ctx, t.ObjectMeta)
 	t.Spec.SetDefaults(ctx)
-	duckv1alpha1.SetClusterNameAnnotation(&t.ObjectMeta, metadataClient.NewDefaultMetadataClient())
+	duck.SetClusterNameAnnotation(&t.ObjectMeta, metadataClient.NewDefaultMetadataClient())
 }
 
 func (ts *TopicSpec) SetDefaults(ctx context.Context) {

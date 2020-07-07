@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 
 	"github.com/google/go-cmp/cmp"
 
@@ -78,5 +79,5 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, original *Chan
 	}
 
 	// Modification of non-empty cluster name annotation is not allowed.
-	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

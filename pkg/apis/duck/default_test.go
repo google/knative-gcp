@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Google LLC
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+// Package duck contains Cloud Run Events API versions for duck components
+package duck
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
 )
 
 var (
@@ -119,91 +122,47 @@ func TestSetAutoscalingAnnotationsDefaults(t *testing.T) {
 	}
 }
 
-func TestValidateAutoscalingAnnotations(t *testing.T) {
+func TestSetClusterNameAnnotation(t *testing.T) {
 	testCases := map[string]struct {
-		objMeta *v1.ObjectMeta
-		error   bool
+		orig     *v1.ObjectMeta
+		data     testingMetadataClient.TestClientData
+		expected *v1.ObjectMeta
 	}{
-		"ok no scaling": {
-			objMeta: noScaling,
-			error:   false,
+		"no annotation, successfully get the clusterName": {
+			orig: &v1.ObjectMeta{},
+			data: testingMetadataClient.TestClientData{},
+			expected: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 		},
-		"invalid extra resources": {
-			objMeta: func() *v1.ObjectMeta {
-				obj := kedaScaling.DeepCopy()
-				delete(obj.Annotations, AutoscalingClassAnnotation)
-				return obj
-			}(),
-			error: true,
+		"no annotation, get clusterName failed": {
+			orig: &v1.ObjectMeta{},
+			data: testingMetadataClient.TestClientData{
+				ClusterNameErr: fmt.Errorf("error when get clusterName"),
+			},
+			expected: &v1.ObjectMeta{},
 		},
-		"ok keda scaling": {
-			objMeta: kedaScaling,
-			error:   false,
-		},
-		"unsupported scaling class": {
-			objMeta: func() *v1.ObjectMeta {
-				obj := kedaScaling.DeepCopy()
-				obj.Annotations[AutoscalingClassAnnotation] = "invalid"
-				return obj
-			}(),
-			error: true,
-		},
-		"invalid min scale": {
-			objMeta: func() *v1.ObjectMeta {
-				obj := kedaScaling.DeepCopy()
-				obj.Annotations[AutoscalingMinScaleAnnotation] = "-1"
-				return obj
-			}(),
-			error: true,
-		},
-		"invalid max scale": {
-			objMeta: func() *v1.ObjectMeta {
-				obj := kedaScaling.DeepCopy()
-				obj.Annotations[AutoscalingMaxScaleAnnotation] = "0"
-				return obj
-			}(),
-			error: true,
-		},
-		"invalid min > max": {
-			objMeta: func() *v1.ObjectMeta {
-				obj := kedaScaling.DeepCopy()
-				obj.Annotations[AutoscalingMinScaleAnnotation] = "4"
-				obj.Annotations[AutoscalingMaxScaleAnnotation] = "1"
-				return obj
-			}(),
-			error: true,
-		},
-		"invalid pollingInterval": {
-			objMeta: func() *v1.ObjectMeta {
-				obj := kedaScaling.DeepCopy()
-				obj.Annotations[KedaAutoscalingPollingIntervalAnnotation] = "1"
-				return obj
-			}(),
-			error: true,
-		},
-		"invalid cooldownPeriod": {
-			objMeta: func() *v1.ObjectMeta {
-				obj := kedaScaling.DeepCopy()
-				obj.Annotations[KedaAutoscalingCooldownPeriodAnnotation] = "0"
-				return obj
-			}(),
-			error: true,
-		},
-		"invalid subscriptionSize": {
-			objMeta: func() *v1.ObjectMeta {
-				obj := kedaScaling.DeepCopy()
-				obj.Annotations[KedaAutoscalingSubscriptionSizeAnnotation] = "0"
-				return obj
-			}(),
-			error: true,
+		"has annotation": {
+			orig: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: "testing-cluster-name",
+				},
+			},
+			data: testingMetadataClient.TestClientData{},
+			expected: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: "testing-cluster-name",
+				},
+			},
 		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			var errs *apis.FieldError
-			err := ValidateAutoscalingAnnotations(context.TODO(), tc.objMeta.Annotations, errs)
-			if tc.error != (err != nil) {
-				t.Fatalf("Unexpected validation failure. Got %v", err)
+			SetClusterNameAnnotation(tc.orig, testingMetadataClient.NewTestClient(tc.data))
+			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
+				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}
 		})
 	}

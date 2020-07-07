@@ -22,7 +22,7 @@ import (
 	"knative.dev/pkg/injection"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
@@ -113,7 +113,7 @@ func newController(
 	// Whenever we introduce a new way of scaling, this code will have to be updated to not just exclude Keda, but the others.
 	// Might be useful to use pkgreconciler.ChainFilterFuncs and move them somewhere else.
 	// TODO revisit once we introduce new scaling strategies.
-	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duckv1beta1.AutoscalingClassAnnotation, duckv1beta1.KEDA, false)
+	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duck.AutoscalingClassAnnotation, duck.KEDA, false)
 	notKedaScaler := pkgreconciler.Not(onlyKedaScaler)
 
 	pullSubscriptionHandler := cache.FilteringResourceEventHandler{
