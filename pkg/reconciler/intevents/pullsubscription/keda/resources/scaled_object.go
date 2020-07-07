@@ -22,10 +22,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	v1 "k8s.io/api/apps/v1"
+
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 )
 
 var (
@@ -40,10 +40,10 @@ var (
 
 func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *v1beta1.PullSubscription) *unstructured.Unstructured {
 	// These values should have already been validated in the webhook, and be valid ints. Not checking for errors.
-	minReplicaCount, _ := strconv.ParseInt(ps.Annotations[duckv1beta1.AutoscalingMinScaleAnnotation], 10, 64)
-	maxReplicateCount, _ := strconv.ParseInt(ps.Annotations[duckv1beta1.AutoscalingMaxScaleAnnotation], 10, 64)
-	cooldownPeriod, _ := strconv.ParseInt(ps.Annotations[duckv1beta1.KedaAutoscalingCooldownPeriodAnnotation], 10, 64)
-	pollingInterval, _ := strconv.ParseInt(ps.Annotations[duckv1beta1.KedaAutoscalingPollingIntervalAnnotation], 10, 64)
+	minReplicaCount, _ := strconv.ParseInt(ps.Annotations[duck.AutoscalingMinScaleAnnotation], 10, 64)
+	maxReplicateCount, _ := strconv.ParseInt(ps.Annotations[duck.AutoscalingMaxScaleAnnotation], 10, 64)
+	cooldownPeriod, _ := strconv.ParseInt(ps.Annotations[duck.KedaAutoscalingCooldownPeriodAnnotation], 10, 64)
+	pollingInterval, _ := strconv.ParseInt(ps.Annotations[duck.KedaAutoscalingPollingIntervalAnnotation], 10, 64)
 
 	// Using Unstructured instead of adding the Keda dependency. Given that the only way to interact with the scaledObject
 	// is using the dynamicClient (see https://keda.sh/faq/), it does not make much sense for now to add an extra dependency,
@@ -81,7 +81,7 @@ func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *v1beta1.PullSu
 					map[string]interface{}{
 						"type": "gcp-pubsub",
 						"metadata": map[string]interface{}{
-							"subscriptionSize": ps.Annotations[duckv1beta1.KedaAutoscalingSubscriptionSizeAnnotation],
+							"subscriptionSize": ps.Annotations[duck.KedaAutoscalingSubscriptionSizeAnnotation],
 							"subscriptionName": ps.Status.SubscriptionID,
 							"credentials":      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
 						},

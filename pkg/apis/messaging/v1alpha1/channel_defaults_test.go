@@ -19,13 +19,12 @@ package v1alpha1
 import (
 	"testing"
 
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
-
 	"github.com/google/go-cmp/cmp"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestChannelDefaults(t *testing.T) {
@@ -33,7 +32,7 @@ func TestChannelDefaults(t *testing.T) {
 		ObjectMeta: v1.ObjectMeta{
 			Annotations: map[string]string{
 				"messaging.knative.dev/subscribable": "v1beta1",
-				duckv1alpha1.ClusterNameAnnotation:   testingMetadataClient.FakeClusterName,
+				duck.ClusterNameAnnotation:   testingMetadataClient.FakeClusterName,
 			},
 		},
 		Spec: ChannelSpec{
@@ -43,7 +42,7 @@ func TestChannelDefaults(t *testing.T) {
 	got := &Channel{
 		ObjectMeta: v1.ObjectMeta{
 			Annotations: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			},
 		},
 		Spec: ChannelSpec{},

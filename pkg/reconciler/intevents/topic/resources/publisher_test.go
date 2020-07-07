@@ -20,11 +20,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
@@ -145,7 +146,7 @@ func TestMakePublisherWithServiceAccount(t *testing.T) {
 			Name:      "topic-name",
 			Namespace: "topic-namespace",
 			Annotations: map[string]string{
-				duckv1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				duck.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			},
 		},
 		Spec: v1beta1.TopicSpec{

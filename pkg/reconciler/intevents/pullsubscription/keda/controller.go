@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1beta1/resource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
@@ -113,7 +113,7 @@ func newController(
 	impl := pullsubscriptionreconciler.NewImpl(ctx, r)
 
 	pubsubBase.Logger.Info("Setting up event handlers")
-	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duckv1beta1.AutoscalingClassAnnotation, duckv1beta1.KEDA, false)
+	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duck.AutoscalingClassAnnotation, duck.KEDA, false)
 
 	pullSubscriptionHandler := cache.FilteringResourceEventHandler{
 		FilterFunc: onlyKedaScaler,

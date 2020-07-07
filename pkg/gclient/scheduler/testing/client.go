@@ -51,6 +51,7 @@ type TestClientData struct {
 	CreateClientErr error
 	CreateJobErr    error
 	DeleteJobErr    error
+	UpdateJobErr    error
 	GetJobErr       error
 	CloseErr        error
 }
@@ -81,6 +82,16 @@ func (c *testClient) CreateJob(ctx context.Context, req *schedulerpb.CreateJobRe
 // CreateJob implements client.DeleteJob
 func (c *testClient) DeleteJob(ctx context.Context, req *schedulerpb.DeleteJobRequest, opts ...gax.CallOption) error {
 	return c.data.DeleteJobErr
+}
+
+// UpdateJob implements client.UpdateJob
+func (c *testClient) UpdateJob(ctx context.Context, req *schedulerpb.UpdateJobRequest, opts ...gax.CallOption) (*schedulerpb.Job, error) {
+	if c.data.UpdateJobErr != nil {
+		return nil, c.data.UpdateJobErr
+	}
+	return &schedulerpb.Job{
+		Name: req.Job.Name,
+	}, nil
 }
 
 // GetJob implements client.GetJob

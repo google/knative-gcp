@@ -28,16 +28,15 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-
 	. "knative.dev/pkg/reconciler/testing"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1beta1/channel"
@@ -125,7 +124,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithChannelSetDefaults,
 				WithChannelAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 			),
 		},
@@ -147,7 +146,7 @@ func TestAllCases(t *testing.T) {
 				WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus(nil)),
 				WithChannelTopicID(testTopicID),
 				WithChannelAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithChannelTopicUnknown("TopicNotConfigured", "Topic has not yet been reconciled"),
 			),
@@ -527,7 +526,7 @@ func newTopic() *inteventsv1beta1.Topic {
 		Secret:  channel.Spec.Secret,
 		Labels:  resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
 		Annotations: map[string]string{
-			duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 		},
 	})
 }
@@ -570,7 +569,7 @@ func newPullSubscriptionWithOwner(subscriber eventingduckv1beta1.SubscriberSpec,
 		Topic:       channel.Status.TopicID,
 		Secret:      channel.Spec.Secret,
 		Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GeneratePullSubscriptionName(subscriber.UID), string(channel.UID)),
-		Annotations: resources.GetPullSubscriptionAnnotations(channel.Name, channel.GetAnnotations()[duckv1beta1.ClusterNameAnnotation]),
+		Annotations: resources.GetPullSubscriptionAnnotations(channel.Name, channel.GetAnnotations()[duck.ClusterNameAnnotation]),
 		Subscriber:  subscriber,
 	})
 }

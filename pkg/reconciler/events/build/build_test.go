@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/knative-gcp/pkg/apis/events"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,11 +38,14 @@ import (
 
 	. "knative.dev/pkg/reconciler/testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/events"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudbuildsource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -165,7 +166,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithCloudBuildSourceAnnotations(map[string]string{
-						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithCloudBuildSourceSetDefault,
 				),
@@ -180,7 +181,7 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceAnnotations(map[string]string{
-						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithCloudBuildSourceSetDefault,
 					WithCloudBuildSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
@@ -205,7 +206,7 @@ func TestAllCases(t *testing.T) {
 					}),
 					WithPullSubscriptionAnnotations(map[string]string{
 						"metrics-resource-group":          resourceGroup,
-						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 					WithPullSubscriptionDefaultGCPAuth,
