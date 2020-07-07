@@ -18,6 +18,7 @@ package helpers
 
 import (
 	"fmt"
+	"knative.dev/eventing/pkg/reconciler/sugar"
 	"net/url"
 	"sort"
 	"strings"
@@ -223,7 +224,7 @@ func TestBrokerWithManyTriggers(t *testing.T, brokerCreator BrokerCreator, shoul
 
 			if shouldLabelNamespace {
 				// Label namespace so that it creates the default broker.
-				if err := client.LabelNamespace(map[string]string{"knative-eventing-injection": "enabled"}); err != nil {
+				if err := client.LabelNamespace(map[string]string{sugar.InjectionLabelKey: sugar.InjectionEnabledLabelValue}); err != nil {
 					t.Fatalf("Error annotating namespace: %v", err)
 				}
 			}
@@ -246,12 +247,7 @@ func TestBrokerWithManyTriggers(t *testing.T, brokerCreator BrokerCreator, shoul
 			for _, event := range test.eventFilters {
 				// Create event recorder pod and service
 				subscriberName := "dumper-" + event.String()
-				eventRecordPod := resources.EventRecordPod(subscriberName)
-				client.CreatePodOrFail(eventRecordPod, testlib.WithService(subscriberName))
-				eventTracker, err := recordevents.NewEventInfoStore(client, subscriberName)
-				if err != nil {
-					t.Fatalf("Pod tracker failed: %v", err)
-				}
+				eventTracker, _ := recordevents.StartEventRecordOrFail(client, subscriberName)
 				eventTrackers[subscriberName] = eventTracker
 				defer eventTracker.Cleanup()
 

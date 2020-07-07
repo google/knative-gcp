@@ -23,70 +23,50 @@ import (
 	"fmt"
 	"log"
 	nethttp "net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.opencensus.io/plugin/ochttp"
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/tracing/propagation/tracecontextb3"
+
+	"knative.dev/eventing/test/lib/sender"
+	"knative.dev/eventing/test/test_images"
 )
 
 var (
 	sink              string
+	responseSink      string
 	inputEvent        string
 	eventEncoding     string
 	periodStr         string
 	delayStr          string
-	maxMsgStr         string
+	maxMsg            int
 	addTracing        bool
+	addSequence       bool
 	incrementalId     bool
 	additionalHeaders string
 )
 
 func init() {
 	flag.StringVar(&sink, "sink", "", "The sink url for the message destination.")
+	flag.StringVar(&responseSink, "response-sink", "", "The response sink url to send the response.")
 	flag.StringVar(&inputEvent, "event", "", "Event JSON encoded")
 	flag.StringVar(&eventEncoding, "event-encoding", "binary", "The encoding of the cloud event: [binary, structured].")
 	flag.StringVar(&periodStr, "period", "5", "The number of seconds between messages.")
 	flag.StringVar(&delayStr, "delay", "5", "The number of seconds to wait before sending messages.")
-	flag.StringVar(&maxMsgStr, "max-messages", "1", "The number of messages to attempt to send. 0 for unlimited.")
+	flag.IntVar(&maxMsg, "max-messages", 1, "The number of messages to attempt to send. 0 for unlimited.")
 	flag.BoolVar(&addTracing, "add-tracing", false, "Should tracing be added to events sent.")
+	flag.BoolVar(&addSequence, "add-sequence-extension", false, "Should add extension 'sequence' identifying the sequence number.")
 	flag.BoolVar(&incrementalId, "incremental-id", false, "Override the event id with an incremental id.")
 	flag.StringVar(&additionalHeaders, "additional-headers", "", "Additional non-CloudEvents headers to send")
 }
 
-func parseDurationStr(durationStr string, defaultDuration int) time.Duration {
-	var duration time.Duration
-	if d, err := strconv.Atoi(durationStr); err != nil {
-		duration = time.Duration(defaultDuration) * time.Second
-	} else {
-		duration = time.Duration(d) * time.Second
-	}
-	return duration
-}
-
 func main() {
 	flag.Parse()
-	period := parseDurationStr(periodStr, 5)
-	delay := parseDurationStr(delayStr, 5)
-
-	maxMsg := 1
-	if m, err := strconv.Atoi(maxMsgStr); err == nil {
-		maxMsg = m
-	}
-
-	defer func() {
-		var err error
-		r := recover()
-		if r != nil {
-			err = r.(error)
-			log.Printf("recovered from panic: %v", err)
-		}
-	}()
+	period := test_images.ParseDurationStr(periodStr, 5)
+	delay := test_images.ParseDurationStr(delayStr, 5)
 
 	if delay > 0 {
 		log.Printf("will sleep for %s", delay)
@@ -118,9 +98,8 @@ func main() {
 		)
 	}
 	if additionalHeaders != "" {
-		for _, kv := range strings.Split(additionalHeaders, ",") {
-			splitted := strings.Split(kv, "=")
-			httpOpts = append(httpOpts, cloudevents.WithHeader(splitted[0], splitted[1]))
+		for k, v := range test_images.ParseHeaders(additionalHeaders) {
+			httpOpts = append(httpOpts, cloudevents.WithHeader(k, v[0]))
 		}
 	}
 
@@ -133,20 +112,15 @@ func main() {
 	if addTracing {
 		log.Println("Adding tracing")
 		logger, _ := zap.NewDevelopment()
-		if err := tracing.SetupStaticPublishing(logger.Sugar(), "", tracing.AlwaysSample); err != nil {
+		if err := test_images.ConfigureTracing(logger.Sugar(), ""); err != nil {
 			log.Fatalf("Unable to setup trace publishing: %v", err)
 		}
 
 		c, err = cloudevents.NewClientObserved(t,
-			cloudevents.WithTimeNow(),
-			cloudevents.WithUUIDs(),
 			cloudevents.WithTracePropagation,
 		)
 	} else {
-		c, err = cloudevents.NewClient(t,
-			cloudevents.WithTimeNow(),
-			cloudevents.WithUUIDs(),
-		)
+		c, err = cloudevents.NewClient(t)
 	}
 
 	if err != nil {
@@ -165,16 +139,42 @@ func main() {
 		event := baseEvent.Clone()
 
 		sequence++
-		event.SetExtension("sequence", sequence)
-
+		if addSequence {
+			event.SetExtension("sequence", sequence)
+		}
 		if incrementalId {
 			event.SetID(fmt.Sprintf("%d", sequence))
 		}
 
-		if responseEvent, result := c.Request(ctx, event); !cloudevents.IsACK(result) {
-			log.Printf("send returned an error: %v\n", result)
-		} else if responseEvent != nil {
-			log.Printf("Got response from %s\n%s\n", sink, *responseEvent)
+		log.Printf("I'm going to send\n%s\n", event)
+
+		responseEvent, responseResult := c.Request(ctx, event)
+		if cloudevents.IsUndelivered(responseResult) {
+			log.Printf("send returned an error: %v\n", responseResult)
+		} else {
+			if responseEvent != nil {
+				log.Printf("Got response from %s\n%s\n%s\n", sink, responseResult, *responseEvent)
+			} else {
+				log.Printf("Got response from %s\n%s\n", sink, responseResult)
+			}
+
+			if responseSink != "" {
+				var httpResult *cehttp.Result
+				cloudevents.ResultAs(responseResult, &httpResult)
+				responseEvent := sender.NewSenderEvent(
+					event.ID(),
+					"https://knative.dev/eventing/test/event-sender",
+					responseEvent,
+					httpResult,
+				)
+
+				result2 := c.Send(cloudevents.ContextWithTarget(context.Background(), responseSink), responseEvent)
+				if cloudevents.IsUndelivered(result2) {
+					log.Printf("send to response sink returned an error: %v\n", result2)
+				} else {
+					log.Printf("Got response from %s\n%s\n", responseSink, result2)
+				}
+			}
 		}
 
 		// Wait for next tick

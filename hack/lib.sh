@@ -78,7 +78,7 @@ function init_pubsub_service_account() {
   local project_id=${1}
   local pubsub_service_account=${2}
   echo "parameter project_id used when initiating pubsub service account is'${project_id}'"
-  echo "parameter control_plane_service_account used when initiating pubsub service account is'${pubsub_service_account}'"
+  echo "parameter data_plane_service_account used when initiating pubsub service account is'${pubsub_service_account}'"
   # Enable APIs.
   gcloud services enable pubsub.googleapis.com
 

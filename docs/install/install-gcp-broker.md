@@ -9,7 +9,7 @@ GCP using [Cloud Pub/Sub](https://cloud.google.com/pubsub).
 Knative Eventing allows different Broker implementations via `BrokerClass`
 annotation. If annotated with
 `"eventing.knative.dev/broker.class": "googlecloud"`, the `Knative-GCP`
-contorller will create a GCP Broker. Compared to the default
+controller will create a GCP Broker. Compared to the default
 [MT Channel Based Broker](https://knative.dev/docs/eventing/broker/mt-channel-based-broker/),
 GCP Broker is more performant and cost-effective by reducing hops and Pub/Sub
 message consumption.
@@ -80,13 +80,16 @@ Workload Identity see
 
 ## Deployment
 
-* For up to [v0.15.0](https://github.com/google/knative-gcp/tree/v0.15.0), apply GCP broker yamls:
+- For up to [v0.15.0](https://github.com/google/knative-gcp/tree/v0.15.0), apply
+  GCP broker yamls:
 
   ```shell
   ko apply -f ./config/broker/
   ```
-* In the latest version, relevant components [will be created by BrokerCell on demand](https://github.com/google/knative-gcp/pull/1170), so, no broker-specific configs are needed at this point.
 
+- In the latest version, relevant components
+  [will be created by BrokerCell on demand](https://github.com/google/knative-gcp/pull/1170),
+  so, no broker-specific configs are needed at this point.
 
 ## Usage
 
@@ -123,8 +126,8 @@ kubectl create namespace ${NAMESPACE}
    This shows the broker you just created like so:
 
    ```shell
-   NAME          READY   REASON   URL                                                                                             AGE
-   test-broker   True             http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   15s
+   NAME          READY   REASON   URL                                                                                                         AGE
+   test-broker   True             http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   15s
    ```
 
 Once the GCP broker is ready, you can use it by sending events to its `URL` and

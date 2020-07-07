@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sendtracker
+  labels:
+    app: sendtracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sendtracker
+  template:
+    metadata:
+      labels:
+        app: sendtracker
+    spec:
+      containers:
+      - name: sendtracker
+        image: ko://github.com/google/knative-gcp/test/test_images/sendtracker
+        env:
+        - name: K_SINK
+          value: "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/default/default"
+        - name: DELAY_MS
+          value: "10"
+        - name: POST_STOP_SECS
+          value: "480"
+

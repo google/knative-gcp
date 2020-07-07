@@ -30,6 +30,8 @@ type Client interface {
 	Close() error
 	// CreateJob see https://godoc.org/cloud.google.com/go/scheduler/apiv1#CloudSchedulerClient.CreateJob
 	CreateJob(ctx context.Context, req *schedulerpb.CreateJobRequest, opts ...gax.CallOption) (*schedulerpb.Job, error)
+	// UpdateJob see https://godoc.org/cloud.google.com/go/scheduler/apiv1#CloudSchedulerClient.UpdateJob
+	UpdateJob(ctx context.Context, req *schedulerpb.UpdateJobRequest, opts ...gax.CallOption) (*schedulerpb.Job, error)
 	// DeleteJob see https://godoc.org/cloud.google.com/go/scheduler/apiv1#CloudSchedulerClient.DeleteJob
 	DeleteJob(ctx context.Context, req *schedulerpb.DeleteJobRequest, opts ...gax.CallOption) error
 	// GetJob see https://godoc.org/cloud.google.com/go/scheduler/apiv1#CloudSchedulerClient.GetJob

@@ -17,4 +17,4 @@ limitations under the License.
 package internal
 
 // StoredChannelVersion is the version of the Channel that is stored in the API server.
-const StoredChannelVersion = "v1alpha1"
+const StoredChannelVersion = "v1beta1"

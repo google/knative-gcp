@@ -29,8 +29,8 @@ spec:
       containers:
         - name: event-display
           # Source code: https://github.com/knative/eventing-contrib/tree/master/cmd/event_display
-          image: gcr.io/knative-releases/github.com/knative/eventing-sources/cmd/event_display:latest
-          
+          image: gcr.io/knative-releases/knative.dev/eventing-contrib/cmd/event_display:latest
+
 ---
 
 # Service pointing at the previous Deployment. This will be the target for event
@@ -66,7 +66,7 @@ spec:
       containers:
         - name: event-display
           # Source code: https://github.com/knative/eventing-contrib/tree/master/cmd/event_display
-          image: gcr.io/knative-releases/github.com/knative/eventing-sources/cmd/event_display:latest
+          image: gcr.io/knative-releases/knative.dev/eventing-contrib/cmd/event_display:latest
 
 ---
 

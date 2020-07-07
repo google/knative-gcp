@@ -90,13 +90,16 @@ function enable_monitoring(){
   local pubsub_service_account=${2}
 
   echo "parameter project_id used when enabling monitoring is'${project_id}'"
-  echo "parameter control_plane_service_account used when enabling monitoring is'${pubsub_service_account}'"
+  echo "parameter data_plane_service_account used when enabling monitoring is'${pubsub_service_account}'"
   # Enable monitoring
   echo "Enable Monitoring"
   gcloud services enable monitoring
   gcloud projects add-iam-policy-binding "${project_id}" \
       --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
-      --role roles/monitoring.editor
+      --role roles/monitoring.metricWriter
+  gcloud projects add-iam-policy-binding "${project_id}" \
+      --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
+      --role roles/cloudtrace.agent
 }
 
 function dump_extra_cluster_state() {

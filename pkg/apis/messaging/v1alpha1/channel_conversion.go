@@ -67,7 +67,7 @@ func (sink *Channel) ConvertFrom(ctx context.Context, from apis.Convertible) err
 		sink.Spec.Subscribable = convert.FromV1beta1SubscribableSpec(source.Spec.SubscribableSpec)
 		sink.Status.IdentityStatus = convert.FromV1beta1IdentityStatus(source.Status.IdentityStatus)
 		sink.Status.AddressStatus = source.Status.AddressStatus
-		if err := sink.Status.SubscribableTypeStatus.ConvertFrom(ctx, source.Status.SubscribableStatus); err != nil {
+		if err := sink.Status.SubscribableTypeStatus.ConvertFrom(ctx, &source.Status.SubscribableStatus); err != nil {
 			return err
 		}
 		sink.Status.ProjectID = source.Status.ProjectID

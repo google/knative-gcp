@@ -19,15 +19,14 @@ package v1alpha1
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"knative.dev/eventing/pkg/logging"
-	"knative.dev/pkg/apis"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/eventing/pkg/apis/messaging"
+	"knative.dev/eventing/pkg/logging"
+	"knative.dev/pkg/apis"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/apis/messaging/internal"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 )
@@ -51,7 +50,7 @@ func (c *Channel) SetDefaults(ctx context.Context) {
 		c.Annotations[messaging.SubscribableDuckVersionAnnotation] = internal.StoredChannelVersion
 	}
 	c.Spec.SetDefaults(ctx)
-	duckv1alpha1.SetClusterNameAnnotation(&c.ObjectMeta, metadataClient.NewDefaultMetadataClient())
+	duck.SetClusterNameAnnotation(&c.ObjectMeta, metadataClient.NewDefaultMetadataClient())
 }
 
 func (cs *ChannelSpec) SetDefaults(ctx context.Context) {
