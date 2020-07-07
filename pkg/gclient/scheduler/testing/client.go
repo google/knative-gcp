@@ -84,7 +84,7 @@ func (c *testClient) DeleteJob(ctx context.Context, req *schedulerpb.DeleteJobRe
 	return c.data.DeleteJobErr
 }
 
-// CreateJob implements client.UpdateJob
+// UpdateJob implements client.UpdateJob
 func (c *testClient) UpdateJob(ctx context.Context, req *schedulerpb.UpdateJobRequest, opts ...gax.CallOption) (*schedulerpb.Job, error) {
 	if c.data.UpdateJobErr != nil {
 		return nil, c.data.UpdateJobErr

@@ -57,7 +57,7 @@ func (c *schedulerClient) CreateJob(ctx context.Context, req *schedulerpb.Create
 	return c.client.CreateJob(ctx, req, opts...)
 }
 
-// CreateJob implements scheduler.CloudSchedulerClient.UpdateJobRequest
+// UpdateJob implements scheduler.CloudSchedulerClient.UpdateJobRequest
 func (c *schedulerClient) UpdateJob(ctx context.Context, req *schedulerpb.UpdateJobRequest, opts ...gax.CallOption) (*schedulerpb.Job, error) {
 	return c.client.UpdateJob(ctx, req, opts...)
 }

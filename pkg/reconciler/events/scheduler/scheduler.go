@@ -121,7 +121,7 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1beta1.CloudS
 		} else if st.Code() == codes.NotFound {
 			// Create the job as it does not exist. For creation, we need a parent, extract it from the jobName.
 			parent := resources.ExtractParentName(jobName)
-			// Add schedulerName as customAttribute.
+			// Add jobName as customAttribute.
 			customAttributes := map[string]string{
 				v1beta1.CloudSchedulerSourceJobName: jobName,
 			}

@@ -17,8 +17,9 @@ limitations under the License.
 package auditlogs
 
 import (
-	"cloud.google.com/go/logging/logadmin"
 	"context"
+
+	"cloud.google.com/go/logging/logadmin"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -91,7 +92,6 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1beta1.CloudAuditLog
 	}
 	s.Status.StackdriverSink = sink
 	s.Status.MarkSinkReady()
-
 	c.Logger.Debugf("Reconciled Stackdriver sink: %+v", sink)
 
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudAuditLogsSource reconciled: "%s/%s"`, s.Namespace, s.Name)
