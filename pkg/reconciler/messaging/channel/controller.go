@@ -78,18 +78,20 @@ func newController(
 	r.Logger.Info("Setting up event handlers")
 	channelInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
+	channelGK := v1beta1.Kind("Channel")
+
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("Channel")),
+		FilterFunc: controller.FilterControllerGK(channelGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullSubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("Channel")),
+		FilterFunc: controller.FilterControllerGK(channelGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("Channel")),
+		FilterFunc: controller.FilterControllerGK(channelGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
