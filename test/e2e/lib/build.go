@@ -82,8 +82,7 @@ func BuildWithConfigFile(t *testing.T, imageName string) string {
 		Args: []string{"build", "-t", image, "."},
 	})
 	build.Images = []string{image}
-	projectsBuildsCreateCall := cloudbuildService.Projects.Builds.Create(project, build)
-	operation, err := projectsBuildsCreateCall.Do()
+	operation, err := cloudbuildService.Projects.Builds.Create(project, build).Do()
 	if err != nil {
 		t.Fatalf("failed to build docker image, %s", err.Error())
 	}
