@@ -17,10 +17,18 @@ limitations under the License.
 package lib
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"testing"
+
 	v1 "k8s.io/api/core/v1"
 
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"google.golang.org/api/cloudbuild/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -43,7 +51,7 @@ func MakeBuildOrDie(client *Client, config BuildConfig) {
 	client.Core.WaitForResourceReadyOrFail(config.BuildName, CloudBuildSourceTypeMeta)
 }
 
-func MakeBuildTargetJobOrDie(client *Client, source, targetName, eventType string) {
+func MakeBuildTargetJobOrDie(client *Client, images, targetName, eventType string) {
 	client.T.Helper()
 	job := resources.BuildTargetJob(targetName, []v1.EnvVar{
 		{
@@ -51,11 +59,62 @@ func MakeBuildTargetJobOrDie(client *Client, source, targetName, eventType strin
 			Value: eventType,
 		},
 		{
-			Name:  "SOURCE",
-			Value: source,
+			Name:  "IMAGES",
+			Value: images,
 		}, {
 			Name:  "TIME",
 			Value: "6m",
 		}})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
 }
+
+func BuildWithConfigFile(t *testing.T, imageName string) string {
+	ctx := context.Background()
+	project := os.Getenv(ProwProjectKey)
+	cloudbuildService, err := cloudbuild.NewService(ctx)
+	if err != nil {
+		t.Fatalf("failed to create cloud build service, %s", err.Error())
+	}
+	build := new(cloudbuild.Build)
+	image := CloudBuildImage(project, imageName)
+	build.Steps = append(build.Steps, &cloudbuild.BuildStep{
+		Name: "gcr.io/cloud-builders/docker",
+		Args: []string{"build", "-t", image, "."},
+	})
+	build.Images = []string{image}
+	projectsBuildsCreateCall := cloudbuildService.Projects.Builds.Create(project, build)
+	operation, err := projectsBuildsCreateCall.Do()
+	if err != nil {
+		t.Fatalf("failed to build docker image, %s", err.Error())
+	}
+	bom, err := extractOperationMetadata(operation)
+	if err != nil {
+		t.Fatalf("failed to extract operation metedata")
+	}
+	if bom.Build.Id == "" {
+		t.Fatalf("No build ID returned in BuildOperationMetadata")
+	}
+	return bom.Build.Id
+}
+
+func extractOperationMetadata(op *cloudbuild.Operation) (*cloudbuild.BuildOperationMetadata, error) {
+	mdJSON, err := json.Marshal(op.Metadata)
+	if err != nil {
+		return nil, err
+	}
+	bom := new(cloudbuild.BuildOperationMetadata)
+	err = json.Unmarshal(mdJSON, bom)
+	if err != nil {
+		return nil, err
+	}
+	if bom.Build == nil {
+		return nil, errors.New("no build found in assumed BuildOperationMetadata")
+	}
+	return bom, nil
+}
+
+func CloudBuildImage(project, imageName string) string {
+	return fmt.Sprintf("gcr.io/%s/%s", project, imageName)
+}
+
+

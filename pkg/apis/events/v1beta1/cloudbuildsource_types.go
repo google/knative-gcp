@@ -14,8 +14,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"fmt"
-
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,20 +52,6 @@ type CloudBuildSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, and Project
 	duckv1beta1.PubSubSpec `json:",inline"`
-}
-
-const (
-	// CloudBuildSource CloudEvent type
-	CloudBuildSourceEvent = "com.google.cloud.build.event"
-	// CloudBuildSourceBuildId is the Pub/Sub message attribute key with the CloudBuildSource's buildId.
-	CloudBuildSourceBuildId = "buildId"
-	// CloudBuildSourceBuildStatus is the Pub/Sub message attribute key with the CloudBuildSource's build status.
-	CloudBuildSourceBuildStatus = "status"
-)
-
-// CloudBuildSourceEventSource returns the Cloud Build CloudEvent source value.
-func CloudBuildSourceEventSource(googleCloudProject, buildId string) string {
-	return fmt.Sprintf("//cloudbuild.googleapis.com/projects/%s/builds/%s", googleCloudProject, buildId)
 }
 
 const (

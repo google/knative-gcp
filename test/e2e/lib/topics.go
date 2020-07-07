@@ -85,7 +85,7 @@ func MakeTopicWithNameOrDie(t *testing.T, topicName string) (string, func()) {
 	}
 }
 
-func MakeTopicWithNameIfItDoesNotExistOrDie(t *testing.T, topicName string) (string, func()) {
+func MakeTopicWithNameIfItDoesNotExist(t *testing.T, topicName string){
 	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key
@@ -107,9 +107,6 @@ func MakeTopicWithNameIfItDoesNotExistOrDie(t *testing.T, topicName string) (str
 		if err != nil {
 			t.Fatalf("failed to create topic, %s", err)
 		}
-	}
-	return topicName, func() {
-		DeleteTopicOrDie(t, topicName)
 	}
 }
 

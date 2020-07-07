@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 const (
@@ -99,11 +99,11 @@ func TestConvertCloudBuild(t *testing.T) {
 				if !gotEvent.Time().Equal(buildPublishTime) {
 					t.Errorf("Time '%v' != '%v'", gotEvent.Time(), buildPublishTime)
 				}
-				if want := v1beta1.CloudBuildSourceEventSource("testproject", buildID); gotEvent.Source() != want {
+				if want := schemasv1.CloudBuildSourceEventSource("testproject", buildID); gotEvent.Source() != want {
 					t.Errorf("Source %q != %q", gotEvent.Source(), want)
 				}
-				if gotEvent.Type() != v1beta1.CloudBuildSourceEvent {
-					t.Errorf(`Type %q != %q`, gotEvent.Type(), v1beta1.CloudBuildSourceEvent)
+				if gotEvent.Type() != schemasv1.CloudBuildSourceEventType {
+					t.Errorf(`Type %q != %q`, gotEvent.Type(), schemasv1.CloudBuildSourceEventType)
 				}
 				if gotEvent.Subject() != buildStatus {
 					t.Errorf("Subject %q != %q", gotEvent.Subject(), buildStatus)
