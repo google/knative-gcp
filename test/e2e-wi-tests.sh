@@ -26,6 +26,7 @@ readonly PROW_SERVICE_ACCOUNT_EMAIL=$(gcloud config get-value core/account)
 # Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
 readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
 readonly CONFIG_GCP_AUTH="test/test_configs/config-gcp-auth-wi.yaml"
+readonly CONFIG_GCP_BROKER="test/test_configs/gcp-broker.yaml"
 readonly K8S_SERVICE_ACCOUNT_NAME="ksa-name"
 
 function export_variable() {
@@ -137,6 +138,8 @@ function gcp_broker_setup() {
   fi
   kubectl annotate --overwrite serviceaccount ${BROKER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account="${PUBSUB_SERVICE_ACCOUNT_EMAIL}" \
     --namespace "${CONTROL_PLANE_NAMESPACE}"
+  # Add a default broker to trigger brokercell ingress/fanout/retry components.
+  ko apply -f ${CONFIG_GCP_BROKER}
 }
 
 function create_private_key_for_pubsub_service_account {
