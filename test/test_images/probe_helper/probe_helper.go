@@ -41,29 +41,36 @@ type envConfig struct {
 	Timeout int `envconfig:"TIMEOUT_MINS" default:"30"`
 }
 
-func forwardFromProbe(ctx context.Context, c cloudevents.Client, receivedEvents map[string] chan bool, timeout int) cloudEventsFunc{
-	return func(event cloudevents.Event) protocol.Result{
+func forwardFromProbe(ctx context.Context, c cloudevents.Client, receivedEvents map[string]chan bool, timeout int) cloudEventsFunc {
+	return func(event cloudevents.Event) protocol.Result {
+		log.Printf("Received probe request: %+v \n", event)
 		eventID := event.ID()
-		log.Print("Sending the cloud event to the broker")
 		receivedEvents[eventID] = make(chan bool, 1)
-		ctx, _ = context.WithTimeout(ctx, time.Duration(timeout) * time.Minute)
+		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
+		defer cancel()
 		if res := c.Send(ctx, event); !cloudevents.IsACK(res) {
-			return cloudevents.ResultNACK
+			return res
 		}
 		select {
 		case <-receivedEvents[eventID]:
 			delete(receivedEvents, eventID)
 			return cloudevents.ResultACK
 		case <-ctx.Done():
-			return cloudevents.ResultNACK
+			return cloudevents.NewReceipt(false, "timed out waiting for event to be sent back")
 		}
 	}
 }
 
 func receiveFromTrigger(receivedEvents map[string]chan bool) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
+		log.Printf("Received event: %+v \n", event)
 		eventID := event.ID()
-		receivedEvents[eventID] <- true
+		ch, ok := receivedEvents[eventID]
+		if !ok {
+			log.Printf("This event is not received by the probe receiver client: %v \n", eventID)
+			return cloudevents.ResultACK
+		}
+		ch <- true
 		return cloudevents.ResultACK
 	}
 }
@@ -77,12 +84,13 @@ func runProbeHelper() {
 	probePort := env.ProbePort
 	receiverPort := env.ReceiverPort
 	timeout := env.Timeout
+	log.Printf("Running Probe Helper with env config: %+v \n", env)
 	// create sender client
 	sp, err := cloudevents.NewHTTP(cloudevents.WithPort(probePort), cloudevents.WithTarget(brokerURL))
 	if err != nil {
 		log.Fatalf("Failed to create sender transport, %v", err)
 	}
-	sc, err  := cloudevents.NewClient(sp)
+	sc, err := cloudevents.NewClient(sp)
 	if err != nil {
 		log.Fatal("Failed to create sender client, ", err)
 	}
@@ -99,7 +107,9 @@ func runProbeHelper() {
 	receivedEvents := make(map[string]chan bool)
 	ctx := signals.NewContext()
 	// start a goroutine to receive the event from probe and forward the event to the broker
+	log.Println("Starting Probe Helper server...")
 	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, receivedEvents, timeout))
 	// Receive the event from the trigger and return the result back to the probe
+	log.Println("Starting event receiver...")
 	rc.StartReceiver(ctx, receiveFromTrigger(receivedEvents))
 }
