@@ -41,6 +41,7 @@ import (
 
 	. "knative.dev/pkg/reconciler/testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	storagev1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	. "github.com/google/knative-gcp/pkg/apis/intevents"
@@ -180,7 +181,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithCloudStorageSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudStorageSourceSetDefaults,
 			),
@@ -195,7 +196,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
 				WithCloudStorageSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudStorageSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 				WithCloudStorageSourceSetDefaults,
@@ -213,7 +214,7 @@ func TestAllCases(t *testing.T) {
 					SourceLabelKey:    storageName,
 				}),
 				WithTopicAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				WithTopicSetDefaults,
@@ -474,7 +475,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithCloudStorageSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudStorageSourceSetDefaults,
 			),
@@ -502,7 +503,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceTopicReady(testTopicID),
 				WithCloudStorageSourceProjectID(testProject),
 				WithCloudStorageSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudStorageSourceSetDefaults,
 				WithCloudStorageSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilepullSubscriptionMsg),
@@ -524,7 +525,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group":          resourceGroup,
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),

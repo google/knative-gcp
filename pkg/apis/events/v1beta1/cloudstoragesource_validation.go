@@ -19,18 +19,19 @@ package v1beta1
 import (
 	"context"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 )
 
 func (current *CloudStorageSource) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
-	return duckv1beta1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
+	return duck.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 
 func (current *CloudStorageSourceSpec) Validate(ctx context.Context) *apis.FieldError {

@@ -22,9 +22,6 @@ import (
 	"strings"
 	"testing"
 
-	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
-	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -42,9 +39,11 @@ import (
 	pkgtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
-
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
@@ -142,7 +141,7 @@ func TestKSACreates(t *testing.T) {
 				WithCloudPubSubSourceSetDefaults)
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
 			identifiable.SetAnnotations(map[string]string{
-				duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			})
 
 			arl := pkgtesting.ActionRecorderList{cs}
@@ -260,7 +259,7 @@ func TestKSADeletes(t *testing.T) {
 			)
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
 			identifiable.SetAnnotations(map[string]string{
-				duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			})
 
 			arl := pkgtesting.ActionRecorderList{cs}

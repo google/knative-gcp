@@ -31,14 +31,13 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
-
-	"google.golang.org/grpc/codes"
-	gstatus "google.golang.org/grpc/status"
 	. "knative.dev/pkg/reconciler/testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	schedulerv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	. "github.com/google/knative-gcp/pkg/apis/intevents"
@@ -50,7 +49,9 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
+
+	"google.golang.org/grpc/codes"
+	gstatus "google.golang.org/grpc/status"
 )
 
 const (
@@ -180,7 +181,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithCloudSchedulerSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudSchedulerSourceSetDefaults,
 			),
@@ -195,7 +196,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
 				WithCloudSchedulerSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudSchedulerSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 				WithCloudSchedulerSourceSetDefaults,
@@ -213,7 +214,7 @@ func TestAllCases(t *testing.T) {
 					SourceLabelKey:    schedulerName,
 				}),
 				WithTopicAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				WithTopicSetDefaults,
@@ -482,7 +483,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithCloudSchedulerSourceAnnotations(map[string]string{
-						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithCloudSchedulerSourceSetDefaults,
 				),
@@ -509,7 +510,7 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourceAnnotations(map[string]string{
-						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithCloudSchedulerSourceSetDefaults,
 					WithCloudSchedulerSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
@@ -530,7 +531,7 @@ func TestAllCases(t *testing.T) {
 						SourceLabelKey:    schedulerName}),
 					WithPullSubscriptionAnnotations(map[string]string{
 						"metrics-resource-group":          resourceGroup,
-						duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				),
