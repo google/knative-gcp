@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	upgrader "github.com/google/knative-gcp/pkg/upgrader/v0.16.0"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
@@ -34,7 +34,7 @@ func main() {
 	ctx := signals.NewContext()
 	cfg := sharedmain.ParseAndGetConfigOrDie()
 	ctx = context.WithValue(ctx, kubeclient.Key{}, kubernetes.NewForConfigOrDie(cfg))
-	ctx = context.WithValue(ctx, dynamicclient.Key{}, versioned.NewForConfigOrDie(cfg))
+	ctx = context.WithValue(ctx, dynamicclient.Key{}, dynamic.NewForConfigOrDie(cfg))
 	if err := upgrader.Upgrade(ctx); err != nil {
 		fmt.Printf("Upgrade failed with: %v\n", err)
 		os.Exit(1)

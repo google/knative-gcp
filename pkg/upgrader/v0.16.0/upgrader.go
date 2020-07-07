@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -63,12 +64,12 @@ func processNamespace(ctx context.Context, ns string) error {
 	}
 
 	logger.Debug("Deleting topics", zap.String("namespace", ns))
-	if err := tc.DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{}); err != nil {
+	if err := tc.DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{}); err != nil && !apierrs.IsNotFound(err) {
 		return fmt.Errorf("failed to delete topics in namespace %q: %w", ns, err)
 	}
 
 	logger.Debug("Deleting pullsubscriptions", zap.String("namespace", ns))
-	if err := psc.DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{}); err != nil {
+	if err := psc.DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{}); err != nil && !apierrs.IsNotFound(err) {
 		return fmt.Errorf("failed to delete pullsubscriptions in namespace %q: %w", ns, err)
 	}
 
