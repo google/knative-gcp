@@ -517,7 +517,7 @@ func makeTargetJobOrDie(client *lib.Client, targetName string) {
 	job := resources.TargetJob(targetName, []v1.EnvVar{{
 		// TIME (used in knockdown.Config) is the timeout for the target to receive event.
 		Name:  "TIME",
-		Value: "2m",
+		Value: "5m",
 	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 }
