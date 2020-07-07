@@ -47,5 +47,5 @@ function istio_patch() {
 function knative_eventing_config_tracing() {
   # Setup config-tracing in knative-eventing, which the tracing tests rely on.
   header "Updating ConfigMap knative-eventing/config-tracing"
-  kubectl replace -f "test/config/knative-eventing-config-tracing.yaml" || return 1
+  kubectl replace -f "test/e2e/config/knative-eventing-config-tracing.yaml" || return 1
 }
