@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/encoding/protowire"
-	"google.golang.org/protobuf/internal/detectknown"
 	"google.golang.org/protobuf/internal/detrand"
+	"google.golang.org/protobuf/internal/genid"
 	"google.golang.org/protobuf/internal/mapsort"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -104,21 +104,21 @@ var protocmpMessageType = reflect.TypeOf(map[string]interface{}(nil))
 func appendKnownMessage(b []byte, m protoreflect.Message) []byte {
 	md := m.Descriptor()
 	fds := md.Fields()
-	switch detectknown.Which(md.FullName()) {
-	case detectknown.AnyProto:
+	switch md.FullName() {
+	case genid.Any_message_fullname:
 		var msgVal protoreflect.Message
-		url := m.Get(fds.ByName("type_url")).String()
+		url := m.Get(fds.ByNumber(genid.Any_TypeUrl_field_number)).String()
 		if v := reflect.ValueOf(m); v.Type().ConvertibleTo(protocmpMessageType) {
 			// For protocmp.Message, directly obtain the sub-message value
 			// which is stored in structured form, rather than as raw bytes.
 			m2 := v.Convert(protocmpMessageType).Interface().(map[string]interface{})
-			v, ok := m2["value"].(proto.Message)
+			v, ok := m2[string(genid.Any_Value_field_name)].(proto.Message)
 			if !ok {
 				return nil
 			}
 			msgVal = v.ProtoReflect()
 		} else {
-			val := m.Get(fds.ByName("value")).Bytes()
+			val := m.Get(fds.ByNumber(genid.Any_Value_field_number)).Bytes()
 			mt, err := protoregistry.GlobalTypes.FindMessageByURL(url)
 			if err != nil {
 				return nil
@@ -137,9 +137,9 @@ func appendKnownMessage(b []byte, m protoreflect.Message) []byte {
 		b = append(b, '}')
 		return b
 
-	case detectknown.TimestampProto:
-		secs := m.Get(fds.ByName("seconds")).Int()
-		nanos := m.Get(fds.ByName("nanos")).Int()
+	case genid.Timestamp_message_fullname:
+		secs := m.Get(fds.ByNumber(genid.Timestamp_Seconds_field_number)).Int()
+		nanos := m.Get(fds.ByNumber(genid.Timestamp_Nanos_field_number)).Int()
 		if nanos < 0 || nanos >= 1e9 {
 			return nil
 		}
@@ -150,9 +150,9 @@ func appendKnownMessage(b []byte, m protoreflect.Message) []byte {
 		x = strings.TrimSuffix(x, ".000")
 		return append(b, x+"Z"...)
 
-	case detectknown.DurationProto:
-		secs := m.Get(fds.ByName("seconds")).Int()
-		nanos := m.Get(fds.ByName("nanos")).Int()
+	case genid.Duration_message_fullname:
+		secs := m.Get(fds.ByNumber(genid.Duration_Seconds_field_number)).Int()
+		nanos := m.Get(fds.ByNumber(genid.Duration_Nanos_field_number)).Int()
 		if nanos <= -1e9 || nanos >= 1e9 || (secs > 0 && nanos < 0) || (secs < 0 && nanos > 0) {
 			return nil
 		}
@@ -162,8 +162,16 @@ func appendKnownMessage(b []byte, m protoreflect.Message) []byte {
 		x = strings.TrimSuffix(x, ".000")
 		return append(b, x+"s"...)
 
-	case detectknown.WrappersProto:
-		fd := fds.ByName("value")
+	case genid.BoolValue_message_fullname,
+		genid.Int32Value_message_fullname,
+		genid.Int64Value_message_fullname,
+		genid.UInt32Value_message_fullname,
+		genid.UInt64Value_message_fullname,
+		genid.FloatValue_message_fullname,
+		genid.DoubleValue_message_fullname,
+		genid.StringValue_message_fullname,
+		genid.BytesValue_message_fullname:
+		fd := fds.ByNumber(genid.WrapperValue_Value_field_number)
 		return appendValue(b, m.Get(fd), fd)
 	}
 
