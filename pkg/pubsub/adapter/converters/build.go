@@ -54,7 +54,7 @@ func convertCloudBuild(ctx context.Context, msg *pubsub.Message) (*cev2.Event, e
 		event.SetSubject(buildStatus)
 	}
 
-	if err := event.SetData(cev2.ApplicationJSON, msg); err != nil {
+	if err := event.SetData(cev2.ApplicationJSON, msg.Data); err != nil {
 		return nil, err
 	}
 

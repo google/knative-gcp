@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -66,19 +65,7 @@ func (r *buildReceiver) Knockdown(event cloudevents.Event) bool {
 	if err := json.Unmarshal(event.Data.([]byte), &eventData); err != nil {
 		fmt.Printf("failed unmarshall event.Data %s.\n", err.Error())
 	}
-
-	buildData:= eventData[buildData]
-	decodedBuildData, err := base64.StdEncoding.DecodeString(fmt.Sprint(buildData))
-	if err != nil {
-		fmt.Printf("failed to do base64 decode for buildData %s.\n", err.Error())
-	}
-
-	var buildDataMap map[string]interface{}
-	err = json.Unmarshal(decodedBuildData, &buildDataMap)
-	if err != nil {
-		fmt.Printf("failed to unmarshall decodedBuildData %s.\n", err.Error())
-	}
-	imageStr := fmt.Sprint(buildDataMap[images])
+	imageStr := fmt.Sprint(eventData[images])
 
 	if event.Type() != r.Type {
 		incorrectAttributes[lib.EventType] = lib.PropPair{Expected: r.Type, Received: event.Type()}
