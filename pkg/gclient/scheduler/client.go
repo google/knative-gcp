@@ -19,7 +19,7 @@ package scheduler
 import (
 	"context"
 
-	scheduler "cloud.google.com/go/scheduler/apiv1"
+	"cloud.google.com/go/scheduler/apiv1"
 	"github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/option"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
@@ -55,6 +55,11 @@ func (c *schedulerClient) Close() error {
 // CreateJob implements scheduler.CloudSchedulerClient.CreateJob
 func (c *schedulerClient) CreateJob(ctx context.Context, req *schedulerpb.CreateJobRequest, opts ...gax.CallOption) (*schedulerpb.Job, error) {
 	return c.client.CreateJob(ctx, req, opts...)
+}
+
+// CreateJob implements scheduler.CloudSchedulerClient.UpdateJobRequest
+func (c *schedulerClient) UpdateJob(ctx context.Context, req *schedulerpb.UpdateJobRequest, opts ...gax.CallOption) (*schedulerpb.Job, error) {
+	return c.client.UpdateJob(ctx, req, opts...)
 }
 
 // DeleteJob implements scheduler.CloudSchedulerClient.DeleteJob
