@@ -22,6 +22,7 @@ import (
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
@@ -39,14 +40,14 @@ func TestCloudAuditLogsSource_SetDefaults(t *testing.T) {
 			orig: &CloudAuditLogsSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 			},
 			expected: &CloudAuditLogsSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: CloudAuditLogsSourceSpec{
@@ -65,7 +66,7 @@ func TestCloudAuditLogsSource_SetDefaults(t *testing.T) {
 			orig: &CloudAuditLogsSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: CloudAuditLogsSourceSpec{
@@ -82,7 +83,7 @@ func TestCloudAuditLogsSource_SetDefaults(t *testing.T) {
 			expected: &CloudAuditLogsSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: CloudAuditLogsSourceSpec{

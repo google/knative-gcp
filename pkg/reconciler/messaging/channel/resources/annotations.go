@@ -17,7 +17,7 @@ limitations under the License.
 package resources
 
 import (
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 )
 
 func GetPullSubscriptionAnnotations(channel, clusterName string) map[string]string {
@@ -26,7 +26,7 @@ func GetPullSubscriptionAnnotations(channel, clusterName string) map[string]stri
 		"metrics-resource-name":  channel,
 	}
 	if clusterName != "" {
-		annotation[duckv1alpha1.ClusterNameAnnotation] = clusterName
+		annotation[duck.ClusterNameAnnotation] = clusterName
 	}
 	return annotation
 }
@@ -34,7 +34,7 @@ func GetPullSubscriptionAnnotations(channel, clusterName string) map[string]stri
 func GetTopicAnnotations(clusterName string) map[string]string {
 	annotation := map[string]string{}
 	if clusterName != "" {
-		annotation[duckv1alpha1.ClusterNameAnnotation] = clusterName
+		annotation[duck.ClusterNameAnnotation] = clusterName
 	}
 	return annotation
 }

@@ -20,25 +20,25 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
+
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"knative.dev/pkg/apis"
-
-	"github.com/google/go-cmp/cmp"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 )
 
 func newAnnotations() map[string]string {
 	return map[string]string{
-		duckv1beta1.AutoscalingClassAnnotation:                duckv1beta1.KEDA,
-		duckv1beta1.AutoscalingMinScaleAnnotation:             "0",
-		duckv1beta1.AutoscalingMaxScaleAnnotation:             "3",
-		duckv1beta1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
-		duckv1beta1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
-		duckv1beta1.KedaAutoscalingPollingIntervalAnnotation:  "30",
+		duck.AutoscalingClassAnnotation:                duck.KEDA,
+		duck.AutoscalingMinScaleAnnotation:             "0",
+		duck.AutoscalingMaxScaleAnnotation:             "3",
+		duck.KedaAutoscalingSubscriptionSizeAnnotation: "5",
+		duck.KedaAutoscalingCooldownPeriodAnnotation:   "60",
+		duck.KedaAutoscalingPollingIntervalAnnotation:  "30",
 	}
 }
 

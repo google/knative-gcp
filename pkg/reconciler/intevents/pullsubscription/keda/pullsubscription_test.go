@@ -23,10 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	v1 "k8s.io/api/apps/v1"
-	"knative.dev/pkg/apis"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -37,15 +34,18 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
+	"knative.dev/eventing/pkg/duck"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
-
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
 
+	gcpduck "github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1beta1/resource"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/pullsubscription"
@@ -56,7 +56,6 @@ import (
 	. "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/keda/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	"knative.dev/eventing/pkg/duck"
 )
 
 const (
@@ -166,12 +165,12 @@ func newSink() *unstructured.Unstructured {
 
 func newAnnotations() map[string]string {
 	return map[string]string{
-		v1beta1.AutoscalingClassAnnotation:                v1beta1.KEDA,
-		v1beta1.AutoscalingMinScaleAnnotation:             "0",
-		v1beta1.AutoscalingMaxScaleAnnotation:             "3",
-		v1beta1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
-		v1beta1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
-		v1beta1.KedaAutoscalingPollingIntervalAnnotation:  "30",
+		gcpduck.AutoscalingClassAnnotation:                gcpduck.KEDA,
+		gcpduck.AutoscalingMinScaleAnnotation:             "0",
+		gcpduck.AutoscalingMaxScaleAnnotation:             "3",
+		gcpduck.KedaAutoscalingSubscriptionSizeAnnotation: "5",
+		gcpduck.KedaAutoscalingCooldownPeriodAnnotation:   "60",
+		gcpduck.KedaAutoscalingPollingIntervalAnnotation:  "30",
 	}
 }
 
@@ -852,12 +851,12 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 	ps := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionAnnotations(map[string]string{
-			v1beta1.AutoscalingClassAnnotation:                v1beta1.KEDA,
-			v1beta1.AutoscalingMinScaleAnnotation:             "0",
-			v1beta1.AutoscalingMaxScaleAnnotation:             "3",
-			v1beta1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
-			v1beta1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
-			v1beta1.KedaAutoscalingPollingIntervalAnnotation:  "30",
+			gcpduck.AutoscalingClassAnnotation:                gcpduck.KEDA,
+			gcpduck.AutoscalingMinScaleAnnotation:             "0",
+			gcpduck.AutoscalingMaxScaleAnnotation:             "3",
+			gcpduck.KedaAutoscalingSubscriptionSizeAnnotation: "5",
+			gcpduck.KedaAutoscalingCooldownPeriodAnnotation:   "60",
+			gcpduck.KedaAutoscalingPollingIntervalAnnotation:  "30",
 		}),
 		WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
 			PubSubSpec: v1beta1.PubSubSpec{

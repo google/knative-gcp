@@ -40,7 +40,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudauditlogssource"
@@ -159,7 +159,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudAuditLogsSourceSetDefaults,
 			),
@@ -174,7 +174,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudAuditLogsSourceSetDefaults,
 			),
@@ -192,7 +192,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithTopicOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
 				WithTopicAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithTopicSetDefaults,
 			),
@@ -213,7 +213,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudAuditLogsSourceSetDefaults,
 			),
@@ -236,7 +236,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudAuditLogsSourceSetDefaults,
 			),
@@ -457,7 +457,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudAuditLogsSourceSetDefaults,
 			),
@@ -484,7 +484,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudAuditLogsSourceSetDefaults,
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
@@ -506,7 +506,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group":          resourceGroup,
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
 				WithPullSubscriptionDefaultGCPAuth,
