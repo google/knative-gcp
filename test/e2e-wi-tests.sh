@@ -116,7 +116,7 @@ function pubsub_setup() {
   if (( ! IS_PROW )); then
     # Enable monitoring
     gcloud services enable monitoring
-    echo "Set up ServiceAccount for Pub/Sub Admin"
+    echo "Set up ServiceAccount for Pub/Sub Editor"
     init_pubsub_service_account "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
     enable_monitoring "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
   fi

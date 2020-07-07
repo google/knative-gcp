@@ -18,7 +18,7 @@ metadata:
   name: scheduler-test
 spec:
   location: "us-central1"
-  data: "my test data"
+  data: "scheduler custom data"
   schedule: "* * * * *"
   sink:
     ref:

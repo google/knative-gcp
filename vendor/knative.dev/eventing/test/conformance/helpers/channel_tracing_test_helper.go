@@ -28,9 +28,8 @@ import (
 
 	tracinghelper "knative.dev/eventing/test/conformance/helpers/tracing"
 	testlib "knative.dev/eventing/test/lib"
-	"knative.dev/eventing/test/lib/recordevents"
 	"knative.dev/eventing/test/lib/resources"
-	"knative.dev/eventing/test/lib/resources/sender"
+	"knative.dev/eventing/test/lib/sender"
 )
 
 // ChannelTracingTestHelperWithChannelTestRunner runs the Channel tracing tests for all Channels in
@@ -228,6 +227,6 @@ func setupChannelTracingWithReply(
 	return expected, cetest.AllOf(
 		cetest.HasSource(senderName),
 		cetest.HasId(eventID),
-		recordevents.DataContains(body),
+		cetest.DataContains(body),
 	)
 }

@@ -35,7 +35,7 @@ func TestChannelDefaults(t *testing.T) {
 			want: Channel{
 				ObjectMeta: v1.ObjectMeta{
 					Annotations: map[string]string{
-						"messaging.knative.dev/subscribable": "v1alpha1",
+						"messaging.knative.dev/subscribable": "v1beta1",
 					},
 				},
 				Spec: ChannelSpec{
