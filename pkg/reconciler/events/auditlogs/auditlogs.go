@@ -19,7 +19,6 @@ package auditlogs
 import (
 	"cloud.google.com/go/logging/logadmin"
 	"context"
-	"fmt"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -92,11 +91,6 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1beta1.CloudAuditLog
 	}
 	s.Status.StackdriverSink = sink
 	s.Status.MarkSinkReady()
-
-	// TODO remove after 0.16 cut.
-	if err := c.deleteOldSink(ctx, s); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, "DeleteOldSinkFailed", "Failed to delete old StackDriver sink: %s", err.Error())
-	}
 
 	c.Logger.Debugf("Reconciled Stackdriver sink: %+v", sink)
 
@@ -208,20 +202,5 @@ func (c *Reconciler) FinalizeKind(ctx context.Context, s *v1beta1.CloudAuditLogs
 		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailed, "Failed to delete CloudAuditLogsSource PubSub: %s", err.Error())
 	}
 	s.Status.StackdriverSink = ""
-	return nil
-}
-
-// TODO remove after 0.16 cut.
-func (c *Reconciler) deleteOldSink(ctx context.Context, s *v1beta1.CloudAuditLogsSource) error {
-	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to create LogAdmin client", zap.Error(err))
-		return err
-	}
-	oldSinkName := fmt.Sprintf("sink-%s", string(s.UID))
-	if err = logadminClient.DeleteSink(ctx, oldSinkName); status.Code(err) != codes.NotFound {
-		logging.FromContext(ctx).Desugar().Error("Failed to delete StackDriver sink", zap.String("sinkName", oldSinkName), zap.Error(err))
-		return err
-	}
 	return nil
 }
