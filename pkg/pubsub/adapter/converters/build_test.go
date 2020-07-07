@@ -16,6 +16,7 @@ limitations under the License.
 package converters
 
 import (
+	"bytes"
 	"context"
 	"testing"
 	"time"
@@ -32,6 +33,7 @@ const (
 
 var (
 	buildPublishTime = time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
+	data = []byte("test data")
 )
 
 func TestConvertCloudBuild(t *testing.T) {
@@ -45,7 +47,7 @@ func TestConvertCloudBuild(t *testing.T) {
 		message: &pubsub.Message{
 			ID:          "id",
 			PublishTime: buildPublishTime,
-			Data:        []byte("test data"),
+			Data:        data,
 			Attributes: map[string]string{
 				"buildId":    buildID,
 				"status":     buildStatus,
@@ -57,7 +59,7 @@ func TestConvertCloudBuild(t *testing.T) {
 		{
 			name: "no buildId attributes",
 			message: &pubsub.Message{
-				Data: []byte("test data"),
+				Data: data,
 				Attributes: map[string]string{
 					"status": buildStatus,
 				},
@@ -67,7 +69,7 @@ func TestConvertCloudBuild(t *testing.T) {
 		{
 			name: "no buildStatus attributes",
 			message: &pubsub.Message{
-				Data: []byte("test data"),
+				Data: data,
 				Attributes: map[string]string{
 					"buildId": buildID,
 				},
@@ -77,7 +79,7 @@ func TestConvertCloudBuild(t *testing.T) {
 		{
 			name: "no attributes",
 			message: &pubsub.Message{
-				Data:       []byte("test data"),
+				Data:       data,
 				Attributes: map[string]string{},
 			},
 			wantErr: true,
@@ -110,6 +112,9 @@ func TestConvertCloudBuild(t *testing.T) {
 				}
 				if gotEvent.DataSchema() != buildSchemaUrl {
 					t.Errorf("DataSchema %q != %q", gotEvent.DataSchema(), buildSchemaUrl)
+				}
+				if !bytes.Equal(gotEvent.Data(), data) {
+					t.Errorf("Data %q != %q", gotEvent.Data(), data)
 				}
 			}
 		})
