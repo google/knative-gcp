@@ -104,7 +104,11 @@ func TestEventTransformationForTrigger(t *testing.T) {
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.EventTransformationForTriggerTestHelper(t, "MTChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
+
+	brokerClass := "MTChannelBasedBroker"
+	brokerVersion := "v1beta1"
+	triggerVersion := "v1beta1"
+	e2ehelpers.EventTransformationForTriggerTestHelper(t, brokerClass, brokerVersion, triggerVersion, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestBrokerChannelFlow(t *testing.T) {
@@ -114,7 +118,11 @@ func TestBrokerChannelFlow(t *testing.T) {
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.BrokerChannelFlowWithTransformation(t, "MTChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
+
+	brokerClass := "MTChannelBasedBroker"
+	brokerVersion := "v1beta1"
+	triggerVersion := "v1beta1"
+	e2ehelpers.BrokerChannelFlowWithTransformation(t, brokerClass, brokerVersion, triggerVersion, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelDeadLetterSink(t *testing.T) {

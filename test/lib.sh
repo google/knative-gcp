@@ -26,6 +26,7 @@ function start_knative_gcp() {
   start_knative_monitoring "$KNATIVE_MONITORING_RELEASE" || return 1
   cloud_run_events_setup || return 1
   istio_patch || return 1
+  knative_eventing_config_tracing || return 1
 }
 
 # Setup the Cloud Run Events environment for running tests.
@@ -41,4 +42,10 @@ function cloud_run_events_setup() {
 function istio_patch() {
   header "Patching Istio"
   kubectl apply -f test/e2e/config/istio-patch/istio-knative-extras.yaml || return 1
+}
+
+function knative_eventing_config_tracing() {
+  # Setup config-tracing in knative-eventing, which the tracing tests rely on.
+  header "Updating ConfigMap knative-eventing/config-tracing"
+  kubectl replace -f "test/e2e/config/knative-eventing-config-tracing.yaml" || return 1
 }
