@@ -26,7 +26,7 @@ readonly PROW_SERVICE_ACCOUNT_EMAIL=$(gcloud config get-value core/account)
 # Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
 readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
 readonly CONFIG_GCP_AUTH="test/test_configs/config-gcp-auth-wi.yaml"
-readonly CONFIG_GCP_BROKER="test/test_configs/gcp-broker.yaml"
+readonly CONFIG_GCP_BROKER="test/test_configs/warmup-broker.yaml"
 readonly K8S_SERVICE_ACCOUNT_NAME="ksa-name"
 
 function export_variable() {
