@@ -33,7 +33,7 @@ const (
 
 var (
 	buildPublishTime = time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
-	data = []byte("test data")
+	data             = []byte("test data")
 )
 
 func TestConvertCloudBuild(t *testing.T) {

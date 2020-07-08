@@ -376,7 +376,7 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 			Name:      "testname",
 			Namespace: "testnamespace",
 			Annotations: map[string]string{
-				"metrics-resource-group":          "test-resource-group",
+				"metrics-resource-group":   "test-resource-group",
 				duck.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			},
 		},

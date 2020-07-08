@@ -19,9 +19,9 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 	"time"
-	"os"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/test/helpers"

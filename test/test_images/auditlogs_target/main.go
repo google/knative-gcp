@@ -92,7 +92,7 @@ func (r *auditLogReceiver) Knockdown(event cloudevents.Event) bool {
 		incorrectAttributes[lib.EventSubject] = lib.PropPair{Expected: r.Subject, Received: event.Subject()}
 	}
 	if eventDataServiceName != r.ServiceName {
-		incorrectAttributes[serviceName] = lib.PropPair{Expected:r.ServiceName, Received: eventDataServiceName}
+		incorrectAttributes[serviceName] = lib.PropPair{Expected: r.ServiceName, Received: eventDataServiceName}
 	}
 	if eventDataMethodName != r.MethodName {
 		incorrectAttributes[methodName] = lib.PropPair{Expected: r.MethodName, Received: eventDataMethodName}

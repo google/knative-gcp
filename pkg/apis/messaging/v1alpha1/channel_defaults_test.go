@@ -32,7 +32,7 @@ func TestChannelDefaults(t *testing.T) {
 		ObjectMeta: v1.ObjectMeta{
 			Annotations: map[string]string{
 				"messaging.knative.dev/subscribable": "v1beta1",
-				duck.ClusterNameAnnotation:   testingMetadataClient.FakeClusterName,
+				duck.ClusterNameAnnotation:           testingMetadataClient.FakeClusterName,
 			},
 		},
 		Spec: ChannelSpec{

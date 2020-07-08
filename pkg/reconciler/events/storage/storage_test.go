@@ -524,7 +524,7 @@ func TestAllCases(t *testing.T) {
 					SourceLabelKey:    storageName,
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group":          resourceGroup,
+					"metrics-resource-group":   resourceGroup,
 					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
