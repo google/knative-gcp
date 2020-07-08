@@ -132,9 +132,17 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 				// If it does not exist, then create it.
 				subCreates = append(subCreates, want)
 			} else {
-				_, found := pullsubs[resources.GeneratePullSubscriptionName(want.UID)]
+				actualPS, found := pullsubs[resources.GeneratePullSubscriptionName(want.UID)]
+
+				// TODO Remove this after 0.16. This is here because in the 0.15->0.16 transition,
+				// we changed the name of the Topic, so we need to check that here.
+				topicChanged := false
+				if actualPS.Spec.Topic != channel.Status.TopicID {
+					topicChanged = true
+				}
+
 				// If did not find or the PS has updated generation, update it.
-				if !found || got.ObservedGeneration != want.Generation {
+				if topicChanged || !found || got.ObservedGeneration != want.Generation {
 					subUpdates = append(subUpdates, want)
 				}
 			}
