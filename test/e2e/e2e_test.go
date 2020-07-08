@@ -213,6 +213,20 @@ func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 	PubSubSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
 }
 
+// TestSmokeCloudBuildSource we can create a CloudBuildSource to ready state and we can delete a CloudBuildSource and its underlying resources.
+func TestSmokeCloudBuildSource(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeCloudBuildSourceTestImpl(t, authConfig)
+}
+
+// TestCloudBuildSourceWithTarget tests we can knock down a target from a CloudBuildSource.
+func TestCloudBuildSourceWithTarget(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	CloudBuildSourceWithTargetTestImpl(t, authConfig)
+}
+
 // TestCloudStorageSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudStorageSource.
 func TestCloudStorageSourceBrokerWithPubSubChannel(t *testing.T) {
 	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")

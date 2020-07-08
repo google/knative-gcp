@@ -22,8 +22,8 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 const (
@@ -34,7 +34,7 @@ func convertCloudBuild(ctx context.Context, msg *pubsub.Message) (*cev2.Event, e
 	event := cev2.NewEvent(cev2.VersionV1)
 	event.SetID(msg.ID)
 	event.SetTime(msg.PublishTime)
-	event.SetType(v1beta1.CloudBuildSourceEvent)
+	event.SetType(schemasv1.CloudBuildSourceEventType)
 	event.SetDataSchema(buildSchemaUrl)
 
 	project, err := GetProjectKey(ctx)
@@ -43,12 +43,12 @@ func convertCloudBuild(ctx context.Context, msg *pubsub.Message) (*cev2.Event, e
 	}
 
 	// Set the source and subject if it comes as an attribute.
-	if buildId, ok := msg.Attributes[v1beta1.CloudBuildSourceBuildId]; !ok {
+	if buildId, ok := msg.Attributes[schemasv1.CloudBuildSourceBuildId]; !ok {
 		return nil, errors.New("received event did not have buildId")
 	} else {
-		event.SetSource(v1beta1.CloudBuildSourceEventSource(project, buildId))
+		event.SetSource(schemasv1.CloudBuildSourceEventSource(project, buildId))
 	}
-	if buildStatus, ok := msg.Attributes[v1beta1.CloudBuildSourceBuildStatus]; !ok {
+	if buildStatus, ok := msg.Attributes[schemasv1.CloudBuildSourceBuildStatus]; !ok {
 		return nil, errors.New("received event did not have build status")
 	} else {
 		event.SetSubject(buildStatus)

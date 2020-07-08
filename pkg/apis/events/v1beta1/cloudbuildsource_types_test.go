@@ -24,15 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func TestCloudBuildSourceEventSource(t *testing.T) {
-	want := "//cloudbuild.googleapis.com/projects/PROJECT/builds/BUILD_ID"
 
-	got := CloudBuildSourceEventSource("PROJECT", "BUILD_ID")
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
-}
 
 func TestCloudBuildSourceGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
