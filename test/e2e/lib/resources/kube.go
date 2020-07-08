@@ -49,10 +49,6 @@ func SenderJob(name string, envVars []corev1.EnvVar) *batchv1.Job {
 	return baseJob(name, "sender", envVars)
 }
 
-func BrokerSenderJob(name string, envVars []corev1.EnvVar) *batchv1.Job {
-	return baseJob(name, "sender_gcpbroker", envVars)
-}
-
 // baseJob will return a base Job that has imageName and envVars set for its PodTemplateSpec.
 func baseJob(name, imageName string, envVars []corev1.EnvVar) *batchv1.Job {
 	return &batchv1.Job{

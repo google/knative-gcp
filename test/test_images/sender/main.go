@@ -23,16 +23,33 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+	transport "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
+	"go.opencensus.io/trace"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
+
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/test/e2e/lib"
-	"go.opencensus.io/trace"
 )
 
 const (
 	brokerURLEnvVar = "BROKER_URL"
 )
+
+// defaultRetry represents that there will be 3 iterations.
+// The duration starts from 30s and is multiplied by factor 1.0 for each iteration.
+var defaultRetry = wait.Backoff{
+	Steps:    3,
+	Duration: 30 * time.Second,
+	Factor:   1.0,
+	// The sleep at each iteration is the duration plus an additional
+	// amount chosen uniformly at random from the interval between 0 and jitter*duration.
+	Jitter: 2.0,
+}
 
 func main() {
 	brokerURL := os.Getenv(brokerURLEnvVar)
@@ -45,11 +62,17 @@ func main() {
 	ctx, span := trace.StartSpan(context.Background(), "sender", trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 
-	ctx, _, err = ceClient.Send(ctx, dummyCloudEvent())
-	rtctx := cloudevents.HTTPTransportContextFrom(ctx)
-	if err != nil {
+	var rtctx transport.TransportContext
+	// Repeat sending Event with exponential backoff when there is 404 or 503 errors.
+	// 404 error indicates some broker configmap sync up issue and 503 error indicates unavailable service.
+	if err := retry.OnError(defaultRetry, isRetryable, func() error {
+		ctx, _, err := ceClient.Send(ctx, dummyCloudEvent())
+		rtctx = cloudevents.HTTPTransportContextFrom(ctx)
+		return err
+	}); err != nil {
 		fmt.Print(err)
 	}
+
 	var success bool
 	if rtctx.StatusCode >= http.StatusOK && rtctx.StatusCode < http.StatusBadRequest {
 		success = true
@@ -80,4 +103,9 @@ func writeTerminationMessage(result interface{}) error {
 		return err
 	}
 	return ioutil.WriteFile("/dev/termination-log", b, 0644)
+}
+
+// isRetryable determines if the err is an error which is retryable
+func isRetryable(err error) bool {
+	return strings.Contains(err.Error(), "404 Not Found") || strings.Contains(err.Error(), "503 Service Unavailable")
 }

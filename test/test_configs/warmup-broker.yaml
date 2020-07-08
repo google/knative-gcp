@@ -15,7 +15,7 @@
 apiVersion: eventing.knative.dev/v1beta1
 kind: Broker
 metadata:
-  name: default
+  name: warmup-broker
   namespace: default
   annotations:
     "eventing.knative.dev/broker.class": "googlecloud"
