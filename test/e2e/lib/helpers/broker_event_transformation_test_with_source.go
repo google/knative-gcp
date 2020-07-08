@@ -88,7 +88,7 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	time.Sleep(5 * time.Second)
 
 	// Create a sender Job to sender the event.
-	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
+	senderJob := resources.BrokerSenderJob(senderName, []v1.EnvVar{{
 		Name:  "BROKER_URL",
 		Value: brokerURL.String(),
 	}})
@@ -139,7 +139,7 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 	time.Sleep(5 * time.Second)
 
 	// Create a sender Job to sender the event.
-	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
+	senderJob := resources.BrokerSenderJob(senderName, []v1.EnvVar{{
 		Name:  "BROKER_URL",
 		Value: brokerURL.String(),
 	}})
@@ -215,7 +215,7 @@ func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID st
 	time.Sleep(5 * time.Second)
 
 	// Create a sender Job to sender the event.
-	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
+	senderJob := resources.BrokerSenderJob(senderName, []v1.EnvVar{{
 		Name:  "BROKER_URL",
 		Value: brokerURL.String(),
 	}})
