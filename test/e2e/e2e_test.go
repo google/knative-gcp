@@ -326,6 +326,9 @@ func TestGCPBroker(t *testing.T) {
 
 // TestGCPBrokerMetrics tests we can knock a Knative Service from a GCP broker and the GCP Broker correctly reports its metrics to StackDriver.
 func TestGCPBrokerMetrics(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip metric test in Workload Identity mode for issue: https://github.com/google/knative-gcp/issues/1346")
+	}
 	cancel := logstream.Start(t)
 	defer cancel()
 	GCPBrokerMetricsTestImpl(t, authConfig)
