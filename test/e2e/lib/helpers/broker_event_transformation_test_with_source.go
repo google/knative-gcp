@@ -87,7 +87,7 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
-	// Create a sender Job to sender the event.
+	// Create a sender Job to send the event with retry.
 	senderJob := resources.BrokerSenderJob(senderName, []v1.EnvVar{{
 		Name:  "BROKER_URL",
 		Value: brokerURL.String(),
@@ -138,7 +138,7 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
-	// Create a sender Job to sender the event.
+	// Create a sender Job to send the event with retry.
 	senderJob := resources.BrokerSenderJob(senderName, []v1.EnvVar{{
 		Name:  "BROKER_URL",
 		Value: brokerURL.String(),
@@ -214,7 +214,7 @@ func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID st
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
-	// Create a sender Job to sender the event.
+	// Create a sender Job to send the event with retry.
 	senderJob := resources.BrokerSenderJob(senderName, []v1.EnvVar{{
 		Name:  "BROKER_URL",
 		Value: brokerURL.String(),
