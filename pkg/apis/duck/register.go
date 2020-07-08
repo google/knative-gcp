@@ -73,4 +73,7 @@ const (
 	minimumKedaCooldownPeriod = 15
 	// minimumKedaSubscriptionSize is the minimum allowed value for the KedaAutoscalingSubscriptionSizeAnnotation annotation.
 	minimumKedaSubscriptionSize = 5
+
+	// defaultSecretName is the default secret name for the controller
+	DefaultSecretName = "google-cloud-key"
 )
