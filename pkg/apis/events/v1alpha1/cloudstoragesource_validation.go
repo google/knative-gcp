@@ -26,7 +26,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 func (current *CloudStorageSource) Validate(ctx context.Context) *apis.FieldError {
@@ -49,7 +48,7 @@ func (current *CloudStorageSourceSpec) Validate(ctx context.Context) *apis.Field
 		errs = errs.Also(apis.ErrMissingField("bucket"))
 	}
 
-	if err := duckv1alpha1.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
+	if err := duck.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 

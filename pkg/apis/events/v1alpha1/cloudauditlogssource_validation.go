@@ -26,7 +26,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 func (current *CloudAuditLogsSource) Validate(ctx context.Context) *apis.FieldError {
@@ -52,7 +51,7 @@ func (current *CloudAuditLogsSourceSpec) Validate(ctx context.Context) *apis.Fie
 		errs = errs.Also(apis.ErrMissingField("methodName"))
 	}
 
-	if err := duckv1alpha1.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
+	if err := duck.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 

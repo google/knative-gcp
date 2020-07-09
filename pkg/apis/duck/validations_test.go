@@ -21,10 +21,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+	logtesting "knative.dev/pkg/logging/testing"
 )
 
 func TestValidateAutoscalingAnnotations(t *testing.T) {
@@ -167,5 +171,67 @@ func TestCheckImmutableClusterNameAnnotation(t *testing.T) {
 				t.Fatalf("Unexpected validation failure. Got %v", err)
 			}
 		})
+	}
+}
+
+
+func TestValidateCredential(t *testing.T) {
+	testCases := []struct {
+		name           string
+		secret         *corev1.SecretKeySelector
+		serviceAccount string
+		wantErr        bool
+	}{{
+		name:           "nil secret, and nil service account",
+		secret:         nil,
+		serviceAccount: "",
+		wantErr:        false,
+	}, {
+		name:           "valid secret, and nil service account",
+		secret:         &gcpauthtesthelper.Secret,
+		serviceAccount: "",
+		wantErr:        false,
+	}, {
+		name: "invalid secret, and nil service account",
+		secret: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: gcpauthtesthelper.Secret.Name,
+			},
+		},
+		serviceAccount: "",
+		wantErr:        true,
+	}, {
+		name: "invalid secret, and nil service account",
+		secret: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{},
+			Key:                  gcpauthtesthelper.Secret.Key,
+		},
+		serviceAccount: "",
+		wantErr:        true,
+	}, {
+		name:           "nil secret, and valid k8s service account",
+		secret:         nil,
+		serviceAccount: "test123",
+		wantErr:        false,
+	}, {
+		name:           "nil secret, and invalid service account",
+		secret:         nil,
+		serviceAccount: "@test",
+		wantErr:        true,
+	}, {
+		name:           "secret and service account exist at the same time",
+		secret:         &gcpauthtesthelper.Secret,
+		serviceAccount: "test",
+		wantErr:        true,
+	}}
+
+	defer logtesting.ClearAll()
+
+	for _, tc := range testCases {
+		errs := ValidateCredential(tc.secret, tc.serviceAccount)
+		got := errs != nil
+		if diff := cmp.Diff(tc.wantErr, got); diff != "" {
+			t.Errorf("unexpected resource (-want, +got) = %v", diff)
+		}
 	}
 }

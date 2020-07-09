@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -58,7 +57,7 @@ func (current *CloudSchedulerSourceSpec) Validate(ctx context.Context) *apis.Fie
 		errs = errs.Also(apis.ErrMissingField("data"))
 	}
 
-	if err := duckv1beta1.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
+	if err := duck.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 
