@@ -3,16 +3,16 @@ module github.com/google/knative-gcp
 go 1.14
 
 require (
-	cloud.google.com/go v0.58.0
+	cloud.google.com/go v0.60.0
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
-	cloud.google.com/go/pubsub v1.3.2-0.20200506222144-2c46308f8465
-	cloud.google.com/go/storage v1.8.0
+	cloud.google.com/go/pubsub v1.4.0
+	cloud.google.com/go/storage v1.10.0
 	github.com/cloudevents/sdk-go v1.2.0
 	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
 	github.com/cloudevents/sdk-go/v2 v2.0.1-0.20200630063327-b91da81265fe
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.4.2
-	github.com/google/go-cmp v0.4.1
+	github.com/google/go-cmp v0.5.0
 	github.com/google/uuid v1.1.1
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
@@ -21,18 +21,18 @@ require (
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
-	golang.org/x/crypto v0.0.0-20200317142112-1b76d66859c6 // indirect
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	google.golang.org/api v0.26.0
-	google.golang.org/genproto v0.0.0-20200608115520-7c474a2e3482
-	google.golang.org/grpc v1.29.1
-	google.golang.org/protobuf v1.24.0
+	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	google.golang.org/api v0.28.0
+	google.golang.org/genproto v0.0.0-20200707001353-8e8330bf89df
+	google.golang.org/grpc v1.30.0
+	google.golang.org/protobuf v1.25.0
 	k8s.io/api v0.18.1
-	k8s.io/apimachinery v0.18.1
+	k8s.io/apimachinery v0.18.5
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.15.1-0.20200701152030-37a42b925214
-	knative.dev/pkg v0.0.0-20200630170034-2c1a029eb97f
-	knative.dev/serving v0.15.1-0.20200701041430-61ccf67bef91
+	knative.dev/eventing v0.16.1-0.20200707191544-0d180a3ffbb5
+	knative.dev/pkg v0.0.0-20200707190344-0a8314b44495
+	knative.dev/serving v0.16.1-0.20200708104447-48b1346b4e87
+	knative.dev/test-infra v0.0.0-20200707231747-4bc7f7fa3578 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 

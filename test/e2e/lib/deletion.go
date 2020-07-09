@@ -22,16 +22,25 @@ import (
 
 func (c *Client) DeletePubSubOrFail(name string) {
 	c.T.Helper()
-	pubsubs := c.KnativeGCP.EventsV1alpha1().CloudPubSubSources(c.Namespace)
+	pubsubs := c.KnativeGCP.EventsV1beta1().CloudPubSubSources(c.Namespace)
 	err := pubsubs.Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete pubsub %s/%s: %v", c.Namespace, name, err)
 	}
 }
 
+func (c *Client) DeleteBuildOrFail(name string) {
+	c.T.Helper()
+	builds := c.KnativeGCP.EventsV1beta1().CloudBuildSources(c.Namespace)
+	err := builds.Delete(name, &metav1.DeleteOptions{})
+	if err != nil {
+		c.T.Fatalf("Failed to delete build %s/%s: %v", c.Namespace, name, err)
+	}
+}
+
 func (c *Client) DeleteSchedulerOrFail(name string) {
 	c.T.Helper()
-	schedulers := c.KnativeGCP.EventsV1alpha1().CloudSchedulerSources(c.Namespace)
+	schedulers := c.KnativeGCP.EventsV1beta1().CloudSchedulerSources(c.Namespace)
 	err := schedulers.Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete scheduler %s/%s: %v", c.Namespace, name, err)
@@ -40,7 +49,7 @@ func (c *Client) DeleteSchedulerOrFail(name string) {
 
 func (c *Client) DeleteStorageOrFail(name string) {
 	c.T.Helper()
-	storages := c.KnativeGCP.EventsV1alpha1().CloudStorageSources(c.Namespace)
+	storages := c.KnativeGCP.EventsV1beta1().CloudStorageSources(c.Namespace)
 	err := storages.Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete storage %s/%s: %v", c.Namespace, name, err)
@@ -49,7 +58,7 @@ func (c *Client) DeleteStorageOrFail(name string) {
 
 func (c *Client) DeleteAuditLogsOrFail(name string) {
 	c.T.Helper()
-	auditLogs := c.KnativeGCP.EventsV1alpha1().CloudAuditLogsSources(c.Namespace)
+	auditLogs := c.KnativeGCP.EventsV1beta1().CloudAuditLogsSources(c.Namespace)
 	err := auditLogs.Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete storage %s/%s: %v", c.Namespace, name, err)

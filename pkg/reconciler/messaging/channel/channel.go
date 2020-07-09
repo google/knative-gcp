@@ -30,7 +30,7 @@ import (
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1beta1/channel"
@@ -132,9 +132,17 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 				// If it does not exist, then create it.
 				subCreates = append(subCreates, want)
 			} else {
-				_, found := pullsubs[resources.GeneratePullSubscriptionName(want.UID)]
+				actualPS, found := pullsubs[resources.GeneratePullSubscriptionName(want.UID)]
+
+				// TODO Remove this after 0.16. This is here because in the 0.15->0.16 transition,
+				// we changed the name of the Topic, so we need to check that here.
+				topicChanged := false
+				if actualPS.Spec.Topic != channel.Status.TopicID {
+					topicChanged = true
+				}
+
 				// If did not find or the PS has updated generation, update it.
-				if !found || got.ObservedGeneration != want.Generation {
+				if topicChanged || !found || got.ObservedGeneration != want.Generation {
 					subUpdates = append(subUpdates, want)
 				}
 			}
@@ -148,7 +156,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 		subDeletes = append(subDeletes, e)
 	}
 
-	clusterName := channel.GetAnnotations()[duckv1beta1.ClusterNameAnnotation]
+	clusterName := channel.GetAnnotations()[duck.ClusterNameAnnotation]
 	for _, s := range subCreates {
 		genName := resources.GeneratePullSubscriptionName(s.UID)
 
@@ -300,7 +308,7 @@ func (r *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1beta1
 }
 
 func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1beta1.Channel) (*inteventsv1beta1.Topic, error) {
-	clusterName := channel.GetAnnotations()[duckv1beta1.ClusterNameAnnotation]
+	clusterName := channel.GetAnnotations()[duck.ClusterNameAnnotation]
 	name := resources.GeneratePublisherName(channel)
 	t := resources.MakeTopic(&resources.TopicArgs{
 		Owner:              channel,

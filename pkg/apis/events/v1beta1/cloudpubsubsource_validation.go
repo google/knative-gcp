@@ -20,13 +20,12 @@ import (
 	"context"
 	"time"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"k8s.io/apimachinery/pkg/api/equality"
-
-	"github.com/google/go-cmp/cmp"
 	"knative.dev/pkg/apis"
 )
 
@@ -40,7 +39,7 @@ const (
 
 func (current *CloudPubSubSource) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
-	return duckv1beta1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
+	return duck.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 
 func (current *CloudPubSubSourceSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -76,7 +75,7 @@ func (current *CloudPubSubSourceSpec) Validate(ctx context.Context) *apis.FieldE
 		}
 	}
 
-	if err := duckv1beta1.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
+	if err := duck.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 

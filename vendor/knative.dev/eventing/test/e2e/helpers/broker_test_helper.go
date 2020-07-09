@@ -23,6 +23,8 @@ import (
 	"strings"
 	"testing"
 
+	"knative.dev/eventing/pkg/reconciler/sugar"
+
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding/spec"
 	cetest "github.com/cloudevents/sdk-go/v2/test"
@@ -223,7 +225,7 @@ func TestBrokerWithManyTriggers(t *testing.T, brokerCreator BrokerCreator, shoul
 
 			if shouldLabelNamespace {
 				// Label namespace so that it creates the default broker.
-				if err := client.LabelNamespace(map[string]string{"knative-eventing-injection": "enabled"}); err != nil {
+				if err := client.LabelNamespace(map[string]string{sugar.InjectionLabelKey: sugar.InjectionEnabledLabelValue}); err != nil {
 					t.Fatalf("Error annotating namespace: %v", err)
 				}
 			}

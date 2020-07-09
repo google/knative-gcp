@@ -20,14 +20,13 @@ import (
 	"context"
 	"testing"
 
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
-
 	"github.com/google/go-cmp/cmp"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 func TestTopicDefaults(t *testing.T) {
@@ -40,7 +39,7 @@ func TestTopicDefaults(t *testing.T) {
 			want: &Topic{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: TopicSpec{
@@ -56,7 +55,7 @@ func TestTopicDefaults(t *testing.T) {
 			got: &Topic{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: TopicSpec{}},
@@ -66,7 +65,7 @@ func TestTopicDefaults(t *testing.T) {
 			want: &Topic{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: TopicSpec{
@@ -75,7 +74,7 @@ func TestTopicDefaults(t *testing.T) {
 			got: &Topic{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 			},

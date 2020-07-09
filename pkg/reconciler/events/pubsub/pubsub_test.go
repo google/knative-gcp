@@ -38,6 +38,7 @@ import (
 
 	. "knative.dev/pkg/reconciler/testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
@@ -163,7 +164,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudPubSubSourceSetDefaults,
 			),
@@ -179,7 +180,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudPubSubSourceConditions,
 				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourceAnnotations(map[string]string{
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithCloudPubSubSourceSetDefaults,
 				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
@@ -201,7 +202,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group":          resourceGroup,
-					duckv1beta1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				WithPullSubscriptionDefaultGCPAuth,

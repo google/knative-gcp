@@ -26,6 +26,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
@@ -223,10 +224,10 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		},
 		"ClusterName annotation changed": {
 			origAnnotation: map[string]string{
-				v1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
 			},
 			updatedAnnotation: map[string]string{
-				v1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
 			},
 			allowed: false,
 		},

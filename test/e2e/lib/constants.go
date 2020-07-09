@@ -41,6 +41,7 @@ const (
 
 	E2ERespEventIDPrefix    = "e2e-testing-resp-event-id"
 	E2EPubSubRespEventID    = E2ERespEventIDPrefix + "-pubsub"
+	E2EBuildRespEventID    = E2ERespEventIDPrefix + "-build"
 	E2EStorageRespEventID   = E2ERespEventIDPrefix + "-storage"
 	E2EAuditLogsRespEventID = E2ERespEventIDPrefix + "-auditlogs"
 	E2ESchedulerRespEventID = E2ERespEventIDPrefix + "-scheduler"
@@ -48,6 +49,7 @@ const (
 
 	E2ERespEventTypePrefix  = "e2e-testing-resp-event-type"
 	E2EPubSubRespEventType  = E2ERespEventTypePrefix + "-pubsub"
+	E2EBuildRespEventType  = E2ERespEventTypePrefix + "-build"
 	E2EStorageRespEventType = E2ERespEventTypePrefix + "-storage"
 	E2EAuditLogsRespType    = E2ERespEventTypePrefix + "-auditlogs"
 	E2ESchedulerRespType    = E2ERespEventTypePrefix + "-scheduler"

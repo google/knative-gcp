@@ -20,16 +20,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-
 	"github.com/google/go-cmp/cmp"
-	"knative.dev/pkg/apis"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 )
 
 const (
@@ -42,7 +40,7 @@ const (
 
 func (current *PullSubscription) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
-	return duckv1alpha1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
+	return duck.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 
 func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -133,5 +131,5 @@ func (current *PullSubscription) CheckImmutableFields(ctx context.Context, origi
 		})
 	}
 	// Modification of non-empty cluster name annotation is not allowed.
-	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }
