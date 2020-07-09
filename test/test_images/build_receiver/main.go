@@ -67,4 +67,3 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *c
 		resp.Status = http.StatusForbidden
 	}
 }
-

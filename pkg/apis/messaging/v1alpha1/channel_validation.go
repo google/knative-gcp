@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/knative-gcp/pkg/apis/duck"
 
 	"github.com/google/go-cmp/cmp"
