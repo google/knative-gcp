@@ -57,7 +57,7 @@ import (
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, brokerName string) {
+func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, brokerName string, needRetry bool) {
 	client.T.Helper()
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
@@ -87,11 +87,20 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
-	// Create a sender Job to send the event with retry.
-	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
+	envVar := []v1.EnvVar{{
 		Name:  "BROKER_URL",
-		Value: brokerURL.String(),
-	}})
+		Value: brokerURL.String()},
+	}
+
+	if needRetry {
+		envVar = append(envVar, v1.EnvVar{
+			Name:  "RETRY",
+			Value: "true",
+		})
+	}
+
+	// Create a sender Job to send the event with retry.
+	senderJob := resources.SenderJob(senderName, envVar)
 	client.CreateJobOrFail(senderJob)
 
 	// Check if dummy CloudEvent is sent out.
@@ -142,6 +151,9 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
 		Name:  "BROKER_URL",
 		Value: brokerURL.String(),
+	}, {
+		Name:  "RETRY",
+		Value: "true",
 	}})
 	client.CreateJobOrFail(senderJob)
 
@@ -218,6 +230,9 @@ func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID st
 	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
 		Name:  "BROKER_URL",
 		Value: brokerURL.String(),
+	}, {
+		Name:  "RETRY",
+		Value: "true",
 	}})
 	client.CreateJobOrFail(senderJob)
 

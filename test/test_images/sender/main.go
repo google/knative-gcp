@@ -38,6 +38,7 @@ import (
 
 const (
 	brokerURLEnvVar = "BROKER_URL"
+	retryEnvVar     = "RETRY"
 )
 
 // defaultRetry represents that there will be 3 iterations.
@@ -53,6 +54,12 @@ var defaultRetry = wait.Backoff{
 
 func main() {
 	brokerURL := os.Getenv(brokerURLEnvVar)
+	retryVar := os.Getenv(retryEnvVar)
+
+	needRetry := false
+	if retryVar == "true" {
+		needRetry = true
+	}
 
 	ceClient, err := kncloudevents.NewDefaultClient(brokerURL)
 	if err != nil {
@@ -63,13 +70,9 @@ func main() {
 	defer span.End()
 
 	var rtctx transport.TransportContext
-	// Repeat sending Event with exponential backoff when there is 404 or 503 errors.
+	// If needRetry is true, repeat sending Event with exponential backoff when there is 404 or 503 errors.
 	// 404 error indicates some broker configmap sync up issue and 503 error indicates unavailable service.
-	if err := retry.OnError(defaultRetry, isRetryable, func() error {
-		ctx, _, err := ceClient.Send(ctx, dummyCloudEvent())
-		rtctx = cloudevents.HTTPTransportContextFrom(ctx)
-		return err
-	}); err != nil {
+	if err = sendEvent(ctx, ceClient, rtctx, needRetry); err != nil {
 		fmt.Print(err)
 	}
 
@@ -85,6 +88,18 @@ func main() {
 	}); err != nil {
 		fmt.Printf("failed to write termination message, %s.\n", err)
 	}
+}
+
+func sendEvent(ctx context.Context, ceClient cloudevents.Client, rtctx transport.TransportContext, needRetry bool) error {
+	send := func() error {
+		ctx, _, err := ceClient.Send(ctx, dummyCloudEvent())
+		rtctx = cloudevents.HTTPTransportContextFrom(ctx)
+		return err
+	}
+	if needRetry {
+		return retry.OnError(defaultRetry, isRetryable, send)
+	}
+	return send()
 }
 
 func dummyCloudEvent() cloudevents.Event {
