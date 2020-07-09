@@ -56,10 +56,7 @@ func main() {
 	brokerURL := os.Getenv(brokerURLEnvVar)
 	retryVar := os.Getenv(retryEnvVar)
 
-	needRetry := false
-	if retryVar == "true" {
-		needRetry = true
-	}
+	needRetry := (retryVar == "true")
 
 	ceClient, err := kncloudevents.NewDefaultClient(brokerURL)
 	if err != nil {
