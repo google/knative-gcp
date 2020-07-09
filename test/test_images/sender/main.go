@@ -69,10 +69,10 @@ func main() {
 	ctx, span := trace.StartSpan(context.Background(), "sender", trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 
-	var rtctx transport.TransportContext
 	// If needRetry is true, repeat sending Event with exponential backoff when there is 404 or 503 errors.
 	// 404 error indicates some broker configmap sync up issue and 503 error indicates unavailable service.
-	if err = sendEvent(ctx, ceClient, rtctx, needRetry); err != nil {
+	rtctx, err := sendEvent(ctx, ceClient, needRetry)
+	if err != nil {
 		fmt.Print(err)
 	}
 
@@ -90,16 +90,21 @@ func main() {
 	}
 }
 
-func sendEvent(ctx context.Context, ceClient cloudevents.Client, rtctx transport.TransportContext, needRetry bool) error {
+func sendEvent(ctx context.Context, ceClient cloudevents.Client, needRetry bool) (transport.TransportContext, error) {
+	var rtctx transport.TransportContext
 	send := func() error {
 		ctx, _, err := ceClient.Send(ctx, dummyCloudEvent())
 		rtctx = cloudevents.HTTPTransportContextFrom(ctx)
 		return err
 	}
+
 	if needRetry {
-		return retry.OnError(defaultRetry, isRetryable, send)
+		err := retry.OnError(defaultRetry, isRetryable, send)
+		return rtctx, err
 	}
-	return send()
+
+	err := send()
+	return rtctx, err
 }
 
 func dummyCloudEvent() cloudevents.Event {
