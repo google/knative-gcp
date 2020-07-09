@@ -162,7 +162,10 @@ function storage_admin_set_up() {
     --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/storage.admin
 
-  # Get service account credentials from: https://cloud.google.com/storage/docs/json_api/v1/projects/serviceAccount/get/
+  # We assume the service account's name is in the form '<project-number>@gs-project-accounts.iam.gserviceaccount.com',
+  # because it has been for all projects we've encountered. However, nothing requires this
+  # format. To get the actual email, use this API:
+  # https://cloud.google.com/storage/docs/json_api/v1/projects/serviceAccount/get/
   local project_number="$(gcloud projects describe ${project_id} --format="value(projectNumber)")"
   gcloud projects add-iam-policy-binding "${project_id}" \
     --member="serviceAccount:service-${project_number}@gs-project-accounts.iam.gserviceaccount.com" \
