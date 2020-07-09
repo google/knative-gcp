@@ -147,19 +147,7 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1beta1
 
 	// If the notification does exist, then return its ID.
 	if existing, ok := notifications[storage.Status.NotificationID]; ok {
-		// TODO remove after the 0.16 cut.
-		// If the notification exists, need to check whether it is using the updated topic name.
-		// If not, then we delete it and create it again.
-		if existing.TopicID != storage.Status.TopicID {
-			err := bucket.DeleteNotification(ctx, storage.Status.NotificationID)
-			if err != nil {
-				logging.FromContext(ctx).Desugar().Error("Failed to delete old CloudStorageSource notification", zap.Error(err))
-				return "", err
-			}
-			// We let the creation to happen after this enclosing if, thus we do not return here and need this other else.
-		} else {
-			return existing.ID, nil
-		}
+		return existing.ID, nil
 	}
 
 	// If the notification does not exist, then create it.
