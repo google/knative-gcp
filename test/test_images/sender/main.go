@@ -69,8 +69,8 @@ func main() {
 	ctx, span := trace.StartSpan(context.Background(), "sender", trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 
-	// If needRetry is true, repeat sending Event with exponential backoff when there is 404 or 503 errors.
-	// 404 error indicates some broker configmap sync up issue and 503 error indicates unavailable service.
+	// If needRetry is true, repeat sending Event with exponential backoff when there is some specific errors.
+	// 404 error indicates some broker configmap sync up issue and 5XX error indicates credential sync issues.
 	rtctx, err := sendEvent(ctx, ceClient, needRetry)
 	if err != nil {
 		fmt.Print(err)
@@ -127,5 +127,5 @@ func writeTerminationMessage(result interface{}) error {
 
 // isRetryable determines if the err is an error which is retryable
 func isRetryable(err error) bool {
-	return strings.Contains(err.Error(), "404 Not Found") || strings.Contains(err.Error(), "503 Service Unavailable")
+	return strings.Contains(err.Error(), "404 Not Found") || strings.Contains(err.Error(), "503 Service Unavailable") || strings.Contains(err.Error(), "500 Internal Server Error")
 }
