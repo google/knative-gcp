@@ -69,8 +69,8 @@ func main() {
 	ctx, span := trace.StartSpan(context.Background(), "sender", trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 
-	// If needRetry is true, repeat sending Event with exponential backoff when there is some specific errors.
-	// 404 error indicates some broker configmap sync up issue and 5XX error indicates credential sync issues.
+	// If needRetry is true, repeat sending Event with exponential backoff when there are some specific errors.
+	// In e2e test, sync problems could cause 404 and 5XX error, retrying those would help reduce flakiness.
 	rtctx, err := sendEvent(ctx, ceClient, needRetry)
 	if err != nil {
 		fmt.Print(err)
