@@ -56,7 +56,7 @@ func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 	brokerURL, brokerName := createGCPBroker(client)
-	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName)
+	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName, true)
 }
 
 func GCPBrokerMetricsTestImpl(t *testing.T, authConfig lib.AuthConfig) {
@@ -177,5 +177,8 @@ func createGCPBroker(client *lib.Client) (url.URL, string) {
 	if err != nil {
 		client.T.Error(err.Error())
 	}
+	// Avoid propagation delay between the controller reconciles the broker config and
+	// the config being pushed to the configmap volume in the ingress pod.
+	time.Sleep(15 * time.Second)
 	return u, brokerName
 }
