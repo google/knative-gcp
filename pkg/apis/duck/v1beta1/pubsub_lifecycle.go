@@ -20,6 +20,19 @@ import (
 	"knative.dev/pkg/apis"
 )
 
+// IsReady returns true if the resource is ready overall.
+func (ss *PubSubStatus) IsReady() bool {
+	for _, c := range ss.Conditions {
+		switch c.Type {
+		// Look for the "happy" condition, which is the only condition that
+		// we can reliably understand to be the overall state of the resource.
+		case apis.ConditionReady, apis.ConditionSucceeded:
+			return c.IsTrue()
+		}
+	}
+	return false
+}
+
 // MarkTopicFailed sets the condition that the PubSub Topic is False and why.
 func (s *PubSubStatus) MarkTopicFailed(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
 	cs.Manage(s).MarkFalse(TopicReady, reason, messageFormat, messageA...)

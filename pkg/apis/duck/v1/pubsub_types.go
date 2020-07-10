@@ -100,19 +100,6 @@ const (
 	PullSubscriptionReady apis.ConditionType = "PullSubscriptionReady"
 )
 
-// IsReady returns true if the resource is ready overall.
-func (ss *PubSubStatus) IsReady() bool {
-	for _, c := range ss.Conditions {
-		switch c.Type {
-		// Look for the "happy" condition, which is the only condition that
-		// we can reliably understand to be the overall state of the resource.
-		case apis.ConditionReady, apis.ConditionSucceeded:
-			return c.IsTrue()
-		}
-	}
-	return false
-}
-
 var (
 	// Verify PubSub resources meet duck contracts.
 	_ duck.Populatable = (*PubSub)(nil)
