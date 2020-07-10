@@ -103,5 +103,7 @@ function pubsub_setup() {
 function gcp_broker_setup() {
   echo "Authentication setup for GCP Broker"
   kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${GCP_BROKER_SECRET_NAME}" --from-file=key.json="${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
+
+  warmup_broker_setup
 }
 
