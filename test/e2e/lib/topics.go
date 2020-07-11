@@ -85,6 +85,31 @@ func MakeTopicWithNameOrDie(t *testing.T, topicName string) (string, func()) {
 	}
 }
 
+func MakeTopicWithNameIfItDoesNotExist(t *testing.T, topicName string) {
+	t.Helper()
+	ctx := context.Background()
+	// Prow sticks the project in this key
+	project := os.Getenv(ProwProjectKey)
+	if project == "" {
+		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
+	}
+	client, err := pubsub.NewClient(ctx, project)
+	if err != nil {
+		t.Fatalf("failed to create pubsub client, %s", err.Error())
+	}
+	topic := client.Topic(topicName)
+	if exists, err := topic.Exists(ctx); err != nil {
+		t.Fatalf("failed to verify topic exists, %s", err)
+	} else if exists {
+		t.Logf("topic already exists: %q", topicName)
+	} else {
+		topic, err = client.CreateTopic(ctx, topicName)
+		if err != nil {
+			t.Fatalf("failed to create topic, %s", err)
+		}
+	}
+}
+
 func GetTopic(t *testing.T, topicName string) *pubsub.Topic {
 	t.Helper()
 	ctx := context.Background()

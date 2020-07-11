@@ -26,6 +26,7 @@ readonly PROW_SERVICE_ACCOUNT_EMAIL=$(gcloud config get-value core/account)
 # Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
 readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
 readonly CONFIG_GCP_AUTH="test/test_configs/config-gcp-auth-wi.yaml"
+readonly CONFIG_GCP_BROKER="test/test_configs/warmup-broker.yaml"
 readonly K8S_SERVICE_ACCOUNT_NAME="ksa-name"
 
 function export_variable() {
@@ -116,7 +117,7 @@ function pubsub_setup() {
   if (( ! IS_PROW )); then
     # Enable monitoring
     gcloud services enable monitoring
-    echo "Set up ServiceAccount for Pub/Sub Admin"
+    echo "Set up ServiceAccount for Pub/Sub Editor"
     init_pubsub_service_account "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
     enable_monitoring "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
   fi
@@ -137,6 +138,8 @@ function gcp_broker_setup() {
   fi
   kubectl annotate --overwrite serviceaccount ${BROKER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account="${PUBSUB_SERVICE_ACCOUNT_EMAIL}" \
     --namespace "${CONTROL_PLANE_NAMESPACE}"
+  # Add a default broker to warm up the broker date plane, so that ingress/fanout/retry pods have enough time to sync up credential.
+  ko apply -f ${CONFIG_GCP_BROKER}
 }
 
 function create_private_key_for_pubsub_service_account {

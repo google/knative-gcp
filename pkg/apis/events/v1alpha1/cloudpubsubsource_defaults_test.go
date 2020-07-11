@@ -25,6 +25,7 @@ import (
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
@@ -46,7 +47,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 		start: &CloudPubSubSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudPubSubSourceSpec{
@@ -65,7 +66,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 		want: &CloudPubSubSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudPubSubSourceSpec{
@@ -87,7 +88,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 		start: &CloudPubSubSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudPubSubSourceSpec{},
@@ -95,7 +96,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 		want: &CloudPubSubSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudPubSubSourceSpec{
@@ -126,7 +127,7 @@ func TestCloudPubSubSourceDefaults_NoChange(t *testing.T) {
 	want := &CloudPubSubSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			},
 		},
 		Spec: CloudPubSubSourceSpec{

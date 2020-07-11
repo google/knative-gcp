@@ -52,7 +52,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
-	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName)
+	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName, false)
 }
 
 func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {

@@ -20,9 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"knative.dev/pkg/apis"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 func (t *Topic) Validate(ctx context.Context) *apis.FieldError {
@@ -67,5 +66,5 @@ func (current *Topic) CheckImmutableFields(ctx context.Context, original *Topic)
 			})
 	}
 	// Modification of non-empty cluster name annotation is not allowed.
-	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

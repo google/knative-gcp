@@ -21,17 +21,16 @@ import (
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-
-	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -360,10 +359,10 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		"ClusterName annotation changed": {
 			origAnnotation: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
 			},
 			updatedAnnotation: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
 			},
 			allowed: false,
 		},

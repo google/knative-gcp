@@ -42,6 +42,7 @@ const (
 const (
 	CloudStorageSourceKind   string = "CloudStorageSource"
 	CloudPubSubSourceKind    string = "CloudPubSubSource"
+	CloudBuildSourceKind     string = "CloudBuildSource"
 	CloudAuditLogsSourceKind string = "CloudAuditLogsSource"
 	CloudSchedulerSourceKind string = "CloudSchedulerSource"
 )

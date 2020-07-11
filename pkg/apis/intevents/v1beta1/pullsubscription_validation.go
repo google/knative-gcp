@@ -20,14 +20,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	duck "github.com/google/knative-gcp/pkg/apis/duck"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-
-	"github.com/google/go-cmp/cmp"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 const (
@@ -40,7 +40,7 @@ const (
 
 func (current *PullSubscription) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
-	return duckv1beta1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
+	return duck.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 
 func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldError {

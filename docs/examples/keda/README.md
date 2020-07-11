@@ -59,8 +59,9 @@ the `CloudPubSubSource` scalable. Note that you could do this for any of the
      --role roles/monitoring.viewer
    ```
 
-1. [Install KEDA](https://keda.sh/docs/1.4/deploy/). Note that this example was tested
-   using KEDA [v1.2.0](https://github.com/kedacore/keda/releases/tag/v1.2.0).
+1. [Install KEDA](https://keda.sh/docs/1.4/deploy/). Note that this example was
+   tested using KEDA
+   [v1.2.0](https://github.com/kedacore/keda/releases/tag/v1.2.0).
 
 ### Deployment
 

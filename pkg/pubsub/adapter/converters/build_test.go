@@ -16,13 +16,14 @@ limitations under the License.
 package converters
 
 import (
+	"bytes"
 	"context"
 	"testing"
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 const (
@@ -32,6 +33,7 @@ const (
 
 var (
 	buildPublishTime = time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
+	data             = []byte("test data")
 )
 
 func TestConvertCloudBuild(t *testing.T) {
@@ -45,7 +47,7 @@ func TestConvertCloudBuild(t *testing.T) {
 		message: &pubsub.Message{
 			ID:          "id",
 			PublishTime: buildPublishTime,
-			Data:        []byte("test data"),
+			Data:        data,
 			Attributes: map[string]string{
 				"buildId":    buildID,
 				"status":     buildStatus,
@@ -57,7 +59,7 @@ func TestConvertCloudBuild(t *testing.T) {
 		{
 			name: "no buildId attributes",
 			message: &pubsub.Message{
-				Data: []byte("test data"),
+				Data: data,
 				Attributes: map[string]string{
 					"status": buildStatus,
 				},
@@ -67,7 +69,7 @@ func TestConvertCloudBuild(t *testing.T) {
 		{
 			name: "no buildStatus attributes",
 			message: &pubsub.Message{
-				Data: []byte("test data"),
+				Data: data,
 				Attributes: map[string]string{
 					"buildId": buildID,
 				},
@@ -77,7 +79,7 @@ func TestConvertCloudBuild(t *testing.T) {
 		{
 			name: "no attributes",
 			message: &pubsub.Message{
-				Data:       []byte("test data"),
+				Data:       data,
 				Attributes: map[string]string{},
 			},
 			wantErr: true,
@@ -99,17 +101,20 @@ func TestConvertCloudBuild(t *testing.T) {
 				if !gotEvent.Time().Equal(buildPublishTime) {
 					t.Errorf("Time '%v' != '%v'", gotEvent.Time(), buildPublishTime)
 				}
-				if want := v1beta1.CloudBuildSourceEventSource("testproject", buildID); gotEvent.Source() != want {
+				if want := schemasv1.CloudBuildSourceEventSource("testproject", buildID); gotEvent.Source() != want {
 					t.Errorf("Source %q != %q", gotEvent.Source(), want)
 				}
-				if gotEvent.Type() != v1beta1.CloudBuildSourceEvent {
-					t.Errorf(`Type %q != %q`, gotEvent.Type(), v1beta1.CloudBuildSourceEvent)
+				if gotEvent.Type() != schemasv1.CloudBuildSourceEventType {
+					t.Errorf(`Type %q != %q`, gotEvent.Type(), schemasv1.CloudBuildSourceEventType)
 				}
 				if gotEvent.Subject() != buildStatus {
 					t.Errorf("Subject %q != %q", gotEvent.Subject(), buildStatus)
 				}
 				if gotEvent.DataSchema() != buildSchemaUrl {
 					t.Errorf("DataSchema %q != %q", gotEvent.DataSchema(), buildSchemaUrl)
+				}
+				if !bytes.Equal(gotEvent.Data(), data) {
+					t.Errorf("Data %q != %q", gotEvent.Data(), data)
 				}
 			}
 		})

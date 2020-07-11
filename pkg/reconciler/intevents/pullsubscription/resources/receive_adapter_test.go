@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/intevents"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
@@ -376,8 +376,8 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 			Name:      "testname",
 			Namespace: "testnamespace",
 			Annotations: map[string]string{
-				"metrics-resource-group":          "test-resource-group",
-				duckv1beta1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				"metrics-resource-group":   "test-resource-group",
+				duck.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			},
 		},
 		Spec: v1beta1.PullSubscriptionSpec{

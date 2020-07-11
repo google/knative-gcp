@@ -21,7 +21,7 @@ import (
 
 	"knative.dev/pkg/apis"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	duck "github.com/google/knative-gcp/pkg/apis/duck"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
@@ -35,7 +35,7 @@ var allEventTypes = []string{
 func (s *CloudStorageSource) SetDefaults(ctx context.Context) {
 	ctx = apis.WithinParent(ctx, s.ObjectMeta)
 	s.Spec.SetDefaults(ctx)
-	duckv1beta1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
+	duck.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }
 
 func (ss *CloudStorageSourceSpec) SetDefaults(ctx context.Context) {

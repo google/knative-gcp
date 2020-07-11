@@ -70,6 +70,12 @@ func WithCloudBuildSourceProject(project string) CloudBuildSourceOption {
 	}
 }
 
+func WithCloudBuildSourceServiceAccount(kServiceAccount string) CloudBuildSourceOption {
+	return func(bs *v1beta1.CloudBuildSource) {
+		bs.Spec.ServiceAccountName = kServiceAccount
+	}
+}
+
 // WithInitCloudBuildSourceConditions initializes the CloudBuildSource's conditions.
 func WithInitCloudBuildSourceConditions(bs *v1beta1.CloudBuildSource) {
 	bs.Status.InitializeConditions()
