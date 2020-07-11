@@ -25,7 +25,6 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/google/knative-gcp/pkg/kncloudevents"
 )
 
 // Config is a common envconfig filled struct that includes the common options for knockdown
@@ -43,7 +42,11 @@ type Config struct {
 // Main should be called by the process' main function. It will run the knockdown test. The return
 // value MUST be used in os.Exit().
 func Main(config Config, kdr Receiver) int {
-	client, err := kncloudevents.NewDefaultClient()
+	// Note that this only accepts TraceContext style tracing, not B3 style tracing. This is being
+	// done here in test code so that we are effectively asserting that our components output in
+	// TraceContext format. For all production code, kncloudevents.NewDefaultClient() should be used
+	// instead.
+	client, err := cloudevents.NewDefaultClient()
 	if err != nil {
 		panic(err)
 	}
