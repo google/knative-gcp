@@ -36,8 +36,8 @@ func SubscriptionExists(t *testing.T, subID string) bool {
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
-	options := []option.ClientOption{option.WithQuotaProject(project)}
-	client, err := pubsub.NewClient(ctx, project, options...)
+	opt := option.WithQuotaProject(project)
+	client, err := pubsub.NewClient(ctx, project, opt)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
 	}

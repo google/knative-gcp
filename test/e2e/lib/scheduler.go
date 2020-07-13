@@ -86,8 +86,8 @@ func SchedulerJobExists(t *testing.T, jobName string) bool {
 	t.Helper()
 	ctx := context.Background()
 	project := os.Getenv(ProwProjectKey)
-	options := []option.ClientOption{option.WithQuotaProject(project)}
-	client, err := scheduler.NewClient(ctx, options...)
+	opt := option.WithQuotaProject(project)
+	client, err := scheduler.NewClient(ctx, opt)
 	if err != nil {
 		t.Fatalf("failed to create scheduler client, %s", err.Error())
 	}

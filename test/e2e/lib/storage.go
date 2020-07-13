@@ -103,8 +103,8 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
-	options := []option.ClientOption{option.WithQuotaProject(project)}
-	client, err := storage.NewClient(ctx, options...)
+	opt := option.WithQuotaProject(project)
+	client, err := storage.NewClient(ctx, opt)
 	if err != nil {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
@@ -136,8 +136,8 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 func DeleteBucket(ctx context.Context, t *testing.T, bucketName string) {
 	t.Helper()
 	project := os.Getenv(ProwProjectKey)
-	options := []option.ClientOption{option.WithQuotaProject(project)}
-	client, err := storage.NewClient(ctx, options...)
+	opt := option.WithQuotaProject(project)
+	client, err := storage.NewClient(ctx, opt)
 	if err != nil {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
@@ -168,8 +168,8 @@ func getBucketHandle(ctx context.Context, t *testing.T, bucketName, project stri
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
-	options := []option.ClientOption{option.WithQuotaProject(project)}
-	client, err := storage.NewClient(ctx, options...)
+	opt := option.WithQuotaProject(project)
+	client, err := storage.NewClient(ctx, opt)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
 	}
@@ -180,8 +180,8 @@ func NotificationExists(t *testing.T, bucketName, notificationID string) bool {
 	t.Helper()
 	ctx := context.Background()
 	project := os.Getenv(ProwProjectKey)
-	options := []option.ClientOption{option.WithQuotaProject(project)}
-	client, err := storage.NewClient(ctx, options...)
+	opt := option.WithQuotaProject(project)
+	client, err := storage.NewClient(ctx, opt)
 	if err != nil {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
