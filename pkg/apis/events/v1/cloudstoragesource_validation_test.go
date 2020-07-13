@@ -70,6 +70,25 @@ var (
 		},
 	}
 
+	storageSourceSpecWithKSA = CloudStorageSourceSpec{
+		Bucket: "my-test-bucket",
+		PubSubSpec: gcpduckv1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: gcpduckv1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+		},
+	}
+
 	// Bucket, Sink, Secret, Event Type and Project and ObjectNamePrefix
 	storageSourceSpec = CloudStorageSourceSpec{
 		Bucket:           "my-test-bucket",
@@ -435,7 +454,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			allowed: false,
 		},
 		"ServiceAccountName changed": {
-			orig: &storageSourceSpec,
+			orig: &storageSourceSpecWithKSA,
 			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
@@ -445,7 +464,6 @@ func TestCheckImmutableFields(t *testing.T) {
 						ServiceAccountName: "new-service-account",
 					},
 					SourceSpec: storageSourceSpec.SourceSpec,
-					Secret:     storageSourceSpec.Secret,
 				},
 			},
 			allowed: false,

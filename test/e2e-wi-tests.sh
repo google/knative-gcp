@@ -82,13 +82,13 @@ function control_plane_setup() {
       --flatten="bindings[].members")
     while read -r member_name
     do
-      # Only delete the iam bindings that is related to the current boskos project.
-      if [ "$(cut -d'.' -f1 <<< "${member_name}")" == "serviceAccount:${PROJECT}" ]; then
+#      # Only delete the iam bindings that is related to the current boskos project.
+#      if [ "$(cut -d'.' -f1 <<< "${member_name}")" == "serviceAccount:${PROJECT}" ]; then
         gcloud iam service-accounts remove-iam-policy-binding \
           --role roles/iam.workloadIdentityUser \
           --member "${member_name}" \
           --project "${PROW_PROJECT_NAME}" "${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}"
-      fi
+#      fi
     done <<< "$members"
     # Allow the Kubernetes service account to use Google service account.
     gcloud iam service-accounts add-iam-policy-binding \
