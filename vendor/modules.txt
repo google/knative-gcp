@@ -24,7 +24,7 @@ cloud.google.com/go/logging
 cloud.google.com/go/logging/apiv2
 cloud.google.com/go/logging/internal
 cloud.google.com/go/logging/logadmin
-# cloud.google.com/go/pubsub v1.4.0
+# cloud.google.com/go/pubsub v1.5.0
 ## explicit
 cloud.google.com/go/pubsub
 cloud.google.com/go/pubsub/apiv1
@@ -349,7 +349,7 @@ go.uber.org/zap/internal/exit
 go.uber.org/zap/internal/ztest
 go.uber.org/zap/zapcore
 go.uber.org/zap/zaptest
-# golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+# golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
 golang.org/x/crypto/openpgp/armor
@@ -364,7 +364,7 @@ golang.org/x/lint/golint
 # golang.org/x/mod v0.3.0
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20200625001655-4c5254603344
+# golang.org/x/net v0.0.0-20200707034311-ab3426394381
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -396,7 +396,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200701000337-a32c0cb1d5b2
+# golang.org/x/tools v0.0.0-20200710042808-f1c4188a97a1
 golang.org/x/tools/cmd/goimports
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
@@ -445,7 +445,7 @@ gonum.org/v1/gonum/lapack
 gonum.org/v1/gonum/lapack/gonum
 gonum.org/v1/gonum/lapack/lapack64
 gonum.org/v1/gonum/mat
-# google.golang.org/api v0.28.0
+# google.golang.org/api v0.29.0
 ## explicit
 google.golang.org/api/container/v1beta1
 google.golang.org/api/googleapi
@@ -475,7 +475,7 @@ google.golang.org/appengine/internal/socket
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/socket
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20200707001353-8e8330bf89df
+# google.golang.org/genproto v0.0.0-20200710124503-20a17af7bd0e
 ## explicit
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
@@ -994,7 +994,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.16.1-0.20200709164007-cfcc52dab2fc
+# knative.dev/eventing v0.16.1-0.20200710223037-c57ec355b284
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1103,10 +1103,11 @@ knative.dev/eventing/test/test_images/transformevents
 # knative.dev/networking v0.0.0-20200707203944-725ec013d8a2
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
-# knative.dev/pkg v0.0.0-20200710003319-43f4f824e3a3
+# knative.dev/pkg v0.0.0-20200713031612-b09a159e12c9
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
+knative.dev/pkg/apis/duck/ducktypes
 knative.dev/pkg/apis/duck/v1
 knative.dev/pkg/apis/duck/v1alpha1
 knative.dev/pkg/apis/duck/v1beta1
@@ -1210,7 +1211,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.16.1-0.20200710090418-c35eec7832b7
+# knative.dev/serving v0.16.1-0.20200713085317-07a3f0a93a88
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
@@ -1249,7 +1250,7 @@ knative.dev/serving/pkg/client/listers/autoscaling/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200709232407-f5e8f2edc236
+# knative.dev/test-infra v0.0.0-20200713045417-850e4e37918d
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
