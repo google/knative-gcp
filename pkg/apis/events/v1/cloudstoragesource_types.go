@@ -32,7 +32,7 @@ import (
 // +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CloudStorageSource is a specification for a Google Cloud CloudStorageSource Source resource
+// CloudStorageSource is a specification for a Google Cloud CloudStorageSource Source resource.
 type CloudStorageSource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -49,10 +49,10 @@ var (
 	_ resourcesemantics.GenericCRD = (*CloudStorageSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudStorageSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudStorageSource)(nil)
-	_ duckv1.KRShaped      = (*CloudStorageSource)(nil)
+	_ duckv1.KRShaped              = (*CloudStorageSource)(nil)
 )
 
-// CloudStorageSourceSpec is the spec for a CloudStorageSource resource
+// CloudStorageSourceSpec is the spec for a CloudStorageSource resource.
 type CloudStorageSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
@@ -75,7 +75,7 @@ const (
 	CloudStorageSourceConditionReady = apis.ConditionReady
 
 	// NotificationReady has status True when GCS has been configured properly to
-	// send Notification events
+	// send Notification events.
 	NotificationReady apis.ConditionType = "NotificationReady"
 )
 
@@ -84,9 +84,9 @@ var storageCondSet = apis.NewLivingConditionSet(
 	gcpduckv1.TopicReady,
 	NotificationReady)
 
-// CloudStorageSourceStatus is the status for a GCS resource
+// CloudStorageSourceStatus is the status for a GCS resource.
 type CloudStorageSourceStatus struct {
-	// This brings in our GCP PubSub based events importers
+	// This brings in the Status for our GCP PubSub event sources
 	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
 	gcpduckv1.PubSubStatus `json:",inline"`
 
@@ -110,7 +110,7 @@ func (s *CloudStorageSource) IdentityStatus() *gcpduckv1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (s *CloudStorageSource) ConditionSet() *apis.ConditionSet {
 	return &storageCondSet
 }
@@ -129,7 +129,7 @@ func (s *CloudStorageSource) PubSubStatus() *gcpduckv1.PubSubStatus {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CloudStorageSourceList is a list of CloudStorageSource resources
+// CloudStorageSourceList is a list of CloudStorageSource resources.
 type CloudStorageSourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`

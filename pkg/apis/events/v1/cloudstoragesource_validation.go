@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -59,10 +59,10 @@ func (current *CloudStorageSource) CheckImmutableFields(ctx context.Context, ori
 	if original == nil {
 		return nil
 	}
-	// Modification of EventType, Secret, ServiceAccount, Project, Bucket, ObjectNamePrefix and PayloadFormat are not allowed. Everything else is mutable.
+	// Modification of EventType, Secret, ServiceAccountName, Project, Bucket, ObjectNamePrefix and PayloadFormat are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudStorageSourceSpec{},
-			"Sink", "CloudEventOverrides", "ServiceAccountName")); diff != "" {
+			"Sink", "CloudEventOverrides")); diff != "" {
 		return &apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},

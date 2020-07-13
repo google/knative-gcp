@@ -416,6 +416,25 @@ func TestCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
+		"Secret.Key changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PubSubSpec: duckv1beta1.PubSubSpec{
+					SourceSpec: storageSourceSpec.SourceSpec,
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: storageSourceSpec.Secret.Name,
+						},
+						Key: "some-other-key",
+					},
+					Project: storageSourceSpec.Project,
+				},
+			},
+			allowed: false,
+		},
 		"Project changed": {
 			orig: &storageSourceSpec,
 			updated: CloudStorageSourceSpec{
@@ -431,7 +450,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed": {
+		"ServiceAccountName changed": {
 			orig: &storageSourceSpec,
 			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
