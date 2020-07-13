@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/pubsub"
+	"google.golang.org/api/option"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -35,7 +36,8 @@ func SubscriptionExists(t *testing.T, subID string) bool {
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
-	client, err := pubsub.NewClient(ctx, project)
+	options := []option.ClientOption{option.WithQuotaProject(project)}
+	client, err := pubsub.NewClient(ctx, project, options...)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
 	}

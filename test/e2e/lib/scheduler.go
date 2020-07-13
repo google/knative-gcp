@@ -19,12 +19,14 @@ package lib
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/gclient/scheduler"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"google.golang.org/api/option"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
@@ -83,7 +85,9 @@ func schedulerEventPayload(customData string) string {
 func SchedulerJobExists(t *testing.T, jobName string) bool {
 	t.Helper()
 	ctx := context.Background()
-	client, err := scheduler.NewClient(ctx)
+	project := os.Getenv(ProwProjectKey)
+	options := []option.ClientOption{option.WithQuotaProject(project)}
+	client, err := scheduler.NewClient(ctx, options...)
 	if err != nil {
 		t.Fatalf("failed to create scheduler client, %s", err.Error())
 	}

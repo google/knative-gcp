@@ -24,6 +24,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
+	"google.golang.org/api/option"
+
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
@@ -69,13 +71,14 @@ func MakeBuildTargetJobOrDie(client *Client, images, targetName, eventType strin
 
 func BuildWithConfigFile(t *testing.T, imageName string) string {
 	ctx := context.Background()
-	client, err := cloudbuild.NewClient(ctx)
+	project := os.Getenv(ProwProjectKey)
+	options := []option.ClientOption{option.WithQuotaProject(project)}
+	client, err := cloudbuild.NewClient(ctx, options...)
 	if err != nil {
 		t.Fatalf("failed to create cloud build client, %s", err.Error())
 	}
 	defer client.Close()
 
-	project := os.Getenv(ProwProjectKey)
 	image := CloudBuildImage(project, imageName)
 	build := new(cloudbuildpb.Build)
 	build.Steps = append(build.Steps, &cloudbuildpb.BuildStep{

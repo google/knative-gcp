@@ -19,6 +19,7 @@ package lib
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"testing"
 
@@ -26,6 +27,7 @@ import (
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/test/helpers"
@@ -101,7 +103,8 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
-	client, err := storage.NewClient(ctx)
+	options := []option.ClientOption{option.WithQuotaProject(project)}
+	client, err := storage.NewClient(ctx, options...)
 	if err != nil {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
@@ -132,7 +135,9 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 
 func DeleteBucket(ctx context.Context, t *testing.T, bucketName string) {
 	t.Helper()
-	client, err := storage.NewClient(ctx)
+	project := os.Getenv(ProwProjectKey)
+	options := []option.ClientOption{option.WithQuotaProject(project)}
+	client, err := storage.NewClient(ctx, options...)
 	if err != nil {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
@@ -163,7 +168,8 @@ func getBucketHandle(ctx context.Context, t *testing.T, bucketName, project stri
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
-	client, err := storage.NewClient(ctx)
+	options := []option.ClientOption{option.WithQuotaProject(project)}
+	client, err := storage.NewClient(ctx, options...)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
 	}
@@ -173,7 +179,9 @@ func getBucketHandle(ctx context.Context, t *testing.T, bucketName, project stri
 func NotificationExists(t *testing.T, bucketName, notificationID string) bool {
 	t.Helper()
 	ctx := context.Background()
-	client, err := storage.NewClient(ctx)
+	project := os.Getenv(ProwProjectKey)
+	options := []option.ClientOption{option.WithQuotaProject(project)}
+	client, err := storage.NewClient(ctx, options...)
 	if err != nil {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
