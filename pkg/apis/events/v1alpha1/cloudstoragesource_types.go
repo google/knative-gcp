@@ -81,7 +81,7 @@ const (
 	CloudStorageSourceConditionReady = apis.ConditionReady
 
 	// NotificationReady has status True when GCS has been configured properly to
-	// send Notification events
+	// send Notification events.
 	NotificationReady apis.ConditionType = "NotificationReady"
 )
 
@@ -90,9 +90,9 @@ var storageCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.TopicReady,
 	NotificationReady)
 
-// CloudStorageSourceStatus is the status for a GCS resource
+// CloudStorageSourceStatus is the status for a GCS resource.
 type CloudStorageSourceStatus struct {
-	// This brings in our GCP PubSub based events importers
+	// This brings in the Status for our GCP PubSub event sources.
 	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
 	duckv1alpha1.PubSubStatus `json:",inline"`
 
@@ -116,7 +116,7 @@ func (s *CloudStorageSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (s *CloudStorageSource) ConditionSet() *apis.ConditionSet {
 	return &storageCondSet
 }
@@ -135,7 +135,7 @@ func (s *CloudStorageSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CloudStorageSourceList is a list of CloudStorageSource resources
+// CloudStorageSourceList is a list of CloudStorageSource resources.
 type CloudStorageSourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`

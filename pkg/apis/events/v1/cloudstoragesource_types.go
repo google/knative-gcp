@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC.
+Copyright 2020 Google LLC.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,19 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package v1
 
 import (
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
-
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // +genclient
@@ -44,10 +43,8 @@ type CloudStorageSource struct {
 
 // Verify that CloudStorageSource matches various duck types.
 var (
-	_ apis.Convertible             = (*CloudStorageSource)(nil)
 	_ apis.Defaultable             = (*CloudStorageSource)(nil)
 	_ apis.Validatable             = (*CloudStorageSource)(nil)
-	_ runtime.Object               = (*CloudStorageSource)(nil)
 	_ kmeta.OwnerRefable           = (*CloudStorageSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudStorageSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudStorageSource)(nil)
@@ -59,7 +56,7 @@ var (
 type CloudStorageSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
-	duckv1beta1.PubSubSpec `json:",inline"`
+	gcpduckv1.PubSubSpec `json:",inline"`
 
 	// Bucket to subscribe to.
 	Bucket string `json:"bucket"`
@@ -71,11 +68,6 @@ type CloudStorageSourceSpec struct {
 	// ObjectNamePrefix limits the notifications to objects with this prefix
 	// +optional
 	ObjectNamePrefix string `json:"objectNamePrefix,omitempty"`
-
-	// PayloadFormat specifies the contents of the message payload.
-	// See https://cloud.google.com/storage/docs/pubsub-notifications#payload.
-	// +optional
-	PayloadFormat string `json:"payloadFormat,omitempty"`
 }
 
 const (
@@ -88,15 +80,15 @@ const (
 )
 
 var storageCondSet = apis.NewLivingConditionSet(
-	duckv1beta1.PullSubscriptionReady,
-	duckv1beta1.TopicReady,
+	gcpduckv1.PullSubscriptionReady,
+	gcpduckv1.TopicReady,
 	NotificationReady)
 
 // CloudStorageSourceStatus is the status for a GCS resource.
 type CloudStorageSourceStatus struct {
-	// This brings in the Status for our GCP PubSub event sources.
+	// This brings in the Status for our GCP PubSub event sources
 	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
-	duckv1beta1.PubSubStatus `json:",inline"`
+	gcpduckv1.PubSubStatus `json:",inline"`
 
 	// NotificationID is the ID that GCS identifies this notification as.
 	// +optional
@@ -109,12 +101,12 @@ func (storage *CloudStorageSource) GetGroupVersionKind() schema.GroupVersionKind
 
 // Methods for identifiable interface.
 // IdentitySpec returns the IdentitySpec portion of the Spec.
-func (s *CloudStorageSource) IdentitySpec() *duckv1beta1.IdentitySpec {
+func (s *CloudStorageSource) IdentitySpec() *gcpduckv1.IdentitySpec {
 	return &s.Spec.IdentitySpec
 }
 
 // IdentityStatus returns the IdentityStatus portion of the Status.
-func (s *CloudStorageSource) IdentityStatus() *duckv1beta1.IdentityStatus {
+func (s *CloudStorageSource) IdentityStatus() *gcpduckv1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
 
@@ -126,12 +118,12 @@ func (s *CloudStorageSource) ConditionSet() *apis.ConditionSet {
 // Methods for pubsubable interface.
 
 // PubSubSpec returns the PubSubSpec portion of the Spec.
-func (s *CloudStorageSource) PubSubSpec() *duckv1beta1.PubSubSpec {
+func (s *CloudStorageSource) PubSubSpec() *gcpduckv1.PubSubSpec {
 	return &s.Spec.PubSubSpec
 }
 
 // PubSubStatus returns the PubSubStatus portion of the Status.
-func (s *CloudStorageSource) PubSubStatus() *duckv1beta1.PubSubStatus {
+func (s *CloudStorageSource) PubSubStatus() *gcpduckv1.PubSubStatus {
 	return &s.Status.PubSubStatus
 }
 
@@ -154,3 +146,4 @@ func (*CloudStorageSource) GetConditionSet() apis.ConditionSet {
 func (s *CloudStorageSource) GetStatus() *duckv1.Status {
 	return &s.Status.Status
 }
+
