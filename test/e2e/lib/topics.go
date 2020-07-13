@@ -85,7 +85,7 @@ func MakeTopicWithNameOrDie(t *testing.T, topicName string) (string, func()) {
 	}
 }
 
-func MakeTopicWithNameIfItDoesNotExist(t *testing.T, topicName string){
+func MakeTopicWithNameIfItDoesNotExist(t *testing.T, topicName string) {
 	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key

@@ -19,23 +19,49 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+	transport "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/kelseyhightower/envconfig"
+	"go.opencensus.io/trace"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
+
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/test/e2e/lib"
-	"go.opencensus.io/trace"
 )
 
-const (
-	brokerURLEnvVar = "BROKER_URL"
-)
+type envConfig struct {
+	BrokerURLEnvVar string `envconfig:"BROKER_URL" required:"true"`
+	RetryEnvVar     string `envconfig:"RETRY"`
+}
+
+// defaultRetry represents that there will be 3 iterations.
+// The duration starts from 30s and is multiplied by factor 1.0 for each iteration.
+var defaultRetry = wait.Backoff{
+	Steps:    3,
+	Duration: 30 * time.Second,
+	Factor:   1.0,
+	// The sleep at each iteration is the duration plus an additional
+	// amount chosen uniformly at random from the interval between 0 and jitter*duration.
+	Jitter: 2.0,
+}
 
 func main() {
-	brokerURL := os.Getenv(brokerURLEnvVar)
+
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
+		panic(fmt.Sprintf("Failed to process env var: %s", err))
+	}
+
+	brokerURL := env.BrokerURLEnvVar
+	needRetry := (env.RetryEnvVar == "true")
 
 	ceClient, err := kncloudevents.NewDefaultClient(brokerURL)
 	if err != nil {
@@ -45,11 +71,13 @@ func main() {
 	ctx, span := trace.StartSpan(context.Background(), "sender", trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 
-	ctx, _, err = ceClient.Send(ctx, dummyCloudEvent())
-	rtctx := cloudevents.HTTPTransportContextFrom(ctx)
+	// If needRetry is true, repeat sending Event with exponential backoff when there are some specific errors.
+	// In e2e test, sync problems could cause 404 and 5XX error, retrying those would help reduce flakiness.
+	rtctx, err := sendEvent(ctx, ceClient, needRetry)
 	if err != nil {
 		fmt.Print(err)
 	}
+
 	var success bool
 	if rtctx.StatusCode >= http.StatusOK && rtctx.StatusCode < http.StatusBadRequest {
 		success = true
@@ -62,6 +90,23 @@ func main() {
 	}); err != nil {
 		fmt.Printf("failed to write termination message, %s.\n", err)
 	}
+}
+
+func sendEvent(ctx context.Context, ceClient cloudevents.Client, needRetry bool) (transport.TransportContext, error) {
+	var rtctx transport.TransportContext
+	send := func() error {
+		ctx, _, err := ceClient.Send(ctx, dummyCloudEvent())
+		rtctx = cloudevents.HTTPTransportContextFrom(ctx)
+		return err
+	}
+
+	if needRetry {
+		err := retry.OnError(defaultRetry, isRetryable, send)
+		return rtctx, err
+	}
+
+	err := send()
+	return rtctx, err
 }
 
 func dummyCloudEvent() cloudevents.Event {
@@ -80,4 +125,19 @@ func writeTerminationMessage(result interface{}) error {
 		return err
 	}
 	return ioutil.WriteFile("/dev/termination-log", b, 0644)
+}
+
+// isRetryable determines if the err is an error which is retryable
+func isRetryable(err error) bool {
+	var httpResult *cehttp.Result
+	if errors.As(err, &httpResult) {
+		// Potentially retry when:
+		// - 404 Not Found
+		// - 500 Internal Server Error, it is currently for reducing flakiness caused by Workload Identity credential sync up.
+		// We should remove it after https://github.com/google/knative-gcp/issues/1058 lands, as 500 error may indicate bugs in our code.
+		// - 503 Service Unavailable (with or without Retry-After) (IGNORE Retry-After)
+		sc := httpResult.StatusCode
+		return sc == 404 || sc == 500 || sc == 503
+	}
+	return false
 }

@@ -20,15 +20,16 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"os"
+
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
 	"github.com/kelseyhightower/envconfig"
-	"os"
 )
 
 const (
-	images = "images"
+	images    = "images"
 	buildData = "Data"
 )
 
@@ -51,7 +52,7 @@ func mainWithExitCode() int {
 type buildReceiver struct {
 	knockdown.Config
 
-	Type  string `envconfig:"TYPE" required:"true"`
+	Type   string `envconfig:"TYPE" required:"true"`
 	Images string `envconfig:"IMAGES" required:"true"`
 }
 

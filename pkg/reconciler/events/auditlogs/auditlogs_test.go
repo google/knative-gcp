@@ -505,7 +505,7 @@ func TestAllCases(t *testing.T) {
 					"events.cloud.google.com/source-name": sourceName,
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group":          resourceGroup,
+					"metrics-resource-group":   resourceGroup,
 					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),

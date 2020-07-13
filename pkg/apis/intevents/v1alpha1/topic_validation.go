@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"knative.dev/pkg/apis"
 	"github.com/google/knative-gcp/pkg/apis/duck"
+	"knative.dev/pkg/apis"
 )
 
 func (t *Topic) Validate(ctx context.Context) *apis.FieldError {

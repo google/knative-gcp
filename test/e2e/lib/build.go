@@ -24,7 +24,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"cloud.google.com/go/cloudbuild/apiv1/v2"
+	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	cloudbuildpb "google.golang.org/genproto/googleapis/devtools/cloudbuild/v1"
@@ -85,7 +85,7 @@ func BuildWithConfigFile(t *testing.T, imageName string) string {
 	build.Images = []string{image}
 
 	req := &cloudbuildpb.CreateBuildRequest{
-		Build: build,
+		Build:     build,
 		ProjectId: project,
 	}
 

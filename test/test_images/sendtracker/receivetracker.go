@@ -142,7 +142,7 @@ func (r rangeReceivedArr) String() string {
 func mapToRange(mapIn map[int]struct{}) rangeReceivedArr {
 	var listOut rangeReceivedArr
 	allKey := make([]int, 0, len(mapIn))
-	for id, _ := range mapIn {
+	for id := range mapIn {
 		allKey = append(allKey, id)
 	}
 	sort.Ints(allKey)

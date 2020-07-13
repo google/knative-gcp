@@ -20,9 +20,9 @@ import (
 	"context"
 	"strconv"
 
+	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	v1 "k8s.io/api/apps/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"

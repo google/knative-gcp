@@ -33,13 +33,13 @@ const (
 
 // A helper function that starts a dummy broker which receives events forwarded by the probe helper and delivers the events
 // back to the probe helper's receive port
-func runDummyBroker(t * testing.T) {
+func runDummyBroker(t *testing.T) {
 	probeReceiverURL := fmt.Sprintf("http://localhost:%d", probeReceiverPort)
 	bp, err := cloudevents.NewHTTP(cloudevents.WithPort(dummyBrokerPort), cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
 		t.Fatalf("Failed to create http protocol of the dummy broker, %v", err)
 	}
-	bc, err  := cloudevents.NewClient(bp)
+	bc, err := cloudevents.NewClient(bp)
 	if err != nil {
 		t.Fatal("Failed to create the dummy broker client, ", err)
 	}
