@@ -19,7 +19,7 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	v1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
@@ -46,7 +46,7 @@ func (ts *TopicStatus) InitializeConditions() {
 
 func (ts *TopicStatus) SetAddress(url *apis.URL) {
 	if ts.Address == nil {
-		ts.Address = &v1.Addressable{}
+		ts.Address = &duckv1.Addressable{}
 	}
 	if url != nil {
 		ts.Address.URL = url
