@@ -12,9 +12,7 @@ jobs:
     - name: gofmt
       run: find -name '*.go' -type f \! -name '*.pb.go' -exec gofmt -s -w {} \+ -o \( -path './vendor' -o -path './third_party' \) -prune
     - name: goimports
-      run: |
-        go get golang.org/x/tools/cmd/goimports
-        find -name '*.go' \! -name wire_gen.go \! -name '*.pb.go' -exec goimports -w {} \+ -o \( -path ./vendor -o -path ./third_party \) -prune
+      run: find -name '*.go' \! -name wire_gen.go \! -name '*.pb.go' -exec go run golang.org/x/tools/cmd/goimports -w {} \+ -o \( -path ./vendor -o -path ./third_party \) -prune
     - uses: EndBug/add-and-commit@v4.2.0
       with:
         message: "Format go"
