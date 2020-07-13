@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,14 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package v1
 
 import (
 	"context"
 	"testing"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -34,7 +33,7 @@ var (
 	// Bare minimum is Bucket and Sink
 	minimalCloudStorageSourceSpec = CloudStorageSourceSpec{
 		Bucket: "my-test-bucket",
-		PubSubSpec: duckv1beta1.PubSubSpec{
+		PubSubSpec: gcpduckv1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
 					Ref: &duckv1.KReference{
@@ -51,7 +50,7 @@ var (
 	// Bucket, Sink and Secret
 	withSecret = CloudStorageSourceSpec{
 		Bucket: "my-test-bucket",
-		PubSubSpec: duckv1beta1.PubSubSpec{
+		PubSubSpec: gcpduckv1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
 					Ref: &duckv1.KReference{
@@ -71,13 +70,12 @@ var (
 		},
 	}
 
-	// Bucket, Sink, Secret, Event Type and Project, ObjectNamePrefix and PayloadFormat
+	// Bucket, Sink, Secret, Event Type and Project and ObjectNamePrefix
 	storageSourceSpec = CloudStorageSourceSpec{
 		Bucket:           "my-test-bucket",
 		EventTypes:       []string{schemasv1.CloudStorageObjectFinalizedEventType, schemasv1.CloudStorageObjectDeletedEventType},
 		ObjectNamePrefix: "test-prefix",
-		PayloadFormat:    cloudevents.ApplicationJSON,
-		PubSubSpec: duckv1beta1.PubSubSpec{
+		PubSubSpec: gcpduckv1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
 					Ref: &duckv1.KReference{
@@ -97,6 +95,8 @@ var (
 			Project: "my-eventing-project",
 		},
 	}
+	validServiceAccountName   = "test"
+	invalidServiceAccountName = "@test"
 )
 
 func TestValidationFields(t *testing.T) {
@@ -151,7 +151,7 @@ func TestSpecValidationFields(t *testing.T) {
 	}, {
 		name: "invalid sink",
 		spec: &CloudStorageSourceSpec{Bucket: "foo",
-			PubSubSpec: duckv1beta1.PubSubSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -168,7 +168,7 @@ func TestSpecValidationFields(t *testing.T) {
 	}, {
 		name: "missing bucket",
 		spec: &CloudStorageSourceSpec{
-			PubSubSpec: duckv1beta1.PubSubSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -189,7 +189,7 @@ func TestSpecValidationFields(t *testing.T) {
 		name: "invalid secret, missing name",
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
-			PubSubSpec: duckv1beta1.PubSubSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -214,7 +214,7 @@ func TestSpecValidationFields(t *testing.T) {
 		name: "nil secret",
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
-			PubSubSpec: duckv1beta1.PubSubSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -232,7 +232,7 @@ func TestSpecValidationFields(t *testing.T) {
 		name: "invalid gcs secret, missing key",
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
-			PubSubSpec: duckv1beta1.PubSubSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -256,8 +256,8 @@ func TestSpecValidationFields(t *testing.T) {
 		name: "invalid k8s service account",
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
-			PubSubSpec: duckv1beta1.PubSubSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
+				IdentitySpec: gcpduckv1.IdentitySpec{
 					ServiceAccountName: invalidServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
@@ -283,8 +283,8 @@ func TestSpecValidationFields(t *testing.T) {
 		name: "valid k8s service account",
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
-			PubSubSpec: duckv1beta1.PubSubSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
+				IdentitySpec: gcpduckv1.IdentitySpec{
 					ServiceAccountName: validServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
@@ -304,8 +304,8 @@ func TestSpecValidationFields(t *testing.T) {
 		name: "have k8s service account and secret at the same time",
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
-			PubSubSpec: duckv1beta1.PubSubSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
+				IdentitySpec: gcpduckv1.IdentitySpec{
 					ServiceAccountName: validServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
@@ -358,7 +358,6 @@ func TestCheckImmutableFields(t *testing.T) {
 				Bucket:           "some-other-bucket",
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
-				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec:       storageSourceSpec.PubSubSpec,
 			},
 			allowed: false,
@@ -369,7 +368,6 @@ func TestCheckImmutableFields(t *testing.T) {
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       []string{schemasv1.CloudStorageObjectMetadataUpdatedEventType},
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
-				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec:       storageSourceSpec.PubSubSpec,
 			},
 			allowed: false,
@@ -380,18 +378,6 @@ func TestCheckImmutableFields(t *testing.T) {
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: "some-other-prefix",
-				PayloadFormat:    storageSourceSpec.PayloadFormat,
-				PubSubSpec:       storageSourceSpec.PubSubSpec,
-			},
-			allowed: false,
-		},
-		"PayloadFormat changed": {
-			orig: &storageSourceSpec,
-			updated: CloudStorageSourceSpec{
-				Bucket:           storageSourceSpec.Bucket,
-				EventTypes:       storageSourceSpec.EventTypes,
-				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
-				PayloadFormat:    "some-other-format",
 				PubSubSpec:       storageSourceSpec.PubSubSpec,
 			},
 			allowed: false,
@@ -402,8 +388,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
-				PayloadFormat:    storageSourceSpec.PayloadFormat,
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					SourceSpec: storageSourceSpec.SourceSpec,
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -422,7 +407,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					SourceSpec: storageSourceSpec.SourceSpec,
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -441,8 +426,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
-				PayloadFormat:    storageSourceSpec.PayloadFormat,
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					SourceSpec: storageSourceSpec.SourceSpec,
 					Secret:     storageSourceSpec.Secret,
 					Project:    "some-other-project",
@@ -456,9 +440,8 @@ func TestCheckImmutableFields(t *testing.T) {
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
-				PayloadFormat:    storageSourceSpec.PayloadFormat,
-				PubSubSpec: duckv1beta1.PubSubSpec{
-					IdentitySpec: duckv1beta1.IdentitySpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					IdentitySpec: gcpduckv1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
 					SourceSpec: storageSourceSpec.SourceSpec,

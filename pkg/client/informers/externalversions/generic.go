@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	v1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	v1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -63,6 +64,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Eventing().V1beta1().Brokers().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("triggers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Eventing().V1beta1().Triggers().Informer()}, nil
+
+		// Group=events.cloud.google.com, Version=v1
+	case v1.SchemeGroupVersion.WithResource("cloudstoragesources"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1().CloudStorageSources().Informer()}, nil
 
 		// Group=events.cloud.google.com, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("cloudauditlogssources"):
