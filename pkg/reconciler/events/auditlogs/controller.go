@@ -95,18 +95,20 @@ func newController(
 	cloudauditlogssourceInformer.Informer().AddEventHandlerWithResyncPeriod(
 		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
+	auditLogsGK := v1beta1.Kind("CloudAuditLogsSource")
+
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("CloudAuditLogsSource")),
+		FilterFunc: controller.FilterControllerGK(auditLogsGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("CloudAuditLogsSource")),
+		FilterFunc: controller.FilterControllerGK(auditLogsGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("CloudAuditLogsSource")),
+		FilterFunc: controller.FilterControllerGK(auditLogsGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
