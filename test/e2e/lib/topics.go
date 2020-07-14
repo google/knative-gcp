@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/pubsub"
+	"google.golang.org/api/option"
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -36,7 +37,8 @@ func MakeTopicOrDie(t *testing.T) (string, func()) {
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
-	client, err := pubsub.NewClient(ctx, project)
+	opt := option.WithQuotaProject(project)
+	client, err := pubsub.NewClient(ctx, project, opt)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
 	}
