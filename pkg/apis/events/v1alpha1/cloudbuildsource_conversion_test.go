@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/google/knative-gcp/pkg/apis/events"
 	"knative.dev/pkg/apis"
 )
 
@@ -35,7 +36,7 @@ var (
 	// TypeMeta is excluded because conversions do not convert it and this variable was created to
 	// test conversions.
 	completeCloudBuildSource = &CloudBuildSource{
-		ObjectMeta: completeObjectMeta,
+		ObjectMeta: events.CompleteObjectMeta,
 		Spec: CloudBuildSourceSpec{
 			PubSubSpec: completePubSubSpec,
 		},

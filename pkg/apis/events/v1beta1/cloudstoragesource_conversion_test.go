@@ -18,7 +18,36 @@ package v1beta1
 
 import (
 	"context"
+	"net/url"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/events"
+	"github.com/google/knative-gcp/pkg/apis/events/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+)
+
+// These variables are used to create a 'complete' version of CloudStorageSource where every field is
+// filled in.
+var (
+	// completeCloudStorageSource is a CloudStorageSource with every field filled in, except TypeMeta.
+	// TypeMeta is excluded because conversions do not convert it and this variable was created to
+	// test conversions.
+	completeCloudStorageSource = &CloudStorageSource{
+		ObjectMeta: events.CompleteObjectMeta,
+		Spec: CloudStorageSourceSpec{
+			PubSubSpec:       completePubSubSpec,
+			Bucket:           "bucket",
+			EventTypes:       []string{"event", "types"},
+			ObjectNamePrefix: "objectNamePrefix",
+			PayloadFormat:    "payloadFormat",
+		},
+		Status: CloudStorageSourceStatus{
+			PubSubStatus:   completePubSubStatus,
+			NotificationID: "notificationId",
+		},
+	}
 )
 
 func TestCloudStorageSourceConversionBadType(t *testing.T) {
@@ -30,5 +59,50 @@ func TestCloudStorageSourceConversionBadType(t *testing.T) {
 
 	if err := good.ConvertFrom(context.Background(), bad); err == nil {
 		t.Errorf("ConvertFrom() = %#v, wanted error", good)
+	}
+}
+
+func TestCloudStorageSourceConversion(t *testing.T) {
+	// Just one for now, just adding the for loop for ease of future changes.
+	versions := []apis.Convertible{&v1.CloudStorageSource{}}
+
+	tests := []struct {
+		name string
+		in   *CloudStorageSource
+	}{{
+		name: "min configuration",
+		in: &CloudStorageSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "ps-name",
+				Namespace:  "ps-ns",
+				Generation: 17,
+			},
+			Spec: CloudStorageSourceSpec{},
+		},
+	}, {
+		name: "full configuration",
+		in:   completeCloudStorageSource,
+	}}
+	for _, test := range tests {
+		for _, version := range versions {
+			t.Run(test.name, func(t *testing.T) {
+				ver := version
+				// DeepCopy because we will edit it below.
+				in := test.in.DeepCopy()
+				if err := in.ConvertTo(context.Background(), ver); err != nil {
+					t.Errorf("ConvertTo() = %v", err)
+				}
+				got := &CloudStorageSource{}
+				if err := got.ConvertFrom(context.Background(), ver); err != nil {
+					t.Errorf("ConvertFrom() = %v", err)
+				}
+				in.Status.ServiceAccountName = ""
+				in.Spec.PayloadFormat = ""
+				ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
+				if diff := cmp.Diff(in, got, ignoreUsername); diff != "" {
+					t.Errorf("roundtrip (-want, +got) = %v", diff)
+				}
+			})
+		}
 	}
 }
