@@ -20,10 +20,9 @@ import (
 	"context"
 	"testing"
 
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
-
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
@@ -57,6 +56,29 @@ var (
 			Project: "my-eventing-project",
 		},
 	}
+
+	auditLogsSourceSpecWithKSA = CloudAuditLogsSourceSpec{
+		ServiceName:  "foo",
+		MethodName:   "bar",
+		ResourceName: "baz",
+		PubSubSpec: duckv1alpha1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: duckv1alpha1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+			Project: "my-eventing-project",
+		},
+	}
+
 	validServiceAccountName   = "test"
 	invalidServiceAccountName = "@test"
 )
@@ -220,25 +242,20 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 			allowed: false,
 		},
 		"ServiceAccount changed": {
-			orig: &auditLogsSourceSpec,
+			orig: &auditLogsSourceSpecWithKSA,
 			updated: CloudAuditLogsSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: auditLogsSourceSpec.PubSubSpec.Secret.Name,
-						},
-						Key: auditLogsSourceSpec.PubSubSpec.Secret.Key,
-					},
 					SourceSpec: duckv1.SourceSpec{
-						Sink: auditLogsSourceSpec.PubSubSpec.Sink,
+						Sink: auditLogsSourceSpecWithKSA.PubSubSpec.Sink,
 					},
+					Project: auditLogsSourceSpecWithKSA.Project,
 				},
-				MethodName:   auditLogsSourceSpec.MethodName,
-				ResourceName: auditLogsSourceSpec.ResourceName,
-				ServiceName:  auditLogsSourceSpec.ServiceName,
+				MethodName:   auditLogsSourceSpecWithKSA.MethodName,
+				ResourceName: auditLogsSourceSpecWithKSA.ResourceName,
+				ServiceName:  auditLogsSourceSpecWithKSA.ServiceName,
 			},
 			allowed: false,
 		},
