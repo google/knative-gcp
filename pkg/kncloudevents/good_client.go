@@ -17,28 +17,26 @@ limitations under the License.
 package kncloudevents
 
 import (
-	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
+	cev2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/protocol/http"
 )
 
-func NewDefaultClient(target ...string) (cloudevents.Client, error) {
-	tOpts := []http.Option{
-		cloudevents.WithBinaryEncoding(),
-	}
+func NewDefaultClient(target ...string) (cev2.Client, error) {
+	var tOpts []http.Option
 	if len(target) > 0 && target[0] != "" {
-		tOpts = append(tOpts, cloudevents.WithTarget(target[0]))
+		tOpts = append(tOpts, cev2.WithTarget(target[0]))
 	}
 
 	// Make an http transport for the CloudEvents client.
-	t, err := cloudevents.NewHTTPTransport(tOpts...)
+	t, err := cev2.NewHTTP(tOpts...)
 	if err != nil {
 		return nil, err
 	}
 
 	// Use the transport to make a new CloudEvents client.
-	c, err := cloudevents.NewClient(t,
-		cloudevents.WithUUIDs(),
-		cloudevents.WithTimeNow(),
+	c, err := cev2.NewClient(t,
+		cev2.WithUUIDs(),
+		cev2.WithTimeNow(),
 	)
 
 	if err != nil {

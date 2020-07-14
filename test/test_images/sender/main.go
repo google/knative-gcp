@@ -19,15 +19,14 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
-	"strings"
 	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	transport "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
+	cev2 "github.com/cloudevents/sdk-go/v2"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/kelseyhightower/envconfig"
 	"go.opencensus.io/trace"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -73,17 +72,12 @@ func main() {
 
 	// If needRetry is true, repeat sending Event with exponential backoff when there are some specific errors.
 	// In e2e test, sync problems could cause 404 and 5XX error, retrying those would help reduce flakiness.
-	rtctx, err := sendEvent(ctx, ceClient, needRetry)
-	if err != nil {
-		fmt.Print(err)
+	success := true
+	if res := sendEvent(ctx, ceClient, needRetry); !cev2.IsACK(res) {
+		success = false
+		fmt.Printf("failed to send event: %s", res.Error())
 	}
 
-	var success bool
-	if rtctx.StatusCode >= http.StatusOK && rtctx.StatusCode < http.StatusBadRequest {
-		success = true
-	} else {
-		success = false
-	}
 	if err := writeTerminationMessage(map[string]interface{}{
 		"success": success,
 		"traceid": span.SpanContext().TraceID.String(),
@@ -92,30 +86,26 @@ func main() {
 	}
 }
 
-func sendEvent(ctx context.Context, ceClient cloudevents.Client, needRetry bool) (transport.TransportContext, error) {
-	var rtctx transport.TransportContext
+func sendEvent(ctx context.Context, ceClient cev2.Client, needRetry bool) error {
 	send := func() error {
-		ctx, _, err := ceClient.Send(ctx, dummyCloudEvent())
-		rtctx = cloudevents.HTTPTransportContextFrom(ctx)
-		return err
+		result := ceClient.Send(ctx, dummyCloudEvent())
+		return result
 	}
 
 	if needRetry {
-		err := retry.OnError(defaultRetry, isRetryable, send)
-		return rtctx, err
+		return retry.OnError(defaultRetry, isRetryable, send)
 	}
 
-	err := send()
-	return rtctx, err
+	return send()
 }
 
-func dummyCloudEvent() cloudevents.Event {
-	event := cloudevents.NewEvent(cloudevents.VersionV1)
+func dummyCloudEvent() cev2.Event {
+	event := cev2.NewEvent(cev2.VersionV1)
 	event.SetID(lib.E2EDummyEventID)
 	event.SetType(lib.E2EDummyEventType)
 	event.SetSource(lib.E2EDummyEventSource)
-	event.SetDataContentType(cloudevents.ApplicationJSON)
-	event.SetData(`{"source": "sender!"}`)
+	event.SetDataContentType(cev2.ApplicationJSON)
+	event.SetData(cev2.ApplicationJSON, `{"source": "sender!"}`)
 	return event
 }
 
@@ -129,14 +119,18 @@ func writeTerminationMessage(result interface{}) error {
 
 // isRetryable determines if the err is an error which is retryable
 func isRetryable(err error) bool {
-	// Potentially retry when:
-	// - 404 Not Found
-	// - 500 Internal Server Error, it is currently for reducing flakiness caused by Workload Identity credential sync up.
-	// We should remove it after https://github.com/google/knative-gcp/issues/1058 lands, as 500 error may indicate bugs in our code.
-	// - 503 Service Unavailable (with or without Retry-After) (IGNORE Retry-After)
-	if strings.Contains(err.Error(), "404 Not Found") || strings.Contains(err.Error(), "500 Internal Server Error") || strings.Contains(err.Error(), "503 Service Unavailable") {
-		log.Printf("Got Error: %s, retry sending Event.\n", err.Error())
-		return true
+	var result *cehttp.Result
+	if errors.As(err, &result) {
+		// Potentially retry when:
+		// - 404 Not Found
+		// - 500 Internal Server Error, it is currently for reducing flakiness caused by Workload Identity credential sync up.
+		// We should remove it after https://github.com/google/knative-gcp/issues/1058 lands, as 500 error may indicate bugs in our code.
+		// - 503 Service Unavailable (with or without Retry-After) (IGNORE Retry-After)
+		sc := result.StatusCode
+		if sc == 404 || sc == 500 || sc == 503 {
+			log.Printf("got error: %s, retry sending event. \n", result.Error())
+			return true
+		}
 	}
 	return false
 }
