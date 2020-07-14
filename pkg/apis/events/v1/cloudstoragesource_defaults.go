@@ -44,5 +44,3 @@ func (ss *CloudStorageSourceSpec) SetDefaults(ctx context.Context) {
 		ss.EventTypes = allEventTypes
 	}
 }
-
-

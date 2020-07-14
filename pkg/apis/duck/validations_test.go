@@ -174,7 +174,6 @@ func TestCheckImmutableClusterNameAnnotation(t *testing.T) {
 	}
 }
 
-
 func TestValidateCredential(t *testing.T) {
 	testCases := []struct {
 		name           string

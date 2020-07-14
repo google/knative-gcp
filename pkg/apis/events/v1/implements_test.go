@@ -37,4 +37,3 @@ func TestTypesImplements(t *testing.T) {
 		}
 	}
 }
-

@@ -146,4 +146,3 @@ func (*CloudStorageSource) GetConditionSet() apis.ConditionSet {
 func (s *CloudStorageSource) GetStatus() *duckv1.Status {
 	return &s.Status.Status
 }
-

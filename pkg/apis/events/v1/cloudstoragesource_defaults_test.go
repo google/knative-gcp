@@ -80,4 +80,3 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 		})
 	}
 }
-
