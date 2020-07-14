@@ -88,6 +88,8 @@ function control_plane_setup() {
           --role roles/iam.workloadIdentityUser \
           --member "${member_name}" \
           --project "${PROW_PROJECT_NAME}" "${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}"
+          # Add a sleep time between each get-set iam-policy-binding loop to avoid concurrency issue. Sleep time is based on the SLO.
+          sleep 10
       fi
     done <<< "$members"
     # Allow the Kubernetes service account to use Google service account.
@@ -159,6 +161,6 @@ function gcp_auth_setup() {
 initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
 
 # Channel related e2e tests we have in Eventing is not running here.
-go_test_e2e -timeout=30m -parallel=6 ./test/e2e -workloadIndentity=true -serviceAccountName="${K8S_SERVICE_ACCOUNT_NAME}" || fail_test
+go_test_e2e -timeout=30m -parallel=4 ./test/e2e -workloadIndentity=true -serviceAccountName="${K8S_SERVICE_ACCOUNT_NAME}" || fail_test
 
 success
