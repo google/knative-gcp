@@ -18,6 +18,7 @@ package deliver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -154,7 +155,19 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 
 	respMsg := cehttp.NewMessageFromHttpResponse(resp)
 	if respMsg.ReadEncoding() == binding.EncodingUnknown {
-		// No reply
+		// If the response code is 2xx and has a body but the encoding is unknown,
+		// consider it's a malformed reply.
+		// This is a similar workaround as in https://github.com/knative/eventing/pull/3450.
+		// This fix is not efficient as it attempts to read the body. In HTTP case we can
+		// probably just use the content-length header to tell. But it will be a upstream
+		// fix instead.
+		body := make([]byte, 1)
+		n, _ := respMsg.BodyReader.Read(body)
+		respMsg.BodyReader.Close()
+		if n != 0 {
+			return errors.New("Received a malformed event in reply")
+		}
+		// No reply.
 		return nil
 	}
 

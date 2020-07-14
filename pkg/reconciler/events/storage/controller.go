@@ -89,18 +89,20 @@ func newController(
 	r.Logger.Info("Setting up event handlers")
 	cloudstoragesourceInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
+	storageGK := v1beta1.Kind("CloudStorageSource")
+
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("CloudStorageSource")),
+		FilterFunc: controller.FilterControllerGK(storageGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("CloudStorageSource")),
+		FilterFunc: controller.FilterControllerGK(storageGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("CloudStorageSource")),
+		FilterFunc: controller.FilterControllerGK(storageGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

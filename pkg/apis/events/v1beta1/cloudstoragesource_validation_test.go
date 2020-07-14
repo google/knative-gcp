@@ -71,6 +71,25 @@ var (
 		},
 	}
 
+	storageSourceSpecWithKSA = CloudStorageSourceSpec{
+		Bucket: "my-test-bucket",
+		PubSubSpec: duckv1beta1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: duckv1beta1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+		},
+	}
+
 	// Bucket, Sink, Secret, Event Type and Project, ObjectNamePrefix and PayloadFormat
 	storageSourceSpec = CloudStorageSourceSpec{
 		Bucket:           "my-test-bucket",
@@ -416,6 +435,25 @@ func TestCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
+		"Secret.Key changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PubSubSpec: duckv1beta1.PubSubSpec{
+					SourceSpec: storageSourceSpec.SourceSpec,
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: storageSourceSpec.Secret.Name,
+						},
+						Key: "some-other-key",
+					},
+					Project: storageSourceSpec.Project,
+				},
+			},
+			allowed: false,
+		},
 		"Project changed": {
 			orig: &storageSourceSpec,
 			updated: CloudStorageSourceSpec{
@@ -431,19 +469,18 @@ func TestCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed": {
-			orig: &storageSourceSpec,
+		"ServiceAccountName changed": {
+			orig: &storageSourceSpecWithKSA,
 			updated: CloudStorageSourceSpec{
-				Bucket:           storageSourceSpec.Bucket,
-				EventTypes:       storageSourceSpec.EventTypes,
-				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
-				PayloadFormat:    storageSourceSpec.PayloadFormat,
+				Bucket:           storageSourceSpecWithKSA.Bucket,
+				EventTypes:       storageSourceSpecWithKSA.EventTypes,
+				ObjectNamePrefix: storageSourceSpecWithKSA.ObjectNamePrefix,
+				PayloadFormat:    storageSourceSpecWithKSA.PayloadFormat,
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					IdentitySpec: duckv1beta1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
-					SourceSpec: storageSourceSpec.SourceSpec,
-					Secret:     storageSourceSpec.Secret,
+					SourceSpec: storageSourceSpecWithKSA.SourceSpec,
 				},
 			},
 			allowed: false,

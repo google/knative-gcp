@@ -71,6 +71,27 @@ var (
 			},
 		},
 	}
+
+	schedulerWithKSA = CloudSchedulerSourceSpec{
+		Location: "mylocation",
+		Schedule: "* * * * *",
+		Data:     "mydata",
+		PubSubSpec: duckv1beta1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: duckv1beta1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+		},
+	}
 )
 
 func TestCloudSchedulerSourceValidationFields(t *testing.T) {
@@ -421,17 +442,16 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 			allowed: false,
 		},
 		"ServiceAccount changed changed": {
-			orig: &schedulerWithSecret,
+			orig: &schedulerWithKSA,
 			updated: CloudSchedulerSourceSpec{
-				Location: schedulerWithSecret.Location,
-				Schedule: schedulerWithSecret.Schedule,
-				Data:     schedulerWithSecret.Data,
+				Location: schedulerWithKSA.Location,
+				Schedule: schedulerWithKSA.Schedule,
+				Data:     schedulerWithKSA.Data,
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					IdentitySpec: duckv1beta1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
-					SourceSpec: schedulerWithSecret.SourceSpec,
-					Secret:     schedulerWithSecret.Secret,
+					SourceSpec: schedulerWithKSA.SourceSpec,
 				},
 			},
 			allowed: false,

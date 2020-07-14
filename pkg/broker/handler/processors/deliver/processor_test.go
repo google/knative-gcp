@@ -200,37 +200,69 @@ func TestDeliverSuccess(t *testing.T) {
 	}
 }
 
+type targetWithFailureHandler struct {
+	t              *testing.T
+	delay          time.Duration
+	respCode       int
+	malFormedEvent bool
+}
+
+func (h *targetWithFailureHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	h.t.Helper()
+	_, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		h.t.Errorf("Failed to read request: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	time.Sleep(h.delay)
+
+	if h.malFormedEvent {
+		w.Write([]byte("not an valid event body"))
+	}
+	w.WriteHeader(h.respCode)
+}
+
 func TestDeliverFailure(t *testing.T) {
 	cases := []struct {
 		name          string
 		withRetry     bool
-		withRespDelay time.Duration
+		targetHandler *targetWithFailureHandler
 		failRetry     bool
 		wantErr       bool
 	}{{
-		name:    "delivery error no retry",
-		wantErr: true,
+		name:          "delivery error no retry",
+		targetHandler: &targetWithFailureHandler{respCode: http.StatusInternalServerError},
+		wantErr:       true,
 	}, {
-		name:      "delivery error retry success",
-		withRetry: true,
+		name:          "delivery error retry success",
+		targetHandler: &targetWithFailureHandler{respCode: http.StatusInternalServerError},
+		withRetry:     true,
 	}, {
-		name:      "delivery error retry failure",
-		withRetry: true,
-		failRetry: true,
-		wantErr:   true,
+		name:          "delivery error retry failure",
+		targetHandler: &targetWithFailureHandler{respCode: http.StatusInternalServerError},
+		withRetry:     true,
+		failRetry:     true,
+		wantErr:       true,
 	}, {
 		name:          "delivery timeout no retry",
-		withRespDelay: time.Second,
+		targetHandler: &targetWithFailureHandler{delay: time.Second, respCode: http.StatusOK},
 		wantErr:       true,
 	}, {
 		name:          "delivery timeout retry success",
-		withRespDelay: time.Second,
+		targetHandler: &targetWithFailureHandler{delay: time.Second, respCode: http.StatusOK},
 		withRetry:     true,
 	}, {
 		name:          "delivery timeout retry failure",
 		withRetry:     true,
-		withRespDelay: time.Second,
+		targetHandler: &targetWithFailureHandler{delay: time.Second, respCode: http.StatusOK},
 		failRetry:     true,
+		wantErr:       true,
+	}, {
+		name: "malformed reply failure",
+		// Return 2xx but with a malformed event should be considered error.
+		targetHandler: &targetWithFailureHandler{respCode: http.StatusOK, malFormedEvent: true},
 		wantErr:       true,
 	}}
 
@@ -238,11 +270,8 @@ func TestDeliverFailure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			reportertest.ResetDeliveryMetrics()
 			ctx := logtest.TestContextWithLogger(t)
-			targetClient, err := cehttp.New()
-			if err != nil {
-				t.Fatalf("failed to create target cloudevents client: %v", err)
-			}
-			targetSvr := httptest.NewServer(targetClient)
+			tc.targetHandler.t = t
+			targetSvr := httptest.NewServer(tc.targetHandler)
 			defer targetSvr.Close()
 
 			_, c, close := testPubsubClient(ctx, t, "test-project")
@@ -295,38 +324,10 @@ func TestDeliverFailure(t *testing.T) {
 			}
 
 			origin := newSampleEvent()
-
-			rctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
-
-			go func() {
-				msg, resp, err := targetClient.Respond(rctx)
-				if err != nil && err != io.EOF {
-					t.Errorf("unexpected error from target receiving event: %v", err)
-				}
-				defer msg.Finish(nil)
-
-				// If with delay, we reply OK so that we know the error is for sure caused by timeout.
-				if tc.withRespDelay > 0 {
-					time.Sleep(tc.withRespDelay)
-					if err := resp(rctx, nil, &cehttp.Result{StatusCode: http.StatusOK}); err != nil {
-						t.Errorf("unexpected error from target responding event: %v", err)
-					}
-					return
-				}
-
-				// Due to https://github.com/cloudevents/sdk-go/issues/433
-				// it's not possible to use Receive to easily return error.
-				if err := resp(rctx, nil, &cehttp.Result{StatusCode: http.StatusInternalServerError}); err != nil {
-					t.Errorf("unexpected error from target responding event: %v", err)
-				}
-			}()
-
 			err = p.Process(ctx, origin)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("processing got error=%v, want=%v", err, tc.wantErr)
 			}
-			<-rctx.Done()
 		})
 	}
 }

@@ -20,13 +20,13 @@ import (
 	"context"
 	"testing"
 
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
-
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
+
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 )
 
 var (
@@ -37,6 +37,26 @@ var (
 					Name: "secret-name",
 				},
 				Key: "secret-key",
+			},
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			Project: "my-eventing-project",
+		},
+		Topic: "pubsub-topic",
+	}
+
+	pubSubSourceSpecWithKSA = CloudPubSubSourceSpec{
+		PubSubSpec: duckv1beta1.PubSubSpec{
+			IdentitySpec: duckv1beta1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
 			},
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
@@ -290,23 +310,18 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 			allowed: false,
 		},
 		"ServiceAccount changed": {
-			orig: &pubSubSourceSpec,
+			orig: &pubSubSourceSpecWithKSA,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					IdentitySpec: duckv1beta1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: pubSubSourceSpec.Secret.Name,
-						},
-						Key: pubSubSourceSpec.Secret.Key,
-					},
 					SourceSpec: duckv1.SourceSpec{
-						Sink: pubSubSourceSpec.Sink,
+						Sink: pubSubSourceSpecWithKSA.Sink,
 					},
+					Project: pubSubSourceSpecWithKSA.Project,
 				},
-				Topic: pubSubSourceSpec.Topic,
+				Topic: pubSubSourceSpecWithKSA.Topic,
 			},
 			allowed: false,
 		},
