@@ -46,6 +46,23 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
      --member=serviceAccount:cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
      --role roles/pubsub.editor
    ```
+   
+   ***Note:***
+   If you are going to configure Workload Identity for Authentication Mechanism in next step, 
+   you also need `roles/monitoring.metricWriter` for metrics functionality:
+      ```shell
+      gcloud projects add-iam-policy-binding $PROJECT_ID \
+        --member=serviceAccount:cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
+        --role roles/monitoring.metricWriter
+      ```
+   and `roles/cloudtrace.agent` for tracing functionality:
+      ```shell
+      gcloud projects add-iam-policy-binding $PROJECT_ID \
+        --member=serviceAccount:cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
+        --role roles/cloudtrace.agent
+      ```
+   If you are going to configure kubernetes Secret for Authentication Mechanism, 
+   then no need to add `roles/monitoring.metricWriter` and `roles/cloudtrace.agent`.
 
 ## Configure the Authentication Mechanism for GCP (the Data Plane)
 
