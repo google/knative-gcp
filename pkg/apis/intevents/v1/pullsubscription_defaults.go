@@ -18,17 +18,11 @@ package v1
 
 import (
 	"context"
-	"time"
-
 	"knative.dev/pkg/apis"
 
-	duck "github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	"knative.dev/pkg/ptr"
-)
-
-const (
-	defaultRetentionDuration = 7 * 24 * time.Hour
-	defaultAckDeadline       = 30 * time.Second
 )
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
@@ -39,22 +33,14 @@ func (s *PullSubscription) SetDefaults(ctx context.Context) {
 
 func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
 	if ss.AckDeadline == nil {
-		ackDeadline := defaultAckDeadline
+		ackDeadline := intevents.DefaultAckDeadline
 		ss.AckDeadline = ptr.String(ackDeadline.String())
 	}
 
 	if ss.RetentionDuration == nil {
-		retentionDuration := defaultRetentionDuration
+		retentionDuration := intevents.DefaultRetentionDuration
 		ss.RetentionDuration = ptr.String(retentionDuration.String())
 	}
 
 	ss.PubSubSpec.SetPubSubDefaults(ctx)
-
-	switch ss.Mode {
-	case ModeCloudEventsBinary, ModeCloudEventsStructured, ModePushCompatible:
-		// Valid Mode.
-	default:
-		// Default is CloudEvents Binary Mode.
-		ss.Mode = ModeCloudEventsBinary
-	}
 }

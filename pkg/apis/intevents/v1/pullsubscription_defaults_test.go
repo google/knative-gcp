@@ -20,20 +20,20 @@ import (
 	"testing"
 	"time"
 
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
-
 	"knative.dev/pkg/ptr"
-
-	"github.com/google/go-cmp/cmp"
-	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/google/go-cmp/cmp"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 )
 
 func TestPullSubscriptionDefaults(t *testing.T) {
 
-	defaultRetentionDuration := defaultRetentionDuration
-	defaultAckDeadline := defaultAckDeadline
+	defaultRetentionDuration := intevents.DefaultRetentionDuration
+	defaultAckDeadline := intevents.DefaultAckDeadline
 
 	tests := []struct {
 		name  string
@@ -43,7 +43,6 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		name: "non-nil structured",
 		start: &PullSubscription{
 			Spec: PullSubscriptionSpec{
-				Mode:              ModeCloudEventsStructured,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1.PubSubSpec{
@@ -58,7 +57,6 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		},
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
-				Mode:              ModeCloudEventsStructured,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1.PubSubSpec{
@@ -68,40 +66,6 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 						},
 						Key: "test.json",
 					},
-				},
-			},
-		},
-	}, {
-		name: "non-nil push",
-		start: &PullSubscription{
-			Spec: PullSubscriptionSpec{
-				Mode: ModePushCompatible,
-			},
-		},
-		want: &PullSubscription{
-			Spec: PullSubscriptionSpec{
-				Mode:              ModePushCompatible,
-				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
-				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				PubSubSpec: duckv1.PubSubSpec{
-					Secret: &gcpauthtesthelper.Secret,
-				},
-			},
-		},
-	}, {
-		name: "non-nil invalid",
-		start: &PullSubscription{
-			Spec: PullSubscriptionSpec{
-				Mode: "invalid",
-			},
-		},
-		want: &PullSubscription{
-			Spec: PullSubscriptionSpec{
-				Mode:              ModeCloudEventsBinary,
-				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
-				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				PubSubSpec: duckv1.PubSubSpec{
-					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -113,7 +77,6 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		},
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
-				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1.PubSubSpec{
@@ -129,7 +92,6 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		},
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
-				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1.PubSubSpec{
@@ -156,7 +118,6 @@ func TestPullSubscriptionDefaults_NoChange(t *testing.T) {
 	secs60 := 60 * time.Second
 	want := &PullSubscription{
 		Spec: PullSubscriptionSpec{
-			Mode:              ModeCloudEventsBinary,
 			AckDeadline:       ptr.String(secs60.String()),
 			RetentionDuration: ptr.String(days2.String()),
 			PubSubSpec: duckv1.PubSubSpec{

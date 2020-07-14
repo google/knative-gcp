@@ -21,6 +21,8 @@ import (
 	"strings"
 	"testing"
 
+	v1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
@@ -32,6 +34,14 @@ var (
 				Name: "secret-name",
 			},
 			Key: "secret-key",
+		},
+		Project: "my-eventing-project",
+		Topic:   "pubsub-topic",
+	}
+
+	topicSpecWithKSA = TopicSpec{
+		IdentitySpec: v1.IdentitySpec{
+			ServiceAccountName: "old-service-account",
 		},
 		Project: "my-eventing-project",
 		Topic:   "pubsub-topic",
@@ -102,6 +112,54 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 				Secret:  topicSpec.Secret,
 				Project: topicSpec.Project,
 				Topic:   "updated",
+			},
+			allowed: false,
+		},
+		"Project changed": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret:  topicSpec.Secret,
+				Project: "new-project",
+				Topic:   topicSpec.Topic,
+			},
+			allowed: false,
+		},
+		"Secret.Key changed": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: topicSpec.Secret.Name,
+					},
+					Key: "some-other-key",
+				},
+				Project: topicSpec.Project,
+				Topic:   topicSpec.Topic,
+			},
+			allowed: false,
+		},
+		"Secret.Name changed": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+					Name: "some-other-name",
+					},
+					Key: topicSpec.Secret.Key,
+				},
+				Project: topicSpec.Project,
+				Topic:   topicSpec.Topic,
+			},
+			allowed: false,
+		},
+		"ServiceAccountName changed": {
+			orig: &topicSpecWithKSA,
+			updated: TopicSpec{
+				Project: topicSpecWithKSA.Project,
+				Topic:   topicSpecWithKSA.Topic,
+				IdentitySpec: v1.IdentitySpec{
+					ServiceAccountName: "new-service-account",
+				},
 			},
 			allowed: false,
 		},

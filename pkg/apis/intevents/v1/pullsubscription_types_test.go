@@ -22,11 +22,12 @@ import (
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/ptr"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/knative-gcp/pkg/apis/duck/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 )
 
 func TestPullSubscriptionGetGroupVersionKind(t *testing.T) {
@@ -38,17 +39,6 @@ func TestPullSubscriptionGetGroupVersionKind(t *testing.T) {
 
 	c := &PullSubscription{}
 	got := c.GetGroupVersionKind()
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
-}
-
-func TestPullSubscriptionPubSubMode_nil(t *testing.T) {
-	want := ModeType("")
-
-	c := &PullSubscription{}
-	got := c.PubSubMode()
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
@@ -76,7 +66,7 @@ func TestGetRetentionDuration(t *testing.T) {
 }
 
 func TestGetAckDeadline_default(t *testing.T) {
-	want := defaultAckDeadline
+	want := intevents.DefaultAckDeadline
 	s := &PullSubscriptionSpec{}
 	got := s.GetAckDeadline()
 
@@ -86,7 +76,7 @@ func TestGetAckDeadline_default(t *testing.T) {
 }
 
 func TestGetRetentionDuration_default(t *testing.T) {
-	want := defaultRetentionDuration
+	want := intevents.DefaultRetentionDuration
 	s := &PullSubscriptionSpec{}
 	got := s.GetRetentionDuration()
 

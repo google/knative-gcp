@@ -27,6 +27,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 )
 
 // +genclient
@@ -89,20 +90,10 @@ type PullSubscriptionSpec struct {
 	// +optional
 	Transformer *duckv1.Destination `json:"transformer,omitempty"`
 
-	// Mode defines the encoding and structure of the payload of when the
-	// PullSubscription invokes the sink.
-	// +optional
-	Mode ModeType `json:"mode,omitempty"`
-
 	// AdapterType determines the type of receive adapter that a
 	// PullSubscription uses.
 	// +optional
 	AdapterType string `json:"adapterType,omitempty"`
-}
-
-// PubSubMode returns the mode currently set for PullSubscription.
-func (p *PullSubscription) PubSubMode() ModeType {
-	return p.Spec.Mode
 }
 
 // GetAckDeadline parses AckDeadline and returns the default if an error occurs.
@@ -112,7 +103,7 @@ func (ps PullSubscriptionSpec) GetAckDeadline() time.Duration {
 			return duration
 		}
 	}
-	return defaultAckDeadline
+	return intevents.DefaultAckDeadline
 }
 
 // GetRetentionDuration parses RetentionDuration and returns the default if an error occurs.
@@ -122,24 +113,8 @@ func (ps PullSubscriptionSpec) GetRetentionDuration() time.Duration {
 			return duration
 		}
 	}
-	return defaultRetentionDuration
+	return intevents.DefaultRetentionDuration
 }
-
-type ModeType string
-
-const (
-	// ModeCloudEventsBinary will use CloudEvents binary HTTP mode with
-	// flattened Pub/Sub payload.
-	ModeCloudEventsBinary ModeType = "CloudEventsBinary"
-
-	// ModeCloudEventsStructured will use CloudEvents structured HTTP mode with
-	// flattened Pub/Sub payload.
-	ModeCloudEventsStructured ModeType = "CloudEventsStructured"
-
-	// ModePushCompatible will use CloudEvents binary HTTP mode with expanded
-	// Pub/Sub payload that matches how Cloud Pub/Sub delivers a push message.
-	ModePushCompatible ModeType = "PushCompatible"
-)
 
 const (
 	// PullSubscriptionConditionReady has status True when the PullSubscription is

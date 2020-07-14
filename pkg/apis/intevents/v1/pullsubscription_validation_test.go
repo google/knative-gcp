@@ -58,7 +58,34 @@ var (
 				Name:       "qux",
 			},
 		},
-		Mode: ModeCloudEventsStructured,
+	}
+
+	pullSubscriptionSpecWithKSA = PullSubscriptionSpec {
+		PubSubSpec: v1.PubSubSpec{
+			Project: "my-eventing-project",
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: v1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+		},
+		Topic: "pubsub-topic",
+		Transformer: &duckv1.Destination{
+			Ref: &duckv1.KReference{
+				APIVersion: "foo",
+				Kind:       "bar",
+				Namespace:  "baz",
+				Name:       "qux",
+			},
+		},
 	}
 )
 
@@ -233,7 +260,6 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					},
 				},
 				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: false,
 		},
@@ -253,7 +279,6 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					},
 				},
 				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: false,
 		},
@@ -273,7 +298,6 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					},
 				},
 				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: false,
 		},
@@ -293,7 +317,22 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					},
 				},
 				Topic: "some-other-topic",
-				Mode:  pullSubscriptionSpec.Mode,
+			},
+			allowed: false,
+		},
+		"ServiceAccountName changed": {
+			orig: &pullSubscriptionSpecWithKSA,
+			updated: PullSubscriptionSpec{
+				PubSubSpec: v1.PubSubSpec{
+					Project: pullSubscriptionSpecWithKSA.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpecWithKSA.Sink,
+					},
+					IdentitySpec: v1.IdentitySpec{
+						ServiceAccountName: "new-service-account",
+					},
+				},
+				Topic: pullSubscriptionSpecWithKSA.Topic,
 			},
 			allowed: false,
 		},
@@ -320,7 +359,6 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					},
 				},
 				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
@@ -347,7 +385,6 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					},
 				},
 				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
@@ -374,7 +411,6 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					},
 				},
 				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
@@ -401,7 +437,6 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					},
 				},
 				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
@@ -428,7 +463,6 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					},
 				},
 				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
@@ -463,7 +497,6 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Name:       pullSubscriptionSpec.Transformer.Ref.Name,
 					},
 				},
-				Mode: pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
@@ -498,7 +531,6 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Name:       pullSubscriptionSpec.Transformer.Ref.Name,
 					},
 				},
-				Mode: pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
@@ -533,27 +565,6 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Name:       "some-other-name",
 					},
 				},
-				Mode: pullSubscriptionSpec.Mode,
-			},
-			allowed: true,
-		},
-		"Mode changed": {
-			orig: &pullSubscriptionSpec,
-			updated: PullSubscriptionSpec{
-				PubSubSpec: v1.PubSubSpec{
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: pullSubscriptionSpec.Secret.Name,
-						},
-						Key: pullSubscriptionSpec.Secret.Key,
-					},
-					Project: pullSubscriptionSpec.Project,
-					SourceSpec: duckv1.SourceSpec{
-						Sink: pullSubscriptionSpec.Sink,
-					},
-				},
-				Topic: pullSubscriptionSpec.Topic,
-				Mode:  ModePushCompatible,
 			},
 			allowed: true,
 		},
@@ -562,7 +573,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 			updated: pullSubscriptionSpec,
 			allowed: true,
 		},
-		"not spec": {
+		"no spec": {
 			orig:    []string{"wrong"},
 			updated: pullSubscriptionSpec,
 			allowed: true,
