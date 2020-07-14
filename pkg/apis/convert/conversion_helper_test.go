@@ -25,10 +25,11 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/convert"
 	gcpduckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	gcpduckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	v1 "k8s.io/api/core/v1"
+	"github.com/google/knative-gcp/pkg/apis/events"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	pkgduckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
@@ -40,62 +41,17 @@ var (
 	backoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
 	backoffDelay  = "backoffDelay"
 
-	completeURL = apis.URL{
-		Scheme:     "scheme",
-		Opaque:     "opaque",
-		User:       url.User("user"),
-		Host:       "host",
-		Path:       "path",
-		RawPath:    "rawPath",
-		ForceQuery: false,
-		RawQuery:   "rawQuery",
-		Fragment:   "fragment",
-	}
-
-	completeDestination = duckv1.Destination{
-		Ref: &duckv1.KReference{
-			APIVersion: "apiVersion",
-			Kind:       "kind",
-			Namespace:  "namespace",
-			Name:       "name",
-		},
-		URI: &completeURL,
-	}
-
-	completeSourceSpec = duckv1.SourceSpec{
-		Sink: completeDestination,
-		CloudEventOverrides: &duckv1.CloudEventOverrides{
-			Extensions: map[string]string{"supers": "reckoners"},
-		},
-	}
-
-	completeV1alpha1IdentitySpec = gcpduckv1alpha1.IdentitySpec{
-		ServiceAccountName: "k8sServiceAccount",
-	}
-
-	completeV1beta1IdentitySpec = gcpduckv1beta1.IdentitySpec{
-		ServiceAccountName: "k8sServiceAccount",
-	}
-
-	completeSecret = &v1.SecretKeySelector{
-		LocalObjectReference: v1.LocalObjectReference{
-			Name: "name",
-		},
-		Key:      "key",
-		Optional: &trueVal,
-	}
-
 	completeV1alpha1PubSubSpec = gcpduckv1alpha1.PubSubSpec{
-		SourceSpec:   completeSourceSpec,
-		IdentitySpec: completeV1alpha1IdentitySpec,
-		Secret:       completeSecret,
+		SourceSpec:   events.CompleteSourceSpec,
+		IdentitySpec: v1alpha1.CompleteIdentitySpec,
+		Secret:       events.CompleteSecret,
 		Project:      "project",
 	}
 
 	completeV1beta1PubSubSpec = gcpduckv1beta1.PubSubSpec{
-		SourceSpec:   completeSourceSpec,
-		IdentitySpec: completeV1beta1IdentitySpec,
-		Secret:       completeSecret,
+		SourceSpec:   events.CompleteSourceSpec,
+		IdentitySpec: v1beta1.CompleteIdentitySpec,
+		Secret:       events.CompleteSecret,
 		Project:      "project",
 	}
 
@@ -127,7 +83,7 @@ var (
 
 	completeV1alpha1PubSubStatus = gcpduckv1alpha1.PubSubStatus{
 		IdentityStatus: completeV1alpha1IdentityStatus,
-		SinkURI:        &completeURL,
+		SinkURI:        &events.CompleteURL,
 		CloudEventAttributes: []duckv1.CloudEventAttributes{
 			{
 				Type:   "type",
@@ -141,7 +97,7 @@ var (
 
 	completeV1beta1PubSubStatus = gcpduckv1beta1.PubSubStatus{
 		IdentityStatus: completeV1beta1IdentityStatus,
-		SinkURI:        &completeURL,
+		SinkURI:        &events.CompleteURL,
 		CloudEventAttributes: []duckv1.CloudEventAttributes{
 			{
 				Type:   "type",
@@ -156,9 +112,9 @@ var (
 	completeAddressStatus = pkgduckv1alpha1.AddressStatus{
 		Address: &pkgduckv1alpha1.Addressable{
 			Addressable: duckv1beta1.Addressable{
-				URL: &completeURL,
+				URL: &events.CompleteURL,
 			},
-			Hostname: completeURL.Host,
+			Hostname: events.CompleteURL.Host,
 		},
 	}
 
@@ -167,11 +123,11 @@ var (
 			{
 				UID:               "uid-1",
 				Generation:        1,
-				SubscriberURI:     &completeURL,
-				ReplyURI:          &completeURL,
-				DeadLetterSinkURI: &completeURL,
+				SubscriberURI:     &events.CompleteURL,
+				ReplyURI:          &events.CompleteURL,
+				DeadLetterSinkURI: &events.CompleteURL,
 				Delivery: &eventingduckv1beta1.DeliverySpec{
-					DeadLetterSink: &completeDestination,
+					DeadLetterSink: &events.CompleteDestination,
 					Retry:          &three,
 					BackoffPolicy:  &backoffPolicy,
 					BackoffDelay:   &backoffDelay,
@@ -200,7 +156,7 @@ func TestV1PubSubSpec(t *testing.T) {
 }
 
 func TestV1beta1IdentitySpec(t *testing.T) {
-	want := completeV1alpha1IdentitySpec
+	want := v1alpha1.CompleteIdentitySpec
 	got := convert.FromV1beta1IdentitySpec(convert.ToV1beta1IdentitySpec(want))
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("Unexpected difference (-want +got): %v", diff)
@@ -208,7 +164,7 @@ func TestV1beta1IdentitySpec(t *testing.T) {
 }
 
 func TestV1IdentitySpec(t *testing.T) {
-	want := completeV1beta1IdentitySpec
+	want := v1beta1.CompleteIdentitySpec
 	got := convert.FromV1IdentitySpec(convert.ToV1IdentitySpec(want))
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("Unexpected difference (-want +got): %v", diff)

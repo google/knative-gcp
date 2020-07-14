@@ -22,55 +22,15 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // These variables are used to create a 'complete' version of CloudAuditLogsSource where every field is
 // filled in.
 var (
-	completeIdentitySpec = duckv1alpha1.IdentitySpec{
-		ServiceAccountName: "k8sServiceAccount",
-	}
-
-	completePubSubSpec = duckv1alpha1.PubSubSpec{
-		SourceSpec:   events.CompleteSourceSpec,
-		IdentitySpec: completeIdentitySpec,
-		Secret:       events.CompleteSecret,
-		Project:      "project",
-	}
-
-	completeIdentityStatus = duckv1alpha1.IdentityStatus{
-		Status: duckv1.Status{
-			ObservedGeneration: 7,
-			Conditions: duckv1.Conditions{
-				{
-					Type:   "Ready",
-					Status: "True",
-				},
-			},
-		},
-		ServiceAccountName: "serviceAccountName",
-	}
-
-	completePubSubStatus = duckv1alpha1.PubSubStatus{
-		IdentityStatus: completeIdentityStatus,
-		SinkURI:        &events.CompleteURL,
-		CloudEventAttributes: []duckv1.CloudEventAttributes{
-			{
-				Type:   "type",
-				Source: "source",
-			},
-		},
-		ProjectID:      "projectID",
-		TopicID:        "topicID",
-		SubscriptionID: "subscriptionID",
-	}
-
 	// completeCloudAuditLogsSource is a CloudAuditLogsSource with every field filled in, except TypeMeta.
 	// TypeMeta is excluded because conversions do not convert it and this variable was created to
 	// test conversions.
