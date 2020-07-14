@@ -27,6 +27,7 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics"
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 )
 
 // +genclient

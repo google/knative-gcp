@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"knative.dev/pkg/injection"
 )

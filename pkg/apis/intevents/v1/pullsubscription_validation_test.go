@@ -20,12 +20,11 @@ import (
 	"context"
 	"testing"
 
+	v1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
-
-	"github.com/google/knative-gcp/pkg/apis/duck/v1"
 )
 
 var (

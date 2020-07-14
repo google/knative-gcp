@@ -26,7 +26,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/knative-gcp/pkg/apis/duck/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	"github.com/google/knative-gcp/pkg/apis/intevents"
 )
 
