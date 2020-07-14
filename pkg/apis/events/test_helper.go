@@ -1,12 +1,13 @@
 package events
 
 import (
+	"net/url"
+	"time"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"net/url"
-	"time"
 )
 
 // These variables are used to create a 'complete' version of Source where every field is

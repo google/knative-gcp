@@ -18,13 +18,13 @@ package v1alpha1
 
 import (
 	"context"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"net/url"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
