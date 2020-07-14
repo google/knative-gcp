@@ -19,15 +19,15 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	transport "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
-	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/kelseyhightower/envconfig"
 	"go.opencensus.io/trace"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -129,15 +129,14 @@ func writeTerminationMessage(result interface{}) error {
 
 // isRetryable determines if the err is an error which is retryable
 func isRetryable(err error) bool {
-	var httpResult *cehttp.Result
-	if errors.As(err, &httpResult) {
-		// Potentially retry when:
-		// - 404 Not Found
-		// - 500 Internal Server Error, it is currently for reducing flakiness caused by Workload Identity credential sync up.
-		// We should remove it after https://github.com/google/knative-gcp/issues/1058 lands, as 500 error may indicate bugs in our code.
-		// - 503 Service Unavailable (with or without Retry-After) (IGNORE Retry-After)
-		sc := httpResult.StatusCode
-		return sc == 404 || sc == 500 || sc == 503
+	// Potentially retry when:
+	// - 404 Not Found
+	// - 500 Internal Server Error, it is currently for reducing flakiness caused by Workload Identity credential sync up.
+	// We should remove it after https://github.com/google/knative-gcp/issues/1058 lands, as 500 error may indicate bugs in our code.
+	// - 503 Service Unavailable (with or without Retry-After) (IGNORE Retry-After)
+	if strings.Contains(err.Error(), "404 Not Found") || strings.Contains(err.Error(), "500 Internal Server Error") || strings.Contains(err.Error(), "503 Service Unavailable") {
+		log.Printf("Got Error: %s, retry sending Event.\n", err.Error())
+		return true
 	}
 	return false
 }
