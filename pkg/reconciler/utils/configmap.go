@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	configMapCreated  = "ConfigMapCreated"
-	configMapUpdated  = "ConfigMapUpdated"
+	configMapCreated = "ConfigMapCreated"
+	configMapUpdated = "ConfigMapUpdated"
 )
 
 type ConfigMapReconciler struct {

@@ -31,8 +31,8 @@ import (
 )
 
 const (
-	configmapCreatedEvent  = "Normal ConfigMapCreated Created configmap testns/test"
-	configmapUpdatedEvent  = "Normal ConfigMapUpdated Updated configmap testns/test"
+	configmapCreatedEvent = "Normal ConfigMapCreated Created configmap testns/test"
+	configmapUpdatedEvent = "Normal ConfigMapUpdated Updated configmap testns/test"
 )
 
 var (
@@ -55,8 +55,8 @@ var (
 		BinaryData: map[string][]byte{"binary": {'d'}},
 	}
 
-	configmapCreateFailure  = pkgreconcilertesting.InduceFailure("create", "configmaps")
-	configmapUpdateFailure  = pkgreconcilertesting.InduceFailure("update", "configmaps")
+	configmapCreateFailure = pkgreconcilertesting.InduceFailure("create", "configmaps")
+	configmapUpdateFailure = pkgreconcilertesting.InduceFailure("update", "configmaps")
 
 	tr = &testRunner{}
 )

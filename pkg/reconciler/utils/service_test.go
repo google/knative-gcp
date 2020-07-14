@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	serviceCreatedEvent    = "Normal ServiceCreated Created service testns/test"
-	serviceUpdatedEvent    = "Normal ServiceUpdated Updated service testns/test"
+	serviceCreatedEvent = "Normal ServiceCreated Created service testns/test"
+	serviceUpdatedEvent = "Normal ServiceUpdated Updated service testns/test"
 )
 
 var (
@@ -45,8 +45,8 @@ var (
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 	}
 
-	serviceCreateFailure    = pkgreconcilertesting.InduceFailure("create", "services")
-	serviceUpdateFailure    = pkgreconcilertesting.InduceFailure("update", "services")
+	serviceCreateFailure = pkgreconcilertesting.InduceFailure("create", "services")
+	serviceUpdateFailure = pkgreconcilertesting.InduceFailure("update", "services")
 )
 
 func TestServiceReconciler(t *testing.T) {

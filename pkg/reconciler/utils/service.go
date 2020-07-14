@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	serviceCreated    = "ServiceCreated"
-	serviceUpdated    = "ServiceUpdated"
+	serviceCreated = "ServiceCreated"
+	serviceUpdated = "ServiceUpdated"
 )
 
 type ServiceReconciler struct {
