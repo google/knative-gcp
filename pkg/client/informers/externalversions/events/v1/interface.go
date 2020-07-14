@@ -24,6 +24,14 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// CloudAuditLogsSources returns a CloudAuditLogsSourceInformer.
+	CloudAuditLogsSources() CloudAuditLogsSourceInformer
+	// CloudBuildSources returns a CloudBuildSourceInformer.
+	CloudBuildSources() CloudBuildSourceInformer
+	// CloudPubSubSources returns a CloudPubSubSourceInformer.
+	CloudPubSubSources() CloudPubSubSourceInformer
+	// CloudSchedulerSources returns a CloudSchedulerSourceInformer.
+	CloudSchedulerSources() CloudSchedulerSourceInformer
 	// CloudStorageSources returns a CloudStorageSourceInformer.
 	CloudStorageSources() CloudStorageSourceInformer
 }
@@ -37,6 +45,26 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// CloudAuditLogsSources returns a CloudAuditLogsSourceInformer.
+func (v *version) CloudAuditLogsSources() CloudAuditLogsSourceInformer {
+	return &cloudAuditLogsSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CloudBuildSources returns a CloudBuildSourceInformer.
+func (v *version) CloudBuildSources() CloudBuildSourceInformer {
+	return &cloudBuildSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CloudPubSubSources returns a CloudPubSubSourceInformer.
+func (v *version) CloudPubSubSources() CloudPubSubSourceInformer {
+	return &cloudPubSubSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CloudSchedulerSources returns a CloudSchedulerSourceInformer.
+func (v *version) CloudSchedulerSources() CloudSchedulerSourceInformer {
+	return &cloudSchedulerSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // CloudStorageSources returns a CloudStorageSourceInformer.
