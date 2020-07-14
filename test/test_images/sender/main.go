@@ -19,13 +19,13 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"time"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/kelseyhightower/envconfig"
 	"go.opencensus.io/trace"
@@ -104,7 +104,6 @@ func dummyCloudEvent() cev2.Event {
 	event.SetID(lib.E2EDummyEventID)
 	event.SetType(lib.E2EDummyEventType)
 	event.SetSource(lib.E2EDummyEventSource)
-	event.SetDataContentType(cev2.ApplicationJSON)
 	event.SetData(cev2.ApplicationJSON, `{"source": "sender!"}`)
 	return event
 }
@@ -120,7 +119,7 @@ func writeTerminationMessage(result interface{}) error {
 // isRetryable determines if the err is an error which is retryable
 func isRetryable(err error) bool {
 	var result *cehttp.Result
-	if errors.As(err, &result) {
+	if protocol.ResultAs(err, &result) {
 		// Potentially retry when:
 		// - 404 Not Found
 		// - 500 Internal Server Error, it is currently for reducing flakiness caused by Workload Identity credential sync up.
