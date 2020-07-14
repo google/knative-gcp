@@ -75,8 +75,6 @@ var (
 		},
 	}
 
-
-
 	CompleteSecret = &v1.SecretKeySelector{
 		LocalObjectReference: v1.LocalObjectReference{
 			Name: "name",
@@ -84,5 +82,4 @@ var (
 		Key:      "key",
 		Optional: &trueVal,
 	}
-
 )

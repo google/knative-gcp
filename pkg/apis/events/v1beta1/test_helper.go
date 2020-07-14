@@ -6,7 +6,6 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-
 // These variables are used to create a 'complete' version of Source where every field is
 // filled in.
 var (

@@ -25,7 +25,6 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-
 // ConvertTo implements apis.Convertible.
 // Converts source (from v1beta1.CloudStorageSource) into v1.CloudStorageSource.
 func (source *CloudStorageSource) ConvertTo(_ context.Context, to apis.Convertible) error {

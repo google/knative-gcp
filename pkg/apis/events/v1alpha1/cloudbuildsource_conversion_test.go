@@ -24,8 +24,8 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 
 	"github.com/google/go-cmp/cmp"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"github.com/google/knative-gcp/pkg/apis/events"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
 
