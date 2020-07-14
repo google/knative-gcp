@@ -104,7 +104,7 @@ func (s *CloudAuditLogsSource) IdentityStatus() *duckv1beta1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (*CloudAuditLogsSource) ConditionSet() *apis.ConditionSet {
 	return &auditLogsSourceCondSet
 }

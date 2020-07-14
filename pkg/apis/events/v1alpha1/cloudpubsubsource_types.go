@@ -34,7 +34,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CloudPubSubSource is a specification for a CloudPubSubSource resource
+// CloudPubSubSource is a specification for a CloudPubSubSource resource.
 // +k8s:openapi-gen=true
 type CloudPubSubSource struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -149,7 +149,7 @@ func (s *CloudPubSubSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (ps *CloudPubSubSource) ConditionSet() *apis.ConditionSet {
 	return &pubSubCondSet
 }
@@ -161,6 +161,7 @@ func (ps *CloudPubSubSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 	return &ps.Spec.PubSubSpec
 }
 
+// CloudPubSubSourceSpec returns the CloudPubSubSourceStatus portion of the Spec.
 func (s *CloudPubSubSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &s.Status.PubSubStatus
 }

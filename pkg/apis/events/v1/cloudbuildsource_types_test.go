@@ -20,7 +20,7 @@ import (
 	"knative.dev/pkg/apis"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/duck/v1"
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -42,8 +42,8 @@ func TestCloudBuildSourceGetGroupVersionKind(t *testing.T) {
 func TestCloudBuildSourceIdentitySpec(t *testing.T) {
 	s := &CloudBuildSource{
 		Spec: CloudBuildSourceSpec{
-			PubSubSpec: v1.PubSubSpec{
-				IdentitySpec: v1.IdentitySpec{
+			PubSubSpec: duckv1.PubSubSpec{
+				IdentitySpec: duckv1.IdentitySpec{
 					ServiceAccountName: "test",
 				},
 			},
@@ -59,10 +59,10 @@ func TestCloudBuildSourceIdentitySpec(t *testing.T) {
 func TestCloudBuildSourceIdentityStatus(t *testing.T) {
 	s := &CloudBuildSource{
 		Status: CloudBuildSourceStatus{
-			PubSubStatus: v1.PubSubStatus{},
+			PubSubStatus: duckv1.PubSubStatus{},
 		},
 	}
-	want := &v1.IdentityStatus{}
+	want := &duckv1.IdentityStatus{}
 	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
@@ -71,7 +71,7 @@ func TestCloudBuildSourceIdentityStatus(t *testing.T) {
 
 func TestCloudBuildSourceConditionSet(t *testing.T) {
 	want := []apis.Condition{{
-		Type: v1.PullSubscriptionReady,
+		Type: duckv1.PullSubscriptionReady,
 	}, {
 		Type: apis.ConditionReady,
 	}}

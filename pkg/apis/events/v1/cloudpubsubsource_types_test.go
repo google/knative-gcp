@@ -20,14 +20,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"knative.dev/pkg/apis"
-
-	"knative.dev/pkg/ptr"
-
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/duck/v1"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/ptr"
 )
 
 func TestCloudPubSubSourceGetGroupVersionKind(t *testing.T) {
@@ -88,8 +87,8 @@ func TestGetRetentionDuration_default(t *testing.T) {
 func TestCloudPubSubSourceIdentitySpec(t *testing.T) {
 	s := &CloudPubSubSource{
 		Spec: CloudPubSubSourceSpec{
-			PubSubSpec: v1.PubSubSpec{
-				IdentitySpec: v1.IdentitySpec{
+			PubSubSpec: duckv1.PubSubSpec{
+				IdentitySpec: duckv1.IdentitySpec{
 					ServiceAccountName: "test",
 				},
 			},
@@ -105,10 +104,10 @@ func TestCloudPubSubSourceIdentitySpec(t *testing.T) {
 func TestCloudPubSubSourceIdentityStatus(t *testing.T) {
 	s := &CloudPubSubSource{
 		Status: CloudPubSubSourceStatus{
-			PubSubStatus: v1.PubSubStatus{},
+			PubSubStatus: duckv1.PubSubStatus{},
 		},
 	}
-	want := &v1.IdentityStatus{}
+	want := &duckv1.IdentityStatus{}
 	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
@@ -117,7 +116,7 @@ func TestCloudPubSubSourceIdentityStatus(t *testing.T) {
 
 func TestCloudPubSubSourceConditionSet(t *testing.T) {
 	want := []apis.Condition{{
-		Type: v1.PullSubscriptionReady,
+		Type: duckv1.PullSubscriptionReady,
 	}, {
 		Type: apis.ConditionReady,
 	}}

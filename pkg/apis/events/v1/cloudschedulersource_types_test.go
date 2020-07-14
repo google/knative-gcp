@@ -19,12 +19,12 @@ package v1
 import (
 	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/pkg/apis"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/knative-gcp/pkg/apis/duck/v1"
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
 )
 
 func TestCloudSchedulerSourceGetGroupVersionKind(t *testing.T) {
@@ -46,9 +46,9 @@ func TestCloudSchedulerSourceConditionSet(t *testing.T) {
 	want := []apis.Condition{{
 		Type: JobReady,
 	}, {
-		Type: v1.TopicReady,
+		Type: duckv1.TopicReady,
 	}, {
-		Type: v1.PullSubscriptionReady,
+		Type: duckv1.PullSubscriptionReady,
 	}, {
 		Type: apis.ConditionReady,
 	}}
@@ -71,8 +71,8 @@ func TestCloudSchedulerSourceConditionSet(t *testing.T) {
 func TestCloudSchedulerSourceIdentitySpec(t *testing.T) {
 	s := &CloudSchedulerSource{
 		Spec: CloudSchedulerSourceSpec{
-			PubSubSpec: v1.PubSubSpec{
-				IdentitySpec: v1.IdentitySpec{
+			PubSubSpec: duckv1.PubSubSpec{
+				IdentitySpec: duckv1.IdentitySpec{
 					ServiceAccountName: "test",
 				},
 			},
@@ -88,10 +88,10 @@ func TestCloudSchedulerSourceIdentitySpec(t *testing.T) {
 func TestCloudSchedulerSourceIdentityStatus(t *testing.T) {
 	s := &CloudSchedulerSource{
 		Status: CloudSchedulerSourceStatus{
-			PubSubStatus: v1.PubSubStatus{},
+			PubSubStatus: duckv1.PubSubStatus{},
 		},
 	}
-	want := &v1.IdentityStatus{}
+	want := &duckv1.IdentityStatus{}
 	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)

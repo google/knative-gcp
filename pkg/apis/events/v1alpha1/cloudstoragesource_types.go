@@ -32,7 +32,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CloudStorageSource is a specification for a Google Cloud CloudStorageSource Source resource
+// CloudStorageSource is a specification for a Google Cloud CloudStorageSource Source resource.
 type CloudStorageSource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -53,7 +53,7 @@ var (
 	_ kngcpduck.PubSubable         = (*CloudStorageSource)(nil)
 )
 
-// CloudStorageSourceSpec is the spec for a CloudStorageSource resource
+// CloudStorageSourceSpec is the spec for a CloudStorageSource resource.
 type CloudStorageSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project

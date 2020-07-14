@@ -28,7 +28,7 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-// CloudBuildSource is a specification for a CloudBuildSource resource
+// CloudBuildSource is a specification for a CloudBuildSource resource.
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type CloudBuildSource struct {
@@ -130,7 +130,7 @@ func (bs *CloudBuildSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &bs.Status.PubSubStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (bs *CloudBuildSource) ConditionSet() *apis.ConditionSet {
 	return &buildCondSet
 }

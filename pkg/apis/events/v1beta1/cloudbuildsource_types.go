@@ -104,7 +104,7 @@ func (bs *CloudBuildSource) PubSubStatus() *duckv1beta1.PubSubStatus {
 	return &bs.Status.PubSubStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (bs *CloudBuildSource) ConditionSet() *apis.ConditionSet {
 	return &buildCondSet
 }
