@@ -38,7 +38,7 @@ type ConfigMapReconciler struct {
 	Recorder   record.EventRecorder
 }
 
-// ReconcileConfigMap reconciles the K8s ConfigMao 'cm'.
+// ReconcileConfigMap reconciles the K8s ConfigMap 'cm'.
 func (r *ConfigMapReconciler) ReconcileConfigMap(obj runtime.Object, cm *corev1.ConfigMap, handlers ...cache.ResourceEventHandlerFuncs) (*corev1.ConfigMap, error) {
 	current, err := r.Lister.ConfigMaps(cm.Namespace).Get(cm.Name)
 	if apierrs.IsNotFound(err) {
