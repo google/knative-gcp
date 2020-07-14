@@ -38,10 +38,10 @@ var (
 	completeCloudBuildSource = &CloudBuildSource{
 		ObjectMeta: events.CompleteObjectMeta,
 		Spec: CloudBuildSourceSpec{
-			PubSubSpec: completePubSubSpec,
+			PubSubSpec: CompletePubSubSpec,
 		},
 		Status: CloudBuildSourceStatus{
-			PubSubStatus: completePubSubStatus,
+			PubSubStatus: CompletePubSubStatus,
 		},
 	}
 )

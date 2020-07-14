@@ -37,13 +37,13 @@ var (
 	completeCloudAuditLogsSource = &CloudAuditLogsSource{
 		ObjectMeta: events.CompleteObjectMeta,
 		Spec: CloudAuditLogsSourceSpec{
-			PubSubSpec:   completePubSubSpec,
+			PubSubSpec:   CompletePubSubSpec,
 			ServiceName:  "serviceName",
 			MethodName:   "methodName",
 			ResourceName: "resourceName",
 		},
 		Status: CloudAuditLogsSourceStatus{
-			PubSubStatus:    completePubSubStatus,
+			PubSubStatus:    CompletePubSubStatus,
 			StackdriverSink: "stackdriverSink",
 		},
 	}

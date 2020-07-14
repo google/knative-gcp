@@ -38,13 +38,13 @@ var (
 	completeCloudSchedulerSource = &CloudSchedulerSource{
 		ObjectMeta: events.CompleteObjectMeta,
 		Spec: CloudSchedulerSourceSpec{
-			PubSubSpec: completePubSubSpec,
+			PubSubSpec: CompletePubSubSpec,
 			Location:   "location",
 			Schedule:   "schedule",
 			Data:       "data",
 		},
 		Status: CloudSchedulerSourceStatus{
-			PubSubStatus: completePubSubStatus,
+			PubSubStatus: CompletePubSubStatus,
 			JobName:      "jobName",
 		},
 	}

@@ -23,14 +23,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/convert"
-	gcpduckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	gcpduckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/events"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 	pkgduckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
@@ -40,74 +37,6 @@ var (
 	three         = int32(3)
 	backoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
 	backoffDelay  = "backoffDelay"
-
-	completeV1alpha1PubSubSpec = gcpduckv1alpha1.PubSubSpec{
-		SourceSpec:   events.CompleteSourceSpec,
-		IdentitySpec: v1alpha1.CompleteIdentitySpec,
-		Secret:       events.CompleteSecret,
-		Project:      "project",
-	}
-
-	completeV1beta1PubSubSpec = gcpduckv1beta1.PubSubSpec{
-		SourceSpec:   events.CompleteSourceSpec,
-		IdentitySpec: v1beta1.CompleteIdentitySpec,
-		Secret:       events.CompleteSecret,
-		Project:      "project",
-	}
-
-	completeV1alpha1IdentityStatus = gcpduckv1alpha1.IdentityStatus{
-		Status: duckv1.Status{
-			ObservedGeneration: 7,
-			Conditions: duckv1.Conditions{
-				{
-					Type:   "Ready",
-					Status: "True",
-				},
-			},
-		},
-		ServiceAccountName: "serviceAccountName",
-	}
-
-	completeV1beta1IdentityStatus = gcpduckv1beta1.IdentityStatus{
-		Status: duckv1.Status{
-			ObservedGeneration: 7,
-			Conditions: duckv1.Conditions{
-				{
-					Type:   "Ready",
-					Status: "True",
-				},
-			},
-		},
-		ServiceAccountName: "serviceAccountName",
-	}
-
-	completeV1alpha1PubSubStatus = gcpduckv1alpha1.PubSubStatus{
-		IdentityStatus: completeV1alpha1IdentityStatus,
-		SinkURI:        &events.CompleteURL,
-		CloudEventAttributes: []duckv1.CloudEventAttributes{
-			{
-				Type:   "type",
-				Source: "source",
-			},
-		},
-		ProjectID:      "projectID",
-		TopicID:        "topicID",
-		SubscriptionID: "subscriptionID",
-	}
-
-	completeV1beta1PubSubStatus = gcpduckv1beta1.PubSubStatus{
-		IdentityStatus: completeV1beta1IdentityStatus,
-		SinkURI:        &events.CompleteURL,
-		CloudEventAttributes: []duckv1.CloudEventAttributes{
-			{
-				Type:   "type",
-				Source: "source",
-			},
-		},
-		ProjectID:      "projectID",
-		TopicID:        "topicID",
-		SubscriptionID: "subscriptionID",
-	}
 
 	completeAddressStatus = pkgduckv1alpha1.AddressStatus{
 		Address: &pkgduckv1alpha1.Addressable{
@@ -138,7 +67,7 @@ var (
 )
 
 func TestV1beta1PubSubSpec(t *testing.T) {
-	want := completeV1alpha1PubSubSpec
+	want := v1alpha1.CompletePubSubSpec
 	got := convert.FromV1beta1PubSubSpec(convert.ToV1beta1PubSubSpec(want))
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
@@ -147,7 +76,7 @@ func TestV1beta1PubSubSpec(t *testing.T) {
 }
 
 func TestV1PubSubSpec(t *testing.T) {
-	want := completeV1beta1PubSubSpec
+	want := v1beta1.CompletePubSubSpec
 	got := convert.FromV1PubSubSpec(convert.ToV1PubSubSpec(want))
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
@@ -172,7 +101,7 @@ func TestV1IdentitySpec(t *testing.T) {
 }
 
 func TestV1beta1PubSubStatus(t *testing.T) {
-	want := completeV1alpha1PubSubStatus
+	want := v1alpha1.CompletePubSubStatus
 	got := convert.FromV1beta1PubSubStatus(convert.ToV1beta1PubSubStatus(want))
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
@@ -181,7 +110,7 @@ func TestV1beta1PubSubStatus(t *testing.T) {
 }
 
 func TestV1PubSubStatus(t *testing.T) {
-	want := completeV1beta1PubSubStatus
+	want := v1beta1.CompletePubSubStatus
 	got := convert.FromV1PubSubStatus(convert.ToV1PubSubStatus(want))
 
 	// ServiceAccountName exists exclusively in v1alpha1 and v1beta1, it has not yet been promoted to
@@ -195,7 +124,7 @@ func TestV1PubSubStatus(t *testing.T) {
 }
 
 func TestV1beta1IdentityStatus(t *testing.T) {
-	want := completeV1alpha1IdentityStatus
+	want := v1alpha1.CompleteIdentityStatus
 	got := convert.FromV1beta1IdentityStatus(convert.ToV1beta1IdentityStatus(want))
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("Unexpected difference (-want +got): %v", diff)
@@ -204,7 +133,7 @@ func TestV1beta1IdentityStatus(t *testing.T) {
 
 func TestV1IdentityStatus(t *testing.T) {
 
-	want := completeV1beta1IdentityStatus
+	want := v1beta1.CompleteIdentityStatus
 	got := convert.FromV1IdentityStatus(convert.ToV1IdentityStatus(want))
 	// ServiceAccountName exists exclusively in v1alpha1 and v1beta1, it has not yet been promoted to
 	// v1. So it won't round trip, it will be silently removed.

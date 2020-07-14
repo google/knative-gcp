@@ -41,14 +41,14 @@ var (
 	completeCloudPubSubSource = &CloudPubSubSource{
 		ObjectMeta: events.CompleteObjectMeta,
 		Spec: CloudPubSubSourceSpec{
-			PubSubSpec:          completePubSubSpec,
+			PubSubSpec:          CompletePubSubSpec,
 			Topic:               "topic",
 			AckDeadline:         &ackDeadline,
 			RetainAckedMessages: true,
 			RetentionDuration:   &retentionDuration,
 		},
 		Status: CloudPubSubSourceStatus{
-			PubSubStatus: completePubSubStatus,
+			PubSubStatus: CompletePubSubStatus,
 		},
 	}
 )

@@ -13,14 +13,14 @@ var (
 		ServiceAccountName: "k8sServiceAccount",
 	}
 
-	completePubSubSpec = duckv1beta1.PubSubSpec{
+	CompletePubSubSpec = duckv1beta1.PubSubSpec{
 		SourceSpec:   events.CompleteSourceSpec,
 		IdentitySpec: CompleteIdentitySpec,
 		Secret:       events.CompleteSecret,
 		Project:      "project",
 	}
 
-	completeIdentityStatus = duckv1beta1.IdentityStatus{
+	CompleteIdentityStatus = duckv1beta1.IdentityStatus{
 		Status: duckv1.Status{
 			ObservedGeneration: 7,
 			Conditions: duckv1.Conditions{
@@ -33,8 +33,8 @@ var (
 		ServiceAccountName: "serviceAccountName",
 	}
 
-	completePubSubStatus = duckv1beta1.PubSubStatus{
-		IdentityStatus: completeIdentityStatus,
+	CompletePubSubStatus = duckv1beta1.PubSubStatus{
+		IdentityStatus: CompleteIdentityStatus,
 		SinkURI:        &events.CompleteURL,
 		CloudEventAttributes: []duckv1.CloudEventAttributes{
 			{

@@ -37,14 +37,14 @@ var (
 	completeCloudStorageSource = &CloudStorageSource{
 		ObjectMeta: events.CompleteObjectMeta,
 		Spec: CloudStorageSourceSpec{
-			PubSubSpec:       completePubSubSpec,
+			PubSubSpec:       CompletePubSubSpec,
 			Bucket:           "bucket",
 			EventTypes:       []string{"event", "types"},
 			ObjectNamePrefix: "objectNamePrefix",
 			PayloadFormat:    "payloadFormat",
 		},
 		Status: CloudStorageSourceStatus{
-			PubSubStatus:   completePubSubStatus,
+			PubSubStatus:   CompletePubSubStatus,
 			NotificationID: "notificationId",
 		},
 	}
