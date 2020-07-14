@@ -139,6 +139,7 @@ func TestChannelTracing(t *testing.T) {
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
+	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/1455 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
 	conformancehelpers.ChannelTracingTestHelperWithChannelTestRunner(t,
