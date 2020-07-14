@@ -61,7 +61,7 @@ var (
 		Mode: ModeCloudEventsStructured,
 	}
 
-	pullSubscriptionSpecWithKSA = PullSubscriptionSpec {
+	pullSubscriptionSpecWithKSA = PullSubscriptionSpec{
 		PubSubSpec: v1beta1.PubSubSpec{
 			Project: "my-eventing-project",
 			SourceSpec: duckv1.SourceSpec{
