@@ -472,15 +472,15 @@ func TestCheckImmutableFields(t *testing.T) {
 		"ServiceAccountName changed": {
 			orig: &storageSourceSpecWithKSA,
 			updated: CloudStorageSourceSpec{
-				Bucket:           storageSourceSpec.Bucket,
-				EventTypes:       storageSourceSpec.EventTypes,
-				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
-				PayloadFormat:    storageSourceSpec.PayloadFormat,
+				Bucket:           storageSourceSpecWithKSA.Bucket,
+				EventTypes:       storageSourceSpecWithKSA.EventTypes,
+				ObjectNamePrefix: storageSourceSpecWithKSA.ObjectNamePrefix,
+				PayloadFormat:    storageSourceSpecWithKSA.PayloadFormat,
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					IdentitySpec: duckv1beta1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
-					SourceSpec: storageSourceSpec.SourceSpec,
+					SourceSpec: storageSourceSpecWithKSA.SourceSpec,
 				},
 			},
 			allowed: false,

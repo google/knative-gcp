@@ -286,9 +286,9 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 						ServiceAccountName: "new-service-account",
 					},
 					SourceSpec: duckv1.SourceSpec{
-						Sink: buildSourceSpec.Sink,
+						Sink: buildSourceSpecWithKSA.Sink,
 					},
-					Project: "my-eventing-project",
+					Project: buildSourceSpecWithKSA.Project,
 				},
 			},
 			allowed: false,

@@ -444,14 +444,14 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 		"ServiceAccount changed changed": {
 			orig: &schedulerWithKSA,
 			updated: CloudSchedulerSourceSpec{
-				Location: schedulerWithSecret.Location,
-				Schedule: schedulerWithSecret.Schedule,
-				Data:     schedulerWithSecret.Data,
+				Location: schedulerWithKSA.Location,
+				Schedule: schedulerWithKSA.Schedule,
+				Data:     schedulerWithKSA.Data,
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					IdentitySpec: duckv1beta1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
-					SourceSpec: schedulerWithSecret.SourceSpec,
+					SourceSpec: schedulerWithKSA.SourceSpec,
 				},
 			},
 			allowed: false,
