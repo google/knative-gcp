@@ -23,6 +23,7 @@ import (
 	eventsv1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	internalv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	internalv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	internalv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
@@ -44,6 +45,7 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	eventsv1.AddToScheme,
 	internalv1alpha1.AddToScheme,
 	internalv1beta1.AddToScheme,
+	internalv1.AddToScheme,
 	messagingv1alpha1.AddToScheme,
 	messagingv1beta1.AddToScheme,
 }

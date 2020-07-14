@@ -63,6 +63,35 @@ var (
 		},
 		Mode: ModeCloudEventsStructured,
 	}
+
+	pullSubscriptionSpecWithKSA = PullSubscriptionSpec {
+		PubSubSpec: v1alpha1.PubSubSpec{
+			Project: "my-eventing-project",
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: v1alpha1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+		},
+		Topic: "pubsub-topic",
+		Transformer: &duckv1.Destination{
+			Ref: &duckv1.KReference{
+				APIVersion: "foo",
+				Kind:       "bar",
+				Namespace:  "baz",
+				Name:       "qux",
+			},
+		},
+		Mode: ModeCloudEventsStructured,
+	}
 )
 
 func TestPubSubCheckValidationFields(t *testing.T) {
@@ -308,6 +337,23 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Topic: "some-other-topic",
 				Mode:  pullSubscriptionSpec.Mode,
+			},
+			allowed: false,
+		},
+		"ServiceAccountName changed": {
+			orig: &pullSubscriptionSpecWithKSA,
+			updated: PullSubscriptionSpec{
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Project: pullSubscriptionSpecWithKSA.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpecWithKSA.Sink,
+					},
+					IdentitySpec: v1alpha1.IdentitySpec{
+						ServiceAccountName: "new-service-account",
+					},
+				},
+				Topic: pullSubscriptionSpecWithKSA.Topic,
+				Mode:  pullSubscriptionSpecWithKSA.Mode,
 			},
 			allowed: false,
 		},

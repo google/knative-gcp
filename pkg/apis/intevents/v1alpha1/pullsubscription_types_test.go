@@ -22,11 +22,12 @@ import (
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/ptr"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 )
 
 func TestPullSubscriptionGetGroupVersionKind(t *testing.T) {
@@ -76,7 +77,7 @@ func TestGetRetentionDuration(t *testing.T) {
 }
 
 func TestGetAckDeadline_default(t *testing.T) {
-	want := defaultAckDeadline
+	want := intevents.DefaultAckDeadline
 	s := &PullSubscriptionSpec{}
 	got := s.GetAckDeadline()
 
@@ -86,7 +87,7 @@ func TestGetAckDeadline_default(t *testing.T) {
 }
 
 func TestGetRetentionDuration_default(t *testing.T) {
-	want := defaultRetentionDuration
+	want := intevents.DefaultRetentionDuration
 	s := &PullSubscriptionSpec{}
 	got := s.GetRetentionDuration()
 

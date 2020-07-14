@@ -27,6 +27,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 )
 
 // +genclient
@@ -108,7 +109,7 @@ func (ps PullSubscriptionSpec) GetAckDeadline() time.Duration {
 			return duration
 		}
 	}
-	return defaultAckDeadline
+	return intevents.DefaultAckDeadline
 }
 
 // GetRetentionDuration parses RetentionDuration and returns the default if an error occurs.
@@ -118,7 +119,7 @@ func (ps PullSubscriptionSpec) GetRetentionDuration() time.Duration {
 			return duration
 		}
 	}
-	return defaultRetentionDuration
+	return intevents.DefaultRetentionDuration
 }
 
 type ModeType string
