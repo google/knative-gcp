@@ -143,7 +143,7 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 			updated: TopicSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-					Name: "some-other-name",
+						Name: "some-other-name",
 					},
 					Key: topicSpec.Secret.Key,
 				},
