@@ -27,17 +27,18 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type client struct {
-	policies map[string]*iam.Policy
+type TestIamClient struct {
+	policies           map[string]*iam.Policy
+	setIamPolicyErrors []error
 }
 
-func NewTestClient() IamClient {
-	return client{
+func NewTestClient() *TestIamClient {
+	return &TestIamClient{
 		policies: make(map[string]*iam.Policy),
 	}
 }
 
-func (c client) GetIamPolicy(ctx context.Context, req *iampb.GetIamPolicyRequest) (*iam.Policy, error) {
+func (c *TestIamClient) GetIamPolicy(ctx context.Context, req *iampb.GetIamPolicyRequest) (*iam.Policy, error) {
 	if policy := c.policies[req.Resource]; policy == nil {
 		return nil, status.Error(codes.NotFound, "service account not found")
 	} else {
@@ -45,7 +46,16 @@ func (c client) GetIamPolicy(ctx context.Context, req *iampb.GetIamPolicyRequest
 	}
 }
 
-func (c client) SetIamPolicy(ctx context.Context, req *admin.SetIamPolicyRequest) (*iam.Policy, error) {
+func (c *TestIamClient) SetIamPolicy(ctx context.Context, req *admin.SetIamPolicyRequest) (*iam.Policy, error) {
+	if len(c.setIamPolicyErrors) > 0 {
+		err := c.setIamPolicyErrors[0]
+		c.setIamPolicyErrors = c.setIamPolicyErrors[1:]
+		return nil, err
+	}
 	c.policies[req.Resource] = &iam.Policy{InternalProto: proto.Clone(req.Policy.InternalProto).(*iampb.Policy)}
 	return &iam.Policy{InternalProto: proto.Clone(c.policies[req.Resource].InternalProto).(*iampb.Policy)}, nil
+}
+
+func (c *TestIamClient) AddSetIamPolicyError(err error) {
+	c.setIamPolicyErrors = append(c.setIamPolicyErrors, err)
 }
