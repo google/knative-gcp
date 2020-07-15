@@ -1,6 +1,33 @@
 # Installing Knative-GCP
 
+## Setup your environment
+
+To start your environment you'll need to set these environment variables (we
+recommend adding them to your `.bashrc`):
+
+1. `GOPATH`: If you don't have one, simply pick a directory and add
+   `export GOPATH=...`
+1. `$GOPATH/bin` on `PATH`: This is so that tooling installed via `go get` will
+   work properly.
+1. `KO_DOCKER_REPO`: The docker repository to which developer images should be
+   pushed (e.g. `gcr.io/[gcloud-project]`).
+
+> :information_source: If you are using Docker Hub to store your images, your
+> `KO_DOCKER_REPO` variable should have the format `docker.io/<username>`.
+> Currently, Docker Hub doesn't let you create subdirs under your username (e.g.
+> `<username>/knative`).
+
+`.bashrc` example:
+
+```shell
+export GOPATH="$HOME/go"
+export PATH="${PATH}:${GOPATH}/bin"
+export KO_DOCKER_REPO='gcr.io/my-gcloud-project-id'
+```
+
 ## Prerequisites
+
+1. You must have [`ko`](https://github.com/google/ko) installed.
 
 1. Create a
    [Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
@@ -15,6 +42,17 @@
    to configure credential in the section **_Configure the Authentication
    Mechanism for GCP_**, we recommend you to enable Workload Identity when you
    create cluster, this could help to reduce subsequent configuration time.
+
+1. Set up a Linux Container repository for pushing images. You can use any
+      container image registry by adjusting the authentication methods and
+      repository paths mentioned in the sections below.
+      - [Google Container Registry quickstart](https://cloud.google.com/container-registry/docs/pushing-and-pulling)
+      - [Docker Hub quickstart](https://docs.docker.com/docker-hub/)
+
+   > :information_source: You'll need to be authenticated with your
+   > `KO_DOCKER_REPO` before pushing images. Run `gcloud auth configure-docker` if
+   > you are using Google Container Registry or `docker login` if you are using
+   > Docker Hub.
 
 1. Install [Knative](https://knative.dev/docs/install/). Preferably, set up both
    [Serving](https://knative.dev/docs/serving/) and

@@ -45,7 +45,9 @@ follows.
 ## Iterating
 
 As you make changes to the code-base, there are two special cases to be aware
-of:
+of(If you run under macOS, you may need to upgrade your bash version on macOS 
+since macOS comes with bash version 3 which is quite limiting and lack features 
+need to run the following two scripts):
 
 - **If you change a type definition ([pkg/apis/](./pkg/apis/.)),** then you must
   run [`./hack/update-codegen.sh`](./hack/update-codegen.sh).
@@ -59,7 +61,7 @@ Once the codegen and dependency information is correct, redeploying the
 controller is simply:
 
 ```shell
-ko apply -f config/controller.yaml
+ko apply -f config/500-controller.yaml
 ```
 
 Or you can [clean it up completely](#clean-up) and start again.
