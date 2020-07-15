@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	// Bare minimum is Location, Schedule, Data, and Sink
+	// Bare minimum is Location, Schedule, Data and Sink
 	minimalCloudSchedulerSourceSpec = CloudSchedulerSourceSpec{
 		Location: "mylocation",
 		Schedule: "* * * * *",
@@ -111,14 +111,14 @@ func TestCloudSchedulerSourceValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
-		name: "missing data, schedule, and sink",
+		name: "missing data, schedule and sink",
 		s:    &CloudSchedulerSource{Spec: CloudSchedulerSourceSpec{Location: "location"}},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("spec.data", "spec.schedule", "spec.sink")
 			return fe
 		}(),
 	}, {
-		name: "missing schedule, and sink",
+		name: "missing schedule and sink",
 		s:    &CloudSchedulerSource{Spec: CloudSchedulerSourceSpec{Location: "location", Data: "data"}},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("spec.schedule", "spec.sink")
@@ -155,7 +155,7 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
-		name: "missing data, schedule, and sink",
+		name: "missing data, schedule and sink",
 		spec: &CloudSchedulerSourceSpec{Location: "location"},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("data", "schedule", "sink")
@@ -456,7 +456,7 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed changed": {
+		"ServiceAccountName changed": {
 			orig: &schedulerWithKSA,
 			updated: CloudSchedulerSourceSpec{
 				Location: schedulerWithKSA.Location,
