@@ -18,6 +18,7 @@ package v1
 
 import (
 	"context"
+
 	"knative.dev/pkg/apis"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
