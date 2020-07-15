@@ -132,17 +132,9 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 				// If it does not exist, then create it.
 				subCreates = append(subCreates, want)
 			} else {
-				actualPS, found := pullsubs[resources.GeneratePullSubscriptionName(want.UID)]
-
-				// TODO Remove this after 0.16. This is here because in the 0.15->0.16 transition,
-				// we changed the name of the Topic, so we need to check that here.
-				topicChanged := false
-				if actualPS.Spec.Topic != channel.Status.TopicID {
-					topicChanged = true
-				}
-
+				_, found := pullsubs[resources.GeneratePullSubscriptionName(want.UID)]
 				// If did not find or the PS has updated generation, update it.
-				if topicChanged || !found || got.ObservedGeneration != want.Generation {
+				if !found || got.ObservedGeneration != want.Generation {
 					subUpdates = append(subUpdates, want)
 				}
 			}
@@ -220,22 +212,6 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 				return err
 			}
 			r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", ps.Name)
-			// TODO remove this else if after 0.16 cut.
-		} else if ps.Spec.Topic != existingPs.Spec.Topic {
-			// We check whether the topic changed. This can only happen when updating to 0.16 as the spec.topic is immutable.
-			// We have to delete the old PS and create a new one here.
-			logging.FromContext(ctx).Desugar().Info("Deleting old PullSubscription", zap.Any("ps", existingPs))
-			err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Delete(existingPs.Name, nil)
-			if err != nil {
-				logging.FromContext(ctx).Desugar().Error("Failed to delete old PullSubscription", zap.Any("ps", existingPs), zap.Error(err))
-				return fmt.Errorf("failed to delete Pullsubscription: %w", err)
-			}
-			logging.FromContext(ctx).Desugar().Debug("Creating new PullSubscription", zap.Any("ps", ps))
-			ps, err = r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Create(ps)
-			if err != nil {
-				logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", ps), zap.Error(err))
-				return fmt.Errorf("failed to create PullSubscription: %w", err)
-			}
 		} else if !equality.Semantic.DeepEqual(ps.Spec, existingPs.Spec) {
 			// Don't modify the informers copy.
 			desired := existingPs.DeepCopy()
@@ -337,23 +313,6 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1beta1.Channe
 	} else if !metav1.IsControlledBy(topic, channel) {
 		channel.Status.MarkTopicNotOwned("Topic %q is owned by another resource.", name)
 		return nil, fmt.Errorf("Channel: %s does not own Topic: %s", channel.Name, name)
-		// TODO remove this else if after 0.16 cut.
-	} else if t.Spec.Topic != topic.Spec.Topic {
-		// We check whether the topic changed. This can only happen when updating to 0.16 as the spec.topic is immutable.
-		// We have to delete the oldTopic and create a new one here.
-		logging.FromContext(ctx).Desugar().Info("Deleting old Topic", zap.Any("topic", topic))
-		err = r.RunClientSet.InternalV1beta1().Topics(channel.Namespace).Delete(topic.Name, nil)
-		if err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to delete old Topic", zap.Any("topic", topic), zap.Error(err))
-			return nil, fmt.Errorf("failed to update Topic: %w", err)
-		}
-		logging.FromContext(ctx).Desugar().Debug("Creating new Topic", zap.Any("topic", t))
-		t, err = r.RunClientSet.InternalV1beta1().Topics(channel.Namespace).Create(t)
-		if err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", t), zap.Error(err))
-			return nil, fmt.Errorf("failed to create Topic: %w", err)
-		}
-		return t, nil
 	} else if !equality.Semantic.DeepDerivative(t.Spec, topic.Spec) {
 		// Don't modify the informers copy.
 		desired := topic.DeepCopy()

@@ -19,11 +19,12 @@ package v1alpha1
 import (
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
 
@@ -34,7 +35,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CloudPubSubSource is a specification for a CloudPubSubSource resource
+// CloudPubSubSource is a specification for a CloudPubSubSource resource.
 // +k8s:openapi-gen=true
 type CloudPubSubSource struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -59,7 +60,7 @@ var (
 // CloudPubSubSourceSpec defines the desired state of the CloudPubSubSource.
 type CloudPubSubSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
+	// Sink, CloudEventOverrides, Secret and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// Topic is the ID of the PubSub Topic to Subscribe to. It must
@@ -95,7 +96,7 @@ func (ps CloudPubSubSourceSpec) GetAckDeadline() time.Duration {
 			return duration
 		}
 	}
-	return defaultAckDeadline
+	return intevents.DefaultAckDeadline
 }
 
 // GetRetentionDuration parses RetentionDuration and returns the default if an error occurs.
@@ -105,7 +106,7 @@ func (ps CloudPubSubSourceSpec) GetRetentionDuration() time.Duration {
 			return duration
 		}
 	}
-	return defaultRetentionDuration
+	return intevents.DefaultRetentionDuration
 }
 
 const (
@@ -149,7 +150,7 @@ func (s *CloudPubSubSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (ps *CloudPubSubSource) ConditionSet() *apis.ConditionSet {
 	return &pubSubCondSet
 }
@@ -161,6 +162,7 @@ func (ps *CloudPubSubSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 	return &ps.Spec.PubSubSpec
 }
 
+// CloudPubSubSourceSpec returns the CloudPubSubSourceStatus portion of the Spec.
 func (s *CloudPubSubSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &s.Status.PubSubStatus
 }

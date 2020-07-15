@@ -26,12 +26,27 @@ import (
 
 type EventsV1Interface interface {
 	RESTClient() rest.Interface
+	CloudAuditLogsSourcesGetter
+	CloudPubSubSourcesGetter
+	CloudSchedulerSourcesGetter
 	CloudStorageSourcesGetter
 }
 
 // EventsV1Client is used to interact with features provided by the events.cloud.google.com group.
 type EventsV1Client struct {
 	restClient rest.Interface
+}
+
+func (c *EventsV1Client) CloudAuditLogsSources(namespace string) CloudAuditLogsSourceInterface {
+	return newCloudAuditLogsSources(c, namespace)
+}
+
+func (c *EventsV1Client) CloudPubSubSources(namespace string) CloudPubSubSourceInterface {
+	return newCloudPubSubSources(c, namespace)
+}
+
+func (c *EventsV1Client) CloudSchedulerSources(namespace string) CloudSchedulerSourceInterface {
+	return newCloudSchedulerSources(c, namespace)
 }
 
 func (c *EventsV1Client) CloudStorageSources(namespace string) CloudStorageSourceInterface {

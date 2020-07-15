@@ -100,7 +100,7 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
-		"bad  MethodName": {
+		"bad MethodName": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
 				obj.MethodName = ""
@@ -241,7 +241,7 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed": {
+		"ServiceAccountName changed": {
 			orig: &auditLogsSourceSpecWithKSA,
 			updated: CloudAuditLogsSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{

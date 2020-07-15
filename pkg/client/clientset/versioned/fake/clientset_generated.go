@@ -28,6 +28,8 @@ import (
 	fakeeventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1/fake"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1"
 	fakeeventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1/fake"
+	internalv1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1"
+	fakeinternalv1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1/fake"
 	internalv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1alpha1"
 	fakeinternalv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1alpha1/fake"
 	internalv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1beta1"
@@ -118,6 +120,11 @@ func (c *Clientset) InternalV1alpha1() internalv1alpha1.InternalV1alpha1Interfac
 // InternalV1beta1 retrieves the InternalV1beta1Client
 func (c *Clientset) InternalV1beta1() internalv1beta1.InternalV1beta1Interface {
 	return &fakeinternalv1beta1.FakeInternalV1beta1{Fake: &c.Fake}
+}
+
+// InternalV1 retrieves the InternalV1Client
+func (c *Clientset) InternalV1() internalv1.InternalV1Interface {
+	return &fakeinternalv1.FakeInternalV1{Fake: &c.Fake}
 }
 
 // MessagingV1alpha1 retrieves the MessagingV1alpha1Client

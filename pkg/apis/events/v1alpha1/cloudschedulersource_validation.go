@@ -70,7 +70,7 @@ func (current *CloudSchedulerSource) CheckImmutableFields(ctx context.Context, o
 		return nil
 	}
 	var errs *apis.FieldError
-	// Modification of Location, Schedule, Data, Secret, ServiceAccount, Project are not allowed. Everything else is mutable.
+	// Modification of Location, Schedule, Data, Secret, ServiceAccountName, Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudSchedulerSourceSpec{},
 			"Sink", "CloudEventOverrides")); diff != "" {

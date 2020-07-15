@@ -301,7 +301,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed": {
+		"ServiceAccountName changed": {
 			orig: &buildSourceSpecWithKSA,
 			updated: CloudBuildSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -445,7 +445,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 			updated: buildSourceSpec,
 			allowed: true,
 		},
-		"not spec": {
+		"no spec": {
 			orig:    []string{"wrong"},
 			updated: buildSourceSpec,
 			allowed: true,

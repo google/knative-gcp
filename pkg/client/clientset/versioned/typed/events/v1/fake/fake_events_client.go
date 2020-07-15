@@ -28,6 +28,18 @@ type FakeEventsV1 struct {
 	*testing.Fake
 }
 
+func (c *FakeEventsV1) CloudAuditLogsSources(namespace string) v1.CloudAuditLogsSourceInterface {
+	return &FakeCloudAuditLogsSources{c, namespace}
+}
+
+func (c *FakeEventsV1) CloudPubSubSources(namespace string) v1.CloudPubSubSourceInterface {
+	return &FakeCloudPubSubSources{c, namespace}
+}
+
+func (c *FakeEventsV1) CloudSchedulerSources(namespace string) v1.CloudSchedulerSourceInterface {
+	return &FakeCloudSchedulerSources{c, namespace}
+}
+
 func (c *FakeEventsV1) CloudStorageSources(namespace string) v1.CloudStorageSourceInterface {
 	return &FakeCloudStorageSources{c, namespace}
 }
