@@ -96,6 +96,8 @@ func TestCloudStorageSourceConversion(t *testing.T) {
 				if err := got.ConvertFrom(context.Background(), ver); err != nil {
 					t.Errorf("ConvertFrom() = %v", err)
 				}
+				// ServiceAccountName and PayloadFormat only exists in v1alpha1 and v1beta1, they doesn't exist in v1.
+				// So it won't round trip, it will be silently removed.
 				in.Status.ServiceAccountName = ""
 				in.Spec.PayloadFormat = ""
 				ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
