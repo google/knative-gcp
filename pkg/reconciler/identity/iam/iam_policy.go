@@ -18,15 +18,22 @@ package iam
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/wire"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 
 	"cloud.google.com/go/iam"
 	admin "cloud.google.com/go/iam/admin/apiv1"
-	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
 	iampb "google.golang.org/genproto/googleapis/iam/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
 )
 
 type action = int
@@ -85,6 +92,17 @@ type manager struct {
 	requestCh   chan *modificationRequest
 	pending     map[GServiceAccount]*batchedModifications // a non-nil batch indicates an outstanding request
 	getPolicyCh chan *getPolicyResponse
+}
+
+// defaultRetry represents that there will be 3 iterations.
+// The duration starts from 5000ms and is multiplied by factor 2.0 for each iteration.
+var defaultRetry = wait.Backoff{
+	Steps:    3,
+	Duration: 5000 * time.Millisecond,
+	Factor:   2.0,
+	// The sleep at each iteration is the duration plus an additional
+	// amount chosen uniformly at random from the interval between 0 and jitter*duration.
+	Jitter: 1.0,
 }
 
 // NewIAMPolicyManager creates an IAMPolicyManager using the given IamClient. The IAMPolicyManager
@@ -237,15 +255,22 @@ func (m *manager) applyBatchedModifications(ctx context.Context, account GServic
 	for role, mod := range batched.roleModifications {
 		applyRoleModifications(policy, role, mod)
 	}
-	policy, err := m.iam.SetIamPolicy(ctx, &admin.SetIamPolicyRequest{
-		Resource: admin.IamServiceAccountPath("-", string(account)),
-		Policy:   policy,
+
+	var newPolicy *iam.Policy
+	err := retry.OnError(defaultRetry, isConflict, func() error {
+		policy, err := m.iam.SetIamPolicy(ctx, &admin.SetIamPolicyRequest{
+			Resource: admin.IamServiceAccountPath("-", string(account)),
+			Policy:   policy,
+		})
+		newPolicy = policy
+		return err
 	})
+
 	for _, listener := range batched.listeners {
 		listener <- err
 	}
 	select {
-	case m.getPolicyCh <- &getPolicyResponse{account: account, policy: policy, err: err}:
+	case m.getPolicyCh <- &getPolicyResponse{account: account, policy: newPolicy, err: err}:
 	case <-ctx.Done():
 	}
 }
@@ -257,4 +282,18 @@ func applyRoleModifications(policy *iam.Policy, role iam.RoleName, mod *roleModi
 	for member := range mod.removeMembers {
 		policy.Remove(member, role)
 	}
+}
+
+// isConflict determines if the error is for concurrency issue.
+func isConflict(err error) bool {
+	var statusErr interface{ GRPCStatus() *status.Status }
+	if errors.As(err, &statusErr) {
+		// Potentially retry when code is:
+		// - 10, indicates the operation was aborted, typically due to a
+		// concurrency issue like sequencer check failures, transaction aborts, etc.
+		// Check https://godoc.org/google.golang.org/grpc/codes for more details about code.
+		code := statusErr.GRPCStatus().Code()
+		return code == codes.Aborted
+	}
+	return false
 }

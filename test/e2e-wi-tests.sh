@@ -87,6 +87,8 @@ function control_plane_setup() {
           --role roles/iam.workloadIdentityUser \
           --member "${member_name}" \
           --project "${PROW_PROJECT_NAME}" "${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}"
+          # Add a sleep time between each get-set iam-policy-binding loop to avoid concurrency issue. Sleep time is based on the SLO.
+          sleep 10
       fi
     done <<< "$members"
     # Allow the Kubernetes service account to use Google service account.
