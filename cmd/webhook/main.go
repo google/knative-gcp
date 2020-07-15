@@ -21,7 +21,6 @@ import (
 	"log"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	configvalidation "github.com/google/knative-gcp/pkg/apis/configs/validation"
 	"github.com/google/knative-gcp/pkg/apis/events"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
@@ -153,7 +152,7 @@ func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *co
 			tracingconfig.ConfigName: tracingconfig.NewTracingConfigFromConfigMap,
 			// metrics.ConfigMapName():   metricsconfig.NewObservabilityConfigFromConfigMap,
 			logging.ConfigMapName():        logging.NewConfigFromConfigMap,
-			leaderelection.ConfigMapName(): configvalidation.ValidateLeaderElectionConfig,
+			leaderelection.ConfigMapName(): leaderelection.NewConfigFromConfigMap,
 			gcpauth.ConfigMapName():        gcpauth.NewDefaultsConfigFromConfigMap,
 		},
 	)
