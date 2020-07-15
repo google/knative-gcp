@@ -23,8 +23,8 @@ const (
 	BatchAPIVersion            = "batch/v1"
 	MessagingAPIVersion        = "messaging.cloud.google.com/v1alpha1"
 	MessagingV1beta1APIVersion = "messaging.cloud.google.com/v1beta1"
-	EventsAPIVersion           = "events.cloud.google.com/v1alpha1"
-	IntEventsAPIVersion        = "internal.events.cloud.google.com/v1alpha1"
+	EventsAPIVersion           = "events.cloud.google.com/v1beta1"
+	IntEventsAPIVersion        = "internal.events.cloud.google.com/v1beta1"
 	ServingAPIVersion          = "serving.knative.dev/v1"
 )
 
