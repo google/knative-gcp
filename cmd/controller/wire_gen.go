@@ -6,9 +6,8 @@
 package main
 
 import (
+	"cloud.google.com/go/iam/admin/apiv1"
 	"context"
-
-	admin "cloud.google.com/go/iam/admin/apiv1"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs"
 	"github.com/google/knative-gcp/pkg/reconciler/events/build"
@@ -21,7 +20,9 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel"
 	"knative.dev/pkg/injection"
+)
 
+import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 

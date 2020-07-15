@@ -6,9 +6,8 @@
 package handler
 
 import (
-	"context"
-
 	"cloud.google.com/go/pubsub"
+	"context"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/metrics"
 )
