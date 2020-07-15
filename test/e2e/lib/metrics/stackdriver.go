@@ -24,63 +24,41 @@ import (
 	"time"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	googlepb "github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/api/iterator"
+	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/protobuf/proto"
 )
 
 // TODO upstream to knative/pkg
-
-func NewStackDriverMetricClient() (*monitoring.MetricClient, error) {
-	return monitoring.NewMetricClient(context.TODO())
+// ListTimeSeries calls metricClient.ListTimeSeries and converts the returned Iterator to a list.
+func ListTimeSeries(ctx context.Context, metricClient *monitoring.MetricClient, req *monitoringpb.ListTimeSeriesRequest) ([]*monitoringpb.TimeSeries, error) {
+	it := metricClient.ListTimeSeries(ctx, req)
+	next, err := it.Next()
+	var res []*monitoringpb.TimeSeries
+	for ; err == nil; next, err = it.Next() {
+		res = append(res, next)
+	}
+	if err != nil && err != iterator.Done {
+		return res, err
+	}
+	return res, nil
 }
 
-// StackDriverListTimeSeriesRequestOption enables further configuration of a ListTimeSeriesRequest.
-type StackDriverListTimeSeriesRequestOption func(*monitoringpb.ListTimeSeriesRequest)
-
-func NewStackDriverListTimeSeriesRequest(projectID string, o ...StackDriverListTimeSeriesRequestOption) *monitoringpb.ListTimeSeriesRequest {
-	req := &monitoringpb.ListTimeSeriesRequest{
-		Name:        fmt.Sprintf("projects/%s", projectID),
-		Aggregation: &monitoringpb.Aggregation{},
+// ListMetricDescriptors calls metricClient.ListMetricDescriptor and converts the returned
+// Iterator to a list.
+func ListMetricDescriptors(ctx context.Context, metricClient *monitoring.MetricClient, request *monitoringpb.ListMetricDescriptorsRequest) ([]*metricpb.MetricDescriptor, error) {
+	it := metricClient.ListMetricDescriptors(ctx, request)
+	next, err := it.Next()
+	var res []*metricpb.MetricDescriptor
+	for ; err == nil; next, err = it.Next() {
+		res = append(res, next)
 	}
-	for _, opt := range o {
-		opt(req)
+	if err != nil && err != iterator.Done {
+		return res, err
 	}
-	return req
-}
-
-func WithStackDriverFilter(filter string) StackDriverListTimeSeriesRequestOption {
-	return func(r *monitoringpb.ListTimeSeriesRequest) {
-		r.Filter = filter
-	}
-}
-
-func WithStackDriverInterval(startSecs, endSecs int64) StackDriverListTimeSeriesRequestOption {
-	return func(r *monitoringpb.ListTimeSeriesRequest) {
-		r.Interval = &monitoringpb.TimeInterval{
-			StartTime: &googlepb.Timestamp{Seconds: startSecs},
-			EndTime:   &googlepb.Timestamp{Seconds: endSecs}}
-	}
-}
-
-func WithStackDriverAlignmentPeriod(seconds int64) StackDriverListTimeSeriesRequestOption {
-	return func(r *monitoringpb.ListTimeSeriesRequest) {
-		r.Aggregation.AlignmentPeriod = &duration.Duration{Seconds: seconds}
-	}
-}
-
-func WithStackDriverPerSeriesAligner(aligner monitoringpb.Aggregation_Aligner) StackDriverListTimeSeriesRequestOption {
-	return func(r *monitoringpb.ListTimeSeriesRequest) {
-		r.Aggregation.PerSeriesAligner = aligner
-	}
-}
-
-func WithStackDriverCrossSeriesReducer(reducer monitoringpb.Aggregation_Reducer) StackDriverListTimeSeriesRequestOption {
-	return func(r *monitoringpb.ListTimeSeriesRequest) {
-		r.Aggregation.CrossSeriesReducer = reducer
-	}
+	return res, nil
 }
 
 func StringifyStackDriverFilter(filter map[string]interface{}) string {
