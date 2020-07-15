@@ -21,8 +21,9 @@ import (
 	"net/url"
 	"testing"
 
+	gcptesting "github.com/google/knative-gcp/pkg/testing"
+
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/events"
 	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -35,16 +36,16 @@ var (
 	// TypeMeta is excluded because conversions do not convert it and this variable was created to
 	// test conversions.
 	completeCloudStorageSource = &CloudStorageSource{
-		ObjectMeta: events.CompleteObjectMeta,
+		ObjectMeta: gcptesting.CompleteObjectMeta,
 		Spec: CloudStorageSourceSpec{
-			PubSubSpec:       CompletePubSubSpec,
+			PubSubSpec:       gcptesting.CompleteV1beta1PubSubSpec,
 			Bucket:           "bucket",
 			EventTypes:       []string{"event", "types"},
 			ObjectNamePrefix: "objectNamePrefix",
 			PayloadFormat:    "payloadFormat",
 		},
 		Status: CloudStorageSourceStatus{
-			PubSubStatus:   CompletePubSubStatus,
+			PubSubStatus:   gcptesting.CompleteV1beta1PubSubStatus,
 			NotificationID: "notificationId",
 		},
 	}

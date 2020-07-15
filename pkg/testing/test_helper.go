@@ -1,9 +1,11 @@
-package events
+package testing
 
 import (
 	"net/url"
 	"time"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -82,5 +84,81 @@ var (
 		},
 		Key:      "key",
 		Optional: &trueVal,
+	}
+
+	CompleteV1alpha1IdentitySpec = duckv1alpha1.IdentitySpec{
+		ServiceAccountName: "k8sServiceAccount",
+	}
+
+	CompleteV1alpha1PubSubSpec = duckv1alpha1.PubSubSpec{
+		SourceSpec:   CompleteSourceSpec,
+		IdentitySpec: CompleteV1alpha1IdentitySpec,
+		Secret:       CompleteSecret,
+		Project:      "project",
+	}
+
+	CompleteV1alpha1IdentityStatus = duckv1alpha1.IdentityStatus{
+		Status: duckv1.Status{
+			ObservedGeneration: 7,
+			Conditions: duckv1.Conditions{
+				{
+					Type:   "Ready",
+					Status: "True",
+				},
+			},
+		},
+		ServiceAccountName: "serviceAccountName",
+	}
+
+	CompleteV1alpha1PubSubStatus = duckv1alpha1.PubSubStatus{
+		IdentityStatus: CompleteV1alpha1IdentityStatus,
+		SinkURI:        &CompleteURL,
+		CloudEventAttributes: []duckv1.CloudEventAttributes{
+			{
+				Type:   "type",
+				Source: "source",
+			},
+		},
+		ProjectID:      "projectID",
+		TopicID:        "topicID",
+		SubscriptionID: "subscriptionID",
+	}
+
+	CompleteV1beta1IdentitySpec = duckv1beta1.IdentitySpec{
+		ServiceAccountName: "k8sServiceAccount",
+	}
+
+	CompleteV1beta1PubSubSpec = duckv1beta1.PubSubSpec{
+		SourceSpec:   CompleteSourceSpec,
+		IdentitySpec: CompleteV1beta1IdentitySpec,
+		Secret:       CompleteSecret,
+		Project:      "project",
+	}
+
+	CompleteV1beta1IdentityStatus = duckv1beta1.IdentityStatus{
+		Status: duckv1.Status{
+			ObservedGeneration: 7,
+			Conditions: duckv1.Conditions{
+				{
+					Type:   "Ready",
+					Status: "True",
+				},
+			},
+		},
+		ServiceAccountName: "serviceAccountName",
+	}
+
+	CompleteV1beta1PubSubStatus = duckv1beta1.PubSubStatus{
+		IdentityStatus: CompleteV1beta1IdentityStatus,
+		SinkURI:        &CompleteURL,
+		CloudEventAttributes: []duckv1.CloudEventAttributes{
+			{
+				Type:   "type",
+				Source: "source",
+			},
+		},
+		ProjectID:      "projectID",
+		TopicID:        "topicID",
+		SubscriptionID: "subscriptionID",
 	}
 )

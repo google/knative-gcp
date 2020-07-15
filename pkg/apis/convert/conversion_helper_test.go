@@ -23,9 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/convert"
-	"github.com/google/knative-gcp/pkg/apis/events"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	gcptesting "github.com/google/knative-gcp/pkg/testing"
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	pkgduckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
@@ -41,9 +39,9 @@ var (
 	completeAddressStatus = pkgduckv1alpha1.AddressStatus{
 		Address: &pkgduckv1alpha1.Addressable{
 			Addressable: duckv1beta1.Addressable{
-				URL: &events.CompleteURL,
+				URL: &gcptesting.CompleteURL,
 			},
-			Hostname: events.CompleteURL.Host,
+			Hostname: gcptesting.CompleteURL.Host,
 		},
 	}
 
@@ -52,11 +50,11 @@ var (
 			{
 				UID:               "uid-1",
 				Generation:        1,
-				SubscriberURI:     &events.CompleteURL,
-				ReplyURI:          &events.CompleteURL,
-				DeadLetterSinkURI: &events.CompleteURL,
+				SubscriberURI:     &gcptesting.CompleteURL,
+				ReplyURI:          &gcptesting.CompleteURL,
+				DeadLetterSinkURI: &gcptesting.CompleteURL,
 				Delivery: &eventingduckv1beta1.DeliverySpec{
-					DeadLetterSink: &events.CompleteDestination,
+					DeadLetterSink: &gcptesting.CompleteDestination,
 					Retry:          &three,
 					BackoffPolicy:  &backoffPolicy,
 					BackoffDelay:   &backoffDelay,
@@ -67,7 +65,7 @@ var (
 )
 
 func TestV1beta1PubSubSpec(t *testing.T) {
-	want := v1alpha1.CompletePubSubSpec
+	want := gcptesting.CompleteV1alpha1PubSubSpec
 	got := convert.FromV1beta1PubSubSpec(convert.ToV1beta1PubSubSpec(want))
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
@@ -76,7 +74,7 @@ func TestV1beta1PubSubSpec(t *testing.T) {
 }
 
 func TestV1PubSubSpec(t *testing.T) {
-	want := v1beta1.CompletePubSubSpec
+	want := gcptesting.CompleteV1beta1PubSubSpec
 	got := convert.FromV1PubSubSpec(convert.ToV1PubSubSpec(want))
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
@@ -85,7 +83,7 @@ func TestV1PubSubSpec(t *testing.T) {
 }
 
 func TestV1beta1IdentitySpec(t *testing.T) {
-	want := v1alpha1.CompleteIdentitySpec
+	want := gcptesting.CompleteV1alpha1IdentitySpec
 	got := convert.FromV1beta1IdentitySpec(convert.ToV1beta1IdentitySpec(want))
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("Unexpected difference (-want +got): %v", diff)
@@ -93,7 +91,7 @@ func TestV1beta1IdentitySpec(t *testing.T) {
 }
 
 func TestV1IdentitySpec(t *testing.T) {
-	want := v1beta1.CompleteIdentitySpec
+	want := gcptesting.CompleteV1beta1IdentitySpec
 	got := convert.FromV1IdentitySpec(convert.ToV1IdentitySpec(want))
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("Unexpected difference (-want +got): %v", diff)
@@ -101,7 +99,7 @@ func TestV1IdentitySpec(t *testing.T) {
 }
 
 func TestV1beta1PubSubStatus(t *testing.T) {
-	want := v1alpha1.CompletePubSubStatus
+	want := gcptesting.CompleteV1alpha1PubSubStatus
 	got := convert.FromV1beta1PubSubStatus(convert.ToV1beta1PubSubStatus(want))
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
@@ -110,7 +108,7 @@ func TestV1beta1PubSubStatus(t *testing.T) {
 }
 
 func TestV1PubSubStatus(t *testing.T) {
-	want := v1beta1.CompletePubSubStatus
+	want := gcptesting.CompleteV1beta1PubSubStatus
 	got := convert.FromV1PubSubStatus(convert.ToV1PubSubStatus(want))
 
 	// ServiceAccountName exists exclusively in v1alpha1 and v1beta1, it has not yet been promoted to
@@ -124,7 +122,7 @@ func TestV1PubSubStatus(t *testing.T) {
 }
 
 func TestV1beta1IdentityStatus(t *testing.T) {
-	want := v1alpha1.CompleteIdentityStatus
+	want := gcptesting.CompleteV1alpha1IdentityStatus
 	got := convert.FromV1beta1IdentityStatus(convert.ToV1beta1IdentityStatus(want))
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("Unexpected difference (-want +got): %v", diff)
@@ -133,7 +131,7 @@ func TestV1beta1IdentityStatus(t *testing.T) {
 
 func TestV1IdentityStatus(t *testing.T) {
 
-	want := v1beta1.CompleteIdentityStatus
+	want := gcptesting.CompleteV1beta1IdentityStatus
 	got := convert.FromV1IdentityStatus(convert.ToV1IdentityStatus(want))
 	// ServiceAccountName exists exclusively in v1alpha1 and v1beta1, it has not yet been promoted to
 	// v1. So it won't round trip, it will be silently removed.

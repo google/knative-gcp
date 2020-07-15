@@ -24,7 +24,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/events"
+	gcptesting "github.com/google/knative-gcp/pkg/testing"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
@@ -36,15 +36,15 @@ var (
 	// TypeMeta is excluded because conversions do not convert it and this variable was created to
 	// test conversions.
 	completeCloudSchedulerSource = &CloudSchedulerSource{
-		ObjectMeta: events.CompleteObjectMeta,
+		ObjectMeta: gcptesting.CompleteObjectMeta,
 		Spec: CloudSchedulerSourceSpec{
-			PubSubSpec: CompletePubSubSpec,
+			PubSubSpec: gcptesting.CompleteV1alpha1PubSubSpec,
 			Location:   "location",
 			Schedule:   "schedule",
 			Data:       "data",
 		},
 		Status: CloudSchedulerSourceStatus{
-			PubSubStatus: CompletePubSubStatus,
+			PubSubStatus: gcptesting.CompleteV1alpha1PubSubStatus,
 			JobName:      "jobName",
 		},
 	}

@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/events"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	gcptesting "github.com/google/knative-gcp/pkg/testing"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
@@ -35,15 +35,15 @@ var (
 	// TypeMeta is excluded because conversions do not convert it and this variable was created to
 	// test conversions.
 	completeCloudAuditLogsSource = &CloudAuditLogsSource{
-		ObjectMeta: events.CompleteObjectMeta,
+		ObjectMeta: gcptesting.CompleteObjectMeta,
 		Spec: CloudAuditLogsSourceSpec{
-			PubSubSpec:   CompletePubSubSpec,
+			PubSubSpec:   gcptesting.CompleteV1alpha1PubSubSpec,
 			ServiceName:  "serviceName",
 			MethodName:   "methodName",
 			ResourceName: "resourceName",
 		},
 		Status: CloudAuditLogsSourceStatus{
-			PubSubStatus:    CompletePubSubStatus,
+			PubSubStatus:    gcptesting.CompleteV1alpha1PubSubStatus,
 			StackdriverSink: "stackdriverSink",
 		},
 	}
