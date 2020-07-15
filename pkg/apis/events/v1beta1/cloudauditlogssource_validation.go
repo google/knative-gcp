@@ -63,7 +63,7 @@ func (current *CloudAuditLogsSource) CheckImmutableFields(ctx context.Context, o
 		return nil
 	}
 
-	// Modification of Topic, Secret, ServiceAccount, Project, ServiceName, MethodName, and ResourceName are not allowed. Everything else is mutable.
+	// Modification of Topic, Secret, ServiceAccountName, Project, ServiceName, MethodName and ResourceName are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudAuditLogsSourceSpec{},
 			"Sink", "CloudEventOverrides")); diff != "" {

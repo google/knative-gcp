@@ -56,7 +56,7 @@ var (
 // CloudStorageSourceSpec is the spec for a CloudStorageSource resource.
 type CloudStorageSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
+	// Sink, CloudEventOverrides, Secret and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// Bucket to subscribe to.
@@ -93,7 +93,7 @@ var storageCondSet = apis.NewLivingConditionSet(
 // CloudStorageSourceStatus is the status for a GCS resource.
 type CloudStorageSourceStatus struct {
 	// This brings in the Status for our GCP PubSub event sources.
-	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
+	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID and SubscriptionID
 	duckv1alpha1.PubSubStatus `json:",inline"`
 
 	// NotificationID is the ID that GCS identifies this notification as.

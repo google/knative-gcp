@@ -20,20 +20,20 @@ import (
 	"testing"
 	"time"
 
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
-
-	"knative.dev/pkg/ptr"
-
 	"github.com/google/go-cmp/cmp"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/ptr"
 )
 
 func TestCloudPubSubSourceDefaults(t *testing.T) {
 
-	defaultRetentionDuration := defaultRetentionDuration
-	defaultAckDeadline := defaultAckDeadline
+	defaultRetentionDuration := intevents.DefaultRetentionDuration
+	defaultAckDeadline := intevents.DefaultAckDeadline
 
 	tests := []struct {
 		name  string

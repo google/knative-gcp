@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
@@ -65,7 +66,7 @@ func TestGetRetentionDuration(t *testing.T) {
 }
 
 func TestGetAckDeadline_default(t *testing.T) {
-	want := defaultAckDeadline
+	want := intevents.DefaultAckDeadline
 	s := &CloudPubSubSourceSpec{}
 	got := s.GetAckDeadline()
 
@@ -75,7 +76,7 @@ func TestGetAckDeadline_default(t *testing.T) {
 }
 
 func TestGetRetentionDuration_default(t *testing.T) {
-	want := defaultRetentionDuration
+	want := intevents.DefaultRetentionDuration
 	s := &CloudPubSubSourceSpec{}
 	got := s.GetRetentionDuration()
 

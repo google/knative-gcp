@@ -20,6 +20,7 @@ import (
 	"time"
 
 	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,7 +59,7 @@ var (
 // CloudPubSubSourceSpec defines the desired state of the CloudPubSubSource.
 type CloudPubSubSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
+	// Sink, CloudEventOverrides, Secret and Project
 	gcpduckv1.PubSubSpec `json:",inline"`
 
 	// Topic is the ID of the PubSub Topic to Subscribe to. It must
@@ -94,7 +95,7 @@ func (ps CloudPubSubSourceSpec) GetAckDeadline() time.Duration {
 			return duration
 		}
 	}
-	return defaultAckDeadline
+	return intevents.DefaultAckDeadline
 }
 
 // GetRetentionDuration parses RetentionDuration and returns the default if an error occurs.
@@ -104,7 +105,7 @@ func (ps CloudPubSubSourceSpec) GetRetentionDuration() time.Duration {
 			return duration
 		}
 	}
-	return defaultRetentionDuration
+	return intevents.DefaultRetentionDuration
 }
 
 const (

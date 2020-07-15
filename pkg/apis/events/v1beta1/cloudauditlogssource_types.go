@@ -55,6 +55,7 @@ var (
 )
 
 const (
+	// SinkReady has status True when CloudAuditLogsSource sink is ready.
 	SinkReady apis.ConditionType = "SinkReady"
 )
 

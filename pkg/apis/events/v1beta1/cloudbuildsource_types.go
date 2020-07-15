@@ -50,7 +50,7 @@ var (
 // CloudBuildSourceSpec defines the desired state of the CloudBuildSource.
 type CloudBuildSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, and Project
+	// Sink, CloudEventOverrides, Secret and Project
 	duckv1beta1.PubSubSpec `json:",inline"`
 }
 
