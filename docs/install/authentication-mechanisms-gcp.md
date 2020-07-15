@@ -140,7 +140,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ## Authentication Mechanism for the Data Plane
 
 Please check
-[Installing Pub/Sub Enabled Service Account](dataplane-service-account.md).
+[Installing Pub/Sub Enabled Service Account](../install/dataplane-service-account.md).
 
 ## Troubleshooting
 
@@ -471,7 +471,7 @@ kubectl get secret -n namespace
       it is most likely that you didn't grant `iam.serviceAccountAdmin`
       permission of the Google Cloud Service Account to the Control Plane's
       Google Cloud Service Account `cloud-run-events`, refer to
-      [default scenario](dataplane-service-account.md/#option-1-use-workload-identity)
+      [default scenario](../install/dataplane-service-account.md/#option-1-use-workload-identity)
       to grant permission.
     - If the `Condition` `Ready` has concurrency related error message like
       this:
@@ -484,5 +484,5 @@ kubectl get secret -n namespace
       ```
       the controller will retry it in the next reconciliation loop (the maximum
       retry period is 5 min). You can also use
-      [non-default scenario](dataplane-service-account.md/#option-1-use-workload-identity)
+      [non-default scenario](../install/dataplane-service-account.md/#option-1-use-workload-identity)
       if this error lasts for a long time.
