@@ -11,7 +11,7 @@ intended to provide a durable messaging solution.
    install [Eventing](https://knative.dev/docs/eventing/) as part of the
    installation procedure.
 
-1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
+1. [Create a Pub/Sub enabled Service Account for the Data Plane](../../install/dataplane-service-account.md)
 
 ## Deployment
 
@@ -21,7 +21,7 @@ intended to provide a durable messaging solution.
       [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
       update `serviceAccountName` with the Kubernetes service account you
       created in
-      [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md),
+      [Create a Pub/Sub enabled Service Account for the Data Plane](../../install/dataplane-service-account.md),
       which is bound to the Pub/Sub enabled Google service account.
 
    1. If you are using standard Kubernetes secrets, but want to use a

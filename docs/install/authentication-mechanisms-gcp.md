@@ -140,7 +140,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ## Authentication Mechanism for the Data Plane
 
 Please check
-[Installing Pub/Sub Enabled Service Account](../install/pubsub-service-account.md).
+[Installing Pub/Sub Enabled Service Account](dataplane-service-account.md).
 
 ## Troubleshooting
 
@@ -428,13 +428,13 @@ kubectl get secret -n namespace
       ***
       **_To solve this issue_**, you can:
 
-    * Check the Google Cloud Service Account `cre-pubsub` for the Data Plane has
+    * Check the Google Cloud Service Account `cre-dataplane` for the Data Plane has
       all required permissions.
     * Check authentication configuration is correct for this resource instance.
 
       - If you are using Workload Identity for this resource instance, refer
         [here](./authentication-mechanisms-gcp.md/#workload-identity) to check
-        the Google Cloud Service Account `cre-pubsub`, and the Kubernetes
+        the Google Cloud Service Account `cre-dataplane`, and the Kubernetes
         Service Account in the namespace where this resource instance resides.
       - If you are using Kubernetes Secrets for this resource instance, refer
         [here](./authentication-mechanisms-gcp.md/#kubernetes-secrets) to check
@@ -465,13 +465,13 @@ kubectl get secret -n namespace
       type: Ready
       status: "False"
       message: 'rpc error: code = PermissionDenied desc = Permission iam.serviceAccounts.setIamPolicy
-        is required to perform this operation on service account projects/-/serviceAccounts/cre-pubsub@PROJECT_ID.iam.gserviceaccount.com.'
+        is required to perform this operation on service account projects/-/serviceAccounts/cre-dataplane@PROJECT_ID.iam.gserviceaccount.com.'
       reason: WorkloadIdentityFailed
       ```
       it is most likely that you didn't grant `iam.serviceAccountAdmin`
       permission of the Google Cloud Service Account to the Control Plane's
       Google Cloud Service Account `cloud-run-events`, refer to
-      [default scenario](../install/pubsub-service-account.md/#option-1-use-workload-identity)
+      [default scenario](dataplane-service-account.md/#option-1-use-workload-identity)
       to grant permission.
     - If the `Condition` `Ready` has concurrency related error message like
       this:
@@ -484,5 +484,5 @@ kubectl get secret -n namespace
       ```
       the controller will retry it in the next reconciliation loop (the maximum
       retry period is 5 min). You can also use
-      [non-default scenario](../install/pubsub-service-account.md/#option-1-use-workload-identity)
+      [non-default scenario](dataplane-service-account.md/#option-1-use-workload-identity)
       if this error lasts for a long time.

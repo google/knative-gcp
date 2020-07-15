@@ -48,14 +48,14 @@ the `CloudPubSubSource` scalable. Note that you could do this for any of the
 
 1. [Install Knative-GCP](../../install/install-knative-gcp.md)
 
-1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
+1. [Create a Pub/Sub enabled Service Account for the Data Plane](../../install/dataplane-service-account.md)
 
 1. Given that KEDA queries StackDriver for metrics, give the Service Account
    created in the previous step permissions to do so.
 
    ```shell
    gcloud projects add-iam-policy-binding $PROJECT_ID \
-     --member=serviceAccount:cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
+     --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
      --role roles/monitoring.viewer
    ```
 
