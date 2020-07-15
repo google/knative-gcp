@@ -48,7 +48,7 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
    ```
    
    ***Note:***
-   If you are going to use metrics and tracing to track your resources,
+   If you are going to use metrics and tracing to track your resources, 
    you also need `roles/monitoring.metricWriter` for metrics functionality:
       ```shell
       gcloud projects add-iam-policy-binding $PROJECT_ID \
