@@ -71,7 +71,7 @@ var (
 	}
 )
 
-func TestPubSubStatusIsReady(t *testing.T) {
+func TestPullSubscriptionStatusIsReady(t *testing.T) {
 	tests := []struct {
 		name                string
 		s                   *PullSubscriptionStatus
@@ -275,7 +275,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 	}
 }
 
-func TestPubSubStatusGetCondition(t *testing.T) {
+func TestPullSubscriptionStatusGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
 		s         *PullSubscriptionStatus

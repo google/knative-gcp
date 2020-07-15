@@ -65,4 +65,10 @@ const (
 	// Tried with 45 seconds but the test has been quite flaky.
 	// Tried with 90 seconds but the test has been quite flaky.
 	WaitCALTime = 120 * time.Second
+
+	// As initially suspected in https://github.com/google/knative-gcp/issues/1437,
+	// sometimes brokercell seems to take much longer than expected to reconcile
+	// the broker config. Plus, the configmap propagation probably also takes a
+	// little bit time.
+	WaitBrokercellTime = 40 * time.Second
 )
