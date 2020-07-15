@@ -26,7 +26,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/util/retry"
 
 	"cloud.google.com/go/iam"
 	admin "cloud.google.com/go/iam/admin/apiv1"
@@ -62,12 +61,18 @@ type roleModification struct {
 type batchedModifications struct {
 	roleModifications map[iam.RoleName]*roleModification
 	listeners         []chan<- error
+	backoff           *wait.Backoff
 }
 
 type getPolicyResponse struct {
 	account GServiceAccount
 	policy  *iam.Policy
 	err     error
+}
+
+type retryBatch struct {
+	account GServiceAccount
+	batch   *batchedModifications
 }
 
 type setPolicyResponse struct {
@@ -92,13 +97,14 @@ type manager struct {
 	requestCh   chan *modificationRequest
 	pending     map[GServiceAccount]*batchedModifications // a non-nil batch indicates an outstanding request
 	getPolicyCh chan *getPolicyResponse
+	retryCh     chan *retryBatch
 }
 
 // defaultRetry represents that there will be 3 iterations.
 // The duration starts from 5000ms and is multiplied by factor 2.0 for each iteration.
 var defaultRetry = wait.Backoff{
-	Steps:    3,
-	Duration: 5000 * time.Millisecond,
+	Steps:    5,
+	Duration: 500 * time.Millisecond,
 	Factor:   2.0,
 	// The sleep at each iteration is the duration plus an additional
 	// amount chosen uniformly at random from the interval between 0 and jitter*duration.
@@ -113,6 +119,7 @@ func NewIAMPolicyManager(ctx context.Context, client gclient.IamClient) (IAMPoli
 		requestCh:   make(chan *modificationRequest),
 		pending:     make(map[GServiceAccount]*batchedModifications),
 		getPolicyCh: make(chan *getPolicyResponse),
+		retryCh:     make(chan *retryBatch),
 	}
 	go m.manage(ctx)
 	return m, nil
@@ -195,6 +202,18 @@ func (m *manager) manage(ctx context.Context) {
 				roleModifications: make(map[iam.RoleName]*roleModification),
 			}
 			go m.applyBatchedModifications(ctx, getPolicy.account, getPolicy.policy, batched)
+		case retryBatch := <-m.retryCh:
+			batch := retryBatch.batch
+			if batch.backoff == nil {
+				batch.backoff = new(wait.Backoff)
+				*batch.backoff = defaultRetry
+			}
+			batch.mergeModifications(m.pending[retryBatch.account])
+			m.pending[retryBatch.account] = batch
+			go func(backoffTime time.Duration) {
+				time.Sleep(backoffTime)
+				m.getPolicy(ctx, retryBatch.account)
+			}(batch.backoff.Step())
 		case <-ctx.Done():
 			for _, batched := range m.pending {
 				for _, listener := range batched.listeners {
@@ -255,22 +274,23 @@ func (m *manager) applyBatchedModifications(ctx context.Context, account GServic
 	for role, mod := range batched.roleModifications {
 		applyRoleModifications(policy, role, mod)
 	}
-
-	var newPolicy *iam.Policy
-	err := retry.OnError(defaultRetry, isConflict, func() error {
-		policy, err := m.iam.SetIamPolicy(ctx, &admin.SetIamPolicyRequest{
-			Resource: admin.IamServiceAccountPath("-", string(account)),
-			Policy:   policy,
-		})
-		newPolicy = policy
-		return err
+	policy, err := m.iam.SetIamPolicy(ctx, &admin.SetIamPolicyRequest{
+		Resource: admin.IamServiceAccountPath("-", string(account)),
+		Policy:   policy,
 	})
+	if isConflict(err) && batched.shouldRetry() {
+		select {
+		case m.retryCh <- &retryBatch{account: account, batch: batched}:
+		case <-ctx.Done():
+		}
+		return
+	}
 
 	for _, listener := range batched.listeners {
 		listener <- err
 	}
 	select {
-	case m.getPolicyCh <- &getPolicyResponse{account: account, policy: newPolicy, err: err}:
+	case m.getPolicyCh <- &getPolicyResponse{account: account, policy: policy, err: err}:
 	case <-ctx.Done():
 	}
 }
@@ -296,4 +316,30 @@ func isConflict(err error) bool {
 		return code == codes.Aborted
 	}
 	return false
+}
+
+func (b *batchedModifications) shouldRetry() bool {
+	return b.backoff == nil || b.backoff.Steps > 0
+}
+
+func (b *batchedModifications) mergeModifications(o *batchedModifications) {
+	if o == nil {
+		return
+	}
+	for r, m2 := range o.roleModifications {
+		m1 := b.roleModifications[r]
+		if m1 == nil {
+			b.roleModifications[r] = m2
+		} else {
+			m1.mergeModification(m2)
+		}
+	}
+	b.listeners = append(b.listeners, o.listeners...)
+}
+
+// mergeModification merges the role modifications in o, superseding any conflicting modifications
+// in r.
+func (r *roleModification) mergeModification(o *roleModification) {
+	r.addMembers = r.addMembers.Union(o.addMembers).Difference(o.removeMembers)
+	r.removeMembers = r.removeMembers.Union(o.removeMembers).Difference(o.addMembers)
 }
