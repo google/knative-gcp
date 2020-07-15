@@ -71,4 +71,3 @@ func (current *CloudStorageSource) CheckImmutableFields(ctx context.Context, ori
 	}
 	return nil
 }
-

@@ -32,8 +32,6 @@ type IdentityStatus struct {
 	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
 	// * Conditions - the latest available observations of a resource's current state.
 	duckv1.Status `json:",inline"`
-	// ServiceAccountName is the k8s service account associated with Google service account.
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
 const (

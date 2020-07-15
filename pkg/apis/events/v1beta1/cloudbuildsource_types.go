@@ -50,7 +50,7 @@ var (
 // CloudBuildSourceSpec defines the desired state of the CloudBuildSource.
 type CloudBuildSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, and Project
+	// Sink, CloudEventOverrides, Secret and Project
 	duckv1beta1.PubSubSpec `json:",inline"`
 }
 
@@ -104,7 +104,7 @@ func (bs *CloudBuildSource) PubSubStatus() *duckv1beta1.PubSubStatus {
 	return &bs.Status.PubSubStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (bs *CloudBuildSource) ConditionSet() *apis.ConditionSet {
 	return &buildCondSet
 }

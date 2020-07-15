@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/knative-gcp/pkg/apis/duck/v1"
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 )
@@ -45,9 +45,9 @@ func TestCloudStorageSourceSourceConditionSet(t *testing.T) {
 	want := []apis.Condition{{
 		Type: NotificationReady,
 	}, {
-		Type: v1.TopicReady,
+		Type: duckv1.TopicReady,
 	}, {
-		Type: v1.PullSubscriptionReady,
+		Type: duckv1.PullSubscriptionReady,
 	}, {
 		Type: apis.ConditionReady,
 	}}
@@ -70,8 +70,8 @@ func TestCloudStorageSourceSourceConditionSet(t *testing.T) {
 func TestCloudStorageSourceIdentitySpec(t *testing.T) {
 	s := &CloudStorageSource{
 		Spec: CloudStorageSourceSpec{
-			PubSubSpec: v1.PubSubSpec{
-				IdentitySpec: v1.IdentitySpec{
+			PubSubSpec: duckv1.PubSubSpec{
+				IdentitySpec: duckv1.IdentitySpec{
 					ServiceAccountName: "test",
 				},
 			},
@@ -87,10 +87,10 @@ func TestCloudStorageSourceIdentitySpec(t *testing.T) {
 func TestCloudStorageSourceIdentityStatus(t *testing.T) {
 	s := &CloudStorageSource{
 		Status: CloudStorageSourceStatus{
-			PubSubStatus: v1.PubSubStatus{},
+			PubSubStatus: duckv1.PubSubStatus{},
 		},
 	}
-	want := &v1.IdentityStatus{}
+	want := &duckv1.IdentityStatus{}
 	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)

@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	// Bare minimum is Location, Schedule, Data, and Sink
+	// Bare minimum is Location, Schedule, Data and Sink
 	minimalCloudSchedulerSourceSpec = CloudSchedulerSourceSpec{
 		Location: "mylocation",
 		Schedule: "* * * * *",
@@ -71,6 +71,27 @@ var (
 			},
 		},
 	}
+
+	schedulerWithKSA = CloudSchedulerSourceSpec{
+		Location: "mylocation",
+		Schedule: "* * * * *",
+		Data:     "mydata",
+		PubSubSpec: duckv1beta1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: duckv1beta1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+		},
+	}
 )
 
 func TestCloudSchedulerSourceValidationFields(t *testing.T) {
@@ -86,14 +107,14 @@ func TestCloudSchedulerSourceValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
-		name: "missing data, schedule, and sink",
+		name: "missing data, schedule and sink",
 		s:    &CloudSchedulerSource{Spec: CloudSchedulerSourceSpec{Location: "location"}},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("spec.data", "spec.schedule", "spec.sink")
 			return fe
 		}(),
 	}, {
-		name: "missing schedule, and sink",
+		name: "missing schedule and sink",
 		s:    &CloudSchedulerSource{Spec: CloudSchedulerSourceSpec{Location: "location", Data: "data"}},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("spec.schedule", "spec.sink")
@@ -130,7 +151,7 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
-		name: "missing data, schedule, and sink",
+		name: "missing data, schedule and sink",
 		spec: &CloudSchedulerSourceSpec{Location: "location"},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("data", "schedule", "sink")
@@ -420,18 +441,17 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed changed": {
-			orig: &schedulerWithSecret,
+		"ServiceAccountName changed": {
+			orig: &schedulerWithKSA,
 			updated: CloudSchedulerSourceSpec{
-				Location: schedulerWithSecret.Location,
-				Schedule: schedulerWithSecret.Schedule,
-				Data:     schedulerWithSecret.Data,
+				Location: schedulerWithKSA.Location,
+				Schedule: schedulerWithKSA.Schedule,
+				Data:     schedulerWithKSA.Data,
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					IdentitySpec: duckv1beta1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
-					SourceSpec: schedulerWithSecret.SourceSpec,
-					Secret:     schedulerWithSecret.Secret,
+					SourceSpec: schedulerWithKSA.SourceSpec,
 				},
 			},
 			allowed: false,

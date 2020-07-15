@@ -22,17 +22,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	nethttp "net/http"
 	"time"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/kelseyhightower/envconfig"
+	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
+	"knative.dev/pkg/tracing/propagation/tracecontextb3"
 
-	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -62,12 +64,13 @@ func main() {
 	brokerURL := env.BrokerURLEnvVar
 	needRetry := (env.RetryEnvVar == "true")
 
-	ceClient, err := kncloudevents.NewDefaultClient(brokerURL)
+	ctx := context.Background()
+	ctx, ceClient, err := newDefaultClient(ctx, brokerURL)
 	if err != nil {
 		fmt.Printf("Unable to create ceClient: %s ", err)
 	}
 
-	ctx, span := trace.StartSpan(context.Background(), "sender", trace.WithSampler(trace.AlwaysSample()))
+	ctx, span := trace.StartSpan(ctx, "sender", trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 
 	// If needRetry is true, repeat sending Event with exponential backoff when there are some specific errors.
@@ -132,4 +135,35 @@ func isRetryable(err error) bool {
 		}
 	}
 	return false
+}
+
+func newDefaultClient(ctx context.Context, target ...string) (context.Context, cev2.Client, error) {
+	ctx = cev2.WithEncodingBinary(ctx)
+
+	tOpts := []cehttp.Option{
+		cev2.WithRoundTripper(&ochttp.Transport{
+			Base:        nethttp.DefaultTransport,
+			Propagation: tracecontextb3.TraceContextEgress,
+		}),
+	}
+	if len(target) > 0 && target[0] != "" {
+		tOpts = append(tOpts, cev2.WithTarget(target[0]))
+	}
+
+	// Make an http transport for the CloudEvents client.
+	t, err := cev2.NewHTTP(tOpts...)
+	if err != nil {
+		return ctx, nil, err
+	}
+
+	// Use the transport to make a new CloudEvents client.
+	c, err := cev2.NewClient(t,
+		cev2.WithUUIDs(),
+		cev2.WithTimeNow(),
+	)
+
+	if err != nil {
+		return ctx, nil, err
+	}
+	return ctx, c, nil
 }

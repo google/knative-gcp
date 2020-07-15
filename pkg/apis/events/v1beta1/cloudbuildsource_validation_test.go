@@ -54,6 +54,25 @@ var (
 			Project: "my-eventing-project",
 		},
 	}
+
+	buildSourceSpecWithKSA = CloudBuildSourceSpec{
+		PubSubSpec: duckv1beta1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: duckv1beta1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+			Project: "my-eventing-project",
+		},
+	}
 )
 
 func TestCloudBuildSourceCheckValidationFields(t *testing.T) {
@@ -259,22 +278,17 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed": {
-			orig: &buildSourceSpec,
+		"ServiceAccountName changed": {
+			orig: &buildSourceSpecWithKSA,
 			updated: CloudBuildSourceSpec{
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					IdentitySpec: duckv1beta1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: buildSourceSpec.Secret.Name,
-						},
-						Key: buildSourceSpec.Secret.Key,
-					},
 					SourceSpec: duckv1.SourceSpec{
-						Sink: buildSourceSpec.Sink,
+						Sink: buildSourceSpecWithKSA.Sink,
 					},
+					Project: buildSourceSpecWithKSA.Project,
 				},
 			},
 			allowed: false,
@@ -384,7 +398,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 			updated: buildSourceSpec,
 			allowed: true,
 		},
-		"not spec": {
+		"no spec": {
 			orig:    []string{"wrong"},
 			updated: buildSourceSpec,
 			allowed: true,

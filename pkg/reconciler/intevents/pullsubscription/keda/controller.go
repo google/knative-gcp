@@ -127,7 +127,7 @@ func newController(
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("Pullsubscription")),
+		FilterFunc: controller.FilterControllerGK(v1beta1.Kind("PullSubscription")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

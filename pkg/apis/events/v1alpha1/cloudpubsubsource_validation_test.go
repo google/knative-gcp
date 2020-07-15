@@ -55,6 +55,26 @@ var (
 		},
 		Topic: "pubsub-topic",
 	}
+
+	pubSubSourceSpecWithKSA = CloudPubSubSourceSpec{
+		PubSubSpec: duckv1alpha1.PubSubSpec{
+			IdentitySpec: duckv1alpha1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			Project: "my-eventing-project",
+		},
+		Topic: "pubsub-topic",
+	}
 )
 
 func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
@@ -308,24 +328,19 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed": {
-			orig: &pubSubSourceSpec,
+		"ServiceAccountName changed": {
+			orig: &pubSubSourceSpecWithKSA,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: pubSubSourceSpec.Secret.Name,
-						},
-						Key: pubSubSourceSpec.Secret.Key,
-					},
 					SourceSpec: duckv1.SourceSpec{
-						Sink: pubSubSourceSpec.Sink,
+						Sink: pubSubSourceSpecWithKSA.Sink,
 					},
+					Project: pubSubSourceSpecWithKSA.Project,
 				},
-				Topic: pubSubSourceSpec.Topic,
+				Topic: pubSubSourceSpecWithKSA.Topic,
 			},
 			allowed: false,
 		},
@@ -457,7 +472,7 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 			updated: pubSubSourceSpec,
 			allowed: true,
 		},
-		"not spec": {
+		"no spec": {
 			orig:    []string{"wrong"},
 			updated: pubSubSourceSpec,
 			allowed: true,

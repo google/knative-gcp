@@ -23,16 +23,7 @@ set -euo pipefail
 
 source $(dirname "$0")/lib.sh
 
-readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="$(mktemp)"
-
 PROJECT_ID=${1:-$(gcloud config get-value project)}
 echo "PROJECT_ID used when init_cloud_storage_source is'${PROJECT_ID}'"
 
-# Download a JSON key for the service account.
-gcloud iam service-accounts keys create "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}" \
-  --iam-account="${PUBSUB_SERVICE_ACCOUNT}"@"${PROJECT_ID}".iam.gserviceaccount.com
-
-storage_admin_set_up "${PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT}" "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
-
-# Remove the tmp file.
-rm "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
+storage_admin_set_up "${PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT}"

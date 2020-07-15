@@ -17,7 +17,7 @@ require (
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
-	go.opencensus.io v0.22.4
+	go.opencensus.io v0.22.5-0.20200714042313-af30f77c5f65
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
@@ -47,9 +47,9 @@ replace (
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 )
 
+// The following packages were pinned as part of the go module transition and should eventually be
+// unpinned.
 replace github.com/blang/semver => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
-
-replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.7
 
 replace github.com/jmespath/go-jmespath => github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 

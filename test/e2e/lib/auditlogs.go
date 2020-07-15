@@ -22,6 +22,7 @@ import (
 	"os"
 	"testing"
 
+	"google.golang.org/api/option"
 	"google.golang.org/grpc/status"
 
 	"cloud.google.com/go/logging/logadmin"
@@ -96,7 +97,8 @@ func StackdriverSinkExists(t *testing.T, sinkID string) bool {
 	t.Helper()
 	ctx := context.Background()
 	project := os.Getenv(ProwProjectKey)
-	client, err := logadmin.NewClient(ctx, project)
+	opt := option.WithQuotaProject(project)
+	client, err := logadmin.NewClient(ctx, project, opt)
 	if err != nil {
 		t.Fatalf("failed to create LogAdmin client, %s", err.Error())
 	}
