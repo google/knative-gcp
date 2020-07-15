@@ -179,6 +179,6 @@ func createGCPBroker(client *lib.Client) (url.URL, string) {
 	}
 	// Avoid propagation delay between the controller reconciles the broker config and
 	// the config being pushed to the configmap volume in the ingress pod.
-	time.Sleep(15 * time.Second)
+	time.Sleep(knativegcptestresources.WaitBrokercellTime)
 	return u, brokerName
 }

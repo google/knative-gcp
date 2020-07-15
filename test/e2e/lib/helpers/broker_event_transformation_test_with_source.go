@@ -85,7 +85,7 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
 	envVar := []v1.EnvVar{{
 		Name:  "BROKER_URL",
@@ -145,7 +145,7 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
 	// Create a sender Job to send the event with retry.
 	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
@@ -224,7 +224,7 @@ func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID st
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
 	// Create a sender Job to send the event with retry.
 	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
@@ -286,7 +286,7 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
 	// Create the PubSub source.
 	lib.MakePubSubOrDie(client, lib.PubSubConfig{
@@ -351,7 +351,7 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
 	// Create the Storage source.
 	lib.MakeStorageOrDie(client, lib.StorageConfig{
@@ -402,7 +402,7 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
 	// Create the CloudAuditLogsSource.
 	lib.MakeAuditLogsOrDie(client, lib.AuditLogsConfig{
@@ -461,7 +461,7 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 	// Just to make sure all resources are ready.
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
 	// Create the CloudSchedulerSource.
 	lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{

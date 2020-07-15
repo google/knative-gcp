@@ -31,6 +31,8 @@ readonly VENDOR_EVENTING_TEST_IMAGES="vendor/knative.dev/eventing/test/test_imag
 # Constants used for authentication setup for GCP Broker if it's not running on Prow.
 readonly APP_ENGINE_REGION="us-central"
 
+readonly CONFIG_WARMUP_GCP_BROKER="test/test_configs/warmup-broker.yaml"
+
 # Setup Knative GCP.
 function knative_setup() {
   start_knative_gcp || return 1
@@ -100,6 +102,22 @@ function enable_monitoring(){
   gcloud projects add-iam-policy-binding "${project_id}" \
       --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
       --role roles/cloudtrace.agent
+}
+
+# The warm-up broker serves the following purposes:
+#
+# 1. When the broker data plane is created for the first time, it is expected
+# that there will be some delay before workload identity credential being fully
+# propagated. A warm-up broker will force the data plane to be created before
+# the real testing. This helps prevent the credential propagation delay causing
+# test flakiness.
+#
+# 2. The broker data plane will be GCed if there is no broker. Usually this would
+# happen before we dump all the pod logs in the cloud-run-events namespace. The
+# warm-up broker makes sure there is always one broker left and thus data plane pods
+# won't be deleted before we dump logs.
+function warmup_broker_setup(){
+  ko apply -f ${CONFIG_WARMUP_GCP_BROKER}
 }
 
 function dump_extra_cluster_state() {
