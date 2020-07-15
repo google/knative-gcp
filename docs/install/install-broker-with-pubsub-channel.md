@@ -41,7 +41,7 @@ Channel.
 
 1.  Patch the configmap in the `knative-eventing` namespace to use the Pub/Sub
     `Channel` as the
-    [default channel](https://knative.dev/docs/eventing/channel-based-broker/)
+    [default channel](https://knative.dev/docs/eventing/channels/default-channels/)
     for Brokers with
     [patch-config-br-defaults-with-pubsub.yaml](./patch-config-br-defaults-with-pubsub.yaml).
 
