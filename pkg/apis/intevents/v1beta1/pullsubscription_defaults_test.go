@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"knative.dev/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
