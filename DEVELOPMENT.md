@@ -7,13 +7,13 @@ Also take a look at:
 - [The pull request workflow](https://www.knative.dev/contributing/contributing/#pull-requests)
 - [How to add and run e2e tests](./test/e2e/README.md)
 - [Iterating](#iterating)
-- [Format Check](#format check)
+- [Format check](#format-check)
 
 ## Getting started
 
 1. [Create and checkout a repo fork](#checkout-your-fork)
 
-1. [Installing Knative-GCP](./README.md/#Installing Knative-GCP)
+1. [Installing Knative-GCP](./README.md/#installing-knative-GCP)
 
 ### Checkout your fork
 
