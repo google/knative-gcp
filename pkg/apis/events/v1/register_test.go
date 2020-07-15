@@ -59,6 +59,9 @@ func TestKnownTypes(t *testing.T) {
 	types := scheme.KnownTypes(SchemeGroupVersion)
 
 	for _, name := range []string{
+		"CloudAuditLogsSource",
+		"CloudPubSubSource",
+		"CloudSchedulerSource",
 		"CloudStorageSource",
 	} {
 		if _, ok := types[name]; !ok {

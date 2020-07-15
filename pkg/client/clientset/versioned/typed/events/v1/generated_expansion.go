@@ -18,4 +18,10 @@ limitations under the License.
 
 package v1
 
+type CloudAuditLogsSourceExpansion interface{}
+
+type CloudPubSubSourceExpansion interface{}
+
+type CloudSchedulerSourceExpansion interface{}
+
 type CloudStorageSourceExpansion interface{}

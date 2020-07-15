@@ -18,18 +18,13 @@ package v1alpha1
 
 import (
 	"context"
-	"time"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-)
-
-const (
-	defaultRetentionDuration = 7 * 24 * time.Hour
-	defaultAckDeadline       = 30 * time.Second
 )
 
 func (ps *CloudPubSubSource) SetDefaults(ctx context.Context) {
@@ -43,12 +38,12 @@ func (pss *CloudPubSubSourceSpec) SetDefaults(ctx context.Context) {
 	pss.SetPubSubDefaults(ctx)
 
 	if pss.AckDeadline == nil {
-		ackDeadline := defaultAckDeadline
+		ackDeadline := intevents.DefaultAckDeadline
 		pss.AckDeadline = ptr.String(ackDeadline.String())
 	}
 
 	if pss.RetentionDuration == nil {
-		retentionDuration := defaultRetentionDuration
+		retentionDuration := intevents.DefaultRetentionDuration
 		pss.RetentionDuration = ptr.String(retentionDuration.String())
 	}
 }

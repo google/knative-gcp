@@ -18,7 +18,9 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"knative.dev/pkg/apis"
 )
@@ -54,16 +56,14 @@ func (current *Topic) CheckImmutableFields(ctx context.Context, original *Topic)
 		return nil
 	}
 
-	var errs *apis.FieldError
-
-	// Topic is immutable.
-	if original.Spec.Topic != current.Spec.Topic {
-		errs = errs.Also(
-			&apis.FieldError{
-				Message: "Immutable field changed",
-				Paths:   []string{"spec", "topic"},
-				Details: fmt.Sprintf("was %q, now %q", original.Spec.Topic, current.Spec.Topic),
-			})
+	// Modification of Topic, Secret, ServiceAccountName and Project are not allowed. Everything else is mutable.
+	if diff := cmp.Diff(original.Spec, current.Spec,
+		cmpopts.IgnoreFields(TopicSpec{}, "PropagationPolicy", "EnablePublisher")); diff != "" {
+		return &apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{"spec"},
+			Details: diff,
+		}
 	}
-	return errs
+	return nil
 }
