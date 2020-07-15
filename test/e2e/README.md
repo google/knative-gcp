@@ -43,7 +43,7 @@ There are two ways to set up authentication mechanism.
     [knative-gcp](../../docs/install/install-knative-gcp.md) installed and
     configured.
 1.  Create a
-    [Pub/Sub Enabled Service Account](../../docs/install/dataplane-service-account.md).
+    [Service Account for the Data Plane](../../docs/install/dataplane-service-account.md).
     Download a credential file and set `GOOGLE_APPLICATION_CREDENTIALS` env var.
     This is used by some tests(e.g., `TestSmokePullSubscription`) to authorize
     the Google SDK clients.

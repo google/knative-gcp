@@ -1,4 +1,4 @@
-# Installing Pub/Sub Enabled Service Account
+# Installing a Service Account for the Data Plane
 
 Besides the control plane setup described in the general
 [installation guide](./install-knative-gcp.md), each of our resources have a

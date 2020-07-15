@@ -140,7 +140,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ## Authentication Mechanism for the Data Plane
 
 Please check
-[Installing Pub/Sub Enabled Service Account](../install/dataplane-service-account.md).
+[Installing a Service Account for the Data Plane](../install/dataplane-service-account.md).
 
 ## Troubleshooting
 
