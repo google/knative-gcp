@@ -8,6 +8,8 @@ Knative-GCP builds on Kubernetes to enable easy configuration and consumption of
 Google Cloud Platform events and services. It can be useful independently, but
 is best mixed with [Knative](https://knative.dev).
 
+If you are interested in contributing, see [DEVELOPMENT.md](./DEVELOPMENT.md).
+
 ## Installing Knative-GCP
 
 Follow this guide to install Knative-GCP components on a platform of your
