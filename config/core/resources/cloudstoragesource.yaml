@@ -217,7 +217,7 @@ spec:
     name: v1
     served: true
     storage: false
-    # We remove status.ServiceAccountName from the schema in v1.
+    # We remove spec.PayloadFormat status.ServiceAccountName from the schema in v1.
     schema:
       openAPIV3Schema:
         type: object
@@ -298,10 +298,6 @@ spec:
                 type: string
                 description: >
                   Optional prefix to only notify when objects match this prefix.
-              payloadFormat:
-                type: string
-                description: >
-                  Optional payload format. Either NONE or JSON_API_V1. If omitted, uses JSON_API_V1.
               eventTypes:
                 type: array
                 items:
