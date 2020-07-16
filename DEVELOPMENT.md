@@ -1,8 +1,7 @@
 # Development
 
 This doc explains how to setup a development environment so you can get started
-contributing to `Knative-GCP`.
-Also take a look at:
+contributing to `Knative-GCP`. Also take a look at:
 
 - [The pull request workflow](https://www.knative.dev/contributing/contributing/#pull-requests)
 - [How to add and run e2e tests](./test/e2e/README.md)
@@ -45,8 +44,8 @@ follows.
 ## Iterating
 
 As you make changes to the code-base, there are two special cases to be aware
-of(If you run under macOS, you may need to upgrade your bash version on macOS 
-since macOS comes with bash version 3 which is quite limiting and lack features 
+of(If you run under macOS, you may need to upgrade your bash version on macOS
+since macOS comes with bash version 3 which is quite limiting and lack features
 need to run the following two scripts):
 
 - **If you change a type definition ([pkg/apis/](./pkg/apis/.)),** then you must
@@ -67,13 +66,17 @@ ko apply -f config/500-controller.yaml
 Or you can [clean it up completely](#clean-up) and start again.
 
 ## Format Check
-The CI/CD runs format check, please run these commands before you submit a code change to make sure the format follows the standard:
-For macOS:
+
+The CI/CD runs format check, please run these commands before you submit a code
+change to make sure the format follows the standard: For macOS:
+
 ```bash
 find . -name '*.go' \! -name wire_gen.go \! -name '*.pb.go' -exec go run golang.org/x/tools/cmd/goimports -w {} \+ -o \( -path ./vendor -o -path ./third_party \) -prune
 find . -name '*.go' -type f \! -name '*.pb.go' -exec gofmt -s -w {} \+ -o \( -path './vendor' -o -path './third_party' \) -prune
 ```
+
 For Linux:
+
 ```bash
 find -name '*.go' \! -name wire_gen.go \! -name '*.pb.go' -exec go run golang.org/x/tools/cmd/goimports -w {} \+ -o \( -path ./vendor -o -path ./third_party \) -prune
 find -name '*.go' -type f \! -name '*.pb.go' -exec gofmt -s -w {} \+ -o \( -path './vendor' -o -path './third_party' \) -prune
