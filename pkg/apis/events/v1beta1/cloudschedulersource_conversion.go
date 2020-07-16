@@ -40,7 +40,7 @@ func (source *CloudSchedulerSource) ConvertTo(ctx context.Context, to apis.Conve
 		sink.Status.JobName = source.Status.JobName
 		return nil
 	default:
-		return apis.ConvertToViaProxy(ctx, source, &v1.CloudPubSubSource{}, sink)
+		return apis.ConvertToViaProxy(ctx, source, &v1.CloudSchedulerSource{}, sink)
 	}
 }
 
@@ -59,6 +59,6 @@ func (sink *CloudSchedulerSource) ConvertFrom(ctx context.Context, from apis.Con
 		sink.Status.JobName = source.Status.JobName
 		return nil
 	default:
-		return apis.ConvertFromViaProxy(ctx, source, &v1.CloudPubSubSource{}, sink)
+		return apis.ConvertFromViaProxy(ctx, source, &v1.CloudSchedulerSource{}, sink)
 	}
 }
