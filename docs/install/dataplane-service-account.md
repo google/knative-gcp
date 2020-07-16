@@ -1,4 +1,4 @@
-# Installing Pub/Sub Enabled Service Account
+# Installing a Service Account for the Data Plane
 
 Besides the control plane setup described in the general
 [installation guide](./install-knative-gcp.md), each of our resources have a
@@ -28,10 +28,10 @@ In general, we would just need permissions to receive messages
 (`roles/pubsub.subscriber`). However, in the case of the `Channel`, we would
 also need the ability to publish messages (`roles/pubsub.publisher`).
 
-1. Create a new Service Account named `cre-pubsub` with the following command:
+1. Create a new Service Account named `cre-dataplane` with the following command:
 
    ```shell
-   gcloud iam service-accounts create cre-pubsub
+   gcloud iam service-accounts create cre-dataplane
    ```
 
 1. Give that Service Account the necessary permissions on your project.
@@ -43,9 +43,24 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
 
    ```shell
    gcloud projects add-iam-policy-binding $PROJECT_ID \
-     --member=serviceAccount:cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
+     --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
      --role roles/pubsub.editor
    ```
+   
+   ***Note:***
+   If you are going to use metrics and tracing to track your resources, 
+   you also need `roles/monitoring.metricWriter` for metrics functionality:
+      ```shell
+      gcloud projects add-iam-policy-binding $PROJECT_ID \
+        --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
+        --role roles/monitoring.metricWriter
+      ```
+   and `roles/cloudtrace.agent` for tracing functionality:
+      ```shell
+      gcloud projects add-iam-policy-binding $PROJECT_ID \
+        --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
+        --role roles/cloudtrace.agent
+      ```
 
 ## Configure the Authentication Mechanism for GCP (the Data Plane)
 
@@ -71,7 +86,7 @@ Plane:
 
 - **_Non-default scenario:_**
 
-  Using the Google Cloud Service Account `cre-pubsub` you just created and using
+  Using the Google Cloud Service Account `cre-dataplane` you just created and using
   [Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
   in
   [Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md)
@@ -82,7 +97,7 @@ Plane:
   configuration in the Control Plane)
 
   You will have a Kubernetes Service Account after the above configuration,
-  which is bound to the Google Cloud Service Account `cre-pubsub`. Remember to
+  which is bound to the Google Cloud Service Account `cre-dataplane`. Remember to
   put this Kubernetes Service Account name as the `spec.serviceAccountName` when
   you create resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
@@ -94,12 +109,12 @@ Plane:
   you can authorize the Controller to configure Workload Identity for you.
 
   You need to grant `iam.serviceAccountAdmin` permission of the Google Cloud
-  Service Account `cre-pubsub` you just created to the Control Plane's Google
+  Service Account `cre-dataplane` you just created to the Control Plane's Google
   Cloud Service Account `cloud-run-events` by:
 
   ```shell
   gcloud iam service-accounts add-iam-policy-binding \
-   cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com  \
+   cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com  \
    --member='serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com' \
    --role='roles/iam.serviceAccountAdmin'
   ```
@@ -118,22 +133,22 @@ Plane:
   default-auth-config: |
     clusterDefaults:
       workloadIdentityMapping:
-        default-cre-pubsub: cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+        default-cre-dataplane: cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
   ```
 
-  Here, `default-cre-pubsub` refers to a Kubernetes Service Account bound to the
-  Google Cloud Service Account `cre-pubsub`. Remember to put this Kubernetes
+  Here, `default-cre-dataplane` refers to a Kubernetes Service Account bound to the
+  Google Cloud Service Account `cre-dataplane`. Remember to put this Kubernetes
   Service Account name as the `spec.serviceAccountName` when you create
   resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
 
-  Kubernetes Service Account `default-cre-pubsub` doesn't need to exist in a
+  Kubernetes Service Account `default-cre-dataplane` doesn't need to exist in a
   specific namespace. Once it is set in the ConfigMap `config-gcp-auth`， the
   Control Plane will create it for you and configure the corresponding Workload
   Identity relationship between the Kubernetes Service Account
-  `default-cre-pubsub` and the Google Cloud Service Account `cre-pubsub` when
+  `default-cre-dataplane` and the Google Cloud Service Account `cre-dataplane` when
   you create resources using the Kubernetes Service Account
-  `default-cre-pubsub`.
+  `default-cre-dataplane`.
 
 A `Condition` `WorkloadIdentityConfigured` will show up under resources'
 `Status`, indicating the Workload Identity configuration status.  
@@ -142,9 +157,9 @@ as a result, any user who can create a resource can get access to the Google Clo
 Service Account which grants the `iam.serviceAccountAdmin` permission to the Controller.
 As an example, if you followed the instructions above, then any user that can make
 a Knative-GCP source or Channel (e.g. `CloudAuditLogsSource`, `CloudPubSubSource`,
-etc.) can cause the Kubernetes Service Account `default-cre-pubsub` to be created.
+etc.) can cause the Kubernetes Service Account `default-cre-dataplane` to be created.
 If they can also create Pods in that namespace, then they can make a Pod that uses
-the Google Service Account `cre-pubsub` credentials.
+the Google Service Account `cre-dataplane` credentials.
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 
@@ -152,8 +167,8 @@ the Google Service Account `cre-pubsub` credentials.
    check this key into source control!**
 
    ```shell
-   gcloud iam service-accounts keys create cre-pubsub.json \
-   --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+   gcloud iam service-accounts keys create cre-dataplane.json \
+   --iam-account=cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
    ```
 
 1. Create a secret on the Kubernetes cluster with the downloaded key. Remember
@@ -161,7 +176,7 @@ the Google Service Account `cre-pubsub` credentials.
    below does so in the `default` namespace.
 
    ```shell
-   kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cre-pubsub.json
+   kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cre-dataplane.json
    ```
 
    `google-cloud-key` and `key.json` are default values expected by our
@@ -178,5 +193,5 @@ the Google Service Account `cre-pubsub` credentials.
 1. Delete the service account
 
    ```shell
-   gcloud iam service-accounts delete cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+   gcloud iam service-accounts delete cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
    ```

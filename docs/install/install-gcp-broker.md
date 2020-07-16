@@ -18,7 +18,7 @@ message consumption.
 
 1. [Install Knative-GCP](./install-knative-gcp.md).
 
-2. [Create a Pub/Sub enabled Service Account](./pubsub-service-account.md).
+2. [Create a Service Account for the Data Plane](./dataplane-service-account.md).
 
 ## Authentication Setup for GCP Broker
 
@@ -49,14 +49,14 @@ Workload Identity see
     gcloud iam service-accounts add-iam-policy-binding \
      --role roles/iam.workloadIdentityUser \
      --member serviceAccount:$PROJECT_ID.svc.id.goog[cloud-run-events/broker] \
-     cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+     cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
     ```
 
 1.  Annotate the `broker` Kubernetes Service Account with
-    `iam.gke.io/gcp-service-account=cre-pubsub@PROJECT_ID.iam.gserviceaccount.com`
+    `iam.gke.io/gcp-service-account=cre-dataplane@PROJECT_ID.iam.gserviceaccount.com`
 
     ```shell
-    kubectl --namespace cloud-run-events  annotate serviceaccount broker iam.gke.io/gcp-service-account=cre-pubsub@${PROJECT_ID}.iam.gserviceaccount.com
+    kubectl --namespace cloud-run-events  annotate serviceaccount broker iam.gke.io/gcp-service-account=cre-dataplane@${PROJECT_ID}.iam.gserviceaccount.com
     ```
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
@@ -65,14 +65,14 @@ Workload Identity see
    check this key into source control!**
 
    ```shell
-   gcloud iam service-accounts keys create cre-pubsub.json \
-   --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+   gcloud iam service-accounts keys create cre-dataplane.json \
+   --iam-account=cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
    ```
 
 1. Create a secret on the Kubernetes cluster with the downloaded key.
 
    ```shell
-   kubectl --namespace cloud-run-events create secret generic google-broker-key --from-file=key.json=cre-pubsub.json
+   kubectl --namespace cloud-run-events create secret generic google-broker-key --from-file=key.json=cre-dataplane.json
    ```
 
    `google-broker-key` and `key.json` are default values expected by our

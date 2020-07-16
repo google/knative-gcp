@@ -43,13 +43,13 @@ There are two ways to set up authentication mechanism.
     [knative-gcp](../../docs/install/install-knative-gcp.md) installed and
     configured.
 1.  Create a
-    [Pub/Sub Enabled Service Account](../../docs/install/pubsub-service-account.md).
+    [Service Account for the Data Plane](../../docs/install/dataplane-service-account.md).
     Download a credential file and set `GOOGLE_APPLICATION_CREDENTIALS` env var.
     This is used by some tests(e.g., `TestSmokePullSubscription`) to authorize
     the Google SDK clients.
     ```
-    cred_file=$(pwd)/cre-pubsub.json
-    gcloud iam service-accounts keys create ${cred_file} --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+    cred_file=$(pwd)/cre-dataplane.json
+    gcloud iam service-accounts keys create ${cred_file} --iam-account=cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
     export GOOGLE_APPLICATION_CREDENTIALS=${cred_file}
     ```
 1.  [Install GCP Broker](../../docs/install/install-gcp-broker.md).
@@ -66,7 +66,7 @@ There are two ways to set up authentication mechanism.
     specify the build tag `e2e`.
 1.  (Optional) Note that if you plan on running metrics-related E2E tests using
     the StackDriver backend, you need to give your
-    [Service Account](../../docs/install/pubsub-service-account.md) the
+    [Service Account](../../docs/install/dataplane-service-account.md) the
     `monitoring.metricWriter` role on your Google Cloud project:
 
     ```shell
@@ -77,7 +77,7 @@ There are two ways to set up authentication mechanism.
 
     If you also plan on running tracing-related E2E tests using the StackDriver
     backend, your
-    [Service Account](../../docs/install/pubsub-service-account.md) needs
+    [Service Account](../../docs/install/dataplane-service-account.md) needs
     additional `cloudtrace.agent` role:
 
     ```shell
