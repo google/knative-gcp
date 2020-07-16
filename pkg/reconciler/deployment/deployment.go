@@ -18,63 +18,41 @@ package deployment
 import (
 	"context"
 	"fmt"
+	"k8s.io/client-go/kubernetes"
 
-	"github.com/google/knative-gcp/pkg/reconciler"
-	v1 "k8s.io/api/apps/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/clock"
-	appsv1listers "k8s.io/client-go/listers/apps/v1"
-	"k8s.io/client-go/tools/cache"
-	"knative.dev/pkg/controller"
-	"knative.dev/pkg/logging"
+	"knative.dev/pkg/client/injection/kube/reconciler/apps/v1/deployment"
+	"knative.dev/pkg/reconciler"
 )
 
 const (
 	SecretUpdateAnnotation = "events.cloud.google.com/secretLastObservedUpdateTime"
 )
 
-type Reconciler struct {
-	*reconciler.Base
-
-	// listers index properties about resources
-	deploymentLister appsv1listers.DeploymentLister
-
-	clock clock.Clock
+// newReconciledNormal makes a new reconciler event with event type Normal, and
+// reason DeploymentReconciled.
+func newReconciledNormal(namespace, name string) reconciler.Event {
+	return reconciler.NewEvent(v1.EventTypeNormal, "DeploymentReconciled", "Deployment reconciled: \"%s/%s\"", namespace, name)
 }
 
-// Check that our Reconciler implements controller.Reconciler
-var _ controller.Reconciler = (*Reconciler)(nil)
+// Reconciler implements controller.Reconciler for Deployment resources.
+type Reconciler struct {
+	clock clock.Clock
 
-// Reconciler implements controller.Reconciler. It gets the deployment and then update its annotation.
+	// KubeClientSet allows us to talk to the k8s for core APIs.
+	KubeClientSet kubernetes.Interface
+}
+
+// Check that our Reconciler implements Interface
+var _ deployment.Interface = (*Reconciler)(nil)
+
+// ReconcileKind implements Interface.ReconcileKind.
+// It gets the deployment and then update its annotation.
 // With this, the deployment will recreate the pods and they will pick up the latest secret image immediately.
 // Otherwise we would need to wait for 1 min for the deployment pods to pick up the updated secret.
-func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Invalid resource key")
-		return nil
-	}
-	// Get the deployment resource with this namespace/name
-	original, err := r.deploymentLister.Deployments(namespace).Get(name)
-	if apierrs.IsNotFound(err) {
-		// The resource may no longer exist, in which case we stop processing.
-		logging.FromContext(ctx).Desugar().Error("Deployment in work queue no longer exists")
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	d := original.DeepCopy()
-
-	// Reconcile this copy of the Deployment.
-	return r.reconcile(ctx, d)
-}
-
-func (r *Reconciler) reconcile(ctx context.Context, d *v1.Deployment) error {
-	if d.DeletionTimestamp != nil {
-		return nil
-	}
-
+func (r *Reconciler) ReconcileKind(ctx context.Context, d *appsv1.Deployment) reconciler.Event {
 	annotations := d.Spec.Template.GetObjectMeta().GetAnnotations()
 	if annotations == nil {
 		annotations = make(map[string]string)
@@ -85,5 +63,5 @@ func (r *Reconciler) reconcile(ctx context.Context, d *v1.Deployment) error {
 	if err != nil {
 		return fmt.Errorf("failed to update deployment: %v", err)
 	}
-	return nil
+	return newReconciledNormal(d.Namespace, d.Name)
 }
