@@ -44,15 +44,16 @@ export KO_DOCKER_REPO='gcr.io/my-gcloud-project-id'
    create cluster, this could help to reduce subsequent configuration time.
 
 1. Set up a Linux Container repository for pushing images. You can use any
-      container image registry by adjusting the authentication methods and
-      repository paths mentioned in the sections below.
-      - [Google Container Registry quickstart](https://cloud.google.com/container-registry/docs/pushing-and-pulling)
-      - [Docker Hub quickstart](https://docs.docker.com/docker-hub/)
+   container image registry by adjusting the authentication methods and
+   repository paths mentioned in the sections below.
+
+   - [Google Container Registry quickstart](https://cloud.google.com/container-registry/docs/pushing-and-pulling)
+   - [Docker Hub quickstart](https://docs.docker.com/docker-hub/)
 
    > :information_source: You'll need to be authenticated with your
-   > `KO_DOCKER_REPO` before pushing images. Run `gcloud auth configure-docker` if
-   > you are using Google Container Registry or `docker login` if you are using
-   > Docker Hub.
+   > `KO_DOCKER_REPO` before pushing images. Run `gcloud auth configure-docker`
+   > if you are using Google Container Registry or `docker login` if you are
+   > using Docker Hub.
 
 1. Install [Knative](https://knative.dev/docs/install/). Preferably, set up both
    [Serving](https://knative.dev/docs/serving/) and
