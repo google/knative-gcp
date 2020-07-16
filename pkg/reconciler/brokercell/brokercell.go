@@ -233,6 +233,7 @@ func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.Ingre
 			Image:              r.env.IngressImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
+			AllowIstioSidecar:  true,
 		},
 		Port: r.env.IngressPort,
 	}
