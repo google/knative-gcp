@@ -1,0 +1,14 @@
+diff --git a/vendor/k8s.io/client-go/tools/leaderelection/leaderelection.go b/vendor/k8s.io/client-go/tools/leaderelection/leaderelection.go
+index 42fffd45..aca87179 100644
+--- a/vendor/k8s.io/client-go/tools/leaderelection/leaderelection.go
++++ b/vendor/k8s.io/client-go/tools/leaderelection/leaderelection.go
+@@ -301,7 +301,8 @@ func (le *LeaderElector) release() bool {
+ 		return true
+ 	}
+ 	leaderElectionRecord := rl.LeaderElectionRecord{
+-		LeaderTransitions: le.observedRecord.LeaderTransitions,
++		LeaderTransitions:    le.observedRecord.LeaderTransitions,
++		LeaseDurationSeconds: le.observedRecord.LeaseDurationSeconds,
+ 	}
+ 	if err := le.config.Lock.Update(leaderElectionRecord); err != nil {
+ 		klog.Errorf("Failed to release lock: %v", err)
