@@ -21,6 +21,7 @@ import (
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -43,8 +44,10 @@ type CloudStorageSource struct {
 
 // Verify that CloudStorageSource matches various duck types.
 var (
+	_ apis.Convertible             = (*CloudStorageSource)(nil)
 	_ apis.Defaultable             = (*CloudStorageSource)(nil)
 	_ apis.Validatable             = (*CloudStorageSource)(nil)
+	_ runtime.Object               = (*CloudStorageSource)(nil)
 	_ kmeta.OwnerRefable           = (*CloudStorageSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudStorageSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudStorageSource)(nil)

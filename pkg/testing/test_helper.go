@@ -6,17 +6,22 @@ import (
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
+	eventingduckv1 "knative.dev/pkg/apis/duck/v1"
+	eventingduckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	eventingduckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 // These variables are used to create a 'complete' version of Source where every field is
 // filled in.
 var (
-	trueVal = true
-	seconds = int64(314)
+	trueVal           = true
+	seconds           = int64(314)
+	AckDeadline       = "ackDeadline"
+	RetentionDuration = "30s"
 
 	CompleteObjectMeta = metav1.ObjectMeta{
 		Name:            "name",
@@ -61,8 +66,8 @@ var (
 		Fragment:   "fragment",
 	}
 
-	CompleteDestination = duckv1.Destination{
-		Ref: &duckv1.KReference{
+	CompleteDestination = eventingduckv1.Destination{
+		Ref: &eventingduckv1.KReference{
 			APIVersion: "apiVersion",
 			Kind:       "kind",
 			Namespace:  "namespace",
@@ -71,9 +76,9 @@ var (
 		URI: &CompleteURL,
 	}
 
-	CompleteSourceSpec = duckv1.SourceSpec{
+	CompleteSourceSpec = eventingduckv1.SourceSpec{
 		Sink: CompleteDestination,
-		CloudEventOverrides: &duckv1.CloudEventOverrides{
+		CloudEventOverrides: &eventingduckv1.CloudEventOverrides{
 			Extensions: map[string]string{"supers": "reckoners"},
 		},
 	}
@@ -98,9 +103,9 @@ var (
 	}
 
 	CompleteV1alpha1IdentityStatus = duckv1alpha1.IdentityStatus{
-		Status: duckv1.Status{
+		Status: eventingduckv1.Status{
 			ObservedGeneration: 7,
-			Conditions: duckv1.Conditions{
+			Conditions: eventingduckv1.Conditions{
 				{
 					Type:   "Ready",
 					Status: "True",
@@ -113,7 +118,7 @@ var (
 	CompleteV1alpha1PubSubStatus = duckv1alpha1.PubSubStatus{
 		IdentityStatus: CompleteV1alpha1IdentityStatus,
 		SinkURI:        &CompleteURL,
-		CloudEventAttributes: []duckv1.CloudEventAttributes{
+		CloudEventAttributes: []eventingduckv1.CloudEventAttributes{
 			{
 				Type:   "type",
 				Source: "source",
@@ -136,9 +141,9 @@ var (
 	}
 
 	CompleteV1beta1IdentityStatus = duckv1beta1.IdentityStatus{
-		Status: duckv1.Status{
+		Status: eventingduckv1.Status{
 			ObservedGeneration: 7,
-			Conditions: duckv1.Conditions{
+			Conditions: eventingduckv1.Conditions{
 				{
 					Type:   "Ready",
 					Status: "True",
@@ -151,7 +156,7 @@ var (
 	CompleteV1beta1PubSubStatus = duckv1beta1.PubSubStatus{
 		IdentityStatus: CompleteV1beta1IdentityStatus,
 		SinkURI:        &CompleteURL,
-		CloudEventAttributes: []duckv1.CloudEventAttributes{
+		CloudEventAttributes: []eventingduckv1.CloudEventAttributes{
 			{
 				Type:   "type",
 				Source: "source",
@@ -160,5 +165,20 @@ var (
 		ProjectID:      "projectID",
 		TopicID:        "topicID",
 		SubscriptionID: "subscriptionID",
+	}
+
+	CompleteV1alpha1AddressStatus = eventingduckv1alpha1.AddressStatus{
+		Address: &eventingduckv1alpha1.Addressable{
+			Addressable: eventingduckv1beta1.Addressable{
+				URL: &CompleteURL,
+			},
+			Hostname: CompleteURL.Host,
+		},
+	}
+
+	CompleteV1beta1AddressStatus = eventingduckv1beta1.AddressStatus{
+		Address: &eventingduckv1beta1.Addressable{
+			URL: &CompleteURL,
+		},
 	}
 )

@@ -26,8 +26,6 @@ import (
 	gcptesting "github.com/google/knative-gcp/pkg/testing"
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-	pkgduckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 var (
@@ -35,15 +33,6 @@ var (
 	three         = int32(3)
 	backoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
 	backoffDelay  = "backoffDelay"
-
-	completeAddressStatus = pkgduckv1alpha1.AddressStatus{
-		Address: &pkgduckv1alpha1.Addressable{
-			Addressable: duckv1beta1.Addressable{
-				URL: &gcptesting.CompleteURL,
-			},
-			Hostname: gcptesting.CompleteURL.Host,
-		},
-	}
 
 	completeSubscribable = &eventingduckv1alpha1.Subscribable{
 		Subscribers: []eventingduckv1alpha1.SubscriberSpec{
@@ -130,7 +119,6 @@ func TestV1beta1IdentityStatus(t *testing.T) {
 }
 
 func TestV1IdentityStatus(t *testing.T) {
-
 	want := gcptesting.CompleteV1beta1IdentityStatus
 	got := convert.FromV1IdentityStatus(convert.ToV1IdentityStatus(want))
 	// ServiceAccountName exists exclusively in v1alpha1 and v1beta1, it has not yet been promoted to
@@ -142,7 +130,7 @@ func TestV1IdentityStatus(t *testing.T) {
 }
 
 func TestV1beta1AddressStatus(t *testing.T) {
-	want := completeAddressStatus
+	want := gcptesting.CompleteV1alpha1AddressStatus
 	v1b1, err := convert.ToV1beta1AddressStatus(context.Background(), want)
 	if err != nil {
 		t.Fatalf("Unable to convert to v1beta1 %v", err)
@@ -166,6 +154,22 @@ func TestV1beta1AddressStatus(t *testing.T) {
 		}
 	}
 
+	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
+	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
+		t.Errorf("Unexpected difference (-want +got): %v", diff)
+	}
+}
+
+func TestV1AddressStatus(t *testing.T) {
+	want := gcptesting.CompleteV1beta1AddressStatus
+	v1, err := convert.ToV1AddressStatus(context.Background(), want)
+	if err != nil {
+		t.Fatalf("Unable to convert to v1beta1 %v", err)
+	}
+	got, err := convert.FromV1AddressStatus(context.Background(), v1)
+	if err != nil {
+		t.Fatalf("Unable to convert from v1beta1 %v", err)
+	}
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
 		t.Errorf("Unexpected difference (-want +got): %v", diff)

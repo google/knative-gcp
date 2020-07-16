@@ -18,17 +18,57 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/google/knative-gcp/pkg/apis/convert"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 
 	"knative.dev/pkg/apis"
 )
 
 // ConvertTo implements apis.Convertible.
-func (*PullSubscription) ConvertTo(_ context.Context, to apis.Convertible) error {
-	return fmt.Errorf("v1beta1 is the highest known version, got: %T", to)
+// Converts v1alpha1.PullSubscription to a higher version of PullSubscription.
+// Currently, we only support v1 as a higher version.
+func (source *PullSubscription) ConvertTo(ctx context.Context, to apis.Convertible) error {
+	switch sink := to.(type) {
+	case *v1.PullSubscription:
+		sink.ObjectMeta = source.ObjectMeta
+		sink.Spec.PubSubSpec = convert.ToV1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Spec.Topic = source.Spec.Topic
+		sink.Spec.AckDeadline = source.Spec.AckDeadline
+		sink.Spec.RetainAckedMessages = source.Spec.RetainAckedMessages
+		sink.Spec.RetentionDuration = source.Spec.RetentionDuration
+		sink.Spec.Transformer = source.Spec.Transformer
+		sink.Spec.AdapterType = source.Spec.AdapterType
+		sink.Status.PubSubStatus = convert.ToV1PubSubStatus(source.Status.PubSubStatus)
+		sink.Status.TransformerURI = source.Status.TransformerURI
+		sink.Status.SubscriptionID = source.Status.SubscriptionID
+		return nil
+	default:
+		return apis.ConvertToViaProxy(ctx, source, &v1.PullSubscription{}, sink)
+	}
 }
 
 // ConvertFrom implements apis.Convertible.
-func (*PullSubscription) ConvertFrom(_ context.Context, from apis.Convertible) error {
-	return fmt.Errorf("v1beta1 is the highest known version, got: %T", from)
+// Converts obj from a higher version of PullSubscription to v1beta1.PullSubscription.
+// Currently, we only support v1 as a higher version.
+func (sink *PullSubscription) ConvertFrom(ctx context.Context, from apis.Convertible) error {
+	switch source := from.(type) {
+	case *v1.PullSubscription:
+		sink.ObjectMeta = source.ObjectMeta
+		sink.Spec.PubSubSpec = convert.FromV1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Spec.Topic = source.Spec.Topic
+		sink.Spec.AckDeadline = source.Spec.AckDeadline
+		sink.Spec.RetainAckedMessages = source.Spec.RetainAckedMessages
+		sink.Spec.RetentionDuration = source.Spec.RetentionDuration
+		sink.Spec.Transformer = source.Spec.Transformer
+		// Since we remove Mode from PullSubscriptionSpec in v1, we treat it as an empty string.
+		sink.Spec.Mode = ""
+		sink.Spec.AdapterType = source.Spec.AdapterType
+		sink.Status.PubSubStatus = convert.FromV1PubSubStatus(source.Status.PubSubStatus)
+		sink.Status.TransformerURI = source.Status.TransformerURI
+		sink.Status.SubscriptionID = source.Status.SubscriptionID
+		return nil
+	default:
+		return apis.ConvertFromViaProxy(ctx, source, &v1.PullSubscription{}, sink)
+	}
 }

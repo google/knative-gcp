@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/knative-gcp/pkg/apis/convert"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
@@ -26,8 +25,8 @@ import (
 )
 
 // ConvertTo implements apis.Convertible.
-// Converts source (from v1beta1.CloudAuditLogsSource) into v1alpha1.CloudAuditLogsSource.
-func (source *CloudAuditLogsSource) ConvertTo(_ context.Context, to apis.Convertible) error {
+// Converts from a v1alpha1.CloudAuditLogsSource to a higher version of CloudAuditLogsSource.
+func (source *CloudAuditLogsSource) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *v1beta1.CloudAuditLogsSource:
 		sink.ObjectMeta = source.ObjectMeta
@@ -39,14 +38,13 @@ func (source *CloudAuditLogsSource) ConvertTo(_ context.Context, to apis.Convert
 		sink.Status.StackdriverSink = source.Status.StackdriverSink
 		return nil
 	default:
-		return fmt.Errorf("unknown conversion, got: %T", sink)
-
+		return apis.ConvertToViaProxy(ctx, source, &v1beta1.CloudAuditLogsSource{}, sink)
 	}
 }
 
 // ConvertFrom implements apis.Convertible.
-// Converts obj from v1alpha1.CloudAuditLogsSource into v1beta1.CloudAuditLogsSource.
-func (sink *CloudAuditLogsSource) ConvertFrom(_ context.Context, from apis.Convertible) error {
+// Converts from a higher version of CloudAuditLogsSource to a v1alpha1.CloudAuditLogsSource.
+func (sink *CloudAuditLogsSource) ConvertFrom(ctx context.Context, from apis.Convertible) error {
 	switch source := from.(type) {
 	case *v1beta1.CloudAuditLogsSource:
 		sink.ObjectMeta = source.ObjectMeta
@@ -58,6 +56,6 @@ func (sink *CloudAuditLogsSource) ConvertFrom(_ context.Context, from apis.Conve
 		sink.Status.StackdriverSink = source.Status.StackdriverSink
 		return nil
 	default:
-		return fmt.Errorf("unknown conversion, got: %T", source)
+		return apis.ConvertFromViaProxy(ctx, source, &v1beta1.CloudAuditLogsSource{}, sink)
 	}
 }

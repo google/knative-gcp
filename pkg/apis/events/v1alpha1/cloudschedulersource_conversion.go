@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/knative-gcp/pkg/apis/convert"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
@@ -26,8 +25,8 @@ import (
 )
 
 // ConvertTo implements apis.Convertible.
-// Converts source (from v1beta1.CloudSchedulerSource) into v1alpha1.CloudSchedulerSource.
-func (source *CloudSchedulerSource) ConvertTo(_ context.Context, to apis.Convertible) error {
+// Converts from a v1alpha1.CloudSchedulerSource to a higher version of CloudSchedulerSource.
+func (source *CloudSchedulerSource) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *v1beta1.CloudSchedulerSource:
 		sink.ObjectMeta = source.ObjectMeta
@@ -39,14 +38,13 @@ func (source *CloudSchedulerSource) ConvertTo(_ context.Context, to apis.Convert
 		sink.Status.JobName = source.Status.JobName
 		return nil
 	default:
-		return fmt.Errorf("unknown conversion, got: %T", sink)
-
+		return apis.ConvertToViaProxy(ctx, source, &v1beta1.CloudPubSubSource{}, sink)
 	}
 }
 
 // ConvertFrom implements apis.Convertible.
-// Converts obj from v1alpha1.CloudSchedulerSource into v1beta1.CloudSchedulerSource.
-func (sink *CloudSchedulerSource) ConvertFrom(_ context.Context, from apis.Convertible) error {
+// Converts from a higher version of CloudSchedulerSource to a v1alpha1.CloudSchedulerSource.
+func (sink *CloudSchedulerSource) ConvertFrom(ctx context.Context, from apis.Convertible) error {
 	switch source := from.(type) {
 	case *v1beta1.CloudSchedulerSource:
 		sink.ObjectMeta = source.ObjectMeta
@@ -58,6 +56,6 @@ func (sink *CloudSchedulerSource) ConvertFrom(_ context.Context, from apis.Conve
 		sink.Status.JobName = source.Status.JobName
 		return nil
 	default:
-		return fmt.Errorf("unknown conversion, got: %T", source)
+		return apis.ConvertFromViaProxy(ctx, source, &v1beta1.CloudPubSubSource{}, sink)
 	}
 }
