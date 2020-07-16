@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"k8s.io/client-go/kubernetes"
+	"knative.dev/pkg/logging"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/clock"
@@ -47,6 +48,11 @@ var _ deployment.Interface = (*Reconciler)(nil)
 // With this, the deployment will recreate the pods and they will pick up the latest secret image immediately.
 // Otherwise we would need to wait for 1 min for the deployment pods to pick up the updated secret.
 func (r *Reconciler) ReconcileKind(ctx context.Context, d *appsv1.Deployment) reconciler.Event {
+	if d.Namespace != namespace || d.Name != deploymentName {
+		logging.FromContext(ctx).Info("Discarding attempt to reconcile invalid deployment")
+		return nil
+	}
+
 	annotations := d.Spec.Template.GetObjectMeta().GetAnnotations()
 	if annotations == nil {
 		annotations = make(map[string]string)

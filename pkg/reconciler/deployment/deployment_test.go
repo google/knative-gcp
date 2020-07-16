@@ -38,8 +38,8 @@ import (
 )
 
 const (
-	testDeploymentName = "test-controller"
-	testNS             = "test-cloud-run-events"
+	testDeploymentName = "controller"
+	testNS             = "cloud-run-events"
 )
 
 func init() {
@@ -58,6 +58,12 @@ func TestAllCases(t *testing.T) {
 			Name: "key not found",
 			// Make sure Reconcile handles good keys that don't exist.
 			Key: "foo/not-found",
+		}, {
+			Name: "invalid deployment name",
+			Objects: []runtime.Object{
+				NewDeployment("other", "otherNS"),
+			},
+			Key: "otherNS/other",
 		}, {
 			Name: "deployment updated",
 			Objects: []runtime.Object{

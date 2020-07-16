@@ -58,18 +58,20 @@ func NewController(
 		clock:         clock.RealClock{},
 	}
 	impl := deploymentreconciler.NewImpl(ctx, r, func(impl *controller.Impl) controller.Options {
+		// TODO seems that this sentinel is not working. Enqueues all deployments anyway and we keep on restarting.
+		//  I think this is due to the PromoteFunc on LeaderElection having no filtering on resources.
+		//  It is called and it just lists every resource and enqueues them.
+		sentinel := impl.EnqueueSentinel(types.NamespacedName{Namespace: namespace, Name: deploymentName})
+		secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+			FilterFunc: controller.FilterWithNameAndNamespace(namespace, secretName),
+			Handler:    handler(sentinel),
+		})
 		return controller.Options{
 			SkipStatusUpdates: true,
 		}
 	})
 
 	logger.Info("Setting up event handlers.")
-
-	sentinel := impl.EnqueueSentinel(types.NamespacedName{Namespace: namespace, Name: deploymentName})
-	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(namespace, secretName),
-		Handler:    handler(sentinel),
-	})
 	return impl
 }
 
