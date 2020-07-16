@@ -18,10 +18,10 @@ package deployment
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/client-go/kubernetes"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/clock"
 	"knative.dev/pkg/client/injection/kube/reconciler/apps/v1/deployment"
 	"knative.dev/pkg/reconciler"
@@ -31,18 +31,12 @@ const (
 	SecretUpdateAnnotation = "events.cloud.google.com/secretLastObservedUpdateTime"
 )
 
-// newReconciledNormal makes a new reconciler event with event type Normal, and
-// reason DeploymentReconciled.
-func newReconciledNormal(namespace, name string) reconciler.Event {
-	return reconciler.NewEvent(v1.EventTypeNormal, "DeploymentReconciled", "Deployment reconciled: \"%s/%s\"", namespace, name)
-}
-
 // Reconciler implements controller.Reconciler for Deployment resources.
 type Reconciler struct {
 	clock clock.Clock
 
 	// KubeClientSet allows us to talk to the k8s for core APIs.
-	KubeClientSet kubernetes.Interface
+	kubeClientSet kubernetes.Interface
 }
 
 // Check that our Reconciler implements Interface
@@ -59,9 +53,9 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, d *appsv1.Deployment) re
 	}
 	annotations[SecretUpdateAnnotation] = r.clock.Now().String()
 	d.Spec.Template.SetAnnotations(annotations)
-	_, err := r.KubeClientSet.AppsV1().Deployments(d.Namespace).Update(d)
+	_, err := r.kubeClientSet.AppsV1().Deployments(d.Namespace).Update(d)
 	if err != nil {
 		return fmt.Errorf("failed to update deployment: %v", err)
 	}
-	return newReconciledNormal(d.Namespace, d.Name)
+	return nil
 }

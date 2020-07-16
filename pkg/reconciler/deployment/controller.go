@@ -1,9 +1,12 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2020 Google LLC
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+
     http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/tools/cache"
 
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	deploymentreconciler "knative.dev/pkg/client/injection/kube/reconciler/apps/v1/deployment"
 
@@ -48,9 +52,14 @@ func NewController(
 	secretInformer := secret.Get(ctx)
 
 	r := &Reconciler{
-		clock: clock.RealClock{},
+		kubeClientSet: kubeclient.Get(ctx),
+		clock:         clock.RealClock{},
 	}
-	impl := deploymentreconciler.NewImpl(ctx, r)
+	impl := deploymentreconciler.NewImpl(ctx, r, func(impl *controller.Impl) controller.Options {
+		return controller.Options{
+			SkipStatusUpdates: true,
+		}
+	})
 
 	logger.Info("Setting up event handlers.")
 

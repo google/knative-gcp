@@ -25,14 +25,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
+	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
+	deploymentreconciler "knative.dev/pkg/client/injection/kube/reconciler/apps/v1/deployment"
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler"
-
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
 )
@@ -91,12 +91,17 @@ func TestAllCases(t *testing.T) {
 	}
 
 	defer logtesting.ClearAll()
+
+	logger := logtesting.TestLogger(t)
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
-		return &Reconciler{
-			Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
-			deploymentLister: listers.GetDeploymentLister(),
+
+		r := &Reconciler{
+			kubeClientSet: fakekubeclient.Get(ctx),
 			clock: clock.NewFakeClock(time.Date(
 				2019, 11, 17, 20, 34, 58, 651387237, time.UTC)),
 		}
+
+		return deploymentreconciler.NewReconciler(ctx, logger, fakekubeclient.Get(ctx),
+			listers.GetDeploymentLister(), controller.GetEventRecorder(ctx), r, controller.Options{SkipStatusUpdates: true})
 	}))
 }
