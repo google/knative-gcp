@@ -43,6 +43,8 @@ const (
 )
 
 // NewController creates a Reconciler for Deployment and returns the result of NewImpl.
+// When the secret `google-cloud-key` in the namespace `cloud-run-events` gets updated,
+// we will enqueue the `cloud-run-events` controller.
 func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
@@ -68,7 +70,6 @@ func NewController(
 		FilterFunc: controller.FilterWithNameAndNamespace(namespace, secretName),
 		Handler:    handler(sentinel),
 	})
-
 	return impl
 }
 
