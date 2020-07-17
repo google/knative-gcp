@@ -139,6 +139,11 @@ spec:
               description: >
                 Google Cloud Project ID of the project into which the topic should be created. If omitted uses
                 the Project ID from the GKE cluster metadata service.
+            topic:
+              type: string
+              description: >
+                ID of the Cloud Pub/Sub Topic to Subscribe to. It must be `cloud-builds` if
+                specified. Defaults to `cloud-builds`.
         status:
           type: object
           properties:

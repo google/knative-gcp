@@ -23,7 +23,7 @@ metadata:
   annotations:
     registry.knative.dev/eventTypes: |
       [
-        { "type": "com.google.cloud.scheduler.job.execute", "description": "This event is sent when a job is executed in Cloud Scheduler."}
+        { "type": "google.cloud.scheduler.job.v1.executed", "schema":"https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/scheduler/v1/data.proto", "description": "This event is sent when a job is executed in Cloud Scheduler."}
       ]
   name: cloudschedulersources.events.cloud.google.com
 spec:
@@ -46,10 +46,10 @@ spec:
   versions:
     - name: v1alpha1
       served: true
-      storage: true
+      storage: false
     - name: v1beta1
       served: true
-      storage: false
+      storage: true
   validation:
     openAPIV3Schema:
       type: object
