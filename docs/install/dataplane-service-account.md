@@ -28,7 +28,8 @@ In general, we would just need permissions to receive messages
 (`roles/pubsub.subscriber`). However, in the case of the `Channel`, we would
 also need the ability to publish messages (`roles/pubsub.publisher`).
 
-1. Create a new Service Account named `cre-dataplane` with the following command:
+1. Create a new Service Account named `cre-dataplane` with the following
+   command:
 
    ```shell
    gcloud iam service-accounts create cre-dataplane
@@ -46,21 +47,24 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
      --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
      --role roles/pubsub.editor
    ```
-   
-   ***Note:***
-   If you are going to use metrics and tracing to track your resources, 
-   you also need `roles/monitoring.metricWriter` for metrics functionality:
-      ```shell
-      gcloud projects add-iam-policy-binding $PROJECT_ID \
-        --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
-        --role roles/monitoring.metricWriter
-      ```
+
+   **_Note:_** If you are going to use metrics and tracing to track your
+   resources, you also need `roles/monitoring.metricWriter` for metrics
+   functionality:
+
+   ```shell
+   gcloud projects add-iam-policy-binding $PROJECT_ID \
+     --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
+     --role roles/monitoring.metricWriter
+   ```
+
    and `roles/cloudtrace.agent` for tracing functionality:
-      ```shell
-      gcloud projects add-iam-policy-binding $PROJECT_ID \
-        --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
-        --role roles/cloudtrace.agent
-      ```
+
+   ```shell
+   gcloud projects add-iam-policy-binding $PROJECT_ID \
+     --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
+     --role roles/cloudtrace.agent
+   ```
 
 ## Configure the Authentication Mechanism for GCP (the Data Plane)
 
@@ -86,7 +90,8 @@ Plane:
 
 - **_Non-default scenario:_**
 
-  Using the Google Cloud Service Account `cre-dataplane` you just created and using
+  Using the Google Cloud Service Account `cre-dataplane` you just created and
+  using
   [Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
   in
   [Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md)
@@ -97,9 +102,9 @@ Plane:
   configuration in the Control Plane)
 
   You will have a Kubernetes Service Account after the above configuration,
-  which is bound to the Google Cloud Service Account `cre-dataplane`. Remember to
-  put this Kubernetes Service Account name as the `spec.serviceAccountName` when
-  you create resources in the
+  which is bound to the Google Cloud Service Account `cre-dataplane`. Remember
+  to put this Kubernetes Service Account name as the `spec.serviceAccountName`
+  when you create resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
 
 - **_Default scenario:_**
@@ -136,18 +141,18 @@ Plane:
         default-cre-dataplane: cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
   ```
 
-  Here, `default-cre-dataplane` refers to a Kubernetes Service Account bound to the
-  Google Cloud Service Account `cre-dataplane`. Remember to put this Kubernetes
-  Service Account name as the `spec.serviceAccountName` when you create
-  resources in the
+  Here, `default-cre-dataplane` refers to a Kubernetes Service Account bound to
+  the Google Cloud Service Account `cre-dataplane`. Remember to put this
+  Kubernetes Service Account name as the `spec.serviceAccountName` when you
+  create resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
 
   Kubernetes Service Account `default-cre-dataplane` doesn't need to exist in a
   specific namespace. Once it is set in the ConfigMap `config-gcp-auth`， the
   Control Plane will create it for you and configure the corresponding Workload
   Identity relationship between the Kubernetes Service Account
-  `default-cre-dataplane` and the Google Cloud Service Account `cre-dataplane` when
-  you create resources using the Kubernetes Service Account
+  `default-cre-dataplane` and the Google Cloud Service Account `cre-dataplane`
+  when you create resources using the Kubernetes Service Account
   `default-cre-dataplane`.
 
 A `Condition` `WorkloadIdentityConfigured` will show up under resources'

@@ -183,7 +183,8 @@ This example shows the _binary_ mode mapping of an event to a Pub/Sub Message:
 }
 ```
 
-This example show a publish request on the REST API of the above Pub/Sub Message:
+This example show a publish request on the REST API of the above Pub/Sub
+Message:
 
 ```text
 POST https://pubsub.googleapis.com/v1/{topic}:publish HTTP/1.1
@@ -266,7 +267,8 @@ Message:
 }
 ```
 
-This example show a publish request on the REST API of the above Pub/Sub Message:
+This example show a publish request on the REST API of the above Pub/Sub
+Message:
 
 ```text
 POST https://pubsub.googleapis.com/v1/{topic}:publish HTTP/1.1
