@@ -56,6 +56,37 @@ spec:
       properties:
         spec:
           type: object
+          properties:
+            components:
+              type: object
+              properties:
+                fanout:
+                  type: object
+                  properties:
+                    minReplicas:
+                      type: integer
+                      format: int64
+                    maxReplicas:
+                      type: integer
+                      format: int64
+                ingress:
+                  type: object
+                  properties:
+                    minReplicas:
+                      type: integer
+                      format: int64
+                    maxReplicas:
+                      type: integer
+                      format: int64
+                retry:
+                  type: object
+                  properties:
+                    minReplicas:
+                      type: integer
+                      format: int64
+                    maxReplicas:
+                      type: integer
+                      format: int64
         status:
           type: object
           properties:

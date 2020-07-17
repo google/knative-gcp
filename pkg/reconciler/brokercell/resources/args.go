@@ -70,6 +70,7 @@ type AutoscalingArgs struct {
 	AvgCPUUtilization int32
 	AvgMemoryUsage    string
 	MaxReplicas       int32
+	MinReplicas       int32
 }
 
 // Labels generates the labels present on all resources representing the
