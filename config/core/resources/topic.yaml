@@ -37,14 +37,14 @@ spec:
       # conversionReviewVersions indicates what ConversionReview versions are understood/preferred by the webhook.
       # The first version in the list understood by the API server is sent to the webhook.
       # The webhook must respond with a ConversionReview object in the same version it received.
-      conversionReviewVersions: ["v1beta1","v1", "v1alpha1"]
+      conversionReviewVersions: ["v1beta1","v1"]
       clientConfig:
         service:
           name: webhook
           namespace: cloud-run-events
   versions:
   - &version
-    name: v1alpha1
+    name: v1
     served: true
     storage: false
     subresources:
@@ -62,10 +62,11 @@ spec:
     - name: Age
       type: date
       jsonPath: .metadata.creationTimestamp
+    # We remove status.properties.serviceAccountName from the schema of v1.
     schema:
-      openAPIV3Schema:
+      openAPIV3Schema: &openAPIV3Schema
         type: object
-        properties:
+        properties: &properties
           spec:
             type: object
             required:
@@ -97,9 +98,9 @@ spec:
               publisher:
                 type: boolean
                 description: "Flag that controls the creation of an HTTP publisher endpoint. If set to true, then a publisher will be created and this Topic will be Addressable (have status.address). If set to false, then no publisher will be created and this custom object represents the creation and deletion of a GCP Pub/Sub Topic only."
-          status:
+          status: &status
             type: object
-            properties:
+            properties: &statusProperties
               observedGeneration:
                 type: integer
                 format: int64
@@ -125,8 +126,6 @@ spec:
                   required:
                     - type
                     - status
-              serviceAccountName:
-                type: string
               projectId:
                 type: string
               topicId:
@@ -136,84 +135,25 @@ spec:
                 properties:
                   url:
                     type: string
+  - << : *version
+    name: v1alpha1
+    served: true
+    storage: false
+    # v1alpha1 and v1beta1 have serviceAccountName in status.properties in the schema
+    schema: &v1alpha1Schema
+      openAPIV3Schema:
+        << : *openAPIV3Schema
+        properties:
+          << : *properties
+          status:
+            << : *status
+            properties:
+              <<: *statusProperties
+              serviceAccountName:
+                type: string
   - << : *version
     name: v1beta1
     served: true
     storage: true
-  - << : *version
-    name: v1
-    served: true
-    storage: false
-    # We remove status.ServiceAccountName from v1.
-    schema:
-      openAPIV3Schema:
-        type: object
-        properties:
-          spec:
-            type: object
-            required:
-              - topic
-            properties:
-              serviceAccountName:
-                type: string
-                description: "Kubernetes service account used to bind to a google service account to poll the Cloud Pub/Sub Subscription. The value of the Kubernetes service account must be a valid DNS subdomain name. (see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names)"
-              secret:
-                type: object
-                description: "Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the Subscription, only to poll it. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
-                properties:
-                  name:
-                    type: string
-                  key:
-                    type: string
-                  optional:
-                    type: boolean
-              project:
-                type: string
-                description: "ID of the Google Cloud Project to own the Pub/Sub credentials. E.g. 'my-project-1234' rather than its display name, 'My Project' or its number '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service."
-              topic:
-                type: string
-                description: "ID of the Cloud Pub/Sub Topic to create. It must be in the form of the unique identifier within the project, not the entire name. E.g. it must be 'laconia', not 'projects/my-gcp-project/topics/laconia'."
-              propagationPolicy:
-                type: string
-                enum: [CreateDelete, CreateNoDelete, NoCreateNoDelete]
-                description: "Propagation policy defines how Topic controls the Cloud Pub/Sub topic for lifecycle changes. Default is CreateNoDelete."
-              publisher:
-                type: boolean
-                description: "Flag that controls the creation of an HTTP publisher endpoint. If set to true, then a publisher will be created and this Topic will be Addressable (have status.address). If set to false, then no publisher will be created and this custom object represents the creation and deletion of a GCP Pub/Sub Topic only."
-          status:
-            type: object
-            properties:
-              observedGeneration:
-                type: integer
-                format: int64
-              conditions:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    lastTransitionTime:
-                      # we use a string in the stored object but a wrapper object
-                      # at runtime.
-                      type: string
-                    message:
-                      type: string
-                    reason:
-                      type: string
-                    severity:
-                      type: string
-                    status:
-                      type: string
-                    type:
-                      type: string
-                  required:
-                    - type
-                    - status
-              projectId:
-                type: string
-              topicId:
-                type: string
-              address:
-                type: object
-                properties:
-                  url:
-                    type: string
+    # the schema of v1beta1 is exactly the same as v1alpha1 schema
+    schema: *v1alpha1Schema

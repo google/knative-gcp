@@ -31,6 +31,7 @@ import (
 func (source *PullSubscription) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *v1.PullSubscription:
+		// Since we remove Mode from PullSubscriptionSpec in v1, we silently remove it here.
 		sink.ObjectMeta = source.ObjectMeta
 		sink.Spec.PubSubSpec = convert.ToV1PubSubSpec(source.Spec.PubSubSpec)
 		sink.Spec.Topic = source.Spec.Topic
