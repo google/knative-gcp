@@ -24,7 +24,9 @@ import (
 	"cloud.google.com/go/pubsub"
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cev2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/knative-gcp/pkg/broker/control"
 	"go.opencensus.io/plugin/ochttp"
+	"google.golang.org/grpc"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/tracing/propagation/tracecontextb3"
 )
@@ -70,4 +72,16 @@ func NewHTTPClient(_ context.Context, maxConnsPerHost MaxConnsPerHost) *nethttp.
 			Propagation: tracecontextb3.TraceContextEgress,
 		},
 	}
+}
+
+type BrokerControlAddress string
+type BrokerControlClientConn *grpc.ClientConn
+
+func NewBrokerControlClientConn(address BrokerControlAddress) (BrokerControlClientConn, error) {
+	conn, err := grpc.Dial(string(address), grpc.WithInsecure())
+	return BrokerControlClientConn(conn), err
+}
+
+func NewBrokerControlClient(clientConn BrokerControlClientConn) control.BrokerControlClient {
+	return control.NewBrokerControlClient((*grpc.ClientConn)(clientConn))
 }

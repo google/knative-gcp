@@ -21,7 +21,8 @@ package main
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/broker/config/volume"
+	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/control"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils/clients"
@@ -34,10 +35,14 @@ func InitializeHandler(
 	projectID clients.ProjectID,
 	podName metrics.PodName,
 	containerName metrics.ContainerName,
+	brokerControlAddress clients.BrokerControlAddress,
+	brokercellName control.BrokercellName,
 ) (*ingress.Handler, error) {
 	panic(wire.Build(
 		ingress.HandlerSet,
-		wire.Value([]volume.Option(nil)),
-		volume.NewTargetsFromFile,
+		clients.NewBrokerControlClientConn,
+		clients.NewBrokerControlClient,
+		control.NewBrokerWatch,
+		wire.Bind(new(config.BrokerConfigs), new(*control.BrokerWatch)),
 	))
 }

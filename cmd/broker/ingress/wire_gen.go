@@ -7,7 +7,7 @@ package main
 
 import (
 	"context"
-	"github.com/google/knative-gcp/pkg/broker/config/volume"
+	"github.com/google/knative-gcp/pkg/broker/control"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils/clients"
@@ -15,10 +15,14 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeHandler(ctx context.Context, port clients.Port, projectID clients.ProjectID, podName metrics.PodName, containerName metrics.ContainerName) (*ingress.Handler, error) {
+func InitializeHandler(ctx context.Context, port clients.Port, projectID clients.ProjectID, podName metrics.PodName, containerName metrics.ContainerName, brokerControlAddress clients.BrokerControlAddress, brokercellName control.BrokercellName) (*ingress.Handler, error) {
 	httpMessageReceiver := clients.NewHTTPMessageReceiver(port)
-	v := _wireValue
-	readonlyTargets, err := volume.NewTargetsFromFile(v...)
+	brokerControlClientConn, err := clients.NewBrokerControlClientConn(brokerControlAddress)
+	if err != nil {
+		return nil, err
+	}
+	brokerControlClient := clients.NewBrokerControlClient(brokerControlClientConn)
+	brokerWatch, err := control.NewBrokerWatch(ctx, brokercellName, brokerControlClient)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +30,7 @@ func InitializeHandler(ctx context.Context, port clients.Port, projectID clients
 	if err != nil {
 		return nil, err
 	}
-	multiTopicDecoupleSink := ingress.NewMultiTopicDecoupleSink(ctx, readonlyTargets, client)
+	multiTopicDecoupleSink := ingress.NewMultiTopicDecoupleSink(ctx, brokerWatch, client)
 	ingressReporter, err := metrics.NewIngressReporter(podName, containerName)
 	if err != nil {
 		return nil, err
@@ -34,7 +38,3 @@ func InitializeHandler(ctx context.Context, port clients.Port, projectID clients
 	handler := ingress.NewHandler(ctx, httpMessageReceiver, multiTopicDecoupleSink, ingressReporter)
 	return handler, nil
 }
-
-var (
-	_wireValue = []volume.Option(nil)
-)

@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package control;
+option go_package = "github.com/google/knative-gcp/pkg/broker/control";
+
+import "pkg/broker/config/targets.proto";
+
+service BrokerControl {
+  rpc WatchBrokers(WatchBrokersReq) returns (stream WatchBrokersResp);
+}
+
+message WatchBrokersReq {
+  string brokercellName = 1;
+  string brokercellNamespace = 2;
+}
+
+message BrokerUpdate {
+  config.BrokerName name = 1;
+  config.BrokerConfig config = 2;
+}
+
+message WatchBrokersResp {
+  repeated BrokerUpdate updates = 1;
+}

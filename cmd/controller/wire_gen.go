@@ -9,6 +9,8 @@ import (
 	"cloud.google.com/go/iam/admin/apiv1"
 	"context"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/broker/control"
+	"github.com/google/knative-gcp/pkg/reconciler/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs"
 	"github.com/google/knative-gcp/pkg/reconciler/events/build"
 	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
@@ -28,7 +30,7 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeControllers(ctx context.Context) ([]injection.ControllerConstructor, error) {
+func InitializeControllers(ctx context.Context, brokerCtl *control.Server) ([]injection.ControllerConstructor, error) {
 	v := ClientOptions()
 	iamClient, err := admin.NewIamClient(ctx, v...)
 	if err != nil {
@@ -48,6 +50,7 @@ func InitializeControllers(ctx context.Context) ([]injection.ControllerConstruct
 	kedaConstructor := keda.NewConstructor(iamPolicyManager, storeSingleton)
 	topicConstructor := topic.NewConstructor(iamPolicyManager, storeSingleton)
 	channelConstructor := channel.NewConstructor(iamPolicyManager, storeSingleton)
-	v2 := Controllers(constructor, storageConstructor, schedulerConstructor, pubsubConstructor, buildConstructor, staticConstructor, kedaConstructor, topicConstructor, channelConstructor)
+	brokercellConstructor := brokercell.NewConstructor(brokerCtl)
+	v2 := Controllers(constructor, storageConstructor, schedulerConstructor, pubsubConstructor, buildConstructor, staticConstructor, kedaConstructor, topicConstructor, channelConstructor, brokercellConstructor)
 	return v2, nil
 }

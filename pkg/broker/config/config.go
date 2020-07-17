@@ -19,7 +19,13 @@ package config
 import (
 	"fmt"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/types"
 )
+
+type BrokerConfigs interface {
+	GetBrokerConfig(types.NamespacedName) (*BrokerConfig, error)
+}
 
 // ReadonlyTargets provides "read" functions for brokers and targets.
 type ReadonlyTargets interface {
@@ -104,5 +110,5 @@ func (t *Target) Key() string {
 
 // Key returns the broker key.
 func (b *Broker) Key() string {
-	return BrokerKey(b.Namespace, b.Name)
+	return BrokerKey(b.Name.Namespace, b.Name.Name)
 }

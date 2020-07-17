@@ -154,7 +154,7 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey string
 	}
 	brokerIngSvr := httptest.NewServer(ceClient)
 
-	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+	h.Targets.MutateBroker(b.Name.Namespace, b.Name.Name, func(bm config.BrokerMutation) {
 		bm.SetDecoupleQueue(&config.Queue{
 			Topic:        topic,
 			Subscription: sub,
@@ -192,14 +192,14 @@ func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, brokerKey strin
 		return
 	}
 
-	if err := h.PubsubClient.Subscription(b.DecoupleQueue.Subscription).Delete(ctx); err != nil {
+	if err := h.PubsubClient.Subscription(b.Config.DecoupleQueue.Subscription).Delete(ctx); err != nil {
 		t.Fatalf("failed to delete broker decouple subscription: %v", err)
 	}
-	if err := h.PubsubClient.Topic(b.DecoupleQueue.Topic).Delete(ctx); err != nil {
+	if err := h.PubsubClient.Topic(b.Config.DecoupleQueue.Topic).Delete(ctx); err != nil {
 		t.Fatalf("failed to delete broker decouple topic: %v", err)
 	}
 
-	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+	h.Targets.MutateBroker(b.Name.Namespace, b.Name.Name, func(bm config.BrokerMutation) {
 		bm.Delete()
 	})
 
@@ -223,13 +223,13 @@ func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey str
 
 	testTarget := &config.Target{
 		Name:             tn,
-		Namespace:        b.Namespace,
-		Broker:           b.Name,
+		Namespace:        b.Name.Namespace,
+		Broker:           b.Name.Name,
 		FilterAttributes: filters,
 		State:            config.State_READY,
 	}
 
-	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+	h.Targets.MutateBroker(b.Name.Namespace, b.Name.Name, func(bm config.BrokerMutation) {
 		bm.UpsertTargets(testTarget)
 	})
 
@@ -321,7 +321,7 @@ func (h *Helper) SendEventToDecoupleQueue(ctx context.Context, t *testing.T, bro
 		t.Fatalf("broker with key %q doesn't exist", brokerKey)
 	}
 
-	ctx = cecontext.WithTopic(ctx, b.DecoupleQueue.Topic)
+	ctx = cecontext.WithTopic(ctx, b.Config.DecoupleQueue.Topic)
 	if err := h.CePubsub.Send(ctx, binding.ToMessage(event)); err != nil {
 		t.Fatalf("failed to seed event to broker (key=%q) decouple queue: %v", brokerKey, err)
 	}

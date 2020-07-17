@@ -31,23 +31,33 @@ message Queue {
   string subscription = 2;
 }
 
-// Represents a broker.
-message Broker {
+message BrokerName {
+  string name = 1;
+  string namespace = 2;
+}
+
+message BrokerConfig {
   // The id of the object. E.g. UID of the resource.
   string id = 1;
 
-  // The name of the object.
-  string name = 2;
-
-  // The namespace of the object.
-  string namespace = 3;
+  // Broker config generation.
+  int64 generation = 2;
 
   // The broker address.
   // Will we have more than one address?
-  string address = 4;
+  string address = 3;
 
   // The decouple queue for the broker.
-  Queue decouple_queue = 5;
+  Queue decouple_queue = 4;
+
+}
+
+// Represents a broker.
+message Broker {
+  // The name of the broker.
+  BrokerName name = 8;
+
+  BrokerConfig config = 9;
 
   // All targets of the broker.
   map<string, Target> targets = 6;

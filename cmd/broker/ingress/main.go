@@ -17,20 +17,25 @@ limitations under the License.
 package main
 
 import (
+	"github.com/google/knative-gcp/pkg/broker/control"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
+	"k8s.io/apimachinery/pkg/types"
 
 	"go.uber.org/zap"
 )
 
 type envConfig struct {
-	PodName   string `envconfig:"POD_NAME" required:"true"`
-	Port      int    `envconfig:"PORT" default:"8080"`
-	ProjectID string `envconfig:"PROJECT_ID"`
+	PodName              string `envconfig:"POD_NAME" required:"true"`
+	Port                 int    `envconfig:"PORT" default:"8080"`
+	ProjectID            string `envconfig:"PROJECT_ID"`
+	BrokerControlAddress string `envconfig:"BROKER_CONTROL_ADDRESS" required:"true"`
+	BrokerCellNamespace  string `envconfig:"BROKER_CELL_NAMESPACE" required:"true"`
+	BrokerCellName       string `envconfig:"BROKER_CELL_NAME" required:"true"`
 }
 
 const (
@@ -63,6 +68,8 @@ func main() {
 		clients.ProjectID(projectID),
 		metrics.PodName(env.PodName),
 		metrics.ContainerName(component),
+		clients.BrokerControlAddress(env.BrokerControlAddress),
+		control.BrokercellName(types.NamespacedName{Namespace: env.BrokerCellNamespace, Name: env.BrokerCellName}),
 	)
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))

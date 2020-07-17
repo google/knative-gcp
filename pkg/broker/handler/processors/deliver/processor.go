@@ -204,7 +204,7 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	}
 
 	// Attach the previous hops for the reply.
-	replyResp, err := p.sendMsg(ctx, broker.Address, respMsg, eventutil.SetRemainingHopsTransformer(hops))
+	replyResp, err := p.sendMsg(ctx, broker.Config.Address, respMsg, eventutil.SetRemainingHopsTransformer(hops))
 	if err != nil {
 		return err
 	}

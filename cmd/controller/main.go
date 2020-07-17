@@ -17,13 +17,17 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"log"
+	"net"
 
 	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	"github.com/google/knative-gcp/pkg/broker/control"
 	"github.com/google/knative-gcp/pkg/reconciler/broker"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler/deployment"
@@ -38,15 +42,39 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel"
 	"github.com/google/knative-gcp/pkg/reconciler/trigger"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"github.com/kelseyhightower/envconfig"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/signals"
 )
 
+type env struct {
+	Port int `envconfig:"PORT" required:"true"`
+}
+
 func main() {
 	appcredentials.MustExistOrUnsetEnv()
+	config := new(env)
+	if err := envconfig.Process("", config); err != nil {
+		log.Fatal(err)
+	}
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer listener.Close()
+	srv := grpc.NewServer()
+	brokerCtl := control.NewServer()
+	control.RegisterBrokerControlServer(srv, brokerCtl)
+
+	go func() {
+		log.Printf("Server started on port %d", config.Port)
+		if err := srv.Serve(listener); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
 	ctx := signals.NewContext()
-	controllers, err := InitializeControllers(ctx)
+	controllers, err := InitializeControllers(ctx, brokerCtl)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,6 +91,7 @@ func Controllers(
 	kedaPullsubscriptionController kedapullsubscription.Constructor,
 	topicController topic.Constructor,
 	channelController channel.Constructor,
+	brokercellController brokercell.Constructor,
 ) []injection.ControllerConstructor {
 	return []injection.ControllerConstructor{
 		injection.ControllerConstructor(auditlogsController),
@@ -74,10 +103,10 @@ func Controllers(
 		injection.ControllerConstructor(kedaPullsubscriptionController),
 		injection.ControllerConstructor(topicController),
 		injection.ControllerConstructor(channelController),
+		injection.ControllerConstructor(brokercellController),
 		deployment.NewController,
 		broker.NewController,
 		trigger.NewController,
-		brokercell.NewController,
 	}
 }
 

@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/broker/control"
 	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
 	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
 	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
@@ -42,6 +43,7 @@ import (
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
 )
 
 const (
@@ -50,10 +52,19 @@ const (
 	controllerAgentName = "brokercell-controller"
 )
 
+type Constructor injection.ControllerConstructor
+
+func NewConstructor(brokerCtl *control.Server) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, brokerCtl)
+	}
+}
+
 // NewController creates a Reconciler for BrokerCell and returns the result of NewImpl.
-func NewController(
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
+	brokerCtl *control.Server,
 ) *controller.Impl {
 	logger := logging.FromContext(ctx)
 
@@ -69,7 +80,7 @@ func NewController(
 	}
 
 	base := reconciler.NewBase(ctx, controllerAgentName, cmw)
-	r, err := NewReconciler(base, ls)
+	r, err := NewReconciler(base, ls, brokerCtl)
 	if err != nil {
 		logger.Fatal("Failed to create BrokerCell reconciler", zap.Error(err))
 	}

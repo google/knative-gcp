@@ -68,13 +68,14 @@ func (hc *fanoutHandlerCache) shouldRenew(b *config.Broker) bool {
 	if !hc.IsAlive() {
 		return true
 	}
+	decoupleQueue := b.GetConfig().GetDecoupleQueue()
 	// If this really happens, it means a data corruption.
 	// The handler creation will fail (which is expected).
-	if b == nil || b.DecoupleQueue == nil {
+	if decoupleQueue == nil {
 		return true
 	}
-	if b.DecoupleQueue.Topic != hc.b.DecoupleQueue.Topic ||
-		b.DecoupleQueue.Subscription != hc.b.DecoupleQueue.Subscription {
+	if b.Config.DecoupleQueue.Topic != hc.b.Config.DecoupleQueue.Topic ||
+		b.Config.DecoupleQueue.Subscription != hc.b.Config.DecoupleQueue.Subscription {
 		return true
 	}
 	return false
@@ -149,7 +150,7 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 			return true
 		}
 
-		sub := p.pubsubClient.Subscription(b.DecoupleQueue.Subscription)
+		sub := p.pubsubClient.Subscription(b.Config.DecoupleQueue.Subscription)
 		sub.ReceiveSettings = p.options.PubsubReceiveSettings
 
 		h := NewHandler(

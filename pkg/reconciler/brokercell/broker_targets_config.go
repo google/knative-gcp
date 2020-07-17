@@ -22,10 +22,12 @@ import (
 
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/apis/eventing"
 	"knative.dev/eventing/pkg/logging"
 
+	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -71,6 +73,13 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.Broker
 		return err
 	}
 	bc.Status.MarkTargetsConfigReady()
+
+	brokerConfigs := make(map[types.NamespacedName]*config.BrokerConfig)
+	for _, broker := range brokers {
+		brokerConfigs[types.NamespacedName{Namespace: broker.Namespace, Name: broker.Name}] = brokerConfig(broker)
+	}
+	r.brokerCtl.UpsertBrokercell(types.NamespacedName{Namespace: bc.Namespace, Name: bc.Name}, brokerConfigs)
+
 	return nil
 }
 
@@ -124,6 +133,17 @@ func (r *Reconciler) addToConfig(ctx context.Context, b *brokerv1beta1.Broker, t
 			}
 		}
 	})
+}
+
+func brokerConfig(b *v1beta1.Broker) *config.BrokerConfig {
+	return &config.BrokerConfig{
+		Id:      string(b.UID),
+		Address: b.Status.Address.URL.String(),
+		DecoupleQueue: &config.Queue{
+			Topic:        brokerresources.GenerateDecouplingTopicName(b),
+			Subscription: brokerresources.GenerateDecouplingSubscriptionName(b),
+		},
+	}
 }
 
 //TODO all this stuff should be in a configmap variant of the config object

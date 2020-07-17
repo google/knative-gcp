@@ -215,6 +215,18 @@ func containerTemplate(args Args) corev1.Container {
 				Name:  "METRICS_DOMAIN",
 				Value: "knative.dev/internal/eventing",
 			},
+			{
+				Name:  "BROKER_CONTROL_ADDRESS",
+				Value: "broker-control:8080",
+			},
+			{
+				Name:  "BROKER_CELL_NAMESPACE",
+				Value: args.BrokerCell.Namespace,
+			},
+			{
+				Name:  "BROKER_CELL_NAME",
+				Value: args.BrokerCell.Name,
+			},
 		},
 		Ports: []corev1.ContainerPort{
 			{

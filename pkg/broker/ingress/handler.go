@@ -30,6 +30,7 @@ import (
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/google/knative-gcp/pkg/broker/control"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils/clients"
@@ -166,11 +167,15 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
 		msg := fmt.Sprintf("Error publishing to PubSub for broker %s. event: %+v, err: %v.", broker, event, res)
 		h.logger.Error(msg)
-		statusCode = nethttp.StatusInternalServerError
-		if errors.Is(res, ErrNotFound) {
+		switch {
+		case errors.Is(res, ErrNotFound):
 			statusCode = nethttp.StatusNotFound
-		} else if errors.Is(res, ErrNotReady) {
+		case errors.Is(res, ErrNotReady):
 			statusCode = nethttp.StatusServiceUnavailable
+		case errors.Is(res, control.BrokerConfigUnavailable):
+			statusCode = nethttp.StatusServiceUnavailable
+		default:
+			statusCode = nethttp.StatusInternalServerError
 		}
 		nethttp.Error(response, msg, statusCode)
 		return

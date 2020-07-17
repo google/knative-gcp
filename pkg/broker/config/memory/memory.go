@@ -30,19 +30,19 @@ type brokerMutation struct {
 
 func (m *brokerMutation) SetID(id string) config.BrokerMutation {
 	m.delete = false
-	m.b.Id = id
+	m.b.Config.Id = id
 	return m
 }
 
 func (m *brokerMutation) SetAddress(address string) config.BrokerMutation {
 	m.delete = false
-	m.b.Address = address
+	m.b.Config.Address = address
 	return m
 }
 
 func (m *brokerMutation) SetDecoupleQueue(q *config.Queue) config.BrokerMutation {
 	m.delete = false
-	m.b.DecoupleQueue = q
+	m.b.Config.DecoupleQueue = q
 	return m
 }
 
@@ -58,8 +58,8 @@ func (m *brokerMutation) UpsertTargets(targets ...*config.Target) config.BrokerM
 		m.b.Targets = make(map[string]*config.Target)
 	}
 	for _, t := range targets {
-		t.Namespace = m.b.Namespace
-		t.Broker = m.b.Name
+		t.Namespace = m.b.Name.Namespace
+		t.Broker = m.b.Name.Name
 		m.b.Targets[t.Name] = t
 	}
 	return m
@@ -76,7 +76,7 @@ func (m *brokerMutation) DeleteTargets(targets ...*config.Target) config.BrokerM
 func (m *brokerMutation) Delete() {
 	// Calling delete will "reset" the broker under mutation instantly.
 	m.delete = true
-	m.b = &config.Broker{Name: m.b.Name, Namespace: m.b.Namespace}
+	m.b = &config.Broker{Name: m.b.Name, Config: &config.BrokerConfig{}}
 }
 
 type memoryTargets struct {
@@ -106,7 +106,7 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
-	b := &config.Broker{Name: name, Namespace: namespace}
+	b := &config.Broker{Name: &config.BrokerName{Name: name, Namespace: namespace}, Config: &config.BrokerConfig{}}
 	var newVal *config.TargetsConfig
 	val := m.Load()
 	if val != nil {

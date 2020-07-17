@@ -19,6 +19,8 @@ import (
 	"context"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/broker/control"
+	"github.com/google/knative-gcp/pkg/reconciler/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs"
 	"github.com/google/knative-gcp/pkg/reconciler/events/build"
 	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
@@ -33,7 +35,7 @@ import (
 	"knative.dev/pkg/injection"
 )
 
-func InitializeControllers(ctx context.Context) ([]injection.ControllerConstructor, error) {
+func InitializeControllers(ctx context.Context, brokerCtl *control.Server) ([]injection.ControllerConstructor, error) {
 	panic(wire.Build(
 		Controllers,
 		ClientOptions,
@@ -48,5 +50,6 @@ func InitializeControllers(ctx context.Context) ([]injection.ControllerConstruct
 		keda.NewConstructor,
 		topic.NewConstructor,
 		channel.NewConstructor,
+		brokercell.NewConstructor,
 	))
 }

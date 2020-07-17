@@ -38,11 +38,11 @@ import (
 const projectEnvKey = "PROJECT_ID"
 
 // NewMultiTopicDecoupleSink creates a new multiTopicDecoupleSink.
-func NewMultiTopicDecoupleSink(ctx context.Context, brokerConfig config.ReadonlyTargets, client *pubsub.Client) *multiTopicDecoupleSink {
+func NewMultiTopicDecoupleSink(ctx context.Context, brokerConfigs config.BrokerConfigs, client *pubsub.Client) *multiTopicDecoupleSink {
 	return &multiTopicDecoupleSink{
-		logger:       logging.FromContext(ctx),
-		pubsub:       client,
-		brokerConfig: brokerConfig,
+		logger:        logging.FromContext(ctx),
+		pubsub:        client,
+		brokerConfigs: brokerConfigs,
 		// TODO(#1118): remove Topic when broker config is removed
 		topics: make(map[types.NamespacedName]*pubsub.Topic),
 	}
@@ -58,8 +58,8 @@ type multiTopicDecoupleSink struct {
 	topicsMut sync.RWMutex
 	// brokerConfig holds configurations for all brokers. It's a view of a configmap populated by
 	// the broker controller.
-	brokerConfig config.ReadonlyTargets
-	logger       *zap.Logger
+	brokerConfigs config.BrokerConfigs
+	logger        *zap.Logger
 }
 
 // Send sends incoming event to its corresponding pubsub topic based on which broker it belongs to.
@@ -126,17 +126,16 @@ func (m *multiTopicDecoupleSink) updateTopicForBroker(broker types.NamespacedNam
 }
 
 func (m *multiTopicDecoupleSink) getTopicIDForBroker(broker types.NamespacedName) (string, error) {
-	brokerConfig, ok := m.brokerConfig.GetBroker(broker.Namespace, broker.Name)
-	if !ok {
+	brokerConfig, err := m.brokerConfigs.GetBrokerConfig(broker)
+	if err != nil {
+		return "", err
+	}
+	if brokerConfig == nil {
 		// There is an propagation delay between the controller reconciles the broker config and
 		// the config being pushed to the configmap volume in the ingress pod. So sometimes we return
 		// an error even if the request is valid.
 		m.logger.Warn("config is not found for", zap.String("broker", broker.String()))
 		return "", fmt.Errorf("%q: %w", broker, ErrNotFound)
-	}
-	if brokerConfig.State != config.State_READY {
-		m.logger.Debug("broker is not ready", zap.Any("ns", broker.Namespace), zap.Any("broker", broker))
-		return "", fmt.Errorf("%q: %w", broker, ErrNotReady)
 	}
 	if brokerConfig.DecoupleQueue == nil || brokerConfig.DecoupleQueue.Topic == "" {
 		m.logger.Error("DecoupleQueue or topic missing for broker, this should NOT happen.", zap.Any("brokerConfig", brokerConfig))

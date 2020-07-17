@@ -73,13 +73,17 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 		state = config.State_READY
 	}
 	brokerConfig := &config.Broker{
-		Id:        string(broker.UID),
-		Name:      broker.Name,
-		Namespace: broker.Namespace,
-		Address:   broker.Status.Address.URL.String(),
-		DecoupleQueue: &config.Queue{
-			Topic:        brokerresources.GenerateDecouplingTopicName(broker),
-			Subscription: brokerresources.GenerateDecouplingSubscriptionName(broker),
+		Name: &config.BrokerName{
+			Name:      broker.Name,
+			Namespace: broker.Namespace,
+		},
+		Config: &config.BrokerConfig{
+			Id:      string(broker.UID),
+			Address: broker.Status.Address.URL.String(),
+			DecoupleQueue: &config.Queue{
+				Topic:        brokerresources.GenerateDecouplingTopicName(broker),
+				Subscription: brokerresources.GenerateDecouplingSubscriptionName(broker),
+			},
 		},
 		Targets: targets,
 		State:   state,

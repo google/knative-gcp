@@ -35,6 +35,7 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/broker/control"
 	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -63,7 +64,7 @@ type listers struct {
 }
 
 // NewReconciler creates a new BrokerCell reconciler.
-func NewReconciler(base *reconciler.Base, ls listers) (*Reconciler, error) {
+func NewReconciler(base *reconciler.Base, ls listers, ctl *control.Server) (*Reconciler, error) {
 	var env envConfig
 	if err := envconfig.Process("BROKER_CELL", &env); err != nil {
 		return nil, err
@@ -91,6 +92,7 @@ func NewReconciler(base *reconciler.Base, ls listers) (*Reconciler, error) {
 		svcRec:        svcRec,
 		deploymentRec: deploymentRec,
 		cmRec:         cmRec,
+		brokerCtl:     ctl,
 	}
 	return r, nil
 }
@@ -105,7 +107,8 @@ type Reconciler struct {
 	deploymentRec *reconcilerutils.DeploymentReconciler
 	cmRec         *reconcilerutils.ConfigMapReconciler
 
-	env envConfig
+	brokerCtl *control.Server
+	env       envConfig
 }
 
 // Check that our Reconciler implements Interface
