@@ -113,8 +113,9 @@ var (
 	ResultACK  = protocol.ResultACK
 	ResultNACK = protocol.ResultNACK
 
-	IsACK  = protocol.IsACK
-	IsNACK = protocol.IsNACK
+	IsACK         = protocol.IsACK
+	IsNACK        = protocol.IsNACK
+	IsUndelivered = protocol.IsUndelivered
 
 	// HTTP Results
 
@@ -161,9 +162,12 @@ var (
 	WithShutdownTimeout = http.WithShutdownTimeout
 	//WithEncoding           = http.WithEncoding
 	//WithStructuredEncoding = http.WithStructuredEncoding // TODO: expose new way
-	WithPort         = http.WithPort
-	WithPath         = http.WithPath
-	WithMiddleware   = http.WithMiddleware
-	WithListener     = http.WithListener
-	WithRoundTripper = http.WithRoundTripper
+	WithPort                      = http.WithPort
+	WithPath                      = http.WithPath
+	WithMiddleware                = http.WithMiddleware
+	WithListener                  = http.WithListener
+	WithRoundTripper              = http.WithRoundTripper
+	WithGetHandlerFunc            = http.WithGetHandlerFunc
+	WithOptionsHandlerFunc        = http.WithOptionsHandlerFunc
+	WithDefaultOptionsHandlerFunc = http.WithDefaultOptionsHandlerFunc
 )

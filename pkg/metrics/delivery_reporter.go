@@ -22,10 +22,17 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/broker/config"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"knative.dev/pkg/metrics"
+)
+
+type DeliveryMetricsKey int
+
+const (
+	startDeliveryProcessingTime DeliveryMetricsKey = iota
 )
 
 type DeliveryReporter struct {
@@ -35,15 +42,8 @@ type DeliveryReporter struct {
 	processingTimeInMsecM *stats.Float64Measure
 }
 
-type DeliveryReportArgs struct {
-	Namespace  string
-	Broker     string
-	Trigger    string
-	FilterType string
-}
-
 func (r *DeliveryReporter) register() error {
-	return view.Register(
+	return metrics.RegisterResourceView(
 		&view.View{
 			Name:        "event_count",
 			Description: "Number of events delivered to a Trigger subscriber",
@@ -121,42 +121,36 @@ func NewDeliveryReporter(podName PodName, containerName ContainerName) (*Deliver
 }
 
 // ReportEventDispatchTime captures dispatch times.
-func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, args DeliveryReportArgs, d time.Duration, responseCode int) error {
-	tag, err := tag.New(
-		ctx,
-		tag.Insert(NamespaceNameKey, args.Namespace),
-		tag.Insert(BrokerNameKey, args.Broker),
-		tag.Insert(TriggerNameKey, args.Trigger),
-		tag.Insert(TriggerFilterTypeKey, filterTypeValue(args.FilterType)),
-		tag.Insert(PodNameKey, string(r.podName)),
-		tag.Insert(ContainerNameKey, string(r.containerName)),
-		tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
-		tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create metrics tag: %v", err)
-	}
+func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration, responseCode int) {
 	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(tag, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
-	return nil
+	metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)),
+		stats.WithTags(
+			tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
+			tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
+		),
+	)
 }
 
-// ReportEventProcessingTime captures event processing times.
-func (r *DeliveryReporter) ReportEventProcessingTime(ctx context.Context, args DeliveryReportArgs, d time.Duration) error {
-	tag, err := tag.New(
-		ctx,
-		tag.Insert(NamespaceNameKey, args.Namespace),
-		tag.Insert(BrokerNameKey, args.Broker),
-		tag.Insert(TriggerNameKey, args.Trigger),
-		tag.Insert(TriggerFilterTypeKey, filterTypeValue(args.FilterType)),
-		tag.Insert(PodNameKey, string(r.podName)),
-		tag.Insert(ContainerNameKey, string(r.containerName)),
-	)
+// StartEventProcessing records the start of event processing for delivery within the given context.
+func StartEventProcessing(ctx context.Context) context.Context {
+	return context.WithValue(ctx, startDeliveryProcessingTime, time.Now())
+}
+
+// FinishEventProcessing captures event processing times. Requires StartDelivery to have been
+// called previously using ctx.
+func (r *DeliveryReporter) FinishEventProcessing(ctx context.Context) error {
+	return r.reportEventProcessingTime(ctx, time.Now())
+}
+
+// ReportEventProcessingTime captures event processing times. Requires StartDelivery to have been
+// called previously using ctx.
+func (r *DeliveryReporter) reportEventProcessingTime(ctx context.Context, end time.Time) error {
+	start, err := getStartDeliveryProcessingTime(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create metrics tag: %v", err)
+		return err
 	}
 	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(tag, r.processingTimeInMsecM.M(float64(d/time.Millisecond)))
+	metrics.Record(ctx, r.processingTimeInMsecM.M(float64(end.Sub(start)/time.Millisecond)))
 	return nil
 }
 
@@ -166,4 +160,28 @@ func filterTypeValue(v string) string {
 	}
 	// the default value if the filter attributes are empty.
 	return "any"
+}
+
+func (r *DeliveryReporter) AddTags(ctx context.Context) (context.Context, error) {
+	return tag.New(ctx,
+		tag.Insert(PodNameKey, string(r.podName)),
+		tag.Insert(ContainerNameKey, string(r.containerName)),
+	)
+}
+
+func AddTargetTags(ctx context.Context, target *config.Target) (context.Context, error) {
+	return tag.New(ctx,
+		tag.Insert(NamespaceNameKey, target.Namespace),
+		tag.Insert(BrokerNameKey, target.Broker),
+		tag.Insert(TriggerNameKey, target.Name),
+		tag.Insert(TriggerFilterTypeKey, filterTypeValue(target.FilterAttributes["type"])),
+	)
+}
+
+func getStartDeliveryProcessingTime(ctx context.Context) (time.Time, error) {
+	v := ctx.Value(startDeliveryProcessingTime)
+	if time, ok := v.(time.Time); ok {
+		return time, nil
+	}
+	return time.Time{}, fmt.Errorf("missing or invalid start time: %v", v)
 }

@@ -68,6 +68,13 @@ spec:
               description: >
                 Propagation policy defines how Topic controls the Cloud Pub/Sub topic for lifecycle
                 changes. Default is CreateNoDelete.
+            publisher:
+              type: boolean
+              description: >
+                Flag that controls the creation of an HTTP publisher endpoint. If set to true, then
+                a publisher will be created and this Topic will be Addressable (have
+                status.address). If set to false, then no publisher will be created and this custom
+                object represents the creation and deletion of a GCP Pub/Sub Topic only.
         status:
           type: object
           properties:

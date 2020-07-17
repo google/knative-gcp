@@ -17,23 +17,20 @@ limitations under the License.
 package v1beta1
 
 import (
-	corev1 "k8s.io/api/core/v1"
-	"knative.dev/eventing/pkg/apis/duck"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/pkg/apis"
 )
 
 var brokerCondSet = apis.NewLivingConditionSet(
 	eventingv1beta1.BrokerConditionAddressable,
-	BrokerConditionIngress,
+	BrokerConditionBrokerCell,
 	BrokerConditionTopic,
 	BrokerConditionSubscription,
 )
 
 const (
-	// BrokerConditionIngress reports the availability of the Broker's ingress
-	// service.
-	BrokerConditionIngress apis.ConditionType = "IngressReady"
+	// BrokerConditionBrokerCell reports the availability of the Broker's BrokerCell.
+	BrokerConditionBrokerCell apis.ConditionType = "BrokerCellReady"
 	// BrokerConditionTopic reports the status of the Broker's PubSub topic.
 	// THis condition is specific to the Google Cloud Broker.
 	BrokerConditionTopic apis.ConditionType = "TopicReady"
@@ -62,14 +59,6 @@ func (bs *BrokerStatus) InitializeConditions() {
 	brokerCondSet.Manage(bs).InitializeConditions()
 }
 
-func (bs *BrokerStatus) PropagateIngressAvailability(ep *corev1.Endpoints) {
-	if duck.EndpointsAreAvailable(ep) {
-		brokerCondSet.Manage(bs).MarkTrue(BrokerConditionIngress)
-	} else {
-		bs.MarkIngressFailed("EndpointsUnavailable", "Endpoints %q are unavailable.", ep.Name)
-	}
-}
-
 // SetAddress makes this Broker addressable by setting the hostname. It also
 // sets the BrokerConditionAddressable to true.
 func (bs *BrokerStatus) SetAddress(url *apis.URL) {
@@ -81,8 +70,24 @@ func (bs *BrokerStatus) SetAddress(url *apis.URL) {
 	}
 }
 
+func (bs *BrokerStatus) MarkBrokerCelllUnknown(reason, format string, args ...interface{}) {
+	brokerCondSet.Manage(bs).MarkUnknown(BrokerConditionBrokerCell, reason, format, args...)
+}
+
+func (bs *BrokerStatus) MarkBrokerCelllFailed(reason, format string, args ...interface{}) {
+	brokerCondSet.Manage(bs).MarkFalse(BrokerConditionBrokerCell, reason, format, args...)
+}
+
+func (bs *BrokerStatus) MarkBrokerCellReady() {
+	brokerCondSet.Manage(bs).MarkTrue(BrokerConditionBrokerCell)
+}
+
 func (bs *BrokerStatus) MarkTopicFailed(reason, format string, args ...interface{}) {
 	brokerCondSet.Manage(bs).MarkFalse(BrokerConditionTopic, reason, format, args...)
+}
+
+func (bs *BrokerStatus) MarkTopicUnknown(reason, format string, args ...interface{}) {
+	brokerCondSet.Manage(bs).MarkUnknown(BrokerConditionTopic, reason, format, args...)
 }
 
 func (bs *BrokerStatus) MarkTopicReady() {
@@ -93,10 +98,10 @@ func (bs *BrokerStatus) MarkSubscriptionFailed(reason, format string, args ...in
 	brokerCondSet.Manage(bs).MarkFalse(BrokerConditionSubscription, reason, format, args...)
 }
 
-func (bs *BrokerStatus) MarkSubscriptionReady() {
-	brokerCondSet.Manage(bs).MarkTrue(BrokerConditionSubscription)
+func (bs *BrokerStatus) MarkSubscriptionUnknown(reason, format string, args ...interface{}) {
+	brokerCondSet.Manage(bs).MarkUnknown(BrokerConditionSubscription, reason, format, args...)
 }
 
-func (bs *BrokerStatus) MarkIngressFailed(reason, format string, args ...interface{}) {
-	brokerCondSet.Manage(bs).MarkFalse(BrokerConditionIngress, reason, format, args...)
+func (bs *BrokerStatus) MarkSubscriptionReady() {
+	brokerCondSet.Manage(bs).MarkTrue(BrokerConditionSubscription)
 }

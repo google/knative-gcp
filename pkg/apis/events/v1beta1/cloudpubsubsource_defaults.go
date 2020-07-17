@@ -18,32 +18,30 @@ package v1beta1
 
 import (
 	"context"
-	"time"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
+
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/ptr"
 )
 
-const (
-	defaultRetentionDuration = 7 * 24 * time.Hour
-	defaultAckDeadline       = 30 * time.Second
-)
-
 func (ps *CloudPubSubSource) SetDefaults(ctx context.Context) {
+	ctx = apis.WithinParent(ctx, ps.ObjectMeta)
 	ps.Spec.SetDefaults(ctx)
-	duckv1beta1.SetAutoscalingAnnotationsDefaults(ctx, &ps.ObjectMeta)
+	duck.SetAutoscalingAnnotationsDefaults(ctx, &ps.ObjectMeta)
 }
 
 func (pss *CloudPubSubSourceSpec) SetDefaults(ctx context.Context) {
-	pss.SetPubSubDefaults()
+	pss.SetPubSubDefaults(ctx)
 
 	if pss.AckDeadline == nil {
-		ackDeadline := defaultAckDeadline
+		ackDeadline := intevents.DefaultAckDeadline
 		pss.AckDeadline = ptr.String(ackDeadline.String())
 	}
 
 	if pss.RetentionDuration == nil {
-		retentionDuration := defaultRetentionDuration
+		retentionDuration := intevents.DefaultRetentionDuration
 		pss.RetentionDuration = ptr.String(retentionDuration.String())
 	}
 }

@@ -25,12 +25,14 @@ import (
 	"strconv"
 	"strings"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudeventsbindings "github.com/cloudevents/sdk-go/v2/binding"
+	cloudeventshttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.uber.org/zap"
 
 	"knative.dev/eventing/pkg/kncloudevents"
-	"knative.dev/eventing/pkg/tracing"
-	"knative.dev/eventing/test/lib"
+	testlib "knative.dev/eventing/test/lib"
+	"knative.dev/eventing/test/lib/recordevents"
+	"knative.dev/eventing/test/test_images"
 )
 
 type eventRecorder struct {
@@ -43,16 +45,16 @@ func newEventRecorder() *eventRecorder {
 
 // Start the recordevents REST api server
 func (er *eventRecorder) StartServer(port int) {
-	http.HandleFunc(lib.GetMinMaxPath, er.handleMinMax)
-	http.HandleFunc(lib.GetEntryPath, er.handleGetEntry)
-	http.HandleFunc(lib.TrimThroughPath, er.handleTrim)
+	http.HandleFunc(recordevents.GetMinMaxPath, er.handleMinMax)
+	http.HandleFunc(recordevents.GetEntryPath, er.handleGetEntry)
+	http.HandleFunc(recordevents.TrimThroughPath, er.handleTrim)
 	go http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
 
 // HTTP handler for GetMinMax requests
 func (er *eventRecorder) handleMinMax(w http.ResponseWriter, r *http.Request) {
 	minAvail, maxSeen := er.es.MinMax()
-	minMax := lib.MinMaxResponse{
+	minMax := recordevents.MinMaxResponse{
 		MinAvail: minAvail,
 		MaxSeen:  maxSeen,
 	}
@@ -70,7 +72,7 @@ func (er *eventRecorder) handleMinMax(w http.ResponseWriter, r *http.Request) {
 func (er *eventRecorder) handleTrim(w http.ResponseWriter, r *http.Request) {
 	// If we extend this much at all we should vendor a better mux(gorilla, etc)
 	path := strings.TrimLeft(r.URL.Path, "/")
-	getPrefix := strings.TrimLeft(lib.TrimThroughPath, "/")
+	getPrefix := strings.TrimLeft(recordevents.TrimThroughPath, "/")
 	suffix := strings.TrimLeft(strings.TrimPrefix(path, getPrefix), "/")
 
 	seqNum, err := strconv.ParseInt(suffix, 10, 32)
@@ -93,7 +95,7 @@ func (er *eventRecorder) handleTrim(w http.ResponseWriter, r *http.Request) {
 func (er *eventRecorder) handleGetEntry(w http.ResponseWriter, r *http.Request) {
 	// If we extend this much at all we should vendor a better mux(gorilla, etc)
 	path := strings.TrimLeft(r.URL.Path, "/")
-	getPrefix := strings.TrimLeft(lib.GetEntryPath, "/")
+	getPrefix := strings.TrimLeft(recordevents.GetEntryPath, "/")
 	suffix := strings.TrimLeft(strings.TrimPrefix(path, getPrefix), "/")
 
 	seqNum, err := strconv.ParseInt(suffix, 10, 32)
@@ -113,42 +115,47 @@ func (er *eventRecorder) handleGetEntry(w http.ResponseWriter, r *http.Request) 
 	w.Write(entryBytes)
 }
 
-// handler for cloudevents
-func (er *eventRecorder) handler(ctx context.Context, event cloudevents.Event) {
-	cloudevents.HTTPTransportContextFrom(ctx)
+func (er *eventRecorder) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	m := cloudeventshttp.NewMessageFromHttpRequest(request)
+	defer m.Finish(nil)
 
-	tx := cloudevents.HTTPTransportContextFrom(ctx)
+	event, eventErr := cloudeventsbindings.ToEvent(context.TODO(), m)
+	header := request.Header
 
-	// Store the event
-	er.es.StoreEvent(event, map[string][]string(tx.Header))
+	er.es.StoreEvent(event, eventErr, map[string][]string(header))
 
-	// Print interesting headers and full events for debugging
-	header := tx.Header
-	headerNameList := lib.InterestingHeaders()
+	headerNameList := testlib.InterestingHeaders()
 	for _, headerName := range headerNameList {
 		if headerValue := header.Get(headerName); headerValue != "" {
 			log.Printf("Header %s: %s\n", headerName, headerValue)
 		}
 	}
-	if err := event.Validate(); err == nil {
-		log.Printf("eventdetails:\n%s", event.String())
+
+	if eventErr != nil {
+		log.Printf("error receiving the event: %v", eventErr)
 	} else {
-		log.Printf("error validating the event: %v", err)
+		valErr := event.Validate()
+		if valErr == nil {
+			log.Printf("eventdetails:\n%s", event.String())
+		} else {
+			log.Printf("error validating the event: %v", valErr)
+		}
 	}
+
+	writer.WriteHeader(http.StatusAccepted)
 }
 
 func main() {
 	er := newEventRecorder()
-	er.StartServer(lib.RecordEventsPort)
+	er.StartServer(recordevents.RecordEventsPort)
 
 	logger, _ := zap.NewDevelopment()
-	if err := tracing.SetupStaticPublishing(logger.Sugar(), "", tracing.AlwaysSample); err != nil {
+	if err := test_images.ConfigureTracing(logger.Sugar(), ""); err != nil {
 		log.Fatalf("Unable to setup trace publishing: %v", err)
 	}
-	c, err := kncloudevents.NewDefaultClient()
-	if err != nil {
-		log.Fatalf("Failed to create client, %v", err)
-	}
 
-	log.Fatalf("Failed to start receiver: %s", c.StartReceiver(context.Background(), er.handler))
+	err := http.ListenAndServe(":8080", kncloudevents.CreateHandler(er))
+	if err != nil {
+		panic(err)
+	}
 }

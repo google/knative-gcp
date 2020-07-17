@@ -1,13 +1,16 @@
 # Installing GCP Broker
 
+**Currently the GCP Broker only supports GKE or GCE environments. Other
+environments may work but are not supported.**
+
 The GCP Broker is a Broker implementation that's highly optimized for running in
 GCP using [Cloud Pub/Sub](https://cloud.google.com/pubsub).
 
 Knative Eventing allows different Broker implementations via `BrokerClass`
 annotation. If annotated with
 `"eventing.knative.dev/broker.class": "googlecloud"`, the `Knative-GCP`
-contorller will create a GCP Broker. Compared to the default
-[Channel Based Broker](https://knative.dev/docs/eventing/channel-based-broker/),
+controller will create a GCP Broker. Compared to the default
+[MT Channel Based Broker](https://knative.dev/docs/eventing/broker/mt-channel-based-broker/),
 GCP Broker is more performant and cost-effective by reducing hops and Pub/Sub
 message consumption.
 
@@ -15,7 +18,7 @@ message consumption.
 
 1. [Install Knative-GCP](./install-knative-gcp.md).
 
-2. [Create a Pub/Sub enabled Service Account](./pubsub-service-account.md).
+2. [Create a Service Account for the Data Plane](./dataplane-service-account.md).
 
 ## Authentication Setup for GCP Broker
 
@@ -42,19 +45,19 @@ Workload Identity see
     Service Account. The scope of this role is only for this specific Google
     Cloud Service Account. It is equivalent to this command:
 
-        ```shell
-        gcloud iam service-accounts add-iam-policy-binding \
-        --role roles/iam.workloadIdentityUser \
-        --member serviceAccount:$PROJECT_ID.svc.id.goog[cloud-run-events/broker] \
-        cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
-        ```
+    ```shell
+    gcloud iam service-accounts add-iam-policy-binding \
+     --role roles/iam.workloadIdentityUser \
+     --member serviceAccount:$PROJECT_ID.svc.id.goog[cloud-run-events/broker] \
+     cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
+    ```
 
 1.  Annotate the `broker` Kubernetes Service Account with
-    `iam.gke.io/gcp-service-account=cre-pubsub@PROJECT_ID.iam.gserviceaccount.com`
+    `iam.gke.io/gcp-service-account=cre-dataplane@PROJECT_ID.iam.gserviceaccount.com`
 
-        ```shell
-        kubectl --namespace cloud-run-events  annotate serviceaccount broker iam.gke.io/gcp-service-account=cre-pubsub@${PROJECT_ID}.iam.gserviceaccount.com
-        ```
+    ```shell
+    kubectl --namespace cloud-run-events  annotate serviceaccount broker iam.gke.io/gcp-service-account=cre-dataplane@${PROJECT_ID}.iam.gserviceaccount.com
+    ```
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 
@@ -62,14 +65,14 @@ Workload Identity see
    check this key into source control!**
 
    ```shell
-   gcloud iam service-accounts keys create cre-pubsub.json \
-   --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+   gcloud iam service-accounts keys create cre-dataplane.json \
+   --iam-account=cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
    ```
 
 1. Create a secret on the Kubernetes cluster with the downloaded key.
 
    ```shell
-   kubectl --namespace cloud-run-events create secret generic google-broker-key --from-file=key.json=cre-pubsub.json
+   kubectl --namespace cloud-run-events create secret generic google-broker-key --from-file=key.json=cre-dataplane.json
    ```
 
    `google-broker-key` and `key.json` are default values expected by our
@@ -77,11 +80,16 @@ Workload Identity see
 
 ## Deployment
 
-Apply GCP broker yamls:
+- For up to [v0.15.0](https://github.com/google/knative-gcp/tree/v0.15.0), apply
+  GCP broker yamls:
 
-```shell
-ko apply -f ./config/broker/
-```
+  ```shell
+  ko apply -f ./config/broker/
+  ```
+
+- In the latest version, relevant components
+  [will be created by BrokerCell on demand](https://github.com/google/knative-gcp/pull/1170),
+  so, no broker-specific configs are needed at this point.
 
 ## Usage
 
@@ -118,14 +126,13 @@ kubectl create namespace ${NAMESPACE}
    This shows the broker you just created like so:
 
    ```shell
-   NAME          READY   REASON   URL                                                                                             AGE
-   test-broker   True             http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   15s
+   NAME          READY   REASON   URL                                                                                                         AGE
+   test-broker   True             http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   15s
    ```
 
 Once the GCP broker is ready, you can use it by sending events to its `URL` and
-create [Triggers](https://knative.dev/docs/eventing/broker-trigger/#trigger) to
-receive events from it, just like any Knative Eventing
-[Brokers](https://knative.dev/docs/eventing/broker-trigger/#broker).
+create Triggers to receive events from it, just like any Knative Eventing
+Brokers in [Broker and Trigger](https://knative.dev/docs/eventing/broker/).
 
 You can find demos of the GCP broker in the
 [examples](../examples/gcpbroker/README.md).

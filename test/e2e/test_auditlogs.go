@@ -23,14 +23,79 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
+
+// SmokeCloudAuditLogsSourceTestImpl tests if a CloudAuditLogsSource object can be created to ready state and delete a CloudAuditLogsSource resource and its underlying resources..
+func SmokeCloudAuditLogsSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	project := os.Getenv(lib.ProwProjectKey)
+
+	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
+	svcName := helpers.AppendRandomString(auditlogsName + "-event-display")
+	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
+	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
+
+	lib.MakeAuditLogsOrDie(client, lib.AuditLogsConfig{
+		SinkGVK:            lib.ServiceGVK,
+		SinkName:           svcName,
+		AuditlogsName:      auditlogsName,
+		MethodName:         lib.PubSubCreateTopicMethodName,
+		Project:            project,
+		ResourceName:       resourceName,
+		ServiceName:        lib.PubSubServiceName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
+
+	createdAuditLogs := client.GetAuditLogsOrFail(auditlogsName)
+
+	topicID := createdAuditLogs.Status.TopicID
+	subID := createdAuditLogs.Status.SubscriptionID
+	sinkID := createdAuditLogs.Status.StackdriverSink
+
+	createdSinkExists := lib.StackdriverSinkExists(t, sinkID)
+	if !createdSinkExists {
+		t.Errorf("Expected StackdriverSink%q to exist", sinkID)
+	}
+
+	createdTopicExists := lib.TopicExists(t, topicID)
+	if !createdTopicExists {
+		t.Errorf("Expected topic%q to exist", topicID)
+	}
+
+	createdSubExists := lib.SubscriptionExists(t, subID)
+	if !createdSubExists {
+		t.Errorf("Expected subscription %q to exist", subID)
+	}
+	client.DeleteAuditLogsOrFail(auditlogsName)
+	//Wait for 40 seconds for topic, subscription and notification to get deleted in gcp
+	time.Sleep(resources.WaitDeletionTime)
+
+	deletedSinkExists := lib.StackdriverSinkExists(t, sinkID)
+	if deletedSinkExists {
+		t.Errorf("Expected s%q StackdriverSink to get deleted", sinkID)
+	}
+
+	deletedTopicExists := lib.TopicExists(t, topicID)
+	if deletedTopicExists {
+		t.Errorf("Expected topic %q to get deleted", topicID)
+	}
+
+	deletedSubExists := lib.SubscriptionExists(t, subID)
+	if deletedSubExists {
+		t.Errorf("Expected subscription %q to get deleted", subID)
+	}
+}
 
 func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	project := os.Getenv(lib.ProwProjectKey)
@@ -44,25 +109,25 @@ func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName, v1beta1.CloudAuditLogsSourceEvent)
+	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName, schemasv1.CloudAuditLogsLogWrittenEventType)
 
 	// Create the CloudAuditLogsSource.
-	lib.MakeAuditLogsOrDie(client,
-		lib.ServiceGVK,
-		auditlogsName,
-		lib.PubSubCreateTopicMethodName,
-		project,
-		resourceName,
-		lib.PubSubServiceName,
-		targetName,
-		authConfig.PubsubServiceAccount,
-	)
+	lib.MakeAuditLogsOrDie(client, lib.AuditLogsConfig{
+		SinkGVK:            lib.ServiceGVK,
+		SinkName:           targetName,
+		AuditlogsName:      auditlogsName,
+		MethodName:         lib.PubSubCreateTopicMethodName,
+		Project:            project,
+		ResourceName:       resourceName,
+		ServiceName:        lib.PubSubServiceName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
 
 	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)
 
 	// Audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds.
-	// Tried with 45 seconds but the test has been quite flaky.
-	time.Sleep(90 * time.Second)
+	time.Sleep(resources.WaitCALTime)
+
 	topicName, deleteTopic := lib.MakeTopicWithNameOrDie(t, topicName)
 	defer deleteTopic()
 

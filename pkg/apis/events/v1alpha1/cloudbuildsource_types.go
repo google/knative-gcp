@@ -16,21 +16,20 @@ package v1alpha1
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis/duck"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-// CloudBuildSource is a specification for a CloudBuildSource resource
+// CloudBuildSource is a specification for a CloudBuildSource resource.
 // +genclient
-// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type CloudBuildSource struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -40,18 +39,22 @@ type CloudBuildSource struct {
 	Status CloudBuildSourceStatus `json:"status,omitempty"`
 }
 
+// Verify that CloudBuildSource matches various duck types.
 var (
+	_ apis.Convertible             = (*CloudBuildSource)(nil)
+	_ apis.Defaultable             = (*CloudBuildSource)(nil)
+	_ apis.Validatable             = (*CloudBuildSource)(nil)
+	_ runtime.Object               = (*CloudBuildSource)(nil)
 	_ kmeta.OwnerRefable           = (*CloudBuildSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudBuildSource)(nil)
-	_ kngcpduck.PubSubable         = (*CloudBuildSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudBuildSource)(nil)
-	_                              = duck.VerifyType(&CloudBuildSource{}, &duckv1.Conditions{})
+	_ kngcpduck.PubSubable         = (*CloudBuildSource)(nil)
 )
 
 // CloudBuildSourceSpec defines the desired state of the CloudBuildSource.
 type CloudBuildSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, and Project
+	// Sink, CloudEventOverrides, Secret and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// Topic is the ID of the PubSub Topic to Subscribe to. It must
@@ -127,7 +130,7 @@ func (bs *CloudBuildSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &bs.Status.PubSubStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (bs *CloudBuildSource) ConditionSet() *apis.ConditionSet {
 	return &buildCondSet
 }

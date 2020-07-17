@@ -19,11 +19,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
 	"github.com/kelseyhightower/envconfig"
-	"os"
 )
 
 const (
@@ -64,8 +65,6 @@ type auditLogReceiver struct {
 	Subject      string `envconfig:"SUBJECT" required:"true"`
 }
 
-
-
 func (r *auditLogReceiver) Knockdown(event cloudevents.Event) bool {
 	fmt.Printf("auditlogs target received event\n")
 	fmt.Printf("event.Context is %s", event.Context.String())
@@ -84,22 +83,22 @@ func (r *auditLogReceiver) Knockdown(event cloudevents.Event) bool {
 	incorrectAttributes := make(map[string]lib.PropPair)
 
 	if event.Type() != r.Type {
-		incorrectAttributes[lib.EventType] = lib.PropPair{Expected: event.Type(), Received: r.Type}
+		incorrectAttributes[lib.EventType] = lib.PropPair{Expected: r.Type, Received: event.Type()}
 	}
 	if event.Source() != r.Source {
-		incorrectAttributes[lib.EventSource] = lib.PropPair{Expected: event.Source(), Received: r.Source}
+		incorrectAttributes[lib.EventSource] = lib.PropPair{Expected: r.Source, Received: event.Source()}
 	}
 	if event.Subject() != r.Subject {
-		incorrectAttributes[lib.EventSubject] = lib.PropPair{Expected: event.Subject(), Received: r.Subject}
+		incorrectAttributes[lib.EventSubject] = lib.PropPair{Expected: r.Subject, Received: event.Subject()}
 	}
 	if eventDataServiceName != r.ServiceName {
-		incorrectAttributes[serviceName] = lib.PropPair{Expected: eventDataServiceName, Received: r.ServiceName}
+		incorrectAttributes[serviceName] = lib.PropPair{Expected: r.ServiceName, Received: eventDataServiceName}
 	}
 	if eventDataMethodName != r.MethodName {
-		incorrectAttributes[methodName] = lib.PropPair{Expected: eventDataMethodName, Received: r.MethodName}
+		incorrectAttributes[methodName] = lib.PropPair{Expected: r.MethodName, Received: eventDataMethodName}
 	}
 	if eventDataResourceName != r.ResourceName {
-		incorrectAttributes[resourceName] = lib.PropPair{Expected: eventDataResourceName, Received: r.ResourceName}
+		incorrectAttributes[resourceName] = lib.PropPair{Expected: r.ResourceName, Received: eventDataResourceName}
 	}
 
 	if len(incorrectAttributes) == 0 {

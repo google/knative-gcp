@@ -19,11 +19,12 @@ package resources
 import (
 	"strconv"
 
+	"github.com/google/knative-gcp/pkg/broker/handler"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/system"
 )
@@ -34,18 +35,116 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 	// Decorate the container template with ingress port.
 	container.Env = append(container.Env, corev1.EnvVar{Name: "PORT", Value: strconv.Itoa(args.Port)})
 	container.Ports = append(container.Ports, corev1.ContainerPort{Name: "http", ContainerPort: int32(args.Port)})
+	container.ReadinessProbe = &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/healthz",
+				Port:   intstr.FromInt(args.Port),
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		FailureThreshold: 3,
+		PeriodSeconds:    2,
+		SuccessThreshold: 1,
+		TimeoutSeconds:   5,
+	}
+	container.LivenessProbe = &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/healthz",
+				Port:   intstr.FromInt(args.Port),
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		FailureThreshold:    3,
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       2,
+		SuccessThreshold:    1,
+		TimeoutSeconds:      5,
+	}
+	container.Resources = corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("1000Mi"),
+		},
+		Requests: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("500Mi"),
+			corev1.ResourceCPU:    resource.MustParse("1000m"),
+		},
+	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
 
 // MakeFanoutDeployment creates the fanout Deployment object.
 func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 	container := containerTemplate(args.Args)
+	container.Resources = corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("3000Mi"),
+		},
+		Requests: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("500Mi"),
+			corev1.ResourceCPU:    resource.MustParse("1500m"),
+		},
+	}
+	container.Ports = append(container.Ports,
+		corev1.ContainerPort{
+			Name:          "http-health",
+			ContainerPort: handler.DefaultHealthCheckPort,
+		},
+	)
+	container.Env = append(container.Env, corev1.EnvVar{
+		Name:  "MAX_CONCURRENCY_PER_EVENT",
+		Value: "100",
+	})
+	container.LivenessProbe = &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/healthz",
+				Port:   intstr.FromInt(handler.DefaultHealthCheckPort),
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		FailureThreshold:    3,
+		InitialDelaySeconds: 15,
+		PeriodSeconds:       15,
+		SuccessThreshold:    1,
+		TimeoutSeconds:      5,
+	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
 
 // MakeRetryDeployment creates the retry Deployment object.
 func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 	container := containerTemplate(args.Args)
+	container.Resources = corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("3000Mi"),
+		},
+		Requests: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("500Mi"),
+			corev1.ResourceCPU:    resource.MustParse("1000m"),
+		},
+	}
+	container.Ports = append(container.Ports,
+		corev1.ContainerPort{
+			Name:          "http-health",
+			ContainerPort: handler.DefaultHealthCheckPort,
+		},
+	)
+	container.LivenessProbe = &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/healthz",
+				Port:   intstr.FromInt(handler.DefaultHealthCheckPort),
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		FailureThreshold:    3,
+		InitialDelaySeconds: 15,
+		PeriodSeconds:       15,
+		SuccessThreshold:    1,
+		TimeoutSeconds:      5,
+	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
 
@@ -67,7 +166,7 @@ func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deploy
 					Volumes: []corev1.Volume{
 						{
 							Name:         "broker-config",
-							VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: "broker-targets"}}},
+							VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: Name(args.BrokerCell.Name, targetsCMName)}}},
 						},
 						{
 							Name:         "google-broker-key",
@@ -131,17 +230,6 @@ func containerTemplate(args Args) corev1.Container {
 			{
 				Name:      "google-broker-key",
 				MountPath: "/var/secrets/google",
-			},
-		},
-		// # TODO(issue #876): determine good values for resource requests/limits
-		Resources: corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("100m"),
-				corev1.ResourceMemory: resource.MustParse("100Mi"),
-			},
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("1000m"),
-				corev1.ResourceMemory: resource.MustParse("1000Mi"),
 			},
 		},
 	}

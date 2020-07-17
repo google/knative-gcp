@@ -17,15 +17,13 @@ limitations under the License.
 package v1beta1
 
 import (
-	"crypto/md5"
-	"fmt"
-
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
@@ -53,9 +51,11 @@ var (
 	_ resourcesemantics.GenericCRD = (*CloudAuditLogsSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudAuditLogsSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudAuditLogsSource)(nil)
+	_ duckv1.KRShaped              = (*CloudAuditLogsSource)(nil)
 )
 
 const (
+	// SinkReady has status True when CloudAuditLogsSource sink is ready.
 	SinkReady apis.ConditionType = "SinkReady"
 )
 
@@ -64,21 +64,6 @@ var auditLogsSourceCondSet = apis.NewLivingConditionSet(
 	duckv1beta1.TopicReady,
 	SinkReady,
 )
-
-const (
-	CloudAuditLogsSourceEvent = "com.google.cloud.auditlog.event"
-)
-
-// CloudAuditLogsSourceEventSource returns the Cloud Audit Logs CloudEvent source value.
-func CloudAuditLogsSourceEventSource(serviceName, parentResource string) string {
-	return fmt.Sprintf("//%s/%s", serviceName, parentResource)
-}
-
-// CloudAuditLogsSourceEventID returns the Cloud Audit Logs CloudEvent id value.
-func CloudAuditLogsSourceEventID(id, logName, timestamp string) string {
-	// Hash the concatenation of the three fields.
-	return fmt.Sprintf("%x", md5.Sum([]byte(id+logName+timestamp)))
-}
 
 type CloudAuditLogsSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
@@ -120,7 +105,7 @@ func (s *CloudAuditLogsSource) IdentityStatus() *duckv1beta1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (*CloudAuditLogsSource) ConditionSet() *apis.ConditionSet {
 	return &auditLogsSourceCondSet
 }
@@ -143,4 +128,14 @@ type CloudAuditLogsSourceList struct {
 	metav1.ListMeta
 
 	Items []CloudAuditLogsSource `json:"items"`
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*CloudAuditLogsSource) GetConditionSet() apis.ConditionSet {
+	return auditLogsSourceCondSet
+}
+
+// GetStatus retrieves the status of the CloudAuditLogsSource. Implements the KRShaped interface.
+func (s *CloudAuditLogsSource) GetStatus() *duckv1.Status {
+	return &s.Status.Status
 }

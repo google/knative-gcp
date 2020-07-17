@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 )
 
@@ -66,6 +67,9 @@ var (
 
 	// Check that we can create OwnerReferences to a Broker.
 	_ kmeta.OwnerRefable = (*Broker)(nil)
+
+	// Check that we implement KRShaped.
+	_ duckv1.KRShaped = (*Broker)(nil)
 )
 
 // BrokerStatus represents the current state of a Broker.
@@ -111,4 +115,14 @@ func (b *Broker) GetGroupVersionKind() schema.GroupVersionKind {
 // GetUntypedSpec returns the spec of the Broker.
 func (b *Broker) GetUntypedSpec() interface{} {
 	return b.Spec
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*Broker) GetConditionSet() apis.ConditionSet {
+	return brokerCondSet
+}
+
+// GetStatus retrieves the status of the Broker. Implements the KRShaped interface.
+func (b *Broker) GetStatus() *duckv1.Status {
+	return &b.Status.Status
 }

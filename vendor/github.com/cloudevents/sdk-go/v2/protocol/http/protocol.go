@@ -35,6 +35,15 @@ type Protocol struct {
 	Client          *http.Client
 	incoming        chan msgErr
 
+	// OptionsHandlerFn handles the OPTIONS method requests and is intended to
+	// implement the abuse protection spec:
+	// https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md#4-abuse-protection
+	OptionsHandlerFn http.HandlerFunc
+	WebhookConfig    *WebhookConfig
+
+	GetHandlerFn    http.HandlerFunc
+	DeleteHandlerFn http.HandlerFunc
+
 	// To support Opener:
 
 	// ShutdownTimeout defines the timeout given to the http.Server when calling Shutdown.
@@ -226,13 +235,40 @@ func (p *Protocol) Respond(ctx context.Context) (binding.Message, protocol.Respo
 // ServeHTTP implements http.Handler.
 // Blocks until ResponseFn is invoked.
 func (p *Protocol) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	m := NewMessageFromHttpRequest(req)
-	if m == nil {
-		p.incoming <- msgErr{msg: nil, err: binding.ErrUnknownEncoding}
-		return // if there was no message, return.
+	// Filter the GET style methods:
+	switch req.Method {
+	case http.MethodOptions:
+		if p.OptionsHandlerFn == nil {
+			rw.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		p.OptionsHandlerFn(rw, req)
+		return
+
+	case http.MethodGet:
+		if p.GetHandlerFn == nil {
+			rw.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		p.GetHandlerFn(rw, req)
+		return
+
+	case http.MethodDelete:
+		if p.DeleteHandlerFn == nil {
+			rw.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		p.DeleteHandlerFn(rw, req)
+		return
 	}
 
-	done := make(chan struct{})
+	m := NewMessageFromHttpRequest(req)
+	if m == nil {
+		// Should never get here unless ServeHTTP is called directly.
+		p.incoming <- msgErr{msg: nil, err: binding.ErrUnknownEncoding}
+		rw.WriteHeader(http.StatusBadRequest)
+		return // if there was no message, return.
+	}
 
 	var finishErr error
 	m.OnFinish = func(err error) error {
@@ -240,14 +276,17 @@ func (p *Protocol) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return nil
 	}
 
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	var fn protocol.ResponseFn = func(ctx context.Context, respMsg binding.Message, res protocol.Result, transformers ...binding.Transformer) error {
 		// Unblock the ServeHTTP after the reply is written
 		defer func() {
-			done <- struct{}{}
+			wg.Done()
 		}()
 
 		if finishErr != nil {
 			http.Error(rw, fmt.Sprintf("Cannot forward CloudEvent: %s", finishErr), http.StatusInternalServerError)
+			return finishErr
 		}
 
 		status := http.StatusOK
@@ -267,6 +306,7 @@ func (p *Protocol) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 					rw.Header().Set("content-type", "text/plain")
 					rw.WriteHeader(status)
 					_, _ = rw.Write([]byte(validationError.Error()))
+					return validationError
 				} else if errors.Is(res, binding.ErrUnknownEncoding) {
 					status = http.StatusUnsupportedMediaType
 				} else {
@@ -286,5 +326,5 @@ func (p *Protocol) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	p.incoming <- msgErr{msg: m, respFn: fn} // Send to Request
 	// Block until ResponseFn is invoked
-	<-done
+	wg.Wait()
 }

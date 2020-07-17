@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/pullsubscription"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/pullsubscription"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/keda/resources"
 	"go.uber.org/zap"
@@ -56,12 +56,11 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface.
 var _ pullsubscriptionreconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, ps *v1beta1.PullSubscription) reconciler.Event {
 	return r.Base.ReconcileKind(ctx, ps)
 }
 
-// TODO upstream to pkg
-func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deployment, src *v1alpha1.PullSubscription) error {
+func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deployment, src *v1beta1.PullSubscription) error {
 	// Check whether KEDA is installed, if not, error out.
 	// Ideally this should be done in the webhook, thus not even allowing the creation of the object.
 	if err := r.discoveryFn(r.KubeClientSet.Discovery(), resources.KedaSchemeGroupVersion); err != nil {
@@ -80,12 +79,15 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 	ra.Spec.Replicas = existing.Spec.Replicas
 	if !equality.Semantic.DeepEqual(ra.Spec, existing.Spec) {
 		existing.Spec = ra.Spec
-		_, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
+		existing, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Error updating Receive Adapter", zap.Error(err))
 			return err
 		}
 	}
+
+	src.Status.PropagateDeploymentAvailability(existing)
+
 	// Now we reconcile the ScaledObject.
 	gvr, _ := meta.UnsafeGuessKindToResource(resources.ScaledObjectGVK)
 	scaledObjectResourceInterface := r.DynamicClientSet.Resource(gvr).Namespace(src.Namespace)
@@ -130,9 +132,11 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 			return err
 		}
 	}
+
+	// TODO propagate ScaledObject status
 	return nil
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, ps *v1beta1.PullSubscription) reconciler.Event {
 	return r.Base.FinalizeKind(ctx, ps)
 }

@@ -19,23 +19,44 @@ package v1alpha1
 import (
 	"context"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/eventing/pkg/logging"
+	"knative.dev/pkg/apis"
+)
+
+var (
+	trueVal = true
 )
 
 func (t *Topic) SetDefaults(ctx context.Context) {
+	ctx = apis.WithinParent(ctx, t.ObjectMeta)
 	t.Spec.SetDefaults(ctx)
-	duckv1alpha1.SetClusterNameAnnotation(&t.ObjectMeta, metadataClient.NewDefaultMetadataClient())
+	duck.SetClusterNameAnnotation(&t.ObjectMeta, metadataClient.NewDefaultMetadataClient())
 }
 
 func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 	if ts.PropagationPolicy == "" {
 		ts.PropagationPolicy = TopicPolicyCreateNoDelete
 	}
-	if ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{}) {
-		ts.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
+
+	ad := gcpauth.FromContextOrDefaults(ctx).GCPAuthDefaults
+	if ad == nil {
+		// TODO This should probably error out, rather than silently allow in non-defaulted COs.
+		logging.FromContext(ctx).Error("Failed to get the GCPAuthDefaults")
+		return
+	}
+	if ts.ServiceAccountName == "" &&
+		(ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{})) {
+		ts.ServiceAccountName = ad.KSA(apis.ParentMeta(ctx).Namespace)
+		ts.Secret = ad.Secret(apis.ParentMeta(ctx).Namespace)
+	}
+
+	if ts.EnablePublisher == nil {
+		ts.EnablePublisher = &trueVal
 	}
 }

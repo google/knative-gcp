@@ -77,6 +77,7 @@ function control_plane_setup() {
   kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${CONTROL_PLANE_SECRET_NAME}" --from-file=key.json="${CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP}"
   echo "Delete the controller pod in the namespace '${CONTROL_PLANE_NAMESPACE}' to refresh the created/patched secret"
   kubectl delete pod -n "${CONTROL_PLANE_NAMESPACE}" --selector role=controller
+  wait_until_pods_running "${CONTROL_PLANE_NAMESPACE}" || return 1
 }
 
 # Create resources required for Pub/Sub Admin setup.
@@ -102,5 +103,7 @@ function pubsub_setup() {
 function gcp_broker_setup() {
   echo "Authentication setup for GCP Broker"
   kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${GCP_BROKER_SECRET_NAME}" --from-file=key.json="${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
+
+  warmup_broker_setup
 }
 

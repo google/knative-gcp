@@ -19,10 +19,13 @@ package v1beta1
 import (
 	"context"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/apis"
+
+	duck "github.com/google/knative-gcp/pkg/apis/duck"
 )
 
 func (s *CloudSchedulerSource) SetDefaults(ctx context.Context) {
-	s.Spec.SetPubSubDefaults()
-	duckv1beta1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
+	ctx = apis.WithinParent(ctx, s.ObjectMeta)
+	s.Spec.SetPubSubDefaults(ctx)
+	duck.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }

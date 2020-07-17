@@ -27,6 +27,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 )
 
 // +genclient
@@ -43,11 +44,6 @@ type PullSubscription struct {
 	Status PullSubscriptionStatus `json:"status,omitempty"`
 }
 
-// PubSubMode returns the mode currently set for PullSubscription.
-func (p *PullSubscription) PubSubMode() ModeType {
-	return p.Spec.Mode
-}
-
 // Check that PullSubscription can be converted to other versions.
 var _ apis.Convertible = (*PullSubscription)(nil)
 
@@ -56,6 +52,9 @@ var _ runtime.Object = (*PullSubscription)(nil)
 
 // Check that PullSubscription implements the Conditions duck type.
 var _ = duck.VerifyType(&PullSubscription{}, &duckv1.Conditions{})
+
+// Check that PullSubscription implements the KRShaped duck type.
+var _ duckv1.KRShaped = (*PullSubscription)(nil)
 
 // PullSubscriptionSpec defines the desired state of the PullSubscription.
 type PullSubscriptionSpec struct {
@@ -102,6 +101,11 @@ type PullSubscriptionSpec struct {
 	AdapterType string `json:"adapterType,omitempty"`
 }
 
+// PubSubMode returns the mode currently set for PullSubscription.
+func (p *PullSubscription) PubSubMode() ModeType {
+	return p.Spec.Mode
+}
+
 // GetAckDeadline parses AckDeadline and returns the default if an error occurs.
 func (ps PullSubscriptionSpec) GetAckDeadline() time.Duration {
 	if ps.AckDeadline != nil {
@@ -109,7 +113,7 @@ func (ps PullSubscriptionSpec) GetAckDeadline() time.Duration {
 			return duration
 		}
 	}
-	return defaultAckDeadline
+	return intevents.DefaultAckDeadline
 }
 
 // GetRetentionDuration parses RetentionDuration and returns the default if an error occurs.
@@ -119,7 +123,7 @@ func (ps PullSubscriptionSpec) GetRetentionDuration() time.Duration {
 			return duration
 		}
 	}
-	return defaultRetentionDuration
+	return intevents.DefaultRetentionDuration
 }
 
 type ModeType string
@@ -214,4 +218,14 @@ func (s *PullSubscription) IdentityStatus() *v1beta1.IdentityStatus {
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (*PullSubscription) ConditionSet() *apis.ConditionSet {
 	return &pullSubscriptionCondSet
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*PullSubscription) GetConditionSet() apis.ConditionSet {
+	return pullSubscriptionCondSet
+}
+
+// GetStatus retrieves the status of the PullSubscription. Implements the KRShaped interface.
+func (s *PullSubscription) GetStatus() *duckv1.Status {
+	return &s.Status.Status
 }

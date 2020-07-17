@@ -17,11 +17,13 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"testing"
+
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"github.com/google/go-cmp/cmp"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -46,7 +48,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 		},
 		"defaults present": {
 			orig: &CloudStorageSourceSpec{
-				EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+				EventTypes: []string{schemasv1.CloudStorageObjectFinalizedEventType, schemasv1.CloudStorageObjectDeletedEventType},
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -57,7 +59,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &CloudStorageSourceSpec{
-				EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+				EventTypes: []string{schemasv1.CloudStorageObjectFinalizedEventType, schemasv1.CloudStorageObjectDeletedEventType},
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -71,7 +73,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			tc.orig.SetDefaults(context.Background())
+			tc.orig.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}

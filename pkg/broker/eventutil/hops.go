@@ -19,8 +19,9 @@ package eventutil
 import (
 	"context"
 
-	cetypes "github.com/cloudevents/sdk-go/pkg/cloudevents/types"
+	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/event"
+	cetypes "github.com/cloudevents/sdk-go/v2/types"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
 )
@@ -59,6 +60,13 @@ func UpdateRemainingHops(ctx context.Context, event *event.Event, preemptiveHops
 // It ignores any existing hops value.
 func SetRemainingHops(ctx context.Context, event *event.Event, hops int32) {
 	event.SetExtension(hopsAttribute, hops)
+}
+
+type SetRemainingHopsTransformer int32
+
+func (h SetRemainingHopsTransformer) Transform(_ binding.MessageMetadataReader, out binding.MessageMetadataWriter) error {
+	out.SetExtension(hopsAttribute, int32(h))
+	return nil
 }
 
 // GetRemainingHops returns the remaining hops of the event if it presents.

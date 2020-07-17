@@ -18,41 +18,34 @@ package v1alpha1
 
 import (
 	"context"
-	"time"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/ptr"
-)
 
-const (
-	defaultRetentionDuration = 7 * 24 * time.Hour
-	defaultAckDeadline       = 30 * time.Second
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 )
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
+	ctx = apis.WithinParent(ctx, s.ObjectMeta)
 	s.Spec.SetDefaults(ctx)
-	duckv1alpha1.SetClusterNameAnnotation(&s.ObjectMeta, metadataClient.NewDefaultMetadataClient())
-	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
+	duck.SetClusterNameAnnotation(&s.ObjectMeta, metadataClient.NewDefaultMetadataClient())
+	duck.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }
 
 func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
 	if ss.AckDeadline == nil {
-		ackDeadline := defaultAckDeadline
+		ackDeadline := intevents.DefaultAckDeadline
 		ss.AckDeadline = ptr.String(ackDeadline.String())
 	}
 
 	if ss.RetentionDuration == nil {
-		retentionDuration := defaultRetentionDuration
+		retentionDuration := intevents.DefaultRetentionDuration
 		ss.RetentionDuration = ptr.String(retentionDuration.String())
 	}
 
-	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
-		ss.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
-	}
+	ss.PubSubSpec.SetPubSubDefaults(ctx)
 
 	switch ss.Mode {
 	case ModeCloudEventsBinary, ModeCloudEventsStructured, ModePushCompatible:

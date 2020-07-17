@@ -38,13 +38,13 @@ var (
 		Status: corev1.ConditionTrue,
 	}
 
-	brokerConditionIngress = apis.Condition{
-		Type:   BrokerConditionIngress,
+	brokerConditionBrokerCell = apis.Condition{
+		Type:   BrokerConditionBrokerCell,
 		Status: corev1.ConditionTrue,
 	}
 
-	brokerConditionIngressFalse = apis.Condition{
-		Type:   BrokerConditionIngress,
+	brokerConditionBrokerCellFalse = apis.Condition{
+		Type:   BrokerConditionBrokerCell,
 		Status: corev1.ConditionFalse,
 	}
 
@@ -85,14 +85,14 @@ func TestBrokerGetCondition(t *testing.T) {
 				Status: duckv1.Status{
 					Conditions: []apis.Condition{
 						brokerConditionAddressable,
-						brokerConditionIngress,
+						brokerConditionBrokerCell,
 						brokerConditionTopic,
 					},
 				},
 			},
 		},
-		condQuery: BrokerConditionIngress,
-		want:      &brokerConditionIngress,
+		condQuery: BrokerConditionBrokerCell,
+		want:      &brokerConditionBrokerCell,
 	}, {
 		name: "multiple conditions, condition false",
 		ts: &BrokerStatus{
@@ -100,14 +100,14 @@ func TestBrokerGetCondition(t *testing.T) {
 				Status: duckv1.Status{
 					Conditions: []apis.Condition{
 						brokerConditionAddressable,
-						brokerConditionIngressFalse,
+						brokerConditionBrokerCellFalse,
 						brokerConditionTopic,
 					},
 				},
 			},
 		},
-		condQuery: BrokerConditionIngress,
-		want:      &brokerConditionIngressFalse,
+		condQuery: BrokerConditionBrokerCell,
+		want:      &brokerConditionBrokerCellFalse,
 	}, {
 		name: "unknown condition",
 		ts: &BrokerStatus{
@@ -148,7 +148,7 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Type:   eventingv1beta1.BrokerConditionAddressable,
 						Status: corev1.ConditionUnknown,
 					}, {
-						Type:   BrokerConditionIngress,
+						Type:   BrokerConditionBrokerCell,
 						Status: corev1.ConditionUnknown,
 					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
@@ -182,7 +182,7 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Type:   eventingv1beta1.BrokerConditionAddressable,
 						Status: corev1.ConditionFalse,
 					}, {
-						Type:   BrokerConditionIngress,
+						Type:   BrokerConditionBrokerCell,
 						Status: corev1.ConditionUnknown,
 					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
@@ -216,7 +216,7 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Type:   eventingv1beta1.BrokerConditionAddressable,
 						Status: corev1.ConditionTrue,
 					}, {
-						Type:   BrokerConditionIngress,
+						Type:   BrokerConditionBrokerCell,
 						Status: corev1.ConditionUnknown,
 					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
@@ -251,51 +251,90 @@ func TestBrokerConditionStatus(t *testing.T) {
 	tests := []struct {
 		name                string
 		addressStatus       bool
-		ingressStatus       bool
-		subscriptionStatus  bool
-		topicStatus         bool
+		brokerCellStatus    corev1.ConditionStatus
+		subscriptionStatus  corev1.ConditionStatus
+		topicStatus         corev1.ConditionStatus
+		configStatus        corev1.ConditionStatus
 		wantConditionStatus corev1.ConditionStatus
 	}{{
 		name:                "all happy",
 		addressStatus:       true,
-		ingressStatus:       true,
-		subscriptionStatus:  true,
-		topicStatus:         true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionTrue,
 	}, {
 		name:                "subscription sad",
 		addressStatus:       true,
-		ingressStatus:       true,
-		subscriptionStatus:  false,
-		topicStatus:         true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionFalse,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "subscription unknown",
+		addressStatus:       true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionUnknown,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
+		wantConditionStatus: corev1.ConditionUnknown,
 	}, {
 		name:                "topic sad",
 		addressStatus:       true,
-		ingressStatus:       true,
-		subscriptionStatus:  true,
-		topicStatus:         false,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionFalse,
+		configStatus:        corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "topic unknown",
+		addressStatus:       true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionUnknown,
+		configStatus:        corev1.ConditionTrue,
+		wantConditionStatus: corev1.ConditionUnknown,
 	}, {
 		name:                "address missing",
 		addressStatus:       false,
-		ingressStatus:       true,
-		subscriptionStatus:  true,
-		topicStatus:         true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "ingress false",
 		addressStatus:       true,
-		ingressStatus:       false,
-		subscriptionStatus:  true,
-		topicStatus:         true,
+		brokerCellStatus:    corev1.ConditionFalse,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "brokerCell false",
+		addressStatus:       true,
+		brokerCellStatus:    corev1.ConditionFalse,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
+		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "brokerCell unknown",
+		addressStatus:       true,
+		brokerCellStatus:    corev1.ConditionUnknown,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
+		wantConditionStatus: corev1.ConditionUnknown,
 	}, {
 		name:                "all sad",
 		addressStatus:       false,
-		ingressStatus:       false,
-		subscriptionStatus:  false,
-		topicStatus:         false,
+		brokerCellStatus:    corev1.ConditionFalse,
+		subscriptionStatus:  corev1.ConditionFalse,
+		topicStatus:         corev1.ConditionFalse,
+		configStatus:        corev1.ConditionFalse,
 		wantConditionStatus: corev1.ConditionFalse,
 	}}
 	for _, test := range tests {
@@ -306,21 +345,28 @@ func TestBrokerConditionStatus(t *testing.T) {
 			} else {
 				bs.SetAddress(nil)
 			}
-			if test.ingressStatus {
-				bs.PropagateIngressAvailability(TestHelper.AvailableEndpoints())
+			if test.brokerCellStatus == corev1.ConditionTrue {
+				bs.MarkBrokerCellReady()
+			} else if test.brokerCellStatus == corev1.ConditionFalse {
+				bs.MarkBrokerCelllFailed("Unable to create brokercell", "induced failure")
 			} else {
-				bs.PropagateIngressAvailability(&corev1.Endpoints{})
+				bs.MarkBrokerCelllUnknown("Unable to create brokercell", "induced unknown")
 			}
-			if test.subscriptionStatus {
+			if test.subscriptionStatus == corev1.ConditionTrue {
 				bs.MarkSubscriptionReady()
-			} else {
+			} else if test.subscriptionStatus == corev1.ConditionFalse {
 				bs.MarkSubscriptionFailed("Unable to create PubSub subscription", "induced failure")
-			}
-			if test.topicStatus {
-				bs.MarkTopicReady()
 			} else {
-				bs.MarkTopicFailed("Unable to create PubSub topic", "induced failure")
+				bs.MarkSubscriptionUnknown("Unable to create PubSub subscription", "induced unknown")
 			}
+			if test.topicStatus == corev1.ConditionTrue {
+				bs.MarkTopicReady()
+			} else if test.topicStatus == corev1.ConditionFalse {
+				bs.MarkTopicFailed("Unable to create PubSub topic", "induced failure")
+			} else {
+				bs.MarkTopicUnknown("Unable to create PubSub topic", "induced unknown")
+			}
+
 			got := bs.GetTopLevelCondition().Status
 			if test.wantConditionStatus != got {
 				t.Errorf("unexpected readiness: want %v, got %v", test.wantConditionStatus, got)

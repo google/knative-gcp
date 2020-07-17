@@ -19,12 +19,12 @@ package resources
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 
-	gcpduckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	gcpduckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 )
 
 // PullSubscriptionArgs are the arguments needed to create a Channel Subscriber.
@@ -39,19 +39,18 @@ type PullSubscriptionArgs struct {
 	Secret             *corev1.SecretKeySelector
 	Labels             map[string]string
 	Annotations        map[string]string
-	Subscriber         duckv1alpha1.SubscriberSpec
+	Subscriber         duckv1beta1.SubscriberSpec
 }
 
 // MakePullSubscription generates (but does not insert into K8s) the
 // PullSubscription for Channels.
-func MakePullSubscription(args *PullSubscriptionArgs) *v1alpha1.PullSubscription {
+func MakePullSubscription(args *PullSubscriptionArgs) *v1beta1.PullSubscription {
 
-	spec := v1alpha1.PullSubscriptionSpec{
-		PubSubSpec: gcpduckv1alpha1.PubSubSpec{
+	spec := v1beta1.PullSubscriptionSpec{
+		PubSubSpec: gcpduckv1beta1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{},
-			IdentitySpec: gcpduckv1alpha1.IdentitySpec{
-				GoogleServiceAccount: args.ServiceAccount,
-				ServiceAccountName:   args.ServiceAccountName,
+			IdentitySpec: gcpduckv1beta1.IdentitySpec{
+				ServiceAccountName: args.ServiceAccountName,
 			},
 			Secret:  args.Secret,
 			Project: args.Project,
@@ -84,7 +83,7 @@ func MakePullSubscription(args *PullSubscriptionArgs) *v1alpha1.PullSubscription
 		}
 	}
 
-	return &v1alpha1.PullSubscription{
+	return &v1beta1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Owner.GetObjectMeta().GetNamespace(),
 			Name:            args.Name,

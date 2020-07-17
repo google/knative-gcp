@@ -18,7 +18,9 @@ package main
 
 import (
 	"context"
+	"log"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	configvalidation "github.com/google/knative-gcp/pkg/apis/configs/validation"
 	"github.com/google/knative-gcp/pkg/apis/events"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -33,6 +35,7 @@ import (
 	"knative.dev/eventing/pkg/logconfig"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/leaderelection"
 	"knative.dev/pkg/logging"
@@ -50,6 +53,7 @@ import (
 var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	// For group messaging.cloud.google.com.
 	messagingv1alpha1.SchemeGroupVersion.WithKind("Channel"): &messagingv1alpha1.Channel{},
+	messagingv1beta1.SchemeGroupVersion.WithKind("Channel"):  &messagingv1beta1.Channel{},
 
 	// For group events.cloud.google.com.
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource"):   &eventsv1alpha1.CloudStorageSource{},
@@ -57,16 +61,31 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource"):    &eventsv1alpha1.CloudPubSubSource{},
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"): &eventsv1alpha1.CloudAuditLogsSource{},
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudBuildSource"):     &eventsv1alpha1.CloudBuildSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudStorageSource"):    &eventsv1beta1.CloudStorageSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudSchedulerSource"):  &eventsv1beta1.CloudSchedulerSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudPubSubSource"):     &eventsv1beta1.CloudPubSubSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"):  &eventsv1beta1.CloudAuditLogsSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudBuildSource"):      &eventsv1beta1.CloudBuildSource{},
 
 	// For group internal.events.cloud.google.com.
 	inteventsv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &inteventsv1alpha1.PullSubscription{},
 	inteventsv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &inteventsv1alpha1.Topic{},
+	inteventsv1beta1.SchemeGroupVersion.WithKind("PullSubscription"):  &inteventsv1beta1.PullSubscription{},
+	inteventsv1beta1.SchemeGroupVersion.WithKind("Topic"):             &inteventsv1beta1.Topic{},
 }
 
-func NewDefaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+type defaultingAdmissionController func(context.Context, configmap.Watcher) *controller.Impl
+
+func newDefaultingAdmissionConstructor(gcpas *gcpauth.StoreSingleton) defaultingAdmissionController {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newDefaultingAdmissionController(ctx, cmw, gcpas.Store(ctx, cmw))
+	}
+}
+
+func newDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher, gcpas *gcpauth.Store) *controller.Impl {
 	// Decorate contexts with the current state of the config.
 	ctxFunc := func(ctx context.Context) context.Context {
-		return ctx
+		return gcpas.ToContext(ctx)
 	}
 
 	return defaulting.NewAdmissionController(ctx,
@@ -88,7 +107,20 @@ func NewDefaultingAdmissionController(ctx context.Context, _ configmap.Watcher) 
 	)
 }
 
-func NewValidationAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+type validationController func(context.Context, configmap.Watcher) *controller.Impl
+
+func newValidationConstructor(gcpas *gcpauth.StoreSingleton) validationController {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newValidationAdmissionController(ctx, cmw, gcpas.Store(ctx, cmw))
+	}
+}
+
+func newValidationAdmissionController(ctx context.Context, cmw configmap.Watcher, gcpas *gcpauth.Store) *controller.Impl {
+	// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
+	ctxFunc := func(ctx context.Context) context.Context {
+		return gcpas.ToContext(ctx)
+	}
+
 	return validation.NewAdmissionController(ctx,
 
 		// Name of the validation webhook.
@@ -100,11 +132,7 @@ func NewValidationAdmissionController(ctx context.Context, _ configmap.Watcher) 
 		// The resources to validate and default.
 		types,
 
-		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
-		func(ctx context.Context) context.Context {
-			// return v1.WithUpgradeViaDefaulting(store.ToContext(ctx))
-			return ctx
-		},
+		ctxFunc,
 
 		// Whether to disallow unknown fields.
 		true,
@@ -126,11 +154,20 @@ func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *co
 			// metrics.ConfigMapName():   metricsconfig.NewObservabilityConfigFromConfigMap,
 			logging.ConfigMapName():        logging.NewConfigFromConfigMap,
 			leaderelection.ConfigMapName(): configvalidation.ValidateLeaderElectionConfig,
+			gcpauth.ConfigMapName():        gcpauth.NewDefaultsConfigFromConfigMap,
 		},
 	)
 }
 
-func NewConversionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+type conversionController func(context.Context, configmap.Watcher) *controller.Impl
+
+func newConversionConstructor(gcpas *gcpauth.StoreSingleton) conversionController {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newConversionController(ctx, cmw, gcpas.Store(ctx, cmw))
+	}
+}
+
+func newConversionController(ctx context.Context, _ configmap.Watcher, gcpas *gcpauth.Store) *controller.Impl {
 	var (
 		eventsv1alpha1_    = eventsv1alpha1.SchemeGroupVersion.Version
 		eventsv1beta1_     = eventsv1beta1.SchemeGroupVersion.Version
@@ -139,6 +176,11 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 		inteventsv1alpha1_ = inteventsv1alpha1.SchemeGroupVersion.Version
 		inteventsv1beta1_  = inteventsv1beta1.SchemeGroupVersion.Version
 	)
+
+	// Decorate contexts with the current state of the config.
+	ctxFunc := func(ctx context.Context) context.Context {
+		return gcpas.ToContext(ctx)
+	}
 
 	return conversion.NewConversionController(ctx,
 		// The path on which to serve the webhook
@@ -179,6 +221,14 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 					eventsv1beta1_:  &eventsv1beta1.CloudStorageSource{},
 				},
 			},
+			eventsv1alpha1.Kind("CloudBuildSource"): {
+				DefinitionName: events.CloudBuildSourcesResource.String(),
+				HubVersion:     eventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					eventsv1alpha1_: &eventsv1alpha1.CloudBuildSource{},
+					eventsv1beta1_:  &eventsv1beta1.CloudBuildSource{},
+				},
+			},
 			// intevents
 			inteventsv1alpha1.Kind("PullSubscription"): {
 				DefinitionName: intevents.PullSubscriptionsResource.String(),
@@ -206,12 +256,10 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 				},
 			},
 		},
-		// We don't want to alter the incoming context, so just pass it as-is.
-		func(ctx context.Context) context.Context {
-			return ctx
-		},
+		ctxFunc,
 	)
 }
+
 func main() {
 	// Set up a signal context with our webhook options
 	ctx := webhook.WithOptions(signals.NewContext(), webhook.Options{
@@ -221,11 +269,23 @@ func main() {
 		SecretName: "webhook-certs",
 	})
 
-	sharedmain.WebhookMainWithContext(ctx, logconfig.WebhookName(),
+	controllers, err := InitializeControllers(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	sharedmain.WebhookMainWithContext(ctx, logconfig.WebhookName(), controllers...)
+}
+
+func Controllers(
+	conversionController conversionController,
+	defaultingAdmissionController defaultingAdmissionController,
+	validationController validationController,
+) []injection.ControllerConstructor {
+	return []injection.ControllerConstructor{
 		certificates.NewController,
 		NewConfigValidationController,
-		NewValidationAdmissionController,
-		NewDefaultingAdmissionController,
-		NewConversionController,
-	)
+		injection.ControllerConstructor(validationController),
+		injection.ControllerConstructor(defaultingAdmissionController),
+		injection.ControllerConstructor(conversionController),
+	}
 }

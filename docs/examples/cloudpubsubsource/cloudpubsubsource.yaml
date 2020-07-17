@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: events.cloud.google.com/v1alpha1
+apiVersion: events.cloud.google.com/v1beta1
 kind: CloudPubSubSource
 metadata:
   name: cloudpubsubsource-test
@@ -26,8 +26,8 @@ spec:
 
 #    # If running in GKE, we will ask the metadata server, change this if required.
 #  project: MY_PROJECT
-#    # If running with workload identity enabled, update googleServiceAccount.
-#  googleServiceAccount: service-account-id@project-id.iam.gserviceaccount.com
+#    # If running with workload identity enabled, update serviceAccountName.
+#  serviceAccountName: kubernetes-service-account-name
 #    # If running with secret, here is the default secret name and key, change this if required.
 #  secret:
 #    name: google-cloud-key

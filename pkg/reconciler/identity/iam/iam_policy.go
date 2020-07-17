@@ -18,14 +18,21 @@ package iam
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"sync"
+	"time"
+
+	"github.com/google/wire"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"cloud.google.com/go/iam"
 	admin "cloud.google.com/go/iam/admin/apiv1"
-	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
 	iampb "google.golang.org/genproto/googleapis/iam/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
 )
 
 type action = int
@@ -54,12 +61,18 @@ type roleModification struct {
 type batchedModifications struct {
 	roleModifications map[iam.RoleName]*roleModification
 	listeners         []chan<- error
+	backoff           *wait.Backoff
 }
 
 type getPolicyResponse struct {
 	account GServiceAccount
 	policy  *iam.Policy
 	err     error
+}
+
+type retryBatch struct {
+	account GServiceAccount
+	batch   *batchedModifications
 }
 
 type setPolicyResponse struct {
@@ -71,26 +84,11 @@ type IAMPolicyManager interface {
 	RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role RoleName) error
 }
 
-var (
-	globalManager       IAMPolicyManager
-	createGlobalManager sync.Once
+var PolicyManagerSet = wire.NewSet(
+	admin.NewIamClient,
+	wire.Bind(new(gclient.IamClient), new(*admin.IamClient)),
+	NewIAMPolicyManager,
 )
-
-// DefaultIAMPolicyManager returns a shared global policy manager.
-func DefaultIAMPolicyManager() IAMPolicyManager {
-	createGlobalManager.Do(func() {
-		c, err := admin.NewIamClient(context.Background())
-		if err != nil {
-			panic(err)
-		}
-		m, err := NewIAMPolicyManager(context.Background(), c)
-		if err != nil {
-			panic(err)
-		}
-		globalManager = m
-	})
-	return globalManager
-}
 
 // manager is an IAMPolicyManager which serializes and batches IAM policy changes to a Google
 // Service Account to avoid conflicting changes.
@@ -99,6 +97,18 @@ type manager struct {
 	requestCh   chan *modificationRequest
 	pending     map[GServiceAccount]*batchedModifications // a non-nil batch indicates an outstanding request
 	getPolicyCh chan *getPolicyResponse
+	retryCh     chan *retryBatch
+}
+
+// defaultRetry represents that there will be 3 iterations.
+// The duration starts from 5000ms and is multiplied by factor 2.0 for each iteration.
+var defaultRetry = wait.Backoff{
+	Steps:    5,
+	Duration: 500 * time.Millisecond,
+	Factor:   2.0,
+	// The sleep at each iteration is the duration plus an additional
+	// amount chosen uniformly at random from the interval between 0 and jitter*duration.
+	Jitter: 1.0,
 }
 
 // NewIAMPolicyManager creates an IAMPolicyManager using the given IamClient. The IAMPolicyManager
@@ -109,6 +119,7 @@ func NewIAMPolicyManager(ctx context.Context, client gclient.IamClient) (IAMPoli
 		requestCh:   make(chan *modificationRequest),
 		pending:     make(map[GServiceAccount]*batchedModifications),
 		getPolicyCh: make(chan *getPolicyResponse),
+		retryCh:     make(chan *retryBatch),
 	}
 	go m.manage(ctx)
 	return m, nil
@@ -191,6 +202,18 @@ func (m *manager) manage(ctx context.Context) {
 				roleModifications: make(map[iam.RoleName]*roleModification),
 			}
 			go m.applyBatchedModifications(ctx, getPolicy.account, getPolicy.policy, batched)
+		case retryBatch := <-m.retryCh:
+			batch := retryBatch.batch
+			if batch.backoff == nil {
+				batch.backoff = new(wait.Backoff)
+				*batch.backoff = defaultRetry
+			}
+			batch.mergeModifications(m.pending[retryBatch.account])
+			m.pending[retryBatch.account] = batch
+			go func(backoffTime time.Duration) {
+				time.Sleep(backoffTime)
+				m.getPolicy(ctx, retryBatch.account)
+			}(batch.backoff.Step())
 		case <-ctx.Done():
 			for _, batched := range m.pending {
 				for _, listener := range batched.listeners {
@@ -255,6 +278,14 @@ func (m *manager) applyBatchedModifications(ctx context.Context, account GServic
 		Resource: admin.IamServiceAccountPath("-", string(account)),
 		Policy:   policy,
 	})
+	if isConflict(err) && batched.shouldRetry() {
+		select {
+		case m.retryCh <- &retryBatch{account: account, batch: batched}:
+		case <-ctx.Done():
+		}
+		return
+	}
+
 	for _, listener := range batched.listeners {
 		listener <- err
 	}
@@ -271,4 +302,44 @@ func applyRoleModifications(policy *iam.Policy, role iam.RoleName, mod *roleModi
 	for member := range mod.removeMembers {
 		policy.Remove(member, role)
 	}
+}
+
+// isConflict determines if the error is for concurrency issue.
+func isConflict(err error) bool {
+	var statusErr interface{ GRPCStatus() *status.Status }
+	if errors.As(err, &statusErr) {
+		// Potentially retry when code is:
+		// - 10, indicates the operation was aborted, typically due to a
+		// concurrency issue like sequencer check failures, transaction aborts, etc.
+		// Check https://godoc.org/google.golang.org/grpc/codes for more details about code.
+		code := statusErr.GRPCStatus().Code()
+		return code == codes.Aborted
+	}
+	return false
+}
+
+func (b *batchedModifications) shouldRetry() bool {
+	return b.backoff == nil || b.backoff.Steps > 0
+}
+
+func (b *batchedModifications) mergeModifications(o *batchedModifications) {
+	if o == nil {
+		return
+	}
+	for r, m2 := range o.roleModifications {
+		m1 := b.roleModifications[r]
+		if m1 == nil {
+			b.roleModifications[r] = m2
+		} else {
+			m1.mergeModification(m2)
+		}
+	}
+	b.listeners = append(b.listeners, o.listeners...)
+}
+
+// mergeModification merges the role modifications in o, superseding any conflicting modifications
+// in r.
+func (r *roleModification) mergeModification(o *roleModification) {
+	r.addMembers = r.addMembers.Union(o.addMembers).Difference(o.removeMembers)
+	r.removeMembers = r.removeMembers.Union(o.removeMembers).Difference(o.addMembers)
 }

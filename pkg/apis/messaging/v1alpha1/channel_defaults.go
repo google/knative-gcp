@@ -22,29 +22,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/eventing/pkg/apis/messaging"
+	"knative.dev/eventing/pkg/logging"
+	"knative.dev/pkg/apis"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/apis/messaging/internal"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 )
 
-const (
-	defaultSecretName = "google-cloud-key"
-	defaultSecretKey  = "key.json"
-)
-
-// defaultSecretSelector is the default secret selector used to load the creds
-// to pass to the Topic and PullSubscriptions to auth with Google Cloud.
-func defaultSecretSelector() *corev1.SecretKeySelector {
-	return &corev1.SecretKeySelector{
-		LocalObjectReference: corev1.LocalObjectReference{
-			Name: defaultSecretName,
-		},
-		Key: defaultSecretKey,
-	}
-}
-
 func (c *Channel) SetDefaults(ctx context.Context) {
+	ctx = apis.WithinParent(ctx, c.ObjectMeta)
 	// We need to set this to the _stored_ version of the Channel. If we set to anything other than
 	// the stored version, then when reading the stored version, conversion won't be called so
 	// nothing will set it to the stored version.
@@ -62,12 +50,18 @@ func (c *Channel) SetDefaults(ctx context.Context) {
 		c.Annotations[messaging.SubscribableDuckVersionAnnotation] = internal.StoredChannelVersion
 	}
 	c.Spec.SetDefaults(ctx)
-	duckv1alpha1.SetClusterNameAnnotation(&c.ObjectMeta, metadataClient.NewDefaultMetadataClient())
+	duck.SetClusterNameAnnotation(&c.ObjectMeta, metadataClient.NewDefaultMetadataClient())
 }
 
 func (cs *ChannelSpec) SetDefaults(ctx context.Context) {
-	if cs.GoogleServiceAccount == "" && cs.ServiceAccountName == "" &&
-		(cs.Secret == nil || equality.Semantic.DeepEqual(cs.Secret, &corev1.SecretKeySelector{})) {
-		cs.Secret = defaultSecretSelector()
+	ad := gcpauth.FromContextOrDefaults(ctx).GCPAuthDefaults
+	if ad == nil {
+		// TODO This should probably error out, rather than silently allow in non-defaulted COs.
+		logging.FromContext(ctx).Error("Failed to get the GCPAuthDefaults")
+		return
+	}
+	if cs.ServiceAccountName == "" && cs.Secret == nil || equality.Semantic.DeepEqual(cs.Secret, &corev1.SecretKeySelector{}) {
+		cs.ServiceAccountName = ad.KSA(apis.ParentMeta(ctx).Namespace)
+		cs.Secret = ad.Secret(apis.ParentMeta(ctx).Namespace)
 	}
 }

@@ -42,8 +42,8 @@ import (
 	"knative.dev/pkg/resolver"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1beta1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
@@ -62,6 +62,10 @@ const (
 	reconciledDataPlaneFailedReason = "DataPlaneReconcileFailed"
 	reconciledSuccessReason         = "PullSubscriptionReconciled"
 	workloadIdentityFailed          = "WorkloadIdentityReconcileFailed"
+
+	// If the topic of the subscription has been deleted, the value of its topic becomes "_deleted-topic_".
+	// See https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#subscription
+	deletedTopic = "_deleted-topic_"
 )
 
 // Base implements the core controller logic for pullsubscription.
@@ -95,17 +99,17 @@ type Base struct {
 }
 
 // ReconcileDataPlaneFunc is used to reconcile the data plane component(s).
-type ReconcileDataPlaneFunc func(ctx context.Context, d *appsv1.Deployment, ps *v1alpha1.PullSubscription) error
+type ReconcileDataPlaneFunc func(ctx context.Context, d *appsv1.Deployment, ps *v1beta1.PullSubscription) error
 
-func (r *Base) ReconcileKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {
+func (r *Base) ReconcileKind(ctx context.Context, ps *v1beta1.PullSubscription) reconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("pullsubscription", ps)))
 
 	ps.Status.InitializeConditions()
 	ps.Status.ObservedGeneration = ps.Generation
 
-	// If pullsubscription doesn't have ownerReference and GCP ServiceAccount is provided, reconcile workload identity.
+	// If pullsubscription doesn't have ownerReference and ServiceAccountName is provided, reconcile workload identity.
 	// Otherwise, its owner will reconcile workload identity.
-	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.GoogleServiceAccount != "" {
+	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.ServiceAccountName != "" {
 		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, ps.Spec.Project, ps); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Pub/Sub subscription workload identity: %s", err.Error())
 		}
@@ -143,15 +147,13 @@ func (r *Base) ReconcileKind(ctx context.Context, ps *v1alpha1.PullSubscription)
 
 	err = r.reconcileDataPlaneResources(ctx, ps, r.ReconcileDataPlaneFn)
 	if err != nil {
-		ps.Status.MarkNotDeployed(reconciledDataPlaneFailedReason, "Failed to reconcile Data Plane resource(s): %s", err.Error())
 		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledDataPlaneFailedReason, "Failed to reconcile Data Plane resource(s): %s", err.Error())
 	}
-	ps.Status.MarkDeployed()
 
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `PullSubscription reconciled: "%s/%s"`, ps.Namespace, ps.Name)
 }
 
-func (r *Base) reconcileSubscription(ctx context.Context, ps *v1alpha1.PullSubscription) (string, error) {
+func (r *Base) reconcileSubscription(ctx context.Context, ps *v1beta1.PullSubscription) (string, error) {
 	if ps.Status.ProjectID == "" {
 		projectID, err := utils.ProjectID(ps.Spec.Project, metadataClient.NewDefaultMetadataClient())
 		if err != nil {
@@ -217,9 +219,28 @@ func (r *Base) reconcileSubscription(ctx context.Context, ps *v1alpha1.PullSubsc
 		subConfig.RetentionDuration = retentionDuration
 	}
 
-	// If the subscription doesn't exist, create it.
-	if !subExists {
-		// Create a new subscription to the previous topic with the given name.
+	// Check if the topic of the subscription is "_deleted-topic_"
+	if subExists {
+		config, err := sub.Config(ctx)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to get Pub/Sub subscription Config", zap.Error(err))
+			return "", err
+		}
+		if config.Topic != nil && config.Topic.String() == deletedTopic {
+			logging.FromContext(ctx).Desugar().Error("Detected deleted topic. Going to recreate the pull subscription. Unacked messages will be lost.")
+			// Subscription with "_deleted-topic_" cannot pull from the new topic. In order to recover, we first delete
+			// the sub and then create it. Unacked messages will be lost.
+			if err := sub.Delete(ctx); err != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to delete the _deleted-topic_ susbscription", zap.Error(err))
+				return "", fmt.Errorf("failed to delete the _deleted-topic_ susbscription: %v", err)
+			}
+			sub, err = client.CreateSubscription(ctx, subID, subConfig)
+			if err != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to create subscription", zap.Error(err))
+				return "", err
+			}
+		}
+	} else {
 		sub, err = client.CreateSubscription(ctx, subID, subConfig)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create subscription", zap.Error(err))
@@ -233,7 +254,7 @@ func (r *Base) reconcileSubscription(ctx context.Context, ps *v1alpha1.PullSubsc
 // deleteSubscription looks at the status.SubscriptionID and if non-empty,
 // hence indicating that we have created a subscription successfully
 // in the PullSubscription, remove it.
-func (r *Base) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSubscription) error {
+func (r *Base) deleteSubscription(ctx context.Context, ps *v1beta1.PullSubscription) error {
 	if ps.Status.SubscriptionID == "" {
 		return nil
 	}
@@ -263,7 +284,7 @@ func (r *Base) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSubscrip
 	return nil
 }
 
-func (r *Base) reconcileDataPlaneResources(ctx context.Context, src *v1alpha1.PullSubscription, f ReconcileDataPlaneFunc) error {
+func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1beta1.PullSubscription, f ReconcileDataPlaneFunc) error {
 	loggingConfig, err := logging.LoggingConfigToJson(r.LoggingConfig)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Error serializing existing logging config", zap.Error(err))
@@ -272,7 +293,7 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, src *v1alpha1.Pu
 	if r.MetricsConfig != nil {
 		component := sourceComponent
 		// Set the metric component based on the channel label.
-		if _, ok := src.Labels["events.cloud.google.com/channel"]; ok {
+		if _, ok := ps.Labels["events.cloud.google.com/channel"]; ok {
 			component = channelComponent
 		}
 		r.MetricsConfig.Component = component
@@ -289,28 +310,28 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, src *v1alpha1.Pu
 	}
 
 	desired := resources.MakeReceiveAdapter(ctx, &resources.ReceiveAdapterArgs{
-		Image:          r.ReceiveAdapterImage,
-		Source:         src,
-		Labels:         resources.GetLabels(r.ControllerAgentName, src.Name),
-		SubscriptionID: src.Status.SubscriptionID,
-		SinkURI:        src.Status.SinkURI,
-		TransformerURI: src.Status.TransformerURI,
-		LoggingConfig:  loggingConfig,
-		MetricsConfig:  metricsConfig,
-		TracingConfig:  tracingConfig,
+		Image:            r.ReceiveAdapterImage,
+		PullSubscription: ps,
+		Labels:           resources.GetLabels(r.ControllerAgentName, ps.Name),
+		SubscriptionID:   ps.Status.SubscriptionID,
+		SinkURI:          ps.Status.SinkURI,
+		TransformerURI:   ps.Status.TransformerURI,
+		LoggingConfig:    loggingConfig,
+		MetricsConfig:    metricsConfig,
+		TracingConfig:    tracingConfig,
 	})
 
-	return f(ctx, desired, src)
+	return f(ctx, desired, ps)
 }
 
-func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.Deployment, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
-	existing, err := r.getReceiveAdapter(ctx, src)
+func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.Deployment, ps *v1beta1.PullSubscription) (*appsv1.Deployment, error) {
+	existing, err := r.getReceiveAdapter(ctx, ps)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Unable to get an existing Receive Adapter", zap.Error(err))
 		return nil, err
 	}
 	if existing == nil {
-		existing, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(desired)
+		existing, err = r.KubeClientSet.AppsV1().Deployments(ps.Namespace).Create(desired)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Error creating Receive Adapter", zap.Error(err))
 			return nil, err
@@ -319,9 +340,9 @@ func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.De
 	return existing, nil
 }
 
-func (r *Base) getReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
-	dl, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).List(metav1.ListOptions{
-		LabelSelector: resources.GetLabelSelector(r.ControllerAgentName, src.Name).String(),
+func (r *Base) getReceiveAdapter(ctx context.Context, ps *v1beta1.PullSubscription) (*appsv1.Deployment, error) {
+	dl, err := r.KubeClientSet.AppsV1().Deployments(ps.Namespace).List(metav1.ListOptions{
+		LabelSelector: resources.GetLabelSelector(r.ControllerAgentName, ps.Name).String(),
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: appsv1.SchemeGroupVersion.String(),
 			Kind:       "Deployment",
@@ -333,7 +354,7 @@ func (r *Base) getReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscrip
 		return nil, err
 	}
 	for _, dep := range dl.Items {
-		if metav1.IsControlledBy(&dep, src) {
+		if metav1.IsControlledBy(&dep, ps) {
 			return &dep, nil
 		}
 	}
@@ -387,7 +408,7 @@ func (r *Base) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 	// TODO: requeue all PullSubscriptions. See https://github.com/google/knative-gcp/issues/457.
 }
 
-func (r *Base) resolveDestination(ctx context.Context, destination duckv1.Destination, ps *v1alpha1.PullSubscription) (*apis.URL, error) {
+func (r *Base) resolveDestination(ctx context.Context, destination duckv1.Destination, ps *v1beta1.PullSubscription) (*apis.URL, error) {
 	// To call URIFromDestinationV1(), dest.Ref must have a Namespace. If there is
 	// no Namespace defined in dest.Ref, we will use the Namespace of the PS
 	// as the Namespace of dest.Ref.
@@ -401,10 +422,12 @@ func (r *Base) resolveDestination(ctx context.Context, destination duckv1.Destin
 	return url, nil
 }
 
-func (r *Base) FinalizeKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {
-	// If pullsubscription doesn't have ownerReference, k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+func (r *Base) FinalizeKind(ctx context.Context, ps *v1beta1.PullSubscription) reconciler.Event {
+	// If pullsubscription doesn't have ownerReference, and
+	// k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
+	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.GoogleServiceAccount != "" {
+	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.ServiceAccountName != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, ps.Spec.Project, ps); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete delete Pub/Sub subscription workload identity: %s", err.Error())
 		}
@@ -414,6 +437,5 @@ func (r *Base) FinalizeKind(ctx context.Context, ps *v1alpha1.PullSubscription) 
 	if err := r.deleteSubscription(ctx, ps); err != nil {
 		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailedReason, "Failed to delete Pub/Sub subscription: %s", err.Error())
 	}
-	ps.Status.SubscriptionID = ""
 	return nil
 }

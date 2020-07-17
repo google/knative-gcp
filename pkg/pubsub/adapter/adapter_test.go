@@ -17,411 +17,278 @@ limitations under the License.
 package adapter
 
 import (
-	"bytes"
 	"context"
+	"errors"
+	"fmt"
+
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
+	cev2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
+	"github.com/cloudevents/sdk-go/v2/protocol"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/utils/clients"
+	"golang.org/x/sync/errgroup"
+	logtest "knative.dev/pkg/logging/testing"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-
-	cloudevents "github.com/cloudevents/sdk-go"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
+	"cloud.google.com/go/pubsub/pstest"
+	"github.com/cloudevents/sdk-go/v2/event"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 )
 
-type mockStatsReporter struct {
-	gotArgs *ReportArgs
-	gotCode int
+const (
+	testProjectID     = "test-testProjectID"
+	testTopic         = "test-testTopic"
+	testSub           = "test-testSub"
+	testName          = "test-testName"
+	testNamespace     = "test-testNamespace"
+	testResourceGroup = "test-testResourceGroup"
+	testConverterType = "test-testConverterType"
+)
+
+func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pubsub.Client, func()) {
+	t.Helper()
+	srv := pstest.NewServer()
+	conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatalf("failed to dial test pubsub connection: %v", err)
+	}
+	close := func() {
+		srv.Close()
+		conn.Close()
+	}
+	c, err := pubsub.NewClient(ctx, projectID, option.WithGRPCConn(conn))
+	if err != nil {
+		t.Fatalf("failed to create test pubsub client: %v", err)
+	}
+	return c, close
 }
 
-func (r *mockStatsReporter) ReportEventCount(args *ReportArgs, responseCode int) error {
-	r.gotArgs = args
-	r.gotCode = responseCode
+type metricLabels struct {
+	CeType     string
+	CeSource   string
+	StatusCode int
+}
+
+type statsReporterRecorder struct {
+	labels []metricLabels
+}
+
+func (r *statsReporterRecorder) ReportEventCount(args *ReportArgs, responseCode int) error {
+	r.labels = append(r.labels, metricLabels{CeType: args.EventType, CeSource: args.EventSource, StatusCode: responseCode})
 	return nil
 }
 
-func TestStartAdapter(t *testing.T) {
-	t.Skipf("need to fix the error from call to newPubSubClient: %s", `pubsub: google: could not find default credentials. See https://developers.google.com/accounts/docs/application-default-credentials for more information.`)
-	a := Adapter{
-		Project:          "proj",
-		Topic:            "top",
-		Subscription:     "sub",
-		Sink:             "http://localhost:8081",
-		Transformer:      "http://localhost:8080",
-		ExtensionsBase64: "eyJrZXkxIjoidmFsdWUxIiwia2V5MiI6InZhbHVlMiJ9Cg==",
-	}
-	// This test only does sanity checks to see if all fields are
-	// initialized.
-	// In reality, Start should be a blocking function. Here, it's not
-	// blocking because we expect it to fail as it shouldn't be able to
-	// connect to pubsub.
-	if err := a.Start(context.Background()); err == nil {
-		t.Fatal("adapter.Start got nil want error")
-	}
-
-	if a.SendMode == "" {
-		t.Errorf("adapter.SendMode got %q want %q", a.SendMode, converters.DefaultSendMode)
-	}
-	if a.reporter == nil {
-		t.Error("adapter.reporter got nil want a StatsReporter")
-	}
-	if a.inbound == nil {
-		t.Error("adapter.inbound got nil want a cloudevents.Client")
-	}
-	if a.outbound == nil {
-		t.Error("adapter.outbound got nil want a cloudevents.Client")
-	}
-	if a.transformer == nil {
-		t.Error("adapter.transformer got nil want a cloudevents.Client")
-	}
-	wantExt := map[string]string{"key1": "value1", "key2": "value2"}
-	if !cmp.Equal(wantExt, a.extensions) {
-		t.Errorf("adapter.extensions got %v want %v", a.extensions, wantExt)
-	}
+type mockConverter struct {
+	converted *cev2.Event
 }
 
-func TestInboundConvert(t *testing.T) {
+func (c *mockConverter) Convert(ctx context.Context, msg *pubsub.Message, converterType converters.ConverterType) (*cev2.Event, error) {
+	if c.converted == nil {
+		return nil, errors.New("induced error")
+	}
+	return c.converted, nil
+}
+
+func TestAdapter(t *testing.T) {
+	sampleEvent := newSampleEvent()
+	convertedEvent := sampleEvent.Clone()
+	convertedEvent.SetID("converted")
+	replyEvent := convertedEvent.Clone()
+	replyEvent.SetType("new-type")
+
 	cases := []struct {
-		name          string
-		ctx           context.Context
-		message       *cepubsub.Message
-		wantMessageFn func() *cloudevents.Event
-		wantErr       bool
+		name             string
+		original         *event.Event
+		converted        *event.Event
+		reply            *event.Event
+		wantMetricLabels []metricLabels
 	}{{
-		name: "pubsub event",
-		ctx: pubsubcontext.WithTransportContext(
-			context.Background(),
-			pubsubcontext.NewTransportContext(
-				"proj", "topic", "sub", "test",
-				&pubsub.Message{ID: "abc"},
-			),
-		),
-		message: &cepubsub.Message{
-			Data: []byte("some data"),
-			Attributes: map[string]string{
-				"schema": "http://example.com",
-				"key1":   "value1",
-			},
-		},
-		wantMessageFn: func() *cloudevents.Event {
-			e := cloudevents.NewEvent(cloudevents.VersionV1)
-			e.SetID("abc")
-			e.SetSource(v1alpha1.CloudPubSubSourceEventSource("proj", "topic"))
-			e.SetDataContentType("application/octet-stream")
-			e.SetType(v1alpha1.CloudPubSubSourcePublish)
-			e.SetDataSchema("http://example.com")
-			e.SetExtension("knativecemode", string(converters.DefaultSendMode))
-			e.Data = []byte("some data")
-			e.DataEncoded = true
-			e.SetExtension("key1", "value1")
-			return &e
-		},
+		name:     "converter fails",
+		original: sampleEvent,
 	}, {
-		name: "storage event",
-		ctx: pubsubcontext.WithTransportContext(
-			context.Background(),
-			pubsubcontext.NewTransportContext(
-				"proj", "topic", "sub", "test",
-				&pubsub.Message{ID: "abc"},
-			),
-		),
-		message: &cepubsub.Message{
-			Data: []byte("some data"),
-			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-				"bucketId":    "my-bucket",
-				"objectId":    "my-obj",
-				"key1":        "value1",
-				"eventType":   "OBJECT_FINALIZE",
-			},
-		},
-		wantMessageFn: func() *cloudevents.Event {
-			e := cloudevents.NewEvent(cloudevents.VersionV1)
-			e.SetID("abc")
-			e.SetSource(v1alpha1.CloudStorageSourceEventSource("my-bucket"))
-			e.SetSubject("my-obj")
-			e.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-			e.SetType("com.google.cloud.storage.object.finalize")
-			e.SetDataSchema("https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json")
-			e.Data = []byte("some data")
-			e.DataEncoded = true
-			e.SetExtension("key1", "value1")
-			return &e
-		},
+		name:      "successful with no reply",
+		original:  sampleEvent,
+		converted: &convertedEvent,
+		wantMetricLabels: []metricLabels{{
+			CeType:     convertedEvent.Type(),
+			CeSource:   convertedEvent.Source(),
+			StatusCode: http.StatusOK,
+		}},
 	}, {
-		name: "invalid storage event",
-		ctx: pubsubcontext.WithTransportContext(
-			context.Background(),
-			pubsubcontext.NewTransportContext(
-				"proj", "topic", "sub", "test",
-				&pubsub.Message{ID: "abc"},
-			),
-		),
-		message: &cepubsub.Message{
-			Data: []byte("some data"),
-			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-				"key1":        "value1",
-				"eventType":   "OBJECT_FINALIZE",
-			},
-		},
-		wantMessageFn: func() *cloudevents.Event { return nil },
-		wantErr:       true,
+		name:      "successful with reply",
+		original:  sampleEvent,
+		converted: &convertedEvent,
+		reply:     &replyEvent,
+		wantMetricLabels: []metricLabels{{
+			CeType:     convertedEvent.Type(),
+			CeSource:   convertedEvent.Source(),
+			StatusCode: http.StatusOK,
+		}, {
+			CeType:     replyEvent.Type(),
+			CeSource:   replyEvent.Source(),
+			StatusCode: http.StatusOK,
+		}},
 	}}
+
+	// TODO add reply failures and other cases
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			a := Adapter{
-				Project:      "proj",
-				Topic:        "top",
-				Subscription: "sub",
-				SendMode:     converters.DefaultSendMode,
-			}
-			var err error
-			gotEvent, err := a.convert(tc.ctx, tc.message, err)
-			if (err != nil) != tc.wantErr {
-				t.Errorf("adapter.convert got error %v want error=%v", err, tc.wantErr)
-			}
-			if diff := cmp.Diff(tc.wantMessageFn(), gotEvent); diff != "" {
-				t.Errorf("adapter.convert got unexpeceted cloudevents.Event (-want +got) %s", diff)
-			}
-		})
-	}
-}
+			ctx := logtest.TestContextWithLogger(t)
 
-func TestReceive(t *testing.T) {
-	cases := []struct {
-		name           string
-		eventFn        func() cloudevents.Event
-		returnStatus   int
-		returnHeader   http.Header
-		returnBody     []byte
-		wantHeader     http.Header
-		wantBody       []byte
-		wantStatus     int
-		wantEventFn    func() *cloudevents.Event
-		wantReportArgs *ReportArgs
-		wantReportCode int
-		wantErr        bool
-		isSource       bool
-	}{{
-		name: "success without responding event",
-		eventFn: func() cloudevents.Event {
-			e := cloudevents.NewEvent(cloudevents.VersionV1)
-			e.SetSource("source")
-			e.SetType("unit.testing")
-			e.SetID("abc")
-			e.SetDataContentType("application/json")
-			e.Data = []byte(`{"key":"value"}`)
-			return e
-		},
-		returnStatus: http.StatusOK,
-		wantHeader: map[string][]string{
-			"Ce-Id":          {"abc"},
-			"Ce-Source":      {"source"},
-			"Ce-Specversion": {"1.0"},
-			"Ce-Type":        {"unit.testing"},
-			"Content-Length": {"15"},
-			"Content-Type":   {"application/json"},
-		},
-		wantBody:    []byte(`{"key":"value"}`),
-		wantEventFn: func() *cloudevents.Event { return nil },
-		wantReportArgs: &ReportArgs{
-			EventSource:   "source",
-			EventType:     "unit.testing",
-			ResourceGroup: "channels.messaging.cloud.google.com",
-		},
-		wantReportCode: 200,
-	}, {
-		name: "success without responding event and from source",
-		eventFn: func() cloudevents.Event {
-			e := cloudevents.NewEvent(cloudevents.VersionV1)
-			e.SetSource("source")
-			e.SetType("unit.testing")
-			e.SetID("abc")
-			e.SetDataContentType("application/json")
-			e.Data = []byte(`{"key":"value"}`)
-			return e
-		},
-		returnStatus: http.StatusOK,
-		isSource:     true,
-		wantHeader: map[string][]string{
-			"Ce-Id":          {"abc"},
-			"Ce-Source":      {"source"},
-			"Ce-Specversion": {"1.0"},
-			"Ce-Type":        {"unit.testing"},
-			"Content-Length": {"15"},
-			"Content-Type":   {"application/json"},
-		},
-		wantBody:    []byte(`{"key":"value"}`),
-		wantEventFn: func() *cloudevents.Event { return nil },
-		wantReportArgs: &ReportArgs{
-			EventSource:   "source",
-			EventType:     "unit.testing",
-			ResourceGroup: "pubsub.events.cloud.google.com",
-		},
-		wantReportCode: 200,
-	}, {
-		name: "success with responding event",
-		eventFn: func() cloudevents.Event {
-			e := cloudevents.NewEvent(cloudevents.VersionV1)
-			e.SetSource("source")
-			e.SetType("unit.testing")
-			e.SetID("abc")
-			e.SetDataContentType("application/json")
-			e.Data = []byte(`{"key":"value"}`)
-			return e
-		},
-		returnStatus: http.StatusOK,
-		returnHeader: map[string][]string{
-			"Ce-Id":          {"def"},
-			"Ce-Source":      {"reply-source"},
-			"Ce-Specversion": {"1.0"},
-			"Ce-Type":        {"unit.testing.reply"},
-			"Content-Type":   {"application/json"},
-		},
-		returnBody: []byte(`{"key2":"value2"}`),
-		wantHeader: map[string][]string{
-			"Ce-Id":          {"abc"},
-			"Ce-Source":      {"source"},
-			"Ce-Specversion": {"1.0"},
-			"Ce-Type":        {"unit.testing"},
-			"Content-Length": {"15"},
-			"Content-Type":   {"application/json"},
-		},
-		wantBody: []byte(`{"key":"value"}`),
-		wantEventFn: func() *cloudevents.Event {
-			e := cloudevents.NewEvent(cloudevents.VersionV1)
-			e.SetSource("reply-source")
-			e.SetType("unit.testing.reply")
-			e.SetID("def")
-			e.SetDataContentType("application/json")
-			e.Data = []byte(`{"key2":"value2"}`)
-			e.DataEncoded = true
-			return &e
-		},
-		wantStatus: 200,
-		wantReportArgs: &ReportArgs{
-			EventSource:   "source",
-			EventType:     "unit.testing",
-			ResourceGroup: "channels.messaging.cloud.google.com",
-		},
-		wantReportCode: 200,
-	}, {
-		name: "receiver internal error",
-		eventFn: func() cloudevents.Event {
-			e := cloudevents.NewEvent(cloudevents.VersionV1)
-			e.SetSource("source")
-			e.SetType("unit.testing")
-			e.SetID("abc")
-			e.SetDataContentType("application/json")
-			e.Data = []byte(`{"key":"value"}`)
-			return e
-		},
-		returnStatus: http.StatusInternalServerError,
-		wantHeader: map[string][]string{
-			"Ce-Id":          {"abc"},
-			"Ce-Source":      {"source"},
-			"Ce-Specversion": {"1.0"},
-			"Ce-Type":        {"unit.testing"},
-			"Content-Length": {"15"},
-			"Content-Type":   {"application/json"},
-		},
-		wantBody:    []byte(`{"key":"value"}`),
-		wantEventFn: func() *cloudevents.Event { return nil },
-		wantReportArgs: &ReportArgs{
-			EventSource:   "source",
-			EventType:     "unit.testing",
-			ResourceGroup: "channels.messaging.cloud.google.com",
-		},
-		wantReportCode: 500,
-		wantErr:        true,
-	}}
+			transformerClient, err := cehttp.New()
+			if err != nil {
+				t.Fatalf("failed to create transformer cloudevents client: %v", err)
+			}
+			transformerSvr := httptest.NewServer(transformerClient)
+			defer transformerSvr.Close()
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			var gotHeader http.Header
-			var gotBody []byte
-			handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				gotHeader = req.Header
-				gotHeader.Del("Accept-Encoding")
-				gotHeader.Del("User-Agent")
-				b := bytes.NewBuffer(gotBody)
-				defer req.Body.Close()
-				io.Copy(b, req.Body)
-				gotBody = b.Bytes()
+			sinkClient, err := cehttp.New()
+			if err != nil {
+				t.Fatalf("failed to create sink cloudevents client: %v", err)
+			}
+			sinkSvr := httptest.NewServer(sinkClient)
+			defer sinkSvr.Close()
 
-				for k, vs := range tc.returnHeader {
-					for _, v := range vs {
-						w.Header().Add(k, v)
+			c, close := testPubsubClient(ctx, t, testProjectID)
+			defer close()
+
+			topic, err := c.CreateTopic(ctx, testTopic)
+			if err != nil {
+				t.Fatalf("failed to create topic: %v", err)
+			}
+			sub, err := c.CreateSubscription(ctx, testSub, pubsub.SubscriptionConfig{
+				Topic: topic,
+			})
+			if err != nil {
+				t.Fatalf("failed to create subscription: %v", err)
+			}
+
+			p, err := cepubsub.New(context.Background(),
+				cepubsub.WithClient(c),
+				cepubsub.WithProjectID(testProjectID),
+				cepubsub.WithTopicID(testTopic),
+			)
+			if err != nil {
+				t.Fatalf("failed to create cloudevents pubsub protocol: %v", err)
+			}
+
+			outbound := http.DefaultClient
+
+			args := &AdapterArgs{
+				TopicID:       testTopic,
+				SinkURI:       sinkSvr.URL,
+				Extensions:    map[string]string{},
+				ConverterType: converters.ConverterType(testConverterType),
+			}
+
+			if tc.reply != nil {
+				args.TransformerURI = transformerSvr.URL
+			}
+
+			adapter := NewAdapter(ctx,
+				clients.ProjectID(testProjectID),
+				Namespace(testNamespace),
+				Name(testName),
+				ResourceGroup(testResourceGroup),
+				sub,
+				outbound,
+				&mockConverter{converted: tc.converted},
+				&statsReporterRecorder{},
+				args)
+
+			rctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+
+			group, ctx := errgroup.WithContext(rctx)
+			group.Go(func() error { return adapter.Start(rctx) })
+			defer adapter.Stop()
+
+			group.Go(func() error {
+				msg, resp, err := transformerClient.Respond(rctx)
+				if err == io.EOF {
+					return nil
+				}
+				if err != nil {
+					return fmt.Errorf("unexpected error from transformer receiving event: %v", err)
+				}
+
+				defer msg.Finish(nil)
+				gotEvent, err := binding.ToEvent(rctx, msg)
+				if err != nil {
+					return fmt.Errorf("transformer received message cannot be converted to an event: %v", err)
+				}
+
+				if diff := cmp.Diff(tc.converted, gotEvent); diff != "" {
+					t.Errorf("transformer received event (-want,+got): %v", diff)
+				}
+
+				if tc.reply != nil {
+					if err := resp(rctx, binding.ToMessage(tc.reply), protocol.ResultACK); err != nil {
+						return fmt.Errorf("unexpected error from transfomer responding event: %v", err)
 					}
 				}
-				w.WriteHeader(tc.returnStatus)
-				w.Write(tc.returnBody)
+				return nil
 			})
-			server := httptest.NewServer(handler)
 
-			r := &mockStatsReporter{}
-			var resourceGroup string
-			if tc.isSource {
-				resourceGroup = "pubsub.events.cloud.google.com"
-			} else {
-				resourceGroup = "channels.messaging.cloud.google.com"
-			}
-			a := Adapter{
-				Project:       "proj",
-				Topic:         "topic",
-				Subscription:  "sub",
-				SendMode:      converters.Binary,
-				reporter:      r,
-				ResourceGroup: resourceGroup,
-			}
+			group.Go(func() error {
+				msg, err := sinkClient.Receive(rctx)
+				if err == io.EOF {
+					return nil
+				}
+				if err != nil {
+					return fmt.Errorf("unexpected error from sink when receiving event: %v", err)
+				}
 
-			var err error
-			if a.outbound, err = a.newHTTPClient(context.Background(), server.URL); err != nil {
-				t.Fatalf("failed to to set adapter outbound to receive events: %v", err)
-			}
-
-			var resp cloudevents.EventResponse
-			err = a.receive(context.Background(), tc.eventFn(), &resp)
-
-			if (err != nil) != tc.wantErr {
-				t.Errorf("adapter.receiver got error %v want error %v", err, tc.wantErr)
-			}
-
-			options := make([]cmp.Option, 0)
-			ignoreCeTraceparent := cmpopts.IgnoreMapEntries(func(n string, _ []string) bool {
-				return n == "Ce-Traceparent"
+				defer msg.Finish(nil)
+				gotEvent, err := binding.ToEvent(rctx, msg)
+				if err != nil {
+					return fmt.Errorf("sink received message that cannot be converted to an event: %v", err)
+				}
+				wantEvent := tc.converted
+				if tc.reply != nil {
+					wantEvent = tc.reply
+				}
+				if diff := cmp.Diff(wantEvent, gotEvent); diff != "" {
+					t.Errorf("sink received event (-want,+got): %v", diff)
+				}
+				return nil
 			})
-			options = append(options, ignoreCeTraceparent)
-			ignoreTraceParent := cmpopts.IgnoreMapEntries(func(n string, _ []string) bool {
-				return n == "Traceparent"
-			})
-			options = append(options, ignoreTraceParent)
-			if diff := cmp.Diff(tc.wantHeader, gotHeader, options...); diff != "" {
-				t.Errorf("receiver got unexpected HTTP header (-want +got): %s", diff)
+
+			if err := p.Send(ctx, binding.ToMessage(tc.original)); err != nil {
+				t.Errorf("failed to seed event to pubsub: %v", err)
+				cancel()
 			}
-			if !bytes.Equal(tc.wantBody, gotBody) {
-				t.Errorf("receiver got HTTP body %v want %v", string(gotBody), string(tc.wantBody))
+
+			if err := group.Wait(); err != nil {
+				t.Fatal(err)
 			}
-			if resp.Status != tc.wantStatus {
-				t.Errorf("adapter.receiver got resp status %d want %d", resp.Status, tc.wantStatus)
+
+			gotMetricLabels := adapter.reporter.(*statsReporterRecorder).labels
+			if diff := cmp.Diff(tc.wantMetricLabels, gotMetricLabels); diff != "" {
+				t.Errorf("metrics reported (-want,+got): %v", diff)
 			}
-			if diff := cmp.Diff(tc.wantEventFn(), resp.Event); diff != "" {
-				t.Errorf("adapter.receiver got unexpected resp event (-want +got): %s", diff)
-			}
-			if diff := cmp.Diff(tc.wantReportArgs, r.gotArgs); diff != "" {
-				t.Errorf("stats reporter got unexpected args (-want +got): %s", diff)
-			}
-			if r.gotCode != tc.wantReportCode {
-				t.Errorf("stats reporter got status code %d want %d", r.gotCode, tc.wantReportCode)
-			}
+
 		})
 	}
+}
+
+func newSampleEvent() *event.Event {
+	sampleEvent := event.New()
+	sampleEvent.SetID("id")
+	sampleEvent.SetSource("source")
+	sampleEvent.SetSubject("subject")
+	sampleEvent.SetType("type")
+	sampleEvent.SetTime(time.Now())
+	return &sampleEvent
 }

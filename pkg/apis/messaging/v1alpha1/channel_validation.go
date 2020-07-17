@@ -20,11 +20,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
+
 	"github.com/google/go-cmp/cmp"
 
 	"knative.dev/pkg/apis"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 func (c *Channel) Validate(ctx context.Context) *apis.FieldError {
@@ -44,7 +44,7 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	if err := duckv1alpha1.ValidateCredential(cs.Secret, cs.GoogleServiceAccount, cs.ServiceAccountName); err != nil {
+	if err := duck.ValidateCredential(cs.Secret, cs.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 
@@ -69,7 +69,7 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, original *Chan
 		}
 	}
 
-	if diff := cmp.Diff(original.Spec.GoogleServiceAccount, current.Spec.GoogleServiceAccount); diff != "" {
+	if diff := cmp.Diff(original.Spec.ServiceAccountName, current.Spec.ServiceAccountName); diff != "" {
 		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"status", "serviceAccount"},
@@ -78,5 +78,5 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, original *Chan
 	}
 
 	// Modification of non-empty cluster name annotation is not allowed.
-	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

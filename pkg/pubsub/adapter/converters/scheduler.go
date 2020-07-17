@@ -20,65 +20,28 @@ import (
 	"context"
 	"errors"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	. "github.com/cloudevents/sdk-go/pkg/cloudevents"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
+	"cloud.google.com/go/pubsub"
+	cev2 "github.com/cloudevents/sdk-go/v2"
 )
 
-const (
-	CloudSchedulerConverter = "com.google.cloud.scheduler"
-)
+func convertCloudScheduler(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {
+	event := cev2.NewEvent(cev2.VersionV1)
+	event.SetID(msg.ID)
+	event.SetTime(msg.PublishTime)
+	event.SetType(schemasv1.CloudSchedulerJobExecutedEventType)
+	event.SetDataSchema(schemasv1.CloudSchedulerEventDataSchema)
 
-func convertCloudScheduler(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
-	tx := pubsubcontext.TransportContextFrom(ctx)
-	// Make a new event and convert the message payload.
-	event := cloudevents.NewEvent(cloudevents.VersionV1)
-	event.SetID(tx.ID)
-	event.SetTime(tx.PublishTime)
-	// We do not know the content type and we do not want to inspect the payload,
-	// thus we set this generic one.
-	event.SetDataContentType("application/octet-stream")
-	event.SetType(v1alpha1.CloudSchedulerSourceExecute)
-	// Set the schema if it comes as an attribute.
-	if val, ok := msg.Attributes["schema"]; ok {
-		delete(msg.Attributes, "schema")
-		event.SetDataSchema(val)
-	}
-	// Set the source and subject if it comes as an attribute.
-	jobName, ok := msg.Attributes[v1alpha1.CloudSchedulerSourceJobName]
-	if ok {
-		delete(msg.Attributes, v1alpha1.CloudSchedulerSourceJobName)
-	} else {
+	jobName, ok := msg.Attributes[v1beta1.CloudSchedulerSourceJobName]
+	if !ok {
 		return nil, errors.New("received event did not have jobName")
 	}
-	schedulerName, ok := msg.Attributes[v1alpha1.CloudSchedulerSourceName]
-	if ok {
-		delete(msg.Attributes, v1alpha1.CloudSchedulerSourceName)
-	} else {
-		return nil, errors.New("received event did not have schedulerName")
-	}
-	parentName := resources.ExtractParentName(jobName)
-	event.SetSource(v1alpha1.CloudSchedulerSourceEventSource(parentName, schedulerName))
-	event.SetSubject(resources.ExtractJobID(jobName))
+	event.SetSource(schemasv1.CloudSchedulerEventSource(jobName))
 
-	// Set the mode to be an extension attribute.
-	event.SetExtension("knativecemode", string(sendMode))
-	event.Data = msg.Data
-	event.DataEncoded = true
-	// Attributes are extensions.
-	if msg.Attributes != nil && len(msg.Attributes) > 0 {
-		for k, v := range msg.Attributes {
-			// CloudEvents v1.0 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') as per
-			// the spec. It's not even possible for a conformant transport to allow non-base36 characters.
-			// Note `SetExtension` will make it lowercase so only `IsAlphaNumeric` needs to be checked here.
-			if IsAlphaNumeric(k) {
-				event.SetExtension(k, v)
-			}
-		}
+	if err := event.SetData(cev2.ApplicationJSON, &schemasv1.SchedulerJobData{CustomData: msg.Data}); err != nil {
+		return nil, err
 	}
 	return &event, nil
 }

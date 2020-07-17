@@ -39,8 +39,13 @@ func NewBrokerCell(name, namespace string, o ...BrokerCellOption) *intv1alpha1.B
 	for _, opt := range o {
 		opt(bc)
 	}
-	bc.SetDefaults(context.Background())
 	return bc
+}
+
+func WithBrokerCellAnnotations(annotations map[string]string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.SetAnnotations(annotations)
+	}
 }
 
 // WithInitBrokerCellConditions initializes the BrokerCell's conditions.
@@ -105,6 +110,12 @@ func WithBrokerCellFanoutFailed(reason, msg string) BrokerCellOption {
 	}
 }
 
+func WithBrokerCellFanoutUnknown(reason, msg string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.MarkFanoutUnknown(reason, msg)
+	}
+}
+
 func WithBrokerCellRetryAvailable() BrokerCellOption {
 	return func(bc *intv1alpha1.BrokerCell) {
 		bc.Status.PropagateFanoutAvailability(v1alpha1.TestHelper.AvailableDeployment())
@@ -114,6 +125,12 @@ func WithBrokerCellRetryAvailable() BrokerCellOption {
 func WithBrokerCellRetryFailed(reason, msg string) BrokerCellOption {
 	return func(bc *intv1alpha1.BrokerCell) {
 		bc.Status.MarkRetryFailed(reason, msg)
+	}
+}
+
+func WithBrokerCellRetryUnknown(reason, msg string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.MarkRetryUnknown(reason, msg)
 	}
 }
 
@@ -127,4 +144,8 @@ func WithTargetsCofigFailed(reason, msg string) BrokerCellOption {
 	return func(bc *intv1alpha1.BrokerCell) {
 		bc.Status.MarkTargetsConfigFailed(reason, msg)
 	}
+}
+
+func WithBrokerCellSetDefaults(bc *intv1alpha1.BrokerCell) {
+	bc.SetDefaults(context.Background())
 }

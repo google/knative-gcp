@@ -20,22 +20,46 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
+	"sync"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
+const (
+	firstNErrsEnvVar = "FIRST_N_ERRS"
+)
+
 type Receiver struct {
-	client cloudevents.Client
+	client     cloudevents.Client
+	errsCount  int
+	firstNErrs int
+	mux        sync.Mutex
 }
 
 func main() {
-	client, err := cloudevents.NewDefaultClient()
+	client, err := kncloudevents.NewDefaultClient()
 	if err != nil {
 		panic(err)
 	}
+
+	firstNErrsStr := os.Getenv(firstNErrsEnvVar)
+	firstNErrs := 0
+	if firstNErrsStr != "" {
+		var err error
+		firstNErrs, err = strconv.Atoi(firstNErrsStr)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	r := &Receiver{
-		client: client,
+		client:     client,
+		errsCount:  0,
+		firstNErrs: firstNErrs,
 	}
 	if err := r.client.StartReceiver(context.Background(), r.Receive); err != nil {
 		log.Fatal(err)
@@ -43,6 +67,12 @@ func main() {
 }
 
 func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) {
+	if r.shouldReturnErr() {
+		// Ksvc seems to auto retry 5xx. So use 4xx for predictability.
+		resp.Error(http.StatusBadRequest, "Seeding failure receiver response with 400")
+		return
+	}
+
 	// Check if the received event is the dummy event sent by sender pod.
 	// If it is, send back a response CloudEvent.
 	if event.ID() == lib.E2EDummyEventID {
@@ -57,4 +87,14 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *c
 	} else {
 		resp.Status = http.StatusForbidden
 	}
+}
+
+func (r *Receiver) shouldReturnErr() bool {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	if r.errsCount >= r.firstNErrs {
+		return false
+	}
+	r.errsCount++
+	return true
 }

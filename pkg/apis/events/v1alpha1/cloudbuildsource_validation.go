@@ -23,13 +23,12 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 )
 
 func (current *CloudBuildSource) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
-	return duckv1alpha1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
+	return duck.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 
 func (current *CloudBuildSourceSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -46,7 +45,7 @@ func (current *CloudBuildSourceSpec) Validate(ctx context.Context) *apis.FieldEr
 		errs = errs.Also(err.ViaField("sink"))
 	}
 
-	if err := duckv1alpha1.ValidateCredential(current.Secret, current.GoogleServiceAccount, current.ServiceAccountName); err != nil {
+	if err := duck.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 
@@ -70,5 +69,5 @@ func (current *CloudBuildSource) CheckImmutableFields(ctx context.Context, origi
 		})
 	}
 	// Modification of non-empty cluster name annotation is not allowed.
-	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

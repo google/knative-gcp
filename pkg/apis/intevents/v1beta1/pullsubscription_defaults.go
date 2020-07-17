@@ -18,38 +18,32 @@ package v1beta1
 
 import (
 	"context"
-	"time"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/pkg/apis"
+
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	"knative.dev/pkg/ptr"
 )
 
-const (
-	defaultRetentionDuration = 7 * 24 * time.Hour
-	defaultAckDeadline       = 30 * time.Second
-)
-
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
+	ctx = apis.WithinParent(ctx, s.ObjectMeta)
 	s.Spec.SetDefaults(ctx)
-	duckv1beta1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
+	duck.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }
 
 func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
 	if ss.AckDeadline == nil {
-		ackDeadline := defaultAckDeadline
+		ackDeadline := intevents.DefaultAckDeadline
 		ss.AckDeadline = ptr.String(ackDeadline.String())
 	}
 
 	if ss.RetentionDuration == nil {
-		retentionDuration := defaultRetentionDuration
+		retentionDuration := intevents.DefaultRetentionDuration
 		ss.RetentionDuration = ptr.String(retentionDuration.String())
 	}
 
-	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
-		ss.Secret = duckv1beta1.DefaultGoogleCloudSecretSelector()
-	}
+	ss.PubSubSpec.SetPubSubDefaults(ctx)
 
 	switch ss.Mode {
 	case ModeCloudEventsBinary, ModeCloudEventsStructured, ModePushCompatible:

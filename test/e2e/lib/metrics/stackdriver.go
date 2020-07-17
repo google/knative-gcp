@@ -20,11 +20,15 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"testing"
+	"time"
 
-	monitoring "cloud.google.com/go/monitoring/apiv3"
+	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	googlepb "github.com/golang/protobuf/ptypes/timestamp"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
+	"google.golang.org/protobuf/proto"
 )
 
 // TODO upstream to knative/pkg
@@ -85,4 +89,63 @@ func StringifyStackDriverFilter(filter map[string]interface{}) string {
 		sb.WriteString(fmt.Sprintf("%s=\"%v\" ", k, v))
 	}
 	return strings.TrimSuffix(sb.String(), " ")
+}
+
+type Assertion interface {
+	Assert(*monitoring.MetricClient) error
+}
+
+func CheckAssertions(t *testing.T, assertions ...Assertion) {
+	t.Helper()
+	ctx := context.Background()
+	client, err := monitoring.NewMetricClient(ctx)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	timeout := time.After(8 * time.Minute)
+	for {
+		errors := make([]error, 0, len(assertions))
+		for _, assertion := range assertions {
+			if err := assertion.Assert(client); err != nil {
+				errors = append(errors, err)
+			}
+		}
+		if len(errors) == 0 {
+			return
+		}
+		select {
+		case <-timeout:
+			t.Errorf("timeout checking metrics")
+			for _, err := range errors {
+				t.Error(err)
+			}
+			return
+		default:
+			time.Sleep(5 * time.Second)
+		}
+	}
+}
+
+func SumCumulative(ts *monitoringpb.TimeSeries) int64 {
+	var startTime *timestamp.Timestamp
+	var lastVal int64
+	var sum int64
+	for _, point := range ts.GetPoints() {
+		if !proto.Equal(point.GetInterval().GetStartTime(), startTime) {
+			lastVal = 0
+		}
+		val := point.GetValue().GetInt64Value()
+		sum += val - lastVal
+		lastVal = val
+	}
+	return sum
+}
+
+func SumDistCount(ts *monitoringpb.TimeSeries) int64 {
+	var sum int64
+	for _, point := range ts.GetPoints() {
+		sum += point.GetValue().GetDistributionValue().GetCount()
+	}
+	return sum
 }

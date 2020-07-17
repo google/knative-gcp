@@ -19,31 +19,42 @@ package lib
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"testing"
 
 	"cloud.google.com/go/storage"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/test/helpers"
 )
 
-func MakeStorageOrDie(client *Client,
-	sinkGVK metav1.GroupVersionKind, bucketName, storageName, sinkName, pubsubServiceAccount string,
-	so ...kngcptesting.CloudStorageSourceOption,
-) {
-	client.T.Helper()
-	so = append(so, kngcptesting.WithCloudStorageSourceBucket(bucketName))
-	so = append(so, kngcptesting.WithCloudStorageSourceSink(sinkGVK, sinkName))
-	so = append(so, kngcptesting.WithCloudStorageSourceGCPServiceAccount(pubsubServiceAccount))
-	eventsStorage := kngcptesting.NewCloudStorageSource(storageName, client.Namespace, so...)
-	client.CreateStorageOrFail(eventsStorage)
-
-	client.Core.WaitForResourceReadyOrFail(storageName, CloudStorageSourceTypeMeta)
+type StorageConfig struct {
+	SinkGVK            metav1.GroupVersionKind
+	BucketName         string
+	StorageName        string
+	SinkName           string
+	ServiceAccountName string
+	Options            []kngcptesting.CloudStorageSourceOption
 }
 
-func MakeStorageJobOrDie(client *Client, source, fileName, targetName, eventType string) {
+func MakeStorageOrDie(client *Client, config StorageConfig) {
+	client.T.Helper()
+	so := config.Options
+	so = append(so, kngcptesting.WithCloudStorageSourceBucket(config.BucketName))
+	so = append(so, kngcptesting.WithCloudStorageSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, kngcptesting.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
+	eventsStorage := kngcptesting.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
+	client.CreateStorageOrFail(eventsStorage)
+
+	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceTypeMeta)
+}
+
+func MakeStorageJobOrDie(client *Client, source, subject, targetName, eventType string) {
 	client.T.Helper()
 	job := resources.StorageTargetJob(targetName, []v1.EnvVar{
 		{
@@ -56,7 +67,7 @@ func MakeStorageJobOrDie(client *Client, source, fileName, targetName, eventType
 		},
 		{
 			Name:  "SUBJECT",
-			Value: fileName,
+			Value: subject,
 		}, {
 			Name:  "TIME",
 			Value: "6m",
@@ -92,12 +103,14 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
-	client, err := storage.NewClient(ctx)
+	opt := option.WithQuotaProject(project)
+	client, err := storage.NewClient(ctx, opt)
 	if err != nil {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
 	it := client.Buckets(ctx, project)
-	bucketName := "storage-e2e-test-" + project
+	// Name should be between 3-63 characters. https://cloud.google.com/storage/docs/naming-buckets
+	bucketName := helpers.AppendRandomString("storage-e2e-test")
 	// Iterate buckets to check if there has a bucket for e2e test
 	for {
 		bucketAttrs, err := it.Next()
@@ -120,15 +133,71 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 	return bucketName
 }
 
+func DeleteBucket(ctx context.Context, t *testing.T, bucketName string) {
+	t.Helper()
+	project := os.Getenv(ProwProjectKey)
+	opt := option.WithQuotaProject(project)
+	client, err := storage.NewClient(ctx, opt)
+	if err != nil {
+		t.Fatalf("failed to create storage client, %s", err.Error())
+	}
+	// Load the Bucket.
+	bucket := client.Bucket(bucketName)
+
+	// Check whether bucket exists or not
+	if _, err := bucket.Attrs(ctx); err != nil {
+		// If the bucket was already deleted, we are good
+		if err == storage.ErrBucketNotExist {
+			t.Logf("Bucket %s already deleted", bucketName)
+			return
+		} else {
+			t.Errorf("Failed to fetch attrs of Bucket %s", bucketName)
+		}
+	}
+
+	// If we fail to delete the bucket, we will fail the test so that users are aware that
+	// we leaked a bucket in the project. If this makes the test flake, then we can revisit and maybe avoid failing.
+	if err := bucket.Delete(ctx); err != nil {
+		t.Errorf("Failed to delete Bucket %s", bucketName)
+	}
+}
+
 func getBucketHandle(ctx context.Context, t *testing.T, bucketName, project string) *storage.BucketHandle {
 	t.Helper()
 	// Prow sticks the project in this key
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
-	client, err := storage.NewClient(ctx)
+	opt := option.WithQuotaProject(project)
+	client, err := storage.NewClient(ctx, opt)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
 	}
 	return client.Bucket(bucketName)
+}
+
+func NotificationExists(t *testing.T, bucketName, notificationID string) bool {
+	t.Helper()
+	ctx := context.Background()
+	project := os.Getenv(ProwProjectKey)
+	opt := option.WithQuotaProject(project)
+	client, err := storage.NewClient(ctx, opt)
+	if err != nil {
+		t.Fatalf("failed to create storage client, %s", err.Error())
+	}
+	defer client.Close()
+
+	client.Bucket(bucketName)
+	bucket := client.Bucket(bucketName)
+
+	notifications, err := bucket.Notifications(ctx)
+	if err != nil {
+		t.Fatalf("Failed to fetch existing notifications %s", err.Error())
+	}
+
+	if _, ok := notifications[notificationID]; ok {
+		return true
+	}
+	return false
+
 }

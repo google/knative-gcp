@@ -19,16 +19,20 @@ package storage
 import (
 	"context"
 
+	"knative.dev/pkg/injection"
+
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"k8s.io/client-go/tools/cache"
 	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	cloudstoragesourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudstoragesource"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
-	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/topic"
-	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	cloudstoragesourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1beta1/cloudstoragesource"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
+	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
+	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudstoragesource"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -48,22 +52,20 @@ const (
 	receiveAdapterName = "cloudstoragesource.events.cloud.google.com"
 )
 
-// NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
-func NewController(
-	ctx context.Context,
-	cmw configmap.Watcher,
-) *controller.Impl {
-	return newControllerWithIAMPolicyManager(
-		ctx,
-		cmw,
-		iam.DefaultIAMPolicyManager())
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a CloudStorageSource controller.
+func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+	}
 }
 
-func newControllerWithIAMPolicyManager(
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
@@ -71,8 +73,14 @@ func newControllerWithIAMPolicyManager(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:     intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:       identity.NewIdentity(ctx, ipm),
+		PubSubBase: intevents.NewPubSubBase(ctx,
+			&intevents.PubSubBaseArgs{
+				ControllerAgentName: controllerAgentName,
+				ReceiveAdapterName:  receiveAdapterName,
+				ReceiveAdapterType:  string(converters.CloudStorage),
+				ConfigWatcher:       cmw,
+			}),
+		Identity:       identity.NewIdentity(ctx, ipm, gcpas),
 		storageLister:  cloudstoragesourceInformer.Lister(),
 		createClientFn: gstorage.NewClient,
 	}
@@ -81,18 +89,20 @@ func newControllerWithIAMPolicyManager(
 	r.Logger.Info("Setting up event handlers")
 	cloudstoragesourceInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
+	storageGK := v1beta1.Kind("CloudStorageSource")
+
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource")),
+		FilterFunc: controller.FilterControllerGK(storageGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource")),
+		FilterFunc: controller.FilterControllerGK(storageGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource")),
+		FilterFunc: controller.FilterControllerGK(storageGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

@@ -78,7 +78,7 @@ function init_pubsub_service_account() {
   local project_id=${1}
   local pubsub_service_account=${2}
   echo "parameter project_id used when initiating pubsub service account is'${project_id}'"
-  echo "parameter control_plane_service_account used when initiating pubsub service account is'${pubsub_service_account}'"
+  echo "parameter data_plane_service_account used when initiating pubsub service account is'${pubsub_service_account}'"
   # Enable APIs.
   gcloud services enable pubsub.googleapis.com
 
@@ -152,7 +152,6 @@ function storage_admin_set_up() {
   echo "Update ServiceAccount for Storage Admin"
   local project_id=${1}
   local pubsub_service_account=${2}
-  local pubsub_service_account_key_temp=${3}
 
   echo "parameter project_id used when setting up storage admin is'${project_id}'"
   echo "parameter pubsub_service_account used when setting up storage admin is'${pubsub_service_account}'"
@@ -163,8 +162,10 @@ function storage_admin_set_up() {
     --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/storage.admin
 
-  curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${pubsub_service_account_key_temp} gcloud auth application-default print-access-token\`" \
-    "https://www.googleapis.com/storage/v1/projects/${project_id}/serviceAccount"
+  # We assume the service account's name is in the form '<project-number>@gs-project-accounts.iam.gserviceaccount.com',
+  # because it has been for all projects we've encountered. However, nothing requires this
+  # format. To get the actual email, use this API:
+  # https://cloud.google.com/storage/docs/json_api/v1/projects/serviceAccount/get/
   local project_number="$(gcloud projects describe ${project_id} --format="value(projectNumber)")"
   gcloud projects add-iam-policy-binding "${project_id}" \
     --member="serviceAccount:service-${project_number}@gs-project-accounts.iam.gserviceaccount.com" \

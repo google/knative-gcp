@@ -17,15 +17,17 @@ limitations under the License.
 package lib
 
 import (
+	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	knativegcptestresources "github.com/google/knative-gcp/test/e2e/lib/resources"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"knative.dev/eventing/test/lib/resources"
 
-	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 )
 
 func (c *Client) CreateUnstructuredObjOrFail(spec *unstructured.Unstructured) {
@@ -39,9 +41,9 @@ func (c *Client) CreateUnstructuredObjOrFail(spec *unstructured.Unstructured) {
 	c.Tracker.Add(gvr.Group, gvr.Version, gvr.Resource, c.Namespace, spec.GetName())
 }
 
-func (c *Client) CreateChannelOrFail(channel *messagingv1alpha1.Channel) {
+func (c *Client) CreateChannelOrFail(channel *messagingv1beta1.Channel) {
 	c.T.Helper()
-	channels := c.KnativeGCP.MessagingV1alpha1().Channels(c.Namespace)
+	channels := c.KnativeGCP.MessagingV1beta1().Channels(c.Namespace)
 	_, err := channels.Create(channel)
 	if err != nil {
 		c.T.Fatalf("Failed to create channel %s/%s: %v", c.Namespace, channel.Name, err)
@@ -50,9 +52,9 @@ func (c *Client) CreateChannelOrFail(channel *messagingv1alpha1.Channel) {
 	c.Tracker.AddObj(channel)
 }
 
-func (c *Client) CreateAuditLogsOrFail(auditlogs *eventsv1alpha1.CloudAuditLogsSource) {
+func (c *Client) CreateAuditLogsOrFail(auditlogs *eventsv1beta1.CloudAuditLogsSource) {
 	c.T.Helper()
-	auditlogses := c.KnativeGCP.EventsV1alpha1().CloudAuditLogsSources(c.Namespace)
+	auditlogses := c.KnativeGCP.EventsV1beta1().CloudAuditLogsSources(c.Namespace)
 	_, err := auditlogses.Create(auditlogs)
 	if err != nil {
 		c.T.Fatalf("Failed to create auditlogs %s/%s: %v", c.Namespace, auditlogs.Name, err)
@@ -61,9 +63,9 @@ func (c *Client) CreateAuditLogsOrFail(auditlogs *eventsv1alpha1.CloudAuditLogsS
 	c.Tracker.AddObj(auditlogs)
 }
 
-func (c *Client) CreatePubSubOrFail(pubsub *eventsv1alpha1.CloudPubSubSource) {
+func (c *Client) CreatePubSubOrFail(pubsub *eventsv1beta1.CloudPubSubSource) {
 	c.T.Helper()
-	pubsubs := c.KnativeGCP.EventsV1alpha1().CloudPubSubSources(c.Namespace)
+	pubsubs := c.KnativeGCP.EventsV1beta1().CloudPubSubSources(c.Namespace)
 	_, err := pubsubs.Create(pubsub)
 	if err != nil {
 		c.T.Fatalf("Failed to create pubsub %s/%s: %v", c.Namespace, pubsub.Name, err)
@@ -72,9 +74,20 @@ func (c *Client) CreatePubSubOrFail(pubsub *eventsv1alpha1.CloudPubSubSource) {
 	c.Tracker.AddObj(pubsub)
 }
 
-func (c *Client) CreateStorageOrFail(storage *eventsv1alpha1.CloudStorageSource) {
+func (c *Client) CreateBuildOrFail(build *eventsv1beta1.CloudBuildSource) {
 	c.T.Helper()
-	storages := c.KnativeGCP.EventsV1alpha1().CloudStorageSources(c.Namespace)
+	builds := c.KnativeGCP.EventsV1beta1().CloudBuildSources(c.Namespace)
+	_, err := builds.Create(build)
+	if err != nil {
+		c.T.Fatalf("Failed to create build %s/%s: %v", c.Namespace, build.Name, err)
+	}
+	c.T.Logf("Created build: %s/%s", c.Namespace, build.Name)
+	c.Tracker.AddObj(build)
+}
+
+func (c *Client) CreateStorageOrFail(storage *eventsv1beta1.CloudStorageSource) {
+	c.T.Helper()
+	storages := c.KnativeGCP.EventsV1beta1().CloudStorageSources(c.Namespace)
 	_, err := storages.Create(storage)
 	if err != nil {
 		c.T.Fatalf("Failed to create storage %s/%s: %v", c.Namespace, storage.Name, err)
@@ -83,9 +96,9 @@ func (c *Client) CreateStorageOrFail(storage *eventsv1alpha1.CloudStorageSource)
 	c.Tracker.AddObj(storage)
 }
 
-func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *inteventsv1alpha1.PullSubscription) {
+func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *inteventsv1beta1.PullSubscription) {
 	c.T.Helper()
-	pullsubscriptions := c.KnativeGCP.InternalV1alpha1().PullSubscriptions(c.Namespace)
+	pullsubscriptions := c.KnativeGCP.InternalV1beta1().PullSubscriptions(c.Namespace)
 	_, err := pullsubscriptions.Create(pullsubscription)
 	if err != nil {
 		c.T.Fatalf("Failed to create pullsubscription %s/%s: %v", c.Namespace, pullsubscription.Name, err)
@@ -94,15 +107,30 @@ func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *inteventsv1alpha
 	c.Tracker.AddObj(pullsubscription)
 }
 
-func (c *Client) CreateSchedulerOrFail(scheduler *eventsv1alpha1.CloudSchedulerSource) {
+func (c *Client) CreateSchedulerOrFail(scheduler *eventsv1beta1.CloudSchedulerSource) {
 	c.T.Helper()
-	schedulers := c.KnativeGCP.EventsV1alpha1().CloudSchedulerSources(c.Namespace)
+	schedulers := c.KnativeGCP.EventsV1beta1().CloudSchedulerSources(c.Namespace)
 	_, err := schedulers.Create(scheduler)
 	if err != nil {
 		c.T.Fatalf("Failed to create scheduler %s/%s: %v", c.Namespace, scheduler.Name, err)
 	}
 	c.T.Logf("Created scheduler: %s/%s", c.Namespace, scheduler.Name)
 	c.Tracker.AddObj(scheduler)
+}
+
+// CreateGCPBrokerV1Beta1OrFail will create a GCP Broker or fail the test if there is an error.
+func (c *Client) CreateGCPBrokerV1Beta1OrFail(name string, options ...knativegcptestresources.BrokerV1Beta1Option) *v1beta1.Broker {
+	namespace := c.Namespace
+	broker := knativegcptestresources.BrokerV1Beta1(name, options...)
+	brokers := c.KnativeGCP.EventingV1beta1().Brokers(namespace)
+	c.T.Logf("Creating broker %s", name)
+	// update broker with the new reference
+	broker, err := brokers.Create(broker)
+	if err != nil {
+		c.T.Fatalf("Failed to create broker %q: %v", name, err)
+	}
+	c.Tracker.AddObj(broker)
+	return broker
 }
 
 // WithServiceForJob returns an option that creates a Service binded with the given job.

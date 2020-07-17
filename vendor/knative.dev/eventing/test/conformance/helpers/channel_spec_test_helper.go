@@ -28,22 +28,22 @@ import (
 
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-	"knative.dev/eventing/test/lib"
+	testlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/apis"
 )
 
 func ChannelSpecTestHelperWithChannelTestRunner(
 	t *testing.T,
-	channelTestRunner lib.ChannelTestRunner,
-	options ...lib.SetupClientOption,
+	channelTestRunner testlib.ComponentsTestRunner,
+	options ...testlib.SetupClientOption,
 ) {
 
-	channelTestRunner.RunTests(t, lib.FeatureBasic, func(st *testing.T, channel metav1.TypeMeta) {
-		client := lib.Setup(st, true, options...)
-		defer lib.TearDown(client)
+	channelTestRunner.RunTests(t, testlib.FeatureBasic, func(st *testing.T, channel metav1.TypeMeta) {
+		client := testlib.Setup(st, true, options...)
+		defer testlib.TearDown(client)
 
 		t.Run("Channel spec allows subscribers", func(t *testing.T) {
-			if channel == channelv1alpha1 || channel == channelv1beta1 {
+			if channel == channelv1beta1 || channel == channelv1 {
 				t.Skip("Not running spec.subscribers array test for generic Channel")
 			}
 			channelSpecAllowsSubscribersArray(st, client, channel)
@@ -51,7 +51,7 @@ func ChannelSpecTestHelperWithChannelTestRunner(
 	})
 }
 
-func channelSpecAllowsSubscribersArray(st *testing.T, client *lib.Client, channel metav1.TypeMeta, options ...lib.SetupClientOption) {
+func channelSpecAllowsSubscribersArray(st *testing.T, client *testlib.Client, channel metav1.TypeMeta, options ...testlib.SetupClientOption) {
 	st.Logf("Running channel spec conformance test with channel %s", channel)
 
 	dtsv, err := getChannelDuckTypeSupportVersionFromTypeMeta(client, channel)
@@ -88,7 +88,7 @@ func channelSpecAllowsSubscribersArray(st *testing.T, client *lib.Client, channe
 
 		ch = channelable
 
-	} else if dtsv == "v1beta1" {
+	} else if dtsv == "v1beta1" || dtsv == "v1" {
 		channelable, err := getChannelAsV1Beta1Channelable(channelName, client, channel)
 		if err != nil {
 			st.Fatalf("Unable to get channel %s to v1beta1 duck type: %s", channel, err)
@@ -123,7 +123,7 @@ func channelSpecAllowsSubscribersArray(st *testing.T, client *lib.Client, channe
 	}
 }
 
-func getChannelDuckTypeSupportVersionFromTypeMeta(client *lib.Client, channel metav1.TypeMeta) (string, error) {
+func getChannelDuckTypeSupportVersionFromTypeMeta(client *testlib.Client, channel metav1.TypeMeta) (string, error) {
 	// the only way is to create one and see
 	channelName := names.SimpleNameGenerator.GenerateName("channel-tmp-")
 

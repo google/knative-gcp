@@ -21,16 +21,16 @@ import (
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-
-	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -74,10 +74,29 @@ var (
 		},
 	}
 
+	storageSourceSpecWithKSA = CloudStorageSourceSpec{
+		Bucket: "my-test-bucket",
+		PubSubSpec: duckv1alpha1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: duckv1alpha1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+		},
+	}
+
 	// Bucket, Sink, Secret, Event Type and Project, ObjectNamePrefix and PayloadFormat
 	storageSourceSpec = CloudStorageSourceSpec{
 		Bucket:           "my-test-bucket",
-		EventTypes:       []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+		EventTypes:       []string{schemasv1.CloudStorageObjectFinalizedEventType, schemasv1.CloudStorageObjectDeletedEventType},
 		ObjectNamePrefix: "test-prefix",
 		PayloadFormat:    cloudevents.ApplicationJSON,
 		PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -359,10 +378,10 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		"ClusterName annotation changed": {
 			origAnnotation: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
 			},
 			updatedAnnotation: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
 			},
 			allowed: false,
 		},
@@ -381,7 +400,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			orig: &storageSourceSpec,
 			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
-				EventTypes:       []string{CloudStorageSourceMetadataUpdate},
+				EventTypes:       []string{schemasv1.CloudStorageObjectMetadataUpdatedEventType},
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
 				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec:       storageSourceSpec.PubSubSpec,
@@ -430,6 +449,25 @@ func TestCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
+		"Secret.Key changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					SourceSpec: storageSourceSpec.SourceSpec,
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: storageSourceSpec.Secret.Name,
+						},
+						Key: "some-other-key",
+					},
+					Project: storageSourceSpec.Project,
+				},
+			},
+			allowed: false,
+		},
 		"Project changed": {
 			orig: &storageSourceSpec,
 			updated: CloudStorageSourceSpec{
@@ -445,19 +483,18 @@ func TestCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed": {
-			orig: &storageSourceSpec,
+		"ServiceAccountName changed": {
+			orig: &storageSourceSpecWithKSA,
 			updated: CloudStorageSourceSpec{
-				Bucket:           storageSourceSpec.Bucket,
-				EventTypes:       storageSourceSpec.EventTypes,
-				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
-				PayloadFormat:    storageSourceSpec.PayloadFormat,
+				Bucket:           storageSourceSpecWithKSA.Bucket,
+				EventTypes:       storageSourceSpecWithKSA.EventTypes,
+				ObjectNamePrefix: storageSourceSpecWithKSA.ObjectNamePrefix,
+				PayloadFormat:    storageSourceSpecWithKSA.PayloadFormat,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
-						GoogleServiceAccount: "new-service-account",
+						ServiceAccountName: "new-service-account",
 					},
-					SourceSpec: storageSourceSpec.SourceSpec,
-					Secret:     storageSourceSpec.Secret,
+					SourceSpec: storageSourceSpecWithKSA.SourceSpec,
 				},
 			},
 			allowed: false,

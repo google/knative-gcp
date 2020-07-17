@@ -17,6 +17,8 @@ kind: ConfigMap
 metadata:
   name: config-tracing
   namespace: cloud-run-events
+  annotations:
+    knative.dev/example-checksum: 4002b4c2
 data:
   _example: |
     ################################

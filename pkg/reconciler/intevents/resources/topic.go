@@ -20,24 +20,25 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 )
 
 type TopicArgs struct {
-	Namespace   string
-	Name        string
-	Spec        *duckv1alpha1.PubSubSpec
-	Owner       kmeta.OwnerRefable
-	Topic       string
-	Labels      map[string]string
-	Annotations map[string]string
+	Namespace       string
+	Name            string
+	Spec            *duckv1beta1.PubSubSpec
+	EnablePublisher *bool
+	Owner           kmeta.OwnerRefable
+	Topic           string
+	Labels          map[string]string
+	Annotations     map[string]string
 }
 
 // MakeTopic creates the spec for, but does not create, a GCP Topic
 // for a given GCS.
-func MakeTopic(args *TopicArgs) *inteventsv1alpha1.Topic {
-	return &inteventsv1alpha1.Topic{
+func MakeTopic(args *TopicArgs) *inteventsv1beta1.Topic {
+	return &inteventsv1beta1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            args.Name,
 			Namespace:       args.Namespace,
@@ -45,15 +46,15 @@ func MakeTopic(args *TopicArgs) *inteventsv1alpha1.Topic {
 			Annotations:     args.Annotations,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
-		Spec: inteventsv1alpha1.TopicSpec{
-			IdentitySpec: duckv1alpha1.IdentitySpec{
-				GoogleServiceAccount: args.Spec.IdentitySpec.GoogleServiceAccount,
-				ServiceAccountName:   args.Spec.IdentitySpec.ServiceAccountName,
+		Spec: inteventsv1beta1.TopicSpec{
+			IdentitySpec: duckv1beta1.IdentitySpec{
+				ServiceAccountName: args.Spec.IdentitySpec.ServiceAccountName,
 			},
 			Secret:            args.Spec.Secret,
 			Project:           args.Spec.Project,
 			Topic:             args.Topic,
-			PropagationPolicy: inteventsv1alpha1.TopicPolicyCreateDelete,
+			PropagationPolicy: inteventsv1beta1.TopicPolicyCreateDelete,
+			EnablePublisher:   args.EnablePublisher,
 		},
 	}
 }

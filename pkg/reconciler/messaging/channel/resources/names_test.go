@@ -23,12 +23,18 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 )
 
 func TestGenerateTopicID(t *testing.T) {
-	want := "cre-chan-a-uid"
-	got := GenerateTopicID("a-uid")
+	want := "cre-chan_default_foo_a-uid"
+	got := GenerateTopicID(&v1beta1.Channel{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "default",
+			UID:       "a-uid",
+		},
+	})
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)
@@ -37,7 +43,7 @@ func TestGenerateTopicID(t *testing.T) {
 
 func TestGeneratePublisherName(t *testing.T) {
 	want := "cre-foo-chan"
-	got := GeneratePublisherName(&v1alpha1.Channel{
+	got := GeneratePublisherName(&v1beta1.Channel{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "foo",
 		},
@@ -50,7 +56,7 @@ func TestGeneratePublisherName(t *testing.T) {
 
 func TestGeneratePublisherNameFromChannel(t *testing.T) {
 	want := "cre-foo-chan"
-	got := GeneratePublisherName(&v1alpha1.Channel{
+	got := GeneratePublisherName(&v1beta1.Channel{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "cre-foo",
 		},
@@ -63,7 +69,16 @@ func TestGeneratePublisherNameFromChannel(t *testing.T) {
 
 func TestGenerateSubscriptionName(t *testing.T) {
 	want := "cre-sub-a-uid"
-	got := GenerateSubscriptionName("a-uid")
+	got := GeneratePullSubscriptionName("a-uid")
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
+	}
+}
+
+func TestExtractUIDFromSubscriptionName(t *testing.T) {
+	want := "a-uid"
+	got := ExtractUIDFromPullSubscriptionName("cre-sub-a-uid")
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)

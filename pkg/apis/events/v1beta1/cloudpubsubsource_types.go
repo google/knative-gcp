@@ -17,15 +17,17 @@ limitations under the License.
 package v1beta1
 
 import (
-	"fmt"
 	"time"
 
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
@@ -54,12 +56,13 @@ var (
 	_ resourcesemantics.GenericCRD = (*CloudPubSubSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudPubSubSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudPubSubSource)(nil)
+	_ duckv1.KRShaped              = (*CloudPubSubSource)(nil)
 )
 
 // CloudPubSubSourceSpec defines the desired state of the CloudPubSubSource.
 type CloudPubSubSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
+	// Sink, CloudEventOverrides, Secret and Project
 	duckv1beta1.PubSubSpec `json:",inline"`
 
 	// Topic is the ID of the PubSub Topic to Subscribe to. It must
@@ -95,7 +98,7 @@ func (ps CloudPubSubSourceSpec) GetAckDeadline() time.Duration {
 			return duration
 		}
 	}
-	return defaultAckDeadline
+	return intevents.DefaultAckDeadline
 }
 
 // GetRetentionDuration parses RetentionDuration and returns the default if an error occurs.
@@ -105,18 +108,8 @@ func (ps CloudPubSubSourceSpec) GetRetentionDuration() time.Duration {
 			return duration
 		}
 	}
-	return defaultRetentionDuration
+	return intevents.DefaultRetentionDuration
 }
-
-// CloudPubSubSourceEventSource returns the Cloud Pub/Sub CloudEvent source value.
-func CloudPubSubSourceEventSource(googleCloudProject, topic string) string {
-	return fmt.Sprintf("//pubsub.googleapis.com/projects/%s/topics/%s", googleCloudProject, topic)
-}
-
-const (
-	// CloudPubSubSource CloudEvent type
-	CloudPubSubSourcePublish = "com.google.cloud.pubsub.topic.publish"
-)
 
 const (
 	// CloudPubSubSourceConditionReady has status True when the CloudPubSubSource is
@@ -159,7 +152,7 @@ func (s *CloudPubSubSource) IdentityStatus() *duckv1beta1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (ps *CloudPubSubSource) ConditionSet() *apis.ConditionSet {
 	return &pubSubCondSet
 }
@@ -171,6 +164,17 @@ func (ps *CloudPubSubSource) PubSubSpec() *duckv1beta1.PubSubSpec {
 	return &ps.Spec.PubSubSpec
 }
 
+// CloudPubSubSourceSpec returns the CloudPubSubSourceStatus portion of the Spec.
 func (s *CloudPubSubSource) PubSubStatus() *duckv1beta1.PubSubStatus {
 	return &s.Status.PubSubStatus
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*CloudPubSubSource) GetConditionSet() apis.ConditionSet {
+	return pubSubCondSet
+}
+
+// GetStatus retrieves the status of the CloudPubSubSource. Implements the KRShaped interface.
+func (s *CloudPubSubSource) GetStatus() *duckv1.Status {
+	return &s.Status.Status
 }

@@ -22,18 +22,21 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/test/helpers"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
+
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokeCloudPubSubSourceTestImpl tests we can create a CloudPubSubSource to ready state.
+// SmokeCloudPubSubSourceTestImpl tests we can create a CloudPubSubSource to ready state and we can delete a CloudPubSubSource and its underlying resources.
 func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
@@ -46,12 +49,29 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	defer lib.TearDown(client)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(client, metav1.GroupVersionKind{
-		Version: "v1",
-		Kind:    "Service"}, psName, svcName, topic, authConfig.PubsubServiceAccount)
+	lib.MakePubSubOrDie(client, lib.PubSubConfig{
+		SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
+		PubSubName:         psName,
+		SinkName:           svcName,
+		TopicName:          topic,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
 
-	client.Core.WaitForResourceReadyOrFail(psName, lib.CloudPubSubSourceTypeMeta)
+	createdPubSub := client.GetPubSubOrFail(psName)
+	subID := createdPubSub.Status.SubscriptionID
 
+	createdSubExists := lib.SubscriptionExists(t, subID)
+	if !createdSubExists {
+		t.Errorf("Expected subscription %q to exist", subID)
+	}
+
+	client.DeletePubSubOrFail(psName)
+	//Wait for 40 seconds for subscription to get deleted in gcp
+	time.Sleep(resources.WaitDeletionTime)
+	deletedSubExists := lib.SubscriptionExists(t, subID)
+	if deletedSubExists {
+		t.Errorf("Expected subscription %q to get deleted", subID)
+	}
 }
 
 // CloudPubSubSourceWithTargetTestImpl tests we can receive an event from a CloudPubSubSource.
@@ -64,20 +84,26 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
 	targetName := helpers.AppendRandomString(topicName + "-target")
-	source := v1beta1.CloudPubSubSourceEventSource(project, topicName)
+	source := schemasv1.CloudPubSubEventSource(project, topicName)
 	data := fmt.Sprintf(`{"topic":%s}`, topicName)
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	if assertMetrics {
-		client.SetupStackDriverMetrics(t)
+		client.SetupStackDriverMetricsInNamespace(t)
 	}
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakePubSubTargetJobOrDie(client, source, targetName, v1beta1.CloudPubSubSourcePublish)
+	lib.MakePubSubTargetJobOrDie(client, source, targetName, schemasv1.CloudPubSubMessagePublishedEventType)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(client, lib.ServiceGVK, psName, targetName, topicName, authConfig.PubsubServiceAccount)
+	lib.MakePubSubOrDie(client, lib.PubSubConfig{
+		SinkGVK:            lib.ServiceGVK,
+		PubSubName:         psName,
+		SinkName:           targetName,
+		TopicName:          topicName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
 
 	topic := lib.GetTopic(t, topicName)
 

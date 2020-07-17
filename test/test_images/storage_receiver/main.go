@@ -23,7 +23,8 @@ import (
 	"net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	"github.com/google/knative-gcp/pkg/kncloudevents"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -32,7 +33,7 @@ type Receiver struct {
 }
 
 func main() {
-	client, err := cloudevents.NewDefaultClient()
+	client, err := kncloudevents.NewDefaultClient()
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +52,7 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *c
 	fmt.Printf("storage receiver received event\n")
 	fmt.Printf("context of event is: %v\n", event.Context.String())
 
-	if event.Type() == v1beta1.CloudStorageSourceFinalize {
+	if event.Type() == schemasv1.CloudStorageObjectFinalizedEventType {
 		resp.Status = http.StatusAccepted
 		respEvent := cloudevents.NewEvent(cloudevents.VersionV1)
 		respEvent.SetID(lib.E2EStorageRespEventID)

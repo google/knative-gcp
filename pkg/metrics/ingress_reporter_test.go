@@ -19,7 +19,6 @@ package metrics
 import (
 	"context"
 	"testing"
-	"time"
 
 	_ "knative.dev/pkg/metrics/testing"
 
@@ -34,13 +33,13 @@ func TestStatsReporter(t *testing.T) {
 	args := IngressReportArgs{
 		Namespace:    "testns",
 		Broker:       "testbroker",
-		EventType:    "testeventtype",
+		EventType:    "google.cloud.scheduler.job.v1.executed",
 		ResponseCode: 202,
 	}
 	wantTags := map[string]string{
 		metricskey.LabelNamespaceName:     "testns",
 		metricskey.LabelBrokerName:        "testbroker",
-		metricskey.LabelEventType:         "testeventtype",
+		metricskey.LabelEventType:         "google.cloud.scheduler.job.v1.executed",
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
 		metricskey.ContainerName:          "testcontainer",
@@ -52,13 +51,46 @@ func TestStatsReporter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// test ReportDispatchTime
+	// test ReportEventCount
 	reportertest.ExpectMetrics(t, func() error {
-		return r.ReportEventDispatchTime(context.Background(), args, 1100*time.Millisecond)
+		return r.ReportEventCount(context.Background(), args)
 	})
 	reportertest.ExpectMetrics(t, func() error {
-		return r.ReportEventDispatchTime(context.Background(), args, 9100*time.Millisecond)
+		return r.ReportEventCount(context.Background(), args)
 	})
 	metricstest.CheckCountData(t, "event_count", wantTags, 2)
-	metricstest.CheckDistributionData(t, "event_dispatch_latencies", wantTags, 2, 1100.0, 9100.0)
+}
+
+func TestStatsReporterWithCustomEventType(t *testing.T) {
+	reportertest.ResetIngressMetrics()
+
+	args := IngressReportArgs{
+		Namespace:    "testns",
+		Broker:       "testbroker",
+		EventType:    "testeventtype",
+		ResponseCode: 202,
+	}
+	wantTags := map[string]string{
+		metricskey.LabelNamespaceName:     "testns",
+		metricskey.LabelBrokerName:        "testbroker",
+		metricskey.LabelEventType:         "custom",
+		metricskey.LabelResponseCode:      "202",
+		metricskey.LabelResponseCodeClass: "2xx",
+		metricskey.ContainerName:          "testcontainer",
+		metricskey.PodName:                "testpod",
+	}
+
+	r, err := NewIngressReporter(PodName("testpod"), ContainerName("testcontainer"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// test ReportEventCount
+	reportertest.ExpectMetrics(t, func() error {
+		return r.ReportEventCount(context.Background(), args)
+	})
+	reportertest.ExpectMetrics(t, func() error {
+		return r.ReportEventCount(context.Background(), args)
+	})
+	metricstest.CheckCountData(t, "event_count", wantTags, 2)
 }

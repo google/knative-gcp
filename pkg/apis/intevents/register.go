@@ -18,10 +18,31 @@ limitations under the License.
 // resources.
 package intevents
 
-import "k8s.io/apimachinery/pkg/runtime/schema"
+import (
+	"time"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
 
 const (
 	GroupName = "internal.events.cloud.google.com"
+
+	// SourceLabelKey is the label name used to identify the source that owns a PS or Topic.
+	SourceLabelKey = "events.cloud.google.com/source-name"
+	// ChannelLabelKey is the label name used to identify the channel that owns a PS or Topic.
+	ChannelLabelKey = "events.cloud.google.com/channel-name"
+	// DefaultRetentionDuration is the default retention duration (7 days) in the default pullSubscription spec.
+	DefaultRetentionDuration = 7 * 24 * time.Hour
+	// DefaultAckDeadline is the default ack deadline (30 seconds) in the default pullSubscription spec.
+	DefaultAckDeadline = 30 * time.Second
+	// MinRetentionDuration is the minimum retention duration (10 seconds) to validate the pullSubscription.
+	MinRetentionDuration = 10 * time.Second
+	// MaxRetentionDuration is the maximum retention duration (7 days) to validate the pullSubscription.
+	MaxRetentionDuration = 7 * 24 * time.Hour // 7 days.
+	// MinAckDeadline is the minimum ack deadline (0 second) to validate the pullSubscription.
+	MinAckDeadline = 0 * time.Second
+	// MinAckDeadline is the maximum ack deadline (10 minutes) to validate the pullSubscription.
+	MaxAckDeadline = 10 * time.Minute
 )
 
 var (

@@ -27,10 +27,10 @@ metadata:
   annotations:
     registry.knative.dev/eventTypes: |
       [
-        { "type": "com.google.cloud.storage.object.finalize", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when a new object (or a new generation of an existing object) is successfully created in the bucket. This includes copying or rewriting an existing object. A failed upload does not trigger this event." },
-        { "type": "com.google.cloud.storage.object.delete", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when an object has been permanently deleted. This includes objects that are overwritten or are deleted as part of the bucket's lifecycle configuration. For buckets with object versioning enabled, this is not sent when an object is archived."},
-        { "type": "com.google.cloud.storage.object.archive", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Only sent when a bucket has enabled object versioning. This event indicates that the live version of an object has become an archived version, either because it was archived or because it was overwritten by the upload of an object of the same name."},
-        { "type": "com.google.cloud.storage.object.metadataUpdate", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when the metadata of an existing object changes." }
+        { "type": "google.cloud.storage.object.v1.finalized", "schema": "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto", "description": "Sent when a new object (or a new generation of an existing object) is successfully created in the bucket. This includes copying or rewriting an existing object. A failed upload does not trigger this event." },
+        { "type": "google.cloud.storage.object.v1.deleted", "schema": "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto", "description": "Sent when an object has been permanently deleted. This includes objects that are overwritten or are deleted as part of the bucket's lifecycle configuration. For buckets with object versioning enabled, this is not sent when an object is archived."},
+        { "type": "google.cloud.storage.object.v1.archived", "schema": "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto", "description": "Only sent when a bucket has enabled object versioning. This event indicates that the live version of an object has become an archived version, either because it was archived or because it was overwritten by the upload of an object of the same name."},
+        { "type": "google.cloud.storage.object.v1.metadataUpdated", "schema": "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto", "description": "Sent when the metadata of an existing object changes." }
       ]
   name: cloudstoragesources.events.cloud.google.com
 spec:
@@ -66,10 +66,10 @@ spec:
   versions:
     - name: v1alpha1
       served: true
-      storage: true
+      storage: false
     - name: v1beta1
       served: true
-      storage: false
+      storage: true
   validation:
     openAPIV3Schema:
       type: object
@@ -117,12 +117,6 @@ spec:
                     Extensions specify what attribute are added or overridden on the outbound event. Each
                     `Extensions` key-value pair are set on the event as an attribute extension independently.
                   x-kubernetes-preserve-unknown-fields: true
-            googleServiceAccount:
-              type: string
-              description: >
-                GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
-                account must be a valid Google service account (see
-                https://cloud.google.com/iam/docs/service-accounts).
             serviceAccountName:
               type: string
               description: >
@@ -165,10 +159,10 @@ spec:
               items:
                 type: string
                 enum:
-                  - com.google.cloud.storage.object.finalize
-                  - com.google.cloud.storage.object.delete
-                  - com.google.cloud.storage.object.archive
-                  - com.google.cloud.storage.object.metadataUpdate
+                  - google.cloud.storage.object.v1.finalized
+                  - google.cloud.storage.object.v1.deleted
+                  - google.cloud.storage.object.v1.archived
+                  - google.cloud.storage.object.v1.metadataUpdated
         status:
           type: object
           properties:

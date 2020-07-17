@@ -17,17 +17,15 @@ limitations under the License.
 package main
 
 import (
-	"github.com/google/knative-gcp/pkg/broker/ingress"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
 
 	"go.uber.org/zap"
 )
-
-const containerName = "ingress"
 
 type envConfig struct {
 	PodName   string `envconfig:"POD_NAME" required:"true"`
@@ -36,7 +34,8 @@ type envConfig struct {
 }
 
 const (
-	component = "broker"
+	component       = "broker-ingress"
+	metricNamespace = "broker"
 )
 
 // main creates and starts an ingress handler using default options.
@@ -48,7 +47,7 @@ func main() {
 	appcredentials.MustExistOrUnsetEnv()
 
 	var env envConfig
-	ctx, res := mainhelper.Init(component, mainhelper.WithEnv(&env))
+	ctx, res := mainhelper.Init(component, mainhelper.WithMetricNamespace(metricNamespace), mainhelper.WithEnv(&env))
 	defer res.Cleanup()
 	logger := res.Logger
 
@@ -60,10 +59,10 @@ func main() {
 
 	ingress, err := InitializeHandler(
 		ctx,
-		ingress.Port(env.Port),
-		ingress.ProjectID(projectID),
+		clients.Port(env.Port),
+		clients.ProjectID(projectID),
 		metrics.PodName(env.PodName),
-		metrics.ContainerName(containerName),
+		metrics.ContainerName(component),
 	)
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))

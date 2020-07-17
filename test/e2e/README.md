@@ -43,13 +43,13 @@ There are two ways to set up authentication mechanism.
     [knative-gcp](../../docs/install/install-knative-gcp.md) installed and
     configured.
 1.  Create a
-    [Pub/Sub Enabled Service Account](../../docs/install/pubsub-service-account.md).
+    [Service Account for the Data Plane](../../docs/install/dataplane-service-account.md).
     Download a credential file and set `GOOGLE_APPLICATION_CREDENTIALS` env var.
     This is used by some tests(e.g., `TestSmokePullSubscription`) to authorize
     the Google SDK clients.
     ```
-    cred_file=$(pwd)/cre-pubsub.json
-    gcloud iam service-accounts keys create ${cred_file} --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+    cred_file=$(pwd)/cre-dataplane.json
+    gcloud iam service-accounts keys create ${cred_file} --iam-account=cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
     export GOOGLE_APPLICATION_CREDENTIALS=${cred_file}
     ```
 1.  [Install GCP Broker](../../docs/install/install-gcp-broker.md).
@@ -66,13 +66,24 @@ There are two ways to set up authentication mechanism.
     specify the build tag `e2e`.
 1.  (Optional) Note that if you plan on running metrics-related E2E tests using
     the StackDriver backend, you need to give your
-    [Service Account](../../docs/install/pubsub-service-account.md) the
-    `Monitoring Editor` role on your Google Cloud project:
+    [Service Account](../../docs/install/dataplane-service-account.md) the
+    `monitoring.metricWriter` role on your Google Cloud project:
 
     ```shell
     gcloud projects add-iam-policy-binding $PROJECT_ID \
-      --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
-      --role roles/monitoring.editor
+      --member=serviceAccount:${your_service_account}@$PROJECT_ID.iam.gserviceaccount.com \
+      --role roles/monitoring.metricWriter
+    ```
+
+    If you also plan on running tracing-related E2E tests using the StackDriver
+    backend, your
+    [Service Account](../../docs/install/dataplane-service-account.md) needs
+    additional `cloudtrace.agent` role:
+
+    ```shell
+    gcloud projects add-iam-policy-binding $$PROJECT_ID \
+      --member=serviceAccount:"${your_service_account}"@$PROJECT_ID.iam.gserviceaccount.com \
+      --role roles/cloudtrace.agent
     ```
 
 1.  (Optional) Note that if plan on running tracing-related E2E tests using the
@@ -118,19 +129,37 @@ E2E_PROJECT_ID=<project name> \
 
 ### Running E2E tests with authentication mechanism using Workload Identity.
 
-Add `-workloadIndentity=true` and
-`-pubsubServiceAccount=$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com`
-to the `go test` command, where
+First, you'll have to modify `clusterDefaults` in ConfigMap `config-gcp-auth`.
+
+You can directly edit the ConfigMap by:
+
+```shell
+kubectl edit configmap config-gcp-auth -n cloud-run-events
+```
+
+and replace the `default-auth-config:` part with:
+
+```shell
+  default-auth-config: |
+    clusterDefaults:
+      serviceAccountName: test-default-ksa
+      workloadIdentityMapping:
+        test-default-ksa: $PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com
+```
+
 `$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the Pub/Sub
 enabled Google Cloud Service Account.
+
+Then, add `-workloadIndentity=true` and `-serviceAccountName=test-default-ksa`
+to the `go test` command.
 
 For example,
 
 ```shell
-E2E_PROJECT_ID=<project name> go test --tags=e2e \
+E2E_PROJECT_ID=<project name> go test --tags=e2e ./test/e2e/... \
   -workloadIndentity=true \
-  -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
-  ./test/e2e/...
+  -serviceAccountName=test-default-ksa \
+  -run TestPullSubscription
 ```
 
 ## Running E2E Tests on an new cluster
@@ -215,3 +244,38 @@ application. This Go file should use the package `main` and include the function
 uploading test images, `ko` will build an image from this folder and upload to
 the Docker repository configured as
 [`KO_DOCKER_REPO`](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup).
+
+## Troubleshooting E2E Tests
+
+### Prow
+
+Each PR will trigger [E2E tests](../../test/e2e). For failed tests, follow the
+prow links on the PR page. Such links are in the format of
+`https://prow.knative.dev/view/gcs/knative-prow/pr-logs/pull/google_knative-gcp/[PR ID]/[TEST NAME]/[TEST ID]`
+, e.g.
+`https://prow.knative.dev/view/gcs/knative-prow/pr-logs/pull/google_knative-gcp/1153/pull-google-knative-gcp-integration-tests/1267481606424104960`
+.
+
+If the prow page doesn't provide any useful information, check out the full logs
+dump.
+
+- The control plane pods (in `cloud-run-events` namespace) logs dump are at
+  `https://console.cloud.google.com/storage/browser/knative-prow/pr-logs/pull/google_knative-gcp/[PR ID]/[TEST NAME]/[TEST ID]/artifacts/controller-logs/`
+  .
+- The data plane pods logs dump are at
+  `https://console.cloud.google.com/storage/browser/knative-prow/pr-logs/pull/google_knative-gcp/[PR ID]/[TEST NAME]/[TEST ID]/artifacts/pod-logs/`
+  .
+
+### Local
+
+Add `CI=true`to the `go test` command.
+
+- The data plane pods logs dump are at
+  `$GOPATH/src/github.com/google/knative-gcp/test/e2e/artifacts/pod-logs` .
+
+For example:
+
+```shell
+CI=true E2E_PROJECT_ID=$PROJECT_ID \
+ go test --tags=e2e ./test/e2e/...
+```

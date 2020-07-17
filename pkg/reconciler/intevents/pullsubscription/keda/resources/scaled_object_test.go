@@ -20,43 +20,44 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
+
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"knative.dev/pkg/apis"
-
-	"github.com/google/go-cmp/cmp"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 func newAnnotations() map[string]string {
 	return map[string]string{
-		duckv1alpha1.AutoscalingClassAnnotation:                duckv1alpha1.KEDA,
-		duckv1alpha1.AutoscalingMinScaleAnnotation:             "0",
-		duckv1alpha1.AutoscalingMaxScaleAnnotation:             "3",
-		duckv1alpha1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
-		duckv1alpha1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
-		duckv1alpha1.KedaAutoscalingPollingIntervalAnnotation:  "30",
+		duck.AutoscalingClassAnnotation:                duck.KEDA,
+		duck.AutoscalingMinScaleAnnotation:             "0",
+		duck.AutoscalingMaxScaleAnnotation:             "3",
+		duck.KedaAutoscalingSubscriptionSizeAnnotation: "5",
+		duck.KedaAutoscalingCooldownPeriodAnnotation:   "60",
+		duck.KedaAutoscalingPollingIntervalAnnotation:  "30",
 	}
 }
 
-func newPullSubscription() *v1alpha1.PullSubscription {
+func newPullSubscription() *v1beta1.PullSubscription {
 	return NewPullSubscription("psname", "psnamespace",
 		WithPullSubscriptionUID("psuid"),
 		WithPullSubscriptionAnnotations(newAnnotations()),
 		WithPullSubscriptionSubscriptionID("subscriptionId"),
+		WithPullSubscriptionSetDefaults,
 	)
 }
 
-func newReceiveAdapter(ps *v1alpha1.PullSubscription) *v1.Deployment {
+func newReceiveAdapter(ps *v1beta1.PullSubscription) *v1.Deployment {
 	raArgs := &resources.ReceiveAdapterArgs{
-		Image:          "image",
-		Source:         ps,
-		Labels:         resources.GetLabels("agentName", "psName"),
-		SubscriptionID: "subscriptionId",
-		SinkURI:        apis.HTTP("sinkURI"),
+		Image:            "image",
+		PullSubscription: ps,
+		Labels:           resources.GetLabels("agentName", "psName"),
+		SubscriptionID:   "subscriptionId",
+		SinkURI:          apis.HTTP("sinkURI"),
 	}
 	return resources.MakeReceiveAdapter(context.Background(), raArgs)
 }
@@ -68,7 +69,7 @@ func TestMakeScaledObject(t *testing.T) {
 
 	want := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "keda.k8s.io/v1alpha1",
+			"apiVersion": "keda.k8s.io/v1beta1",
 			"kind":       "ScaledObject",
 			"metadata": map[string]interface{}{
 				"namespace": "psnamespace",
@@ -79,7 +80,7 @@ func TestMakeScaledObject(t *testing.T) {
 				},
 				"ownerReferences": []interface{}{
 					map[string]interface{}{
-						"apiVersion":         "internal.events.cloud.google.com/v1alpha1",
+						"apiVersion":         "internal.events.cloud.google.com/v1beta1",
 						"kind":               "PullSubscription",
 						"blockOwnerDeletion": true,
 						"controller":         true,

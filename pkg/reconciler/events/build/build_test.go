@@ -38,11 +38,14 @@ import (
 
 	. "knative.dev/pkg/reconciler/testing"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudbuildsource"
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/events"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudbuildsource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -54,7 +57,7 @@ const (
 	sinkName  = "sink"
 
 	testNS                                     = "testnamespace"
-	testTopicID                                = v1alpha1.DefaultTopic
+	testTopicID                                = events.CloudBuildTopic
 	generation                                 = 1
 	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
@@ -68,7 +71,7 @@ var (
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
-		Version: "v1alpha1",
+		Version: "v1beta1",
 		Kind:    "Sink",
 	}
 
@@ -84,13 +87,13 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = v1alpha1.AddToScheme(scheme.Scheme)
+	_ = v1beta1.AddToScheme(scheme.Scheme)
 }
 
 // Returns an ownerref for the test CloudBuildSource object
 func ownerRef() metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "events.cloud.google.com/v1alpha1",
+		APIVersion:         "events.cloud.google.com/v1beta1",
 		Kind:               "CloudBuildSource",
 		Name:               buildName,
 		UID:                buildUID,
@@ -115,7 +118,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 func newSink() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.google.com/v1alpha1",
+			"apiVersion": "testing.cloud.google.com/v1beta1",
 			"kind":       "Sink",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -133,7 +136,7 @@ func newSink() *unstructured.Unstructured {
 func newSinkDestination() duckv1.Destination {
 	return duckv1.Destination{
 		Ref: &duckv1.KReference{
-			APIVersion: "testing.cloud.google.com/v1alpha1",
+			APIVersion: "testing.cloud.google.com/v1beta1",
 			Kind:       "Sink",
 			Namespace:  testNS,
 			Name:       sinkName,
@@ -161,11 +164,11 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithCloudBuildSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
+					WithCloudBuildSourceSetDefault,
 				),
 				newSink(),
 			},
@@ -174,26 +177,27 @@ func TestAllCases(t *testing.T) {
 				Object: NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceStatusObservedGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
+					WithCloudBuildSourceSetDefault,
 					WithCloudBuildSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
 				),
 			}},
 			WantCreates: []runtime.Object{
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				NewPullSubscription(buildName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
-						PubSubSpec: duckv1alpha1.PubSubSpec{
+						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
 							SourceSpec: duckv1.SourceSpec{
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudBuild),
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionLabels(map[string]string{
@@ -201,10 +205,11 @@ func TestAllCases(t *testing.T) {
 						"events.cloud.google.com/source-name": buildName,
 					}),
 					WithPullSubscriptionAnnotations(map[string]string{
-						"metrics-resource-group":           resourceGroup,
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						"metrics-resource-group":   resourceGroup,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+					WithPullSubscriptionDefaultGCPAuth,
 				),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -219,18 +224,19 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
+					WithCloudBuildSourceSetDefault,
 				),
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				NewPullSubscription(buildName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
-						PubSubSpec: duckv1alpha1.PubSubSpec{
+						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
 							SourceSpec: duckv1.SourceSpec{
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudBuild),
 					}),
 					WithPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
 				newSink(),
@@ -240,11 +246,11 @@ func TestAllCases(t *testing.T) {
 				Object: NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceStatusObservedGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourcePullSubscriptionFailed("PullSubscriptionFalse", "status false test message"),
+					WithCloudBuildSourceSetDefault,
 				),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -259,18 +265,19 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
+					WithCloudBuildSourceSetDefault,
 				),
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				NewPullSubscription(buildName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
-						PubSubSpec: duckv1alpha1.PubSubSpec{
+						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
 							SourceSpec: duckv1.SourceSpec{
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudBuild),
 					}),
 					WithPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
 				newSink(),
@@ -280,11 +287,11 @@ func TestAllCases(t *testing.T) {
 				Object: NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceStatusObservedGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourcePullSubscriptionUnknown("PullSubscriptionUnknown", "status unknown test message"),
+					WithCloudBuildSourceSetDefault,
 				),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -299,18 +306,19 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
+					WithCloudBuildSourceSetDefault,
 				),
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				NewPullSubscription(buildName, testNS,
+					WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 						Topic: testTopicID,
-						PubSubSpec: duckv1alpha1.PubSubSpec{
+						PubSubSpec: duckv1beta1.PubSubSpec{
 							Secret: &secret,
 							SourceSpec: duckv1.SourceSpec{
 								Sink: newSinkDestination(),
 							},
 						},
+						AdapterType: string(converters.CloudBuild),
 					}),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
@@ -324,29 +332,31 @@ func TestAllCases(t *testing.T) {
 						return false, nil, nil
 					}
 					attempts++
-					return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+					return true, nil, apierrs.NewConflict(v1beta1.Resource("foo"), "bar", errors.New("foo"))
 				},
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceStatusObservedGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourcePullSubscriptionReady(),
 					WithCloudBuildSourceSinkURI(pubsubSinkURL),
+					WithCloudBuildSourceSubscriptionID(SubscriptionID),
+					WithCloudBuildSourceSetDefault,
 				),
 			}, {
 				Object: NewCloudBuildSource(buildName, testNS,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceStatusObservedGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourcePullSubscriptionReady(),
 					WithCloudBuildSourceSinkURI(pubsubSinkURL),
+					WithCloudBuildSourceSubscriptionID(SubscriptionID),
 					WithCloudBuildSourceFinalizers("cloudbuildsources.events.cloud.google.com"),
+					WithCloudBuildSourceSetDefault,
 				),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -356,47 +366,19 @@ func TestAllCases(t *testing.T) {
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", buildName),
 				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudBuildSource reconciled: "%s/%s"`, testNS, buildName),
 			},
-		}, {
-			Name: "pullsubscription deleted with getting k8s service account error",
-			Objects: []runtime.Object{
-				NewCloudBuildSource(buildName, testNS,
-					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
-					WithCloudBuildSourceSink(sinkGVK, sinkName),
-					WithCloudBuildSourceDeletionTimestamp,
-					WithCloudBuildSourceGCPServiceAccount(gServiceAccount),
-					WithCloudBuildSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-					WithCloudBuildSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-					}),
-				),
-				newSink(),
-			},
-			Key: testNS + "/" + buildName,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewCloudBuildSource(buildName, testNS,
-					WithCloudBuildSourceObjectMetaGeneration(generation),
-					WithCloudBuildSourceTopic(testTopicID),
-					WithCloudBuildSourceSink(sinkGVK, sinkName),
-					WithCloudBuildSourceDeletionTimestamp,
-					WithCloudBuildSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
-					WithCloudBuildSourceGCPServiceAccount(gServiceAccount),
-					WithCloudBuildSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-					WithCloudBuildSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-					}),
-				),
-			}},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudBuildSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
-			},
 		}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			PubSubBase:           intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			PubSubBase: intevents.NewPubSubBase(ctx,
+				&intevents.PubSubBaseArgs{
+					ControllerAgentName: controllerAgentName,
+					ReceiveAdapterName:  receiveAdapterName,
+					ReceiveAdapterType:  string(converters.CloudBuild),
+					ConfigWatcher:       cmw,
+				}),
+			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			buildLister:          listers.GetCloudBuildSourceLister(),
 			serviceAccountLister: listers.GetServiceAccountLister(),
 		}

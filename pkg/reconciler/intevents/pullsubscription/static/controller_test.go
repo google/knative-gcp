@@ -20,7 +20,12 @@ import (
 	"os"
 	"testing"
 
-	iamtesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/logging"
 	logtesting "knative.dev/pkg/logging/testing"
@@ -30,16 +35,10 @@ import (
 	"knative.dev/pkg/system"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake"
+	iamtesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 
 	// Fake injection informers
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription/fake"
 )
 
 func TestNew(t *testing.T) {
@@ -48,7 +47,7 @@ func TestNew(t *testing.T) {
 
 	_ = os.Setenv("PUBSUB_RA_IMAGE", "PUBSUB_RA_IMAGE")
 
-	c := newControllerWithIAMPolicyManager(ctx, configmap.NewStaticWatcher(
+	cmw := configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      logging.ConfigMapName(),
@@ -70,8 +69,8 @@ func TestNew(t *testing.T) {
 			},
 			Data: map[string]string{},
 		},
-	),
-		iamtesting.NoopIAMPolicyManager)
+	)
+	c := newController(ctx, cmw, iamtesting.NoopIAMPolicyManager, iamtesting.NewGCPAuthTestStore(t, nil))
 
 	if c == nil {
 		t.Fatal("Expected newControllerWithIAMPolicyManager to return a non-nil value")

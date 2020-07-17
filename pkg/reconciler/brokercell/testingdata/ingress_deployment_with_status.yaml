@@ -41,6 +41,25 @@ spec:
       containers:
       - name: ingress
         image: ingress
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 2
+          successThreshold: 1
+          timeoutSeconds: 5
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          periodSeconds: 2
+          successThreshold: 1
+          timeoutSeconds: 5
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/secrets/google/key.json        
@@ -65,11 +84,10 @@ spec:
           mountPath: /var/secrets/google          
         resources:
           limits:
-            cpu: 1000m
             memory: 1000Mi
           requests:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 1000m
+            memory: 500Mi
         ports:
         - name: metrics
           containerPort: 9090
@@ -78,7 +96,7 @@ spec:
       volumes:
       - name: broker-config
         configMap:
-          name: broker-targets
+          name: test-brokercell-brokercell-broker-targets
       - name: google-broker-key
         secret:
           secretName: google-broker-key

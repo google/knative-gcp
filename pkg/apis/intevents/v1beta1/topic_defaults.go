@@ -19,12 +19,19 @@ package v1beta1
 import (
 	"context"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/eventing/pkg/logging"
+	"knative.dev/pkg/apis"
+)
+
+var (
+	trueVal = true
 )
 
 func (t *Topic) SetDefaults(ctx context.Context) {
+	ctx = apis.WithinParent(ctx, t.ObjectMeta)
 	t.Spec.SetDefaults(ctx)
 }
 
@@ -32,7 +39,20 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 	if ts.PropagationPolicy == "" {
 		ts.PropagationPolicy = TopicPolicyCreateNoDelete
 	}
-	if ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{}) {
-		ts.Secret = duckv1beta1.DefaultGoogleCloudSecretSelector()
+
+	ad := gcpauth.FromContextOrDefaults(ctx).GCPAuthDefaults
+	if ad == nil {
+		// TODO This should probably error out, rather than silently allow in non-defaulted COs.
+		logging.FromContext(ctx).Error("Failed to get the GCPAuthDefaults")
+		return
+	}
+	if ts.ServiceAccountName == "" &&
+		(ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{})) {
+		ts.ServiceAccountName = ad.KSA(apis.ParentMeta(ctx).Namespace)
+		ts.Secret = ad.Secret(apis.ParentMeta(ctx).Namespace)
+	}
+
+	if ts.EnablePublisher == nil {
+		ts.EnablePublisher = &trueVal
 	}
 }

@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -29,20 +30,29 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
-	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/go-cmp/cmp"
+	kgcptesting "github.com/google/knative-gcp/pkg/testing"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"knative.dev/pkg/logging"
+	logtest "knative.dev/pkg/logging/testing"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
+	"github.com/google/knative-gcp/pkg/metrics"
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
+
+	_ "knative.dev/pkg/metrics/testing"
 )
 
 const (
@@ -98,7 +108,10 @@ func TestDeliverSuccess(t *testing.T) {
 	}}
 
 	for _, tc := range cases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			reportertest.ResetDeliveryMetrics()
+			ctx := logtest.TestContextWithLogger(t)
 			targetClient, err := cehttp.New()
 			if err != nil {
 				t.Fatalf("failed to create target cloudevents client: %v", err)
@@ -106,10 +119,6 @@ func TestDeliverSuccess(t *testing.T) {
 			ingressClient, err := cehttp.New()
 			if err != nil {
 				t.Fatalf("failed to create ingress cloudevents client: %v", err)
-			}
-			deliverClient, err := ceclient.NewDefault()
-			if err != nil {
-				t.Fatalf("failed to create requester cloudevents client: %v", err)
 			}
 			targetSvr := httptest.NewServer(targetClient)
 			defer targetSvr.Close()
@@ -123,12 +132,17 @@ func TestDeliverSuccess(t *testing.T) {
 				bm.SetAddress(ingressSvr.URL)
 				bm.UpsertTargets(target)
 			})
-			ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
+			r, err := metrics.NewDeliveryReporter("pod", "container")
+			if err != nil {
+				t.Fatal(err)
+			}
 			p := &Processor{
-				DeliverClient: deliverClient,
+				DeliverClient: http.DefaultClient,
 				Targets:       testTargets,
+				StatsReporter: r,
 			}
 
 			rctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -147,8 +161,6 @@ func TestDeliverSuccess(t *testing.T) {
 				if err != nil {
 					t.Errorf("target received message cannot be converted to an event: %v", err)
 				}
-				// Force the time to be the same so that we can compare easier.
-				gotEvent.SetTime(tc.wantOrigin.Time())
 				if diff := cmp.Diff(tc.wantOrigin, gotEvent); diff != "" {
 					t.Errorf("target received event (-want,+got): %v", diff)
 				}
@@ -174,7 +186,6 @@ func TestDeliverSuccess(t *testing.T) {
 						eventutil.UpdateRemainingHops(rctx, gotEvent, hops)
 					}
 				}
-				// Force the time to be the same so that we can compare easier.
 				if diff := cmp.Diff(tc.wantReply, gotEvent); diff != "" {
 					t.Errorf("ingress received event (-want,+got): %v", diff)
 				}
@@ -189,52 +200,78 @@ func TestDeliverSuccess(t *testing.T) {
 	}
 }
 
+type targetWithFailureHandler struct {
+	t              *testing.T
+	delay          time.Duration
+	respCode       int
+	malFormedEvent bool
+}
+
+func (h *targetWithFailureHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	h.t.Helper()
+	_, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		h.t.Errorf("Failed to read request: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	time.Sleep(h.delay)
+
+	if h.malFormedEvent {
+		w.Write([]byte("not an valid event body"))
+	}
+	w.WriteHeader(h.respCode)
+}
+
 func TestDeliverFailure(t *testing.T) {
 	cases := []struct {
 		name          string
 		withRetry     bool
-		withRespDelay time.Duration
+		targetHandler *targetWithFailureHandler
 		failRetry     bool
 		wantErr       bool
 	}{{
-		name:    "delivery error no retry",
-		wantErr: true,
+		name:          "delivery error no retry",
+		targetHandler: &targetWithFailureHandler{respCode: http.StatusInternalServerError},
+		wantErr:       true,
 	}, {
-		name:      "delivery error retry success",
-		withRetry: true,
+		name:          "delivery error retry success",
+		targetHandler: &targetWithFailureHandler{respCode: http.StatusInternalServerError},
+		withRetry:     true,
 	}, {
-		name:      "delivery error retry failure",
-		withRetry: true,
-		failRetry: true,
-		wantErr:   true,
+		name:          "delivery error retry failure",
+		targetHandler: &targetWithFailureHandler{respCode: http.StatusInternalServerError},
+		withRetry:     true,
+		failRetry:     true,
+		wantErr:       true,
 	}, {
 		name:          "delivery timeout no retry",
-		withRespDelay: time.Second,
+		targetHandler: &targetWithFailureHandler{delay: time.Second, respCode: http.StatusOK},
 		wantErr:       true,
 	}, {
 		name:          "delivery timeout retry success",
-		withRespDelay: time.Second,
+		targetHandler: &targetWithFailureHandler{delay: time.Second, respCode: http.StatusOK},
 		withRetry:     true,
 	}, {
 		name:          "delivery timeout retry failure",
 		withRetry:     true,
-		withRespDelay: time.Second,
+		targetHandler: &targetWithFailureHandler{delay: time.Second, respCode: http.StatusOK},
 		failRetry:     true,
+		wantErr:       true,
+	}, {
+		name: "malformed reply failure",
+		// Return 2xx but with a malformed event should be considered error.
+		targetHandler: &targetWithFailureHandler{respCode: http.StatusOK, malFormedEvent: true},
 		wantErr:       true,
 	}}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
-			targetClient, err := cehttp.New()
-			if err != nil {
-				t.Fatalf("failed to create target cloudevents client: %v", err)
-			}
-			deliverClient, err := ceclient.NewDefault()
-			if err != nil {
-				t.Fatalf("failed to create requester cloudevents client: %v", err)
-			}
-			targetSvr := httptest.NewServer(targetClient)
+			reportertest.ResetDeliveryMetrics()
+			ctx := logtest.TestContextWithLogger(t)
+			tc.targetHandler.t = t
+			targetSvr := httptest.NewServer(tc.targetHandler)
 			defer targetSvr.Close()
 
 			_, c, close := testPubsubClient(ctx, t, "test-project")
@@ -273,47 +310,24 @@ func TestDeliverFailure(t *testing.T) {
 			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
+			r, err := metrics.NewDeliveryReporter("pod", "container")
+			if err != nil {
+				t.Fatal(err)
+			}
 			p := &Processor{
-				DeliverClient:      deliverClient,
+				DeliverClient:      http.DefaultClient,
 				Targets:            testTargets,
 				RetryOnFailure:     tc.withRetry,
 				DeliverRetryClient: deliverRetryClient,
 				DeliverTimeout:     500 * time.Millisecond,
+				StatsReporter:      r,
 			}
 
 			origin := newSampleEvent()
-
-			rctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
-
-			go func() {
-				msg, resp, err := targetClient.Respond(rctx)
-				if err != nil && err != io.EOF {
-					t.Errorf("unexpected error from target receiving event: %v", err)
-				}
-				defer msg.Finish(nil)
-
-				// If with delay, we reply OK so that we know the error is for sure caused by timeout.
-				if tc.withRespDelay > 0 {
-					time.Sleep(tc.withRespDelay)
-					if err := resp(rctx, nil, &cehttp.Result{StatusCode: http.StatusOK}); err != nil {
-						t.Errorf("unexpected error from target responding event: %v", err)
-					}
-					return
-				}
-
-				// Due to https://github.com/cloudevents/sdk-go/issues/433
-				// it's not possible to use Receive to easily return error.
-				if err := resp(rctx, nil, &cehttp.Result{StatusCode: http.StatusInternalServerError}); err != nil {
-					t.Errorf("unexpected error from target responding event: %v", err)
-				}
-			}()
-
 			err = p.Process(ctx, origin)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("processing got error=%v, want=%v", err, tc.wantErr)
 			}
-			<-rctx.Done()
 		})
 	}
 }
@@ -322,6 +336,7 @@ type NoReplyHandler struct{}
 
 func (NoReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
+	io.Copy(ioutil.Discard, req.Body)
 }
 
 func BenchmarkDeliveryNoReply(b *testing.B) {
@@ -333,7 +348,11 @@ func BenchmarkDeliveryNoReply(b *testing.B) {
 	targetSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
 	defer targetSvr.Close()
 
-	benchmarkNoReply(b, httpClient, targetSvr.URL)
+	for _, eventSize := range []int{0, 1000, 1000000} {
+		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
+			benchmarkNoReply(b, &httpClient, targetSvr.URL, eventSize)
+		})
+	}
 }
 
 type ReplyHandler struct {
@@ -342,17 +361,26 @@ type ReplyHandler struct {
 
 func (h ReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	cehttp.WriteResponseWriter(req.Context(), h.msg, http.StatusOK, w)
+	io.Copy(ioutil.Discard, req.Body)
 }
 
 func BenchmarkDeliveryWithReply(b *testing.B) {
 	httpClient := http.Client{Transport: &http.Transport{MaxIdleConnsPerHost: runtime.NumCPU()}}
 	ingressSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
 	defer ingressSvr.Close()
-	benchmarkWithReply(b, ingressSvr.URL, func(b *testing.B, reply *event.Event) (http.Client, string) {
-		targetSvr := httptest.NewServer(ReplyHandler{msg: binding.ToMessage(reply)})
-		b.Cleanup(targetSvr.Close)
-		return httpClient, targetSvr.URL
-	})
+	for _, eventSize := range []int{0, 1000, 1000000} {
+		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
+			benchmarkWithReply(b, ingressSvr.URL, eventSize,
+				func(b *testing.B, reply *event.Event) (http.Client, string) {
+					targetSvr := httptest.NewServer(ReplyHandler{
+						msg: binding.ToMessage(reply),
+					})
+					b.Cleanup(targetSvr.Close)
+					return httpClient, targetSvr.URL
+				},
+			)
+		})
+	}
 }
 
 type fakeRoundTripper map[string]*http.Response
@@ -381,7 +409,11 @@ func BenchmarkDeliveryNoReplyFakeClient(b *testing.B) {
 			},
 		}),
 	}
-	benchmarkNoReply(b, httpClient, targetAddress)
+	for _, eventSize := range kgcptesting.BenchmarkEventSizes {
+		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
+			benchmarkNoReply(b, &httpClient, targetAddress, eventSize)
+		})
+	}
 }
 
 type fakeBody struct {
@@ -426,20 +458,21 @@ func makeFakeTargetWithReply(b *testing.B, reply *event.Event) (httpClient http.
 // of the fake client helps to better isolate the performance of the processor itself and can
 // provide better profiling data.
 func BenchmarkDeliveryWithReplyFakeClient(b *testing.B) {
-	benchmarkWithReply(b, fakeIngressAddress, makeFakeTargetWithReply)
+	for _, eventSize := range kgcptesting.BenchmarkEventSizes {
+		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
+			benchmarkWithReply(b, fakeIngressAddress, eventSize, makeFakeTargetWithReply)
+		})
+	}
 }
 
-func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string) {
-	sampleEvent := newSampleEvent()
-
-	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
+func benchmarkNoReply(b *testing.B, httpClient *http.Client, targetAddress string, eventSize int) {
+	reportertest.ResetDeliveryMetrics()
+	statsReporter, err := metrics.NewDeliveryReporter("pod", "container")
 	if err != nil {
 		b.Fatal(err)
 	}
-	deliverClient, err := ceclient.New(httpProtocol)
-	if err != nil {
-		b.Fatalf("failed to create requester cloudevents client: %v", err)
-	}
+
+	sampleEvent := kgcptesting.NewTestEvent(b, eventSize)
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
@@ -447,12 +480,15 @@ func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string
 	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
 		bm.UpsertTargets(target)
 	})
-	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(b, zaptest.Level(zap.InfoLevel)).Sugar())
+	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 	ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 	p := &Processor{
-		DeliverClient: deliverClient,
-		Targets:       testTargets,
+		DeliverClient:  httpClient,
+		Targets:        testTargets,
+		StatsReporter:  statsReporter,
+		RetryOnFailure: false,
 	}
 
 	b.ResetTimer()
@@ -465,20 +501,18 @@ func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string
 	})
 }
 
-func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*testing.B, *event.Event) (httpClient http.Client, targetAdress string)) {
-	sampleEvent := newSampleEvent()
+func benchmarkWithReply(b *testing.B, ingressAddress string, eventSize int, makeTarget func(*testing.B, *event.Event) (httpClient http.Client, targetAdress string)) {
+	reportertest.ResetDeliveryMetrics()
+	statsReporter, err := metrics.NewDeliveryReporter("pod", "container")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	sampleEvent := kgcptesting.NewTestEvent(b, eventSize)
 	sampleReply := sampleEvent.Clone()
 	sampleReply.SetID("reply")
 
 	httpClient, targetAddress := makeTarget(b, &sampleReply)
-	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
-	if err != nil {
-		b.Fatal(err)
-	}
-	deliverClient, err := ceclient.New(httpProtocol)
-	if err != nil {
-		b.Fatalf("failed to create requester cloudevents client: %v", err)
-	}
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
@@ -487,12 +521,14 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*te
 		bm.SetAddress(ingressAddress)
 		bm.UpsertTargets(target)
 	})
-	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(b, zaptest.Level(zap.InfoLevel)).Sugar())
+	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 	ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 	p := &Processor{
-		DeliverClient: deliverClient,
+		DeliverClient: &httpClient,
 		Targets:       testTargets,
+		StatsReporter: statsReporter,
 	}
 
 	b.ResetTimer()

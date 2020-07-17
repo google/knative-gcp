@@ -18,19 +18,26 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/event"
-	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
+)
+
+const (
+	testProjectID = "test-testProjectID"
+	testTopic     = "test-testTopic"
+	testSub       = "test-testSub"
 )
 
 func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pubsub.Client, func()) {
@@ -53,6 +60,120 @@ func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pub
 
 func TestHandler(t *testing.T) {
 	ctx := context.Background()
+	c, close := testPubsubClient(ctx, t, testProjectID)
+	defer close()
+
+	topic, err := c.CreateTopic(ctx, testTopic)
+	if err != nil {
+		t.Fatalf("failed to create topic: %v", err)
+	}
+	sub, err := c.CreateSubscription(ctx, testSub, pubsub.SubscriptionConfig{
+		Topic: topic,
+	})
+	if err != nil {
+		t.Fatalf("failed to create subscription: %v", err)
+	}
+
+	p, err := cepubsub.New(context.Background(),
+		cepubsub.WithClient(c),
+		cepubsub.WithProjectID(testProjectID),
+		cepubsub.WithTopicID(testTopic),
+	)
+	if err != nil {
+		t.Fatalf("failed to create cloudevents pubsub protocol: %v", err)
+	}
+
+	eventCh := make(chan *event.Event)
+	processor := &processors.FakeProcessor{PrevEventsCh: eventCh}
+	h := NewHandler(sub, processor, time.Second, RetryPolicy{})
+	h.Start(ctx, func(err error) {})
+	defer h.Stop()
+	if !h.IsAlive() {
+		t.Error("start handler didn't bring it alive")
+	}
+
+	testEvent := event.New()
+	testEvent.SetID("id")
+	testEvent.SetSource("source")
+	testEvent.SetSubject("subject")
+	testEvent.SetType("type")
+
+	t.Run("handle event success", func(t *testing.T) {
+		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
+			t.Fatalf("failed to seed event to pubsub: %v", err)
+		}
+		gotEvent := nextEventWithTimeout(eventCh)
+		if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
+			t.Errorf("processed event (-want,+got): %v", diff)
+		}
+	})
+
+	t.Run("retry event on processing failure", func(t *testing.T) {
+		unlock := processor.Lock()
+		processor.OneTimeErr = true
+		unlock()
+		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
+			t.Fatalf("failed to seed event to pubsub: %v", err)
+		}
+		// On failure, the handler should nack the pubsub message.
+		// And we should expect two deliveries.
+		for i := 0; i < 2; i++ {
+			gotEvent := nextEventWithTimeout(eventCh)
+			if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
+				t.Errorf("processed event (-want,+got): %v", diff)
+			}
+		}
+	})
+
+	t.Run("message is not an event", func(t *testing.T) {
+		res := topic.Publish(context.Background(), &pubsub.Message{ID: "testid"})
+		if _, err := res.Get(context.Background()); err != nil {
+			t.Fatalf("Failed to publish a msg to topic: %v", err)
+		}
+
+		gotEvent := nextEventWithTimeout(eventCh)
+		// The message should be Acked and should not reach the processor
+		if gotEvent != nil {
+			t.Errorf("processor should receive 0 events but got: %+v", gotEvent)
+		}
+	})
+
+	t.Run("timeout on event processing", func(t *testing.T) {
+		unlock := processor.Lock()
+		processor.BlockUntilCancel = true
+		unlock()
+		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
+			t.Fatalf("failed to seed event to pubsub: %v", err)
+		}
+		gotEvent := nextEventWithTimeout(eventCh)
+		if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
+			t.Errorf("processed event (-want,+got): %v", diff)
+		}
+		unlock = processor.Lock()
+		if !processor.WasCancelled {
+			t.Error("processor was not cancelled on timeout")
+		}
+		unlock()
+	})
+}
+
+type firstNErrProc struct {
+	processors.BaseProcessor
+	desiredErrCount, currErrCount int
+	successSignal                 chan struct{}
+}
+
+func (p *firstNErrProc) Process(_ context.Context, _ *event.Event) error {
+	if p.currErrCount < p.desiredErrCount {
+		p.currErrCount++
+		return errors.New("always error")
+	}
+	p.successSignal <- struct{}{}
+	return nil
+}
+
+func TestRetryBackoff(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
 	c, close := testPubsubClient(ctx, t, "test-project")
 	defer close()
 
@@ -76,17 +197,22 @@ func TestHandler(t *testing.T) {
 		t.Fatalf("failed to create cloudevents pubsub protocol: %v", err)
 	}
 
-	eventCh := make(chan *event.Event)
-	processor := &processors.FakeProcessor{PrevEventsCh: eventCh}
-	h := &Handler{
-		Subscription: sub,
-		Processor:    processor,
-		Timeout:      time.Second,
+	delays := []time.Duration{}
+	desiredErrCount := 8
+	successSignal := make(chan struct{})
+	processor := &firstNErrProc{
+		desiredErrCount: desiredErrCount,
+		successSignal:   successSignal,
+	}
+	h := NewHandler(sub, processor, time.Second, RetryPolicy{MinBackoff: time.Millisecond, MaxBackoff: 16 * time.Millisecond})
+	// Mock sleep func to collect nack backoffs.
+	h.delayNack = func(d time.Duration) {
+		delays = append(delays, d)
 	}
 	h.Start(ctx, func(err error) {})
 	defer h.Stop()
 	if !h.IsAlive() {
-		t.Error("start handler didn't bring it alive")
+		t.Fatal("start handler didn't bring it alive")
 	}
 
 	testEvent := event.New()
@@ -95,55 +221,36 @@ func TestHandler(t *testing.T) {
 	testEvent.SetSubject("subject")
 	testEvent.SetType("type")
 
-	t.Run("handle event success", func(t *testing.T) {
-		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
-			t.Errorf("failed to seed event to pubsub: %v", err)
-		}
-		gotEvent := nextEventWithTimeout(eventCh)
-		if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
-			t.Errorf("processed event (-want,+got): %v", diff)
-		}
-	})
+	if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
+		t.Fatalf("failed to seed event to pubsub: %v", err)
+	}
 
-	t.Run("retry event on processing failure", func(t *testing.T) {
-		unlock := processor.Lock()
-		processor.OneTimeErr = true
-		unlock()
-		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
-			t.Errorf("failed to seed event to pubsub: %v", err)
-		}
-		// On failure, the handler should nack the pubsub message.
-		// And we should expect two deliveries.
-		for i := 0; i < 2; i++ {
-			gotEvent := nextEventWithTimeout(eventCh)
-			if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
-				t.Errorf("processed event (-want,+got): %v", diff)
-			}
-		}
-	})
+	// Wait until all desired errors were returned.
+	// Then stop the handler by cancel the context.
+	<-successSignal
+	cancel()
 
-	t.Run("timeout on event processing", func(t *testing.T) {
-		unlock := processor.Lock()
-		processor.BlockUntilCancel = true
-		unlock()
-		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
-			t.Errorf("failed to seed event to pubsub: %v", err)
+	if len(delays) != desiredErrCount {
+		t.Errorf("retry count got=%d, want=%d", len(delays), desiredErrCount)
+	}
+	if delays[0] != time.Millisecond {
+		t.Errorf("initial nack delay got=%v, want=%v", delays[0], time.Millisecond)
+	}
+	// We expect exponential backoff until MaxBackoff
+	for i := 1; i < len(delays); i++ {
+		wantDelay := 2 * delays[i-1]
+		if wantDelay > 16*time.Millisecond {
+			wantDelay = 16 * time.Millisecond
 		}
-		gotEvent := nextEventWithTimeout(eventCh)
-		if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
-			t.Errorf("processed event (-want,+got): %v", diff)
+		if delays[i] != wantDelay {
+			t.Errorf("delays[%d] got=%v, want=%v", i, delays[i], wantDelay)
 		}
-		unlock = processor.Lock()
-		if !processor.WasCancelled {
-			t.Error("processor was not cancelled on timeout")
-		}
-		unlock()
-	})
+	}
 }
 
 func nextEventWithTimeout(eventCh <-chan *event.Event) *event.Event {
 	select {
-	case <-time.After(30 * time.Second):
+	case <-time.After(time.Second):
 		return nil
 	case got := <-eventCh:
 		return got

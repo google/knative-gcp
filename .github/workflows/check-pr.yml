@@ -1,0 +1,31 @@
+name: Check PR
+on: pull_request
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.3.1
+    - uses: actions/setup-go@v2.1.0
+      with:
+        go-version: 1.14.4
+    - name: gofmt
+      run: |
+        DIFFS=$(find -name '*.go' -type f \! -name '*.pb.go' -exec gofmt -s -l {} \+ -o \( -path './vendor' -o -path './third_party' \) -prune)
+        if [[ -n $DIFFS ]]; then
+          echo ::error::Diffs reported by gofmt
+          echo ::group::Files with diffs
+          echo $DIFFS
+          echo ::endgroup::
+          exit 1
+        fi
+    - name: goimports
+      run: |
+        DIFFS=$(find -name '*.go' \! -name wire_gen.go \! -name '*.pb.go' -exec go run golang.org/x/tools/cmd/goimports -l {} \+ -o \( -path ./vendor -o -path ./third_party \) -prune)
+        if [[ -n $DIFFS ]]; then
+          echo ::error::Diffs reported by goimports
+          echo ::group::Files with diffs
+          echo $DIFFS
+          echo ::endgroup::
+          exit 1
+        fi
+      

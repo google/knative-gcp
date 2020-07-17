@@ -44,7 +44,7 @@ func AwaitForAll(log *zap.SugaredLogger) error {
 			log.Infof("Wait for %s", w.name)
 			before := time.Now()
 			err := w.routine()
-			took := time.Now().Sub(before)
+			took := time.Since(before)
 			if err != nil {
 				log.Errorf("Error while waiting for %s: %v", w.name, err)
 			} else {
@@ -62,11 +62,12 @@ func AwaitForAll(log *zap.SugaredLogger) error {
 }
 
 // WaitForReadiness will wait until readiness endpoint reports OK
-func WaitForReadiness(port int) error {
-	return wait.Poll(25*time.Millisecond, 5*time.Minute, func() (done bool, err error) {
+func WaitForReadiness(port int, log *zap.SugaredLogger) error {
+	return wait.PollImmediate(10*time.Millisecond, 5*time.Minute, func() (done bool, err error) {
 		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", port))
 		if err != nil {
-			return false, err
+			log.Debugf("Error while connecting: %v", err)
+			return false, nil
 		}
 		defer func() {
 			_ = resp.Body.Close()

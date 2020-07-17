@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 )
 
@@ -70,16 +72,6 @@ func (s *PullSubscriptionStatus) MarkNoTransformer(reason, messageFormat string,
 	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionTransformerProvided, reason, messageFormat, messageA...)
 }
 
-// MarkDeployed sets the condition that the source has been deployed.
-func (s *PullSubscriptionStatus) MarkDeployed() {
-	pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionDeployed)
-}
-
-// MarkNotDeployed sets the condition that the source has not been deployed.
-func (s *PullSubscriptionStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{}) {
-	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionDeployed, reason, messageFormat, messageA...)
-}
-
 // MarkSubscribed sets the condition that the subscription has been created.
 func (s *PullSubscriptionStatus) MarkSubscribed(subscriptionID string) {
 	s.SubscriptionID = subscriptionID
@@ -89,4 +81,25 @@ func (s *PullSubscriptionStatus) MarkSubscribed(subscriptionID string) {
 // MarkNoSubscription sets the condition that the subscription does not exist.
 func (s *PullSubscriptionStatus) MarkNoSubscription(reason, messageFormat string, messageA ...interface{}) {
 	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionSubscribed, reason, messageFormat, messageA...)
+}
+
+// PropagateDeploymentAvailability uses the availability of the provided Deployment to determine if
+// PullSubscriptionConditionDeployed should be marked as true or false.
+func (s *PullSubscriptionStatus) PropagateDeploymentAvailability(d *appsv1.Deployment) {
+	deploymentAvailableFound := false
+	for _, cond := range d.Status.Conditions {
+		if cond.Type == appsv1.DeploymentAvailable {
+			deploymentAvailableFound = true
+			if cond.Status == corev1.ConditionTrue {
+				pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionDeployed)
+			} else if cond.Status == corev1.ConditionFalse {
+				pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionDeployed, cond.Reason, cond.Message)
+			} else if cond.Status == corev1.ConditionUnknown {
+				pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionDeployed, cond.Reason, cond.Message)
+			}
+		}
+	}
+	if !deploymentAvailableFound {
+		pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionDeployed, "DeploymentUnavailable", "Deployment %q is unavailable.", d.Name)
+	}
 }

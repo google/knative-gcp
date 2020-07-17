@@ -20,7 +20,8 @@ package events
 import "k8s.io/apimachinery/pkg/runtime/schema"
 
 const (
-	GroupName = "events.cloud.google.com"
+	GroupName       = "events.cloud.google.com"
+	CloudBuildTopic = "cloud-builds"
 )
 
 var (
@@ -43,5 +44,10 @@ var (
 	CloudStorageSourcesResource = schema.GroupResource{
 		Group:    GroupName,
 		Resource: "cloudstoragesources",
+	}
+	// CloudBuildSourcesResource represents a CloudBuildSource.
+	CloudBuildSourcesResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "cloudbuildsources",
 	}
 )

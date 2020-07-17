@@ -21,26 +21,32 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestMakeMinimumReceiveAdapter(t *testing.T) {
-	src := &v1alpha1.PullSubscription{
+	ps := &v1beta1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "source-name",
-			Namespace: "source-namespace",
+			Name:      "testname",
+			Namespace: "testnamespace",
+			Labels: map[string]string{
+				intevents.SourceLabelKey: "my-source-name",
+			},
 		},
-		Spec: v1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckv1alpha1.PubSubSpec{
+		Spec: v1beta1.PullSubscriptionSpec{
+			PubSubSpec: duckv1beta1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -49,13 +55,14 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 				},
 				Project: "eventing-name",
 			},
-			Topic: "topic",
+			Topic:       "topic",
+			AdapterType: "source-adapter-type",
 		},
 	}
 
 	got := MakeReceiveAdapter(context.Background(), &ReceiveAdapterArgs{
-		Image:  "test-image",
-		Source: src,
+		Image:            "test-image",
+		PullSubscription: ps,
 		Labels: map[string]string{
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
@@ -71,17 +78,17 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 	yes := true
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   "source-namespace",
-			Name:        "cre-pull-",
+			Namespace:   "testnamespace",
+			Name:        "cre-src-testname-",
 			Annotations: nil,
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "internal.events.cloud.google.com/v1alpha1",
+				APIVersion:         "internal.events.cloud.google.com/v1beta1",
 				Kind:               "PullSubscription",
-				Name:               "source-name",
+				Name:               "testname",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
@@ -105,6 +112,16 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: "test-image",
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("600Mi"),
+								corev1.ResourceCPU:    resource.MustParse("500m"),
+							},
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("50Mi"),
+								corev1.ResourceCPU:    resource.MustParse("400m"),
+							},
+						},
 						Env: []corev1.EnvVar{{
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
@@ -120,7 +137,8 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 						}, {
 							Name: "TRANSFORMER_URI",
 						}, {
-							Name: "ADAPTER_TYPE",
+							Name:  "ADAPTER_TYPE",
+							Value: "source-adapter-type",
 						}, {
 							Name:  "SEND_MODE",
 							Value: "binary",
@@ -137,10 +155,10 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 							Value: "TracingConfig-ABC123",
 						}, {
 							Name:  "NAME",
-							Value: "source-name",
+							Value: "testname",
 						}, {
 							Name:  "NAMESPACE",
-							Value: "source-namespace",
+							Value: "testnamespace",
 						}, {
 							Name:  "RESOURCE_GROUP",
 							Value: defaultResourceGroup,
@@ -152,7 +170,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 							Value: "/var/secrets/google/eventing-secret-key",
 						}, {
 							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
-							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: src.Spec.Secret},
+							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: ps.Spec.Secret},
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
@@ -179,16 +197,16 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 }
 
 func TestMakeFullReceiveAdapter(t *testing.T) {
-	src := &v1alpha1.PullSubscription{
+	ps := &v1beta1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "source-name",
-			Namespace: "source-namespace",
+			Name:      "testname",
+			Namespace: "testnamespace",
 			Annotations: map[string]string{
 				"metrics-resource-group": "test-resource-group",
 			},
 		},
-		Spec: v1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckv1alpha1.PubSubSpec{
+		Spec: v1beta1.PullSubscriptionSpec{
+			PubSubSpec: duckv1beta1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -205,13 +223,13 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 				},
 			},
 			Topic:       "topic",
-			AdapterType: "adapter-type",
+			AdapterType: string(converters.PubSubPull),
 		},
 	}
 
 	got := MakeReceiveAdapter(context.Background(), &ReceiveAdapterArgs{
-		Image:  "test-image",
-		Source: src,
+		Image:            "test-image",
+		PullSubscription: ps,
 		Labels: map[string]string{
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
@@ -228,17 +246,17 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 	yes := true
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   "source-namespace",
-			Name:        "cre-pull-",
-			Annotations: src.Annotations,
+			Namespace:   "testnamespace",
+			Name:        "cre-ps-testname-",
+			Annotations: ps.Annotations,
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "internal.events.cloud.google.com/v1alpha1",
+				APIVersion:         "internal.events.cloud.google.com/v1beta1",
 				Kind:               "PullSubscription",
-				Name:               "source-name",
+				Name:               "testname",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
@@ -262,6 +280,16 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: "test-image",
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("600Mi"),
+								corev1.ResourceCPU:    resource.MustParse("500m"),
+							},
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("50Mi"),
+								corev1.ResourceCPU:    resource.MustParse("400m"),
+							},
+						},
 						Env: []corev1.EnvVar{{
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
@@ -279,7 +307,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 							Value: "http://transformer-uri",
 						}, {
 							Name:  "ADAPTER_TYPE",
-							Value: "adapter-type",
+							Value: string(converters.PubSubPull),
 						}, {
 							Name:  "SEND_MODE",
 							Value: "binary",
@@ -297,10 +325,10 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 							Value: "TracingConfig-ABC123",
 						}, {
 							Name:  "NAME",
-							Value: "source-name",
+							Value: "testname",
 						}, {
 							Name:  "NAMESPACE",
-							Value: "source-namespace",
+							Value: "testnamespace",
 						}, {
 							Name:  "RESOURCE_GROUP",
 							Value: "test-resource-group",
@@ -312,7 +340,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 							Value: "/var/secrets/google/eventing-secret-key",
 						}, {
 							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
-							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: src.Spec.Secret},
+							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: ps.Spec.Secret},
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
@@ -341,27 +369,21 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 	}
 }
 
-func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
-	gServiceAccountName := "test@test.iam.gserviceaccount.com"
-	src := &v1alpha1.PullSubscription{
+func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
+	serviceAccountName := "test"
+	ps := &v1beta1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "source-name",
-			Namespace: "source-namespace",
+			Name:      "testname",
+			Namespace: "testnamespace",
 			Annotations: map[string]string{
-				"metrics-resource-group":           "test-resource-group",
-				duckv1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				"metrics-resource-group":   "test-resource-group",
+				duck.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			},
 		},
-		Spec: v1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckv1alpha1.PubSubSpec{
-				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: gServiceAccountName,
-				},
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "eventing-secret-name",
-					},
-					Key: "eventing-secret-key",
+		Spec: v1beta1.PullSubscriptionSpec{
+			PubSubSpec: duckv1beta1.PubSubSpec{
+				IdentitySpec: duckv1beta1.IdentitySpec{
+					ServiceAccountName: serviceAccountName,
 				},
 				Project: "eventing-name",
 				SourceSpec: duckv1.SourceSpec{
@@ -378,8 +400,8 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 	}
 
 	got := MakeReceiveAdapter(context.Background(), &ReceiveAdapterArgs{
-		Image:  "test-image",
-		Source: src,
+		Image:            "test-image",
+		PullSubscription: ps,
 		Labels: map[string]string{
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
@@ -396,17 +418,17 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 	yes := true
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   "source-namespace",
-			Name:        "cre-pull-",
-			Annotations: src.Annotations,
+			Namespace:   "testnamespace",
+			Name:        "cre-ps-testname-",
+			Annotations: ps.Annotations,
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "internal.events.cloud.google.com/v1alpha1",
+				APIVersion:         "internal.events.cloud.google.com/v1beta1",
 				Kind:               "PullSubscription",
-				Name:               "source-name",
+				Name:               "testname",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
@@ -427,10 +449,20 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "test-fake-cluster-name",
+					ServiceAccountName: "test",
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: "test-image",
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("600Mi"),
+								corev1.ResourceCPU:    resource.MustParse("500m"),
+							},
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("50Mi"),
+								corev1.ResourceCPU:    resource.MustParse("400m"),
+							},
+						},
 						Env: []corev1.EnvVar{{
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
@@ -448,7 +480,7 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 							Value: "http://transformer-uri",
 						}, {
 							Name:  "ADAPTER_TYPE",
-							Value: "adapter-type",
+							Value: string(converters.PubSubPull),
 						}, {
 							Name:  "SEND_MODE",
 							Value: "binary",
@@ -466,10 +498,10 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 							Value: "TracingConfig-ABC123",
 						}, {
 							Name:  "NAME",
-							Value: "source-name",
+							Value: "testname",
 						}, {
 							Name:  "NAMESPACE",
-							Value: "source-namespace",
+							Value: "testnamespace",
 						}, {
 							Name:  "RESOURCE_GROUP",
 							Value: "test-resource-group",

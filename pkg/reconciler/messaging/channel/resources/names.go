@@ -20,32 +20,35 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/pkg/kmeta"
 
-	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
+	"github.com/google/knative-gcp/pkg/utils/naming"
 )
 
 const (
 	subscriptionNamePrefix = "cre-sub-"
 )
 
-func GenerateTopicID(UID types.UID) string {
-	return fmt.Sprintf("cre-chan-%s", string(UID))
+// GenerateTopicID generates the name of the Pub/Sub topic, not our Topic resource.
+func GenerateTopicID(channel *v1beta1.Channel) string {
+	return naming.TruncatedPubsubResourceName("cre-chan", channel.Namespace, channel.Name, channel.UID)
 }
 
-func GeneratePublisherName(channel *v1alpha1.Channel) string {
+func GeneratePublisherName(channel *v1beta1.Channel) string {
 	if strings.HasPrefix(channel.Name, "cre-") {
 		return kmeta.ChildName(channel.Name, "-chan")
 	}
 	return kmeta.ChildName(fmt.Sprintf("cre-%s", channel.Name), "-chan")
 }
 
-func GenerateSubscriptionName(UID types.UID) string {
+// GeneratePullSubscriptionName generates the name of the PullSubscription resource using the subscriber's UID.
+func GeneratePullSubscriptionName(UID types.UID) string {
 	return fmt.Sprintf("%s%s", subscriptionNamePrefix, string(UID))
 }
 
-func ExtractUIDFromSubscriptionName(name string) string {
+// ExtractUIDFromPullSubscriptionName extracts the subscriber's UID from the PullSubscription name.
+func ExtractUIDFromPullSubscriptionName(name string) string {
 	return strings.TrimPrefix(name, subscriptionNamePrefix)
 }

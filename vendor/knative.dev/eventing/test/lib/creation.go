@@ -28,16 +28,19 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	configsv1alpha1 "knative.dev/eventing/pkg/apis/configs/v1alpha1"
-	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/reconciler"
+
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
-	flowsv1alpha1 "knative.dev/eventing/pkg/apis/flows/v1alpha1"
-	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	flowsv1 "knative.dev/eventing/pkg/apis/flows/v1"
+	flowsv1beta1 "knative.dev/eventing/pkg/apis/flows/v1beta1"
+	messagingv1 "knative.dev/eventing/pkg/apis/messaging/v1"
+	messagingv1beta1 "knative.dev/eventing/pkg/apis/messaging/v1beta1"
 	sourcesv1alpha1 "knative.dev/eventing/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing/pkg/utils"
 	"knative.dev/eventing/test/lib/duck"
 	"knative.dev/eventing/test/lib/resources"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // TODO(chizhg): break this file into multiple files when it grows too large.
@@ -68,9 +71,9 @@ func (c *Client) CreateChannelsOrFail(names []string, channelTypeMeta *metav1.Ty
 }
 
 // CreateChannelWithDefaultOrFail will create a default Channel Resource in Eventing or fail the test if there is an error.
-func (c *Client) CreateChannelWithDefaultOrFail(channel *messagingv1alpha1.Channel) {
-	c.T.Logf("Creating default channel %+v", channel)
-	channels := c.Eventing.MessagingV1alpha1().Channels(c.Namespace)
+func (c *Client) CreateChannelWithDefaultOrFail(channel *messagingv1beta1.Channel) {
+	c.T.Logf("Creating default v1beta1 channel %+v", channel)
+	channels := c.Eventing.MessagingV1beta1().Channels(c.Namespace)
 	_, err := channels.Create(channel)
 	if err != nil {
 		c.T.Fatalf("Failed to create channel %q: %v", channel.Name, err)
@@ -78,31 +81,23 @@ func (c *Client) CreateChannelWithDefaultOrFail(channel *messagingv1alpha1.Chann
 	c.Tracker.AddObj(channel)
 }
 
-// CreateSubscriptionOrFail will create a Subscription or fail the test if there is an error.
+// CreateChannelV1WithDefaultOrFail will create a default Channel Resource in Eventing or fail the test if there is an error.
+func (c *Client) CreateChannelV1WithDefaultOrFail(channel *messagingv1.Channel) {
+	c.T.Logf("Creating default v1 channel %+v", channel)
+	channels := c.Eventing.MessagingV1().Channels(c.Namespace)
+	_, err := channels.Create(channel)
+	if err != nil {
+		c.T.Fatalf("Failed to create channel %q: %v", channel.Name, err)
+	}
+	c.Tracker.AddObj(channel)
+}
+
+// CreateSubscriptionOrFail will create a v1beta1 Subscription or fail the test if there is an error.
 func (c *Client) CreateSubscriptionOrFail(
 	name, channelName string,
 	channelTypeMeta *metav1.TypeMeta,
-	options ...resources.SubscriptionOption,
-) *messagingv1alpha1.Subscription {
-	namespace := c.Namespace
-	subscription := resources.Subscription(name, channelName, channelTypeMeta, options...)
-	subscriptions := c.Eventing.MessagingV1alpha1().Subscriptions(namespace)
-	c.T.Logf("Creating subscription %s for channel %+v-%s", name, channelTypeMeta, channelName)
-	// update subscription with the new reference
-	subscription, err := subscriptions.Create(subscription)
-	if err != nil {
-		c.T.Fatalf("Failed to create subscription %q: %v", name, err)
-	}
-	c.Tracker.AddObj(subscription)
-	return subscription
-}
-
-// CreateSubscriptionOrFailV1Beta1 will create a Subscription or fail the test if there is an error.
-func (c *Client) CreateSubscriptionOrFailV1Beta1(
-	name, channelName string,
-	channelTypeMeta *metav1.TypeMeta,
 	options ...resources.SubscriptionOptionV1Beta1,
-) {
+) *messagingv1beta1.Subscription {
 	namespace := c.Namespace
 	subscription := resources.SubscriptionV1Beta1(name, channelName, channelTypeMeta, options...)
 	subscriptions := c.Eventing.MessagingV1beta1().Subscriptions(namespace)
@@ -113,14 +108,34 @@ func (c *Client) CreateSubscriptionOrFailV1Beta1(
 		c.T.Fatalf("Failed to create subscription %q: %v", name, err)
 	}
 	c.Tracker.AddObj(subscription)
+	return subscription
 }
 
-// CreateSubscriptionsOrFail will create a list of Subscriptions with the same configuration except the name.
+// CreateSubscriptionV1OrFail will create a v1 Subscription or fail the test if there is an error.
+func (c *Client) CreateSubscriptionV1OrFail(
+	name, channelName string,
+	channelTypeMeta *metav1.TypeMeta,
+	options ...resources.SubscriptionOptionV1,
+) *messagingv1.Subscription {
+	namespace := c.Namespace
+	subscription := resources.SubscriptionV1(name, channelName, channelTypeMeta, options...)
+	subscriptions := c.Eventing.MessagingV1().Subscriptions(namespace)
+	c.T.Logf("Creating v1 subscription %s for channel %+v-%s", name, channelTypeMeta, channelName)
+	// update subscription with the new reference
+	subscription, err := subscriptions.Create(subscription)
+	if err != nil {
+		c.T.Fatalf("Failed to create subscription %q: %v", name, err)
+	}
+	c.Tracker.AddObj(subscription)
+	return subscription
+}
+
+// CreateSubscriptionsOrFail will create a list of v1beta1 Subscriptions with the same configuration except the name.
 func (c *Client) CreateSubscriptionsOrFail(
 	names []string,
 	channelName string,
 	channelTypeMeta *metav1.TypeMeta,
-	options ...resources.SubscriptionOption,
+	options ...resources.SubscriptionOptionV1Beta1,
 ) {
 	c.T.Logf("Creating subscriptions %v for channel %+v-%s", names, channelTypeMeta, channelName)
 	for _, name := range names {
@@ -128,43 +143,28 @@ func (c *Client) CreateSubscriptionsOrFail(
 	}
 }
 
-func (c *Client) CreateConfigMapPropagationOrFail(name string) *configsv1alpha1.ConfigMapPropagation {
-	c.T.Logf("Creating configMapPropagation %s", name)
-	namespace := c.Namespace
-	configMapPropagation := resources.ConfigMapPropagation(name, namespace)
-	configMapPropagations := c.Eventing.ConfigsV1alpha1().ConfigMapPropagations(namespace)
-	configMapPropagation, err := configMapPropagations.Create(configMapPropagation)
-	if err != nil {
-		c.T.Fatalf("Failed to create configMapPropagation %q: %v", name, err)
+// CreateSubscriptionsV1OrFail will create a list of v1 Subscriptions with the same configuration except the name.
+func (c *Client) CreateSubscriptionsV1OrFail(
+	names []string,
+	channelName string,
+	channelTypeMeta *metav1.TypeMeta,
+	options ...resources.SubscriptionOptionV1,
+) {
+	c.T.Logf("Creating subscriptions %v for channel %+v-%s", names, channelTypeMeta, channelName)
+	for _, name := range names {
+		c.CreateSubscriptionV1OrFail(name, channelName, channelTypeMeta, options...)
 	}
-	c.Tracker.AddObj(configMapPropagation)
-	return configMapPropagation
 }
 
 // CreateConfigMapOrFail will create a configmap or fail the test if there is an error.
 func (c *Client) CreateConfigMapOrFail(name, namespace string, data map[string]string) *corev1.ConfigMap {
 	c.T.Logf("Creating configmap %s", name)
-	configMap, err := c.Kube.Kube.CoreV1().ConfigMaps(namespace).Create(resources.ConfigMap(name, data))
+	configMap, err := c.Kube.Kube.CoreV1().ConfigMaps(namespace).Create(resources.ConfigMap(name, namespace, data))
 	if err != nil {
 		c.T.Fatalf("Failed to create configmap %s: %v", name, err)
 	}
 	c.Tracker.Add(coreAPIGroup, coreAPIVersion, "configmaps", namespace, name)
 	return configMap
-}
-
-// CreateBrokerOrFail will create a Broker or fail the test if there is an error.
-func (c *Client) CreateBrokerOrFail(name string, options ...resources.BrokerOption) *v1alpha1.Broker {
-	namespace := c.Namespace
-	broker := resources.Broker(name, options...)
-	brokers := c.Eventing.EventingV1alpha1().Brokers(namespace)
-	c.T.Logf("Creating broker %s", name)
-	// update broker with the new reference
-	broker, err := brokers.Create(broker)
-	if err != nil {
-		c.T.Fatalf("Failed to create broker %q: %v", name, err)
-	}
-	c.Tracker.AddObj(broker)
-	return broker
 }
 
 func (c *Client) CreateBrokerConfigMapOrFail(name string, channel *metav1.TypeMeta) *duckv1.KReference {
@@ -192,42 +192,19 @@ func (c *Client) CreateBrokerConfigMapOrFail(name string, channel *metav1.TypeMe
 	}
 }
 
-// CreateBrokerOrFail will create a Broker or fail the test if there is an error.
+// CreateBrokerV1Beta1OrFail will create a v1beta1 Broker or fail the test if there is an error.
 func (c *Client) CreateBrokerV1Beta1OrFail(name string, options ...resources.BrokerV1Beta1Option) *v1beta1.Broker {
 	namespace := c.Namespace
 	broker := resources.BrokerV1Beta1(name, options...)
 	brokers := c.Eventing.EventingV1beta1().Brokers(namespace)
-	c.T.Logf("Creating broker %s", name)
+	c.T.Logf("Creating v1beta1 broker %s", name)
 	// update broker with the new reference
 	broker, err := brokers.Create(broker)
 	if err != nil {
-		c.T.Fatalf("Failed to create broker %q: %v", name, err)
+		c.T.Fatalf("Failed to create v1beta1 broker %q: %v", name, err)
 	}
 	c.Tracker.AddObj(broker)
 	return broker
-}
-
-// CreateBrokersOrFail will create a list of Brokers.
-func (c *Client) CreateBrokersOrFail(names []string, channelTypeMeta *metav1.TypeMeta) {
-	c.T.Logf("Creating brokers %v", names)
-	for _, name := range names {
-		c.CreateBrokerOrFail(name, resources.WithChannelTemplateForBroker(channelTypeMeta))
-	}
-}
-
-// CreateTriggerOrFail will create a Trigger or fail the test if there is an error.
-func (c *Client) CreateTriggerOrFail(name string, options ...resources.TriggerOption) *v1alpha1.Trigger {
-	namespace := c.Namespace
-	trigger := resources.Trigger(name, options...)
-	triggers := c.Eventing.EventingV1alpha1().Triggers(namespace)
-	c.T.Logf("Creating trigger %s", name)
-	// update trigger with the new reference
-	trigger, err := triggers.Create(trigger)
-	if err != nil {
-		c.T.Fatalf("Failed to create trigger %q: %v", name, err)
-	}
-	c.Tracker.AddObj(trigger)
-	return trigger
 }
 
 // CreateTriggerOrFailV1Beta1 will create a v1beta1 Trigger or fail the test if there is an error.
@@ -245,11 +222,53 @@ func (c *Client) CreateTriggerOrFailV1Beta1(name string, options ...resources.Tr
 	return trigger
 }
 
+// CreateBrokerV1OrFail will create a v1 Broker or fail the test if there is an error.
+func (c *Client) CreateBrokerV1OrFail(name string, options ...resources.BrokerV1Option) *eventingv1.Broker {
+	namespace := c.Namespace
+	broker := resources.BrokerV1(name, options...)
+	brokers := c.Eventing.EventingV1().Brokers(namespace)
+	c.T.Logf("Creating v1 broker %s", name)
+	// update broker with the new reference
+	broker, err := brokers.Create(broker)
+	if err != nil {
+		c.T.Fatalf("Failed to create v1 broker %q: %v", name, err)
+	}
+	c.Tracker.AddObj(broker)
+	return broker
+}
+
+// CreateTriggerOrFailV1 will create a v1 Trigger or fail the test if there is an error.
+func (c *Client) CreateTriggerV1OrFail(name string, options ...resources.TriggerOptionV1) *eventingv1.Trigger {
+	namespace := c.Namespace
+	trigger := resources.TriggerV1(name, options...)
+	triggers := c.Eventing.EventingV1().Triggers(namespace)
+	c.T.Logf("Creating v1 trigger %s", name)
+	// update trigger with the new reference
+	trigger, err := triggers.Create(trigger)
+	if err != nil {
+		c.T.Fatalf("Failed to create v1 trigger %q: %v", name, err)
+	}
+	c.Tracker.AddObj(trigger)
+	return trigger
+}
+
 // CreateFlowsSequenceOrFail will create a Sequence (in flows.knative.dev api group) or
 // fail the test if there is an error.
-func (c *Client) CreateFlowsSequenceOrFail(sequence *flowsv1alpha1.Sequence) {
+func (c *Client) CreateFlowsSequenceOrFail(sequence *flowsv1beta1.Sequence) {
 	c.T.Logf("Creating flows sequence %+v", sequence)
-	sequences := c.Eventing.FlowsV1alpha1().Sequences(c.Namespace)
+	sequences := c.Eventing.FlowsV1beta1().Sequences(c.Namespace)
+	_, err := sequences.Create(sequence)
+	if err != nil {
+		c.T.Fatalf("Failed to create flows sequence %q: %v", sequence.Name, err)
+	}
+	c.Tracker.AddObj(sequence)
+}
+
+// CreateFlowsSequenceOrFail will create a Sequence (in flows.knative.dev api group) or
+// fail the test if there is an error.
+func (c *Client) CreateFlowsSequenceV1OrFail(sequence *flowsv1.Sequence) {
+	c.T.Logf("Creating flows sequence %+v", sequence)
+	sequences := c.Eventing.FlowsV1().Sequences(c.Namespace)
 	_, err := sequences.Create(sequence)
 	if err != nil {
 		c.T.Fatalf("Failed to create flows sequence %q: %v", sequence.Name, err)
@@ -259,9 +278,21 @@ func (c *Client) CreateFlowsSequenceOrFail(sequence *flowsv1alpha1.Sequence) {
 
 // CreateFlowsParallelOrFail will create a Parallel (in flows.knative.dev api group) or
 // fail the test if there is an error.
-func (c *Client) CreateFlowsParallelOrFail(parallel *flowsv1alpha1.Parallel) {
+func (c *Client) CreateFlowsParallelOrFail(parallel *flowsv1beta1.Parallel) {
 	c.T.Logf("Creating flows parallel %+v", parallel)
-	parallels := c.Eventing.FlowsV1alpha1().Parallels(c.Namespace)
+	parallels := c.Eventing.FlowsV1beta1().Parallels(c.Namespace)
+	_, err := parallels.Create(parallel)
+	if err != nil {
+		c.T.Fatalf("Failed to create flows parallel %q: %v", parallel.Name, err)
+	}
+	c.Tracker.AddObj(parallel)
+}
+
+// CreateFlowsParallelOrFail will create a Parallel (in flows.knative.dev api group) or
+// fail the test if there is an error.
+func (c *Client) CreateFlowsParallelV1OrFail(parallel *flowsv1.Parallel) {
+	c.T.Logf("Creating flows parallel %+v", parallel)
+	parallels := c.Eventing.FlowsV1().Parallels(c.Namespace)
 	_, err := parallels.Create(parallel)
 	if err != nil {
 		c.T.Fatalf("Failed to create flows parallel %q: %v", parallel.Name, err)
@@ -373,12 +404,24 @@ func (c *Client) CreatePodOrFail(pod *corev1.Pod, options ...func(*corev1.Pod, *
 			c.T.Fatalf("Failed to configure pod %q: %v", pod.Name, err)
 		}
 	}
-	c.T.Logf("Creating pod %+v", pod)
-	if _, err := c.Kube.CreatePod(pod); err != nil {
+
+	c.applyTracingEnv(&pod.Spec)
+
+	err := reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
+		c.T.Logf("Creating pod %+v", pod)
+		_, e := c.Kube.CreatePod(pod)
+		return e
+	})
+	if err != nil {
 		c.T.Fatalf("Failed to create pod %q: %v", pod.Name, err)
 	}
 	c.Tracker.Add(coreAPIGroup, coreAPIVersion, "pods", namespace, pod.Name)
 	c.podsCreated = append(c.podsCreated, pod.Name)
+}
+
+// GetServiceHost returns the service hostname for the specified podName
+func (c *Client) GetServiceHost(podName string) string {
+	return fmt.Sprintf("%s.%s.svc", podName, c.Namespace)
 }
 
 // CreateDeploymentOrFail will create a Deployment or fail the test if there is an error.
@@ -392,6 +435,9 @@ func (c *Client) CreateDeploymentOrFail(deploy *appsv1.Deployment, options ...fu
 			c.T.Fatalf("Failed to configure deploy %q: %v", deploy.Name, err)
 		}
 	}
+
+	c.applyTracingEnv(&deploy.Spec.Template.Spec)
+
 	c.T.Logf("Creating deployment %+v", deploy)
 	if _, err := c.Kube.Kube.AppsV1().Deployments(deploy.Namespace).Create(deploy); err != nil {
 		c.T.Fatalf("Failed to create deploy %q: %v", deploy.Name, err)
@@ -410,6 +456,9 @@ func (c *Client) CreateCronJobOrFail(cronjob *batchv1beta1.CronJob, options ...f
 			c.T.Fatalf("Failed to configure cronjob %q: %v", cronjob.Name, err)
 		}
 	}
+
+	c.applyTracingEnv(&cronjob.Spec.JobTemplate.Spec.Template.Spec)
+
 	c.T.Logf("Creating cronjob %+v", cronjob)
 	if _, err := c.Kube.Kube.BatchV1beta1().CronJobs(cronjob.Namespace).Create(cronjob); err != nil {
 		c.T.Fatalf("Failed to create cronjob %q: %v", cronjob.Name, err)
@@ -521,4 +570,10 @@ func (c *Client) CreateRBACResourcesForBrokers() {
 		fmt.Sprintf("%s-%s", saFilterName, crFilterName),
 		c.Namespace,
 	)
+}
+
+func (c *Client) applyTracingEnv(pod *corev1.PodSpec) {
+	for i := 0; i < len(pod.Containers); i++ {
+		pod.Containers[i].Env = append(pod.Containers[i].Env, c.tracingEnv)
+	}
 }

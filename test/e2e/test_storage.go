@@ -19,7 +19,6 @@ package e2e
 import (
 	"context"
 	"encoding/json"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"net/http"
 	"os"
 	"testing"
@@ -28,13 +27,77 @@ import (
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
+
+// SmokeCloudStorageSourceTestImpl tests if a CloudStorageSource object can be created to ready state and delete a CloudStorageSource resource and its underlying resources..
+func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	ctx := context.Background()
+	project := os.Getenv(lib.ProwProjectKey)
+
+	bucketName := lib.MakeBucket(ctx, t, project)
+	defer lib.DeleteBucket(ctx, t, bucketName)
+	storageName := helpers.AppendRandomString(bucketName + "-storage")
+	svcName := helpers.AppendRandomString(bucketName + "-event-display")
+
+	//make the storage source
+	lib.MakeStorageOrDie(client, lib.StorageConfig{
+		SinkGVK:            lib.ServiceGVK,
+		BucketName:         bucketName,
+		StorageName:        storageName,
+		SinkName:           svcName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
+
+	createdStorage := client.GetStorageOrFail(storageName)
+
+	topicID := createdStorage.Status.TopicID
+	subID := createdStorage.Status.SubscriptionID
+	notificationID := createdStorage.Status.NotificationID
+
+	createdNotificationExists := lib.NotificationExists(t, bucketName, notificationID)
+	if !createdNotificationExists {
+		t.Errorf("Expected notification%q to exist", topicID)
+	}
+
+	createdTopicExists := lib.TopicExists(t, topicID)
+	if !createdTopicExists {
+		t.Errorf("Expected topic%q to exist", topicID)
+	}
+
+	createdSubExists := lib.SubscriptionExists(t, subID)
+	if !createdSubExists {
+		t.Errorf("Expected subscription %q to exist", subID)
+	}
+	client.DeleteStorageOrFail(storageName)
+	//Wait for 40 seconds for topic, subscription and notification to get deleted in gcp
+	time.Sleep(resources.WaitDeletionTime)
+
+	deletedNotificationExists := lib.NotificationExists(t, bucketName, notificationID)
+	if deletedNotificationExists {
+		t.Errorf("Expected notification%q to get deleted", notificationID)
+	}
+
+	deletedTopicExists := lib.TopicExists(t, topicID)
+	if deletedTopicExists {
+		t.Errorf("Expected topic %q to get deleted", topicID)
+	}
+
+	deletedSubExists := lib.SubscriptionExists(t, subID)
+	if deletedSubExists {
+		t.Errorf("Expected subscription %q to get deleted", subID)
+	}
+}
 
 func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
 	t.Helper()
@@ -42,23 +105,31 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 	project := os.Getenv(lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
+	defer lib.DeleteBucket(ctx, t, bucketName)
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	if assertMetrics {
-		client.SetupStackDriverMetrics(t)
+		client.SetupStackDriverMetricsInNamespace(t)
 	}
 	defer lib.TearDown(client)
 
 	fileName := helpers.AppendRandomString("test-file-for-storage")
-	source := v1beta1.CloudStorageSourceEventSource(bucketName)
+	source := schemasv1.CloudStorageEventSource(bucketName)
+	subject := schemasv1.CloudStorageEventSubject(fileName)
 
 	// Create a storage_target Job to receive the events.
-	lib.MakeStorageJobOrDie(client, source, fileName, targetName, v1beta1.CloudStorageSourceFinalize)
+	lib.MakeStorageJobOrDie(client, source, subject, targetName, schemasv1.CloudStorageObjectFinalizedEventType)
 
 	// Create the Storage source.
-	lib.MakeStorageOrDie(client, lib.ServiceGVK, bucketName, storageName, targetName, authConfig.PubsubServiceAccount)
+	lib.MakeStorageOrDie(client, lib.StorageConfig{
+		SinkGVK:            lib.ServiceGVK,
+		BucketName:         bucketName,
+		StorageName:        storageName,
+		SinkName:           targetName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
 
 	// Add a random name file in the bucket
 	lib.AddRandomFile(ctx, t, bucketName, fileName, project)
@@ -103,8 +174,8 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 			"metric.type":                 lib.EventCountMetricType,
 			"resource.type":               lib.GlobalMetricResourceType,
 			"metric.label.resource_group": lib.StorageResourceGroup,
-			"metric.label.event_type":     v1alpha1.CloudStorageSourceFinalize,
-			"metric.label.event_source":   v1alpha1.CloudStorageSourceEventSource(bucketName),
+			"metric.label.event_type":     schemasv1.CloudStorageObjectFinalizedEventType,
+			"metric.label.event_source":   schemasv1.CloudStorageEventSource(bucketName),
 			"metric.label.namespace_name": client.Namespace,
 			"metric.label.name":           storageName,
 			// We exit the target image before sending a response, thus check for 500.

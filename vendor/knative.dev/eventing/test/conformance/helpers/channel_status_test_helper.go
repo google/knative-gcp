@@ -21,20 +21,20 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"knative.dev/eventing/test/lib"
+	testlib "knative.dev/eventing/test/lib"
 )
 
 // ChannelStatusTestHelperWithChannelTestRunner runs the Channel status tests for all Channels in
-// the ChannelTestRunner.
+// the ComponentsTestRunner.
 func ChannelStatusTestHelperWithChannelTestRunner(
 	t *testing.T,
-	channelTestRunner lib.ChannelTestRunner,
-	options ...lib.SetupClientOption,
+	channelTestRunner testlib.ComponentsTestRunner,
+	options ...testlib.SetupClientOption,
 ) {
 
-	channelTestRunner.RunTests(t, lib.FeatureBasic, func(st *testing.T, channel metav1.TypeMeta) {
-		client := lib.Setup(st, true, options...)
-		defer lib.TearDown(client)
+	channelTestRunner.RunTests(t, testlib.FeatureBasic, func(st *testing.T, channel metav1.TypeMeta) {
+		client := testlib.Setup(st, true, options...)
+		defer testlib.TearDown(client)
 
 		t.Run("Channel has required status fields", func(t *testing.T) {
 			channelHasRequiredStatus(st, client, channel, options...)
@@ -42,7 +42,7 @@ func ChannelStatusTestHelperWithChannelTestRunner(
 	})
 }
 
-func channelHasRequiredStatus(st *testing.T, client *lib.Client, channel metav1.TypeMeta, options ...lib.SetupClientOption) {
+func channelHasRequiredStatus(st *testing.T, client *testlib.Client, channel metav1.TypeMeta, options ...testlib.SetupClientOption) {
 	st.Logf("Running channel status conformance test with channel %q", channel)
 
 	channelName := "channel-req-status"
@@ -76,7 +76,7 @@ func channelHasRequiredStatus(st *testing.T, client *lib.Client, channel metav1.
 		if channelable.Status.AddressStatus.Address.URL.IsEmpty() {
 			st.Fatalf("No hostname found for %q", channel)
 		}
-	} else if dtsv == "v1beta1" {
+	} else if dtsv == "v1beta1" || dtsv == "v1" {
 		channelable, err := getChannelAsV1Beta1Channelable(channelName, client, channel)
 		if err != nil {
 			st.Fatalf("Unable to get channel %q to v1beta1 duck type: %q", channel, err)

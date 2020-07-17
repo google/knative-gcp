@@ -18,6 +18,7 @@ package testing
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
+	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -25,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
+	hpav2beta2listers "k8s.io/client-go/listers/autoscaling/v2beta2"
 	batchv1listers "k8s.io/client-go/listers/batch/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
@@ -42,16 +44,16 @@ import (
 	fakeservingclientset "knative.dev/serving/pkg/client/clientset/versioned/fake"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	EventsV1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	EventsV1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	MessagingV1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	Messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
-	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
-	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
+	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1beta1"
 	intlisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
-	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
+	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1beta1"
+	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1beta1"
 )
 
 var sinkAddToScheme = func(scheme *runtime.Scheme) error {
@@ -115,15 +117,15 @@ func (l *Listers) GetServingObjects() []runtime.Object {
 }
 
 func (l *Listers) GetPullSubscriptionLister() inteventslisters.PullSubscriptionLister {
-	return inteventslisters.NewPullSubscriptionLister(l.indexerFor(&inteventsv1alpha1.PullSubscription{}))
+	return inteventslisters.NewPullSubscriptionLister(l.indexerFor(&inteventsv1beta1.PullSubscription{}))
 }
 
 func (l *Listers) GetTopicLister() inteventslisters.TopicLister {
-	return inteventslisters.NewTopicLister(l.indexerFor(&inteventsv1alpha1.Topic{}))
+	return inteventslisters.NewTopicLister(l.indexerFor(&inteventsv1beta1.Topic{}))
 }
 
 func (l *Listers) GetChannelLister() messaginglisters.ChannelLister {
-	return messaginglisters.NewChannelLister(l.indexerFor(&MessagingV1alpha1.Channel{}))
+	return messaginglisters.NewChannelLister(l.indexerFor(&Messagingv1beta1.Channel{}))
 }
 
 func (l *Listers) GetJobLister() batchv1listers.JobLister {
@@ -131,23 +133,23 @@ func (l *Listers) GetJobLister() batchv1listers.JobLister {
 }
 
 func (l *Listers) GetCloudAuditLogsSourceLister() eventslisters.CloudAuditLogsSourceLister {
-	return eventslisters.NewCloudAuditLogsSourceLister(l.indexerFor(&EventsV1alpha1.CloudAuditLogsSource{}))
+	return eventslisters.NewCloudAuditLogsSourceLister(l.indexerFor(&EventsV1beta1.CloudAuditLogsSource{}))
 }
 
 func (l *Listers) GetCloudStorageSourceLister() eventslisters.CloudStorageSourceLister {
-	return eventslisters.NewCloudStorageSourceLister(l.indexerFor(&EventsV1alpha1.CloudStorageSource{}))
+	return eventslisters.NewCloudStorageSourceLister(l.indexerFor(&EventsV1beta1.CloudStorageSource{}))
 }
 
 func (l *Listers) GetCloudSchedulerSourceLister() eventslisters.CloudSchedulerSourceLister {
-	return eventslisters.NewCloudSchedulerSourceLister(l.indexerFor(&EventsV1alpha1.CloudSchedulerSource{}))
+	return eventslisters.NewCloudSchedulerSourceLister(l.indexerFor(&EventsV1beta1.CloudSchedulerSource{}))
 }
 
 func (l *Listers) GetCloudPubSubSourceLister() eventslisters.CloudPubSubSourceLister {
-	return eventslisters.NewCloudPubSubSourceLister(l.indexerFor(&EventsV1alpha1.CloudPubSubSource{}))
+	return eventslisters.NewCloudPubSubSourceLister(l.indexerFor(&EventsV1beta1.CloudPubSubSource{}))
 }
 
 func (l *Listers) GetCloudBuildSourceLister() eventslisters.CloudBuildSourceLister {
-	return eventslisters.NewCloudBuildSourceLister(l.indexerFor(&EventsV1alpha1.CloudBuildSource{}))
+	return eventslisters.NewCloudBuildSourceLister(l.indexerFor(&EventsV1beta1.CloudBuildSource{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
@@ -204,4 +206,8 @@ func (l *Listers) GetTriggerLister() brokerlisters.TriggerLister {
 
 func (l *Listers) GetBrokerCellLister() intlisters.BrokerCellLister {
 	return intlisters.NewBrokerCellLister(l.indexerFor(&intv1alpha1.BrokerCell{}))
+}
+
+func (l *Listers) GetHPALister() hpav2beta2listers.HorizontalPodAutoscalerLister {
+	return hpav2beta2listers.NewHorizontalPodAutoscalerLister(l.indexerFor(&hpav2beta2.HorizontalPodAutoscaler{}))
 }

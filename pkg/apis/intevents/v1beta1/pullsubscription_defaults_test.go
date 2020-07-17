@@ -17,22 +17,23 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 )
 
 func TestPullSubscriptionDefaults(t *testing.T) {
 
-	defaultRetentionDuration := defaultRetentionDuration
-	defaultAckDeadline := defaultAckDeadline
+	defaultRetentionDuration := intevents.DefaultRetentionDuration
+	defaultAckDeadline := intevents.DefaultAckDeadline
 
 	tests := []struct {
 		name  string
@@ -83,7 +84,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1beta1.PubSubSpec{
-					Secret: duckv1beta1.DefaultGoogleCloudSecretSelector(),
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -100,7 +101,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1beta1.PubSubSpec{
-					Secret: duckv1beta1.DefaultGoogleCloudSecretSelector(),
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -116,7 +117,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1beta1.PubSubSpec{
-					Secret: duckv1beta1.DefaultGoogleCloudSecretSelector(),
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -132,7 +133,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1beta1.PubSubSpec{
-					Secret: duckv1beta1.DefaultGoogleCloudSecretSelector(),
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -141,7 +142,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.start
-			got.SetDefaults(context.Background())
+			got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("failed to get expected (-want, +got) = %v", diff)
@@ -170,7 +171,7 @@ func TestPullSubscriptionDefaults_NoChange(t *testing.T) {
 	}
 
 	got := want.DeepCopy()
-	got.SetDefaults(context.Background())
+	got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

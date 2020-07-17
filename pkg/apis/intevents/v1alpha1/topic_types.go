@@ -31,7 +31,6 @@ import (
 )
 
 // +genclient
-// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Topic is a resource representing a Topic backed by Google Cloud Pub/Sub.
@@ -80,6 +79,14 @@ type TopicSpec struct {
 	//PropagationPolicy defines how Topic controls the Cloud Pub/Sub topic for
 	// lifecycle changes. Defaults to TopicPolicyCreateNoDelete if empty.
 	PropagationPolicy PropagationPolicyType `json:"propagationPolicy,omitempty"`
+
+	// EnablePublisher controls the creation of an HTTP publisher endpoint. If set to true, then
+	// a publisher will be created and this Topic will be Addressable (have status.address). If set
+	// to false, then no publisher will be created and this custom object represents the creation
+	// and deletion of a GCP Pub/Sub Topic only.
+	// Defaults to true.
+	// +optional
+	EnablePublisher *bool `json:"publisher,omitempty"`
 }
 
 // PropagationPolicyType defines enum type for TopicPolicy
@@ -103,9 +110,7 @@ const (
 )
 
 var topicCondSet = apis.NewLivingConditionSet(
-	TopicConditionAddressable,
 	TopicConditionTopicExists,
-	TopicConditionPublisherReady,
 )
 
 const (

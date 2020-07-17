@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/apis/eventing"
-	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
+	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -51,7 +51,6 @@ func NewTrigger(name, namespace, broker string, to ...TriggerOption) *brokerv1be
 	for _, opt := range to {
 		opt(t)
 	}
-	t.SetDefaults(context.Background())
 	return t
 }
 
@@ -96,14 +95,14 @@ func WithInitTriggerConditions(t *brokerv1beta1.Trigger) {
 }
 
 func WithTriggerGeneration(gen int64) TriggerOption {
-	return func(s *brokerv1beta1.Trigger) {
-		s.Generation = gen
+	return func(t *brokerv1beta1.Trigger) {
+		t.Generation = gen
 	}
 }
 
 func WithTriggerStatusObservedGeneration(gen int64) TriggerOption {
-	return func(s *brokerv1beta1.Trigger) {
-		s.Status.ObservedGeneration = gen
+	return func(t *brokerv1beta1.Trigger) {
+		t.Status.ObservedGeneration = gen
 	}
 }
 
@@ -139,7 +138,7 @@ func WithInjectionAnnotation(injectionAnnotation string) TriggerOption {
 		if t.Annotations == nil {
 			t.Annotations = make(map[string]string)
 		}
-		t.Annotations[v1alpha1.InjectionAnnotation] = injectionAnnotation
+		t.Annotations[v1beta1.InjectionAnnotation] = injectionAnnotation
 	}
 }
 
@@ -148,7 +147,7 @@ func WithDependencyAnnotation(dependencyAnnotation string) TriggerOption {
 		if t.Annotations == nil {
 			t.Annotations = make(map[string]string)
 		}
-		t.Annotations[v1alpha1.DependencyAnnotation] = dependencyAnnotation
+		t.Annotations[v1beta1.DependencyAnnotation] = dependencyAnnotation
 	}
 }
 
@@ -207,4 +206,8 @@ func WithTriggerFinalizers(finalizers ...string) TriggerOption {
 	return func(t *brokerv1beta1.Trigger) {
 		t.Finalizers = finalizers
 	}
+}
+
+func WithTriggerSetDefaults(t *brokerv1beta1.Trigger) {
+	t.SetDefaults(context.Background())
 }

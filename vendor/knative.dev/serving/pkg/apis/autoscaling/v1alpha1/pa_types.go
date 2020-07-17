@@ -19,10 +19,10 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	net "knative.dev/networking/pkg/apis/networking"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
-	net "knative.dev/serving/pkg/apis/networking"
 )
 
 // +genclient
@@ -112,6 +112,9 @@ const (
 	// PodAutoscalerConditionReady is set when the revision is starting to materialize
 	// runtime resources, and becomes true when those resources are ready.
 	PodAutoscalerConditionReady = apis.ConditionReady
+	// PodAutoscalerConditionScaleTargetInitialized is set when the PodAutoscaler's
+	// ScaleTargetRef was ready to serve traffic once.
+	PodAutoscalerConditionScaleTargetInitialized apis.ConditionType = "ScaleTargetInitialized"
 	// PodAutoscalerConditionActive is set when the PodAutoscaler's ScaleTargetRef is receiving traffic.
 	PodAutoscalerConditionActive apis.ConditionType = "Active"
 )
@@ -143,11 +146,6 @@ type PodAutoscalerList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []PodAutoscaler `json:"items"`
-}
-
-// GetTypeMeta retrieves the ObjectMeta of the PodAutoscaler. Implements the KRShaped interface.
-func (t *PodAutoscaler) GetTypeMeta() *metav1.TypeMeta {
-	return &t.TypeMeta
 }
 
 // GetStatus retrieves the status of the PodAutoscaler. Implements the KRShaped interface.

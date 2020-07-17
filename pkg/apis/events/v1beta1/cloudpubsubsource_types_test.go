@@ -20,25 +20,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
-
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 )
-
-func TestCloudPubSubSourceEventSource(t *testing.T) {
-	want := "//pubsub.googleapis.com/projects/PROJECT/topics/TOPIC"
-
-	got := CloudPubSubSourceEventSource("PROJECT", "TOPIC")
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
-}
 
 func TestCloudPubSubSourceGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
@@ -76,7 +66,7 @@ func TestGetRetentionDuration(t *testing.T) {
 }
 
 func TestGetAckDeadline_default(t *testing.T) {
-	want := defaultAckDeadline
+	want := intevents.DefaultAckDeadline
 	s := &CloudPubSubSourceSpec{}
 	got := s.GetAckDeadline()
 
@@ -86,7 +76,7 @@ func TestGetAckDeadline_default(t *testing.T) {
 }
 
 func TestGetRetentionDuration_default(t *testing.T) {
-	want := defaultRetentionDuration
+	want := intevents.DefaultRetentionDuration
 	s := &CloudPubSubSourceSpec{}
 	got := s.GetRetentionDuration()
 
@@ -144,5 +134,22 @@ func TestCloudPubSubSourceConditionSet(t *testing.T) {
 	})
 	if diff := cmp.Diff(want, got, sortConditionTypes, compareConditionTypes); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestCloudPubSubSource_GetConditionSet(t *testing.T) {
+	s := &CloudPubSubSource{}
+
+	if got, want := s.GetConditionSet().GetTopLevelConditionType(), apis.ConditionReady; got != want {
+		t.Errorf("GetTopLevelCondition=%v, want=%v", got, want)
+	}
+}
+
+func TestCloudPubSubSource_GetStatus(t *testing.T) {
+	s := &CloudPubSubSource{
+		Status: CloudPubSubSourceStatus{},
+	}
+	if got, want := s.GetStatus(), &s.Status.Status; got != want {
+		t.Errorf("GetStatus=%v, want=%v", got, want)
 	}
 }

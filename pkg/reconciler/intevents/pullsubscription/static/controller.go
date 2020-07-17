@@ -19,9 +19,12 @@ package static
 import (
 	"context"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
+	"knative.dev/pkg/injection"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -32,7 +35,7 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
 
-	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/pullsubscription"
+	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/pullsubscription"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
@@ -60,22 +63,20 @@ type envConfig struct {
 	ReceiveAdapter string `envconfig:"PUBSUB_RA_IMAGE" required:"true"`
 }
 
-// NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
-func NewController(
-	ctx context.Context,
-	cmw configmap.Watcher,
-) *controller.Impl {
-	return newControllerWithIAMPolicyManager(
-		ctx,
-		cmw,
-		iam.DefaultIAMPolicyManager())
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a static CloudBuildSource controller.
+func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+	}
 }
 
-func newControllerWithIAMPolicyManager(
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	deploymentInformer := deploymentinformer.Get(ctx)
 	pullSubscriptionInformer := pullsubscriptioninformers.Get(ctx)
@@ -95,7 +96,7 @@ func newControllerWithIAMPolicyManager(
 	r := &Reconciler{
 		Base: &psreconciler.Base{
 			PubSubBase:             pubsubBase,
-			Identity:               identity.NewIdentity(ctx, ipm),
+			Identity:               identity.NewIdentity(ctx, ipm, gcpas),
 			DeploymentLister:       deploymentInformer.Lister(),
 			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
 			ReceiveAdapterImage:    env.ReceiveAdapter,
@@ -112,7 +113,7 @@ func newControllerWithIAMPolicyManager(
 	// Whenever we introduce a new way of scaling, this code will have to be updated to not just exclude Keda, but the others.
 	// Might be useful to use pkgreconciler.ChainFilterFuncs and move them somewhere else.
 	// TODO revisit once we introduce new scaling strategies.
-	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duckv1alpha1.AutoscalingClassAnnotation, duckv1alpha1.KEDA, false)
+	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duck.AutoscalingClassAnnotation, duck.KEDA, false)
 	notKedaScaler := pkgreconciler.Not(onlyKedaScaler)
 
 	pullSubscriptionHandler := cache.FilteringResourceEventHandler{
@@ -127,7 +128,7 @@ func newControllerWithIAMPolicyManager(
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Pullsubscription")),
+		FilterFunc: controller.FilterControllerGK(v1beta1.Kind("PullSubscription")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

@@ -17,33 +17,40 @@ limitations under the License.
 package lib
 
 import (
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
-	v1 "k8s.io/api/core/v1"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	v1 "k8s.io/api/core/v1"
+
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgmetrics "knative.dev/pkg/metrics"
 )
 
-func MakePubSubOrDie(client *Client,
-	sinkGVK metav1.GroupVersionKind,
-	psName, sinkName, topicName, pubsubServiceAccount string,
-	so ...kngcptesting.CloudPubSubSourceOption,
-) {
-	client.T.Helper()
-	so = append(so, kngcptesting.WithCloudPubSubSourceSink(sinkGVK, sinkName))
-	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(topicName))
-	so = append(so, kngcptesting.WithCloudPubSubSourceGCPServiceAccount(pubsubServiceAccount))
-	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace, so...)
-	client.CreatePubSubOrFail(eventsPubsub)
+type PubSubConfig struct {
+	SinkGVK            metav1.GroupVersionKind
+	PubSubName         string
+	SinkName           string
+	TopicName          string
+	ServiceAccountName string
+	Options            []kngcptesting.CloudPubSubSourceOption
+}
 
-	client.Core.WaitForResourceReadyOrFail(psName, CloudPubSubSourceTypeMeta)
+func MakePubSubOrDie(client *Client, config PubSubConfig) {
+	client.T.Helper()
+	so := config.Options
+	so = append(so, kngcptesting.WithCloudPubSubSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(config.TopicName))
+	so = append(so, kngcptesting.WithCloudPubSubSourceServiceAccount(config.ServiceAccountName))
+	eventsPubSub := kngcptesting.NewCloudPubSubSource(config.PubSubName, client.Namespace, so...)
+	client.CreatePubSubOrFail(eventsPubSub)
+
+	client.Core.WaitForResourceReadyOrFail(config.PubSubName, CloudPubSubSourceTypeMeta)
 }
 
 func MakePubSubTargetJobOrDie(client *Client, source, targetName, eventType string) {
@@ -75,8 +82,8 @@ func AssertMetrics(t *testing.T, client *Client, topicName, psName string) {
 		"metric.type":                 EventCountMetricType,
 		"resource.type":               GlobalMetricResourceType,
 		"metric.label.resource_group": PubsubResourceGroup,
-		"metric.label.event_type":     v1alpha1.CloudPubSubSourcePublish,
-		"metric.label.event_source":   v1alpha1.CloudPubSubSourceEventSource(projectID, topicName),
+		"metric.label.event_type":     schemasv1.CloudPubSubMessagePublishedEventType,
+		"metric.label.event_source":   schemasv1.CloudPubSubEventSource(projectID, topicName),
 		"metric.label.namespace_name": client.Namespace,
 		"metric.label.name":           psName,
 		// We exit the target image before sending a response, thus check for 500.

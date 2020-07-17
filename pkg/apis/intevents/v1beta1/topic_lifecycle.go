@@ -54,6 +54,10 @@ func (ts *TopicStatus) SetAddress(url *apis.URL) {
 	} else {
 		ts.Address.URL = nil
 		topicCondSet.Manage(ts).MarkFalse(TopicConditionAddressable, "emptyUrl", "url is the empty string")
+		// The TopicConditionAddressable is not included in the ready set as we don't want to create Publishers for Sources.
+		// We therefore need to set the ConditionReady to false here.
+		topicCondSet.Manage(ts).MarkFalse(apis.ConditionReady, "emptyUrl", "url is the empty string")
+
 	}
 }
 
@@ -68,6 +72,7 @@ func (ts *TopicStatus) PropagatePublisherStatus(ss *v1.ServiceStatus) {
 	case sc.Status == corev1.ConditionUnknown:
 		ts.MarkPublisherUnknown(sc.Reason, sc.Message)
 	case sc.Status == corev1.ConditionTrue:
+		ts.SetAddress(ss.Address.URL)
 		ts.MarkPublisherDeployed()
 	case sc.Status == corev1.ConditionFalse:
 		ts.MarkPublisherNotDeployed(sc.Reason, sc.Message)
@@ -84,17 +89,26 @@ func (ts *TopicStatus) MarkPublisherDeployed() {
 // MarkPublisherUnknown sets the condition that the status of publisher is Unknown.
 func (ts *TopicStatus) MarkPublisherUnknown(reason, messageFormat string, messageA ...interface{}) {
 	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherReady, reason, messageFormat, messageA...)
+	// The TopicConditionPublisherReady is not included in the ready set as we don't want to create Publishers for Sources.
+	// We therefore need to set the ConditionReady to unknown here.
+	topicCondSet.Manage(ts).MarkUnknown(apis.ConditionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPublisherNotDeployed sets the condition that the publisher has not been deployed.
 func (ts *TopicStatus) MarkPublisherNotDeployed(reason, messageFormat string, messageA ...interface{}) {
 	topicCondSet.Manage(ts).MarkFalse(TopicConditionPublisherReady, reason, messageFormat, messageA...)
+	// The TopicConditionPublisherReady is not included in the ready set as we don't want to create Publishers for Sources.
+	// We therefore need to set the ConditionReady to false here.
+	topicCondSet.Manage(ts).MarkFalse(apis.ConditionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPublisherNotConfigured changes the PublisherReady condition to be unknown to reflect
 // that the Publisher does not yet have a Status.
 func (ts *TopicStatus) MarkPublisherNotConfigured() {
 	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherReady, "PublisherNotConfigured", "Publisher has not yet been reconciled")
+	// The TopicConditionPublisherReady is not included in the ready set as we don't want to create Publishers for Sources.
+	// We therefore need to set the ConditionReady to unknown here.
+	topicCondSet.Manage(ts).MarkUnknown(apis.ConditionReady, "PublisherNotConfigured", "Publisher has not yet been reconciled")
 }
 
 // MarkTopicReady sets the condition that the topic has been created.

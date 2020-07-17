@@ -41,15 +41,6 @@ func TestGetGroupVersionKind(t *testing.T) {
 	}
 }
 
-func TestCloudStorageSourceEventSource(t *testing.T) {
-	want := "//storage.googleapis.com/buckets/bucket"
-	got := CloudStorageSourceEventSource("bucket")
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
-}
-
 func TestCloudStorageSourceSourceConditionSet(t *testing.T) {
 	want := []apis.Condition{{
 		Type: NotificationReady,
@@ -81,13 +72,13 @@ func TestCloudStorageSourceIdentitySpec(t *testing.T) {
 		Spec: CloudStorageSourceSpec{
 			PubSubSpec: v1alpha1.PubSubSpec{
 				IdentitySpec: v1alpha1.IdentitySpec{
-					GoogleServiceAccount: "test",
+					ServiceAccountName: "test",
 				},
 			},
 		},
 	}
 	want := "test"
-	got := s.IdentitySpec().GoogleServiceAccount
+	got := s.IdentitySpec().ServiceAccountName
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

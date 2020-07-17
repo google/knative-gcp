@@ -11,7 +11,7 @@ Channel.
 1. [Install Knative-GCP](./install-knative-gcp.md). Remember to install
    [Knative Eventing](https://knative.dev/docs/eventing/).
 
-1. [Create a Pub/Sub enabled Service Account](./pubsub-service-account.md).
+1. [Create a Service Account for the Data Plane](./dataplane-service-account.md).
 
 ## Deployment
 
@@ -30,7 +30,7 @@ Channel.
         [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
         update `serviceAccount` with the Pub/Sub enabled service account you
         created in
-        [Create a Pub/Sub enabled Service Account](./pubsub-service-account.md).
+        [Create a Service Account for the Data Plane](./dataplane-service-account.md).
 
     1.  If you are using standard Kubernetes secrets, but want to use a
         non-default one, update `secret` with your own secret.
@@ -41,7 +41,7 @@ Channel.
 
 1.  Patch the configmap in the `knative-eventing` namespace to use the Pub/Sub
     `Channel` as the
-    [default channel](https://knative.dev/docs/eventing/channel-based-broker/)
+    [default channel](https://knative.dev/docs/eventing/channels/default-channels/)
     for Brokers with
     [patch-config-br-defaults-with-pubsub.yaml](./patch-config-br-defaults-with-pubsub.yaml).
 

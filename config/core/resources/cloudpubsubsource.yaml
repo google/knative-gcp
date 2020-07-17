@@ -27,7 +27,7 @@ metadata:
   annotations:
     registry.knative.dev/eventTypes: |
       [
-        { "type": "com.google.cloud.pubsub.topic.publish", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
+        { "type": "google.cloud.pubsub.topic.v1.messagePublished", "schema": "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/pubsub/v1/data.proto", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
       ]
   name: cloudpubsubsources.events.cloud.google.com
 spec:
@@ -63,10 +63,10 @@ spec:
   versions:
     - name: v1alpha1
       served: true
-      storage: true
+      storage: false
     - name: v1beta1
       served: true
-      storage: false
+      storage: true
   validation:
     openAPIV3Schema:
       type: object
@@ -114,12 +114,6 @@ spec:
                     Extensions specify what attribute are added or overridden on the outbound event. Each
                     `Extensions` key-value pair are set on the event as an attribute extension independently.
                   x-kubernetes-preserve-unknown-fields: true
-            googleServiceAccount:
-              type: string
-              description: >
-                GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
-                account must be a valid Google service account (see
-                https://cloud.google.com/iam/docs/service-accounts).
             serviceAccountName:
               type: string
               description: >

@@ -21,15 +21,13 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"runtime"
 	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 
-	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/test/performance/infra/common"
 	pb "knative.dev/eventing/test/performance/infra/event_state"
 )
@@ -149,7 +147,7 @@ func (r *Receiver) processEvents() {
 }
 
 func (r *Receiver) startCloudEventsReceiver(ctx context.Context) error {
-	cli, err := kncloudevents.NewDefaultClient()
+	cli, err := cloudevents.NewDefaultClient()
 	if err != nil {
 		return fmt.Errorf("failed to create CloudEvents client: %v", err)
 	}
@@ -159,7 +157,7 @@ func (r *Receiver) startCloudEventsReceiver(ctx context.Context) error {
 }
 
 // processReceiveEvent processes the event received by the CloudEvents receiver.
-func (r *Receiver) processReceiveEvent(event cloudevents.Event, resp *cloudevents.EventResponse) {
+func (r *Receiver) processReceiveEvent(event cloudevents.Event) {
 	t := r.typeExtractor(event)
 	switch t {
 	case common.MeasureEventType:
@@ -173,7 +171,6 @@ func (r *Receiver) processReceiveEvent(event cloudevents.Event, resp *cloudevent
 			r.endCh <- struct{}{}
 		})
 	}
-	resp.Status = http.StatusAccepted
 }
 
 // waitForPortAvailable waits until the given TCP port is available.

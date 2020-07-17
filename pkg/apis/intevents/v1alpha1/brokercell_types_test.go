@@ -19,6 +19,8 @@ package v1alpha1
 import (
 	"testing"
 
+	"knative.dev/pkg/apis"
+
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -43,5 +45,22 @@ func TestBrokerCell_GetUntypedSpec(t *testing.T) {
 	s := bc.GetUntypedSpec()
 	if _, ok := s.(BrokerCellSpec); !ok {
 		t.Errorf("untyped spec was not a BrokerSpec")
+	}
+}
+
+func TestBrokerCell_GetConditionSet(t *testing.T) {
+	bc := &BrokerCell{}
+
+	if got, want := bc.GetConditionSet().GetTopLevelConditionType(), apis.ConditionReady; got != want {
+		t.Errorf("GetTopLevelCondition=%v, want=%v", got, want)
+	}
+}
+
+func TestBrokerCell_GetStatus(t *testing.T) {
+	bc := &BrokerCell{
+		Status: BrokerCellStatus{},
+	}
+	if got, want := bc.GetStatus(), &bc.Status.Status; got != want {
+		t.Errorf("GetStatus=%v, want=%v", got, want)
 	}
 }

@@ -23,17 +23,21 @@ import (
 	"cloud.google.com/go/pubsub"
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool"
+	"github.com/google/knative-gcp/pkg/broker/handler"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
 
 	"go.uber.org/zap"
 )
 
 const (
-	component = "broker-fanout"
+	component        = "broker-fanout"
+	metricNamespace  = "trigger"
+	poolResyncPeriod = 15 * time.Second
 )
 
 type envConfig struct {
@@ -43,6 +47,11 @@ type envConfig struct {
 	HandlerConcurrency     int    `envconfig:"HANDLER_CONCURRENCY"`
 	MaxConcurrencyPerEvent int    `envconfig:"MAX_CONCURRENCY_PER_EVENT"`
 
+	// MaxStaleDuration is the max duration of the handler pool without being synced.
+	// With the internal pool resync period being 15s, it requires at least 4
+	// continuous sync failures (or no sync at all) to be stale.
+	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"1m"`
+
 	// Max to 10m.
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
 }
@@ -51,9 +60,13 @@ func main() {
 	appcredentials.MustExistOrUnsetEnv()
 
 	var env envConfig
-	ctx, res := mainhelper.Init(component, mainhelper.WithEnv(&env))
+	ctx, res := mainhelper.Init(component, mainhelper.WithMetricNamespace(metricNamespace), mainhelper.WithEnv(&env))
 	defer res.Cleanup()
 	logger := res.Logger
+
+	if env.MaxStaleDuration > 0 && env.MaxStaleDuration < poolResyncPeriod {
+		logger.Fatalf("MAX_STALE_DURATION must be greater than pool resync period %v", poolResyncPeriod)
+	}
 
 	// Give the signal channel some buffer so that reconciling handlers won't
 	// block the targets config update?
@@ -69,17 +82,19 @@ func main() {
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
 	syncPool, err := InitializeSyncPool(
 		ctx,
-		pool.ProjectID(projectID),
+		clients.ProjectID(projectID),
+		metrics.PodName(env.PodName),
+		metrics.ContainerName(component),
 		[]volume.Option{
 			volume.WithPath(env.TargetsConfigPath),
 			volume.WithNotifyChan(targetsUpdateCh),
 		},
-		buildPoolOptions(env)...,
+		buildHandlerOptions(env)...,
 	)
 	if err != nil {
 		logger.Fatal("Failed to create fanout sync pool", zap.Error(err))
 	}
-	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal); err != nil {
+	if _, err := handler.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, handler.DefaultHealthCheckPort); err != nil {
 		logger.Fatalw("Failed to start fanout sync pool", zap.Error(err))
 	}
 
@@ -94,7 +109,7 @@ func poolSyncSignal(ctx context.Context, targetsUpdateCh chan struct{}) chan str
 	// Give it some buffer so that multiple signal could queue up
 	// but not blocking the signaler?
 	ch := make(chan struct{}, 10)
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(poolResyncPeriod)
 	go func() {
 		for {
 			select {
@@ -110,21 +125,21 @@ func poolSyncSignal(ctx context.Context, targetsUpdateCh chan struct{}) chan str
 	return ch
 }
 
-func buildPoolOptions(env envConfig) []pool.Option {
+func buildHandlerOptions(env envConfig) []handler.Option {
 	rs := pubsub.DefaultReceiveSettings
-	var opts []pool.Option
+	var opts []handler.Option
 	if env.HandlerConcurrency > 0 {
 		// Let the pubsub subscription and handler have the same concurrency?
-		opts = append(opts, pool.WithHandlerConcurrency(env.HandlerConcurrency))
+		opts = append(opts, handler.WithHandlerConcurrency(env.HandlerConcurrency))
 		rs.NumGoroutines = env.HandlerConcurrency
 	}
 	if env.MaxConcurrencyPerEvent > 0 {
-		opts = append(opts, pool.WithMaxConcurrentPerEvent(env.MaxConcurrencyPerEvent))
+		opts = append(opts, handler.WithMaxConcurrentPerEvent(env.MaxConcurrencyPerEvent))
 	}
 	if env.TimeoutPerEvent > 0 {
-		opts = append(opts, pool.WithTimeoutPerEvent(env.TimeoutPerEvent))
+		opts = append(opts, handler.WithTimeoutPerEvent(env.TimeoutPerEvent))
 	}
-	opts = append(opts, pool.WithPubsubReceiveSettings(rs))
+	opts = append(opts, handler.WithPubsubReceiveSettings(rs))
 	// The default CeClient is good?
 	return opts
 }

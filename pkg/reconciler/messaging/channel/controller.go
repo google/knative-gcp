@@ -19,15 +19,18 @@ package channel
 import (
 	"context"
 
+	"knative.dev/pkg/injection"
+
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
-	pullsubscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
-	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/topic"
-	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1alpha1/channel"
-	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
+	pullsubscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
+	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
+	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1beta1/channel"
+	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1beta1/channel"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -43,22 +46,20 @@ const (
 	controllerAgentName = "cloud-run-events-channel-controller"
 )
 
-// NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
-func NewController(
-	ctx context.Context,
-	cmw configmap.Watcher,
-) *controller.Impl {
-	return newControllerWithIAMPolicyManager(
-		ctx,
-		cmw,
-		iam.DefaultIAMPolicyManager())
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a Channel controller.
+func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+	}
 }
 
-func newControllerWithIAMPolicyManager(
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	channelInformer := channelinformer.Get(ctx)
 
@@ -68,7 +69,7 @@ func newControllerWithIAMPolicyManager(
 
 	r := &Reconciler{
 		Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
-		Identity:      identity.NewIdentity(ctx, ipm),
+		Identity:      identity.NewIdentity(ctx, ipm, gcpas),
 		channelLister: channelInformer.Lister(),
 		topicLister:   topicInformer.Lister(),
 	}
@@ -77,18 +78,20 @@ func newControllerWithIAMPolicyManager(
 	r.Logger.Info("Setting up event handlers")
 	channelInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
+	channelGK := v1beta1.Kind("Channel")
+
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Channel")),
+		FilterFunc: controller.FilterControllerGK(channelGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullSubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Channel")),
+		FilterFunc: controller.FilterControllerGK(channelGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Channel")),
+		FilterFunc: controller.FilterControllerGK(channelGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

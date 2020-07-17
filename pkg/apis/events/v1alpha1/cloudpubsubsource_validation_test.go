@@ -20,12 +20,13 @@ import (
 	"context"
 	"testing"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
@@ -39,6 +40,26 @@ var (
 					Name: "secret-name",
 				},
 				Key: "secret-key",
+			},
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			Project: "my-eventing-project",
+		},
+		Topic: "pubsub-topic",
+	}
+
+	pubSubSourceSpecWithKSA = CloudPubSubSourceSpec{
+		PubSubSpec: duckv1alpha1.PubSubSpec{
+			IdentitySpec: duckv1alpha1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
 			},
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
@@ -182,7 +203,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 				obj := pubSubSourceSpec.DeepCopy()
 				obj.Secret = &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "name",
+						Name: gcpauthtesthelper.Secret.Name,
 					},
 				}
 				return *obj
@@ -208,7 +229,12 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
 				obj.ServiceAccountName = validServiceAccountName
-				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
+				obj.Secret = &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "google-cloud-key",
+					},
+					Key: "key.json",
+				}
 				return *obj
 			}(),
 			error: true,
@@ -238,10 +264,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 		},
 		"ClusterName annotation changed": {
 			origAnnotation: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
 			},
 			updatedAnnotation: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
 			},
 			allowed: false,
 		},
@@ -302,24 +328,19 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed": {
-			orig: &pubSubSourceSpec,
+		"ServiceAccountName changed": {
+			orig: &pubSubSourceSpecWithKSA,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
-						GoogleServiceAccount: "new-service-account",
-					},
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: pubSubSourceSpec.Secret.Name,
-						},
-						Key: pubSubSourceSpec.Secret.Key,
+						ServiceAccountName: "new-service-account",
 					},
 					SourceSpec: duckv1.SourceSpec{
-						Sink: pubSubSourceSpec.Sink,
+						Sink: pubSubSourceSpecWithKSA.Sink,
 					},
+					Project: pubSubSourceSpecWithKSA.Project,
 				},
-				Topic: pubSubSourceSpec.Topic,
+				Topic: pubSubSourceSpecWithKSA.Topic,
 			},
 			allowed: false,
 		},
@@ -451,7 +472,7 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 			updated: pubSubSourceSpec,
 			allowed: true,
 		},
-		"not spec": {
+		"no spec": {
 			orig:    []string{"wrong"},
 			updated: pubSubSourceSpec,
 			allowed: true,

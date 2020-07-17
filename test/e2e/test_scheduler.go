@@ -19,32 +19,72 @@ package e2e
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"knative.dev/pkg/test/helpers"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
-// SmokeCloudSchedulerSourceSetup tests if a CloudSchedulerSource object can be created and be made ready.
-func SmokeCloudSchedulerSourceSetup(t *testing.T, authConfig lib.AuthConfig) {
+// SmokeCloudSchedulerSourceTestImpl tests if a CloudSchedulerSource object can be created to ready state and delete a CloudSchedulerSource resource and its underlying resources..
+func SmokeCloudSchedulerSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	sName := "scheduler-test"
+	// Create an Addressable to receive scheduler events
+	data := helpers.AppendRandomString("smoke-scheduler-source")
+	// Create the target and scheduler
+	schedulerName := helpers.AppendRandomString("scheduler")
+	svcName := "event-display"
+	lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
+		SinkGVK:            lib.ServiceGVK,
+		SchedulerName:      schedulerName,
+		Data:               data,
+		SinkName:           svcName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
 
-	scheduler := kngcptesting.NewCloudSchedulerSource(sName, client.Namespace,
-		kngcptesting.WithCloudSchedulerSourceLocation("us-central1"),
-		kngcptesting.WithCloudSchedulerSourceData("my test data"),
-		kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"),
-		kngcptesting.WithCloudSchedulerSourceSink(lib.ServiceGVK, "event-display"),
-		kngcptesting.WithCloudSchedulerSourceGCPServiceAccount(authConfig.PubsubServiceAccount),
-	)
+	createdScheduler := client.GetSchedulerOrFail(schedulerName)
 
-	client.CreateSchedulerOrFail(scheduler)
-	client.Core.WaitForResourceReadyOrFail(sName, lib.CloudSchedulerSourceTypeMeta)
+	topicID := createdScheduler.Status.TopicID
+	subID := createdScheduler.Status.SubscriptionID
+	jobName := createdScheduler.Status.JobName
+
+	createdJobExists := lib.SchedulerJobExists(t, jobName)
+	if !createdJobExists {
+		t.Errorf("Expected job%q to exist", jobName)
+	}
+
+	createdTopicExists := lib.TopicExists(t, topicID)
+	if !createdTopicExists {
+		t.Errorf("Expected topic%q to exist", topicID)
+	}
+
+	createdSubExists := lib.SubscriptionExists(t, subID)
+	if !createdSubExists {
+		t.Errorf("Expected subscription %q to exist", subID)
+	}
+	client.DeleteSchedulerOrFail(schedulerName)
+	//Wait for 40 seconds for topic, subscription and job to get deleted in gcp
+	time.Sleep(resources.WaitDeletionTime)
+
+	deletedJobExists := lib.SchedulerJobExists(t, jobName)
+	if deletedJobExists {
+		t.Errorf("Expected job%q to get deleted", jobName)
+	}
+
+	deletedTopicExists := lib.TopicExists(t, topicID)
+	if deletedTopicExists {
+		t.Errorf("Expected topic %q to get deleted", topicID)
+	}
+
+	deletedSubExists := lib.SubscriptionExists(t, subID)
+	if deletedSubExists {
+		t.Errorf("Expected subscription %q to get deleted", subID)
+	}
 }
 
 // CloudSchedulerSourceWithTargetTestImpl injects a scheduler event and checks if it is in the
@@ -59,8 +99,14 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 	// Create the target and scheduler
 	schedulerName := helpers.AppendRandomString("scheduler")
 	targetName := helpers.AppendRandomString(schedulerName + "-target")
-	lib.MakeSchedulerJobOrDie(client, data, targetName, v1beta1.CloudSchedulerSourceExecute)
-	lib.MakeSchedulerOrDie(client, lib.ServiceGVK, schedulerName, data, targetName, authConfig.PubsubServiceAccount)
+	lib.MakeSchedulerJobOrDie(client, data, targetName, schemasv1.CloudSchedulerJobExecutedEventType)
+	lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
+		SinkGVK:            lib.ServiceGVK,
+		SchedulerName:      schedulerName,
+		Data:               data,
+		SinkName:           targetName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	})
 
 	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
 	if err != nil {

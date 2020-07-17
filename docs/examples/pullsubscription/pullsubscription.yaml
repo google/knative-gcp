@@ -16,7 +16,7 @@
 #   TOPIC_NAME: Replace with the Cloud PubSub Topic name.
 #   MY_PROJECT: Replace with the Google Cloud Project's ID.
 
-apiVersion: pubsub.cloud.google.com/v1alpha1
+apiVersion: internal.events.cloud.google.com/v1beta1
 kind: PullSubscription
 metadata:
   name: TOPIC_NAME-source
@@ -30,8 +30,8 @@ spec:
 
 #    # If running in GKE, we will ask the metadata server, change this if required.
 #  project: MY_PROJECT
-#    # If running with workload identity enabled, update googleServiceAccount.
-#  googleServiceAccount: service-account-id@project-id.iam.gserviceaccount.com
+#    # If running with workload identity enabled, update serviceAccountName.
+#  serviceAccountName: kubernetes-service-account-name
 #    # If running with secret, here is the default secret name and key, change this if required.
 #  secret:
 #    name: google-cloud-key

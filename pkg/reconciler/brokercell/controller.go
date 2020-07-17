@@ -23,16 +23,25 @@ import (
 
 	"go.uber.org/zap"
 
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
+	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
+	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
+	hpainformer "github.com/google/knative-gcp/pkg/client/injection/kube/informers/autoscaling/v2beta2/horizontalpodautoscaler"
+	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/logging"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	configmapinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
+	podinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/pod"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-
-	"github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
-	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
-	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
 const (
@@ -48,13 +57,19 @@ func NewController(
 ) *controller.Impl {
 	logger := logging.FromContext(ctx)
 
-	brokercellInformer := brokercell.Get(ctx)
-	deploymentLister := deploymentinformer.Get(ctx).Lister()
-	svcLister := serviceinformer.Get(ctx).Lister()
-	epLister := endpointsinformer.Get(ctx).Lister()
+	ls := listers{
+		brokerLister:     brokerinformer.Get(ctx).Lister(),
+		hpaLister:        hpainformer.Get(ctx).Lister(),
+		triggerLister:    triggerinformer.Get(ctx).Lister(),
+		configMapLister:  configmapinformer.Get(ctx).Lister(),
+		serviceLister:    serviceinformer.Get(ctx).Lister(),
+		endpointsLister:  endpointsinformer.Get(ctx).Lister(),
+		deploymentLister: deploymentinformer.Get(ctx).Lister(),
+		podLister:        podinformer.Get(ctx).Lister(),
+	}
 
 	base := reconciler.NewBase(ctx, controllerAgentName, cmw)
-	r, err := NewReconciler(base, svcLister, epLister, deploymentLister)
+	r, err := NewReconciler(base, ls)
 	if err != nil {
 		logger.Fatal("Failed to create BrokerCell reconciler", zap.Error(err))
 	}
@@ -62,9 +77,51 @@ func NewController(
 
 	logger.Info("Setting up event handlers.")
 
-	brokercellInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
+	brokercellinformer.Get(ctx).Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
-	// TODO: add additional informer event handlers here.
+	// Watch brokers and triggers to invoke configmap update immediately.
+	brokerinformer.Get(ctx).Informer().AddEventHandler(controller.HandleAll(
+		func(obj interface{}) {
+			if b, ok := obj.(*brokerv1beta1.Broker); ok {
+				// TODO(#866) Select the brokercell that's associated with the given broker.
+				impl.EnqueueKey(types.NamespacedName{Namespace: b.Namespace, Name: brokerresources.DefaultBrokerCellName})
+			}
+		},
+	))
+	triggerinformer.Get(ctx).Informer().AddEventHandler(controller.HandleAll(
+		func(obj interface{}) {
+			if t, ok := obj.(*brokerv1beta1.Trigger); ok {
+				b, err := brokerinformer.Get(ctx).Lister().Brokers(t.Namespace).Get(t.Spec.Broker)
+				if err != nil {
+					logging.FromContext(ctx).Error("Failed to get broker", zap.Error(err))
+					return
+				}
+				// TODO(#866) Select the brokercell that's associated with the given broker.
+				impl.EnqueueKey(types.NamespacedName{Namespace: b.Namespace, Name: brokerresources.DefaultBrokerCellName})
+			}
+		},
+	))
+
+	// Watch data plane components created by brokercell so we can update brokercell status immediately.
+	// 1. Watch deployments for ingress, fanout and retry
+	deploymentinformer.Get(ctx).Informer().AddEventHandler(handleResourceUpdate(impl))
+	// 2. Watch ingress endpoints
+	endpointsinformer.Get(ctx).Informer().AddEventHandler(handleResourceUpdate(impl))
+	// 3. Watch hpa for ingress, fanout and retry deployments
+	hpainformer.Get(ctx).Informer().AddEventHandler(handleResourceUpdate(impl))
+	// 4. Watch the broker targets configmap.
+	configmapinformer.Get(ctx).Informer().AddEventHandler(handleResourceUpdate(impl))
 
 	return impl
+}
+
+// handleResourceUpdate returns an event handler for resources created by brokercell such as the ingress deployment.
+func handleResourceUpdate(impl *controller.Impl) cache.ResourceEventHandler {
+	// Since resources created by brokercell live in the same namespace as the brokercell, we use an
+	// empty namespaceLabel so that the same namespace of the given object is used to enqueue.
+	namespaceLabel := ""
+	// Resources created by the brokercell, including the indirectly created ingress service endpoints,
+	// have such a label resources.BrokerCellLabelKey=<brokercellName>. Resources without this label
+	// will be skipped by the function.
+	return controller.HandleAll(impl.EnqueueLabelOfNamespaceScopedResource(namespaceLabel, resources.BrokerCellLabelKey))
 }

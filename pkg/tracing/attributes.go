@@ -16,7 +16,13 @@ limitations under the License.
 
 package tracing
 
-import "knative.dev/eventing/pkg/tracing"
+import (
+	"fmt"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/eventing/pkg/tracing"
+)
 
 const (
 	PubSubProtocol = "Pub/Sub"
@@ -25,3 +31,15 @@ const (
 var (
 	PubSubProtocolAttribute = tracing.MessagingProtocolAttribute(PubSubProtocol)
 )
+
+func SubscriptionDestination(s string) string {
+	return fmt.Sprintf("subscription:%s", s)
+}
+
+func SourceDestination(resourceGroup string, src types.NamespacedName) string {
+	// resourceGroup is of the form <resource>.events.cloud.google.com,
+	// where resource can be for example cloudpubsubsources.
+	// We keep with the resource piece.
+	gr := schema.ParseGroupResource(resourceGroup)
+	return fmt.Sprintf("%s:%s.%s", gr.Resource, src.Name, src.Namespace)
+}

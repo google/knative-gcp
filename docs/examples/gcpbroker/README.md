@@ -37,8 +37,8 @@ kubectl -n cloud-run-events-example get broker test-broker
 ```
 
 ```shell
-NAME          READY   REASON   URL                                                                                             AGE
-test-broker   True             http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   15s
+NAME          READY   REASON   URL                                                                                                         AGE
+test-broker   True             http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   9s
 ```
 
 Verify the triggers are ready:
@@ -76,10 +76,10 @@ To show the various types of events you can send, you will make three requests:
    `type:greeting`, run the following in the SSH terminal:
 
    ```sh
-   curl -v "http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello" \
-     -H "Ce-Specversion: 0.3" \
+     -H "Ce-Specversion: 1.0" \
      -H "Ce-Type: greeting" \
      -H "Ce-Source: not-sendoff" \
      -H "Content-Type: application/json" \
@@ -93,7 +93,7 @@ To show the various types of events you can send, you will make three requests:
    similar to the one below:
 
    ```sh
-   < HTTP/1.1 200 OK
+   < HTTP/1.1 202 Accepted
    < Date: Thu, 23 Apr 2020 22:14:21 GMT
    < Content-Length: 0
    ```
@@ -102,10 +102,10 @@ To show the various types of events you can send, you will make three requests:
    `source:sendoff`, run the following in the SSH terminal:
 
    ```sh
-   curl -v "http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-goodbye" \
-     -H "Ce-Specversion: 0.3" \
+     -H "Ce-Specversion: 1.0" \
      -H "Ce-Type: not-greeting" \
      -H "Ce-Source: sendoff" \
      -H "Content-Type: application/json" \
@@ -119,7 +119,7 @@ To show the various types of events you can send, you will make three requests:
    similar to the one below:
 
    ```sh
-     < HTTP/1.1 200 OK
+     < HTTP/1.1 202 Accepted
    < Date: Thu, 23 Apr 2020 22:14:21 GMT
    < Content-Length: 0
    ```
@@ -129,10 +129,10 @@ To show the various types of events you can send, you will make three requests:
    terminal:
 
    ```sh
-   curl -v "http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello-goodbye" \
-     -H "Ce-Specversion: 0.3" \
+     -H "Ce-Specversion: 1.0" \
      -H "Ce-Type: greeting" \
      -H "Ce-Source: sendoff" \
      -H "Content-Type: application/json" \
@@ -146,7 +146,7 @@ To show the various types of events you can send, you will make three requests:
    similar to the one below:
 
    ```sh
-   < HTTP/1.1 200 OK
+   < HTTP/1.1 202 Accepted
    < Date: Thu, 23 Apr 2020 22:14:21 GMT
    < Content-Length: 0
    ```
@@ -177,7 +177,7 @@ After sending events, verify that your events were received by the appropriate
    ☁️  cloudevents.Event
    Validation: valid
    Context Attributes,
-     specversion: 0.3
+     specversion: 1.0
      type: greeting
      source: not-sendoff
      id: say-hello
@@ -192,7 +192,7 @@ After sending events, verify that your events were received by the appropriate
    ☁️  cloudevents.Event
    Validation: valid
    Context Attributes,
-     specversion: 0.3
+     specversion: 1.0
      type: greeting
      source: sendoff
      id: say-hello-goodbye
@@ -220,7 +220,7 @@ After sending events, verify that your events were received by the appropriate
    ☁️  cloudevents.Event
    Validation: valid
    Context Attributes,
-      specversion: 0.3
+      specversion: 1.0
       type: not-greeting
       source: sendoff
       id: say-goodbye
@@ -235,7 +235,7 @@ After sending events, verify that your events were received by the appropriate
     ☁️  cloudevents.Event
     Validation: valid
     Context Attributes,
-      specversion: 0.3
+      specversion: 1.0
       type: greeting
       source: sendoff
       id: say-hello-goodbye
@@ -274,10 +274,10 @@ consumers are back.
 1. Send an event that has the `type:greeting` and the`source:sendoff`:
 
    ```sh
-   curl -v "http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello-goodbye" \
-     -H "Ce-Specversion: 0.3" \
+     -H "Ce-Specversion: 1.0" \
      -H "Ce-Type: greeting" \
      -H "Ce-Source: sendoff" \
      -H "Content-Type: application/json" \
@@ -289,7 +289,7 @@ consumers are back.
 1. Now let's bring the event consumers back:
 
    ```shell
-   kubectl delete -f event-consumers.yaml
+   kubectl apply -f event-consumers.yaml
    ```
 
    Wait a couple of seconds, and you should see the event delivered to the event

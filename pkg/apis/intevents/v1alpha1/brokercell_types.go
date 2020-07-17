@@ -25,6 +25,12 @@ import (
 	"knative.dev/pkg/kmeta"
 )
 
+const (
+	// Annotations to tell if the brokercell is created automatically by the GCP broker controller.
+	CreatorKey = "internal.events.cloud.google.com/creator"
+	Creator    = "googlecloud"
+)
+
 // +genclient
 // +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -57,6 +63,9 @@ var (
 
 	// Check that we can create OwnerReferences to a BrokerCell.
 	_ kmeta.OwnerRefable = (*BrokerCell)(nil)
+
+	// Check that BrokerCell implements the KRShaped duck type.
+	_ duckv1.KRShaped = (*BrokerCell)(nil)
 )
 
 // BrokerCellSpec defines the desired state of a Brokercell.
@@ -96,4 +105,14 @@ func (bc *BrokerCell) GetGroupVersionKind() schema.GroupVersionKind {
 // GetUntypedSpec returns the spec of the BrokerCell.
 func (bc *BrokerCell) GetUntypedSpec() interface{} {
 	return bc.Spec
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*BrokerCell) GetConditionSet() apis.ConditionSet {
+	return brokerCellCondSet
+}
+
+// GetStatus retrieves the status of the BrokerCell. Implements the KRShaped interface.
+func (bc *BrokerCell) GetStatus() *duckv1.Status {
+	return &bc.Status.Status
 }

@@ -19,15 +19,19 @@ package pubsub
 import (
 	"context"
 
+	"knative.dev/pkg/injection"
+
 	"k8s.io/client-go/tools/cache"
 	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	cloudpubsubsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudpubsubsource"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
-	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	cloudpubsubsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1beta1/cloudpubsubsource"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
+	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudpubsubsource"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -46,30 +50,34 @@ const (
 	receiveAdapterName = "cloudpubsubsource.events.cloud.google.com"
 )
 
-// NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
-func NewController(
-	ctx context.Context,
-	cmw configmap.Watcher,
-) *controller.Impl {
-	return newControllerWithIAMPolicyManager(
-		ctx,
-		cmw,
-		iam.DefaultIAMPolicyManager())
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a CloudPubSubSource controller.
+func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+	}
 }
 
-func newControllerWithIAMPolicyManager(
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	cloudpubsubsourceInformer := cloudpubsubsourceinformers.Get(ctx)
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:   intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:     identity.NewIdentity(ctx, ipm),
+		PubSubBase: intevents.NewPubSubBase(ctx,
+			&intevents.PubSubBaseArgs{
+				ControllerAgentName: controllerAgentName,
+				ReceiveAdapterName:  receiveAdapterName,
+				ReceiveAdapterType:  string(converters.CloudPubSub),
+				ConfigWatcher:       cmw,
+			}),
+		Identity:     identity.NewIdentity(ctx, ipm, gcpas),
 		pubsubLister: cloudpubsubsourceInformer.Lister(),
 	}
 	impl := cloudpubsubsourcereconciler.NewImpl(ctx, r)
@@ -78,13 +86,15 @@ func newControllerWithIAMPolicyManager(
 	cloudpubsubsourceInformer.Informer().AddEventHandlerWithResyncPeriod(
 		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
+	pubsubGK := v1beta1.Kind("CloudPubSubSource")
+
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource")),
+		FilterFunc: controller.FilterControllerGK(pubsubGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource")),
+		FilterFunc: controller.FilterControllerGK(pubsubGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

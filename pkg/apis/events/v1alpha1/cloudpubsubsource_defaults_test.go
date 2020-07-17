@@ -17,14 +17,16 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -33,8 +35,8 @@ import (
 
 func TestCloudPubSubSourceDefaults(t *testing.T) {
 
-	defaultRetentionDuration := defaultRetentionDuration
-	defaultAckDeadline := defaultAckDeadline
+	defaultRetentionDuration := intevents.DefaultRetentionDuration
+	defaultAckDeadline := intevents.DefaultAckDeadline
 
 	tests := []struct {
 		name  string
@@ -45,7 +47,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 		start: &CloudPubSubSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudPubSubSourceSpec{
@@ -64,7 +66,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 		want: &CloudPubSubSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudPubSubSourceSpec{
@@ -86,7 +88,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 		start: &CloudPubSubSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudPubSubSourceSpec{},
@@ -94,14 +96,14 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 		want: &CloudPubSubSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
 			Spec: CloudPubSubSourceSpec{
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -110,7 +112,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.start
-			got.SetDefaults(context.Background())
+			got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("failed to get expected (-want, +got) = %v", diff)
@@ -125,7 +127,7 @@ func TestCloudPubSubSourceDefaults_NoChange(t *testing.T) {
 	want := &CloudPubSubSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			},
 		},
 		Spec: CloudPubSubSourceSpec{
@@ -143,7 +145,7 @@ func TestCloudPubSubSourceDefaults_NoChange(t *testing.T) {
 	}
 
 	got := want.DeepCopy()
-	got.SetDefaults(context.Background())
+	got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

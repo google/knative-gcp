@@ -27,10 +27,10 @@ import (
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -48,11 +48,11 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+		kngcptesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 			Topic: topic,
-			PubSubSpec: duckv1alpha1.PubSubSpec{
-				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: authConfig.PubsubServiceAccount,
+			PubSubSpec: duckv1beta1.PubSubSpec{
+				IdentitySpec: duckv1beta1.IdentitySpec{
+					ServiceAccountName: authConfig.ServiceAccountName,
 				},
 			},
 		}),
@@ -71,22 +71,22 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 
 	psName := topicName + "-sub"
 	targetName := topicName + "-target"
-	source := v1beta1.CloudPubSubSourceEventSource(project, topicName)
+	source := schemasv1.CloudPubSubEventSource(project, topicName)
 	data := fmt.Sprintf(`{"topic":%s}`, topicName)
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakePubSubTargetJobOrDie(client, source, targetName, v1beta1.CloudPubSubSourcePublish)
+	lib.MakePubSubTargetJobOrDie(client, source, targetName, schemasv1.CloudPubSubMessagePublishedEventType)
 
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+		kngcptesting.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
 			Topic: topicName,
-			PubSubSpec: duckv1alpha1.PubSubSpec{
-				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: authConfig.PubsubServiceAccount,
+			PubSubSpec: duckv1beta1.PubSubSpec{
+				IdentitySpec: duckv1beta1.IdentitySpec{
+					ServiceAccountName: authConfig.ServiceAccountName,
 				},
 			},
 		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))

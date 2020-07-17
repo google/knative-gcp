@@ -13,7 +13,7 @@ does so using a Pull format.
 
 1. [Install Knative-GCP](../../install/install-knative-gcp.md)
 
-1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
+1. [Create a Service Account for the Data Plane](../../install/dataplane-service-account.md)
 
 ## Deployment
 
@@ -29,9 +29,10 @@ does so using a Pull format.
 
    1. If you are in GKE and using
       [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
-      update `googleServiceAccount` with the Pub/Sub enabled service account you
+      update `serviceAccountName` with the Kubernetes service account you
       created in
-      [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
+      [Create a Service Account for the Data Plane](../../install/dataplane-service-account.md),
+      which is bound to the Pub/Sub enabled Google service account.
 
    1. If you are using standard Kubernetes secrets, but want to use a
       non-default one, update `secret` with your own secret.
@@ -111,7 +112,7 @@ service that this `PullSubscription` sinks to.
 1. Inspect the logs of the service:
 
    ```shell
-   kubectl logs --selector app=event-display -c user-container
+   kubectl logs --selector app=event-display -c user-container --tail=200
    ```
 
 You should see log lines similar to:
@@ -121,7 +122,7 @@ You should see log lines similar to:
 Validation: valid
  Context Attributes,
    specversion: 1.0
-   type: com.google.cloud.pubsub.topic.publish
+   type: google.cloud.pubsub.topic.v1.messagePublished
    source: //pubsub.googleapis.com/PROJECT_ID/topics/TOPIC_NAME
    id: 9f9b0968-a15f-4e74-ac58-e8a1c4fa587d
    time: 2019-06-10T17:52:36.73Z

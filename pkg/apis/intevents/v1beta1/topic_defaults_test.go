@@ -21,24 +21,44 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	corev1 "k8s.io/api/core/v1"
 )
 
 func TestTopicDefaults(t *testing.T) {
-	want := &Topic{Spec: TopicSpec{
-		PropagationPolicy: TopicPolicyCreateNoDelete,
-		Secret: &corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{
-				Name: "google-cloud-key",
-			},
-			Key: "key.json",
+	testCases := map[string]struct {
+		want *Topic
+		got  *Topic
+		ctx  context.Context
+	}{
+		"with GCP Auth": {
+			want: &Topic{Spec: TopicSpec{
+				PropagationPolicy: TopicPolicyCreateNoDelete,
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "google-cloud-key",
+					},
+					Key: "key.json",
+				},
+				EnablePublisher: &trueVal,
+			}},
+			got: &Topic{Spec: TopicSpec{}},
+			ctx: gcpauthtesthelper.ContextWithDefaults(),
 		},
-	}}
-
-	got := &Topic{Spec: TopicSpec{}}
-	got.SetDefaults(context.Background())
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+		"without GCP Auth": {
+			want: &Topic{Spec: TopicSpec{
+				PropagationPolicy: TopicPolicyCreateNoDelete},
+			},
+			got: &Topic{},
+			ctx: context.Background(),
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			tc.got.SetDefaults(tc.ctx)
+			if diff := cmp.Diff(tc.want, tc.got); diff != "" {
+				t.Errorf("Unexpected differences (-want +got): %v", diff)
+			}
+		})
 	}
 }

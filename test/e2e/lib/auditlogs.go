@@ -17,11 +17,19 @@ limitations under the License.
 package lib
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"testing"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc/status"
+
+	"cloud.google.com/go/logging/logadmin"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"google.golang.org/grpc/codes"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -31,22 +39,31 @@ const (
 	PubSubCreateTopicMethodName = "google.pubsub.v1.Publisher.CreateTopic"
 )
 
-func MakeAuditLogsOrDie(client *Client,
-	sinkGVK metav1.GroupVersionKind,
-	auditlogsName, methodName, project, resourceName, serviceName, sinkName, pubsubServiceAccount string,
-	so ...kngcptesting.CloudAuditLogsSourceOption,
-) {
+type AuditLogsConfig struct {
+	SinkGVK            metav1.GroupVersionKind
+	SinkName           string
+	AuditlogsName      string
+	MethodName         string
+	Project            string
+	ResourceName       string
+	ServiceName        string
+	ServiceAccountName string
+	Options            []kngcptesting.CloudAuditLogsSourceOption
+}
+
+func MakeAuditLogsOrDie(client *Client, config AuditLogsConfig) {
 	client.T.Helper()
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceName(serviceName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceMethodName(methodName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceProject(project))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceResourceName(resourceName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(sinkGVK, sinkName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceGCPServiceAccount(pubsubServiceAccount))
-	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(auditlogsName, client.Namespace, so...)
+	so := config.Options
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceName(config.ServiceName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceMethodName(config.MethodName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceProject(config.Project))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceResourceName(config.ResourceName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceAccount(config.ServiceAccountName))
+	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
 
-	client.Core.WaitForResourceReadyOrFail(auditlogsName, CloudAuditLogsSourceTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(config.AuditlogsName, CloudAuditLogsSourceTypeMeta)
 }
 
 func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, serviceName, targetName, eventType string) {
@@ -65,13 +82,35 @@ func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, se
 		Value: eventType,
 	}, {
 		Name:  "SOURCE",
-		Value: v1alpha1.CloudAuditLogsSourceEventSource(serviceName, fmt.Sprintf("projects/%s", project)),
+		Value: schemasv1.CloudAuditLogsEventSource(fmt.Sprintf("projects/%s", project), "activity"),
 	}, {
 		Name:  "SUBJECT",
-		Value: resourceName,
+		Value: schemasv1.CloudAuditLogsEventSubject(serviceName, resourceName),
 	}, {
 		Name:  "TIME",
 		Value: "6m",
 	}})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
+}
+
+func StackdriverSinkExists(t *testing.T, sinkID string) bool {
+	t.Helper()
+	ctx := context.Background()
+	project := os.Getenv(ProwProjectKey)
+	opt := option.WithQuotaProject(project)
+	client, err := logadmin.NewClient(ctx, project, opt)
+	if err != nil {
+		t.Fatalf("failed to create LogAdmin client, %s", err.Error())
+	}
+	defer client.Close()
+
+	_, err = client.Sink(ctx, sinkID)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return false
+		}
+
+		t.Fatalf("Failed from LogAdmin client while retrieving StackdriverSink %s with error %s", sinkID, err.Error())
+	}
+	return true
 }

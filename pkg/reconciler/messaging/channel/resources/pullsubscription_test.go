@@ -20,24 +20,24 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	duckinteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	duckinteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestMakePullSubscription(t *testing.T) {
-	channel := &v1alpha1.Channel{
+	channel := &v1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "channel-name",
 			Namespace: "channel-namespace",
 			UID:       "channel-uid",
 		},
-		Spec: v1alpha1.ChannelSpec{
+		Spec: v1beta1.ChannelSpec{
 			Project: "eventing-name",
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
@@ -46,7 +46,7 @@ func TestMakePullSubscription(t *testing.T) {
 				Key: "eventing-secret-key",
 			},
 		},
-		Status: v1alpha1.ChannelStatus{
+		Status: v1beta1.ChannelStatus{
 			ProjectID: "project-123",
 			TopicID:   "topic-abc",
 		},
@@ -54,7 +54,7 @@ func TestMakePullSubscription(t *testing.T) {
 
 	got := MakePullSubscription(&PullSubscriptionArgs{
 		Owner:   channel,
-		Name:    GenerateSubscriptionName("subscriber-uid"),
+		Name:    GeneratePullSubscriptionName("subscriber-uid"),
 		Project: channel.Status.ProjectID,
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,
@@ -62,7 +62,7 @@ func TestMakePullSubscription(t *testing.T) {
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
 		},
-		Subscriber: duckv1alpha1.SubscriberSpec{
+		Subscriber: duckv1beta1.SubscriberSpec{
 			SubscriberURI: &apis.URL{
 				Scheme: "http",
 				Path:   "/",
@@ -77,7 +77,7 @@ func TestMakePullSubscription(t *testing.T) {
 	})
 
 	yes := true
-	want := &inteventsv1alpha1.PullSubscription{
+	want := &inteventsv1beta1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "channel-namespace",
 			Name:      "cre-sub-subscriber-uid",
@@ -86,7 +86,7 @@ func TestMakePullSubscription(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "messaging.cloud.google.com/v1alpha1",
+				APIVersion:         "messaging.cloud.google.com/v1beta1",
 				Kind:               "Channel",
 				Name:               "channel-name",
 				UID:                "channel-uid",
@@ -94,8 +94,8 @@ func TestMakePullSubscription(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: inteventsv1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckinteventsv1alpha1.PubSubSpec{
+		Spec: inteventsv1beta1.PullSubscriptionSpec{
+			PubSubSpec: duckinteventsv1beta1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -122,13 +122,13 @@ func TestMakePullSubscription(t *testing.T) {
 }
 
 func TestMakePullSubscription_JustSubscriber(t *testing.T) {
-	channel := &v1alpha1.Channel{
+	channel := &v1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "channel-name",
 			Namespace: "channel-namespace",
 			UID:       "channel-uid",
 		},
-		Spec: v1alpha1.ChannelSpec{
+		Spec: v1beta1.ChannelSpec{
 			Project: "eventing-name",
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
@@ -137,7 +137,7 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 				Key: "eventing-secret-key",
 			},
 		},
-		Status: v1alpha1.ChannelStatus{
+		Status: v1beta1.ChannelStatus{
 			ProjectID: "project-123",
 			TopicID:   "topic-abc",
 		},
@@ -145,7 +145,7 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 
 	got := MakePullSubscription(&PullSubscriptionArgs{
 		Owner:   channel,
-		Name:    GenerateSubscriptionName("subscriber-uid"),
+		Name:    GeneratePullSubscriptionName("subscriber-uid"),
 		Project: channel.Status.ProjectID,
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,
@@ -153,7 +153,7 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
 		},
-		Subscriber: duckv1alpha1.SubscriberSpec{
+		Subscriber: duckv1beta1.SubscriberSpec{
 			SubscriberURI: &apis.URL{
 				Scheme: "http",
 				Path:   "/",
@@ -163,7 +163,7 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 	})
 
 	yes := true
-	want := &inteventsv1alpha1.PullSubscription{
+	want := &inteventsv1beta1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "channel-namespace",
 			Name:      "cre-sub-subscriber-uid",
@@ -172,7 +172,7 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "messaging.cloud.google.com/v1alpha1",
+				APIVersion:         "messaging.cloud.google.com/v1beta1",
 				Kind:               "Channel",
 				Name:               "channel-name",
 				UID:                "channel-uid",
@@ -180,8 +180,8 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: inteventsv1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckinteventsv1alpha1.PubSubSpec{
+		Spec: inteventsv1beta1.PullSubscriptionSpec{
+			PubSubSpec: duckinteventsv1beta1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -205,13 +205,13 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 }
 
 func TestMakePullSubscription_JustReply(t *testing.T) {
-	channel := &v1alpha1.Channel{
+	channel := &v1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "channel-name",
 			Namespace: "channel-namespace",
 			UID:       "channel-uid",
 		},
-		Spec: v1alpha1.ChannelSpec{
+		Spec: v1beta1.ChannelSpec{
 			Project: "eventing-name",
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
@@ -220,7 +220,7 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 				Key: "eventing-secret-key",
 			},
 		},
-		Status: v1alpha1.ChannelStatus{
+		Status: v1beta1.ChannelStatus{
 			ProjectID: "project-123",
 			TopicID:   "topic-abc",
 		},
@@ -228,7 +228,7 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 
 	got := MakePullSubscription(&PullSubscriptionArgs{
 		Owner:   channel,
-		Name:    GenerateSubscriptionName("subscriber-uid"),
+		Name:    GeneratePullSubscriptionName("subscriber-uid"),
 		Project: channel.Status.ProjectID,
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,
@@ -236,7 +236,7 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
 		},
-		Subscriber: duckv1alpha1.SubscriberSpec{
+		Subscriber: duckv1beta1.SubscriberSpec{
 			ReplyURI: &apis.URL{
 				Scheme: "http",
 				Path:   "/",
@@ -246,7 +246,7 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 	})
 
 	yes := true
-	want := &inteventsv1alpha1.PullSubscription{
+	want := &inteventsv1beta1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "channel-namespace",
 			Name:      "cre-sub-subscriber-uid",
@@ -255,7 +255,7 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "messaging.cloud.google.com/v1alpha1",
+				APIVersion:         "messaging.cloud.google.com/v1beta1",
 				Kind:               "Channel",
 				Name:               "channel-name",
 				UID:                "channel-uid",
@@ -263,8 +263,8 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: inteventsv1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckinteventsv1alpha1.PubSubSpec{
+		Spec: inteventsv1beta1.PullSubscriptionSpec{
+			PubSubSpec: duckinteventsv1beta1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",

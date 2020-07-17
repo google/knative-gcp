@@ -18,12 +18,17 @@ package ingress
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/pstest"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/types"
 
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/client/test"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -31,17 +36,14 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
-	"knative.dev/pkg/logging"
 	logtest "knative.dev/pkg/logging/testing"
 )
 
 func TestMultiTopicDecoupleSink(t *testing.T) {
 	type brokerTestCase struct {
-		ns          string
-		broker      string
-		topic       string
-		clientErrFn func(client *fakePubsubClient)
-		wantErr     bool
+		broker  types.NamespacedName
+		topic   string
+		wantErr bool
 	}
 	tests := []struct {
 		name         string
@@ -52,14 +54,16 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "happy path single broker",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
+					"test_ns_1/test_broker_1": {State: config.State_READY, DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
 				},
 			},
 			cases: []brokerTestCase{
 				{
-					ns:     "test_ns_1",
-					broker: "test_broker_1",
-					topic:  "test_topic_1",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
+					topic: "test_topic_1",
 				},
 			},
 		},
@@ -67,37 +71,24 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "happy path multiple brokers",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
-					"test_ns_2/test_broker_2": {DecoupleQueue: &config.Queue{Topic: "test_topic_2"}},
+					"test_ns_1/test_broker_1": {State: config.State_READY, DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
+					"test_ns_2/test_broker_2": {State: config.State_READY, DecoupleQueue: &config.Queue{Topic: "test_topic_2"}},
 				},
 			},
 			cases: []brokerTestCase{
 				{
-					ns:     "test_ns_1",
-					broker: "test_broker_1",
-					topic:  "test_topic_1",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
+					topic: "test_topic_1",
 				},
 				{
-					ns:     "test_ns_2",
-					broker: "test_broker_2",
-					topic:  "test_topic_2",
-				},
-			},
-		},
-		{
-			name: "client returns error",
-			brokerConfig: &config.TargetsConfig{
-				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
-				},
-			},
-			cases: []brokerTestCase{
-				{
-					ns:          "test_ns_1",
-					broker:      "test_broker_1",
-					topic:       "test_topic_1",
-					clientErrFn: injectErr("test_topic_1", errors.New("inject error")),
-					wantErr:     true,
+					broker: types.NamespacedName{
+						Namespace: "test_ns_2",
+						Name:      "test_broker_2",
+					},
+					topic: "test_topic_2",
 				},
 			},
 		},
@@ -106,8 +97,28 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			brokerConfig: &config.TargetsConfig{},
 			cases: []brokerTestCase{
 				{
-					ns:      "test_ns_1",
-					broker:  "test_broker_1",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
+					topic:   "test_topic_1",
+					wantErr: true,
+				},
+			},
+		},
+		{
+			name: "broker is not ready",
+			brokerConfig: &config.TargetsConfig{
+				Brokers: map[string]*config.Broker{
+					"test_ns_1/test_broker_1": {State: config.State_UNKNOWN, DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
+				},
+			},
+			cases: []brokerTestCase{
+				{
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -117,13 +128,15 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "decouple queue is nil for broker",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: nil},
+					"test_ns_1/test_broker_1": {State: config.State_READY, DecoupleQueue: nil},
 				},
 			},
 			cases: []brokerTestCase{
 				{
-					ns:      "test_ns_1",
-					broker:  "test_broker_1",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -133,13 +146,15 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "empty topic for broker",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: ""}},
+					"test_ns_1/test_broker_1": {State: config.State_READY, DecoupleQueue: &config.Queue{Topic: ""}},
 				},
 			},
 			cases: []brokerTestCase{
 				{
-					ns:      "test_ns_1",
-					broker:  "test_broker_1",
+					broker: types.NamespacedName{
+						Namespace: "test_ns_1",
+						Name:      "test_broker_1",
+					},
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -148,18 +163,30 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fakeClient := newFakePubsubClient(t)
+			ctx := logtest.TestContextWithLogger(t)
+			psSrv := pstest.NewServer()
+			defer psSrv.Close()
+			psClient := createPubsubClient(ctx, t, psSrv)
 			brokerConfig := memory.NewTargets(tt.brokerConfig)
-			for _, testCase := range tt.cases {
-				ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
-				if testCase.clientErrFn != nil {
-					testCase.clientErrFn(fakeClient)
+			for i, testCase := range tt.cases {
+				topic := psClient.Topic(testCase.topic)
+				if exists, err := topic.Exists(ctx); err != nil {
+					t.Fatal(err)
+				} else if !exists {
+					if topic, err = psClient.CreateTopic(ctx, testCase.topic); err != nil {
+						t.Fatal(err)
+					}
 				}
-				sink := NewMultiTopicDecoupleSink(ctx, brokerConfig, fakeClient)
+				subscription, err := psClient.CreateSubscription(
+					ctx, fmt.Sprintf("test-sub-%d", i), pubsub.SubscriptionConfig{Topic: topic})
+				if err != nil {
+					t.Fatal(err)
+				}
 
+				sink := NewMultiTopicDecoupleSink(ctx, brokerConfig, psClient)
 				// Send events
 				event := createTestEvent(uuid.New().String())
-				err := sink.Send(context.Background(), testCase.ns, testCase.broker, *event)
+				err = sink.Send(context.Background(), testCase.broker, *event)
 
 				// Verify results.
 				if testCase.wantErr && err == nil {
@@ -169,9 +196,23 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 					t.Fatalf("Unexpected error: %v", err)
 				}
 				if !testCase.wantErr {
-					got := <-fakeClient.topics[testCase.topic]
-					if dif := cmp.Diff(*event, got); dif != "" {
-						t.Errorf("Output event doesn't match input, dif: %v", dif)
+					rctx, cancel := context.WithCancel(ctx)
+					msgCh := make(chan *pubsub.Message, 1)
+					subscription.Receive(rctx,
+						func(ctx context.Context, m *pubsub.Message) {
+							select {
+							case msgCh <- m:
+								cancel()
+							case <-ctx.Done():
+							}
+							m.Ack()
+						},
+					)
+					msg := <-msgCh
+					if got, err := binding.ToEvent(ctx, cepubsub.NewMessage(msg)); err != nil {
+						t.Error(err)
+					} else if diff := cmp.Diff(event, got); diff != "" {
+						t.Errorf("Output event doesn't match input, diff: %v", diff)
 					}
 				}
 			}

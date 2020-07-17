@@ -16,16 +16,14 @@ limitations under the License.
 package converters
 
 import (
+	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/pubsub"
-
-	cloudevents "github.com/cloudevents/sdk-go"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
 const (
@@ -33,18 +31,23 @@ const (
 	buildStatus = "SUCCESS"
 )
 
+var (
+	buildPublishTime = time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
+	data             = []byte("test data")
+)
+
 func TestConvertCloudBuild(t *testing.T) {
 
 	tests := []struct {
-		name        string
-		message     *cepubsub.Message
-		sendMode    ModeType
-		wantEventFn func() *cloudevents.Event
-		wantErr     bool
+		name    string
+		message *pubsub.Message
+		wantErr bool
 	}{{
-		name: "valid attributes",
-		message: &cepubsub.Message{
-			Data: []byte("test data"),
+		name: "valid event",
+		message: &pubsub.Message{
+			ID:          "id",
+			PublishTime: buildPublishTime,
+			Data:        data,
 			Attributes: map[string]string{
 				"buildId":    buildID,
 				"status":     buildStatus,
@@ -52,88 +55,68 @@ func TestConvertCloudBuild(t *testing.T) {
 				"attribute2": "value2",
 			},
 		},
-		sendMode: Binary,
-		wantEventFn: func() *cloudevents.Event {
-			return buildCloudEvent(map[string]string{
-				"buildId":    buildID,
-				"status":     buildStatus,
-				"attribute1": "value1",
-				"attribute2": "value2",
-			}, buildID, buildStatus)
-		},
 	},
 		{
 			name: "no buildId attributes",
-			message: &cepubsub.Message{
-				Data: []byte("test data"),
+			message: &pubsub.Message{
+				Data: data,
 				Attributes: map[string]string{
 					"status": buildStatus,
 				},
 			},
-			sendMode: Binary,
-			wantErr:  true,
+			wantErr: true,
 		},
 		{
 			name: "no buildStatus attributes",
-			message: &cepubsub.Message{
-				Data: []byte("test data"),
+			message: &pubsub.Message{
+				Data: data,
 				Attributes: map[string]string{
 					"buildId": buildID,
 				},
 			},
-			sendMode: Binary,
-			wantErr:  true,
+			wantErr: true,
 		},
 		{
 			name: "no attributes",
-			message: &cepubsub.Message{
-				Data:       []byte("test data"),
+			message: &pubsub.Message{
+				Data:       data,
 				Attributes: map[string]string{},
 			},
-			sendMode: Binary,
-			wantErr:  true,
+			wantErr: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := pubsubcontext.WithTransportContext(context.TODO(), pubsubcontext.NewTransportContext(
-				"testproject",
-				"testtopic",
-				"testsubscription",
-				"testmethod",
-				&pubsub.Message{
-					ID: "id",
-				},
-			))
-
-			gotEvent, err := Convert(ctx, test.message, test.sendMode, CloudBuildConverter)
+			ctx := WithProjectKey(context.Background(), "testproject")
+			gotEvent, err := NewPubSubConverter().Convert(ctx, test.message, CloudBuild)
 			if err != nil {
 				if !test.wantErr {
 					t.Errorf("converters.convertBuild got error %v want error=%v", err, test.wantErr)
 				}
 			} else {
-				if diff := cmp.Diff(test.wantEventFn(), gotEvent); diff != "" {
-					t.Errorf("converters.convertBuild got unexpeceted cloudevents.Event (-want +got) %s", diff)
+				if gotEvent.ID() != "id" {
+					t.Errorf("ID '%s' != '%s'", gotEvent.ID(), "id")
+				}
+				if !gotEvent.Time().Equal(buildPublishTime) {
+					t.Errorf("Time '%v' != '%v'", gotEvent.Time(), buildPublishTime)
+				}
+				if want := schemasv1.CloudBuildSourceEventSource("testproject", buildID); gotEvent.Source() != want {
+					t.Errorf("Source %q != %q", gotEvent.Source(), want)
+				}
+				if gotEvent.Type() != schemasv1.CloudBuildSourceEventType {
+					t.Errorf(`Type %q != %q`, gotEvent.Type(), schemasv1.CloudBuildSourceEventType)
+				}
+				if gotEvent.Subject() != buildStatus {
+					t.Errorf("Subject %q != %q", gotEvent.Subject(), buildStatus)
+				}
+				if gotEvent.DataSchema() != buildSchemaUrl {
+					t.Errorf("DataSchema %q != %q", gotEvent.DataSchema(), buildSchemaUrl)
+				}
+				if !bytes.Equal(gotEvent.Data(), data) {
+					t.Errorf("Data %q != %q", gotEvent.Data(), data)
 				}
 			}
 		})
 	}
-}
-
-func buildCloudEvent(extensions map[string]string, buildID, buildStatus string) *cloudevents.Event {
-	e := cloudevents.NewEvent(cloudevents.VersionV1)
-	e.SetID("id")
-	e.SetSource(v1alpha1.CloudBuildSourceEventSource("testproject", buildID))
-	e.SetSubject(buildStatus)
-	e.SetDataContentType(cloudevents.ApplicationJSON)
-	e.SetType(v1alpha1.CloudBuildSourceEvent)
-	e.SetExtension("knativecemode", string(Binary))
-	e.SetDataSchema("https://raw.githubusercontent.com/google/knative-gcp/master/schemas/build/schema.json")
-	e.Data = []byte("test data")
-	e.DataEncoded = true
-	for k, v := range extensions {
-		e.SetExtension(k, v)
-	}
-	return &e
 }

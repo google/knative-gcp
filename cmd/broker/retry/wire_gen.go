@@ -7,33 +7,29 @@ package main
 
 import (
 	"context"
-	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool"
+	"github.com/google/knative-gcp/pkg/broker/handler"
+	"github.com/google/knative-gcp/pkg/metrics"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 )
 
 // Injectors from wire.go:
 
-func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*pool.RetryPool, error) {
+func InitializeSyncPool(ctx context.Context, projectID clients.ProjectID, podName metrics.PodName, containerName metrics.ContainerName, targetsVolumeOpts []volume.Option, opts ...handler.Option) (*handler.RetryPool, error) {
 	readonlyTargets, err := volume.NewTargetsFromFile(targetsVolumeOpts...)
 	if err != nil {
 		return nil, err
 	}
-	client, err := pool.NewPubsubClient(ctx, projectID)
+	client, err := clients.NewPubsubClient(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
-	v := _wireValue
-	protocol, err := http.New(v...)
+	httpClient := _wireClientValue
+	deliveryReporter, err := metrics.NewDeliveryReporter(podName, containerName)
 	if err != nil {
 		return nil, err
 	}
-	v2 := _wireValue2
-	deliverClient, err := pool.NewDeliverClient(protocol, v2...)
-	if err != nil {
-		return nil, err
-	}
-	retryPool, err := pool.NewRetryPool(readonlyTargets, client, deliverClient, opts...)
+	retryPool, err := handler.NewRetryPool(readonlyTargets, client, httpClient, deliveryReporter, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -41,6 +37,5 @@ func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVo
 }
 
 var (
-	_wireValue  = pool.DefaultHTTPOpts
-	_wireValue2 = pool.DefaultCEClientOpts
+	_wireClientValue = handler.DefaultHTTPClient
 )

@@ -17,27 +17,44 @@ limitations under the License.
 package lib
 
 import (
-	kngcpresources "github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
+	"context"
+	"encoding/json"
+	"os"
+	"testing"
+
+	"github.com/google/knative-gcp/pkg/gclient/scheduler"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"google.golang.org/api/option"
+	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
+	"google.golang.org/grpc/codes"
+	gstatus "google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func MakeSchedulerOrDie(client *Client,
-	sinkGVK metav1.GroupVersionKind, schedulerName, data, sinkName, pubsubServiceAccount string,
-	so ...kngcptesting.CloudSchedulerSourceOption,
-) {
+type SchedulerConfig struct {
+	SinkGVK            metav1.GroupVersionKind
+	SchedulerName      string
+	Data               string
+	SinkName           string
+	ServiceAccountName string
+	Options            []kngcptesting.CloudSchedulerSourceOption
+}
+
+func MakeSchedulerOrDie(client *Client, config SchedulerConfig) {
 	client.T.Helper()
+	so := config.Options
 	so = append(so, kngcptesting.WithCloudSchedulerSourceLocation("us-central1"))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceData(data))
+	so = append(so, kngcptesting.WithCloudSchedulerSourceData(config.Data))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceSink(sinkGVK, sinkName))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceGCPServiceAccount(pubsubServiceAccount))
-	scheduler := kngcptesting.NewCloudSchedulerSource(schedulerName, client.Namespace, so...)
+	so = append(so, kngcptesting.WithCloudSchedulerSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, kngcptesting.WithCloudSchedulerSourceServiceAccount(config.ServiceAccountName))
+	scheduler := kngcptesting.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
 
 	client.CreateSchedulerOrFail(scheduler)
-	client.Core.WaitForResourceReadyOrFail(schedulerName, CloudSchedulerSourceTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceTypeMeta)
 }
 
 func MakeSchedulerJobOrDie(client *Client, data, targetName, eventType string) {
@@ -48,12 +65,8 @@ func MakeSchedulerJobOrDie(client *Client, data, targetName, eventType string) {
 			Value: "6m",
 		},
 		{
-			Name:  "SUBJECT_PREFIX",
-			Value: kngcpresources.JobPrefix,
-		},
-		{
 			Name:  "DATA",
-			Value: data,
+			Value: schedulerEventPayload(data),
 		},
 		{
 			Name:  "TYPE",
@@ -61,4 +74,36 @@ func MakeSchedulerJobOrDie(client *Client, data, targetName, eventType string) {
 		},
 	})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
+}
+
+func schedulerEventPayload(customData string) string {
+	jd := &schemasv1.SchedulerJobData{CustomData: []byte(customData)}
+	b, _ := json.Marshal(jd)
+	return string(b)
+}
+
+func SchedulerJobExists(t *testing.T, jobName string) bool {
+	t.Helper()
+	ctx := context.Background()
+	project := os.Getenv(ProwProjectKey)
+	opt := option.WithQuotaProject(project)
+	client, err := scheduler.NewClient(ctx, opt)
+	if err != nil {
+		t.Fatalf("failed to create scheduler client, %s", err.Error())
+	}
+	defer client.Close()
+
+	_, err = client.GetJob(ctx, &schedulerpb.GetJobRequest{Name: jobName})
+	if err != nil {
+		st, ok := gstatus.FromError(err)
+		if !ok {
+			t.Fatalf("Failed from CloudSchedulerSource client while retrieving CloudSchedulerSource job %s with error %s", jobName, err.Error())
+		}
+		if st.Code() == codes.NotFound {
+			return false
+		}
+
+		t.Fatalf("Failed from CloudSchedulerSource client while retrieving CloudSchedulerSource job %s with error %s with status code %s", jobName, err.Error(), st.Code())
+	}
+	return true
 }

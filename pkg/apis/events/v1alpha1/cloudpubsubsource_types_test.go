@@ -27,18 +27,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
-
-func TestCloudPubSubSourceEventSource(t *testing.T) {
-	want := "//pubsub.googleapis.com/projects/PROJECT/topics/TOPIC"
-
-	got := CloudPubSubSourceEventSource("PROJECT", "TOPIC")
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
-}
 
 func TestCloudPubSubSourceGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
@@ -76,7 +67,7 @@ func TestGetRetentionDuration(t *testing.T) {
 }
 
 func TestGetAckDeadline_default(t *testing.T) {
-	want := defaultAckDeadline
+	want := intevents.DefaultAckDeadline
 	s := &CloudPubSubSourceSpec{}
 	got := s.GetAckDeadline()
 
@@ -86,7 +77,7 @@ func TestGetAckDeadline_default(t *testing.T) {
 }
 
 func TestGetRetentionDuration_default(t *testing.T) {
-	want := defaultRetentionDuration
+	want := intevents.DefaultRetentionDuration
 	s := &CloudPubSubSourceSpec{}
 	got := s.GetRetentionDuration()
 
@@ -100,13 +91,13 @@ func TestCloudPubSubSourceIdentitySpec(t *testing.T) {
 		Spec: CloudPubSubSourceSpec{
 			PubSubSpec: v1alpha1.PubSubSpec{
 				IdentitySpec: v1alpha1.IdentitySpec{
-					GoogleServiceAccount: "test",
+					ServiceAccountName: "test",
 				},
 			},
 		},
 	}
 	want := "test"
-	got := s.IdentitySpec().GoogleServiceAccount
+	got := s.IdentitySpec().ServiceAccountName
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

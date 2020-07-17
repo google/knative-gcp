@@ -17,24 +17,54 @@ limitations under the License.
 package v1beta1
 
 import (
+	"sync"
+
 	"knative.dev/pkg/apis"
 )
 
-var brokerCondSet = apis.NewLivingConditionSet(BrokerConditionAddressable)
-
 const (
-	BrokerConditionReady                          = apis.ConditionReady
-	BrokerConditionAddressable apis.ConditionType = "Addressable"
+	BrokerConditionReady                             = apis.ConditionReady
+	BrokerConditionIngress        apis.ConditionType = "IngressReady"
+	BrokerConditionTriggerChannel apis.ConditionType = "TriggerChannelReady"
+	BrokerConditionFilter         apis.ConditionType = "FilterReady"
+	BrokerConditionAddressable    apis.ConditionType = "Addressable"
 )
 
+var brokerCondSet = apis.NewLivingConditionSet(
+	BrokerConditionIngress,
+	BrokerConditionTriggerChannel,
+	BrokerConditionFilter,
+	BrokerConditionAddressable,
+)
+var brokerCondSetLock = sync.RWMutex{}
+
+// RegisterAlternateBrokerConditionSet register a apis.ConditionSet for the given broker class.
+func RegisterAlternateBrokerConditionSet(conditionSet apis.ConditionSet) {
+	brokerCondSetLock.Lock()
+	defer brokerCondSetLock.Unlock()
+
+	brokerCondSet = conditionSet
+}
+
 // GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
-func (*Broker) GetConditionSet() apis.ConditionSet {
+func (b *Broker) GetConditionSet() apis.ConditionSet {
+	brokerCondSetLock.RLock()
+	defer brokerCondSetLock.RUnlock()
+
+	return brokerCondSet
+}
+
+// GetConditionSet retrieves the condition set for this resource.
+func (bs *BrokerStatus) GetConditionSet() apis.ConditionSet {
+	brokerCondSetLock.RLock()
+	defer brokerCondSetLock.RUnlock()
+
 	return brokerCondSet
 }
 
 // GetTopLevelCondition returns the top level Condition.
 func (bs *BrokerStatus) GetTopLevelCondition() *apis.Condition {
-	return brokerCondSet.Manage(bs).GetTopLevelCondition()
+	return bs.GetConditionSet().Manage(bs).GetTopLevelCondition()
 }
 
 // SetAddress makes this Broker addressable by setting the URI. It also
@@ -42,8 +72,23 @@ func (bs *BrokerStatus) GetTopLevelCondition() *apis.Condition {
 func (bs *BrokerStatus) SetAddress(url *apis.URL) {
 	bs.Address.URL = url
 	if url != nil {
-		brokerCondSet.Manage(bs).MarkTrue(BrokerConditionAddressable)
+		bs.GetConditionSet().Manage(bs).MarkTrue(BrokerConditionAddressable)
 	} else {
-		brokerCondSet.Manage(bs).MarkFalse(BrokerConditionAddressable, "nil URL", "URL is nil")
+		bs.GetConditionSet().Manage(bs).MarkFalse(BrokerConditionAddressable, "nil URL", "URL is nil")
 	}
+}
+
+// GetCondition returns the condition currently associated with the given type, or nil.
+func (bs *BrokerStatus) GetCondition(t apis.ConditionType) *apis.Condition {
+	return bs.GetConditionSet().Manage(bs).GetCondition(t)
+}
+
+// IsReady returns true if the resource is ready overall.
+func (bs *BrokerStatus) IsReady() bool {
+	return bs.GetConditionSet().Manage(bs).IsHappy()
+}
+
+// InitializeConditions sets relevant unset conditions to Unknown state.
+func (bs *BrokerStatus) InitializeConditions() {
+	bs.GetConditionSet().Manage(bs).InitializeConditions()
 }

@@ -66,10 +66,7 @@ spec:
   versions:
     - name: v1alpha1
       served: true
-      # Note that the storage version here _must_ match StoredChannelVersion in
-      # pkg/apis/messaging/internal/constants.go. If the storage version is changing here, update
-      # the constant in code too.
-      storage: true
+      storage: false
       schema:
         openAPIV3Schema:
           type: object
@@ -77,12 +74,6 @@ spec:
             spec:
               type: object
               properties:
-                googleServiceAccount:
-                  type: string
-                  description: >
-                    GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
-                    account must be a valid Google service account (see
-                    https://cloud.google.com/iam/docs/service-accounts).
                 serviceAccountName:
                   type: string
                   description: >
@@ -212,7 +203,10 @@ spec:
                   type: string
     - name: v1beta1
       served: true
-      storage: false
+      # Note that the storage version here _must_ match StoredChannelVersion in
+      # pkg/apis/messaging/internal/constants.go. If the storage version is changing here, update
+      # the constant in code too.
+      storage: true
       schema:
         openAPIV3Schema:
           type: object

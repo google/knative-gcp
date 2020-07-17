@@ -22,6 +22,9 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
@@ -54,6 +57,25 @@ var (
 			Project: "my-eventing-project",
 		},
 		Topic: ptr.String(topic),
+	}
+
+	buildSourceSpecWithKSA = CloudBuildSourceSpec{
+		PubSubSpec: duckv1alpha1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: duckv1alpha1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+			Project: "my-eventing-project",
+		},
 	}
 )
 
@@ -185,7 +207,7 @@ func TestCloudBuildSourceCheckValidationFields(t *testing.T) {
 			spec: func() CloudBuildSourceSpec {
 				obj := buildSourceSpec.DeepCopy()
 				obj.ServiceAccountName = validServiceAccountName
-				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
+				obj.Secret = &gcpauthtesthelper.Secret
 				return *obj
 			}(),
 			error: true,
@@ -215,10 +237,10 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		},
 		"ClusterName annotation changed": {
 			origAnnotation: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
 			},
 			updatedAnnotation: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
 			},
 			allowed: false,
 		},
@@ -279,24 +301,19 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed": {
-			orig: &buildSourceSpec,
+		"ServiceAccountName changed": {
+			orig: &buildSourceSpecWithKSA,
 			updated: CloudBuildSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
-						GoogleServiceAccount: "new-service-account",
-					},
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: buildSourceSpec.Secret.Name,
-						},
-						Key: buildSourceSpec.Secret.Key,
+						ServiceAccountName: "new-service-account",
 					},
 					SourceSpec: duckv1.SourceSpec{
-						Sink: buildSourceSpec.Sink,
+						Sink: buildSourceSpecWithKSA.Sink,
 					},
+					Project: buildSourceSpecWithKSA.Project,
 				},
-				Topic: buildSourceSpec.Topic,
+				Topic: buildSourceSpecWithKSA.Topic,
 			},
 			allowed: false,
 		},
@@ -428,7 +445,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 			updated: buildSourceSpec,
 			allowed: true,
 		},
-		"not spec": {
+		"no spec": {
 			orig:    []string{"wrong"},
 			updated: buildSourceSpec,
 			allowed: true,

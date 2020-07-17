@@ -21,8 +21,25 @@ import (
 	nethttp "net/http"
 
 	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
+	"knative.dev/pkg/tracing/propagation/tracecontextb3"
 )
+
+// ConnectionArgs allow to configure connection parameters to the underlying
+// HTTP Client transport.
+type ConnectionArgs struct {
+	// MaxIdleConns refers to the max idle connections, as in net/http/transport.
+	MaxIdleConns int
+	// MaxIdleConnsPerHost refers to the max idle connections per host, as in net/http/transport.
+	MaxIdleConnsPerHost int
+}
+
+func (ca *ConnectionArgs) ConfigureTransport(transport *nethttp.Transport) {
+	if ca == nil {
+		return
+	}
+	transport.MaxIdleConns = ca.MaxIdleConns
+	transport.MaxIdleConnsPerHost = ca.MaxIdleConnsPerHost
+}
 
 type HttpMessageSender struct {
 	Client *nethttp.Client
@@ -37,7 +54,7 @@ func NewHttpMessageSender(connectionArgs *ConnectionArgs, target string) (*HttpM
 	client := &nethttp.Client{
 		Transport: &ochttp.Transport{
 			Base:        base,
-			Propagation: &tracecontext.HTTPFormat{},
+			Propagation: tracecontextb3.TraceContextEgress,
 		},
 	}
 

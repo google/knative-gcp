@@ -24,7 +24,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"knative.dev/eventing/test/lib"
+	testlib "knative.dev/eventing/test/lib"
+	"knative.dev/eventing/test/lib/recordevents"
 	"knative.dev/eventing/test/lib/resources"
 )
 
@@ -32,12 +33,16 @@ import (
 // the Status is correctly reflected as failed with BrokerDoesNotExist. Then it will create
 // the broker and ensure that Trigger / Broker will get to Ready state.
 func TestTriggerNoBroker(t *testing.T, channel string, brokerCreator BrokerCreator) {
-	client := lib.Setup(t, true)
-	defer lib.TearDown(client)
+	t.Skipf("triggers no longer get status written to them by the generic trigger controller.")
+
+	client := testlib.Setup(t, true)
+	defer testlib.TearDown(client)
 	brokerName := strings.ToLower(channel)
-	subscriberName := name("dumper", "", "", map[string]interface{}{})
-	pod := resources.EventLoggerPod(subscriberName)
-	client.CreatePodOrFail(pod, lib.WithService(subscriberName))
+
+	subscriberName := "dumper-empty"
+	eventTracker, _ := recordevents.StartEventRecordOrFail(client, subscriberName)
+	defer eventTracker.Cleanup()
+
 	client.CreateTriggerOrFailV1Beta1("testtrigger",
 		resources.WithSubscriberServiceRefForTriggerV1Beta1(subscriberName),
 		resources.WithBrokerV1Beta1(brokerName),

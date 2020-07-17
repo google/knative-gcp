@@ -30,7 +30,8 @@ const (
 	// FanoutName is the name used for the fanout container.
 	FanoutName = "fanout"
 	// RetryName is the name used for the retry container.
-	RetryName = "retry"
+	RetryName          = "retry"
+	BrokerCellLabelKey = "brokerCell"
 )
 
 var (
@@ -62,13 +63,27 @@ type RetryArgs struct {
 	Args
 }
 
+// AutoscalingArgs are the arguments to create HPA for deployments.
+type AutoscalingArgs struct {
+	ComponentName     string
+	BrokerCell        *intv1alpha1.BrokerCell
+	AvgCPUUtilization int32
+	AvgMemoryUsage    string
+	MaxReplicas       int32
+}
+
 // Labels generates the labels present on all resources representing the
 // component of the given BrokerCell.
 func Labels(brokerCellName, componentName string) map[string]string {
+	cl := CommonLabels(brokerCellName)
+	cl["role"] = componentName
+	return cl
+}
+
+func CommonLabels(brokerCellName string) map[string]string {
 	return map[string]string{
-		"app":        "cloud-run-events",
-		"role":       componentName,
-		"brokerCell": brokerCellName,
+		"app":              "cloud-run-events",
+		BrokerCellLabelKey: brokerCellName,
 	}
 }
 

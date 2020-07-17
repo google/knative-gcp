@@ -57,6 +57,11 @@ func (c *schedulerClient) CreateJob(ctx context.Context, req *schedulerpb.Create
 	return c.client.CreateJob(ctx, req, opts...)
 }
 
+// UpdateJob implements scheduler.CloudSchedulerClient.UpdateJobRequest
+func (c *schedulerClient) UpdateJob(ctx context.Context, req *schedulerpb.UpdateJobRequest, opts ...gax.CallOption) (*schedulerpb.Job, error) {
+	return c.client.UpdateJob(ctx, req, opts...)
+}
+
 // DeleteJob implements scheduler.CloudSchedulerClient.DeleteJob
 func (c *schedulerClient) DeleteJob(ctx context.Context, req *schedulerpb.DeleteJobRequest, opts ...gax.CallOption) error {
 	return c.client.DeleteJob(ctx, req, opts...)

@@ -19,7 +19,11 @@ package scheduler
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"knative.dev/pkg/injection"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -29,10 +33,10 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	cloudschedulersourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudschedulersource"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
-	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/topic"
-	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudschedulersource"
+	cloudschedulersourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1beta1/cloudschedulersource"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
+	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
+	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudschedulersource"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 )
 
@@ -48,22 +52,20 @@ const (
 	receiveAdapterName = "cloudschedulersource.events.cloud.google.com"
 )
 
-// NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
-func NewController(
-	ctx context.Context,
-	cmw configmap.Watcher,
-) *controller.Impl {
-	return newControllerWithIAMPolicyManager(
-		ctx,
-		cmw,
-		iam.DefaultIAMPolicyManager())
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a CloudSchedulerSource controller.
+func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+	}
 }
 
-func newControllerWithIAMPolicyManager(
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
@@ -71,8 +73,14 @@ func newControllerWithIAMPolicyManager(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	c := &Reconciler{
-		PubSubBase:      intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:        identity.NewIdentity(ctx, ipm),
+		PubSubBase: intevents.NewPubSubBase(ctx,
+			&intevents.PubSubBaseArgs{
+				ControllerAgentName: controllerAgentName,
+				ReceiveAdapterName:  receiveAdapterName,
+				ReceiveAdapterType:  string(converters.CloudScheduler),
+				ConfigWatcher:       cmw,
+			}),
+		Identity:        identity.NewIdentity(ctx, ipm, gcpas),
 		schedulerLister: cloudschedulersourceInformer.Lister(),
 		createClientFn:  gscheduler.NewClient,
 	}
@@ -81,18 +89,20 @@ func newControllerWithIAMPolicyManager(
 	c.Logger.Info("Setting up event handlers")
 	cloudschedulersourceInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
+	schedulerGK := v1beta1.Kind("CloudSchedulerSource")
+
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
+		FilterFunc: controller.FilterControllerGK(schedulerGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
+		FilterFunc: controller.FilterControllerGK(schedulerGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
+		FilterFunc: controller.FilterControllerGK(schedulerGK),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

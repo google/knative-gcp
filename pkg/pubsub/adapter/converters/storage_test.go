@@ -19,171 +19,118 @@ package converters
 import (
 	"context"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/google/go-cmp/cmp"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+)
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+const (
+	bucket    = "my-bucket"
+	objectId  = "myfile.jpg"
+	eventType = "OBJECT_FINALIZE"
+)
+
+var (
+	storagePublishTime = time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
 )
 
 func TestConvertCloudStorageSource(t *testing.T) {
 
 	tests := []struct {
-		name        string
-		message     *cepubsub.Message
-		sendMode    ModeType
-		wantEventFn func() *cloudevents.Event
-		wantErr     bool
+		name    string
+		message *pubsub.Message
+		wantErr bool
 	}{{
 		name: "no attributes",
-		message: &cepubsub.Message{
+		message: &pubsub.Message{
 			Data: []byte("test data"),
-			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-			},
-		},
-		sendMode: Binary,
-		wantEventFn: func() *cloudevents.Event {
-			return storageCloudEvent(map[string]string{})
 		},
 		wantErr: true,
 	}, {
 		name: "no bucketId attribute",
-		message: &cepubsub.Message{
+		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-				"eventType":   "OBJECT_FINALIZE",
-				"attribute1":  "value1",
-				"attribute2":  "value2",
-			},
-		},
-		sendMode: Binary,
-		wantEventFn: func() *cloudevents.Event {
-			return storageCloudEvent(map[string]string{
+				"eventType":  eventType,
 				"attribute1": "value1",
 				"attribute2": "value2",
-			})
+			},
 		},
 		wantErr: true,
 	}, {
 		name: "no eventType attribute",
-		message: &cepubsub.Message{
+		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-				"bucketId":    "my-bucket",
+				"bucketId": bucket,
+				"objectId": objectId,
 			},
-		},
-		sendMode: Binary,
-		wantEventFn: func() *cloudevents.Event {
-			return storageCloudEvent(map[string]string{})
 		},
 		wantErr: true,
 	}, {
-		name: "set subject",
-		message: &cepubsub.Message{
+		name: "unknown eventType attribute",
+		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-				"bucketId":    "my-bucket",
-				"eventType":   "OBJECT_FINALIZE",
-				"objectId":    "myfile.jpg",
-				"AttriBUte1":  "value1",
-				"AttrIbuTe2":  "value2",
+				"eventType": "RANDOM_EVENT",
+				"bucketId":  bucket,
+				"objectId":  objectId,
 			},
 		},
-		sendMode: Binary,
-		wantEventFn: func() *cloudevents.Event {
-			return storageCloudEvent(map[string]string{
-				"attribute1": "value1",
-				"attribute2": "value2",
-			},
-				"myfile.jpg")
-		},
+		wantErr: true,
 	}, {
-		name: "not setting invalid upper case attributes",
-		message: &cepubsub.Message{
+		name: "no objectId attribute",
+		message: &pubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"knative-gcp": "com.google.cloud.storage",
-				"bucketId":    "my-bucket",
-				"eventType":   "OBJECT_FINALIZE",
-				"AttriBUte1":  "value1",
-				"AttrIbuTe2":  "value2",
+				"bucketId":  bucket,
+				"eventType": eventType,
 			},
 		},
-		sendMode: Binary,
-		wantEventFn: func() *cloudevents.Event {
-			return storageCloudEvent(map[string]string{
-				"attribute1": "value1",
-				"attribute2": "value2",
-			})
-		},
+		wantErr: true,
 	}, {
-		name: "only setting valid alphanumeric attribute",
-		message: &cepubsub.Message{
-			Data: []byte("test data"),
+		name: "valid message",
+		message: &pubsub.Message{
+			ID:          "id",
+			PublishTime: storagePublishTime,
+			Data:        []byte("test data"),
 			Attributes: map[string]string{
-				"knative-gcp":       "com.google.cloud.storage",
-				"bucketId":          "my-bucket",
-				"eventType":         "OBJECT_FINALIZE",
-				"attribute1":        "value1",
-				"Invalid-Attrib#$^": "value2",
+				"bucketId":  bucket,
+				"eventType": eventType,
+				"objectId":  objectId,
 			},
-		},
-		sendMode: Binary,
-		wantEventFn: func() *cloudevents.Event {
-			return storageCloudEvent(map[string]string{
-				"attribute1": "value1",
-			})
 		},
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := pubsubcontext.WithTransportContext(context.TODO(), pubsubcontext.NewTransportContext(
-				"testproject",
-				"testtopic",
-				"testsubscription",
-				"testmethod",
-				&pubsub.Message{
-					ID: "id",
-				},
-			))
-
-			gotEvent, err := Convert(ctx, test.message, test.sendMode, "")
+			gotEvent, err := NewPubSubConverter().Convert(context.Background(), test.message, CloudStorage)
 
 			if err != nil {
 				if !test.wantErr {
 					t.Fatalf("converters.convertCloudStorage got error %v want error=%v", err, test.wantErr)
 				}
 			} else {
-				if diff := cmp.Diff(test.wantEventFn(), gotEvent); diff != "" {
-					t.Fatalf("converters.convertCloudStorage got unexpeceted cloudevents.Event (-want +got) %s", diff)
+				if gotEvent.ID() != "id" {
+					t.Errorf("ID '%s' != '%s'", gotEvent.ID(), "id")
+				}
+				if !gotEvent.Time().Equal(storagePublishTime) {
+					t.Errorf("Time '%v' != '%v'", gotEvent.Time(), storagePublishTime)
+				}
+				if want := schemasv1.CloudStorageEventSource("my-bucket"); gotEvent.Source() != want {
+					t.Errorf("Source %q != %q", gotEvent.Source(), want)
+				}
+				if gotEvent.Type() != schemasv1.CloudStorageObjectFinalizedEventType {
+					t.Errorf(`Type %q != %q`, gotEvent.Type(), schemasv1.CloudStorageObjectFinalizedEventType)
+				}
+				if want := schemasv1.CloudStorageEventSubject(objectId); gotEvent.Subject() != want {
+					t.Errorf("Subject %q != %q", gotEvent.Subject(), objectId)
+				}
+				if gotEvent.DataSchema() != schemasv1.CloudStorageEventDataSchema {
+					t.Errorf("DataSchema %q != %q", gotEvent.DataSchema(), schemasv1.CloudStorageEventDataSchema)
 				}
 			}
 		})
 	}
-}
-
-func storageCloudEvent(extensions map[string]string, subject ...string) *cloudevents.Event {
-	e := cloudevents.NewEvent(cloudevents.VersionV1)
-	e.SetID("id")
-	e.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-	e.SetDataSchema(storageSchemaUrl)
-	e.SetSource(v1alpha1.CloudStorageSourceEventSource("my-bucket"))
-	e.SetType(v1alpha1.CloudStorageSourceFinalize)
-	if len(subject) > 0 {
-		e.SetSubject(subject[0])
-	}
-	e.Data = []byte("test data")
-	e.DataEncoded = true
-	for k, v := range extensions {
-		e.SetExtension(k, v)
-	}
-	return &e
 }

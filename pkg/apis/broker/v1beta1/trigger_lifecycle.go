@@ -65,11 +65,11 @@ func (ts *TriggerStatus) PropagateBrokerStatus(bs *BrokerStatus) {
 
 	switch {
 	case bc.Status == corev1.ConditionUnknown:
-		ts.MarkBrokerUnknown(bc.Reason, bc.Message)
+		ts.MarkBrokerUnknown("Broker/"+bc.Reason, bc.Message)
 	case bc.Status == corev1.ConditionTrue:
 		triggerCondSet.Manage(ts).MarkTrue(eventingv1beta1.TriggerConditionBroker)
 	case bc.Status == corev1.ConditionFalse:
-		ts.MarkBrokerFailed(bc.Reason, bc.Message)
+		ts.MarkBrokerFailed("Broker/"+bc.Reason, bc.Message)
 	default:
 		ts.MarkBrokerUnknown("BrokerUnknown", "The status of Broker is invalid: %v", bc.Status)
 	}
@@ -92,12 +92,20 @@ func (bs *TriggerStatus) MarkTopicFailed(reason, format string, args ...interfac
 	triggerCondSet.Manage(bs).MarkFalse(TriggerConditionTopic, reason, format, args...)
 }
 
+func (bs *TriggerStatus) MarkTopicUnknown(reason, format string, args ...interface{}) {
+	triggerCondSet.Manage(bs).MarkUnknown(TriggerConditionTopic, reason, format, args...)
+}
+
 func (bs *TriggerStatus) MarkTopicReady() {
 	triggerCondSet.Manage(bs).MarkTrue(TriggerConditionTopic)
 }
 
 func (bs *TriggerStatus) MarkSubscriptionFailed(reason, format string, args ...interface{}) {
 	triggerCondSet.Manage(bs).MarkFalse(TriggerConditionSubscription, reason, format, args...)
+}
+
+func (bs *TriggerStatus) MarkSubscriptionUnknown(reason, format string, args ...interface{}) {
+	triggerCondSet.Manage(bs).MarkUnknown(TriggerConditionSubscription, reason, format, args...)
 }
 
 func (bs *TriggerStatus) MarkSubscriptionReady() {

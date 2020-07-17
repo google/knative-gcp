@@ -17,11 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
@@ -39,14 +39,14 @@ func TestCloudSchedulerSource_SetDefaults(t *testing.T) {
 			orig: &CloudSchedulerSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 			},
 			expected: &CloudSchedulerSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: CloudSchedulerSourceSpec{
@@ -65,7 +65,7 @@ func TestCloudSchedulerSource_SetDefaults(t *testing.T) {
 			orig: &CloudSchedulerSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: CloudSchedulerSourceSpec{
@@ -82,7 +82,7 @@ func TestCloudSchedulerSource_SetDefaults(t *testing.T) {
 			expected: &CloudSchedulerSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: CloudSchedulerSourceSpec{
@@ -100,7 +100,7 @@ func TestCloudSchedulerSource_SetDefaults(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			tc.orig.SetDefaults(context.Background())
+			tc.orig.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}
