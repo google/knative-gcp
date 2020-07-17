@@ -19,7 +19,7 @@ package scheduler
 import (
 	"context"
 
-	"cloud.google.com/go/scheduler/apiv1"
+	scheduler "cloud.google.com/go/scheduler/apiv1"
 	"github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/option"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"

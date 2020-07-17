@@ -18,11 +18,12 @@ package v1alpha1
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 
 	"knative.dev/pkg/apis"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 func (t *Topic) Validate(ctx context.Context) *apis.FieldError {
@@ -56,16 +57,16 @@ func (current *Topic) CheckImmutableFields(ctx context.Context, original *Topic)
 		return nil
 	}
 
-	var errs *apis.FieldError
-	// Topic is immutable.
-	if original.Spec.Topic != current.Spec.Topic {
-		errs = errs.Also(
-			&apis.FieldError{
-				Message: "Immutable field changed",
-				Paths:   []string{"spec", "topic"},
-				Details: fmt.Sprintf("was %q, now %q", original.Spec.Topic, current.Spec.Topic),
-			})
+	if diff := cmp.Diff(original.Spec, current.Spec,
+		cmpopts.IgnoreFields(TopicSpec{}, "PropagationPolicy", "EnablePublisher")); diff != "" {
+		return &apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{"spec"},
+			Details: diff,
+		}
 	}
+
+	var errs *apis.FieldError
 	// Modification of non-empty cluster name annotation is not allowed.
-	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

@@ -28,10 +28,10 @@ VERSION="master"
 # The list of dependencies that we track at HEAD and periodically
 # float forward in this repository.
 FLOATING_DEPS=(
-  "knative.dev/pkg@release-0.16"
+  "knative.dev/pkg@$VERSION"
   "knative.dev/serving@$VERSION"
   "knative.dev/eventing@$VERSION"
-  "knative.dev/test-infra@release-0.16"
+  "knative.dev/test-infra@$VERSION"
 )
 
 # Parse flags to determine any we should pass to dep.
@@ -57,3 +57,7 @@ go mod vendor
 find vendor/ \( -name OWNERS -o -name OWNERS_ALIASES -o -name BUILD -o -name BUILD.bazel \) -delete
 
 update_licenses third_party/VENDOR-LICENSE "./..."
+
+# Patch k8s leader-election fixing graceful release
+# More information: https://github.com/kubernetes/kubernetes/pull/91942
+git apply ${ROOT_DIR}/hack/k8s-client-go.patch

@@ -19,10 +19,9 @@ package v1alpha1
 import (
 	"testing"
 
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
-
 	"github.com/google/go-cmp/cmp"
-
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
@@ -95,14 +94,14 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 			orig: &CloudStorageSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 			},
 			expected: &CloudStorageSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: CloudStorageSourceSpec{
@@ -127,7 +126,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 			orig: &CloudStorageSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: CloudStorageSourceSpec{
@@ -144,7 +143,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 			expected: &CloudStorageSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+						duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					},
 				},
 				Spec: CloudStorageSourceSpec{

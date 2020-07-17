@@ -57,7 +57,7 @@ import (
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, brokerName string) {
+func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, brokerName string, needRetry bool) {
 	client.T.Helper()
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
@@ -85,13 +85,22 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
-	// Create a sender Job to sender the event.
-	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
+	envVar := []v1.EnvVar{{
 		Name:  "BROKER_URL",
-		Value: brokerURL.String(),
-	}})
+		Value: brokerURL.String()},
+	}
+
+	if needRetry {
+		envVar = append(envVar, v1.EnvVar{
+			Name:  "RETRY",
+			Value: "true",
+		})
+	}
+
+	// Create a sender Job to send the event with retry.
+	senderJob := resources.SenderJob(senderName, envVar)
 	client.CreateJobOrFail(senderJob)
 
 	// Check if dummy CloudEvent is sent out.
@@ -136,12 +145,15 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
-	// Create a sender Job to sender the event.
+	// Create a sender Job to send the event with retry.
 	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
 		Name:  "BROKER_URL",
 		Value: brokerURL.String(),
+	}, {
+		Name:  "RETRY",
+		Value: "true",
 	}})
 	client.CreateJobOrFail(senderJob)
 
@@ -212,12 +224,15 @@ func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID st
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
-	// Create a sender Job to sender the event.
+	// Create a sender Job to send the event with retry.
 	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
 		Name:  "BROKER_URL",
 		Value: brokerURL.String(),
+	}, {
+		Name:  "RETRY",
+		Value: "true",
 	}})
 	client.CreateJobOrFail(senderJob)
 
@@ -271,7 +286,7 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
 	// Create the PubSub source.
 	lib.MakePubSubOrDie(client, lib.PubSubConfig{
@@ -336,7 +351,7 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
 	// Create the Storage source.
 	lib.MakeStorageOrDie(client, lib.StorageConfig{
@@ -387,7 +402,7 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
 	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
 	// Create the CloudAuditLogsSource.
 	lib.MakeAuditLogsOrDie(client, lib.AuditLogsConfig{
@@ -446,7 +461,7 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 	// Just to make sure all resources are ready.
 
 	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
+	time.Sleep(resources.WaitBrokercellTime)
 
 	// Create the CloudSchedulerSource.
 	lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
@@ -517,7 +532,7 @@ func makeTargetJobOrDie(client *lib.Client, targetName string) {
 	job := resources.TargetJob(targetName, []v1.EnvVar{{
 		// TIME (used in knockdown.Config) is the timeout for the target to receive event.
 		Name:  "TIME",
-		Value: "2m",
+		Value: "5m",
 	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 }

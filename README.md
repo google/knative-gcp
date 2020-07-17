@@ -8,13 +8,15 @@ Knative-GCP builds on Kubernetes to enable easy configuration and consumption of
 Google Cloud Platform events and services. It can be useful independently, but
 is best mixed with [Knative](https://knative.dev).
 
+If you are interested in contributing, see [DEVELOPMENT.md](./DEVELOPMENT.md).
+
 ## Installing Knative-GCP
 
 Follow this guide to install Knative-GCP components on a platform of your
 choice.
 
 1. [Installing Knative-GCP](./docs/install/install-knative-gcp.md)
-1. [Installing Pub/Sub Enabled Service Account](./docs/install/pubsub-service-account.md)
+1. [Installing a Service Account for the Data Plane](./docs/install/dataplane-service-account.md)
 1. [Installing GCP Broker](./docs/install/install-gcp-broker.md)
 1. [Installing Broker with PubSub Channel](./docs/install/install-broker-with-pubsub-channel.md)
 1. [Managing Multiple Projects](./docs/install/managing-multiple-projects.md)

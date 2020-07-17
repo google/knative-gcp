@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"testing"
 
+	"knative.dev/eventing/test/lib/resources"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -89,12 +91,15 @@ func NewClient(configPath string, clusterName string, namespace string, t *testi
 	client.Tracker = NewTracker(t, client.Dynamic)
 
 	client.tracingEnv, err = getTracingConfig(client.Kube.Kube)
+	if err != nil {
+		return nil, err
+	}
 
 	return client, nil
 }
 
 func getTracingConfig(c *kubernetes.Clientset) (corev1.EnvVar, error) {
-	cm, err := c.CoreV1().ConfigMaps("knative-eventing").Get("config-tracing", metav1.GetOptions{})
+	cm, err := c.CoreV1().ConfigMaps(resources.SystemNamespace).Get("config-tracing", metav1.GetOptions{})
 	if err != nil {
 		return corev1.EnvVar{}, fmt.Errorf("error while retrieving the config-tracing config map: %+v", errors.WithStack(err))
 	}

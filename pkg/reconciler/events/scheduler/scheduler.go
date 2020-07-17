@@ -18,6 +18,7 @@ package scheduler
 
 import (
 	"context"
+
 	"go.uber.org/zap"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
 	"google.golang.org/grpc/codes"
@@ -110,10 +111,8 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1beta1.CloudS
 	}
 	defer client.Close()
 
-	pubsubTargetName := resources.GeneratePubSubTargetTopic(scheduler, topic)
-
 	// Check if the job exists.
-	job, err := client.GetJob(ctx, &schedulerpb.GetJobRequest{Name: jobName})
+	_, err = client.GetJob(ctx, &schedulerpb.GetJobRequest{Name: jobName})
 	if err != nil {
 		if st, ok := gstatus.FromError(err); !ok {
 			logging.FromContext(ctx).Desugar().Error("Failed from CloudSchedulerSource client while retrieving CloudSchedulerSource job", zap.String("jobName", jobName), zap.Error(err))
@@ -131,7 +130,7 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1beta1.CloudS
 					Name: jobName,
 					Target: &schedulerpb.Job_PubsubTarget{
 						PubsubTarget: &schedulerpb.PubsubTarget{
-							TopicName:  pubsubTargetName,
+							TopicName:  resources.GeneratePubSubTargetTopic(scheduler, topic),
 							Data:       []byte(scheduler.Spec.Data),
 							Attributes: customAttributes,
 						},
@@ -145,30 +144,6 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1beta1.CloudS
 			}
 		} else {
 			logging.FromContext(ctx).Desugar().Error("Failed from CloudSchedulerSource client while retrieving CloudSchedulerSource job", zap.String("jobName", jobName), zap.Any("errorCode", st.Code()), zap.Error(err))
-			return err
-		}
-	}
-	// TODO remove after 0.16 cut.
-	actualTarget := job.GetPubsubTarget()
-	if actualTarget != nil && actualTarget.TopicName != pubsubTargetName {
-		// This means that it is using a topic with an old name. We will update the target.
-		_, err = client.UpdateJob(ctx, &schedulerpb.UpdateJobRequest{
-			Job: &schedulerpb.Job{
-				Name: job.Name,
-				Target: &schedulerpb.Job_PubsubTarget{
-					PubsubTarget: &schedulerpb.PubsubTarget{
-						TopicName:  pubsubTargetName,
-						Data:       actualTarget.Data,
-						Attributes: actualTarget.Attributes,
-					},
-				},
-				// Needed to add these two here otherwise I was getting an update error.
-				Schedule: job.Schedule,
-				TimeZone: job.TimeZone,
-			},
-		})
-		if err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to update old CloudSchedulerSource job", zap.String("jobName", jobName), zap.Error(err))
 			return err
 		}
 	}

@@ -25,6 +25,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/webhook/resourcesemantics"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
@@ -36,6 +37,14 @@ var (
 				Name: "secret-name",
 			},
 			Key: "secret-key",
+		},
+		Project: "my-eventing-project",
+		Topic:   "pubsub-topic",
+	}
+
+	topicSpecWithKSA = TopicSpec{
+		IdentitySpec: v1alpha1.IdentitySpec{
+			ServiceAccountName: "old-service-account",
 		},
 		Project: "my-eventing-project",
 		Topic:   "pubsub-topic",
@@ -104,10 +113,10 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 		},
 		"ClusterName annotation changed": {
 			origAnnotation: map[string]string{
-				v1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
 			},
 			updatedAnnotation: map[string]string{
-				v1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
 			},
 			allowed: false,
 		},
@@ -117,6 +126,54 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 				Secret:  topicSpec.Secret,
 				Project: topicSpec.Project,
 				Topic:   "updated",
+			},
+			allowed: false,
+		},
+		"Project changed": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret:  topicSpec.Secret,
+				Project: "new-project",
+				Topic:   topicSpec.Topic,
+			},
+			allowed: false,
+		},
+		"Secret.Key changed": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: topicSpec.Secret.Name,
+					},
+					Key: "some-other-key",
+				},
+				Project: topicSpec.Project,
+				Topic:   topicSpec.Topic,
+			},
+			allowed: false,
+		},
+		"Secret.Name changed": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "some-other-name",
+					},
+					Key: topicSpec.Secret.Key,
+				},
+				Project: topicSpec.Project,
+				Topic:   topicSpec.Topic,
+			},
+			allowed: false,
+		},
+		"ServiceAccountName changed": {
+			orig: &topicSpecWithKSA,
+			updated: TopicSpec{
+				Project: topicSpecWithKSA.Project,
+				Topic:   topicSpecWithKSA.Topic,
+				IdentitySpec: v1alpha1.IdentitySpec{
+					ServiceAccountName: "new-service-account",
+				},
 			},
 			allowed: false,
 		},

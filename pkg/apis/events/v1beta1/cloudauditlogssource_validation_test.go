@@ -20,10 +20,11 @@ import (
 	"context"
 	"testing"
 
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 )
 
 var (
@@ -51,6 +52,30 @@ var (
 			Project: "my-eventing-project",
 		},
 	}
+
+	auditLogsSourceSpecWithKSA = CloudAuditLogsSourceSpec{
+		ServiceName:  "foo",
+		MethodName:   "bar",
+		ResourceName: "baz",
+		PubSubSpec: duckv1beta1.PubSubSpec{
+
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: duckv1beta1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
+			},
+			Project: "my-eventing-project",
+		},
+	}
+
 	validServiceAccountName   = "test"
 	invalidServiceAccountName = "@test"
 )
@@ -72,7 +97,7 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
-		"bad  MethodName": {
+		"bad MethodName": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
 				obj.MethodName = ""
@@ -202,26 +227,21 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"ServiceAccount changed": {
-			orig: &auditLogsSourceSpec,
+		"ServiceAccountName changed": {
+			orig: &auditLogsSourceSpecWithKSA,
 			updated: CloudAuditLogsSourceSpec{
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					IdentitySpec: duckv1beta1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: auditLogsSourceSpec.PubSubSpec.Secret.Name,
-						},
-						Key: auditLogsSourceSpec.PubSubSpec.Secret.Key,
-					},
 					SourceSpec: duckv1.SourceSpec{
-						Sink: auditLogsSourceSpec.PubSubSpec.Sink,
+						Sink: auditLogsSourceSpecWithKSA.PubSubSpec.Sink,
 					},
+					Project: auditLogsSourceSpecWithKSA.Project,
 				},
-				MethodName:   auditLogsSourceSpec.MethodName,
-				ResourceName: auditLogsSourceSpec.ResourceName,
-				ServiceName:  auditLogsSourceSpec.ServiceName,
+				MethodName:   auditLogsSourceSpecWithKSA.MethodName,
+				ResourceName: auditLogsSourceSpecWithKSA.ResourceName,
+				ServiceName:  auditLogsSourceSpecWithKSA.ServiceName,
 			},
 			allowed: false,
 		},

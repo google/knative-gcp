@@ -26,7 +26,7 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
@@ -42,7 +42,7 @@ func NewCloudStorageSource(name, namespace string, so ...CloudStorageSourceOptio
 			Namespace: namespace,
 			UID:       "test-storage-uid",
 			Annotations: map[string]string{
-				duckv1beta1.ClusterNameAnnotation: testing.FakeClusterName,
+				duck.ClusterNameAnnotation: testing.FakeClusterName,
 			},
 		},
 	}

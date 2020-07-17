@@ -22,9 +22,9 @@ import (
 	"log"
 	"net/http"
 
-	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-
 	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/google/knative-gcp/pkg/kncloudevents"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -33,7 +33,7 @@ type Receiver struct {
 }
 
 func main() {
-	client, err := cloudevents.NewDefaultClient()
+	client, err := kncloudevents.NewDefaultClient()
 	if err != nil {
 		panic(err)
 	}

@@ -19,6 +19,7 @@ package adapter
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"io"
 	"net/http"
@@ -34,6 +35,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/utils/clients"
+	"golang.org/x/sync/errgroup"
 	logtest "knative.dev/pkg/logging/testing"
 
 	"cloud.google.com/go/pubsub"
@@ -141,9 +143,6 @@ func TestAdapter(t *testing.T) {
 	// TODO add reply failures and other cases
 
 	for _, tc := range cases {
-		// Shadowing the loop iteration variable inside the loop to avoid a race otherwise.
-		// TODO find a better fix
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := logtest.TestContextWithLogger(t)
 
@@ -208,60 +207,53 @@ func TestAdapter(t *testing.T) {
 				&statsReporterRecorder{},
 				args)
 
-			errCh := make(chan error, 1)
-			go func() {
-				errCh <- adapter.Start(ctx)
-			}()
-			defer adapter.Stop()
-
-			select {
-			case err := <-errCh:
-				t.Fatalf("Failed to start adapter: %v", err)
-			// TODO better way of doing this?
-			case <-time.After(time.Second):
-				t.Logf("Adapter started")
-			}
-
 			rctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 
-			go func() {
+			group, ctx := errgroup.WithContext(rctx)
+			group.Go(func() error { return adapter.Start(rctx) })
+			defer adapter.Stop()
+
+			group.Go(func() error {
 				msg, resp, err := transformerClient.Respond(rctx)
-				if err != nil && err != io.EOF {
-					t.Errorf("unexpected error from transformer receiving event: %v", err)
+				if err == io.EOF {
+					return nil
 				}
-				if msg != nil {
-					defer msg.Finish(nil)
+				if err != nil {
+					return fmt.Errorf("unexpected error from transformer receiving event: %v", err)
+				}
 
-					gotEvent, err := binding.ToEvent(rctx, msg)
-					if err != nil {
-						t.Errorf("transformer received message cannot be converted to an event: %v", err)
-					}
-					if diff := cmp.Diff(tc.converted, gotEvent); diff != "" {
-						t.Errorf("transformer received event (-want,+got): %v", diff)
-					}
+				defer msg.Finish(nil)
+				gotEvent, err := binding.ToEvent(rctx, msg)
+				if err != nil {
+					return fmt.Errorf("transformer received message cannot be converted to an event: %v", err)
+				}
 
-					if tc.reply != nil {
-						if err := resp(rctx, binding.ToMessage(tc.reply), protocol.ResultACK); err != nil {
-							t.Errorf("unexpected error from transfomer responding event: %v", err)
-						}
+				if diff := cmp.Diff(tc.converted, gotEvent); diff != "" {
+					t.Errorf("transformer received event (-want,+got): %v", diff)
+				}
+
+				if tc.reply != nil {
+					if err := resp(rctx, binding.ToMessage(tc.reply), protocol.ResultACK); err != nil {
+						return fmt.Errorf("unexpected error from transfomer responding event: %v", err)
 					}
 				}
-			}()
+				return nil
+			})
 
-			go func() {
+			group.Go(func() error {
 				msg, err := sinkClient.Receive(rctx)
-				if err != nil && err != io.EOF {
-					t.Errorf("unexpected error from sink when receiving event: %v", err)
+				if err == io.EOF {
+					return nil
 				}
-				var gotEvent *event.Event
-				if msg != nil {
-					defer msg.Finish(nil)
-					var err error
-					gotEvent, err = binding.ToEvent(rctx, msg)
-					if err != nil {
-						t.Errorf("sink received message that cannot be converted to an event: %v", err)
-					}
+				if err != nil {
+					return fmt.Errorf("unexpected error from sink when receiving event: %v", err)
+				}
+
+				defer msg.Finish(nil)
+				gotEvent, err := binding.ToEvent(rctx, msg)
+				if err != nil {
+					return fmt.Errorf("sink received message that cannot be converted to an event: %v", err)
 				}
 				wantEvent := tc.converted
 				if tc.reply != nil {
@@ -270,13 +262,17 @@ func TestAdapter(t *testing.T) {
 				if diff := cmp.Diff(wantEvent, gotEvent); diff != "" {
 					t.Errorf("sink received event (-want,+got): %v", diff)
 				}
-			}()
+				return nil
+			})
 
 			if err := p.Send(ctx, binding.ToMessage(tc.original)); err != nil {
-				t.Fatalf("failed to seed event to pubsub: %v", err)
+				t.Errorf("failed to seed event to pubsub: %v", err)
+				cancel()
 			}
 
-			<-rctx.Done()
+			if err := group.Wait(); err != nil {
+				t.Fatal(err)
+			}
 
 			gotMetricLabels := adapter.reporter.(*statsReporterRecorder).labels
 			if diff := cmp.Diff(tc.wantMetricLabels, gotMetricLabels); diff != "" {

@@ -20,27 +20,20 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-
-	"github.com/google/go-cmp/cmp"
 	"knative.dev/pkg/apis"
-)
-
-const (
-	minRetentionDuration = 10 * time.Second   // 10 seconds.
-	maxRetentionDuration = 7 * 24 * time.Hour // 7 days.
-
-	minAckDeadline = 0 * time.Second  // 0 seconds.
-	maxAckDeadline = 10 * time.Minute // 10 minutes.
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func (current *PullSubscription) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
-	return duckv1beta1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
+	return duck.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 
 func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -67,8 +60,8 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 		rd, err := time.ParseDuration(*current.RetentionDuration)
 		if err != nil {
 			errs = errs.Also(apis.ErrInvalidValue(*current.RetentionDuration, "retentionDuration"))
-		} else if rd < minRetentionDuration || rd > maxRetentionDuration {
-			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.RetentionDuration, minRetentionDuration.String(), maxRetentionDuration.String(), "retentionDuration"))
+		} else if rd < intevents.MinRetentionDuration || rd > intevents.MaxRetentionDuration {
+			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.RetentionDuration, intevents.MinRetentionDuration.String(), intevents.MaxRetentionDuration.String(), "retentionDuration"))
 		}
 	}
 
@@ -77,8 +70,8 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 		ad, err := time.ParseDuration(*current.AckDeadline)
 		if err != nil {
 			errs = errs.Also(apis.ErrInvalidValue(*current.AckDeadline, "ackDeadline"))
-		} else if ad < minAckDeadline || ad > maxAckDeadline {
-			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.AckDeadline, minAckDeadline.String(), maxAckDeadline.String(), "ackDeadline"))
+		} else if ad < intevents.MinAckDeadline || ad > intevents.MaxAckDeadline {
+			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.AckDeadline, intevents.MinAckDeadline.String(), intevents.MaxAckDeadline.String(), "ackDeadline"))
 		}
 	}
 

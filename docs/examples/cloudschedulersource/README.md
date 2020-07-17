@@ -21,7 +21,7 @@ scheduled events from
    gcloud app create --region=$APP_ENGINE_LOCATION
    ```
 
-1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
+1. [Create a Service Account for the Data Plane](../../install/dataplane-service-account.md)
 
 1. Enable the `Cloud Scheduler API` on your project:
 
@@ -37,7 +37,7 @@ scheduled events from
       [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
       update `serviceAccountName` with the Kubernetes service account you
       created in
-      [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md),
+      [Create a Service Account for the Data Plane](../../install/dataplane-service-account.md),
       which is bound to the Pub/Sub enabled Google service account.
 
    1. If you are using standard Kubernetes secrets, but want to use a

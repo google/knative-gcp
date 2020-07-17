@@ -53,6 +53,7 @@ var (
 )
 
 const (
+	// SinkReady has status True when CloudAuditLogsSource sink is ready.
 	SinkReady apis.ConditionType = "SinkReady"
 )
 
@@ -102,7 +103,7 @@ func (s *CloudAuditLogsSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (*CloudAuditLogsSource) ConditionSet() *apis.ConditionSet {
 	return &auditLogsSourceCondSet
 }

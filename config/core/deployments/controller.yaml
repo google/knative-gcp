@@ -35,6 +35,9 @@ spec:
       containers:
       - name: controller
         image: ko://github.com/google/knative-gcp/cmd/controller
+        # TODO enable HA once https://github.com/google/knative-gcp/issues/1466 is fixed.
+        args:
+          - "--disable-ha"
         imagePullPolicy: Always
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS

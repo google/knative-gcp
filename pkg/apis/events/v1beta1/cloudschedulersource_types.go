@@ -32,7 +32,7 @@ import (
 // +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CloudSchedulerSource is a specification for a CloudSchedulerSource resource
+// CloudSchedulerSource is a specification for a CloudSchedulerSource resource.
 type CloudSchedulerSource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -59,10 +59,10 @@ const (
 	CloudSchedulerSourceJobName = "jobName"
 )
 
-// CloudSchedulerSourceSpec is the spec for a CloudSchedulerSource resource
+// CloudSchedulerSourceSpec is the spec for a CloudSchedulerSource resource.
 type CloudSchedulerSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
+	// Sink, CloudEventOverrides, Secret and Project
 	duckv1beta1.PubSubSpec `json:",inline"`
 
 	// Location where to create the Job in.
@@ -89,10 +89,10 @@ var schedulerCondSet = apis.NewLivingConditionSet(
 	duckv1beta1.TopicReady,
 	JobReady)
 
-// CloudSchedulerSourceStatus is the status for a CloudSchedulerSource resource
+// CloudSchedulerSourceStatus is the status for a CloudSchedulerSource resource.
 type CloudSchedulerSourceStatus struct {
 	// This brings in our GCP PubSub based events importers
-	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
+	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID and SubscriptionID
 	duckv1beta1.PubSubStatus `json:",inline"`
 
 	// JobName is the name of the created scheduler Job on success.
@@ -115,7 +115,7 @@ func (s *CloudSchedulerSource) IdentityStatus() *duckv1beta1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
 
-// ConditionSet returns the apis.ConditionSet of the embedding object
+// ConditionSet returns the apis.ConditionSet of the embedding object.
 func (s *CloudSchedulerSource) ConditionSet() *apis.ConditionSet {
 	return &schedulerCondSet
 }
@@ -133,7 +133,7 @@ func (s *CloudSchedulerSource) PubSubStatus() *duckv1beta1.PubSubStatus {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CloudSchedulerSourceList is a list of CloudSchedulerSource resources
+// CloudSchedulerSourceList is a list of CloudSchedulerSource resources.
 type CloudSchedulerSourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`

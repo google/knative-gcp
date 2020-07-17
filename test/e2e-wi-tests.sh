@@ -87,6 +87,8 @@ function control_plane_setup() {
           --role roles/iam.workloadIdentityUser \
           --member "${member_name}" \
           --project "${PROW_PROJECT_NAME}" "${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}"
+          # Add a sleep time between each get-set iam-policy-binding loop to avoid concurrency issue. Sleep time is based on the SLO.
+          sleep 10
       fi
     done <<< "$members"
     # Allow the Kubernetes service account to use Google service account.
@@ -137,6 +139,8 @@ function gcp_broker_setup() {
   fi
   kubectl annotate --overwrite serviceaccount ${BROKER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account="${PUBSUB_SERVICE_ACCOUNT_EMAIL}" \
     --namespace "${CONTROL_PLANE_NAMESPACE}"
+
+  warmup_broker_setup
 }
 
 function create_private_key_for_pubsub_service_account {

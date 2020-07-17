@@ -20,28 +20,19 @@ import (
 	"context"
 	"time"
 
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"k8s.io/apimachinery/pkg/api/equality"
-
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
+
+	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
-)
-
-const (
-	minRetentionDuration = 10 * time.Second   // 10 seconds.
-	maxRetentionDuration = 7 * 24 * time.Hour // 7 days.
-
-	minAckDeadline = 0 * time.Second  // 0 seconds.
-	maxAckDeadline = 10 * time.Minute // 10 minutes.
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func (current *CloudPubSubSource) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
-	return duckv1alpha1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
+	return duck.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 
 func (current *CloudPubSubSourceSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -62,8 +53,8 @@ func (current *CloudPubSubSourceSpec) Validate(ctx context.Context) *apis.FieldE
 		rd, err := time.ParseDuration(*current.RetentionDuration)
 		if err != nil {
 			errs = errs.Also(apis.ErrInvalidValue(*current.RetentionDuration, "retentionDuration"))
-		} else if rd < minRetentionDuration || rd > maxRetentionDuration {
-			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.RetentionDuration, minRetentionDuration.String(), maxRetentionDuration.String(), "retentionDuration"))
+		} else if rd < intevents.MinRetentionDuration || rd > intevents.MaxRetentionDuration {
+			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.RetentionDuration, intevents.MinRetentionDuration.String(), intevents.MaxRetentionDuration.String(), "retentionDuration"))
 		}
 	}
 
@@ -72,12 +63,12 @@ func (current *CloudPubSubSourceSpec) Validate(ctx context.Context) *apis.FieldE
 		ad, err := time.ParseDuration(*current.AckDeadline)
 		if err != nil {
 			errs = errs.Also(apis.ErrInvalidValue(*current.AckDeadline, "ackDeadline"))
-		} else if ad < minAckDeadline || ad > maxAckDeadline {
-			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.AckDeadline, minAckDeadline.String(), maxAckDeadline.String(), "ackDeadline"))
+		} else if ad < intevents.MinAckDeadline || ad > intevents.MaxAckDeadline {
+			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.AckDeadline, intevents.MinAckDeadline.String(), intevents.MaxAckDeadline.String(), "ackDeadline"))
 		}
 	}
 
-	if err := duckv1alpha1.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
+	if err := duck.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 
@@ -90,7 +81,7 @@ func (current *CloudPubSubSource) CheckImmutableFields(ctx context.Context, orig
 	}
 
 	var errs *apis.FieldError
-	// Modification of Topic, Secret, ServiceAccount, and Project are not allowed. Everything else is mutable.
+	// Modification of Topic, Secret, ServiceAccountName and Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudPubSubSourceSpec{},
 			"Sink", "AckDeadline", "RetainAckedMessages", "RetentionDuration", "CloudEventOverrides")); diff != "" {
@@ -101,5 +92,5 @@ func (current *CloudPubSubSource) CheckImmutableFields(ctx context.Context, orig
 		})
 	}
 	// Modification of non-empty cluster name annotation is not allowed.
-	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

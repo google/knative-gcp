@@ -27,7 +27,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
@@ -40,7 +40,7 @@ const (
 	controllerAgentName = "cloud-run-events-deployment-controller"
 
 	namespace      = "cloud-run-events"
-	secretName     = v1alpha1.DefaultSecretName
+	secretName     = duck.DefaultSecretName
 	deploymentName = "controller"
 	envKey         = "GOOGLE_APPLICATION_CREDENTIALS"
 )

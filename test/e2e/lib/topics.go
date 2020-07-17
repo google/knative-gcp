@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/pubsub"
+	"google.golang.org/api/option"
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -36,7 +37,8 @@ func MakeTopicOrDie(t *testing.T) (string, func()) {
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
-	client, err := pubsub.NewClient(ctx, project)
+	opt := option.WithQuotaProject(project)
+	client, err := pubsub.NewClient(ctx, project, opt)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
 	}
@@ -82,6 +84,31 @@ func MakeTopicWithNameOrDie(t *testing.T, topicName string) (string, func()) {
 	}
 	return topicName, func() {
 		DeleteTopicOrDie(t, topicName)
+	}
+}
+
+func MakeTopicWithNameIfItDoesNotExist(t *testing.T, topicName string) {
+	t.Helper()
+	ctx := context.Background()
+	// Prow sticks the project in this key
+	project := os.Getenv(ProwProjectKey)
+	if project == "" {
+		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
+	}
+	client, err := pubsub.NewClient(ctx, project)
+	if err != nil {
+		t.Fatalf("failed to create pubsub client, %s", err.Error())
+	}
+	topic := client.Topic(topicName)
+	if exists, err := topic.Exists(ctx); err != nil {
+		t.Fatalf("failed to verify topic exists, %s", err)
+	} else if exists {
+		t.Logf("topic already exists: %q", topicName)
+	} else {
+		topic, err = client.CreateTopic(ctx, topicName)
+		if err != nil {
+			t.Fatalf("failed to create topic, %s", err)
+		}
 	}
 }
 

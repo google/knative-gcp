@@ -167,7 +167,6 @@ CloudEvents attribute type's [canonical string representation][ce-types].
 This example shows the _binary_ mode mapping of an event to a Pub/Sub Message:
 
 ```text
-Publish /some-topic
 --- Attributes ---
 {
   "ce-specversion": "1.0",
@@ -181,6 +180,32 @@ Publish /some-topic
 --- Data ---
 {
     ... application data ...
+}
+```
+
+This example show a publish request on the REST API of the above Pub/Sub
+Message:
+
+```text
+POST https://pubsub.googleapis.com/v1/{topic}:publish HTTP/1.1
+Content-Type: application/json; charset=utf-8
+Authorization: Bearer ... token ...
+
+{
+  "messages": [
+    {
+      "attributes": {
+        "ce-specversion": "1.0",
+        "ce-type": "com.example.someevent",
+        "ce-time": "2020-03-10T03:56:24Z",
+        "ce-id": "1234-1234-1234",
+        "ce-source": "/mycontext/subcontext",
+          .... further attributes ...
+        "ce-datacontenttype": "application/json; charset=utf-8",
+      },
+      "data": "... base64 encoded Data JSON (see above) ..."
+    }
+  ]
 }
 ```
 
@@ -223,10 +248,9 @@ This example shows the _structured_ mode mapping of an event to a Pub/Sub
 Message:
 
 ```text
-Publish /some-topic
 --- Attributes ---
 {
-  "content-type": "application/cloudevents+json; charset=utf-8",
+  "content-type": "application/cloudevents+json; charset=utf-8"
 }
 --- Data ---
 {
@@ -240,6 +264,26 @@ Publish /some-topic
   "data": {
     ... application data ...
   }
+}
+```
+
+This example show a publish request on the REST API of the above Pub/Sub
+Message:
+
+```text
+POST https://pubsub.googleapis.com/v1/{topic}:publish HTTP/1.1
+Content-Type: application/json; charset=utf-8
+Authorization: Bearer ... token ...
+
+{
+  "messages": [
+    {
+      "attributes": {
+        "content-type": "application/cloudevents+json; charset=utf-8"
+      },
+      "data": "... base64 encoded Data JSON (see above) ..."
+    }
+  ]
 }
 ```
 

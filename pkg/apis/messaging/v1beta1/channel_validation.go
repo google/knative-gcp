@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"knative.dev/pkg/apis"
 )
 
@@ -42,7 +42,7 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	if err := duckv1beta1.ValidateCredential(cs.Secret, cs.ServiceAccountName); err != nil {
+	if err := duck.ValidateCredential(cs.Secret, cs.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 

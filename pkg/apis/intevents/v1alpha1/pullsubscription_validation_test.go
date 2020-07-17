@@ -26,6 +26,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
@@ -49,6 +50,35 @@ var (
 						Name:       "qux",
 					},
 				},
+			},
+		},
+		Topic: "pubsub-topic",
+		Transformer: &duckv1.Destination{
+			Ref: &duckv1.KReference{
+				APIVersion: "foo",
+				Kind:       "bar",
+				Namespace:  "baz",
+				Name:       "qux",
+			},
+		},
+		Mode: ModeCloudEventsStructured,
+	}
+
+	pullSubscriptionSpecWithKSA = PullSubscriptionSpec{
+		PubSubSpec: v1alpha1.PubSubSpec{
+			Project: "my-eventing-project",
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			IdentitySpec: v1alpha1.IdentitySpec{
+				ServiceAccountName: "old-service-account",
 			},
 		},
 		Topic: "pubsub-topic",
@@ -223,10 +253,10 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		},
 		"ClusterName annotation changed": {
 			origAnnotation: map[string]string{
-				v1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
 			},
 			updatedAnnotation: map[string]string{
-				v1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
 			},
 			allowed: false,
 		},
@@ -307,6 +337,23 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Topic: "some-other-topic",
 				Mode:  pullSubscriptionSpec.Mode,
+			},
+			allowed: false,
+		},
+		"ServiceAccountName changed": {
+			orig: &pullSubscriptionSpecWithKSA,
+			updated: PullSubscriptionSpec{
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Project: pullSubscriptionSpecWithKSA.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpecWithKSA.Sink,
+					},
+					IdentitySpec: v1alpha1.IdentitySpec{
+						ServiceAccountName: "new-service-account",
+					},
+				},
+				Topic: pullSubscriptionSpecWithKSA.Topic,
+				Mode:  pullSubscriptionSpecWithKSA.Mode,
 			},
 			allowed: false,
 		},

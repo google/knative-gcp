@@ -39,6 +39,7 @@ import (
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
+	reconcilerutils "github.com/google/knative-gcp/pkg/reconciler/utils"
 )
 
 type envConfig struct {
@@ -67,18 +68,18 @@ func NewReconciler(base *reconciler.Base, ls listers) (*Reconciler, error) {
 	if err := envconfig.Process("BROKER_CELL", &env); err != nil {
 		return nil, err
 	}
-	svcRec := &reconciler.ServiceReconciler{
+	svcRec := &reconcilerutils.ServiceReconciler{
 		KubeClient:      base.KubeClientSet,
 		ServiceLister:   ls.serviceLister,
 		EndpointsLister: ls.endpointsLister,
 		Recorder:        base.Recorder,
 	}
-	deploymentRec := &reconciler.DeploymentReconciler{
+	deploymentRec := &reconcilerutils.DeploymentReconciler{
 		KubeClient: base.KubeClientSet,
 		Lister:     ls.deploymentLister,
 		Recorder:   base.Recorder,
 	}
-	cmRec := &reconciler.ConfigMapReconciler{
+	cmRec := &reconcilerutils.ConfigMapReconciler{
 		KubeClient: base.KubeClientSet,
 		Lister:     ls.configMapLister,
 		Recorder:   base.Recorder,
@@ -100,9 +101,9 @@ type Reconciler struct {
 
 	listers
 
-	svcRec        *reconciler.ServiceReconciler
-	deploymentRec *reconciler.DeploymentReconciler
-	cmRec         *reconciler.ConfigMapReconciler
+	svcRec        *reconcilerutils.ServiceReconciler
+	deploymentRec *reconcilerutils.DeploymentReconciler
+	cmRec         *reconcilerutils.ConfigMapReconciler
 
 	env envConfig
 }

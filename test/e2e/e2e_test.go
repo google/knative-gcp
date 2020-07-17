@@ -46,7 +46,7 @@ func TestSingleBinaryEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingBinary, "v1beta1", "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingBinary, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestSingleStructuredEventForChannel(t *testing.T) {
@@ -56,7 +56,7 @@ func TestSingleStructuredEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingStructured, "v1beta1", "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingStructured, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelClusterDefaulter(t *testing.T) {
@@ -85,7 +85,7 @@ func TestEventTransformationForSubscription(t *testing.T) {
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.EventTransformationForSubscriptionTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.EventTransformationForSubscriptionTestHelper(t, e2ehelpers.SubscriptionV1beta1, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelChain(t *testing.T) {
@@ -94,7 +94,7 @@ func TestChannelChain(t *testing.T) {
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelChainTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelChainTestHelper(t, e2ehelpers.SubscriptionV1beta1, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestEventTransformationForTrigger(t *testing.T) {
@@ -132,13 +132,14 @@ func TestChannelDeadLetterSink(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelDeadLetterSinkTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelDeadLetterSinkTestHelper(t, e2ehelpers.SubscriptionV1beta1, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelTracing(t *testing.T) {
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
+	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/1455 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
 	conformancehelpers.ChannelTracingTestHelperWithChannelTestRunner(t,
@@ -211,6 +212,20 @@ func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	PubSubSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
+}
+
+// TestSmokeCloudBuildSource we can create a CloudBuildSource to ready state and we can delete a CloudBuildSource and its underlying resources.
+func TestSmokeCloudBuildSource(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeCloudBuildSourceTestImpl(t, authConfig)
+}
+
+// TestCloudBuildSourceWithTarget tests we can knock down a target from a CloudBuildSource.
+func TestCloudBuildSourceWithTarget(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	CloudBuildSourceWithTargetTestImpl(t, authConfig)
 }
 
 // TestCloudStorageSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudStorageSource.

@@ -85,7 +85,7 @@ func newController(
 		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("CloudBuildSource")),
+		FilterFunc: controller.FilterControllerGK(v1beta1.Kind("CloudBuildSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
