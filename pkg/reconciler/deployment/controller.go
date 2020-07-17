@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package deployment
 
 import (
@@ -23,55 +22,55 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/tools/cache"
-
-	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
-	deploymentreconciler "knative.dev/pkg/client/injection/kube/reconciler/apps/v1/deployment"
-
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
 const (
+	// ReconcilerName is the name of the reconciler
+	ReconcilerName = "Deployment"
+
+	// controllerAgentName is the string used by this controller to identify
+	// itself when creating events.
+	controllerAgentName = "cloud-run-events-deployment-controller"
+
 	namespace      = "cloud-run-events"
 	secretName     = duck.DefaultSecretName
 	deploymentName = "controller"
 	envKey         = "GOOGLE_APPLICATION_CREDENTIALS"
 )
 
-// NewController creates a Reconciler for Deployment and returns the result of NewImpl.
-// When the secret `google-cloud-key` in the namespace `cloud-run-events` gets updated,
-// we will enqueue the `cloud-run-events` controller.
+// NewController initializes the controller and is called by the generated code
+// Registers event handlers to enqueue events.
+// When the secret `google-cloud-key` of namespace `cloud-run-events` gets updated, we will enqueue the deployment `controller` of namespace `cloud-run-events`.
 func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
-	logger := logging.FromContext(ctx)
 
+	deploymentInformer := deployment.Get(ctx)
 	secretInformer := secret.Get(ctx)
 
 	r := &Reconciler{
-		kubeClientSet: kubeclient.Get(ctx),
-		clock:         clock.RealClock{},
+		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
+		deploymentLister: deploymentInformer.Lister(),
+		clock:            clock.RealClock{},
 	}
-	impl := deploymentreconciler.NewImpl(ctx, r, func(impl *controller.Impl) controller.Options {
-		// TODO seems that this sentinel is not working. Enqueues all deployments anyway and we keep on restarting.
-		//  I think this is due to the PromoteFunc on LeaderElection having no filtering on resources.
-		//  It is called and it just lists every resource and enqueues them.
-		sentinel := impl.EnqueueSentinel(types.NamespacedName{Namespace: namespace, Name: deploymentName})
-		secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-			FilterFunc: controller.FilterWithNameAndNamespace(namespace, secretName),
-			Handler:    handler(sentinel),
-		})
-		return controller.Options{
-			SkipStatusUpdates: true,
-		}
-	})
 
-	logger.Info("Setting up event handlers.")
+	impl := controller.NewImpl(r, r.Logger, ReconcilerName)
+
+	r.Logger.Info("Setting up event handlers")
+
+	sentinel := impl.EnqueueSentinel(types.NamespacedName{Namespace: namespace, Name: deploymentName})
+	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterWithNameAndNamespace(namespace, secretName),
+		Handler:    handler(sentinel),
+	})
 	return impl
 }
 

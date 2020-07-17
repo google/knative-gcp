@@ -19,37 +19,59 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/client-go/kubernetes"
-	"knative.dev/pkg/logging"
-
-	appsv1 "k8s.io/api/apps/v1"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	v1 "k8s.io/api/apps/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/clock"
-	"knative.dev/pkg/client/injection/kube/reconciler/apps/v1/deployment"
-	"knative.dev/pkg/reconciler"
+	appsv1listers "k8s.io/client-go/listers/apps/v1"
+	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
 )
 
 const (
 	SecretUpdateAnnotation = "events.cloud.google.com/secretLastObservedUpdateTime"
 )
 
-// Reconciler implements controller.Reconciler for Deployment resources.
 type Reconciler struct {
-	clock clock.Clock
+	*reconciler.Base
 
-	// KubeClientSet allows us to talk to the k8s for core APIs.
-	kubeClientSet kubernetes.Interface
+	// listers index properties about resources
+	deploymentLister appsv1listers.DeploymentLister
+
+	clock clock.Clock
 }
 
-// Check that our Reconciler implements Interface
-var _ deployment.Interface = (*Reconciler)(nil)
+// Check that our Reconciler implements controller.Reconciler
+var _ controller.Reconciler = (*Reconciler)(nil)
 
-// ReconcileKind implements Interface.ReconcileKind.
-// It gets the deployment and then update its annotation.
+// Reconciler implements controller.Reconciler. It gets the deployment and then update its annotation.
 // With this, the deployment will recreate the pods and they will pick up the latest secret image immediately.
 // Otherwise we would need to wait for 1 min for the deployment pods to pick up the updated secret.
-func (r *Reconciler) ReconcileKind(ctx context.Context, d *appsv1.Deployment) reconciler.Event {
-	if d.Namespace != namespace || d.Name != deploymentName {
-		logging.FromContext(ctx).Info("Discarding attempt to reconcile invalid deployment")
+func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Invalid resource key")
+		return nil
+	}
+	// Get the deployment resource with this namespace/name
+	original, err := r.deploymentLister.Deployments(namespace).Get(name)
+	if apierrs.IsNotFound(err) {
+		// The resource may no longer exist, in which case we stop processing.
+		logging.FromContext(ctx).Desugar().Error("Deployment in work queue no longer exists")
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	d := original.DeepCopy()
+
+	// Reconcile this copy of the Deployment.
+	return r.reconcile(ctx, d)
+}
+
+func (r *Reconciler) reconcile(ctx context.Context, d *v1.Deployment) error {
+	if d.DeletionTimestamp != nil {
 		return nil
 	}
 
@@ -59,7 +81,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, d *appsv1.Deployment) re
 	}
 	annotations[SecretUpdateAnnotation] = r.clock.Now().String()
 	d.Spec.Template.SetAnnotations(annotations)
-	_, err := r.kubeClientSet.AppsV1().Deployments(d.Namespace).Update(d)
+	_, err := r.KubeClientSet.AppsV1().Deployments(d.Namespace).Update(d)
 	if err != nil {
 		return fmt.Errorf("failed to update deployment: %v", err)
 	}
