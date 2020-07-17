@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Google LLC.
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,17 +18,17 @@ package v1
 
 import (
 	"context"
-	"testing"
+	"fmt"
+
+	"knative.dev/pkg/apis"
 )
 
-func TestTopicConversionBadType(t *testing.T) {
-	good, bad := &Topic{}, &PullSubscription{}
+// ConvertTo implements apis.Convertible.
+func (*CloudPubSubSource) ConvertTo(_ context.Context, to apis.Convertible) error {
+	return fmt.Errorf("v1 is the highest known version, got: %T", to)
+}
 
-	if err := good.ConvertTo(context.Background(), bad); err == nil {
-		t.Errorf("ConvertTo() = %#v, wanted error", bad)
-	}
-
-	if err := good.ConvertFrom(context.Background(), bad); err == nil {
-		t.Errorf("ConvertFrom() = %#v, wanted error", good)
-	}
+// ConvertFrom implements apis.Convertible.
+func (*CloudPubSubSource) ConvertFrom(_ context.Context, from apis.Convertible) error {
+	return fmt.Errorf("v1 is the highest known version, got: %T", from)
 }

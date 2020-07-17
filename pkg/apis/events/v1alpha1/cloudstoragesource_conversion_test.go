@@ -53,7 +53,7 @@ var (
 )
 
 func TestCloudStorageSourceConversionBadType(t *testing.T) {
-	good, bad := &CloudStorageSource{}, &CloudStorageSource{}
+	good, bad := &CloudStorageSource{}, &CloudPubSubSource{}
 
 	if err := good.ConvertTo(context.Background(), bad); err == nil {
 		t.Errorf("ConvertTo() = %#v, wanted error", bad)

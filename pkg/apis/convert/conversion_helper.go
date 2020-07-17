@@ -19,6 +19,8 @@ package convert
 import (
 	"context"
 
+	pkgduckv1 "knative.dev/pkg/apis/duck/v1"
+
 	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
@@ -170,6 +172,18 @@ func ToV1beta1AddressStatus(ctx context.Context, from pkgduckv1alpha1.AddressSta
 	return to, nil
 }
 
+func ToV1AddressStatus(ctx context.Context, from pkgduckv1beta1.AddressStatus) (pkgduckv1.AddressStatus, error) {
+	to := pkgduckv1.AddressStatus{}
+	if from.Address != nil {
+		to.Address = &pkgduckv1.Addressable{}
+		err := from.Address.ConvertTo(ctx, to.Address)
+		if err != nil {
+			return pkgduckv1.AddressStatus{}, err
+		}
+	}
+	return to, nil
+}
+
 func FromV1beta1AddressStatus(ctx context.Context, from pkgduckv1beta1.AddressStatus) (pkgduckv1alpha1.AddressStatus, error) {
 	to := pkgduckv1alpha1.AddressStatus{}
 	if from.Address != nil {
@@ -177,6 +191,18 @@ func FromV1beta1AddressStatus(ctx context.Context, from pkgduckv1beta1.AddressSt
 		err := to.Address.ConvertFrom(ctx, from.Address)
 		if err != nil {
 			return pkgduckv1alpha1.AddressStatus{}, err
+		}
+	}
+	return to, nil
+}
+
+func FromV1AddressStatus(ctx context.Context, from pkgduckv1.AddressStatus) (pkgduckv1beta1.AddressStatus, error) {
+	to := pkgduckv1beta1.AddressStatus{}
+	if from.Address != nil {
+		to.Address = &pkgduckv1beta1.Addressable{}
+		err := to.Address.ConvertFrom(ctx, from.Address)
+		if err != nil {
+			return pkgduckv1beta1.AddressStatus{}, err
 		}
 	}
 	return to, nil

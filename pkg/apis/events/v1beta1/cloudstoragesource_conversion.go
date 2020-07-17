@@ -25,7 +25,8 @@ import (
 )
 
 // ConvertTo implements apis.Convertible.
-// Converts source (from v1beta1.CloudStorageSource) into a higher version.
+// Converts from v1beta1.CloudStorageSource to a higher version.
+// Currently, we only support v1 as a higher version.
 func (source *CloudStorageSource) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *v1.CloudStorageSource:
@@ -45,7 +46,8 @@ func (source *CloudStorageSource) ConvertTo(ctx context.Context, to apis.Convert
 }
 
 // ConvertFrom implements apis.Convertible.
-// Converts obj from higher versions  into v1beta1.CloudStorageSource.
+// Converts from a higher version of CloudStorageSource to v1beta1.CloudStorageSource.
+// Currently, we only support v1 as a higher version.
 func (sink *CloudStorageSource) ConvertFrom(ctx context.Context, from apis.Convertible) error {
 	switch source := from.(type) {
 	case *v1.CloudStorageSource:

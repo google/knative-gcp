@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Google LLC.
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import (
 	"testing"
 )
 
-func TestTopicConversionBadType(t *testing.T) {
-	good, bad := &Topic{}, &PullSubscription{}
+func TestCloudAuditLogsSourceConversionBadType(t *testing.T) {
+	good, bad := &CloudAuditLogsSource{}, &CloudAuditLogsSource{}
 
 	if err := good.ConvertTo(context.Background(), bad); err == nil {
 		t.Errorf("ConvertTo() = %#v, wanted error", bad)
