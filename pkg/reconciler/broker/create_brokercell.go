@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler/names"
 	"knative.dev/pkg/apis"
@@ -41,7 +42,8 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 	var err error
 	// TODO(#866) Get brokercell based on the label (or annotation) on the broker.
 	bc, err = r.brokerCellLister.BrokerCells(system.Namespace()).Get(resources.DefaultBrokerCellName)
-
+	bName := types.NamespacedName{Namespace: b.Namespace, Name: b.Name}
+	bcName := types.NamespacedName{Namespace: bc.Namespace, Name: bc.Name}
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Error reconciling brokercell", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
 		b.Status.MarkBrokerCelllUnknown("BrokerCellUnknown", "Failed to get brokercell %s/%s", bc.Namespace, bc.Name)
@@ -73,7 +75,11 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 	}
 
 	if bc.Status.IsReady() {
-		b.Status.MarkBrokerCellReady()
+		if r.brokerCtl.MinGeneration(bcName, bName) < b.Generation {
+			b.Status.MarkBrokerCelllUnknown("BrokerCellNotProgrammed", "Brokercell %s has not been programmed with config for broker %s (generation %d)", bcName, bName, b.Generation)
+		} else {
+			b.Status.MarkBrokerCellReady()
+		}
 	} else {
 		b.Status.MarkBrokerCelllUnknown("BrokerCellNotReady", "Brokercell %s/%s is not ready", bc.Namespace, bc.Name)
 	}

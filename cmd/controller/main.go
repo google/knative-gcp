@@ -91,6 +91,7 @@ func Controllers(
 	kedaPullsubscriptionController kedapullsubscription.Constructor,
 	topicController topic.Constructor,
 	channelController channel.Constructor,
+	brokerController broker.Constructor,
 	brokercellController brokercell.Constructor,
 ) []injection.ControllerConstructor {
 	return []injection.ControllerConstructor{
@@ -103,9 +104,9 @@ func Controllers(
 		injection.ControllerConstructor(kedaPullsubscriptionController),
 		injection.ControllerConstructor(topicController),
 		injection.ControllerConstructor(channelController),
+		injection.ControllerConstructor(brokerController),
 		injection.ControllerConstructor(brokercellController),
 		deployment.NewController,
-		broker.NewController,
 		trigger.NewController,
 	}
 }

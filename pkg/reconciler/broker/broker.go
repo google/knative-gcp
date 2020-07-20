@@ -30,6 +30,7 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/broker/control"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
@@ -56,6 +57,8 @@ type Reconciler struct {
 
 	// pubsubClient is used as the Pubsub client when present.
 	pubsubClient *pubsub.Client
+
+	brokerCtl *control.Server
 }
 
 // Check that Reconciler implements Interface

@@ -17,6 +17,7 @@ limitations under the License.
 package control
 
 import (
+	"math"
 	"sync"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -38,7 +39,9 @@ type updates struct {
 }
 
 type watcher struct {
-	updateCh chan updates
+	updateCh       chan updates
+	generationsMut sync.RWMutex
+	generations    map[types.NamespacedName]int64
 }
 
 type Server struct {
@@ -63,7 +66,8 @@ func (s *Server) WatchBrokers(req *WatchBrokersReq, watch BrokerControl_WatchBro
 	}
 
 	w := watcher{
-		updateCh: make(chan updates, 1),
+		updateCh:    make(chan updates, 1),
+		generations: make(map[types.NamespacedName]int64),
 	}
 	w.updateCh <- updates{needsUpdate: make(chan struct{})}
 
@@ -87,6 +91,7 @@ func (s *Server) WatchBrokers(req *WatchBrokersReq, watch BrokerControl_WatchBro
 	if err := watch.Send(&WatchBrokersResp{Updates: brokers}); err != nil {
 		return err
 	}
+	w.updateGenerations(brokers)
 	return w.watchUpdates(cell, watch)
 }
 
@@ -121,6 +126,29 @@ func (s *Server) UpsertBrokercell(brokercellName types.NamespacedName, brokers m
 	}
 }
 
+func (s *Server) MinGeneration(brokercell types.NamespacedName, broker types.NamespacedName) int64 {
+	var minGeneration int64 = math.MaxInt64
+	s.brokerCellsMut.RLock()
+	cell := s.brokerCells[brokercell]
+	if cell == nil {
+		return -1
+	}
+	s.brokerCellsMut.RUnlock()
+	cell.watchersMut.RLock()
+	watchers := cell.watchers
+	cell.watchersMut.RUnlock()
+	for _, watcher := range watchers {
+		watcher.generationsMut.RLock()
+		if g, ok := watcher.generations[broker]; ok && g < minGeneration {
+			minGeneration = g
+		} else {
+			minGeneration = -1
+		}
+		watcher.generationsMut.RUnlock()
+	}
+	return minGeneration
+}
+
 func (b *brokerCell) sendUpdate(broker types.NamespacedName) {
 	b.watchersMut.RLock()
 	watchers := b.watchers
@@ -132,6 +160,18 @@ func (b *brokerCell) sendUpdate(broker types.NamespacedName) {
 		}
 		u.brokers = append(u.brokers, broker)
 		w.updateCh <- u
+	}
+}
+
+func (w *watcher) updateGenerations(updates []*BrokerUpdate) {
+	w.generationsMut.Lock()
+	defer w.generationsMut.Unlock()
+	for _, u := range updates {
+		if u.Config == nil {
+			delete(w.generations, brokerNN(u.Name))
+		} else {
+			w.generations[brokerNN(u.Name)] = u.Config.GetGeneration()
+		}
 	}
 }
 
@@ -155,5 +195,6 @@ func (w *watcher) watchUpdates(cell *brokerCell, watch BrokerControl_WatchBroker
 		if err := watch.Send(&resp); err != nil {
 			return err
 		}
+		w.updateGenerations(resp.Updates)
 	}
 }

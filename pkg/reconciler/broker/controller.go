@@ -29,10 +29,12 @@ import (
 	"knative.dev/eventing/pkg/logging"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/broker/control"
 	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
 	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
@@ -47,7 +49,19 @@ const (
 	controllerAgentName = "broker-controller"
 )
 
-func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+type Constructor injection.ControllerConstructor
+
+func NewConstructor(brokerCtl *control.Server) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, brokerCtl)
+	}
+}
+
+func newController(
+	ctx context.Context,
+	cmw configmap.Watcher,
+	brokerCtl *control.Server,
+) *controller.Impl {
 	brokerInformer := brokerinformer.Get(ctx)
 	bcInformer := brokercellinformer.Get(ctx)
 
@@ -76,6 +90,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
 		brokerCellLister: bcInformer.Lister(),
 		pubsubClient:     client,
+		brokerCtl:        brokerCtl,
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass)

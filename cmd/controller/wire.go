@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/broker/control"
+	"github.com/google/knative-gcp/pkg/reconciler/broker"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs"
 	"github.com/google/knative-gcp/pkg/reconciler/events/build"
@@ -50,6 +51,7 @@ func InitializeControllers(ctx context.Context, brokerCtl *control.Server) ([]in
 		keda.NewConstructor,
 		topic.NewConstructor,
 		channel.NewConstructor,
+		broker.NewConstructor,
 		brokercell.NewConstructor,
 	))
 }

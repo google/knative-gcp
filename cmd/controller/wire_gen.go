@@ -10,6 +10,7 @@ import (
 	"context"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/broker/control"
+	"github.com/google/knative-gcp/pkg/reconciler/broker"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs"
 	"github.com/google/knative-gcp/pkg/reconciler/events/build"
@@ -50,7 +51,8 @@ func InitializeControllers(ctx context.Context, brokerCtl *control.Server) ([]in
 	kedaConstructor := keda.NewConstructor(iamPolicyManager, storeSingleton)
 	topicConstructor := topic.NewConstructor(iamPolicyManager, storeSingleton)
 	channelConstructor := channel.NewConstructor(iamPolicyManager, storeSingleton)
+	brokerConstructor := broker.NewConstructor(brokerCtl)
 	brokercellConstructor := brokercell.NewConstructor(brokerCtl)
-	v2 := Controllers(constructor, storageConstructor, schedulerConstructor, pubsubConstructor, buildConstructor, staticConstructor, kedaConstructor, topicConstructor, channelConstructor, brokercellConstructor)
+	v2 := Controllers(constructor, storageConstructor, schedulerConstructor, pubsubConstructor, buildConstructor, staticConstructor, kedaConstructor, topicConstructor, channelConstructor, brokerConstructor, brokercellConstructor)
 	return v2, nil
 }
