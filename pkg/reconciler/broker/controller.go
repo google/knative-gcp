@@ -97,6 +97,8 @@ func newController(
 
 	r.Logger.Info("Setting up event handlers")
 
+	brokerCtl.RegisterBrokerWorkqueue(impl.WorkQueue)
+
 	brokerInformer.Informer().AddEventHandlerWithResyncPeriod(
 		cache.FilteringResourceEventHandler{
 			// Only reconcile brokers with the proper class annotation

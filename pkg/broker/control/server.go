@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/workqueue"
 )
 
 type brokerCell struct {
@@ -40,6 +41,7 @@ type updates struct {
 }
 
 type watcher struct {
+	server         *Server
 	updateCh       chan updates
 	generationsMut sync.RWMutex
 	generations    map[types.NamespacedName]int64
@@ -47,6 +49,9 @@ type watcher struct {
 
 type Server struct {
 	UnimplementedBrokerControlServer
+
+	brokerQueueMut sync.RWMutex
+	brokerQueue    workqueue.Interface
 
 	brokerCellsMut sync.RWMutex
 	brokerCells    map[types.NamespacedName]*brokerCell
@@ -67,6 +72,7 @@ func (s *Server) WatchBrokers(req *WatchBrokersReq, watch BrokerControl_WatchBro
 	}
 
 	w := watcher{
+		server:      s,
 		updateCh:    make(chan updates, 1),
 		generations: make(map[types.NamespacedName]int64),
 	}
@@ -101,6 +107,12 @@ func brokerName(broker types.NamespacedName) *config.BrokerName {
 		Namespace: broker.Namespace,
 		Name:      broker.Name,
 	}
+}
+
+func (s *Server) RegisterBrokerWorkqueue(queue workqueue.Interface) {
+	s.brokerQueueMut.Lock()
+	defer s.brokerQueueMut.Unlock()
+	s.brokerQueue = queue
 }
 
 func (s *Server) UpsertBrokercell(brokercellName types.NamespacedName, brokers map[types.NamespacedName]*config.BrokerConfig) {
@@ -143,6 +155,7 @@ func (s *Server) UpdateBrokerConfig(brokercellName types.NamespacedName, brokerN
 		}
 		cell.brokersMut.Unlock()
 	} else {
+		s.brokerCellsMut.Unlock()
 		return errors.New("brokercell config not initialized")
 	}
 	return nil
@@ -171,6 +184,15 @@ func (s *Server) MinGeneration(brokercell types.NamespacedName, broker types.Nam
 	return minGeneration
 }
 
+func (s *Server) enqueueBroker(brokerName types.NamespacedName) {
+	s.brokerQueueMut.RLock()
+	queue := s.brokerQueue
+	s.brokerQueueMut.RUnlock()
+	if queue != nil {
+		queue.Add(brokerName)
+	}
+}
+
 func (b *brokerCell) sendUpdate(broker types.NamespacedName) {
 	b.watchersMut.RLock()
 	watchers := b.watchers
@@ -189,11 +211,13 @@ func (w *watcher) updateGenerations(updates []*BrokerUpdate) {
 	w.generationsMut.Lock()
 	defer w.generationsMut.Unlock()
 	for _, u := range updates {
+		n := brokerNN(u.Name)
 		if u.Config == nil {
-			delete(w.generations, brokerNN(u.Name))
+			delete(w.generations, n)
 		} else {
-			w.generations[brokerNN(u.Name)] = u.Config.GetGeneration()
+			w.generations[n] = u.Config.GetGeneration()
 		}
+		w.server.enqueueBroker(n)
 	}
 }
 
