@@ -19,11 +19,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
-	"log"
-	"net/http"
 
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 
@@ -49,7 +50,7 @@ func main() {
 	}
 }
 
-func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) (*event.Event, protocol.Result){
+func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) (*event.Event, protocol.Result) {
 	// Check if the received event is the event sent by CloudPubSubSource.
 	// If it is, send back a response CloudEvent.
 	// Print out event received to log
@@ -62,7 +63,7 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) (*event
 		respEvent.SetType(lib.E2EBuildRespEventType)
 		respEvent.SetSource(event.Source())
 		respEvent.SetSubject(event.Subject())
-		respEvent.SetData(cloudevents.ApplicationJSON,event.Data)
+		respEvent.SetData(cloudevents.ApplicationJSON, event.Data)
 		respEvent.SetDataContentType(event.DataContentType())
 		fmt.Printf("context of respEvent is: %v\n", respEvent.Context.String())
 		fmt.Printf("context of respEvent is: %v\n", respEvent.Context.String())
