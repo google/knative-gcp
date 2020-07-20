@@ -45,6 +45,7 @@ type Args struct {
 	Image              string
 	ServiceAccountName string
 	MetricsPort        int
+	AllowIstioSidecar  bool
 }
 
 // IngressArgs are the arguments to create a Broker's ingress Deployment.

@@ -31,6 +31,8 @@ spec:
         app: cloud-run-events
         role: webhook
         events.cloud.google.com/release: devel
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: webhook
       containers:
