@@ -19,12 +19,16 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/cloudevents/sdk-go/v2/event"
+	"github.com/cloudevents/sdk-go/v2/protocol"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"log"
 	"net/http"
 
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -33,7 +37,7 @@ type Receiver struct {
 }
 
 func main() {
-	client, err := cloudevents.NewDefaultClient()
+	client, err := kncloudevents.NewDefaultClient()
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +49,7 @@ func main() {
 	}
 }
 
-func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) {
+func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) (*event.Event, protocol.Result){
 	// Check if the received event is the event sent by CloudPubSubSource.
 	// If it is, send back a response CloudEvent.
 	// Print out event received to log
@@ -53,17 +57,17 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *c
 	fmt.Printf("context of event is: %v\n", event.Context.String())
 
 	if event.Type() == schemasv1.CloudBuildSourceEventType {
-		resp.Status = http.StatusAccepted
 		respEvent := cloudevents.NewEvent(cloudevents.VersionV1)
 		respEvent.SetID(lib.E2EBuildRespEventID)
 		respEvent.SetType(lib.E2EBuildRespEventType)
 		respEvent.SetSource(event.Source())
 		respEvent.SetSubject(event.Subject())
-		respEvent.SetData(event.Data)
+		respEvent.SetData(cloudevents.ApplicationJSON,event.Data)
 		respEvent.SetDataContentType(event.DataContentType())
 		fmt.Printf("context of respEvent is: %v\n", respEvent.Context.String())
-		resp.Event = &respEvent
+		fmt.Printf("context of respEvent is: %v\n", respEvent.Context.String())
+		return &respEvent, cehttp.NewResult(http.StatusAccepted, "OK")
 	} else {
-		resp.Status = http.StatusForbidden
+		return nil, cehttp.NewResult(http.StatusForbidden, "Forbidden")
 	}
 }
