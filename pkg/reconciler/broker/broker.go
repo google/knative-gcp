@@ -26,10 +26,12 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/control"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
@@ -95,20 +97,32 @@ func (r *Reconciler) reconcileBroker(ctx context.Context, b *brokerv1beta1.Broke
 	b.Status.InitializeConditions()
 	b.Status.ObservedGeneration = b.Generation
 
-	if err := r.ensureBrokerCellExists(ctx, b); err != nil {
+	bc, err := r.ensureBrokerCellExists(ctx, b)
+	if err != nil {
 		return fmt.Errorf("brokercell reconcile failed: %v", err)
 	}
 
 	// Create decoupling topic and pullsub for this broker. Ingress will push
 	// to this topic and fanout will pull from the pull sub.
-	if err := r.reconcileDecouplingTopicAndSubscription(ctx, b); err != nil {
+	queue, err := r.reconcileDecouplingTopicAndSubscription(ctx, b)
+	if err != nil {
 		return fmt.Errorf("decoupling topic reconcile failed: %v", err)
 	}
+
+	bName := types.NamespacedName{Namespace: b.Namespace, Name: b.Name}
+	bcName := types.NamespacedName{Namespace: bc.Namespace, Name: bc.Name}
+	config := &config.BrokerConfig{
+		Id:            string(b.UID),
+		Generation:    b.Generation,
+		Address:       b.Status.Address.URL.String(),
+		DecoupleQueue: queue,
+	}
+	r.brokerCtl.UpdateBrokerConfig(bcName, bName, config)
 
 	return nil
 }
 
-func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context, b *brokerv1beta1.Broker) error {
+func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context, b *brokerv1beta1.Broker) (*config.Queue, error) {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling decoupling topic", zap.Any("broker", b))
 	// get ProjectID from metadata if projectID isn't set
@@ -117,7 +131,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 		logger.Error("Failed to find project id", zap.Error(err))
 		b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
 		b.Status.MarkSubscriptionUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
-		return err
+		return nil, err
 	}
 	// Set the projectID in the status.
 	//TODO uncomment when eventing webhook allows this
@@ -131,7 +145,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
 			b.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
 			b.Status.MarkSubscriptionUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
-			return err
+			return nil, err
 		}
 		defer client.Close()
 	}
@@ -150,7 +164,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	topicConfig := &pubsub.TopicConfig{Labels: labels}
 	topic, err := pubsubReconciler.ReconcileTopic(ctx, topicID, topicConfig, b, &b.Status)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// TODO(grantr): this isn't actually persisted due to webhook issues.
 	//TODO uncomment when eventing webhook allows this
@@ -166,14 +180,14 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 		// RetentionDuration
 	}
 	if _, err := pubsubReconciler.ReconcileSubscription(ctx, subID, subConfig, b, &b.Status); err != nil {
-		return err
+		return nil, err
 	}
 
 	// TODO(grantr): this isn't actually persisted due to webhook issues.
 	//TODO uncomment when eventing webhook allows this
 	//b.Status.SubscriptionID = sub.ID()
 
-	return nil
+	return &config.Queue{Topic: topicID, Subscription: subID}, nil
 }
 
 func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b *brokerv1beta1.Broker) error {

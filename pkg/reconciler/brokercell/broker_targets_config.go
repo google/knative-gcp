@@ -137,8 +137,9 @@ func (r *Reconciler) addToConfig(ctx context.Context, b *brokerv1beta1.Broker, t
 
 func brokerConfig(b *v1beta1.Broker) *config.BrokerConfig {
 	return &config.BrokerConfig{
-		Id:      string(b.UID),
-		Address: b.Status.Address.URL.String(),
+		Id:         string(b.UID),
+		Generation: b.Generation,
+		Address:    b.Status.Address.URL.String(),
 		DecoupleQueue: &config.Queue{
 			Topic:        brokerresources.GenerateDecouplingTopicName(b),
 			Subscription: brokerresources.GenerateDecouplingSubscriptionName(b),

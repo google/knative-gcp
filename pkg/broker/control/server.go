@@ -17,6 +17,7 @@ limitations under the License.
 package control
 
 import (
+	"errors"
 	"math"
 	"sync"
 
@@ -124,6 +125,27 @@ func (s *Server) UpsertBrokercell(brokercellName types.NamespacedName, brokers m
 		s.brokerCells[brokercellName] = &brokerCell{brokers: brokers}
 		s.brokerCellsMut.Unlock()
 	}
+}
+
+func (s *Server) UpdateBrokerConfig(brokercellName types.NamespacedName, brokerName types.NamespacedName, brokerConfig *config.BrokerConfig) error {
+	s.brokerCellsMut.Lock()
+	if cell, ok := s.brokerCells[brokercellName]; ok {
+		s.brokerCellsMut.Unlock()
+		cell.brokersMut.Lock()
+		if brokerConfig == nil {
+			if _, ok = cell.brokers[brokercellName]; ok {
+				delete(cell.brokers, brokercellName)
+				cell.sendUpdate(brokercellName)
+			}
+		} else if oldConfig := cell.brokers[brokercellName]; oldConfig == nil || brokerConfig.Generation > oldConfig.Generation {
+			cell.brokers[brokercellName] = brokerConfig
+			cell.sendUpdate(brokercellName)
+		}
+		cell.brokersMut.Unlock()
+	} else {
+		return errors.New("brokercell config not initialized")
+	}
+	return nil
 }
 
 func (s *Server) MinGeneration(brokercell types.NamespacedName, broker types.NamespacedName) int64 {

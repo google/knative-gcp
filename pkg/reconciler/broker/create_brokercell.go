@@ -37,17 +37,15 @@ import (
 )
 
 // ensureBrokerCellExists creates a BrokerCell if it doesn't exist, and update broker status based on brokercell status.
-func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta1.Broker) error {
+func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta1.Broker) (*inteventsv1alpha1.BrokerCell, error) {
 	var bc *inteventsv1alpha1.BrokerCell
 	var err error
 	// TODO(#866) Get brokercell based on the label (or annotation) on the broker.
 	bc, err = r.brokerCellLister.BrokerCells(system.Namespace()).Get(resources.DefaultBrokerCellName)
-	bName := types.NamespacedName{Namespace: b.Namespace, Name: b.Name}
-	bcName := types.NamespacedName{Namespace: bc.Namespace, Name: bc.Name}
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Error reconciling brokercell", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
 		b.Status.MarkBrokerCelllUnknown("BrokerCellUnknown", "Failed to get brokercell %s/%s", bc.Namespace, bc.Name)
-		return err
+		return nil, err
 	}
 
 	if apierrs.IsNotFound(err) {
@@ -56,7 +54,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 		if err != nil && !apierrs.IsAlreadyExists(err) {
 			logging.FromContext(ctx).Error("Error creating brokercell", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
 			b.Status.MarkBrokerCelllFailed("BrokerCellCreationFailed", "Failed to create %s/%s", want.Namespace, want.Name)
-			return err
+			return nil, err
 		}
 		if apierrs.IsAlreadyExists(err) {
 			logging.FromContext(ctx).Info("Brokercell already exists", zap.String("namespace", b.Namespace), zap.String("broker", b.Name))
@@ -66,7 +64,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 			if err != nil {
 				logging.FromContext(ctx).Error("Failed to get the brokercell from the API server", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
 				b.Status.MarkBrokerCelllUnknown("BrokerCellUnknown", "Failed to get the brokercell from the API server %s/%s", want.Namespace, want.Name)
-				return err
+				return nil, err
 			}
 		}
 		if err == nil {
@@ -74,6 +72,8 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 		}
 	}
 
+	bName := types.NamespacedName{Namespace: b.Namespace, Name: b.Name}
+	bcName := types.NamespacedName{Namespace: bc.Namespace, Name: bc.Name}
 	if bc.Status.IsReady() {
 		if r.brokerCtl.MinGeneration(bcName, bName) < b.Generation {
 			b.Status.MarkBrokerCelllUnknown("BrokerCellNotProgrammed", "Brokercell %s has not been programmed with config for broker %s (generation %d)", bcName, bName, b.Generation)
@@ -92,5 +92,5 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 		Path:   fmt.Sprintf("/%s/%s", b.Namespace, b.Name),
 	})
 
-	return nil
+	return bc, nil
 }
