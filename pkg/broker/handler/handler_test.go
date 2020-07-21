@@ -156,36 +156,6 @@ func TestHandler(t *testing.T) {
 	})
 }
 
-func TestRetryPolicy(t *testing.T) {
-	ctx := context.Background()
-	c, close := testPubsubClient(ctx, t, "test-project")
-	defer close()
-
-	topic, err := c.CreateTopic(ctx, testTopic)
-	if err != nil {
-		t.Fatalf("failed to create topic: %v", err)
-	}
-	wantCfg := pubsub.SubscriptionConfig{
-		Topic: topic,
-		RetryPolicy: &pubsub.RetryPolicy{
-			MinimumBackoff: time.Millisecond,
-			MaximumBackoff: 2 * time.Millisecond,
-		},
-	}
-	sub, err := c.CreateSubscription(ctx, "test-sub", wantCfg)
-	if err != nil {
-		t.Fatalf("failed to create subscription: %v", err)
-	}
-
-	cfg, err := sub.Config(ctx)
-	if err != nil {
-		t.Fatalf("could not get pubsub config: %v", err)
-	}
-	if diff := cmp.Diff(wantCfg.RetryPolicy, cfg.RetryPolicy); diff != "" {
-		t.Errorf("pubsub config retry policy (-want,+got): %v", diff)
-	}
-}
-
 func nextEventWithTimeout(eventCh <-chan *event.Event) *event.Event {
 	select {
 	case <-time.After(time.Second):

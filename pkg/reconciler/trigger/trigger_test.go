@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
+	"cloud.google.com/go/pubsub"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -71,6 +73,10 @@ var (
 		Group:   subscriberGroup,
 		Version: subscriberVersion,
 		Kind:    subscriberKind,
+	}
+	retryPolicy = &pubsub.RetryPolicy{
+		MaximumBackoff: time.Minute,
+		MinimumBackoff: time.Second,
 	}
 )
 
@@ -333,6 +339,11 @@ func TestAllCasesTrigger(t *testing.T) {
 			PostConditions: []func(*testing.T, *TableRow){
 				OnlyTopics("cre-tgr_testnamespace_test-trigger_abc123"),
 				OnlySubscriptions("cre-tgr_testnamespace_test-trigger_abc123"),
+				SubscriptionHasRetryPolicy("cre-tgr_testnamespace_test-trigger_abc123",
+					&pubsub.RetryPolicy{
+						MaximumBackoff: time.Minute,
+						MinimumBackoff: time.Second,
+					}),
 			},
 		},
 	}
@@ -364,6 +375,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			projectID:          testProject,
 			pubsubClient:       psclient,
+			retryPolicy:        retryPolicy,
 		}
 
 		return triggerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetTriggerLister(), r.Recorder, r, withAgentAndFinalizer(nil))

@@ -23,6 +23,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
+	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -109,6 +110,20 @@ func SubscriptionExists(id string) func(*testing.T, *rtesting.TableRow) {
 			t.Errorf("Error checking subscription existence: %v", err)
 		} else if !exist {
 			t.Errorf("Expected subscription %q to exist", id)
+		}
+	}
+}
+
+func SubscriptionHasRetryPolicy(id string, wantPolicy *pubsub.RetryPolicy) func(*testing.T, *rtesting.TableRow) {
+	return func(t *testing.T, r *rtesting.TableRow) {
+		c := getPubsubClient(r)
+		sub := c.Subscription(id)
+		cfg, err := sub.Config(context.Background())
+		if err != nil {
+			t.Errorf("Error getting pubsub config: %v", err)
+		}
+		if diff := cmp.Diff(wantPolicy, cfg.RetryPolicy); diff != "" {
+			t.Errorf("Pubsub config retry policy (-want,+got): %v", diff)
 		}
 	}
 }
