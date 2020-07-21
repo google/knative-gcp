@@ -24,6 +24,7 @@ import (
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -47,8 +48,10 @@ type CloudPubSubSource struct {
 
 // Verify that CloudPubSubSource matches various duck types.
 var (
+	_ apis.Convertible             = (*CloudPubSubSource)(nil)
 	_ apis.Defaultable             = (*CloudPubSubSource)(nil)
 	_ apis.Validatable             = (*CloudPubSubSource)(nil)
+	_ runtime.Object               = (*CloudPubSubSource)(nil)
 	_ kmeta.OwnerRefable           = (*CloudPubSubSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudPubSubSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudPubSubSource)(nil)

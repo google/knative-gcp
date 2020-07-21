@@ -18,17 +18,48 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/google/knative-gcp/pkg/apis/convert"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 
 	"knative.dev/pkg/apis"
 )
 
 // ConvertTo implements apis.Convertible.
-func (*CloudPubSubSource) ConvertTo(_ context.Context, to apis.Convertible) error {
-	return fmt.Errorf("v1beta1 is the highest known version, got: %T", to)
+// Converts from a v1alpha1.CloudPubSubSource to a higher version of CloudPubSubSource.
+// Currently, we only support v1 as a higher version.
+func (source *CloudPubSubSource) ConvertTo(ctx context.Context, to apis.Convertible) error {
+	switch sink := to.(type) {
+	case *v1.CloudPubSubSource:
+		sink.ObjectMeta = source.ObjectMeta
+		sink.Spec.PubSubSpec = convert.ToV1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Spec.Topic = source.Spec.Topic
+		sink.Spec.AckDeadline = source.Spec.AckDeadline
+		sink.Spec.RetainAckedMessages = source.Spec.RetainAckedMessages
+		sink.Spec.RetentionDuration = source.Spec.RetentionDuration
+		sink.Status.PubSubStatus = convert.ToV1PubSubStatus(source.Status.PubSubStatus)
+		return nil
+	default:
+		return apis.ConvertToViaProxy(ctx, source, &v1.CloudPubSubSource{}, sink)
+
+	}
 }
 
 // ConvertFrom implements apis.Convertible.
-func (*CloudPubSubSource) ConvertFrom(_ context.Context, from apis.Convertible) error {
-	return fmt.Errorf("v1beta1 is the highest known version, got: %T", from)
+// Converts from a higher version of CloudPubSubSource to a v1alpha1.CloudPubSubSource.
+// Currently, we only support v1 as a higher version.
+func (sink *CloudPubSubSource) ConvertFrom(ctx context.Context, from apis.Convertible) error {
+	switch source := from.(type) {
+	case *v1.CloudPubSubSource:
+		sink.ObjectMeta = source.ObjectMeta
+		sink.Spec.PubSubSpec = convert.FromV1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Spec.Topic = source.Spec.Topic
+		sink.Spec.AckDeadline = source.Spec.AckDeadline
+		sink.Spec.RetainAckedMessages = source.Spec.RetainAckedMessages
+		sink.Spec.RetentionDuration = source.Spec.RetentionDuration
+		sink.Status.PubSubStatus = convert.FromV1PubSubStatus(source.Status.PubSubStatus)
+		return nil
+	default:
+		return apis.ConvertFromViaProxy(ctx, source, &v1.CloudPubSubSource{}, sink)
+	}
 }

@@ -21,6 +21,7 @@ import (
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -43,8 +44,10 @@ type CloudSchedulerSource struct {
 
 // Verify that CloudSchedulerSource matches various duck types.
 var (
+	_ apis.Convertible             = (*CloudSchedulerSource)(nil)
 	_ apis.Defaultable             = (*CloudSchedulerSource)(nil)
 	_ apis.Validatable             = (*CloudSchedulerSource)(nil)
+	_ runtime.Object               = (*CloudSchedulerSource)(nil)
 	_ kmeta.OwnerRefable           = (*CloudSchedulerSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudSchedulerSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudSchedulerSource)(nil)

@@ -22,7 +22,7 @@ import (
 )
 
 func TestTopicConversionBadType(t *testing.T) {
-	good, bad := &Topic{}, &Topic{}
+	good, bad := &Topic{}, &PullSubscription{}
 
 	if err := good.ConvertTo(context.Background(), bad); err == nil {
 		t.Errorf("ConvertTo() = %#v, wanted error", bad)

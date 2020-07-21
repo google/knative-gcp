@@ -45,6 +45,7 @@ type Args struct {
 	Image              string
 	ServiceAccountName string
 	MetricsPort        int
+	AllowIstioSidecar  bool
 }
 
 // IngressArgs are the arguments to create a Broker's ingress Deployment.
@@ -70,6 +71,7 @@ type AutoscalingArgs struct {
 	AvgCPUUtilization int32
 	AvgMemoryUsage    string
 	MaxReplicas       int32
+	MinReplicas       int32
 }
 
 // Labels generates the labels present on all resources representing the

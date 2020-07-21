@@ -26,7 +26,7 @@ import (
 )
 
 // ConvertTo implements apis.Convertible.
-// Converts source (from v1beta1.PullSubscription) into v1alpha1.PullSubscription.
+// Converts a v1alpha1.Topic to a higher version of topic.
 func (source *Topic) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *v1beta1.Topic:
@@ -51,13 +51,13 @@ func (source *Topic) ConvertTo(ctx context.Context, to apis.Convertible) error {
 		sink.Status.TopicID = source.Status.TopicID
 		return nil
 	default:
-		return fmt.Errorf("unknown conversion, got: %T", sink)
+		return apis.ConvertToViaProxy(ctx, source, &v1beta1.Topic{}, sink)
 
 	}
 }
 
 // ConvertFrom implements apis.Convertible.
-// Converts obj from v1alpha1.PullSubscription into v1beta1.PullSubscription.
+// Converts from a higher version of Topic to v1alpha1.Topic.
 func (sink *Topic) ConvertFrom(ctx context.Context, from apis.Convertible) error {
 	switch source := from.(type) {
 	case *v1beta1.Topic:
@@ -82,7 +82,7 @@ func (sink *Topic) ConvertFrom(ctx context.Context, from apis.Convertible) error
 		sink.Status.TopicID = source.Status.TopicID
 		return nil
 	default:
-		return fmt.Errorf("unknown conversion, got: %T", source)
+		return apis.ConvertFromViaProxy(ctx, source, &v1beta1.Topic{}, sink)
 	}
 }
 

@@ -18,17 +18,47 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/google/knative-gcp/pkg/apis/convert"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 
 	"knative.dev/pkg/apis"
 )
 
 // ConvertTo implements apis.Convertible.
-func (*CloudAuditLogsSource) ConvertTo(_ context.Context, to apis.Convertible) error {
-	return fmt.Errorf("v1beta1 is the highest known version, got: %T", to)
+// Converts source (from v1beta1.CloudAuditLogsSource) to a higher version of CloudAuditLogsSource.
+// Currently, we only support v1 as a higher version.
+func (source *CloudAuditLogsSource) ConvertTo(ctx context.Context, to apis.Convertible) error {
+	switch sink := to.(type) {
+	case *v1.CloudAuditLogsSource:
+		sink.ObjectMeta = source.ObjectMeta
+		sink.Spec.PubSubSpec = convert.ToV1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Spec.ServiceName = source.Spec.ServiceName
+		sink.Spec.MethodName = source.Spec.MethodName
+		sink.Spec.ResourceName = source.Spec.ResourceName
+		sink.Status.PubSubStatus = convert.ToV1PubSubStatus(source.Status.PubSubStatus)
+		sink.Status.StackdriverSink = source.Status.StackdriverSink
+		return nil
+	default:
+		return apis.ConvertToViaProxy(ctx, source, &v1.CloudAuditLogsSource{}, sink)
+	}
 }
 
 // ConvertFrom implements apis.Convertible.
-func (*CloudAuditLogsSource) ConvertFrom(_ context.Context, from apis.Convertible) error {
-	return fmt.Errorf("v1beta1 is the highest known version, got: %T", from)
+// Converts obj from a higher version of CloudAuditLogsSource to a v1beta1.CloudAuditLogsSource.
+// Currently, we only support v1 as a higher version.
+func (sink *CloudAuditLogsSource) ConvertFrom(ctx context.Context, from apis.Convertible) error {
+	switch source := from.(type) {
+	case *v1.CloudAuditLogsSource:
+		sink.ObjectMeta = source.ObjectMeta
+		sink.Spec.PubSubSpec = convert.FromV1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Spec.ServiceName = source.Spec.ServiceName
+		sink.Spec.MethodName = source.Spec.MethodName
+		sink.Spec.ResourceName = source.Spec.ResourceName
+		sink.Status.PubSubStatus = convert.FromV1PubSubStatus(source.Status.PubSubStatus)
+		sink.Status.StackdriverSink = source.Status.StackdriverSink
+		return nil
+	default:
+		return apis.ConvertFromViaProxy(ctx, source, &v1.CloudAuditLogsSource{}, sink)
+	}
 }

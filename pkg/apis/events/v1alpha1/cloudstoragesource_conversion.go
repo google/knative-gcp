@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/knative-gcp/pkg/apis/convert"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
@@ -26,8 +25,8 @@ import (
 )
 
 // ConvertTo implements apis.Convertible.
-// Converts source (from v1beta1.CloudStorageSource) into v1alpha1.CloudStorageSource.
-func (source *CloudStorageSource) ConvertTo(_ context.Context, to apis.Convertible) error {
+// Converts from v1alpha1.CloudStorageSource into a higher version.
+func (source *CloudStorageSource) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *v1beta1.CloudStorageSource:
 		sink.ObjectMeta = source.ObjectMeta
@@ -41,14 +40,14 @@ func (source *CloudStorageSource) ConvertTo(_ context.Context, to apis.Convertib
 		sink.Status.NotificationID = source.Status.NotificationID
 		return nil
 	default:
-		return fmt.Errorf("unknown conversion, got: %T", sink)
+		return apis.ConvertToViaProxy(ctx, source, &v1beta1.CloudStorageSource{}, sink)
 
 	}
 }
 
 // ConvertFrom implements apis.Convertible.
-// Converts obj from v1alpha1.CloudStorageSource into v1beta1.CloudStorageSource.
-func (sink *CloudStorageSource) ConvertFrom(_ context.Context, from apis.Convertible) error {
+// Converts from a higher version into v1alpha1.CloudStorageSource.
+func (sink *CloudStorageSource) ConvertFrom(ctx context.Context, from apis.Convertible) error {
 	switch source := from.(type) {
 	case *v1beta1.CloudStorageSource:
 		sink.ObjectMeta = source.ObjectMeta
@@ -62,6 +61,6 @@ func (sink *CloudStorageSource) ConvertFrom(_ context.Context, from apis.Convert
 		sink.Status.NotificationID = source.Status.NotificationID
 		return nil
 	default:
-		return fmt.Errorf("unknown conversion, got: %T", source)
+		return apis.ConvertFromViaProxy(ctx, source, &v1beta1.CloudStorageSource{}, sink)
 	}
 }

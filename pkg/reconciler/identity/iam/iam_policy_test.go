@@ -55,12 +55,13 @@ func makePolicy(roles map[iam.RoleName][]string) *iam.Policy {
 func TestAddPolicyBinding(t *testing.T) {
 	t.Parallel()
 	tcs := []struct {
-		name          string
-		initialPolicy *iam.Policy
-		role          iam.RoleName
-		member        string
-		wantErrCode   codes.Code
-		wantMembers   map[iam.RoleName][]string
+		name            string
+		initialPolicy   *iam.Policy
+		role            iam.RoleName
+		member          string
+		wantErrCode     codes.Code
+		wantMembers     map[iam.RoleName][]string
+		setIamPolicyErr error
 	}{{
 		name:        "not found",
 		role:        role1,
@@ -105,6 +106,22 @@ func TestAddPolicyBinding(t *testing.T) {
 		wantMembers: map[iam.RoleName][]string{
 			role1: {member1, member2},
 		},
+	}, {
+		name:          "retry aborted",
+		initialPolicy: &iam.Policy{},
+		role:          role1,
+		member:        member1,
+		wantMembers: map[iam.RoleName][]string{
+			role1: {member1},
+		},
+		setIamPolicyErr: status.Error(codes.Aborted, "test error"),
+	}, {
+		name:            "no retry invalid argument",
+		initialPolicy:   &iam.Policy{},
+		role:            role1,
+		member:          member1,
+		wantErrCode:     codes.InvalidArgument,
+		setIamPolicyErr: status.Error(codes.InvalidArgument, "test error"),
 	}}
 	for _, tc := range tcs {
 		tc := tc
@@ -122,6 +139,9 @@ func TestAddPolicyBinding(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+			}
+			if tc.setIamPolicyErr != nil {
+				client.AddSetIamPolicyError(tc.setIamPolicyErr)
 			}
 
 			err = m.AddIAMPolicyBinding(ctx, GServiceAccount(testAccount), tc.member, RoleName(tc.role))

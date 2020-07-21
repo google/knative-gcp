@@ -39,6 +39,7 @@ import (
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
+	reconcilerutils "github.com/google/knative-gcp/pkg/reconciler/utils"
 )
 
 type envConfig struct {
@@ -67,18 +68,18 @@ func NewReconciler(base *reconciler.Base, ls listers) (*Reconciler, error) {
 	if err := envconfig.Process("BROKER_CELL", &env); err != nil {
 		return nil, err
 	}
-	svcRec := &reconciler.ServiceReconciler{
+	svcRec := &reconcilerutils.ServiceReconciler{
 		KubeClient:      base.KubeClientSet,
 		ServiceLister:   ls.serviceLister,
 		EndpointsLister: ls.endpointsLister,
 		Recorder:        base.Recorder,
 	}
-	deploymentRec := &reconciler.DeploymentReconciler{
+	deploymentRec := &reconcilerutils.DeploymentReconciler{
 		KubeClient: base.KubeClientSet,
 		Lister:     ls.deploymentLister,
 		Recorder:   base.Recorder,
 	}
-	cmRec := &reconciler.ConfigMapReconciler{
+	cmRec := &reconcilerutils.ConfigMapReconciler{
 		KubeClient: base.KubeClientSet,
 		Lister:     ls.configMapLister,
 		Recorder:   base.Recorder,
@@ -100,9 +101,9 @@ type Reconciler struct {
 
 	listers
 
-	svcRec        *reconciler.ServiceReconciler
-	deploymentRec *reconciler.DeploymentReconciler
-	cmRec         *reconciler.ConfigMapReconciler
+	svcRec        *reconcilerutils.ServiceReconciler
+	deploymentRec *reconcilerutils.DeploymentReconciler
+	cmRec         *reconcilerutils.ConfigMapReconciler
 
 	env envConfig
 }
@@ -232,6 +233,7 @@ func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.Ingre
 			Image:              r.env.IngressImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
+			AllowIstioSidecar:  true,
 		},
 		Port: r.env.IngressPort,
 	}
@@ -243,7 +245,8 @@ func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.Au
 		BrokerCell:        bc,
 		AvgCPUUtilization: 95,
 		AvgMemoryUsage:    "700Mi",
-		MaxReplicas:       10,
+		MaxReplicas:       *bc.Spec.Components.Ingress.MaxReplicas,
+		MinReplicas:       *bc.Spec.Components.Ingress.MinReplicas,
 	}
 }
 
@@ -270,7 +273,8 @@ func (r *Reconciler) makeFanoutHPAArgs(bc *intv1alpha1.BrokerCell) resources.Aut
 		// usage, HPA could have enough time to kick in.
 		// See: https://github.com/google/knative-gcp/issues/1265
 		AvgMemoryUsage: "1500Mi",
-		MaxReplicas:    10,
+		MaxReplicas:    *bc.Spec.Components.Fanout.MaxReplicas,
+		MinReplicas:    *bc.Spec.Components.Fanout.MinReplicas,
 	}
 }
 
@@ -297,7 +301,8 @@ func (r *Reconciler) makeRetryHPAArgs(bc *intv1alpha1.BrokerCell) resources.Auto
 		// usage, HPA could have enough time to kick in.
 		// See: https://github.com/google/knative-gcp/issues/1265
 		AvgMemoryUsage: "1500Mi",
-		MaxReplicas:    10,
+		MaxReplicas:    *bc.Spec.Components.Retry.MaxReplicas,
+		MinReplicas:    *bc.Spec.Components.Retry.MinReplicas,
 	}
 }
 

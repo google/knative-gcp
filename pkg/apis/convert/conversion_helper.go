@@ -19,6 +19,9 @@ package convert
 import (
 	"context"
 
+	pkgduckv1 "knative.dev/pkg/apis/duck/v1"
+
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
@@ -35,10 +38,29 @@ func ToV1beta1PubSubSpec(from duckv1alpha1.PubSubSpec) duckv1beta1.PubSubSpec {
 	to.Project = from.Project
 	return to
 }
+
+func ToV1PubSubSpec(from duckv1beta1.PubSubSpec) duckv1.PubSubSpec {
+	to := duckv1.PubSubSpec{}
+	to.SourceSpec = from.SourceSpec
+	to.IdentitySpec = ToV1IdentitySpec(from.IdentitySpec)
+	to.Secret = from.Secret
+	to.Project = from.Project
+	return to
+}
+
 func FromV1beta1PubSubSpec(from duckv1beta1.PubSubSpec) duckv1alpha1.PubSubSpec {
 	to := duckv1alpha1.PubSubSpec{}
 	to.SourceSpec = from.SourceSpec
 	to.IdentitySpec = FromV1beta1IdentitySpec(from.IdentitySpec)
+	to.Secret = from.Secret
+	to.Project = from.Project
+	return to
+}
+
+func FromV1PubSubSpec(from duckv1.PubSubSpec) duckv1beta1.PubSubSpec {
+	to := duckv1beta1.PubSubSpec{}
+	to.SourceSpec = from.SourceSpec
+	to.IdentitySpec = FromV1IdentitySpec(from.IdentitySpec)
 	to.Secret = from.Secret
 	to.Project = from.Project
 	return to
@@ -49,8 +71,21 @@ func ToV1beta1IdentitySpec(from duckv1alpha1.IdentitySpec) duckv1beta1.IdentityS
 	to.ServiceAccountName = from.ServiceAccountName
 	return to
 }
+
+func ToV1IdentitySpec(from duckv1beta1.IdentitySpec) duckv1.IdentitySpec {
+	to := duckv1.IdentitySpec{}
+	to.ServiceAccountName = from.ServiceAccountName
+	return to
+}
+
 func FromV1beta1IdentitySpec(from duckv1beta1.IdentitySpec) duckv1alpha1.IdentitySpec {
 	to := duckv1alpha1.IdentitySpec{}
+	to.ServiceAccountName = from.ServiceAccountName
+	return to
+}
+
+func FromV1IdentitySpec(from duckv1.IdentitySpec) duckv1beta1.IdentitySpec {
+	to := duckv1beta1.IdentitySpec{}
 	to.ServiceAccountName = from.ServiceAccountName
 	return to
 }
@@ -65,9 +100,32 @@ func ToV1beta1PubSubStatus(from duckv1alpha1.PubSubStatus) duckv1beta1.PubSubSta
 	to.SubscriptionID = from.SubscriptionID
 	return to
 }
+
+func ToV1PubSubStatus(from duckv1beta1.PubSubStatus) duckv1.PubSubStatus {
+	to := duckv1.PubSubStatus{}
+	to.IdentityStatus = ToV1IdentityStatus(from.IdentityStatus)
+	to.SinkURI = from.SinkURI
+	to.CloudEventAttributes = from.CloudEventAttributes
+	to.ProjectID = from.ProjectID
+	to.TopicID = from.TopicID
+	to.SubscriptionID = from.SubscriptionID
+	return to
+}
+
 func FromV1beta1PubSubStatus(from duckv1beta1.PubSubStatus) duckv1alpha1.PubSubStatus {
 	to := duckv1alpha1.PubSubStatus{}
 	to.IdentityStatus = FromV1beta1IdentityStatus(from.IdentityStatus)
+	to.SinkURI = from.SinkURI
+	to.CloudEventAttributes = from.CloudEventAttributes
+	to.ProjectID = from.ProjectID
+	to.TopicID = from.TopicID
+	to.SubscriptionID = from.SubscriptionID
+	return to
+}
+
+func FromV1PubSubStatus(from duckv1.PubSubStatus) duckv1beta1.PubSubStatus {
+	to := duckv1beta1.PubSubStatus{}
+	to.IdentityStatus = FromV1IdentityStatus(from.IdentityStatus)
 	to.SinkURI = from.SinkURI
 	to.CloudEventAttributes = from.CloudEventAttributes
 	to.ProjectID = from.ProjectID
@@ -82,10 +140,23 @@ func ToV1beta1IdentityStatus(from duckv1alpha1.IdentityStatus) duckv1beta1.Ident
 	to.ServiceAccountName = from.ServiceAccountName
 	return to
 }
+
+func ToV1IdentityStatus(from duckv1beta1.IdentityStatus) duckv1.IdentityStatus {
+	to := duckv1.IdentityStatus{}
+	to.Status = from.Status
+	return to
+}
+
 func FromV1beta1IdentityStatus(from duckv1beta1.IdentityStatus) duckv1alpha1.IdentityStatus {
 	to := duckv1alpha1.IdentityStatus{}
 	to.Status = from.Status
 	to.ServiceAccountName = from.ServiceAccountName
+	return to
+}
+
+func FromV1IdentityStatus(from duckv1.IdentityStatus) duckv1beta1.IdentityStatus {
+	to := duckv1beta1.IdentityStatus{}
+	to.Status = from.Status
 	return to
 }
 
@@ -101,6 +172,18 @@ func ToV1beta1AddressStatus(ctx context.Context, from pkgduckv1alpha1.AddressSta
 	return to, nil
 }
 
+func ToV1AddressStatus(ctx context.Context, from pkgduckv1beta1.AddressStatus) (pkgduckv1.AddressStatus, error) {
+	to := pkgduckv1.AddressStatus{}
+	if from.Address != nil {
+		to.Address = &pkgduckv1.Addressable{}
+		err := from.Address.ConvertTo(ctx, to.Address)
+		if err != nil {
+			return pkgduckv1.AddressStatus{}, err
+		}
+	}
+	return to, nil
+}
+
 func FromV1beta1AddressStatus(ctx context.Context, from pkgduckv1beta1.AddressStatus) (pkgduckv1alpha1.AddressStatus, error) {
 	to := pkgduckv1alpha1.AddressStatus{}
 	if from.Address != nil {
@@ -108,6 +191,18 @@ func FromV1beta1AddressStatus(ctx context.Context, from pkgduckv1beta1.AddressSt
 		err := to.Address.ConvertFrom(ctx, from.Address)
 		if err != nil {
 			return pkgduckv1alpha1.AddressStatus{}, err
+		}
+	}
+	return to, nil
+}
+
+func FromV1AddressStatus(ctx context.Context, from pkgduckv1.AddressStatus) (pkgduckv1beta1.AddressStatus, error) {
+	to := pkgduckv1beta1.AddressStatus{}
+	if from.Address != nil {
+		to.Address = &pkgduckv1beta1.Addressable{}
+		err := to.Address.ConvertFrom(ctx, from.Address)
+		if err != nil {
+			return pkgduckv1beta1.AddressStatus{}, err
 		}
 	}
 	return to, nil
