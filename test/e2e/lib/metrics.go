@@ -19,6 +19,7 @@ package lib
 import (
 	"fmt"
 	"io/ioutil"
+	"knative.dev/pkg/test/logging"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -94,7 +95,15 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 	}
 	// TODO There is almost certainly a better way to do this, but for now, just use kubectl to port
 	// forward and use HTTP to read the metrics. https://github.com/google/knative-gcp/issues/1083
-	pid, err := monitoring.PortForward(client.T.Logf, podList, localPort, metricsPort, pod.Namespace)
+	pid, err := monitoring.PortForward(
+		client.T.Logf,
+		podList,
+		localPort,
+		metricsPort,
+		pod.Namespace,
+		logging.NewLoggerWriter(podName.Name+"-stdout: ", client.T.Logf),
+		logging.NewLoggerWriter(podName.Name+"-stderr: ", client.T.Logf),
+	)
 	if err != nil {
 		client.T.Logf("Unable to port forward for Pod %q: %v", podName, err)
 		return
@@ -140,8 +149,8 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 }
 
 func findAvailablePort() (int, error) {
-	const portMin = 40_000
-	const portMax = 60_000
+	const portMin = 40000
+	const portMax = 60000
 	portRand := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var localPort int

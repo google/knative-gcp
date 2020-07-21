@@ -333,8 +333,8 @@ func (c *Client) CreateSinkBindingV1Beta1OrFail(sb *sourcesv1beta1.SinkBinding) 
 	c.Tracker.AddObj(sb)
 }
 
-// CreateApiServerSourceOrFail will create an ApiServerSource
-func (c *Client) CreateApiServerSourceOrFail(apiServerSource *sourcesv1alpha2.ApiServerSource) {
+// CreateApiServerSourceV1Alpha2OrFail will create an v1alpha2 ApiServerSource
+func (c *Client) CreateApiServerSourceV1Alpha2OrFail(apiServerSource *sourcesv1alpha2.ApiServerSource) {
 	c.T.Logf("Creating apiserversource %+v", apiServerSource)
 	apiServerInterface := c.Eventing.SourcesV1alpha2().ApiServerSources(c.Namespace)
 	_, err := apiServerInterface.Create(apiServerSource)
@@ -344,10 +344,32 @@ func (c *Client) CreateApiServerSourceOrFail(apiServerSource *sourcesv1alpha2.Ap
 	c.Tracker.AddObj(apiServerSource)
 }
 
-// CreateContainerSourceV1Alpha2OrFail will create a ContainerSource.
+// CreateApiServerSourceV1Beta1OrFail will create an v1beta1 ApiServerSource
+func (c *Client) CreateApiServerSourceV1Beta1OrFail(apiServerSource *sourcesv1beta1.ApiServerSource) {
+	c.T.Logf("Creating apiserversource %+v", apiServerSource)
+	apiServerInterface := c.Eventing.SourcesV1beta1().ApiServerSources(c.Namespace)
+	_, err := apiServerInterface.Create(apiServerSource)
+	if err != nil {
+		c.T.Fatalf("Failed to create apiserversource %q: %v", apiServerSource.Name, err)
+	}
+	c.Tracker.AddObj(apiServerSource)
+}
+
+// CreateContainerSourceV1Alpha2OrFail will create a v1alpha2 ContainerSource.
 func (c *Client) CreateContainerSourceV1Alpha2OrFail(containerSource *sourcesv1alpha2.ContainerSource) {
 	c.T.Logf("Creating containersource %+v", containerSource)
 	containerInterface := c.Eventing.SourcesV1alpha2().ContainerSources(c.Namespace)
+	_, err := containerInterface.Create(containerSource)
+	if err != nil {
+		c.T.Fatalf("Failed to create containersource %q: %v", containerSource.Name, err)
+	}
+	c.Tracker.AddObj(containerSource)
+}
+
+// CreateContainerSourceV1Beta1OrFail will create a v1beta1 ContainerSource.
+func (c *Client) CreateContainerSourceV1Beta1OrFail(containerSource *sourcesv1beta1.ContainerSource) {
+	c.T.Logf("Creating containersource %+v", containerSource)
+	containerInterface := c.Eventing.SourcesV1beta1().ContainerSources(c.Namespace)
 	_, err := containerInterface.Create(containerSource)
 	if err != nil {
 		c.T.Fatalf("Failed to create containersource %q: %v", containerSource.Name, err)

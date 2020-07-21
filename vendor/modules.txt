@@ -34,7 +34,7 @@ cloud.google.com/go/pubsub/pstest
 # cloud.google.com/go/storage v1.10.0
 ## explicit
 cloud.google.com/go/storage
-# contrib.go.opencensus.io/exporter/ocagent v0.6.1-0.20200121232419-b3d61dbd6252
+# contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200615190824-f8c219d2d895
 contrib.go.opencensus.io/exporter/ocagent
 # contrib.go.opencensus.io/exporter/prometheus v0.2.1-0.20200609204449-6bcf6f8577f0
 contrib.go.opencensus.io/exporter/prometheus
@@ -199,7 +199,7 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.1.1
+# github.com/google/go-containerregistry v0.1.2-0.20200717224239-a84993334b27
 github.com/google/go-containerregistry/pkg/name
 # github.com/google/go-github/v27 v27.0.6
 github.com/google/go-github/v27/github
@@ -233,10 +233,14 @@ github.com/googleapis/gax-go/v2
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
-# github.com/grpc-ecosystem/grpc-gateway v1.12.2
+# github.com/grpc-ecosystem/grpc-gateway v1.14.6
 github.com/grpc-ecosystem/grpc-gateway/internal
 github.com/grpc-ecosystem/grpc-gateway/runtime
 github.com/grpc-ecosystem/grpc-gateway/utilities
+# github.com/hashicorp/go-cleanhttp v0.5.1
+github.com/hashicorp/go-cleanhttp
+# github.com/hashicorp/go-retryablehttp v0.6.6
+github.com/hashicorp/go-retryablehttp
 # github.com/hashicorp/golang-lru v0.5.4
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
@@ -303,6 +307,10 @@ github.com/prometheus/procfs/internal/util
 # github.com/prometheus/statsd_exporter v0.15.0
 github.com/prometheus/statsd_exporter/pkg/mapper
 github.com/prometheus/statsd_exporter/pkg/mapper/fsm
+# github.com/rickb777/date v1.13.0
+github.com/rickb777/date/period
+# github.com/rickb777/plural v1.2.1
+github.com/rickb777/plural
 # github.com/robfig/cron/v3 v3.0.1 => github.com/robfig/cron/v3 v3.0.0
 github.com/robfig/cron/v3
 # github.com/rogpeppe/fastuuid v1.2.0
@@ -397,7 +405,7 @@ golang.org/x/oauth2/jwt
 ## explicit
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae
+# golang.org/x/sys v0.0.0-20200720211630-cb9d2d5c5666
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
@@ -411,7 +419,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200714190737-9048b464a08d
+# golang.org/x/tools v0.0.0-20200721032237-77f530d86f9a
 golang.org/x/tools/cmd/goimports
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
@@ -490,7 +498,7 @@ google.golang.org/appengine/internal/socket
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/socket
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20200715011427-11fb19a81f2c
+# google.golang.org/genproto v0.0.0-20200721032028-5044d0edf986
 ## explicit
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
@@ -685,7 +693,7 @@ k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensio
 k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/internalinterfaces
 k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1
-# k8s.io/apimachinery v0.18.5 => k8s.io/apimachinery v0.17.6
+# k8s.io/apimachinery v0.18.6 => k8s.io/apimachinery v0.17.6
 ## explicit
 k8s.io/apimachinery/pkg/api/apitesting/fuzzer
 k8s.io/apimachinery/pkg/api/equality
@@ -1011,7 +1019,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.16.1-0.20200717021433-4b0317d315ae
+# knative.dev/eventing v0.16.1-0.20200721123435-4f98fa7bae59
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1109,6 +1117,9 @@ knative.dev/eventing/test/conformance/helpers/tracing
 knative.dev/eventing/test/e2e/helpers
 knative.dev/eventing/test/flags
 knative.dev/eventing/test/lib
+knative.dev/eventing/test/lib/dropevents
+knative.dev/eventing/test/lib/dropevents/dropeventsfibonacci
+knative.dev/eventing/test/lib/dropevents/dropeventsfirst
 knative.dev/eventing/test/lib/duck
 knative.dev/eventing/test/lib/recordevents
 knative.dev/eventing/test/lib/resources
@@ -1124,10 +1135,10 @@ knative.dev/eventing/test/test_images/event-sender
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/networking v0.0.0-20200715190634-e189256cc68f
+# knative.dev/networking v0.0.0-20200720170535-ca74f50d1c0e
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
-# knative.dev/pkg v0.0.0-20200716235533-0f78f8a8cccf
+# knative.dev/pkg v0.0.0-20200721155336-c0a9ec7f1104
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1192,6 +1203,7 @@ knative.dev/pkg/metrics/metricskey
 knative.dev/pkg/metrics/metricstest
 knative.dev/pkg/metrics/testing
 knative.dev/pkg/network
+knative.dev/pkg/network/handlers
 knative.dev/pkg/profiling
 knative.dev/pkg/ptr
 knative.dev/pkg/reconciler
@@ -1236,7 +1248,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.16.1-0.20200717045341-1c127c2746d6
+# knative.dev/serving v0.16.1-0.20200721161436-7c3349129b9e
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
@@ -1275,7 +1287,7 @@ knative.dev/serving/pkg/client/listers/autoscaling/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200716222033-3c06d840fc70
+# knative.dev/test-infra v0.0.0-20200721160835-f31b2ce4e804
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0

@@ -23,16 +23,16 @@ require (
 	go.uber.org/zap v1.15.0
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	google.golang.org/api v0.29.0
-	google.golang.org/genproto v0.0.0-20200715011427-11fb19a81f2c
+	google.golang.org/genproto v0.0.0-20200721032028-5044d0edf986
 	google.golang.org/grpc v1.30.0
 	google.golang.org/protobuf v1.25.0
 	k8s.io/api v0.18.1
-	k8s.io/apimachinery v0.18.5
+	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.16.1-0.20200717021433-4b0317d315ae
-	knative.dev/pkg v0.0.0-20200716235533-0f78f8a8cccf
-	knative.dev/serving v0.16.1-0.20200717045341-1c127c2746d6
-	knative.dev/test-infra v0.0.0-20200716222033-3c06d840fc70 // indirect
+	knative.dev/eventing v0.16.1-0.20200721123435-4f98fa7bae59
+	knative.dev/pkg v0.0.0-20200721155336-c0a9ec7f1104
+	knative.dev/serving v0.16.1-0.20200721161436-7c3349129b9e
+	knative.dev/test-infra v0.0.0-20200721160835-f31b2ce4e804 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
