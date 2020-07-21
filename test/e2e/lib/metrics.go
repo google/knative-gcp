@@ -19,7 +19,6 @@ package lib
 import (
 	"fmt"
 	"io/ioutil"
-	"knative.dev/pkg/test/logging"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -33,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"knative.dev/pkg/test/logging"
 	"knative.dev/pkg/test/monitoring"
 )
 
@@ -149,8 +149,8 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 }
 
 func findAvailablePort() (int, error) {
-	const portMin = 40000
-	const portMax = 60000
+	const portMin = 40_000
+	const portMax = 60_000
 	portRand := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var localPort int
