@@ -62,7 +62,7 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) (*event
 		respEvent.SetType(lib.E2ESchedulerRespType)
 		respEvent.SetSource(event.Source())
 		respEvent.SetSubject(event.Subject())
-		respEvent.SetData(cloudevents.ApplicationCloudEventsJSON, event.Data)
+		respEvent.SetData(cloudevents.ApplicationJSON, event.Data())
 		respEvent.SetDataContentType(event.DataContentType())
 		fmt.Printf("context of respEvent is: %v\n", respEvent.Context.String())
 		return &respEvent, cehttp.NewResult(http.StatusAccepted, "OK")

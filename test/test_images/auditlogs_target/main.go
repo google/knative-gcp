@@ -67,12 +67,14 @@ type auditLogReceiver struct {
 
 func (r *auditLogReceiver) Knockdown(event cloudevents.Event) bool {
 	fmt.Printf("auditlogs target received event\n")
+	fmt.Printf("target get the event")
 	fmt.Printf("event.Context is %s", event.Context.String())
 
 	var eventData map[string]interface{}
 	if err := json.Unmarshal(event.Data(), &eventData); err != nil {
 		fmt.Printf("failed unmarshall event.Data %s.\n", err.Error())
 	}
+	fmt.Printf("proceeded eventdata")
 	payload := eventData[protoPayload].(map[string]interface{})
 	eventDataServiceName := payload[serviceName].(string)
 	fmt.Printf("event.Data.%s is %s \n", serviceName, eventDataServiceName)
@@ -102,6 +104,7 @@ func (r *auditLogReceiver) Knockdown(event cloudevents.Event) bool {
 	}
 
 	if len(incorrectAttributes) == 0 {
+		fmt.Printf("successfully sent to auditlogs target")
 		return true
 	}
 	for k, v := range incorrectAttributes {
