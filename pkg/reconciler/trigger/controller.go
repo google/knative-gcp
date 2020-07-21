@@ -61,7 +61,7 @@ var filterBroker = pkgreconciler.AnnotationFilterFunc(eventingv1beta1.BrokerClas
 type envConfig struct {
 	ProjectID string `envconfig:"PROJECT_ID"`
 
-	MinRetryBackoff time.Duration `envconfig:"MIN_RETRY_BACKOFF" default:"30s"`
+	MinRetryBackoff time.Duration `envconfig:"MIN_RETRY_BACKOFF" default:"1s"`
 	MaxRetryBackoff time.Duration `envconfig:"MAX_RETRY_BACKOFF" default:"1m"`
 }
 
