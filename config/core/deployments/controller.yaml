@@ -30,6 +30,8 @@ spec:
       labels:
         app: cloud-run-events
         role: controller
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: controller
       containers:

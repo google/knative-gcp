@@ -160,7 +160,12 @@ func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deploy
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{MatchLabels: Labels(args.BrokerCell.Name, args.ComponentName)},
 			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{Labels: Labels(args.BrokerCell.Name, args.ComponentName)},
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: Labels(args.BrokerCell.Name, args.ComponentName),
+					Annotations: map[string]string{
+						"sidecar.istio.io/inject": strconv.FormatBool(args.AllowIstioSidecar),
+					},
+				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: args.ServiceAccountName,
 					Volumes: []corev1.Volume{
