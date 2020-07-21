@@ -38,7 +38,6 @@ type Receiver struct {
 
 func main() {
 	client, err := kncloudevents.NewDefaultClient()
-	fmt.Printf("AuditLog client created-v2")
 	if err != nil {
 		panic(err)
 	}
@@ -63,8 +62,7 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) (*event
 		respEvent.SetType(lib.E2EAuditLogsRespType)
 		respEvent.SetSource(event.Source())
 		respEvent.SetSubject(event.Subject())
-		respEvent.SetData("", event.Data())
-		respEvent.SetDataContentType(event.DataContentType())
+		respEvent.SetData(event.DataContentType(), event.Data())
 		fmt.Printf("context of respEvent is: %v\n", respEvent.Context.String())
 		return &respEvent, cehttp.NewResult(http.StatusAccepted, "OK")
 	} else {

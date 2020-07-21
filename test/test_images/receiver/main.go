@@ -83,7 +83,6 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) (*event
 		event.SetID(lib.E2EDummyRespEventID)
 		event.SetType(lib.E2EDummyRespEventType)
 		event.SetSource(lib.E2EDummyRespEventSource)
-		event.SetDataContentType(cloudevents.ApplicationJSON)
 		event.SetData(cloudevents.ApplicationJSON, `{"source": "receiver!"}`)
 		return &event, cehttp.NewResult(http.StatusAccepted, "OK")
 	} else {
