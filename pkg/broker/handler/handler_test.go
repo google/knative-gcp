@@ -85,7 +85,7 @@ func TestHandler(t *testing.T) {
 
 	eventCh := make(chan *event.Event)
 	processor := &processors.FakeProcessor{PrevEventsCh: eventCh}
-	h := NewHandler(sub, processor, time.Second, RetryPolicy{})
+	h := NewHandler(sub, processor, time.Second)
 	h.Start(ctx, func(err error) {})
 	defer h.Stop()
 	if !h.IsAlive() {
@@ -183,6 +183,10 @@ func TestRetryBackoff(t *testing.T) {
 	}
 	sub, err := c.CreateSubscription(ctx, "test-sub", pubsub.SubscriptionConfig{
 		Topic: topic,
+		RetryPolicy: &pubsub.RetryPolicy{
+			MaximumBackoff: 16 * time.Millisecond,
+			MinimumBackoff: time.Millisecond,
+		},
 	})
 	if err != nil {
 		t.Fatalf("failed to create subscription: %v", err)
@@ -204,7 +208,7 @@ func TestRetryBackoff(t *testing.T) {
 		desiredErrCount: desiredErrCount,
 		successSignal:   successSignal,
 	}
-	h := NewHandler(sub, processor, time.Second, RetryPolicy{MinBackoff: time.Millisecond, MaxBackoff: 16 * time.Millisecond})
+	h := NewHandler(sub, processor, time.Second)
 	// Mock sleep func to collect nack backoffs.
 	h.delayNack = func(d time.Duration) {
 		delays = append(delays, d)

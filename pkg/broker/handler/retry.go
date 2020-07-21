@@ -142,7 +142,6 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 				},
 			),
 			p.options.TimeoutPerEvent,
-			p.options.RetryPolicy,
 		)
 		hc := &retryHandlerCache{
 			Handler: *h,
