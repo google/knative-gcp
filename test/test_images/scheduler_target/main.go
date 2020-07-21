@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
 	"github.com/kelseyhightower/envconfig"
@@ -47,7 +47,7 @@ func (r *schedulerReceiver) Knockdown(event cloudevents.Event) bool {
 
 	// Check data
 	// TODO fix!
-	data := string(event.Data.([]uint8))
+	data := string(event.Data())
 	if data != r.Data {
 		incorrectAttributes[lib.EventData] = lib.PropPair{Expected: r.Data, Received: data}
 	}

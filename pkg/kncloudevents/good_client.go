@@ -17,16 +17,18 @@ limitations under the License.
 package kncloudevents
 
 import (
-	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
+	nethttp "net/http"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.opencensus.io/plugin/ochttp"
 	"knative.dev/pkg/tracing/propagation/tracecontextb3"
 )
 
 func NewDefaultClient(target ...string) (cloudevents.Client, error) {
 	tOpts := []http.Option{
-		cloudevents.WithBinaryEncoding(),
-		cloudevents.WithHTTPTransport(&ochttp.Transport{
+		cloudevents.WithRoundTripper(&ochttp.Transport{
+			Base:        nethttp.DefaultTransport,
 			Propagation: tracecontextb3.TraceContextEgress,
 		}),
 	}
@@ -35,7 +37,7 @@ func NewDefaultClient(target ...string) (cloudevents.Client, error) {
 	}
 
 	// Make an http transport for the CloudEvents client.
-	t, err := cloudevents.NewHTTPTransport(tOpts...)
+	t, err := cloudevents.NewHTTP(tOpts...)
 	if err != nil {
 		return nil, err
 	}
