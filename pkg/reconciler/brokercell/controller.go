@@ -90,15 +90,7 @@ func newController(
 
 	brokercellinformer.Get(ctx).Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
-	// Watch brokers and triggers to invoke configmap update immediately.
-	brokerinformer.Get(ctx).Informer().AddEventHandler(controller.HandleAll(
-		func(obj interface{}) {
-			if b, ok := obj.(*brokerv1beta1.Broker); ok {
-				// TODO(#866) Select the brokercell that's associated with the given broker.
-				impl.EnqueueKey(types.NamespacedName{Namespace: b.Namespace, Name: brokerresources.DefaultBrokerCellName})
-			}
-		},
-	))
+	// Watch triggers to invoke configmap update immediately.
 	triggerinformer.Get(ctx).Informer().AddEventHandler(controller.HandleAll(
 		func(obj interface{}) {
 			if t, ok := obj.(*brokerv1beta1.Trigger); ok {
