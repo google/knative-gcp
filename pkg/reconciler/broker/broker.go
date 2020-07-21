@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
+	"knative.dev/pkg/system"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -83,6 +84,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *brokerv1beta1.Broker)
 func (r *Reconciler) FinalizeKind(ctx context.Context, b *brokerv1beta1.Broker) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Finalizing Broker", zap.Any("broker", b))
+
+	// TODO(#866) Get brokercell based on the label (or annotation) on the broker.
+	bc, err := r.brokerCellLister.BrokerCells(system.Namespace()).Get(resources.DefaultBrokerCellName)
+	if err != nil {
+		return fmt.Errorf("failed to get brokercell: %w", err)
+	}
+	bName := types.NamespacedName{Namespace: b.Namespace, Name: b.Name}
+	bcName := types.NamespacedName{Namespace: bc.Namespace, Name: bc.Name}
+	r.brokerCtl.UpdateBrokerConfig(bcName, bName, nil)
 
 	if err := r.deleteDecouplingTopicAndSubscription(ctx, b); err != nil {
 		return fmt.Errorf("failed to delete Pub/Sub topic: %v", err)
