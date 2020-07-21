@@ -18,17 +18,37 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/google/knative-gcp/pkg/apis/convert"
+	"github.com/google/knative-gcp/pkg/apis/events/v1"
 	"knative.dev/pkg/apis"
 )
 
 // ConvertTo implements apis.Convertible.
-func (*CloudBuildSource) ConvertTo(_ context.Context, to apis.Convertible) error {
-	return fmt.Errorf("v1beta1 is the highest known version, got: %T", to)
+// Converts source (from v1beta1.CloudBuildSource) into v1alpha1.CloudBuildSource.
+func (source *CloudBuildSource) ConvertTo(ctx context.Context, to apis.Convertible) error {
+	switch sink := to.(type) {
+	case *v1.CloudBuildSource:
+		sink.ObjectMeta = source.ObjectMeta
+		sink.Spec.PubSubSpec = convert.ToV1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Status.PubSubStatus = convert.ToV1PubSubStatus(source.Status.PubSubStatus)
+		return nil
+	default:
+		return apis.ConvertToViaProxy(ctx, source, &v1.CloudBuildSource{}, sink)
+
+	}
 }
 
 // ConvertFrom implements apis.Convertible.
-func (*CloudBuildSource) ConvertFrom(_ context.Context, from apis.Convertible) error {
-	return fmt.Errorf("v1beta1 is the highest known version, got: %T", from)
+// Converts obj from v1alpha1.CloudBuildSource into v1beta1.CloudBuildSource.
+func (sink *CloudBuildSource) ConvertFrom(ctx context.Context, from apis.Convertible) error {
+	switch source := from.(type) {
+	case *v1.CloudBuildSource:
+		sink.ObjectMeta = source.ObjectMeta
+		sink.Spec.PubSubSpec = convert.FromV1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Status.PubSubStatus = convert.FromV1PubSubStatus(source.Status.PubSubStatus)
+		return nil
+	default:
+		return apis.ConvertFromViaProxy(ctx, source, &v1.CloudBuildSource{}, sink)
+	}
 }

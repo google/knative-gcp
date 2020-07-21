@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/apis/events/v1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 
 	"github.com/google/go-cmp/cmp"
@@ -58,7 +59,7 @@ func TestCloudBuildSourceConversionBadType(t *testing.T) {
 	}
 }
 
-func TestClouBuildSourceConversion(t *testing.T) {
+func TestClouBuildSourceConversionBetweenV1beta1(t *testing.T) {
 	// Just one for now, just adding the for loop for ease of future changes.
 	versions := []apis.Convertible{&v1beta1.CloudBuildSource{}}
 
@@ -92,6 +93,53 @@ func TestClouBuildSourceConversion(t *testing.T) {
 				}
 				ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 				if diff := cmp.Diff(test.in, got, ignoreUsername); diff != "" {
+					t.Errorf("roundtrip (-want, +got) = %v", diff)
+				}
+			})
+		}
+	}
+}
+
+func TestCloudBuildSourceConversionBetweenV1(t *testing.T) {
+	// Just one for now, just adding the for loop for ease of future changes.
+	// Just one for now, just adding the for loop for ease of future changes.
+	versions := []apis.Convertible{&v1.CloudBuildSource{}}
+
+	tests := []struct {
+		name string
+		in   *CloudBuildSource
+	}{{
+		name: "min configuration",
+		in: &CloudBuildSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "ps-name",
+				Namespace:  "ps-ns",
+				Generation: 17,
+			},
+			Spec: CloudBuildSourceSpec{},
+		},
+	}, {
+		name: "full configuration",
+		in:   completeCloudBuildSource,
+	}}
+	for _, test := range tests {
+		for _, version := range versions {
+			t.Run(test.name, func(t *testing.T) {
+				ver := version
+				// DeepCopy because we will edit it below.
+				in := test.in.DeepCopy()
+				if err := in.ConvertTo(context.Background(), ver); err != nil {
+					t.Errorf("ConvertTo() = %v", err)
+				}
+				got := &CloudBuildSource{}
+				if err := got.ConvertFrom(context.Background(), ver); err != nil {
+					t.Errorf("ConvertFrom() = %v", err)
+				}
+				// ServiceAccountName only exists in v1alpha1 and v1beta1, they doesn't exist in v1.
+				// So it won't round trip, it will be silently removed.
+				in.Status.ServiceAccountName = ""
+				ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
+				if diff := cmp.Diff(in, got, ignoreUsername); diff != "" {
 					t.Errorf("roundtrip (-want, +got) = %v", diff)
 				}
 			})

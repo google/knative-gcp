@@ -63,6 +63,7 @@ func TestKnownTypes(t *testing.T) {
 		"CloudPubSubSource",
 		"CloudSchedulerSource",
 		"CloudStorageSource",
+		"CloudBuildSource",
 	} {
 		if _, ok := types[name]; !ok {
 			t.Errorf("Did not find %q as registered type", name)
