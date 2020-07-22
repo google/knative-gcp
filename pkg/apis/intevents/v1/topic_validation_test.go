@@ -18,12 +18,13 @@ package v1
 
 import (
 	"context"
+	"strings"
+	"testing"
+
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/ptr"
-	"strings"
-	"testing"
 
 	v1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 
@@ -39,8 +40,8 @@ var (
 			},
 			Key: "secret-key",
 		},
-		Project: "my-eventing-project",
-		Topic:   "pubsub-topic",
+		Project:           "my-eventing-project",
+		Topic:             "pubsub-topic",
 		PropagationPolicy: TopicPolicyCreateDelete,
 		EnablePublisher:   ptr.Bool(true),
 	}
@@ -175,8 +176,8 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 					},
 					Key: "some-other-key",
 				},
-				Project: topicSpec.Project,
-				Topic:   topicSpec.Topic,
+				Project:           topicSpec.Project,
+				Topic:             topicSpec.Topic,
 				PropagationPolicy: topicSpec.PropagationPolicy,
 				EnablePublisher:   topicSpec.EnablePublisher,
 			},
@@ -191,8 +192,8 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 					},
 					Key: topicSpec.Secret.Key,
 				},
-				Project: topicSpec.Project,
-				Topic:   topicSpec.Topic,
+				Project:           topicSpec.Project,
+				Topic:             topicSpec.Topic,
 				PropagationPolicy: topicSpec.PropagationPolicy,
 				EnablePublisher:   topicSpec.EnablePublisher,
 			},

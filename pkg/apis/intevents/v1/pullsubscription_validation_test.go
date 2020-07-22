@@ -18,9 +18,10 @@ package v1
 
 import (
 	"context"
+	"testing"
+
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
-	"testing"
 
 	v1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -341,7 +342,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Sink: pullSubscriptionSpec.Sink,
 					},
 				},
-				Topic: "some-other-topic",
+				Topic:               "some-other-topic",
 				AckDeadline:         pullSubscriptionSpec.AckDeadline,
 				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
 				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
