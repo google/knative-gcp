@@ -319,7 +319,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		"ServiceAccountName added": {
 			orig: &buildSourceSpec,
 			updated: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: buildSourceSpec.Secret.Name,
@@ -330,7 +330,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 					SourceSpec: duckv1.SourceSpec{
 						Sink: buildSourceSpec.Sink,
 					},
-					IdentitySpec: duckv1beta1.IdentitySpec{
+					IdentitySpec: gcpduckv1.IdentitySpec{
 						ServiceAccountName: "old-service-account",
 					},
 				},
