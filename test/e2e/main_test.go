@@ -94,19 +94,18 @@ func TestMain(m *testing.M) {
 		// Stackdriver.
 		// After running all tests, we verify that no custom metrics have been emitted in the past
 		// 30 min to cover roughly how long the e2e tests run.
-		return verifyNoCustomMetrics(projectID, time.Duration(-30)*time.Minute)
+		if err := verifyNoCustomMetrics(projectID, time.Duration(-30)*time.Minute); err != nil {
+			log.Fatalf("Failed to verify that no custom metrics are emitted: %v", err)
+		}
+
+		return 0
 	}())
 }
 
-// Return code meaning
-// 0: success, no custom metrics found
-// 1: failure, found custom metrics
-// 2: failure, unable to verify custom metrics
-func verifyNoCustomMetrics(projectID string, duration time.Duration) int {
+func verifyNoCustomMetrics(projectID string, duration time.Duration) error {
 	client, err := monitoring.NewMetricClient(context.TODO())
 	if err != nil {
-		fmt.Printf("Failed to create metrics client: %v\n", err)
-		return 2
+		return fmt.Errorf("Failed to create metrics client: %w\n", err)
 	}
 	defer client.Close()
 	// Get the metric descriptors with custom metric prefix.
@@ -116,22 +115,21 @@ func verifyNoCustomMetrics(projectID string, duration time.Duration) int {
 	}
 	descriptors, err := metrics.ListMetricDescriptors(context.TODO(), client, req)
 	if err != nil {
-		fmt.Printf("Failed to list custom metrics: %v\n", err)
-		return 2
+		return fmt.Errorf("Failed to list custom metrics: %w\n", err)
 	}
 
 	// Check no data points of custom metrics in the past duration.
 	fmt.Printf("Got %d custom metric definitions with prefix %s\n", len(descriptors), knativeCustomMetricPrefix)
 	for _, d := range descriptors {
-		if code := verifyNoPoints(client, projectID, d.GetType(), duration); code > 0 {
-			return code
+		if err := verifyNoPoints(client, projectID, d.GetType(), duration); err != nil {
+			return err
 		}
 	}
-	return 0
+	return nil
 }
 
 // verifyNoPoints verifies no metrics data points are found for the given metric type.
-func verifyNoPoints(client *monitoring.MetricClient, projectID string, mt string, duration time.Duration) int {
+func verifyNoPoints(client *monitoring.MetricClient, projectID string, mt string, duration time.Duration) error {
 	req := &monitoringpb.ListTimeSeriesRequest{
 		Name:   fmt.Sprintf("projects/%s", projectID),
 		Filter: fmt.Sprintf(`metric.type="%s"`, mt),
@@ -142,14 +140,12 @@ func verifyNoPoints(client *monitoring.MetricClient, projectID string, mt string
 	}
 	tss, err := metrics.ListTimeSeries(context.TODO(), client, req)
 	if err != nil {
-		fmt.Printf("Failed to fetch data points of custom metric %s: %s\n", mt, err)
-		return 2
+		return fmt.Errorf("Failed to fetch data points of custom metric %s: %w\n", mt, err)
 	}
 	for _, ts := range tss {
 		if len(ts.GetPoints()) > 0 {
-			fmt.Printf("Found data points of custom metric %s, which should be disabled", mt)
-			return 1
+			return fmt.Errorf("Found data points of custom metric %s, which should be disabled", mt)
 		}
 	}
-	return 0
+	return nil
 }
