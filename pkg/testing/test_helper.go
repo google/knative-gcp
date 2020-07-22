@@ -129,6 +129,31 @@ var (
 		SubscriptionID: "subscriptionID",
 	}
 
+	CompleteV1alpha1PubSubStatusWithoutServiceAccountName = duckv1alpha1.PubSubStatus{
+		IdentityStatus: CompleteV1alpha1IdentityStatusWithoutServiceAccountName,
+		SinkURI:        &CompleteURL,
+		CloudEventAttributes: []eventingduckv1.CloudEventAttributes{
+			{
+				Type:   "type",
+				Source: "source",
+			},
+		},
+		ProjectID:      "projectID",
+		TopicID:        "topicID",
+		SubscriptionID: "subscriptionID",
+	}
+	CompleteV1alpha1IdentityStatusWithoutServiceAccountName = duckv1alpha1.IdentityStatus{
+		Status: eventingduckv1.Status{
+			ObservedGeneration: 7,
+			Conditions: eventingduckv1.Conditions{
+				{
+					Type:   "Ready",
+					Status: "True",
+				},
+			},
+		},
+	}
+
 	CompleteV1beta1IdentitySpec = duckv1beta1.IdentitySpec{
 		ServiceAccountName: "k8sServiceAccount",
 	}

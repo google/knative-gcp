@@ -21,12 +21,9 @@ import (
 	"net/url"
 	"testing"
 
-	eventingduckv1 "knative.dev/pkg/apis/duck/v1"
-
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	gcptesting "github.com/google/knative-gcp/pkg/testing"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -44,32 +41,7 @@ var (
 			PubSubSpec: gcptesting.CompleteV1alpha1PubSubSpec,
 		},
 		Status: CloudBuildSourceStatus{
-			PubSubStatus: completeV1alpha1PubSubStatusWithoutServiceAccountName,
-		},
-	}
-
-	completeV1alpha1PubSubStatusWithoutServiceAccountName = duckv1alpha1.PubSubStatus{
-		IdentityStatus: completeV1alpha1IdentityStatusWithoutServiceAccountName,
-		SinkURI:        &gcptesting.CompleteURL,
-		CloudEventAttributes: []eventingduckv1.CloudEventAttributes{
-			{
-				Type:   "type",
-				Source: "source",
-			},
-		},
-		ProjectID:      "projectID",
-		TopicID:        "topicID",
-		SubscriptionID: "subscriptionID",
-	}
-	completeV1alpha1IdentityStatusWithoutServiceAccountName = duckv1alpha1.IdentityStatus{
-		Status: eventingduckv1.Status{
-			ObservedGeneration: 7,
-			Conditions: eventingduckv1.Conditions{
-				{
-					Type:   "Ready",
-					Status: "True",
-				},
-			},
+			PubSubStatus: gcptesting.CompleteV1alpha1PubSubStatusWithoutServiceAccountName,
 		},
 	}
 )

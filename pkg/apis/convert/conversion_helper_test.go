@@ -62,6 +62,15 @@ func TestV1beta1PubSubSpec(t *testing.T) {
 	}
 }
 
+func TestV1alpha1ToV1PubSubSpec(t *testing.T) {
+	want := gcptesting.CompleteV1alpha1PubSubSpec
+	got := convert.FromV1ToV1alpha1PubSubSpec(convert.FromV1alpha1ToV1PubSubSpec(want))
+	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
+	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
+		t.Errorf("Unexpected difference (-want +got): %v", diff)
+	}
+}
+
 func TestV1PubSubSpec(t *testing.T) {
 	want := gcptesting.CompleteV1beta1PubSubSpec
 	got := convert.FromV1PubSubSpec(convert.ToV1PubSubSpec(want))
@@ -90,6 +99,15 @@ func TestV1IdentitySpec(t *testing.T) {
 func TestV1beta1PubSubStatus(t *testing.T) {
 	want := gcptesting.CompleteV1alpha1PubSubStatus
 	got := convert.FromV1beta1PubSubStatus(convert.ToV1beta1PubSubStatus(want))
+	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
+	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
+		t.Errorf("Unexpected difference (-want +got): %v", diff)
+	}
+}
+
+func TestV1alpha1toV1PubSubStatus(t *testing.T) {
+	want := gcptesting.CompleteV1alpha1PubSubStatusWithoutServiceAccountName
+	got := convert.FromV1ToV1alpha1PubSubStatus(convert.FromV1alpha1ToV1PubSubStatus(want))
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
 		t.Errorf("Unexpected difference (-want +got): %v", diff)
