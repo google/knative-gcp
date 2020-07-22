@@ -80,6 +80,8 @@ func (current *CloudSchedulerSource) CheckImmutableFields(ctx context.Context, o
 			Details: diff,
 		})
 	}
+	// Modification of AutoscalingClassAnnotations is not allowed.
+	errs = duck.CheckImmutableAutoscalingClassAnnotations(&current.ObjectMeta, &original.ObjectMeta, errs)
 
 	// Modification of non-empty cluster name annotation is not allowed.
 	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)

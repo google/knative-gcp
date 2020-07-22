@@ -98,7 +98,7 @@ var (
 	}
 )
 
-func TestPubSubCheckValidationFields(t *testing.T) {
+func TestPullSubscriptionCheckValidationFields(t *testing.T) {
 	testCases := map[string]struct {
 		spec  PullSubscriptionSpec
 		error bool
@@ -243,7 +243,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 	}
 }
 
-func TestPubSubCheckImmutableFields(t *testing.T) {
+func TestPullSubscriptionCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
 		orig              interface{}
 		updated           PullSubscriptionSpec
@@ -263,6 +263,29 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
 			},
 			allowed: false,
+		},
+		"AnnotationClass annotation changed": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation added": {
+			origAnnotation: map[string]string{},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation deleted": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{},
+			allowed:           false,
 		},
 		"Secret.Name changed": {
 			orig: &pullSubscriptionSpec,

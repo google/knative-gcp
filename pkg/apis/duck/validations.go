@@ -104,6 +104,19 @@ func CheckImmutableClusterNameAnnotation(current *metav1.ObjectMeta, original *m
 	return errs
 }
 
+// CheckImmutableAutoscalingClassAnnotations checks AutoscalingClassAnnotation Annotations are immutable.
+func CheckImmutableAutoscalingClassAnnotations(current *metav1.ObjectMeta, original *metav1.ObjectMeta, errs *apis.FieldError) *apis.FieldError {
+	// If AutoscalingClassAnnotation is immutable no matter if it was defined or not
+	if diff := cmp.Diff(original.Annotations[AutoscalingClassAnnotation], current.Annotations[AutoscalingClassAnnotation]); diff != "" {
+		errs = errs.Also(&apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{fmt.Sprintf("metadata.annotations[%s]", AutoscalingClassAnnotation)},
+			Details: diff,
+		})
+	}
+	return errs
+}
+
 // ValidateCredential checks secret and service account.
 func ValidateCredential(secret *corev1.SecretKeySelector, kServiceAccountName string) *apis.FieldError {
 	if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) && kServiceAccountName != "" {
