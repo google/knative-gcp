@@ -20,7 +20,7 @@ package resources
 import (
 	"fmt"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	"github.com/google/knative-gcp/pkg/utils/naming"
 )
 

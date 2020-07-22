@@ -42,7 +42,7 @@ import (
 	"knative.dev/pkg/resolver"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"

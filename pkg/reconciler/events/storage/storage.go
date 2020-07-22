@@ -29,7 +29,7 @@ import (
 
 	. "cloud.google.com/go/storage"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudstoragesource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"

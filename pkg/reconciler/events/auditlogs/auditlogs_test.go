@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+	v1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 
 	"cloud.google.com/go/logging/logadmin"
 	"google.golang.org/grpc/codes"

@@ -42,7 +42,7 @@ import (
 
 	gstatus "google.golang.org/grpc/status"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"

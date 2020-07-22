@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/keda/resources"

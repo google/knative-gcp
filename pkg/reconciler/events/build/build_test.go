@@ -24,7 +24,7 @@ import (
 
 	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
 
-	"github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+	v1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"

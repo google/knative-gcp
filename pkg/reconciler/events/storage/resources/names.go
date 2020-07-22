@@ -19,7 +19,7 @@ package resources
 import (
 	"github.com/google/knative-gcp/pkg/utils/naming"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 )
 
 // GenerateTopicName generates a topic name for the storage. This refers to the underlying Pub/Sub topic, and not our

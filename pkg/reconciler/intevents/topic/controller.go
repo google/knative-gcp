@@ -30,7 +30,7 @@ import (
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"

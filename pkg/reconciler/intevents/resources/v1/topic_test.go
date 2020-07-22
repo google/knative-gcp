@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 

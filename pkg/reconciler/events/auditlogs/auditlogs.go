@@ -29,7 +29,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	cloudauditlogssourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudauditlogssource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"

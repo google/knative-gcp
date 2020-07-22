@@ -1,7 +1,7 @@
 package resources
 
 import (
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
 )
 

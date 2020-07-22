@@ -41,7 +41,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	"github.com/google/knative-gcp/pkg/apis/duck/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	intereventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	fakePubsubClient "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"

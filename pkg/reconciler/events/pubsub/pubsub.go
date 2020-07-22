@@ -24,7 +24,7 @@ import (
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudpubsubsource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"

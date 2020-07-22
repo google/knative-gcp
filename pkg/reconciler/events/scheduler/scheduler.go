@@ -27,7 +27,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudschedulersource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"

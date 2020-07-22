@@ -22,7 +22,7 @@ import (
 
 	"knative.dev/pkg/kmeta"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 )
 
 func GeneratePublisherName(topic *v1.Topic) string {

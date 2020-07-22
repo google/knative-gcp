@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+	v1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -92,7 +92,7 @@ func TestKSACreates(t *testing.T) {
 			},
 			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1beta1",
+					APIVersion:         "events.cloud.google.com/v1",
 					Kind:               "CloudPubSubSource",
 					UID:                "test-pubsub-uid",
 					Name:               identifiableName,
@@ -109,7 +109,7 @@ func TestKSACreates(t *testing.T) {
 			config: ConfigMapFromTestFile(t, "config-gcp-auth", "default-auth-config"),
 			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1beta1",
+					APIVersion:         "events.cloud.google.com/v1",
 					Kind:               "CloudPubSubSource",
 					UID:                "test-pubsub-uid",
 					Name:               identifiableName,
