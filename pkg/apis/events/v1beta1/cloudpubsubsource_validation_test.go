@@ -18,10 +18,11 @@ package v1beta1
 
 import (
 	"context"
+	"testing"
+
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
@@ -53,10 +54,10 @@ var (
 			},
 			Project: "my-eventing-project",
 		},
-		Topic: "pubsub-topic",
-		AckDeadline: ptr.String("30s"),
+		Topic:               "pubsub-topic",
+		AckDeadline:         ptr.String("30s"),
 		RetainAckedMessages: true,
-		RetentionDuration: ptr.String("30s"),
+		RetentionDuration:   ptr.String("30s"),
 	}
 
 	pubSubSourceSpecWithKSA = CloudPubSubSourceSpec{
@@ -250,11 +251,11 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 
 func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudPubSubSourceSpec
+		orig              interface{}
+		updated           CloudPubSubSourceSpec
 		origAnnotation    map[string]string
 		updatedAnnotation map[string]string
-		allowed bool
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: pubSubSourceSpec,
@@ -284,10 +285,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
-				AckDeadline: pubSubSourceSpec.AckDeadline,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
 				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
-				RetentionDuration: pubSubSourceSpec.RetentionDuration,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -306,10 +307,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
-				AckDeadline: pubSubSourceSpec.AckDeadline,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
 				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
-				RetentionDuration: pubSubSourceSpec.RetentionDuration,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -328,10 +329,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
-				AckDeadline: pubSubSourceSpec.AckDeadline,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
 				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
-				RetentionDuration: pubSubSourceSpec.RetentionDuration,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -366,10 +367,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
-				AckDeadline: ptr.String("50s"),
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         ptr.String("50s"),
 				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
-				RetentionDuration: pubSubSourceSpec.RetentionDuration,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -388,10 +389,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
-				AckDeadline: pubSubSourceSpec.AckDeadline,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
 				RetainAckedMessages: false,
-				RetentionDuration: pubSubSourceSpec.RetentionDuration,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -410,10 +411,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
-				AckDeadline: pubSubSourceSpec.AckDeadline,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
 				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
-				RetentionDuration: ptr.String("50s"),
+				RetentionDuration:   ptr.String("50s"),
 			},
 			allowed: false,
 		},
@@ -432,10 +433,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: "some-other-topic",
-				AckDeadline: pubSubSourceSpec.AckDeadline,
+				Topic:               "some-other-topic",
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
 				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
-				RetentionDuration: pubSubSourceSpec.RetentionDuration,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -449,16 +450,16 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						},
 						Key: pubSubSourceSpec.Secret.Key,
 					},
-					Project: pubSubSourceSpec.Project,
+					Project:    pubSubSourceSpec.Project,
 					SourceSpec: pubSubSourceSpec.SourceSpec,
 					IdentitySpec: duckv1beta1.IdentitySpec{
 						ServiceAccountName: "old-service-account",
 					},
 				},
-				Topic: pubSubSourceSpecWithKSA.Topic,
-				AckDeadline: pubSubSourceSpec.AckDeadline,
+				Topic:               pubSubSourceSpecWithKSA.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
 				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
-				RetentionDuration: pubSubSourceSpec.RetentionDuration,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -491,10 +492,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
-				AckDeadline: pubSubSourceSpec.AckDeadline,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
 				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
-				RetentionDuration: pubSubSourceSpec.RetentionDuration,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -520,10 +521,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
-				AckDeadline: pubSubSourceSpec.AckDeadline,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
 				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
-				RetentionDuration: pubSubSourceSpec.RetentionDuration,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -549,10 +550,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
-				AckDeadline: pubSubSourceSpec.AckDeadline,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
 				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
-				RetentionDuration: pubSubSourceSpec.RetentionDuration,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -578,10 +579,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
-				AckDeadline: pubSubSourceSpec.AckDeadline,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
 				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
-				RetentionDuration: pubSubSourceSpec.RetentionDuration,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: true,
 		},

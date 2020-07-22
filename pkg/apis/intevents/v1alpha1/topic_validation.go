@@ -58,7 +58,7 @@ func (current *Topic) CheckImmutableFields(ctx context.Context, original *Topic)
 	}
 
 	var errs *apis.FieldError
-	// Modification of Topic, Secret, ServiceAccountName PropagationPolicy, EnablePublisher and Project are not allowed.
+	// Modification of Topic, Secret, ServiceAccountName, PropagationPolicy, EnablePublisher and Project are not allowed.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(TopicSpec{})); diff != "" {
 		errs = errs.Also(&apis.FieldError{

@@ -70,10 +70,10 @@ func (current *CloudAuditLogsSource) CheckImmutableFields(ctx context.Context, o
 			"Sink", "CloudEventOverrides")); diff != "" {
 		errs = errs.Also(
 			&apis.FieldError{
-			Message: "Immutable fields changed (-old +new)",
-			Paths:   []string{"spec"},
-			Details: diff,
-		})
+				Message: "Immutable fields changed (-old +new)",
+				Paths:   []string{"spec"},
+				Details: diff,
+			})
 	}
 	// Modification of non-empty cluster name annotation is not allowed.
 	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)

@@ -18,10 +18,11 @@ package v1beta1
 
 import (
 	"context"
+	"testing"
+
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
@@ -373,11 +374,11 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 
 func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudSchedulerSourceSpec
+		orig              interface{}
+		updated           CloudSchedulerSourceSpec
 		origAnnotation    map[string]string
 		updatedAnnotation map[string]string
-		allowed bool
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: schedulerWithSecret,
@@ -501,7 +502,7 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.APIVersion changed": {
 			orig: &schedulerWithSecret,
-			updated: CloudSchedulerSourceSpec {
+			updated: CloudSchedulerSourceSpec{
 				Location: schedulerWithSecret.Location,
 				Schedule: schedulerWithSecret.Schedule,
 				Data:     schedulerWithSecret.Data,
@@ -529,7 +530,7 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Kind changed": {
 			orig: &schedulerWithSecret,
-			updated: CloudSchedulerSourceSpec {
+			updated: CloudSchedulerSourceSpec{
 				Location: schedulerWithSecret.Location,
 				Schedule: schedulerWithSecret.Schedule,
 				Data:     schedulerWithSecret.Data,
@@ -557,7 +558,7 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Namespace changed": {
 			orig: &schedulerWithSecret,
-			updated: CloudSchedulerSourceSpec {
+			updated: CloudSchedulerSourceSpec{
 				Location: schedulerWithSecret.Location,
 				Schedule: schedulerWithSecret.Schedule,
 				Data:     schedulerWithSecret.Data,
@@ -585,7 +586,7 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Name changed": {
 			orig: &schedulerWithSecret,
-			updated: CloudSchedulerSourceSpec {
+			updated: CloudSchedulerSourceSpec{
 				Location: schedulerWithSecret.Location,
 				Schedule: schedulerWithSecret.Schedule,
 				Data:     schedulerWithSecret.Data,

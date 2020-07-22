@@ -18,9 +18,10 @@ package v1alpha1
 
 import (
 	"context"
-	"knative.dev/pkg/ptr"
 	"strings"
 	"testing"
+
+	"knative.dev/pkg/ptr"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,10 +40,10 @@ var (
 			},
 			Key: "secret-key",
 		},
-		Project: "my-eventing-project",
-		Topic:   "pubsub-topic",
+		Project:           "my-eventing-project",
+		Topic:             "pubsub-topic",
 		PropagationPolicy: TopicPolicyCreateDelete,
-		EnablePublisher: ptr.Bool(true),
+		EnablePublisher:   ptr.Bool(true),
 	}
 
 	topicSpecWithKSA = TopicSpec{
@@ -126,44 +127,44 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 		"Topic changed": {
 			orig: &topicSpec,
 			updated: TopicSpec{
-				Secret:  topicSpec.Secret,
-				Project: topicSpec.Project,
-				Topic:   "updated",
+				Secret:            topicSpec.Secret,
+				Project:           topicSpec.Project,
+				Topic:             "updated",
 				PropagationPolicy: topicSpec.PropagationPolicy,
-				EnablePublisher: topicSpec.EnablePublisher,
+				EnablePublisher:   topicSpec.EnablePublisher,
 			},
 			allowed: false,
 		},
 		"Project changed": {
 			orig: &topicSpec,
 			updated: TopicSpec{
-				Secret:  topicSpec.Secret,
-				Project: "new-project",
-				Topic:   topicSpec.Topic,
+				Secret:            topicSpec.Secret,
+				Project:           "new-project",
+				Topic:             topicSpec.Topic,
 				PropagationPolicy: topicSpec.PropagationPolicy,
-				EnablePublisher: topicSpec.EnablePublisher,
+				EnablePublisher:   topicSpec.EnablePublisher,
 			},
 			allowed: false,
 		},
 		"PropagationPolicy changed": {
 			orig: &topicSpec,
 			updated: TopicSpec{
-				Secret:  topicSpec.Secret,
-				Project: "new-project",
-				Topic:   topicSpec.Topic,
+				Secret:            topicSpec.Secret,
+				Project:           "new-project",
+				Topic:             topicSpec.Topic,
 				PropagationPolicy: TopicPolicyCreateNoDelete,
-				EnablePublisher: topicSpec.EnablePublisher,
+				EnablePublisher:   topicSpec.EnablePublisher,
 			},
 			allowed: false,
 		},
 		"EnablePublisher changed": {
 			orig: &topicSpec,
 			updated: TopicSpec{
-				Secret:  topicSpec.Secret,
-				Project: "new-project",
-				Topic:   topicSpec.Topic,
+				Secret:            topicSpec.Secret,
+				Project:           "new-project",
+				Topic:             topicSpec.Topic,
 				PropagationPolicy: topicSpec.PropagationPolicy,
-				EnablePublisher: ptr.Bool(false),
+				EnablePublisher:   ptr.Bool(false),
 			},
 			allowed: false,
 		},
@@ -176,10 +177,10 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 					},
 					Key: "some-other-key",
 				},
-				Project: topicSpec.Project,
-				Topic:   topicSpec.Topic,
+				Project:           topicSpec.Project,
+				Topic:             topicSpec.Topic,
 				PropagationPolicy: topicSpec.PropagationPolicy,
-				EnablePublisher: topicSpec.EnablePublisher,
+				EnablePublisher:   topicSpec.EnablePublisher,
 			},
 			allowed: false,
 		},
@@ -192,10 +193,10 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 					},
 					Key: topicSpec.Secret.Key,
 				},
-				Project: topicSpec.Project,
-				Topic:   topicSpec.Topic,
+				Project:           topicSpec.Project,
+				Topic:             topicSpec.Topic,
 				PropagationPolicy: topicSpec.PropagationPolicy,
-				EnablePublisher: topicSpec.EnablePublisher,
+				EnablePublisher:   topicSpec.EnablePublisher,
 			},
 			allowed: false,
 		},
@@ -219,10 +220,10 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 					},
 					Key: topicSpec.Secret.Key,
 				},
-				Project: topicSpec.Project,
-				Topic:   topicSpec.Topic,
+				Project:           topicSpec.Project,
+				Topic:             topicSpec.Topic,
 				PropagationPolicy: topicSpec.PropagationPolicy,
-				EnablePublisher: topicSpec.EnablePublisher,
+				EnablePublisher:   topicSpec.EnablePublisher,
 				IdentitySpec: v1alpha1.IdentitySpec{
 					ServiceAccountName: "new-service-account",
 				},
@@ -230,7 +231,7 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 			allowed: false,
 		},
 		"ClusterName annotation added": {
-			origAnnotation:nil,
+			origAnnotation: nil,
 			updatedAnnotation: map[string]string{
 				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
 			},

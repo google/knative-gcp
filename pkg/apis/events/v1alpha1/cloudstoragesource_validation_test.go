@@ -508,7 +508,7 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.APIVersion changed": {
 			orig: &storageSourceSpec,
-			updated: CloudStorageSourceSpec {
+			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
@@ -537,7 +537,7 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Kind changed": {
 			orig: &storageSourceSpec,
-			updated: CloudStorageSourceSpec {
+			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
@@ -566,7 +566,7 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Namespace changed": {
 			orig: &storageSourceSpec,
-			updated: CloudStorageSourceSpec {
+			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
@@ -595,7 +595,7 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Name changed": {
 			orig: &storageSourceSpec,
-			updated: CloudStorageSourceSpec {
+			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,

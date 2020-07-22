@@ -18,10 +18,11 @@ package v1beta1
 
 import (
 	"context"
+	"testing"
+
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -171,11 +172,11 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 
 func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudAuditLogsSourceSpec
+		orig              interface{}
+		updated           CloudAuditLogsSourceSpec
 		origAnnotation    map[string]string
 		updatedAnnotation map[string]string
-		allowed bool
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: auditLogsSourceSpec,
@@ -311,7 +312,7 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 						},
 						Key: auditLogsSourceSpec.Secret.Key,
 					},
-					Project: auditLogsSourceSpec.Project,
+					Project:    auditLogsSourceSpec.Project,
 					SourceSpec: auditLogsSourceSpec.SourceSpec,
 					IdentitySpec: duckv1beta1.IdentitySpec{
 						ServiceAccountName: "old-service-account",

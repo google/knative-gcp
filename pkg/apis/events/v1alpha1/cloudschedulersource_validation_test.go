@@ -502,7 +502,7 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.APIVersion changed": {
 			orig: &schedulerWithSecret,
-			updated: CloudSchedulerSourceSpec {
+			updated: CloudSchedulerSourceSpec{
 				Location: schedulerWithSecret.Location,
 				Schedule: schedulerWithSecret.Schedule,
 				Data:     schedulerWithSecret.Data,
@@ -530,7 +530,7 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Kind changed": {
 			orig: &schedulerWithSecret,
-			updated: CloudSchedulerSourceSpec {
+			updated: CloudSchedulerSourceSpec{
 				Location: schedulerWithSecret.Location,
 				Schedule: schedulerWithSecret.Schedule,
 				Data:     schedulerWithSecret.Data,
@@ -558,7 +558,7 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Namespace changed": {
 			orig: &schedulerWithSecret,
-			updated: CloudSchedulerSourceSpec {
+			updated: CloudSchedulerSourceSpec{
 				Location: schedulerWithSecret.Location,
 				Schedule: schedulerWithSecret.Schedule,
 				Data:     schedulerWithSecret.Data,
@@ -586,7 +586,7 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Name changed": {
 			orig: &schedulerWithSecret,
-			updated: CloudSchedulerSourceSpec {
+			updated: CloudSchedulerSourceSpec{
 				Location: schedulerWithSecret.Location,
 				Schedule: schedulerWithSecret.Schedule,
 				Data:     schedulerWithSecret.Data,

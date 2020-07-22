@@ -18,10 +18,11 @@ package v1beta1
 
 import (
 	"context"
+	"testing"
+
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
@@ -366,7 +367,7 @@ func TestSpecValidationFields(t *testing.T) {
 
 func TestCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
+		orig              interface{}
 		updated           CloudStorageSourceSpec
 		origAnnotation    map[string]string
 		updatedAnnotation map[string]string
@@ -508,7 +509,7 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.APIVersion changed": {
 			orig: &storageSourceSpec,
-			updated: CloudStorageSourceSpec {
+			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
@@ -537,7 +538,7 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Kind changed": {
 			orig: &storageSourceSpec,
-			updated: CloudStorageSourceSpec {
+			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
@@ -566,7 +567,7 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Namespace changed": {
 			orig: &storageSourceSpec,
-			updated: CloudStorageSourceSpec {
+			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
@@ -595,7 +596,7 @@ func TestCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Name changed": {
 			orig: &storageSourceSpec,
-			updated: CloudStorageSourceSpec {
+			updated: CloudStorageSourceSpec{
 				Bucket:           storageSourceSpec.Bucket,
 				EventTypes:       storageSourceSpec.EventTypes,
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,

@@ -17,9 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func TestResource_GetFullType(t *testing.T) {
@@ -62,5 +63,3 @@ func TestResource_Populate(t *testing.T) {
 		t.Errorf("Unexpected difference (-want, +got): %v", diff)
 	}
 }
-
-

@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	"context"
+
 	"github.com/google/knative-gcp/pkg/apis/duck"
 
 	"github.com/google/go-cmp/cmp"
@@ -58,7 +59,7 @@ func (current *Topic) CheckImmutableFields(ctx context.Context, original *Topic)
 	}
 
 	var errs *apis.FieldError
-	// Modification of Topic, Secret, ServiceAccountName PropagationPolicy, EnablePublisher and Project are not allowed.
+	// Modification of Topic, Secret, ServiceAccountName, PropagationPolicy, EnablePublisher and Project are not allowed.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(TopicSpec{})); diff != "" {
 		errs = errs.Also(&apis.FieldError{

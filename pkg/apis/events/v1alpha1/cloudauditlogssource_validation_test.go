@@ -311,7 +311,7 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 						},
 						Key: auditLogsSourceSpec.Secret.Key,
 					},
-					Project: auditLogsSourceSpec.Project,
+					Project:    auditLogsSourceSpec.Project,
 					SourceSpec: auditLogsSourceSpec.SourceSpec,
 					IdentitySpec: duckv1alpha1.IdentitySpec{
 						ServiceAccountName: "old-service-account",
