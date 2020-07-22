@@ -20,12 +20,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/knative-gcp/pkg/apis/duck"
-	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
