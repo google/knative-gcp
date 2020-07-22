@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+	"knative.dev/pkg/ptr"
 	"strings"
 	"testing"
 
@@ -40,6 +41,8 @@ var (
 		},
 		Project: "my-eventing-project",
 		Topic:   "pubsub-topic",
+		PropagationPolicy: TopicPolicyCreateDelete,
+		EnablePublisher: ptr.Bool(true),
 	}
 
 	topicSpecWithKSA = TopicSpec{
@@ -126,6 +129,8 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 				Secret:  topicSpec.Secret,
 				Project: topicSpec.Project,
 				Topic:   "updated",
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher: topicSpec.EnablePublisher,
 			},
 			allowed: false,
 		},
@@ -135,6 +140,30 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 				Secret:  topicSpec.Secret,
 				Project: "new-project",
 				Topic:   topicSpec.Topic,
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher: topicSpec.EnablePublisher,
+			},
+			allowed: false,
+		},
+		"PropagationPolicy changed": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret:  topicSpec.Secret,
+				Project: "new-project",
+				Topic:   topicSpec.Topic,
+				PropagationPolicy: TopicPolicyCreateNoDelete,
+				EnablePublisher: topicSpec.EnablePublisher,
+			},
+			allowed: false,
+		},
+		"EnablePublisher changed": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret:  topicSpec.Secret,
+				Project: "new-project",
+				Topic:   topicSpec.Topic,
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher: ptr.Bool(false),
 			},
 			allowed: false,
 		},
@@ -149,6 +178,8 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 				},
 				Project: topicSpec.Project,
 				Topic:   topicSpec.Topic,
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher: topicSpec.EnablePublisher,
 			},
 			allowed: false,
 		},
@@ -163,6 +194,8 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 				},
 				Project: topicSpec.Project,
 				Topic:   topicSpec.Topic,
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher: topicSpec.EnablePublisher,
 			},
 			allowed: false,
 		},
@@ -176,6 +209,32 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 				},
 			},
 			allowed: false,
+		},
+		"ServiceAccountName added": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: topicSpec.Secret.Name,
+					},
+					Key: topicSpec.Secret.Key,
+				},
+				Project: topicSpec.Project,
+				Topic:   topicSpec.Topic,
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher: topicSpec.EnablePublisher,
+				IdentitySpec: v1alpha1.IdentitySpec{
+					ServiceAccountName: "new-service-account",
+				},
+			},
+			allowed: false,
+		},
+		"ClusterName annotation added": {
+			origAnnotation:nil,
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: true,
 		},
 	}
 

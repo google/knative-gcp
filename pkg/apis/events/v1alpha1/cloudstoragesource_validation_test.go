@@ -499,6 +499,139 @@ func TestCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
+		"ClusterName annotation added": {
+			origAnnotation: nil,
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: true,
+		},
+		"Sink.APIVersion changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec {
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    cloudevents.ApplicationJSON,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: storageSourceSpec.Secret.Name,
+						},
+						Key: storageSourceSpec.Secret.Key,
+					},
+					Project: storageSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: "some-other-api-version",
+								Kind:       storageSourceSpec.Sink.Ref.Kind,
+								Namespace:  storageSourceSpec.Sink.Ref.Namespace,
+								Name:       storageSourceSpec.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"Sink.Kind changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec {
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    cloudevents.ApplicationJSON,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: storageSourceSpec.Secret.Name,
+						},
+						Key: storageSourceSpec.Secret.Key,
+					},
+					Project: storageSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: storageSourceSpec.Sink.Ref.APIVersion,
+								Kind:       "some-other-kind",
+								Namespace:  storageSourceSpec.Sink.Ref.Namespace,
+								Name:       storageSourceSpec.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"Sink.Namespace changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec {
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    cloudevents.ApplicationJSON,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: storageSourceSpec.Secret.Name,
+						},
+						Key: storageSourceSpec.Secret.Key,
+					},
+					Project: storageSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: storageSourceSpec.Sink.Ref.APIVersion,
+								Kind:       storageSourceSpec.Sink.Ref.Kind,
+								Namespace:  "some-other-namespace",
+								Name:       storageSourceSpec.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"Sink.Name changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec {
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    cloudevents.ApplicationJSON,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: storageSourceSpec.Secret.Name,
+						},
+						Key: storageSourceSpec.Secret.Key,
+					},
+					Project: storageSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: storageSourceSpec.Sink.Ref.APIVersion,
+								Kind:       storageSourceSpec.Sink.Ref.Kind,
+								Namespace:  storageSourceSpec.Sink.Ref.Namespace,
+								Name:       "some-other-name",
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"no change": {
+			orig:    &storageSourceSpec,
+			updated: storageSourceSpec,
+			allowed: true,
+		},
+		"no spec": {
+			orig:    []string{"wrong"},
+			updated: storageSourceSpec,
+			allowed: true,
+		},
 	}
 
 	for n, tc := range testCases {

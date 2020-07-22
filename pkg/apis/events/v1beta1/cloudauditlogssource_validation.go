@@ -63,15 +63,18 @@ func (current *CloudAuditLogsSource) CheckImmutableFields(ctx context.Context, o
 		return nil
 	}
 
+	var errs *apis.FieldError
 	// Modification of Topic, Secret, ServiceAccountName, Project, ServiceName, MethodName and ResourceName are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudAuditLogsSourceSpec{},
 			"Sink", "CloudEventOverrides")); diff != "" {
-		return &apis.FieldError{
+		errs = errs.Also(
+			&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
 			Details: diff,
-		}
+		})
 	}
-	return nil
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }
