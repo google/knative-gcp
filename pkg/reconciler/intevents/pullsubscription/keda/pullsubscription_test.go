@@ -23,6 +23,8 @@ import (
 	"strings"
 	"testing"
 
+	v12 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,10 +47,10 @@ import (
 	"knative.dev/pkg/resolver"
 
 	gcpduck "github.com/google/knative-gcp/pkg/apis/duck"
-	"github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
-	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1beta1/resource"
-	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/pullsubscription"
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	pubsubv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1/resource"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
@@ -90,13 +92,13 @@ var (
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
-		Version: "v1beta1",
+		Version: "v1",
 		Kind:    "Sink",
 	}
 
 	transformerGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
-		Version: "v1beta1",
+		Version: "v1",
 		Kind:    "Transformer",
 	}
 
@@ -110,7 +112,7 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = pubsubv1beta1.AddToScheme(scheme.Scheme)
+	_ = pubsubv1.AddToScheme(scheme.Scheme)
 }
 
 func newSecret() *corev1.Secret {
@@ -125,30 +127,30 @@ func newSecret() *corev1.Secret {
 	}
 }
 
-func newPullSubscription(subscriptionId string) *pubsubv1beta1.PullSubscription {
-	return NewPullSubscription(sourceName, testNS,
-		WithPullSubscriptionUID(sourceUID),
-		WithPullSubscriptionAnnotations(newAnnotations()),
-		WithPullSubscriptionObjectMetaGeneration(generation),
-		WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
+func newPullSubscription(subscriptionId string) *pubsubv1.PullSubscription {
+	return v12.NewPullSubscription(sourceName, testNS,
+		v12.WithPullSubscriptionUID(sourceUID),
+		v12.WithPullSubscriptionAnnotations(newAnnotations()),
+		v12.WithPullSubscriptionObjectMetaGeneration(generation),
+		v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
 			Topic: testTopicID,
-			PubSubSpec: v1beta1.PubSubSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				Secret:  &secret,
 				Project: testProject,
 			},
 		}),
-		WithPullSubscriptionSubscriptionID(subscriptionId),
-		WithInitPullSubscriptionConditions,
-		WithPullSubscriptionSink(sinkGVK, sinkName),
-		WithPullSubscriptionMarkSink(sinkURI),
-		WithPullSubscriptionSetDefaults,
+		v12.WithPullSubscriptionSubscriptionID(subscriptionId),
+		v12.WithInitPullSubscriptionConditions,
+		v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+		v12.WithPullSubscriptionMarkSink(sinkURI),
+		v12.WithPullSubscriptionSetDefaults,
 	)
 }
 
 func newSink() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.google.com/v1beta1",
+			"apiVersion": "testing.cloud.google.com/v1",
 			"kind":       "Sink",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -177,7 +179,7 @@ func newAnnotations() map[string]string {
 func newTransformer() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.google.com/v1beta1",
+			"apiVersion": "testing.cloud.google.com/v1",
 			"kind":       "Transformer",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -204,19 +206,19 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "cannot get sink",
 		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				},
 				),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionSetDefaults,
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 			newSecret(),
 		},
@@ -224,48 +226,48 @@ func TestAllCases(t *testing.T) {
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
 			Eventf(corev1.EventTypeWarning, "InvalidSink",
-				`InvalidSink: failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1beta1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
+				`InvalidSink: failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, resourceGroup),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			Object: v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
 				// Updates
-				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSinkNotFound(),
-				WithPullSubscriptionSetDefaults,
+				v12.WithPullSubscriptionStatusObservedGeneration(generation),
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionSinkNotFound(),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 		}},
 	}, {
 		Name: "create client fails",
 		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -281,26 +283,26 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			Object: v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionStatusObservedGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(nil),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "client-create-induced-error")),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionProjectID(testProject),
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+				v12.WithPullSubscriptionTransformerURI(nil),
+				v12.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "client-create-induced-error")),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -309,21 +311,21 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "topic exists fails",
 		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -341,26 +343,26 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			Object: v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionStatusObservedGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(nil),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "topic-exists-induced-error")),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionProjectID(testProject),
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+				v12.WithPullSubscriptionTransformerURI(nil),
+				v12.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "topic-exists-induced-error")),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -369,21 +371,21 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "topic does not exist",
 		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -401,26 +403,26 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			Object: v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionStatusObservedGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(nil),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToReconcileSubscriptionMsg, testTopicID)),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionProjectID(testProject),
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+				v12.WithPullSubscriptionTransformerURI(nil),
+				v12.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToReconcileSubscriptionMsg, testTopicID)),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -429,21 +431,21 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "subscription exists fails",
 		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -461,26 +463,26 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			Object: v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionStatusObservedGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(nil),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-exists-induced-error")),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionProjectID(testProject),
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+				v12.WithPullSubscriptionTransformerURI(nil),
+				v12.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-exists-induced-error")),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -489,21 +491,21 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "create subscription fails",
 		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -522,26 +524,26 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			Object: v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionStatusObservedGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(nil),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-create-induced-error")),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionProjectID(testProject),
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+				v12.WithPullSubscriptionTransformerURI(nil),
+				v12.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-create-induced-error")),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -571,28 +573,28 @@ func TestAllCases(t *testing.T) {
 			newReceiveAdapter(context.Background(), testImage, nil),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			Object: v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(nil),
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionProjectID(testProject),
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+				v12.WithPullSubscriptionTransformerURI(nil),
 				// Updates
-				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkNoDeployed(deploymentName(testSubscriptionID), testNS),
-				WithPullSubscriptionSetDefaults,
+				v12.WithPullSubscriptionStatusObservedGeneration(generation),
+				v12.WithPullSubscriptionMarkSubscribed(testSubscriptionID),
+				v12.WithPullSubscriptionMarkNoDeployed(deploymentName(testSubscriptionID), testNS),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -601,19 +603,19 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "successful create - reuse existing receive adapter - match",
 		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionSetDefaults,
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -635,27 +637,27 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, "PullSubscriptionReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			Object: v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed(deploymentName(testSubscriptionID), testNS),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(nil),
-				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionProjectID(testProject),
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSubscribed(testSubscriptionID),
+				v12.WithPullSubscriptionMarkDeployed(deploymentName(testSubscriptionID), testNS),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+				v12.WithPullSubscriptionTransformerURI(nil),
+				v12.WithPullSubscriptionStatusObservedGeneration(generation),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -664,20 +666,20 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "successful create - reuse existing receive adapter - mismatch",
 		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionTransformer(transformerGVK, transformerName),
-				WithPullSubscriptionSetDefaults,
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionTransformer(transformerGVK, transformerName),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 			newSink(),
 			newTransformer(),
@@ -708,27 +710,27 @@ func TestAllCases(t *testing.T) {
 			Object: newReceiveAdapter(context.Background(), testImage, transformerURI),
 		}},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			Object: v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionTransformer(transformerGVK, transformerName),
-				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkNoDeployed(deploymentName(testSubscriptionID), testNS),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkTransformer(transformerURI),
-				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionSetDefaults,
+				v12.WithInitPullSubscriptionConditions,
+				v12.WithPullSubscriptionProjectID(testProject),
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionTransformer(transformerGVK, transformerName),
+				v12.WithPullSubscriptionMarkSubscribed(testSubscriptionID),
+				v12.WithPullSubscriptionMarkNoDeployed(deploymentName(testSubscriptionID), testNS),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionMarkTransformer(transformerURI),
+				v12.WithPullSubscriptionStatusObservedGeneration(generation),
+				v12.WithPullSubscriptionSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -737,23 +739,23 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "deleting - failed to delete subscription",
 		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed(deploymentName(testSubscriptionID), testNS),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionDeleted,
-				WithPullSubscriptionSetDefaults,
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSubscribed(testSubscriptionID),
+				v12.WithPullSubscriptionMarkDeployed(deploymentName(testSubscriptionID), testNS),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionDeleted,
+				v12.WithPullSubscriptionSetDefaults,
 			),
 			newSecret(),
 		},
@@ -776,24 +778,24 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "successfully deleted subscription",
 		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-					PubSubSpec: v1beta1.PubSubSpec{
+			v12.NewPullSubscription(sourceName, testNS,
+				v12.WithPullSubscriptionUID(sourceUID),
+				v12.WithPullSubscriptionAnnotations(newAnnotations()),
+				v12.WithPullSubscriptionObjectMetaGeneration(generation),
+				v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
 					},
 					Topic: testTopicID,
 				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed(deploymentName(testSubscriptionID), testNS),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionSubscriptionID(""),
-				WithPullSubscriptionDeleted,
-				WithPullSubscriptionSetDefaults,
+				v12.WithPullSubscriptionSink(sinkGVK, sinkName),
+				v12.WithPullSubscriptionMarkSubscribed(testSubscriptionID),
+				v12.WithPullSubscriptionMarkDeployed(deploymentName(testSubscriptionID), testNS),
+				v12.WithPullSubscriptionMarkSink(sinkURI),
+				v12.WithPullSubscriptionSubscriptionID(""),
+				v12.WithPullSubscriptionDeleted,
+				v12.WithPullSubscriptionSetDefaults,
 			),
 			newSecret(),
 		},
@@ -848,9 +850,9 @@ func deploymentName(subscriptionID string) string {
 }
 
 func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL) runtime.Object {
-	ps := NewPullSubscription(sourceName, testNS,
-		WithPullSubscriptionUID(sourceUID),
-		WithPullSubscriptionAnnotations(map[string]string{
+	ps := v12.NewPullSubscription(sourceName, testNS,
+		v12.WithPullSubscriptionUID(sourceUID),
+		v12.WithPullSubscriptionAnnotations(map[string]string{
 			gcpduck.AutoscalingClassAnnotation:                gcpduck.KEDA,
 			gcpduck.AutoscalingMinScaleAnnotation:             "0",
 			gcpduck.AutoscalingMaxScaleAnnotation:             "3",
@@ -858,14 +860,14 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 			gcpduck.KedaAutoscalingCooldownPeriodAnnotation:   "60",
 			gcpduck.KedaAutoscalingPollingIntervalAnnotation:  "30",
 		}),
-		WithPullSubscriptionSpec(pubsubv1beta1.PullSubscriptionSpec{
-			PubSubSpec: v1beta1.PubSubSpec{
+		v12.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				Secret:  &secret,
 				Project: testProject,
 			},
 			Topic: testTopicID,
 		}),
-		WithPullSubscriptionSetDefaults,
+		v12.WithPullSubscriptionSetDefaults,
 	)
 	args := &resources.ReceiveAdapterArgs{
 		Image:            image,
@@ -885,7 +887,7 @@ func newAvailableReceiveAdapter(ctx context.Context, image string, transformer *
 	return obj
 }
 
-func newScaledObject(ps *pubsubv1beta1.PullSubscription) runtime.Object {
+func newScaledObject(ps *pubsubv1.PullSubscription) runtime.Object {
 	ctx := context.Background()
 	ra := newReceiveAdapter(ctx, testImage, nil)
 	d, _ := ra.(*v1.Deployment)

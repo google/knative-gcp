@@ -22,12 +22,13 @@ import (
 	"os"
 	"testing"
 
+	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
+
 	v1 "k8s.io/api/core/v1"
 
 	"google.golang.org/api/option"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	cloudbuildpb "google.golang.org/genproto/googleapis/devtools/cloudbuild/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,15 +39,15 @@ type BuildConfig struct {
 	BuildName          string
 	SinkName           string
 	ServiceAccountName string
-	Options            []kngcptesting.CloudBuildSourceOption
+	Options            []reconcilertestingv1beta1.CloudBuildSourceOption
 }
 
 func MakeBuildOrDie(client *Client, config BuildConfig) {
 	client.T.Helper()
 	so := config.Options
-	so = append(so, kngcptesting.WithCloudBuildSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, kngcptesting.WithCloudBuildSourceServiceAccount(config.ServiceAccountName))
-	build := kngcptesting.NewCloudBuildSource(config.BuildName, client.Namespace, so...)
+	so = append(so, reconcilertestingv1beta1.WithCloudBuildSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1beta1.WithCloudBuildSourceServiceAccount(config.ServiceAccountName))
+	build := reconcilertestingv1beta1.NewCloudBuildSource(config.BuildName, client.Namespace, so...)
 	client.CreateBuildOrFail(build)
 
 	client.Core.WaitForResourceReadyOrFail(config.BuildName, CloudBuildSourceTypeMeta)

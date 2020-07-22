@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -137,8 +139,8 @@ func TestKSACreates(t *testing.T) {
 				policyManager: m,
 				gcpAuthStore:  NewGCPAuthTestStore(t, tc.config),
 			}
-			identifiable := NewCloudPubSubSource(identifiableName, testNS,
-				WithCloudPubSubSourceSetDefaults)
+			identifiable := v1.NewCloudPubSubSource(identifiableName, testNS,
+				v1.WithCloudPubSubSourceSetDefaults)
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
 			identifiable.SetAnnotations(map[string]string{
 				duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
@@ -253,9 +255,8 @@ func TestKSADeletes(t *testing.T) {
 				policyManager: m,
 				gcpAuthStore:  NewGCPAuthTestStore(t, tc.config),
 			}
-			identifiable := NewCloudPubSubSource(identifiableName, testNS,
-				WithCloudPubSubSourceServiceAccountName(kServiceAccountName),
-				WithCloudPubSubSourceSetDefaults,
+			identifiable := v1.NewCloudPubSubSource(identifiableName, testNS,
+				v1.WithCloudPubSubSourceSetDefaults,
 			)
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
 			identifiable.SetAnnotations(map[string]string{
