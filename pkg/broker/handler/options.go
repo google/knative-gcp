@@ -36,12 +36,6 @@ var (
 	maxTimeout = 10 * time.Minute
 )
 
-// RetryPolicy defines the retry policy for pubsub messages.
-// TODO: https://github.com/google/knative-gcp/issues/1100#issuecomment-638304147
-type RetryPolicy struct {
-	MinBackoff, MaxBackoff time.Duration
-}
-
 // Options holds all the options for create handler pool.
 type Options struct {
 	// HandlerConcurrency is the number of goroutines
@@ -56,8 +50,6 @@ type Options struct {
 	DeliveryTimeout time.Duration
 	// PubsubReceiveSettings is the pubsub receive settings.
 	PubsubReceiveSettings pubsub.ReceiveSettings
-	// RetryPolicy defines the retry policy for pubsub messages.
-	RetryPolicy RetryPolicy
 }
 
 // NewOptions creates a Options.
@@ -113,12 +105,5 @@ func WithPubsubReceiveSettings(s pubsub.ReceiveSettings) Option {
 func WithDeliveryTimeout(t time.Duration) Option {
 	return func(o *Options) {
 		o.DeliveryTimeout = t
-	}
-}
-
-// WithRetryPolicy sets the RetryPolicy.
-func WithRetryPolicy(r RetryPolicy) Option {
-	return func(o *Options) {
-		o.RetryPolicy = r
 	}
 }

@@ -21,8 +21,11 @@ import (
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/knative-gcp/pkg/apis/duck"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
@@ -363,13 +366,47 @@ func TestSpecValidationFields(t *testing.T) {
 
 func TestCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudStorageSourceSpec
-		allowed bool
+		orig              interface{}
+		updated           CloudStorageSourceSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: storageSourceSpec,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation changed": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation added": {
+			origAnnotation: map[string]string{},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation deleted": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{},
+			allowed:           false,
 		},
 		"Bucket changed": {
 			orig: &storageSourceSpec,
@@ -485,13 +522,152 @@ func TestCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
+		"ClusterName annotation added": {
+			origAnnotation: nil,
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: true,
+		},
+		"Sink.APIVersion changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    cloudevents.ApplicationJSON,
+				PubSubSpec: duckv1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: storageSourceSpec.Secret.Name,
+						},
+						Key: storageSourceSpec.Secret.Key,
+					},
+					Project: storageSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: "some-other-api-version",
+								Kind:       storageSourceSpec.Sink.Ref.Kind,
+								Namespace:  storageSourceSpec.Sink.Ref.Namespace,
+								Name:       storageSourceSpec.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"Sink.Kind changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    cloudevents.ApplicationJSON,
+				PubSubSpec: duckv1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: storageSourceSpec.Secret.Name,
+						},
+						Key: storageSourceSpec.Secret.Key,
+					},
+					Project: storageSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: storageSourceSpec.Sink.Ref.APIVersion,
+								Kind:       "some-other-kind",
+								Namespace:  storageSourceSpec.Sink.Ref.Namespace,
+								Name:       storageSourceSpec.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"Sink.Namespace changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    cloudevents.ApplicationJSON,
+				PubSubSpec: duckv1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: storageSourceSpec.Secret.Name,
+						},
+						Key: storageSourceSpec.Secret.Key,
+					},
+					Project: storageSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: storageSourceSpec.Sink.Ref.APIVersion,
+								Kind:       storageSourceSpec.Sink.Ref.Kind,
+								Namespace:  "some-other-namespace",
+								Name:       storageSourceSpec.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"Sink.Name changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    cloudevents.ApplicationJSON,
+				PubSubSpec: duckv1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: storageSourceSpec.Secret.Name,
+						},
+						Key: storageSourceSpec.Secret.Key,
+					},
+					Project: storageSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: storageSourceSpec.Sink.Ref.APIVersion,
+								Kind:       storageSourceSpec.Sink.Ref.Kind,
+								Namespace:  storageSourceSpec.Sink.Ref.Namespace,
+								Name:       "some-other-name",
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"no change": {
+			orig:    &storageSourceSpec,
+			updated: storageSourceSpec,
+			allowed: true,
+		},
+		"no spec": {
+			orig:    []string{"wrong"},
+			updated: storageSourceSpec,
+			allowed: true,
+		},
 	}
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			var orig *CloudStorageSource
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &CloudStorageSource{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*CloudStorageSourceSpec); ok {
 					orig = &CloudStorageSource{
 						Spec: *spec,
@@ -499,6 +675,9 @@ func TestCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &CloudStorageSource{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

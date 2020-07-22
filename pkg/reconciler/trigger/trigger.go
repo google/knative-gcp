@@ -66,6 +66,9 @@ type Reconciler struct {
 
 	// pubsubClient is used as the Pubsub client when present.
 	pubsubClient *pubsub.Client
+
+	// retryPolicy defines the retry policy for pubsub messages.
+	retryPolicy *pubsub.RetryPolicy
 }
 
 // Check that TriggerReconciler implements Interface
@@ -216,8 +219,9 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	// Check if PullSub exists, and if not, create it.
 	subID := resources.GenerateRetrySubscriptionName(trig)
 	subConfig := pubsub.SubscriptionConfig{
-		Topic:  topic,
-		Labels: labels,
+		Topic:       topic,
+		Labels:      labels,
+		RetryPolicy: r.retryPolicy,
 		//TODO(grantr): configure these settings?
 		// AckDeadline
 		// RetentionDuration

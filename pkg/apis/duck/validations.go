@@ -94,12 +94,25 @@ func validateAnnotationNotExists(annotations map[string]string, annotation strin
 func CheckImmutableClusterNameAnnotation(current *metav1.ObjectMeta, original *metav1.ObjectMeta, errs *apis.FieldError) *apis.FieldError {
 	if _, ok := original.Annotations[ClusterNameAnnotation]; ok {
 		if diff := cmp.Diff(original.Annotations[ClusterNameAnnotation], current.Annotations[ClusterNameAnnotation]); diff != "" {
-			return errs.Also(&apis.FieldError{
+			errs = errs.Also(&apis.FieldError{
 				Message: "Immutable fields changed (-old +new)",
 				Paths:   []string{fmt.Sprintf("metadata.annotations[%s]", ClusterNameAnnotation)},
 				Details: diff,
 			})
 		}
+	}
+	return errs
+}
+
+// CheckImmutableAutoscalingClassAnnotations checks AutoscalingClassAnnotation Annotations are immutable.
+func CheckImmutableAutoscalingClassAnnotations(current *metav1.ObjectMeta, original *metav1.ObjectMeta, errs *apis.FieldError) *apis.FieldError {
+	// If AutoscalingClassAnnotation is immutable no matter if it was defined or not
+	if diff := cmp.Diff(original.Annotations[AutoscalingClassAnnotation], current.Annotations[AutoscalingClassAnnotation]); diff != "" {
+		errs = errs.Also(&apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{fmt.Sprintf("metadata.annotations[%s]", AutoscalingClassAnnotation)},
+			Details: diff,
+		})
 	}
 	return errs
 }

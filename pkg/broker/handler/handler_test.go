@@ -18,7 +18,6 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -85,7 +84,7 @@ func TestHandler(t *testing.T) {
 
 	eventCh := make(chan *event.Event)
 	processor := &processors.FakeProcessor{PrevEventsCh: eventCh}
-	h := NewHandler(sub, processor, time.Second, RetryPolicy{})
+	h := NewHandler(sub, processor, time.Second)
 	h.Start(ctx, func(err error) {})
 	defer h.Stop()
 	if !h.IsAlive() {
@@ -155,97 +154,6 @@ func TestHandler(t *testing.T) {
 		}
 		unlock()
 	})
-}
-
-type firstNErrProc struct {
-	processors.BaseProcessor
-	desiredErrCount, currErrCount int
-	successSignal                 chan struct{}
-}
-
-func (p *firstNErrProc) Process(_ context.Context, _ *event.Event) error {
-	if p.currErrCount < p.desiredErrCount {
-		p.currErrCount++
-		return errors.New("always error")
-	}
-	p.successSignal <- struct{}{}
-	return nil
-}
-
-func TestRetryBackoff(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	c, close := testPubsubClient(ctx, t, "test-project")
-	defer close()
-
-	topic, err := c.CreateTopic(ctx, "test-topic")
-	if err != nil {
-		t.Fatalf("failed to create topic: %v", err)
-	}
-	sub, err := c.CreateSubscription(ctx, "test-sub", pubsub.SubscriptionConfig{
-		Topic: topic,
-	})
-	if err != nil {
-		t.Fatalf("failed to create subscription: %v", err)
-	}
-
-	p, err := cepubsub.New(context.Background(),
-		cepubsub.WithClient(c),
-		cepubsub.WithProjectID("test-project"),
-		cepubsub.WithTopicID("test-topic"),
-	)
-	if err != nil {
-		t.Fatalf("failed to create cloudevents pubsub protocol: %v", err)
-	}
-
-	delays := []time.Duration{}
-	desiredErrCount := 8
-	successSignal := make(chan struct{})
-	processor := &firstNErrProc{
-		desiredErrCount: desiredErrCount,
-		successSignal:   successSignal,
-	}
-	h := NewHandler(sub, processor, time.Second, RetryPolicy{MinBackoff: time.Millisecond, MaxBackoff: 16 * time.Millisecond})
-	// Mock sleep func to collect nack backoffs.
-	h.delayNack = func(d time.Duration) {
-		delays = append(delays, d)
-	}
-	h.Start(ctx, func(err error) {})
-	defer h.Stop()
-	if !h.IsAlive() {
-		t.Fatal("start handler didn't bring it alive")
-	}
-
-	testEvent := event.New()
-	testEvent.SetID("id")
-	testEvent.SetSource("source")
-	testEvent.SetSubject("subject")
-	testEvent.SetType("type")
-
-	if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
-		t.Fatalf("failed to seed event to pubsub: %v", err)
-	}
-
-	// Wait until all desired errors were returned.
-	// Then stop the handler by cancel the context.
-	<-successSignal
-	cancel()
-
-	if len(delays) != desiredErrCount {
-		t.Errorf("retry count got=%d, want=%d", len(delays), desiredErrCount)
-	}
-	if delays[0] != time.Millisecond {
-		t.Errorf("initial nack delay got=%v, want=%v", delays[0], time.Millisecond)
-	}
-	// We expect exponential backoff until MaxBackoff
-	for i := 1; i < len(delays); i++ {
-		wantDelay := 2 * delays[i-1]
-		if wantDelay > 16*time.Millisecond {
-			wantDelay = 16 * time.Millisecond
-		}
-		if delays[i] != wantDelay {
-			t.Errorf("delays[%d] got=%v, want=%v", i, delays[i], wantDelay)
-		}
-	}
 }
 
 func nextEventWithTimeout(eventCh <-chan *event.Event) *event.Event {
