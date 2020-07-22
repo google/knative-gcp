@@ -22,7 +22,7 @@ import (
 
 	"os"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
 	"github.com/kelseyhightower/envconfig"
@@ -63,7 +63,7 @@ func (r *buildReceiver) Knockdown(event cloudevents.Event) bool {
 	incorrectAttributes := make(map[string]lib.PropPair)
 
 	var eventData map[string]interface{}
-	if err := json.Unmarshal(event.Data.([]byte), &eventData); err != nil {
+	if err := json.Unmarshal(event.Data(), &eventData); err != nil {
 		fmt.Printf("failed unmarshall event.Data %s.\n", err.Error())
 	}
 	imageStr := fmt.Sprint(eventData[images])

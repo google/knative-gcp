@@ -24,7 +24,11 @@ import (
 	"strconv"
 	"sync"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go/v2/event"
+	"github.com/cloudevents/sdk-go/v2/protocol"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
@@ -66,26 +70,23 @@ func main() {
 	}
 }
 
-func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) {
+func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) (*event.Event, protocol.Result) {
 	if r.shouldReturnErr() {
 		// Ksvc seems to auto retry 5xx. So use 4xx for predictability.
-		resp.Error(http.StatusBadRequest, "Seeding failure receiver response with 400")
-		return
+		return nil, cehttp.NewResult(http.StatusBadRequest, "Seeding failure receiver response with 400")
 	}
 
 	// Check if the received event is the dummy event sent by sender pod.
 	// If it is, send back a response CloudEvent.
 	if event.ID() == lib.E2EDummyEventID {
-		resp.Status = http.StatusAccepted
 		event = cloudevents.NewEvent(cloudevents.VersionV1)
 		event.SetID(lib.E2EDummyRespEventID)
 		event.SetType(lib.E2EDummyRespEventType)
 		event.SetSource(lib.E2EDummyRespEventSource)
-		event.SetDataContentType(cloudevents.ApplicationJSON)
-		event.SetData(`{"source": "receiver!"}`)
-		resp.Event = &event
+		event.SetData(cloudevents.ApplicationJSON, `{"source": "receiver!"}`)
+		return &event, cehttp.NewResult(http.StatusAccepted, "OK")
 	} else {
-		resp.Status = http.StatusForbidden
+		return nil, cehttp.NewResult(http.StatusForbidden, "Forbidden")
 	}
 }
 

@@ -103,21 +103,6 @@ github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
-# github.com/cloudevents/sdk-go v1.2.0
-## explicit
-github.com/cloudevents/sdk-go
-github.com/cloudevents/sdk-go/pkg/cloudevents
-github.com/cloudevents/sdk-go/pkg/cloudevents/client
-github.com/cloudevents/sdk-go/pkg/cloudevents/context
-github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec
-github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/json
-github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/text
-github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/xml
-github.com/cloudevents/sdk-go/pkg/cloudevents/extensions
-github.com/cloudevents/sdk-go/pkg/cloudevents/observability
-github.com/cloudevents/sdk-go/pkg/cloudevents/transport
-github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http
-github.com/cloudevents/sdk-go/pkg/cloudevents/types
 # github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
 ## explicit
 github.com/cloudevents/sdk-go/protocol/pubsub/v2
