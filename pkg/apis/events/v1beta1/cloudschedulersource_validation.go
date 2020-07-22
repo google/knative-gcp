@@ -68,15 +68,21 @@ func (current *CloudSchedulerSource) CheckImmutableFields(ctx context.Context, o
 	if original == nil {
 		return nil
 	}
+
+	var errs *apis.FieldError
 	// Modification of Location, Schedule, Data, Secret, ServiceAccountName, Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudSchedulerSourceSpec{},
 			"Sink", "CloudEventOverrides")); diff != "" {
-		return &apis.FieldError{
+		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
 			Details: diff,
-		}
+		})
 	}
-	return nil
+	// Modification of AutoscalingClassAnnotations is not allowed.
+	errs = duck.CheckImmutableAutoscalingClassAnnotations(&current.ObjectMeta, &original.ObjectMeta, errs)
+
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

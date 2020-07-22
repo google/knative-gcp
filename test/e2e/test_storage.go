@@ -188,13 +188,11 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 
 		actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
 		if err != nil {
-			t.Errorf("failed to get stackdriver event count metric: %v", err)
-			t.Fail()
+			t.Fatalf("failed to get stackdriver event count metric: %v", err)
 		}
 		expectedCount := int64(1)
-		if *actualCount != expectedCount {
+		if actualCount != expectedCount {
 			t.Errorf("Actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
-			t.Fail()
 		}
 	}
 }
