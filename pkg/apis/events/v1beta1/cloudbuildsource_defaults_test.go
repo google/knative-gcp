@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -43,7 +43,7 @@ func TestBuildSourceDefaults(t *testing.T) {
 				},
 			},
 			Spec: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: duckv1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: "my-cloud-key",
@@ -60,7 +60,7 @@ func TestBuildSourceDefaults(t *testing.T) {
 				},
 			},
 			Spec: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: duckv1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: "my-cloud-key",
@@ -88,7 +88,7 @@ func TestBuildSourceDefaults(t *testing.T) {
 				},
 			},
 			Spec: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: duckv1.PubSubSpec{
 					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
@@ -115,7 +115,7 @@ func TestCloudBuildSourceDefaults_NoChange(t *testing.T) {
 			},
 		},
 		Spec: CloudBuildSourceSpec{
-			PubSubSpec: duckv1beta1.PubSubSpec{
+			PubSubSpec: duckv1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "my-cloud-key",

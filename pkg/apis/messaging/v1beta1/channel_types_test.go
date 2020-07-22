@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 )
 
 func TestChannelGetGroupVersionKind(t *testing.T) {
@@ -46,7 +46,7 @@ func TestChannelGetGroupVersionKind(t *testing.T) {
 func TestChannelIdentitySpec(t *testing.T) {
 	s := &Channel{
 		Spec: ChannelSpec{
-			IdentitySpec: duckv1beta1.IdentitySpec{
+			IdentitySpec: duckv1.IdentitySpec{
 				ServiceAccountName: "test",
 			},
 		},
@@ -61,10 +61,10 @@ func TestChannelIdentitySpec(t *testing.T) {
 func TestChannelIdentityStatus(t *testing.T) {
 	s := &Channel{
 		Status: ChannelStatus{
-			IdentityStatus: duckv1beta1.IdentityStatus{},
+			IdentityStatus: duckv1.IdentityStatus{},
 		},
 	}
-	want := &duckv1beta1.IdentityStatus{}
+	want := &duckv1.IdentityStatus{}
 	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)

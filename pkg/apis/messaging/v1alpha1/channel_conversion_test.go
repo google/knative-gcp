@@ -137,7 +137,6 @@ var (
 				},
 			},
 		},
-		ServiceAccountName: "serviceAccountName",
 	}
 
 	completeAddressStatus = pkgduckv1.AddressStatus{

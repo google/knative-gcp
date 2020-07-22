@@ -22,7 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
@@ -47,7 +47,7 @@ func TestChannelGetCondition(t *testing.T) {
 	}{{
 		name: "single condition",
 		cs: &ChannelStatus{
-			IdentityStatus: duckv1beta1.IdentityStatus{
+			IdentityStatus: gcpduckv1.IdentityStatus{
 				Status: duckv1.Status{
 					Conditions: []apis.Condition{
 						condReady,
@@ -77,7 +77,7 @@ func TestChannelInitializeConditions(t *testing.T) {
 		name: "empty",
 		cs:   &ChannelStatus{},
 		want: &ChannelStatus{
-			IdentityStatus: duckv1beta1.IdentityStatus{
+			IdentityStatus: gcpduckv1.IdentityStatus{
 				Status: duckv1.Status{
 					Conditions: []apis.Condition{{
 						Type:   ChannelConditionAddressable,
@@ -95,7 +95,7 @@ func TestChannelInitializeConditions(t *testing.T) {
 	}, {
 		name: "one false",
 		cs: &ChannelStatus{
-			IdentityStatus: duckv1beta1.IdentityStatus{
+			IdentityStatus: gcpduckv1.IdentityStatus{
 				Status: duckv1.Status{
 					Conditions: []apis.Condition{{
 						Type:   ChannelConditionAddressable,
@@ -105,7 +105,7 @@ func TestChannelInitializeConditions(t *testing.T) {
 			},
 		},
 		want: &ChannelStatus{
-			IdentityStatus: duckv1beta1.IdentityStatus{
+			IdentityStatus: gcpduckv1.IdentityStatus{
 				Status: duckv1.Status{
 					Conditions: []apis.Condition{{
 						Type:   ChannelConditionAddressable,
@@ -123,7 +123,7 @@ func TestChannelInitializeConditions(t *testing.T) {
 	}, {
 		name: "one true",
 		cs: &ChannelStatus{
-			IdentityStatus: duckv1beta1.IdentityStatus{
+			IdentityStatus: gcpduckv1.IdentityStatus{
 				Status: duckv1.Status{
 					Conditions: []apis.Condition{{
 						Type:   ChannelConditionAddressable,
@@ -133,7 +133,7 @@ func TestChannelInitializeConditions(t *testing.T) {
 			},
 		},
 		want: &ChannelStatus{
-			IdentityStatus: duckv1beta1.IdentityStatus{
+			IdentityStatus: gcpduckv1.IdentityStatus{
 				Status: duckv1.Status{
 					Conditions: []apis.Condition{{
 						Type:   ChannelConditionAddressable,
@@ -220,7 +220,7 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 	}{
 		"empty string": {
 			want: &ChannelStatus{
-				IdentityStatus: duckv1beta1.IdentityStatus{
+				IdentityStatus: gcpduckv1.IdentityStatus{
 					Status: duckv1.Status{
 						Conditions: []apis.Condition{
 							{
@@ -250,7 +250,7 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 						},
 					},
 				},
-				IdentityStatus: duckv1beta1.IdentityStatus{
+				IdentityStatus: gcpduckv1.IdentityStatus{
 					Status: duckv1.Status{
 						Conditions: []apis.Condition{
 							{
