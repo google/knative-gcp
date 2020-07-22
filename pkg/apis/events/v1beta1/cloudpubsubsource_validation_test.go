@@ -20,6 +20,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -50,7 +54,10 @@ var (
 			},
 			Project: "my-eventing-project",
 		},
-		Topic: "pubsub-topic",
+		Topic:               "pubsub-topic",
+		AckDeadline:         ptr.String("30s"),
+		RetainAckedMessages: true,
+		RetentionDuration:   ptr.String("30s"),
 	}
 
 	pubSubSourceSpecWithKSA = CloudPubSubSourceSpec{
@@ -244,13 +251,47 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 
 func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudPubSubSourceSpec
-		allowed bool
+		orig              interface{}
+		updated           CloudPubSubSourceSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: pubSubSourceSpec,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation changed": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation added": {
+			origAnnotation: map[string]string{},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation deleted": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{},
+			allowed:           false,
 		},
 		"Secret.Name changed": {
 			orig: &pubSubSourceSpec,
@@ -267,7 +308,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
+				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -286,7 +330,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
+				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -305,7 +352,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
+				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -325,6 +375,72 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
+		"AckDeadline changed": {
+			orig: &pubSubSourceSpec,
+			updated: CloudPubSubSourceSpec{
+				PubSubSpec: duckv1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pubSubSourceSpec.Secret.Name,
+						},
+						Key: pubSubSourceSpec.Secret.Key,
+					},
+					Project: pubSubSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pubSubSourceSpec.Sink,
+					},
+				},
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         ptr.String("50s"),
+				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
+			},
+			allowed: false,
+		},
+		"RetainAckedMessages changed": {
+			orig: &pubSubSourceSpec,
+			updated: CloudPubSubSourceSpec{
+				PubSubSpec: duckv1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pubSubSourceSpec.Secret.Name,
+						},
+						Key: pubSubSourceSpec.Secret.Key,
+					},
+					Project: pubSubSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pubSubSourceSpec.Sink,
+					},
+				},
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
+				RetainAckedMessages: false,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
+			},
+			allowed: false,
+		},
+		"RetentionDuration changed": {
+			orig: &pubSubSourceSpec,
+			updated: CloudPubSubSourceSpec{
+				PubSubSpec: duckv1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pubSubSourceSpec.Secret.Name,
+						},
+						Key: pubSubSourceSpec.Secret.Key,
+					},
+					Project: pubSubSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pubSubSourceSpec.Sink,
+					},
+				},
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
+				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
+				RetentionDuration:   ptr.String("50s"),
+			},
+			allowed: false,
+		},
 		"Topic changed": {
 			orig: &pubSubSourceSpec,
 			updated: CloudPubSubSourceSpec{
@@ -340,9 +456,42 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: "some-other-topic",
+				Topic:               "some-other-topic",
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
+				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: false,
+		},
+		"ServiceAccountName added": {
+			orig: &pubSubSourceSpec,
+			updated: CloudPubSubSourceSpec{
+				PubSubSpec: duckv1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pubSubSourceSpec.Secret.Name,
+						},
+						Key: pubSubSourceSpec.Secret.Key,
+					},
+					Project:    pubSubSourceSpec.Project,
+					SourceSpec: pubSubSourceSpec.SourceSpec,
+					IdentitySpec: duckv1beta1.IdentitySpec{
+						ServiceAccountName: "old-service-account",
+					},
+				},
+				Topic:               pubSubSourceSpecWithKSA.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
+				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
+			},
+			allowed: false,
+		},
+		"ClusterName annotation added": {
+			origAnnotation: nil,
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: true,
 		},
 		"Sink.APIVersion changed": {
 			orig: &pubSubSourceSpec,
@@ -366,7 +515,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
+				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -392,7 +544,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
+				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -418,7 +573,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
+				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -444,7 +602,10 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pubSubSourceSpec.Topic,
+				Topic:               pubSubSourceSpec.Topic,
+				AckDeadline:         pubSubSourceSpec.AckDeadline,
+				RetainAckedMessages: pubSubSourceSpec.RetainAckedMessages,
+				RetentionDuration:   pubSubSourceSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -464,7 +625,13 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *CloudPubSubSource
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &CloudPubSubSource{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*CloudPubSubSourceSpec); ok {
 					orig = &CloudPubSubSource{
 						Spec: *spec,
@@ -472,6 +639,9 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &CloudPubSubSource{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

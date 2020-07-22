@@ -51,6 +51,16 @@ func TestSetAutoscalingAnnotationsDefaults(t *testing.T) {
 			orig:     noScaling,
 			expected: noScaling,
 		},
+		"no AutoscalingClassAnnotation": {
+			orig: func() *v1.ObjectMeta {
+				obj := kedaScaling.DeepCopy()
+				delete(obj.Annotations, AutoscalingClassAnnotation)
+				return obj
+			}(),
+			expected: &v1.ObjectMeta{
+				Annotations: map[string]string{},
+			},
+		},
 		"minScale default": {
 			orig: func() *v1.ObjectMeta {
 				obj := kedaScaling.DeepCopy()

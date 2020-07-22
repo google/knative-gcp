@@ -80,15 +80,21 @@ func (current *CloudPubSubSource) CheckImmutableFields(ctx context.Context, orig
 		return nil
 	}
 
-	// Modification of Topic, Secret, ServiceAccountName and Project are not allowed. Everything else is mutable.
+	var errs *apis.FieldError
+	// Modification of Topic, Secret, AckDeadline, RetainAckedMessages, RetentionDuration, ServiceAccountName and Project are not allowed.
+	// Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudPubSubSourceSpec{},
-			"Sink", "AckDeadline", "RetainAckedMessages", "RetentionDuration", "CloudEventOverrides")); diff != "" {
-		return &apis.FieldError{
+			"Sink", "CloudEventOverrides")); diff != "" {
+		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
 			Details: diff,
-		}
+		})
 	}
-	return nil
+	// Modification of AutoscalingClassAnnotations is not allowed.
+	errs = duck.CheckImmutableAutoscalingClassAnnotations(&current.ObjectMeta, &original.ObjectMeta, errs)
+
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

@@ -57,16 +57,19 @@ func (current *Topic) CheckImmutableFields(ctx context.Context, original *Topic)
 		return nil
 	}
 
+	var errs *apis.FieldError
+	// Modification of Topic, Secret, ServiceAccountName, PropagationPolicy, EnablePublisher and Project are not allowed.
 	if diff := cmp.Diff(original.Spec, current.Spec,
-		cmpopts.IgnoreFields(TopicSpec{}, "PropagationPolicy", "EnablePublisher")); diff != "" {
-		return &apis.FieldError{
+		cmpopts.IgnoreFields(TopicSpec{})); diff != "" {
+		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
 			Details: diff,
-		}
+		})
 	}
+	// Modification of AutoscalingClassAnnotations is not allowed.
+	errs = duck.CheckImmutableAutoscalingClassAnnotations(&current.ObjectMeta, &original.ObjectMeta, errs)
 
-	var errs *apis.FieldError
 	// Modification of non-empty cluster name annotation is not allowed.
 	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

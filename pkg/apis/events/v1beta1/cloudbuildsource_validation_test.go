@@ -224,6 +224,29 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
+		"AnnotationClass annotation changed": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation added": {
+			origAnnotation: map[string]string{},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation deleted": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{},
+			allowed:           false,
+		},
 		"Secret.Name changed": {
 			orig: &buildSourceSpec,
 			updated: CloudBuildSourceSpec{
@@ -292,6 +315,34 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 				},
 			},
 			allowed: false,
+		},
+		"ServiceAccountName added": {
+			orig: &buildSourceSpec,
+			updated: CloudBuildSourceSpec{
+				PubSubSpec: duckv1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: buildSourceSpec.Secret.Name,
+						},
+						Key: buildSourceSpec.Secret.Key,
+					},
+					Project: buildSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: buildSourceSpec.Sink,
+					},
+					IdentitySpec: duckv1beta1.IdentitySpec{
+						ServiceAccountName: "old-service-account",
+					},
+				},
+			},
+			allowed: false,
+		},
+		"ClusterName annotation added": {
+			origAnnotation: nil,
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: true,
 		},
 		"Sink.APIVersion changed": {
 			orig: &buildSourceSpec,

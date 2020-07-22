@@ -20,6 +20,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -58,7 +62,10 @@ var (
 				Name:       "qux",
 			},
 		},
-		Mode: ModeCloudEventsStructured,
+		Mode:                ModeCloudEventsStructured,
+		AckDeadline:         ptr.String("30s"),
+		RetainAckedMessages: true,
+		RetentionDuration:   ptr.String("30s"),
 	}
 
 	pullSubscriptionSpecWithKSA = PullSubscriptionSpec{
@@ -91,7 +98,7 @@ var (
 	}
 )
 
-func TestPubSubCheckValidationFields(t *testing.T) {
+func TestPullSubscriptionCheckValidationFields(t *testing.T) {
 	testCases := map[string]struct {
 		spec  PullSubscriptionSpec
 		error bool
@@ -236,15 +243,49 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 	}
 }
 
-func TestPubSubCheckImmutableFields(t *testing.T) {
+func TestPullSubscriptionCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated PullSubscriptionSpec
-		allowed bool
+		orig              interface{}
+		updated           PullSubscriptionSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: pullSubscriptionSpec,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation changed": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation added": {
+			origAnnotation: map[string]string{},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation deleted": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{},
+			allowed:           false,
 		},
 		"Secret.Name changed": {
 			orig: &pullSubscriptionSpec,
@@ -261,8 +302,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Sink: pullSubscriptionSpec.Sink,
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -281,8 +325,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Sink: pullSubscriptionSpec.Sink,
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -301,25 +348,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Sink: pullSubscriptionSpec.Sink,
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
-			},
-			allowed: false,
-		},
-		"ServiceAccountName changed": {
-			orig: &pullSubscriptionSpecWithKSA,
-			updated: PullSubscriptionSpec{
-				PubSubSpec: v1beta1.PubSubSpec{
-					Project: pullSubscriptionSpecWithKSA.Project,
-					SourceSpec: duckv1.SourceSpec{
-						Sink: pullSubscriptionSpecWithKSA.Sink,
-					},
-					IdentitySpec: v1beta1.IdentitySpec{
-						ServiceAccountName: "new-service-account",
-					},
-				},
-				Topic: pullSubscriptionSpecWithKSA.Topic,
-				Mode:  pullSubscriptionSpecWithKSA.Mode,
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -338,8 +371,31 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Sink: pullSubscriptionSpec.Sink,
 					},
 				},
-				Topic: "some-other-topic",
-				Mode:  pullSubscriptionSpec.Mode,
+				Topic:               "some-other-topic",
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
+			},
+			allowed: false,
+		},
+		"ServiceAccountName changed": {
+			orig: &pullSubscriptionSpecWithKSA,
+			updated: PullSubscriptionSpec{
+				PubSubSpec: v1beta1.PubSubSpec{
+					Project: pullSubscriptionSpecWithKSA.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpecWithKSA.Sink,
+					},
+					IdentitySpec: v1beta1.IdentitySpec{
+						ServiceAccountName: "new-service-account",
+					},
+				},
+				Topic:               pullSubscriptionSpecWithKSA.Topic,
+				Mode:                pullSubscriptionSpecWithKSA.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: false,
 		},
@@ -365,8 +421,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -392,8 +451,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -419,8 +481,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -446,8 +511,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -473,8 +541,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						},
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
-				Mode:  pullSubscriptionSpec.Mode,
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -509,7 +580,10 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Name:       pullSubscriptionSpec.Transformer.Ref.Name,
 					},
 				},
-				Mode: pullSubscriptionSpec.Mode,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -544,7 +618,10 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Name:       pullSubscriptionSpec.Transformer.Ref.Name,
 					},
 				},
-				Mode: pullSubscriptionSpec.Mode,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -579,7 +656,10 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Name:       "some-other-name",
 					},
 				},
-				Mode: pullSubscriptionSpec.Mode,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
 			},
 			allowed: true,
 		},
@@ -598,8 +678,110 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 						Sink: pullSubscriptionSpec.Sink,
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
-				Mode:  ModePushCompatible,
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                ModePushCompatible,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
+			},
+			allowed: false,
+		},
+		"AckDeadline changed": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				PubSubSpec: v1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
+					},
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpec.Sink,
+					},
+				},
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         ptr.String("50s"),
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
+			},
+			allowed: false,
+		},
+		"RetainAckedMessages changed": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				PubSubSpec: v1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
+					},
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpec.Sink,
+					},
+				},
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: false,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
+			},
+			allowed: false,
+		},
+		"RetentionDuration changed": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				PubSubSpec: v1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
+					},
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpec.Sink,
+					},
+				},
+				Topic:               pullSubscriptionSpec.Topic,
+				Mode:                pullSubscriptionSpec.Mode,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   ptr.String("50s"),
+			},
+			allowed: false,
+		},
+		"ServiceAccountName added": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				PubSubSpec: v1beta1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
+					},
+					Project:    pullSubscriptionSpec.Project,
+					SourceSpec: pullSubscriptionSpec.SourceSpec,
+					IdentitySpec: v1beta1.IdentitySpec{
+						ServiceAccountName: "old-service-account",
+					},
+				},
+				Topic:               pullSubscriptionSpecWithKSA.Topic,
+				AckDeadline:         pullSubscriptionSpec.AckDeadline,
+				RetainAckedMessages: pullSubscriptionSpec.RetainAckedMessages,
+				RetentionDuration:   pullSubscriptionSpec.RetentionDuration,
+			},
+			allowed: false,
+		},
+		"ClusterName annotation added": {
+			origAnnotation: nil,
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
 			},
 			allowed: true,
 		},
@@ -619,7 +801,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *PullSubscription
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &PullSubscription{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*PullSubscriptionSpec); ok {
 					orig = &PullSubscription{
 						Spec: *spec,
@@ -627,6 +815,9 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &PullSubscription{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)
