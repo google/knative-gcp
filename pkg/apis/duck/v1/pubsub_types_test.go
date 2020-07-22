@@ -17,13 +17,14 @@ limitations under the License.
 package v1
 
 import (
+	"testing"
+	"time"
+
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"testing"
-	"time"
 )
 
 func TestPubSub_GetFullType(t *testing.T) {
@@ -50,7 +51,7 @@ func TestPubSub_Populate(t *testing.T) {
 	got := &PubSub{}
 
 	want := &PubSub{
-		Spec: PubSubSpec {
+		Spec: PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
 					URI: &apis.URL{
@@ -59,7 +60,7 @@ func TestPubSub_Populate(t *testing.T) {
 						RawQuery: "flip=mattmoor",
 					},
 				},
-				CloudEventOverrides: &duckv1.CloudEventOverrides {
+				CloudEventOverrides: &duckv1.CloudEventOverrides{
 					Extensions: map[string]string{
 						"boosh": "kakow",
 					},
@@ -90,8 +91,8 @@ func TestPubSub_Populate(t *testing.T) {
 				Host:     "tableflip.dev",
 				RawQuery: "flip=mattmoor",
 			},
-			ProjectID: "projectid",
-			TopicID: "topicid",
+			ProjectID:      "projectid",
+			TopicID:        "topicid",
 			SubscriptionID: "subscriptionid",
 		},
 	}
