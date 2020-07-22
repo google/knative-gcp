@@ -59,9 +59,6 @@ type envConfig struct {
 
 	// Max to 10m.
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
-
-	MinRetryBackoff time.Duration `envconfig:"MIN_RETRY_BACKOFF" default:"1s"`
-	MaxRetryBackoff time.Duration `envconfig:"MAX_RETRY_BACKOFF" default:"1m"`
 }
 
 func main() {
@@ -148,10 +145,6 @@ func buildHandlerOptions(env envConfig) []handler.Option {
 	if env.TimeoutPerEvent > 0 {
 		opts = append(opts, handler.WithTimeoutPerEvent(env.TimeoutPerEvent))
 	}
-	opts = append(opts, handler.WithRetryPolicy(handler.RetryPolicy{
-		MinBackoff: env.MinRetryBackoff,
-		MaxBackoff: env.MaxRetryBackoff,
-	}))
 	opts = append(opts, handler.WithPubsubReceiveSettings(rs))
 	// The default CeClient is good?
 	return opts

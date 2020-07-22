@@ -24,7 +24,7 @@ import (
 	"log"
 	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
 
 // Config is a common envconfig filled struct that includes the common options for knockdown

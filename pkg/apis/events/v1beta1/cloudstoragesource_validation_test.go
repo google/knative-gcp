@@ -23,8 +23,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"knative.dev/pkg/apis"

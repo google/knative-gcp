@@ -167,7 +167,6 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 				},
 			),
 			p.options.TimeoutPerEvent,
-			p.options.RetryPolicy,
 		)
 		hc := &fanoutHandlerCache{
 			Handler: *h,
