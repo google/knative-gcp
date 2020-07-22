@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"knative.dev/pkg/apis"
 	"testing"
+
+	"knative.dev/pkg/apis"
 )
 
 var cs = apis.NewLivingConditionSet(
@@ -28,9 +29,9 @@ var cs = apis.NewLivingConditionSet(
 
 func TestPubSubStatusIsReady(t *testing.T) {
 	tests := []struct {
-		name                string
-		ps                  *PubSubStatus
-		want                bool
+		name string
+		ps   *PubSubStatus
+		want bool
 	}{{
 		name: "uninitialized",
 		ps:   &PubSubStatus{},
