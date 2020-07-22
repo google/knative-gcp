@@ -26,7 +26,9 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/api/iterator"
+	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -36,7 +38,6 @@ import (
 	pkgTest "knative.dev/pkg/test"
 
 	knativegcp "github.com/google/knative-gcp/pkg/client/clientset/versioned"
-
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	"github.com/google/knative-gcp/test/e2e/lib/operations"
 )
@@ -205,36 +206,40 @@ func (c *Client) LogsFor(namespace, name string, tm *metav1.TypeMeta) (string, e
 }
 
 // TODO make this function more generic.
-func (c *Client) StackDriverEventCountMetricFor(namespace, projectID, filter string) (*int64, error) {
-	metricClient, err := metrics.NewStackDriverMetricClient()
+func (c *Client) StackDriverEventCountMetricFor(namespace, projectID, filter string) (int64, error) {
+	metricClient, err := monitoring.NewMetricClient(context.TODO())
 	if err != nil {
-		return nil, fmt.Errorf("failed to create stackdriver metric client: %v", err)
+		return 0, fmt.Errorf("failed to create stackdriver metric client: %v", err)
 	}
 
 	// TODO make times configurable if needed.
-	metricRequest := metrics.NewStackDriverListTimeSeriesRequest(projectID,
-		metrics.WithStackDriverFilter(filter),
-		// Starting 5 minutes back until now.
-		metrics.WithStackDriverInterval(time.Now().Add(-5*time.Minute).Unix(), time.Now().Unix()),
+	metricRequest := &monitoringpb.ListTimeSeriesRequest{
+		Name:   fmt.Sprintf("projects/%s", projectID),
+		Filter: filter,
+		Interval: &monitoringpb.TimeInterval{
+			// Starting 5 minutes back until now.
+			StartTime: &timestamp.Timestamp{Seconds: time.Now().Add(-5 * time.Minute).Unix()},
+			EndTime:   &timestamp.Timestamp{Seconds: time.Now().Unix()},
+		},
 		// Delta counts aggregated every 2 minutes.
 		// We aggregate for count as other aggregations will give higher values.
 		// The reason is that PubSub upon an error, will retry, thus we will be recording multiple events.
-		metrics.WithStackDriverAlignmentPeriod(2*int64(time.Minute.Seconds())),
-		metrics.WithStackDriverPerSeriesAligner(monitoringpb.Aggregation_ALIGN_DELTA),
-		metrics.WithStackDriverCrossSeriesReducer(monitoringpb.Aggregation_REDUCE_COUNT),
-	)
-
-	it := metricClient.ListTimeSeries(context.TODO(), metricRequest)
-
-	for {
-		res, err := it.Next()
-		if err == iterator.Done {
-			return nil, errors.New("no metric reported")
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to iterate over result: %v", err)
-		}
-		actualCount := res.GetPoints()[0].GetValue().GetInt64Value()
-		return &actualCount, nil
+		Aggregation: &monitoringpb.Aggregation{
+			AlignmentPeriod:    &duration.Duration{Seconds: 120},
+			PerSeriesAligner:   monitoringpb.Aggregation_ALIGN_DELTA,
+			CrossSeriesReducer: monitoringpb.Aggregation_REDUCE_COUNT,
+		},
 	}
+
+	res, err := metrics.ListTimeSeries(context.TODO(), metricClient, metricRequest)
+	if err != nil {
+		return 0, fmt.Errorf("failed to iterate over result: %v", err)
+	}
+	if len(res) == 0 {
+		return 0, errors.New("no metric reported")
+	}
+	if len(res[0].GetPoints()) == 0 {
+		return 0, errors.New("no metric points reported")
+	}
+	return res[0].GetPoints()[0].GetValue().GetInt64Value(), nil
 }

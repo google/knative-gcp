@@ -19,26 +19,39 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"os"
 	"testing"
+	"time"
 
+	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/knative-gcp/test"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	eventingtest "knative.dev/eventing/test"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/zipkin"
 )
 
-var channelTestRunner eventingtestlib.ComponentsTestRunner
-var authConfig lib.AuthConfig
+const knativeCustomMetricPrefix = "custom.googleapis.com/knative.dev/"
+
+var (
+	channelTestRunner eventingtestlib.ComponentsTestRunner
+	authConfig        lib.AuthConfig
+	projectID         string
+)
 
 func TestMain(m *testing.M) {
 	os.Exit(func() int {
 		test.InitializeFlags()
 		eventingtest.InitializeEventingFlags()
+		projectID = os.Getenv(lib.ProwProjectKey)
 		channelTestRunner = eventingtestlib.ComponentsTestRunner{
 			// ChannelFeatureMap saves the channel-features mapping.
 			// Each pair means the channel support the given list of features.
@@ -72,6 +85,67 @@ func TestMain(m *testing.M) {
 		// tests that need the tracing in place.
 		defer zipkin.CleanupZipkinTracingSetup(log.Printf)
 
-		return m.Run()
+		if code := m.Run(); code > 0 {
+			return code
+		}
+
+		// The knative/pkg base controller emits custom metrics, plus some other components can
+		// potentially emit custom metrics. By default custom metrics should not be published to
+		// Stackdriver.
+		// After running all tests, we verify that no custom metrics have been emitted in the past
+		// 30 min to cover roughly how long the e2e tests run.
+		if err := verifyNoCustomMetrics(projectID, time.Duration(-30)*time.Minute); err != nil {
+			log.Fatalf("Failed to verify that no custom metrics are emitted: %v", err)
+		}
+
+		return 0
 	}())
+}
+
+func verifyNoCustomMetrics(projectID string, duration time.Duration) error {
+	client, err := monitoring.NewMetricClient(context.TODO())
+	if err != nil {
+		return fmt.Errorf("Failed to create metrics client: %w\n", err)
+	}
+	defer client.Close()
+	// Get the metric descriptors with custom metric prefix.
+	req := &monitoringpb.ListMetricDescriptorsRequest{
+		Name:   fmt.Sprintf("projects/%s", projectID),
+		Filter: fmt.Sprintf(`metric.type=starts_with("%s")`, knativeCustomMetricPrefix),
+	}
+	descriptors, err := metrics.ListMetricDescriptors(context.TODO(), client, req)
+	if err != nil {
+		return fmt.Errorf("Failed to list custom metrics: %w\n", err)
+	}
+
+	// Check no data points of custom metrics in the past duration.
+	fmt.Printf("Got %d custom metric definitions with prefix %s\n", len(descriptors), knativeCustomMetricPrefix)
+	for _, d := range descriptors {
+		if err := verifyNoPoints(client, projectID, d.GetType(), duration); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// verifyNoPoints verifies no metrics data points are found for the given metric type.
+func verifyNoPoints(client *monitoring.MetricClient, projectID string, mt string, duration time.Duration) error {
+	req := &monitoringpb.ListTimeSeriesRequest{
+		Name:   fmt.Sprintf("projects/%s", projectID),
+		Filter: fmt.Sprintf(`metric.type="%s"`, mt),
+		Interval: &monitoringpb.TimeInterval{
+			StartTime: &timestamp.Timestamp{Seconds: time.Now().Add(duration).Unix()},
+			EndTime:   &timestamp.Timestamp{Seconds: time.Now().Unix()},
+		},
+	}
+	tss, err := metrics.ListTimeSeries(context.TODO(), client, req)
+	if err != nil {
+		return fmt.Errorf("Failed to fetch data points of custom metric %s: %w\n", mt, err)
+	}
+	for _, ts := range tss {
+		if len(ts.GetPoints()) > 0 {
+			return fmt.Errorf("Found data points of custom metric %s, which should be disabled", mt)
+		}
+	}
+	return nil
 }
