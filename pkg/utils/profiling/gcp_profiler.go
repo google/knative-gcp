@@ -41,15 +41,16 @@ type GCPProfilerEnvConfig struct {
 }
 
 // StartGCPProfiler starts the GCP Profiler if enabled in the given EnvConfig
-// struct. Returns the start error or nil if the GCP Profiler is disabled.
-func StartGCPProfiler(serviceName string, env GCPProfilerEnvConfig) error {
+// struct. Returns a bool indicating if profiling was started or not, and a
+// start error or nil if the GCP Profiler is disabled.
+func StartGCPProfiler(serviceName string, env GCPProfilerEnvConfig) (bool, error) {
 	if env.GCPProfilerEnabled {
-		return profiler.Start(profiler.Config{
+		return true, profiler.Start(profiler.Config{
 			Service:        serviceName,
 			ServiceVersion: env.GCPProfilerServiceVersion,
 			ProjectID:      env.GCPProfilerProject, // optional on GCP
 			DebugLogging:   env.GCPProfilerDebugLogging,
 		})
 	}
-	return nil
+	return false, nil
 }

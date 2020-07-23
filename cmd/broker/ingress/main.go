@@ -23,7 +23,6 @@ import (
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
-	"github.com/google/knative-gcp/pkg/utils/profiling"
 
 	"go.uber.org/zap"
 )
@@ -32,9 +31,6 @@ type envConfig struct {
 	PodName   string `envconfig:"POD_NAME" required:"true"`
 	Port      int    `envconfig:"PORT" default:"8080"`
 	ProjectID string `envconfig:"PROJECT_ID"`
-
-	// Configure the GCP Profiler.
-	profiling.GCPProfilerEnvConfig
 }
 
 const (
@@ -59,8 +55,6 @@ func main() {
 	if err != nil {
 		logger.Desugar().Fatal("Failed to create project id", zap.Error(err))
 	}
-
-	profiling.StartGCPProfiler("broker-ingress", env.GCPProfilerEnvConfig)
 
 	logger.Desugar().Info("Starting ingress handler", zap.Any("envConfig", env), zap.Any("Project ID", projectID))
 

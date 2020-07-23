@@ -30,7 +30,6 @@ import (
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
-	"github.com/google/knative-gcp/pkg/utils/profiling"
 
 	"go.uber.org/zap"
 )
@@ -55,9 +54,6 @@ type envConfig struct {
 
 	// Max to 10m.
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
-
-	// Configure the GCP Profiler.
-	profiling.GCPProfilerEnvConfig
 }
 
 func main() {
@@ -71,8 +67,6 @@ func main() {
 	if env.MaxStaleDuration > 0 && env.MaxStaleDuration < poolResyncPeriod {
 		logger.Fatalf("MAX_STALE_DURATION must be greater than pool resync period %v", poolResyncPeriod)
 	}
-
-	profiling.StartGCPProfiler("broker-fanout", env.GCPProfilerEnvConfig)
 
 	// Give the signal channel some buffer so that reconciling handlers won't
 	// block the targets config update?
