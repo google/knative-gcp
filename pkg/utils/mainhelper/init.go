@@ -46,10 +46,13 @@ type InitRes struct {
 	Cleanup    func()
 }
 
-// Similar to sharedmain.Main, Init runs common logic in starting a main function,
+// Init runs common logic in starting a main function, similar to sharedmain.
 // it returns a result object that contains useful artifacts for later use.
 // Unlike sharedmain.Main, Init is meant to be run as a helper function in any main
 // functions, while sharedmain.Main runs controllers with predefined method signatures.
+//
+// When a command is converted to use this function, please update the list of
+// commands that support profiling in docs/development/profiling.md.
 func Init(component string, opts ...InitOption) (context.Context, *InitRes) {
 	args := newInitArgs(component, opts...)
 	ctx := args.ctx

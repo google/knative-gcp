@@ -7,6 +7,7 @@ contributing to `Knative-GCP`. Also take a look at:
 - [How to add and run e2e tests](./test/e2e/README.md)
 - [Iterating](#iterating)
 - [Format check](#format-check)
+- [Additional development documentation](./docs/development/README.md)
 
 ## Getting started
 
