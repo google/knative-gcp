@@ -24,10 +24,10 @@ import (
 // configuring the GCP Profiler. Intended to be embedded in per-binary
 // envconfig struct types.
 type GCPProfilerEnvConfig struct {
-	// GCPProfilerEnabled enables the Google Cloud Profiler when GCP_PROFILER=1
+	// GCPProfiler enables the Google Cloud Profiler when GCP_PROFILER=1
 	// (or any other true value that strconv.ParseBool supports). Defaults to
 	// false.
-	GCPProfilerEnabled bool `envconfig:"GCP_PROFILER"`
+	GCPProfiler bool `envconfig:"GCP_PROFILER"`
 	// GCPProfilerProject sets the GCP project to use when profiling with
 	// GCP_PROFILER_PROJECT. Optional on GCP.
 	GCPProfilerProject string `envconfig:"GCP_PROFILER_PROJECT"`
@@ -40,17 +40,21 @@ type GCPProfilerEnvConfig struct {
 	GCPProfilerDebugLogging bool `envconfig:"GCP_PROFILER_DEBUG_LOGGING"`
 }
 
+// GCPProfilerEnabled returns true if the config enables the GCP Profiler.
+func (c GCPProfilerEnvConfig) GCPProfilerEnabled() bool {
+	return c.GCPProfiler
+}
+
 // StartGCPProfiler starts the GCP Profiler if enabled in the given EnvConfig
-// struct. Returns a bool indicating if profiling was started or not, and a
-// start error or nil if the GCP Profiler is disabled.
-func StartGCPProfiler(serviceName string, env GCPProfilerEnvConfig) (bool, error) {
-	if env.GCPProfilerEnabled {
-		return true, profiler.Start(profiler.Config{
+// struct. Returns an error or nil if the GCP Profiler is disabled.
+func StartGCPProfiler(serviceName string, env GCPProfilerEnvConfig) error {
+	if env.GCPProfilerEnabled() {
+		return profiler.Start(profiler.Config{
 			Service:        serviceName,
 			ServiceVersion: env.GCPProfilerServiceVersion,
 			ProjectID:      env.GCPProfilerProject, // optional on GCP
 			DebugLogging:   env.GCPProfilerDebugLogging,
 		})
 	}
-	return false, nil
+	return nil
 }

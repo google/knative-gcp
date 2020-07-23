@@ -106,11 +106,10 @@ func ProcessGCPProfilerEnvConfigOrDie(component string, logger *zap.SugaredLogge
 	if err := envconfig.Process("", &env); err != nil {
 		logger.Desugar().Fatal("Failed to process GCP Profiler env config", zap.Error(err))
 	}
-	started, err := profiling.StartGCPProfiler(component, env)
-	if err != nil {
-		logger.Desugar().Fatal("Failed to start GCP Profiler", zap.Error(err))
-	}
-	if started {
+	if env.GCPProfilerEnabled() {
+		if err := profiling.StartGCPProfiler(component, env); err != nil {
+			logger.Desugar().Fatal("Failed to start GCP Profiler", zap.Error(err))
+		}
 		logger.Desugar().Info("GCP Profiler enabled", zap.Bool("gcpProfiler", true), zap.Any("gcpProfilerConfig", env))
 	}
 }

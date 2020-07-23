@@ -27,18 +27,27 @@ const (
 )
 
 var (
-	disabledEnv = GCPProfilerEnvConfig{GCPProfilerEnabled: false}
-	enabledEnv  = GCPProfilerEnvConfig{GCPProfilerEnabled: true}
+	disabledEnv = GCPProfilerEnvConfig{GCPProfiler: false}
+	enabledEnv  = GCPProfilerEnvConfig{GCPProfiler: true}
 )
 
-func TestGCPProfilerDisabled(t *testing.T) {
+func TestStartGCPProfilerDisabled(t *testing.T) {
 	if err := StartGCPProfiler(invalidServiceName, disabledEnv); err != nil {
 		t.Errorf("Expected StartGCPProfiler to return nil, got %v", err)
 	}
 }
 
-func TestGCPProfilerEnabled(t *testing.T) {
+func TestStartGCPProfilerEnabled(t *testing.T) {
 	if err := StartGCPProfiler(invalidServiceName, enabledEnv); err == nil {
 		t.Error("Expected StartGCPProfiler to return an error, got nil")
+	}
+}
+
+func TestGCPProfilerEnabled(t *testing.T) {
+	if disabledEnv.GCPProfilerEnabled() {
+		t.Errorf("Expected profiler to be disabled for %#v", disabledEnv)
+	}
+	if !enabledEnv.GCPProfilerEnabled() {
+		t.Errorf("Expected profiler to be enabled for %#v", enabledEnv)
 	}
 }
