@@ -67,7 +67,13 @@ spec:
                       type: integer
                       format: int64
                     avgMemoryUsage:
-                        type: string
+                      type: string
+                    cpuRequest:
+                      type: string
+                    memoryRequest:
+                      type: string
+                    memoryLimit:
+                      type: string
                     minReplicas:
                       type: integer
                       format: int64
@@ -82,6 +88,12 @@ spec:
                       format: int64
                     avgMemoryUsage:
                         type: string
+                    cpuRequest:
+                      type: string
+                    memoryRequest:
+                      type: string
+                    memoryLimit:
+                      type: string
                     minReplicas:
                       type: integer
                       format: int64
@@ -96,6 +108,12 @@ spec:
                       format: int64
                     avgMemoryUsage:
                         type: string
+                    cpuRequest:
+                      type: string
+                    memoryRequest:
+                      type: string
+                    memoryLimit:
+                      type: string
                     minReplicas:
                       type: integer
                       format: int64

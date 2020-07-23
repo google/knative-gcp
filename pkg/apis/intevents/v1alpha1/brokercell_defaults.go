@@ -31,6 +31,11 @@ const (
 	// See: https://github.com/google/knative-gcp/issues/1265
 	avgMemoryUsage string = "1500Mi"
 	avgMemoryUsageIngress string = "700Mi"
+	cpuRequest string = "1000Mi"
+	cpuRequestFanout string = "1500Mi"
+	memoryRequest string = "500Mi"
+	memoryLimit string = "3000Mi"
+	memoryLimitIngress string = "1000Mi"
 	minReplicas int32 = 1
 	maxReplicas int32 = 10
 )
@@ -50,19 +55,37 @@ func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 	if bcs.Components.Fanout.AvgMemoryUsage == nil {
 		bcs.Components.Fanout.AvgMemoryUsage = ptr.String(avgMemoryUsage)
 	}
+	if bcs.Components.Fanout.CPURequest == nil {
+		bcs.Components.Fanout.CPURequest = ptr.String(cpuRequestFanout)
+	}
+	if bcs.Components.Fanout.MemoryRequest == nil {
+		bcs.Components.Fanout.MemoryRequest = ptr.String(memoryRequest)
+	}
+	if bcs.Components.Fanout.MemoryLimit == nil {
+		bcs.Components.Fanout.MemoryLimit = ptr.String(memoryLimit)
+	}
 	if bcs.Components.Fanout.MinReplicas == nil {
 		bcs.Components.Fanout.MinReplicas = ptr.Int32(minReplicas)
 	}
 	if bcs.Components.Fanout.MaxReplicas == nil {
 		bcs.Components.Fanout.MaxReplicas = ptr.Int32(maxReplicas)
 	}
-
+	
 	// Retry defaults
 	if bcs.Components.Retry.AvgCPUUtilization == nil {
 		bcs.Components.Retry.AvgCPUUtilization = ptr.Int32(avgCPUUtilization)
 	}
 	if bcs.Components.Retry.AvgMemoryUsage == nil {
 		bcs.Components.Retry.AvgMemoryUsage = ptr.String(avgMemoryUsage)
+	}
+	if bcs.Components.Retry.CPURequest == nil {
+		bcs.Components.Retry.CPURequest = ptr.String(cpuRequest)
+	}
+	if bcs.Components.Retry.MemoryRequest == nil {
+		bcs.Components.Retry.MemoryRequest = ptr.String(memoryRequest)
+	}
+	if bcs.Components.Retry.MemoryLimit == nil {
+		bcs.Components.Retry.MemoryLimit = ptr.String(memoryLimit)
 	}
 	if bcs.Components.Retry.MinReplicas == nil {
 		bcs.Components.Retry.MinReplicas = ptr.Int32(minReplicas)
@@ -77,6 +100,15 @@ func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 	}
 	if bcs.Components.Ingress.AvgMemoryUsage == nil {
 		bcs.Components.Ingress.AvgMemoryUsage = ptr.String(avgMemoryUsageIngress)
+	}
+	if bcs.Components.Ingress.CPURequest == nil {
+		bcs.Components.Ingress.CPURequest = ptr.String(cpuRequest)
+	}
+	if bcs.Components.Ingress.MemoryRequest == nil {
+		bcs.Components.Ingress.MemoryRequest = ptr.String(memoryRequest)
+	}
+	if bcs.Components.Ingress.MemoryLimit == nil {
+		bcs.Components.Ingress.MemoryLimit = ptr.String(memoryLimitIngress)
 	}
 	if bcs.Components.Ingress.MinReplicas == nil {
 		bcs.Components.Ingress.MinReplicas = ptr.Int32(minReplicas)
