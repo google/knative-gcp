@@ -63,6 +63,11 @@ spec:
                 fanout:
                   type: object
                   properties:
+                    avgCPUUtilization:
+                      type: integer
+                      format: int64
+                    avgMemoryUsage:
+                        type: string
                     minReplicas:
                       type: integer
                       format: int64
@@ -72,6 +77,11 @@ spec:
                 ingress:
                   type: object
                   properties:
+                    avgCPUUtilization:
+                      type: integer
+                      format: int64
+                    avgMemoryUsage:
+                        type: string
                     minReplicas:
                       type: integer
                       format: int64
@@ -81,6 +91,11 @@ spec:
                 retry:
                   type: object
                   properties:
+                    avgCPUUtilization:
+                      type: integer
+                      format: int64
+                    avgMemoryUsage:
+                        type: string
                     minReplicas:
                       type: integer
                       format: int64

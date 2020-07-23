@@ -243,8 +243,8 @@ func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.Au
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.IngressName,
 		BrokerCell:        bc,
-		AvgCPUUtilization: 95,
-		AvgMemoryUsage:    "700Mi",
+		AvgCPUUtilization: *bc.Spec.Components.Ingress.AvgCPUUtilization,
+		AvgMemoryUsage:    *bc.Spec.Components.Ingress.AvgMemoryUsage,
 		MaxReplicas:       *bc.Spec.Components.Ingress.MaxReplicas,
 		MinReplicas:       *bc.Spec.Components.Ingress.MinReplicas,
 	}
@@ -266,13 +266,8 @@ func (r *Reconciler) makeFanoutHPAArgs(bc *intv1alpha1.BrokerCell) resources.Aut
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.FanoutName,
 		BrokerCell:        bc,
-		AvgCPUUtilization: 95,
-		// The limit we set is 3000Mi which is mostly used to prevent surging
-		// memory usage causing OOM.
-		// Here we only set half of the limit so that in case of surging memory
-		// usage, HPA could have enough time to kick in.
-		// See: https://github.com/google/knative-gcp/issues/1265
-		AvgMemoryUsage: "1500Mi",
+		AvgCPUUtilization: *bc.Spec.Components.Fanout.AvgCPUUtilization,
+		AvgMemoryUsage: *bc.Spec.Components.Fanout.AvgMemoryUsage,
 		MaxReplicas:    *bc.Spec.Components.Fanout.MaxReplicas,
 		MinReplicas:    *bc.Spec.Components.Fanout.MinReplicas,
 	}
@@ -294,13 +289,8 @@ func (r *Reconciler) makeRetryHPAArgs(bc *intv1alpha1.BrokerCell) resources.Auto
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.RetryName,
 		BrokerCell:        bc,
-		AvgCPUUtilization: 95,
-		// The limit we set is 3000Mi which is mostly used to prevent surging
-		// memory usage causing OOM.
-		// Here we only set half of the limit so that in case of surging memory
-		// usage, HPA could have enough time to kick in.
-		// See: https://github.com/google/knative-gcp/issues/1265
-		AvgMemoryUsage: "1500Mi",
+		AvgCPUUtilization: *bc.Spec.Components.Retry.AvgCPUUtilization,
+		AvgMemoryUsage: *bc.Spec.Components.Retry.AvgMemoryUsage,
 		MaxReplicas:    *bc.Spec.Components.Retry.MaxReplicas,
 		MinReplicas:    *bc.Spec.Components.Retry.MinReplicas,
 	}

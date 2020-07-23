@@ -23,6 +23,14 @@ import (
 )
 
 const (
+	avgCPUUtilization int32 = 95
+	// The limit we set (for Fanout and Retry) is 3000Mi which is mostly used 
+	// to prevent surging memory usage causing OOM.
+	// Here we only set half of the limit so that in case of surging memory
+	// usage, HPA could have enough time to kick in.
+	// See: https://github.com/google/knative-gcp/issues/1265
+	avgMemoryUsage string = "1500Mi"
+	avgMemoryUsageIngress string = "700Mi"
 	minReplicas int32 = 1
 	maxReplicas int32 = 10
 )
@@ -35,17 +43,40 @@ func (bc *BrokerCell) SetDefaults(ctx context.Context) {
 
 // SetDefaults sets the default field values for a BrokerCellSpec.
 func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
+	// Fanout defaults
+	if bcs.Components.Fanout.AvgCPUUtilization == nil {
+		bcs.Components.Fanout.AvgCPUUtilization = ptr.Int32(avgCPUUtilization)
+	}
+	if bcs.Components.Fanout.AvgMemoryUsage == nil {
+		bcs.Components.Fanout.AvgMemoryUsage = ptr.String(avgMemoryUsage)
+	}
 	if bcs.Components.Fanout.MinReplicas == nil {
 		bcs.Components.Fanout.MinReplicas = ptr.Int32(minReplicas)
 	}
 	if bcs.Components.Fanout.MaxReplicas == nil {
 		bcs.Components.Fanout.MaxReplicas = ptr.Int32(maxReplicas)
 	}
+
+	// Retry defaults
+	if bcs.Components.Retry.AvgCPUUtilization == nil {
+		bcs.Components.Retry.AvgCPUUtilization = ptr.Int32(avgCPUUtilization)
+	}
+	if bcs.Components.Retry.AvgMemoryUsage == nil {
+		bcs.Components.Retry.AvgMemoryUsage = ptr.String(avgMemoryUsage)
+	}
 	if bcs.Components.Retry.MinReplicas == nil {
 		bcs.Components.Retry.MinReplicas = ptr.Int32(minReplicas)
 	}
 	if bcs.Components.Retry.MaxReplicas == nil {
 		bcs.Components.Retry.MaxReplicas = ptr.Int32(maxReplicas)
+	}
+
+	// Ingress defaults
+	if bcs.Components.Ingress.AvgCPUUtilization == nil {
+		bcs.Components.Ingress.AvgCPUUtilization = ptr.Int32(avgCPUUtilization)
+	}
+	if bcs.Components.Ingress.AvgMemoryUsage == nil {
+		bcs.Components.Ingress.AvgMemoryUsage = ptr.String(avgMemoryUsageIngress)
 	}
 	if bcs.Components.Ingress.MinReplicas == nil {
 		bcs.Components.Ingress.MinReplicas = ptr.Int32(minReplicas)

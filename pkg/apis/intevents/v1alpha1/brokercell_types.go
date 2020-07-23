@@ -71,6 +71,12 @@ var (
 // ComponentParameters specifies scaling and resource parameters to be used
 // by a single component of a BrokerCell.
 type ComponentParameters struct {
+	// AvgCPUUtilization specifies the average CPU consumption for the component
+	AvgCPUUtilization *int32 `json:"avgCPUUtilization,omitempty"`
+	
+	// AvgMemoryUsage specifies the average memory consumption for the component
+	AvgMemoryUsage *string `json:"avgMemoryUsage,omitempty"`
+	
 	// MinReplicas specifies the minimum replica count for the component.
 	MinReplicas *int32 `json:"minReplicas,omitempty"`
 
