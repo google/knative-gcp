@@ -30,8 +30,11 @@ import (
 func TestBrokerCell_SetDefaults(t *testing.T) {
 	defaultMinReplicas, defaultMaxRepicas := ptr.Int32(1), ptr.Int32(10)
 	ingressMinReplicas, ingressMaxReplicas := ptr.Int32(2), ptr.Int32(3)
+	ingressAvgCPUUtilization, ingressAvgMemoryUsage := ptr.Int32(100), ptr.String("1000Mi")
 	fanoutMinReplicas, fanoutMaxReplicas := ptr.Int32(4), ptr.Int32(5)
+	fanoutAvgCPUUtilization, fanoutAvgMemoryUsage := ptr.Int32(101), ptr.String("10000Mi")
 	retryMinReplicas, retryMaxReplicas := ptr.Int32(6), ptr.Int32(7)
+	retryAvgCPUUtilization, retryAvgMemoryUsage := ptr.Int32(102), ptr.String("100000Mi")
 	tests := []struct {
 		name  string
 		start *BrokerCell
@@ -55,14 +58,20 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 			Spec: BrokerCellSpec{
 				ComponentsParametersSpec{
 					Fanout: ComponentParameters{
+						AvgCPUUtilization: ptr.Int32(avgCPUUtilization),
+						AvgMemoryUsage: ptr.String(avgMemoryUsage),
 						MaxReplicas: defaultMaxRepicas,
 						MinReplicas: defaultMinReplicas,
 					},
 					Ingress: ComponentParameters{
+						AvgCPUUtilization: ptr.Int32(avgCPUUtilization),
+						AvgMemoryUsage: ptr.String(avgMemoryUsageIngress),
 						MaxReplicas: defaultMaxRepicas,
 						MinReplicas: defaultMinReplicas,
 					},
 					Retry: ComponentParameters{
+						AvgCPUUtilization: ptr.Int32(avgCPUUtilization),
+						AvgMemoryUsage: ptr.String(avgMemoryUsage),
 						MaxReplicas: defaultMaxRepicas,
 						MinReplicas: defaultMinReplicas,
 					},
@@ -80,14 +89,20 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 			Spec: BrokerCellSpec{
 				ComponentsParametersSpec{
 					Fanout: ComponentParameters{
+						AvgCPUUtilization: fanoutAvgCPUUtilization,
+						AvgMemoryUsage: fanoutAvgMemoryUsage,
 						MaxReplicas: fanoutMaxReplicas,
 						MinReplicas: fanoutMinReplicas,
 					},
 					Ingress: ComponentParameters{
+						AvgCPUUtilization: ingressAvgCPUUtilization,
+						AvgMemoryUsage: ingressAvgMemoryUsage,
 						MaxReplicas: ingressMaxReplicas,
 						MinReplicas: ingressMinReplicas,
 					},
 					Retry: ComponentParameters{
+						AvgCPUUtilization: retryAvgCPUUtilization,
+						AvgMemoryUsage: retryAvgMemoryUsage,
 						MaxReplicas: retryMaxReplicas,
 						MinReplicas: retryMinReplicas,
 					},
@@ -103,14 +118,20 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 			Spec: BrokerCellSpec{
 				ComponentsParametersSpec{
 					Fanout: ComponentParameters{
+						AvgCPUUtilization: fanoutAvgCPUUtilization,
+						AvgMemoryUsage: fanoutAvgMemoryUsage,
 						MaxReplicas: fanoutMaxReplicas,
 						MinReplicas: fanoutMinReplicas,
 					},
 					Ingress: ComponentParameters{
+						AvgCPUUtilization: ingressAvgCPUUtilization,
+						AvgMemoryUsage: ingressAvgMemoryUsage,
 						MaxReplicas: ingressMaxReplicas,
 						MinReplicas: ingressMinReplicas,
 					},
 					Retry: ComponentParameters{
+						AvgCPUUtilization: retryAvgCPUUtilization,
+						AvgMemoryUsage: retryAvgMemoryUsage,
 						MaxReplicas: retryMaxReplicas,
 						MinReplicas: retryMinReplicas,
 					},
