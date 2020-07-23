@@ -234,6 +234,9 @@ func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.Ingre
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
 			AllowIstioSidecar:  true,
+			CPURequest: 		*bc.Spec.Components.Ingress.CPURequest,
+			MemoryRequest: 		*bc.Spec.Components.Ingress.MemoryRequest,
+			MemoryLimit:        *bc.Spec.Components.Ingress.MemoryLimit,
 		},
 		Port: r.env.IngressPort,
 	}
@@ -258,6 +261,9 @@ func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell) resources.Fanout
 			Image:              r.env.FanoutImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
+			CPURequest: 		*bc.Spec.Components.Fanout.CPURequest,
+			MemoryRequest: 		*bc.Spec.Components.Fanout.MemoryRequest,
+			MemoryLimit:        *bc.Spec.Components.Fanout.MemoryLimit,
 		},
 	}
 }
@@ -281,6 +287,9 @@ func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell) resources.RetryAr
 			Image:              r.env.RetryImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
+			CPURequest: 		*bc.Spec.Components.Retry.CPURequest,
+			MemoryRequest: 		*bc.Spec.Components.Retry.MemoryRequest,
+			MemoryLimit:        *bc.Spec.Components.Retry.MemoryLimit,
 		},
 	}
 }
