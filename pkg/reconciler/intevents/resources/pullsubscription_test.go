@@ -14,12 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package resources
 
 import (
 	"testing"
-
-	"github.com/google/knative-gcp/pkg/reconciler/intevents/resources"
 
 	"github.com/google/go-cmp/cmp"
 	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
@@ -71,7 +69,7 @@ func TestMakePullSubscription(t *testing.T) {
 		Owner:       source,
 		Topic:       "topic-abc",
 		AdapterType: "google.storage",
-		Annotations: resources.GetAnnotations(nil, "storages.events.cloud.google.com"),
+		Annotations: GetAnnotations(nil, "storages.events.cloud.google.com"),
 		Labels: map[string]string{
 			"receive-adapter":                     "storage.events.cloud.google.com",
 			"events.cloud.google.com/source-name": source.Name,

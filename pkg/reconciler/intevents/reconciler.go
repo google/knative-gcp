@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/intevents/resources/v1"
-
 	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
@@ -84,7 +82,7 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 	}
 
 	name := pubsubable.GetObjectMeta().GetName()
-	args := &reconcilertestingv1.TopicArgs{
+	args := &resources.TopicArgs{
 		Namespace:       pubsubable.GetObjectMeta().GetNamespace(),
 		Name:            name,
 		Spec:            pubsubable.PubSubSpec(),
@@ -94,7 +92,7 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 		Labels:          resources.GetLabels(psb.receiveAdapterName, name),
 		Annotations:     pubsubable.GetObjectMeta().GetAnnotations(),
 	}
-	newTopic := reconcilertestingv1.MakeTopic(args)
+	newTopic := resources.MakeTopic(args)
 
 	topics := psb.pubsubClient.InternalV1().Topics(newTopic.Namespace)
 	t, err := topics.Get(newTopic.Name, v1.GetOptions{})
@@ -143,7 +141,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 
 	cs := pubsubable.ConditionSet()
 
-	args := &reconcilertestingv1.PullSubscriptionArgs{
+	args := &resources.PullSubscriptionArgs{
 		Namespace:   namespace,
 		Name:        name,
 		Spec:        spec,
@@ -154,7 +152,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 		Annotations: resources.GetAnnotations(annotations, resourceGroup),
 	}
 
-	newPS := reconcilertestingv1.MakePullSubscription(args)
+	newPS := resources.MakePullSubscription(args)
 
 	pullSubscriptions := psb.pubsubClient.InternalV1().PullSubscriptions(namespace)
 	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})

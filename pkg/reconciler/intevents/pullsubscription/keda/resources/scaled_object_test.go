@@ -69,7 +69,7 @@ func TestMakeScaledObject(t *testing.T) {
 
 	want := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "keda.k8s.io/v1",
+			"apiVersion": "keda.k8s.io/v1beta1",
 			"kind":       "ScaledObject",
 			"metadata": map[string]interface{}{
 				"namespace": "psnamespace",

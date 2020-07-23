@@ -31,11 +31,11 @@ import (
 var (
 	ScaledObjectGVK = schema.GroupVersionKind{
 		Group:   "keda.k8s.io",
-		Version: "v1",
+		Version: "v1beta1",
 		Kind:    "ScaledObject",
 	}
 
-	KedaSchemeGroupVersion = schema.GroupVersion{Group: "keda.k8s.io", Version: "v1"}
+	KedaSchemeGroupVersion = schema.GroupVersion{Group: "keda.k8s.io", Version: "v1beta1"}
 )
 
 func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *intereventsv1.PullSubscription) *unstructured.Unstructured {
@@ -50,7 +50,7 @@ func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *intereventsv1.
 	// which BTW brings things like controller-runtime, etc.
 	so := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "keda.k8s.io/v1",
+			"apiVersion": "keda.k8s.io/v1beta1",
 			"kind":       "ScaledObject",
 			"metadata": map[string]interface{}{
 				"namespace": ra.Namespace,
