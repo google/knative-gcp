@@ -17,8 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"time"
-
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -34,8 +32,6 @@ type envConfig struct {
 	PodName   string `envconfig:"POD_NAME" required:"true"`
 	Port      int    `envconfig:"PORT" default:"8080"`
 	ProjectID string `envconfig:"PROJECT_ID"`
-
-	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
 
 	// Configure the GCP Profiler.
 	profiling.GCPProfilerEnvConfig
