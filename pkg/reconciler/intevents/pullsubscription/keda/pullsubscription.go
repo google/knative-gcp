@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
-	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/pullsubscription"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/keda/resources"
 	"go.uber.org/zap"
@@ -56,11 +56,11 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface.
 var _ pullsubscriptionreconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, ps *v1beta1.PullSubscription) reconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, ps *v1.PullSubscription) reconciler.Event {
 	return r.Base.ReconcileKind(ctx, ps)
 }
 
-func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deployment, src *v1beta1.PullSubscription) error {
+func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deployment, src *v1.PullSubscription) error {
 	// Check whether KEDA is installed, if not, error out.
 	// Ideally this should be done in the webhook, thus not even allowing the creation of the object.
 	if err := r.discoveryFn(r.KubeClientSet.Discovery(), resources.KedaSchemeGroupVersion); err != nil {
@@ -137,6 +137,6 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 	return nil
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, ps *v1beta1.PullSubscription) reconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, ps *v1.PullSubscription) reconciler.Event {
 	return r.Base.FinalizeKind(ctx, ps)
 }

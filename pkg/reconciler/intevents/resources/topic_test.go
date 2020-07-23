@@ -24,16 +24,16 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
+	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestMakeTopicWithCloudStorageSource(t *testing.T) {
-	source := &v1beta1.CloudStorageSource{
+	source := &v1.CloudStorageSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "storage-name",
 			Namespace: "storage-namespace",
@@ -42,8 +42,8 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName,
 			},
 		},
-		Spec: v1beta1.CloudStorageSourceSpec{
-			PubSubSpec: duckv1beta1.PubSubSpec{
+		Spec: v1.CloudStorageSourceSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				Project: "project-123",
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
@@ -81,7 +81,7 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 	got := MakeTopic(args)
 
 	yes := true
-	want := &inteventsv1beta1.Topic{
+	want := &inteventsv1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "storage-namespace",
 			Name:      "storage-name",
@@ -90,7 +90,7 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 				"source":          "storage-name",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "events.cloud.google.com/v1beta1",
+				APIVersion:         "events.cloud.google.com/v1",
 				Kind:               "CloudStorageSource",
 				Name:               "storage-name",
 				UID:                "storage-uid",
@@ -101,7 +101,7 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName,
 			},
 		},
-		Spec: inteventsv1beta1.TopicSpec{
+		Spec: inteventsv1.TopicSpec{
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
@@ -110,7 +110,7 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 			},
 			Project:           "project-123",
 			Topic:             "topic-abc",
-			PropagationPolicy: inteventsv1beta1.TopicPolicyCreateDelete,
+			PropagationPolicy: inteventsv1.TopicPolicyCreateDelete,
 		},
 	}
 
@@ -120,7 +120,7 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 }
 
 func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
-	source := &v1beta1.CloudSchedulerSource{
+	source := &v1.CloudSchedulerSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "scheduler-name",
 			Namespace: "scheduler-namespace",
@@ -129,8 +129,8 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName,
 			},
 		},
-		Spec: v1beta1.CloudSchedulerSourceSpec{
-			PubSubSpec: duckv1beta1.PubSubSpec{
+		Spec: v1.CloudSchedulerSourceSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				Project: "project-123",
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
@@ -167,7 +167,7 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 	got := MakeTopic(args)
 
 	yes := true
-	want := &inteventsv1beta1.Topic{
+	want := &inteventsv1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "scheduler-namespace",
 			Name:      "scheduler-name",
@@ -176,7 +176,7 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 				"source":          "scheduler-name",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "events.cloud.google.com/v1beta1",
+				APIVersion:         "events.cloud.google.com/v1",
 				Kind:               "CloudSchedulerSource",
 				Name:               "scheduler-name",
 				UID:                "scheduler-uid",
@@ -187,7 +187,7 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName,
 			},
 		},
-		Spec: inteventsv1beta1.TopicSpec{
+		Spec: inteventsv1.TopicSpec{
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
@@ -196,7 +196,7 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 			},
 			Project:           "project-123",
 			Topic:             "topic-abc",
-			PropagationPolicy: inteventsv1beta1.TopicPolicyCreateDelete,
+			PropagationPolicy: inteventsv1.TopicPolicyCreateDelete,
 		},
 	}
 

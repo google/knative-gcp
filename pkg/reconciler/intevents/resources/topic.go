@@ -20,14 +20,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 )
 
 type TopicArgs struct {
 	Namespace       string
 	Name            string
-	Spec            *duckv1beta1.PubSubSpec
+	Spec            *duckv1.PubSubSpec
 	EnablePublisher *bool
 	Owner           kmeta.OwnerRefable
 	Topic           string
@@ -37,8 +37,8 @@ type TopicArgs struct {
 
 // MakeTopic creates the spec for, but does not create, a GCP Topic
 // for a given GCS.
-func MakeTopic(args *TopicArgs) *inteventsv1beta1.Topic {
-	return &inteventsv1beta1.Topic{
+func MakeTopic(args *TopicArgs) *inteventsv1.Topic {
+	return &inteventsv1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            args.Name,
 			Namespace:       args.Namespace,
@@ -46,14 +46,14 @@ func MakeTopic(args *TopicArgs) *inteventsv1beta1.Topic {
 			Annotations:     args.Annotations,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
-		Spec: inteventsv1beta1.TopicSpec{
-			IdentitySpec: duckv1beta1.IdentitySpec{
+		Spec: inteventsv1.TopicSpec{
+			IdentitySpec: duckv1.IdentitySpec{
 				ServiceAccountName: args.Spec.IdentitySpec.ServiceAccountName,
 			},
 			Secret:            args.Spec.Secret,
 			Project:           args.Spec.Project,
 			Topic:             args.Topic,
-			PropagationPolicy: inteventsv1beta1.TopicPolicyCreateDelete,
+			PropagationPolicy: inteventsv1.TopicPolicyCreateDelete,
 			EnablePublisher:   args.EnablePublisher,
 		},
 	}

@@ -65,7 +65,7 @@ func WithTriggerSubscriberRef(gvk metav1.GroupVersionKind, name, namespace strin
 	return func(t *brokerv1beta1.Trigger) {
 		t.Spec.Subscriber = duckv1.Destination{
 			Ref: &duckv1.KReference{
-				APIVersion: apiVersion(gvk),
+				APIVersion: ApiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,
 				Namespace:  namespace,
@@ -79,7 +79,7 @@ func WithTriggerSubscriberRefAndURIReference(gvk metav1.GroupVersionKind, name, 
 	return func(t *brokerv1beta1.Trigger) {
 		t.Spec.Subscriber = duckv1.Destination{
 			Ref: &duckv1.KReference{
-				APIVersion: apiVersion(gvk),
+				APIVersion: ApiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,
 				Namespace:  namespace,

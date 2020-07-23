@@ -20,12 +20,12 @@ import (
 	"context"
 	"testing"
 
+	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	intereventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
-	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"knative.dev/pkg/apis"
@@ -42,16 +42,16 @@ func newAnnotations() map[string]string {
 	}
 }
 
-func newPullSubscription() *v1beta1.PullSubscription {
-	return NewPullSubscription("psname", "psnamespace",
-		WithPullSubscriptionUID("psuid"),
-		WithPullSubscriptionAnnotations(newAnnotations()),
-		WithPullSubscriptionSubscriptionID("subscriptionId"),
-		WithPullSubscriptionSetDefaults,
+func newPullSubscription() *intereventsv1.PullSubscription {
+	return reconcilertestingv1.NewPullSubscription("psname", "psnamespace",
+		reconcilertestingv1.WithPullSubscriptionUID("psuid"),
+		reconcilertestingv1.WithPullSubscriptionAnnotations(newAnnotations()),
+		reconcilertestingv1.WithPullSubscriptionSubscriptionID("subscriptionId"),
+		reconcilertestingv1.WithPullSubscriptionSetDefaults,
 	)
 }
 
-func newReceiveAdapter(ps *v1beta1.PullSubscription) *v1.Deployment {
+func newReceiveAdapter(ps *intereventsv1.PullSubscription) *v1.Deployment {
 	raArgs := &resources.ReceiveAdapterArgs{
 		Image:            "image",
 		PullSubscription: ps,
@@ -80,7 +80,7 @@ func TestMakeScaledObject(t *testing.T) {
 				},
 				"ownerReferences": []interface{}{
 					map[string]interface{}{
-						"apiVersion":         "internal.events.cloud.google.com/v1beta1",
+						"apiVersion":         "internal.events.cloud.google.com/v1",
 						"kind":               "PullSubscription",
 						"blockOwnerDeletion": true,
 						"controller":         true,

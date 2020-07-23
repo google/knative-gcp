@@ -22,10 +22,10 @@ import (
 
 	"knative.dev/pkg/kmeta"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 )
 
-func GeneratePublisherName(topic *v1beta1.Topic) string {
+func GeneratePublisherName(topic *v1.Topic) string {
 	if HasPrefix(topic.Name, "cre-") {
 		return kmeta.ChildName(topic.Name, "-publish")
 	}

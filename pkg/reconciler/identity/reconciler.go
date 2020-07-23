@@ -33,7 +33,7 @@ import (
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	duck "github.com/google/knative-gcp/pkg/duck/v1beta1"
+	duck "github.com/google/knative-gcp/pkg/duck/v1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
@@ -70,8 +70,6 @@ type Identity struct {
 // and add iam policy binding between this k8s service account and its corresponding GCP service account.
 func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID string, identifiable duck.Identifiable) (*corev1.ServiceAccount, error) {
 	status := identifiable.IdentityStatus()
-	// Remove status.ServiceAccountName from last reconcile circle.
-	status.ServiceAccountName = ""
 	// Create corresponding k8s ServiceAccount if it doesn't exist.
 
 	identityNames, err := i.getGoogleServiceAccountName(ctx, identifiable)
@@ -106,7 +104,6 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return kServiceAccount, fmt.Errorf("adding iam policy binding failed with: %w", err)
 	}
-	status.ServiceAccountName = kServiceAccount.Name
 	status.MarkWorkloadIdentityConfigured(identifiable.ConditionSet())
 	return kServiceAccount, nil
 }
@@ -115,13 +112,6 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 // if this k8s service account only has one ownerReference.
 func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string, identifiable duck.Identifiable) error {
 	status := identifiable.IdentityStatus()
-	// If the ServiceAccountName wasn't set in the status, it means there are errors when reconciling workload identity.
-	// If ReconcileWorkloadIdentity error is for k8s service account, it will be handled by k8s ownerReferences Garbage collection.
-	// If ReconcileWorkloadIdentity error is for add iam policy binding, then no need to remove it.
-	// Thus, for this case, we simply return.
-	if status.ServiceAccountName == "" {
-		return nil
-	}
 
 	identityNames, err := i.getGoogleServiceAccountName(ctx, identifiable)
 	if err != nil {

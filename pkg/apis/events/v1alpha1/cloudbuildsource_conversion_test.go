@@ -41,7 +41,7 @@ var (
 			PubSubSpec: gcptesting.CompleteV1alpha1PubSubSpec,
 		},
 		Status: CloudBuildSourceStatus{
-			PubSubStatus: gcptesting.CompleteV1alpha1PubSubStatus,
+			PubSubStatus: gcptesting.CompleteV1alpha1PubSubStatusWithoutServiceAccountName,
 		},
 	}
 )

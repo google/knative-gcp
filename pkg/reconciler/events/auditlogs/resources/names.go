@@ -20,24 +20,24 @@ package resources
 import (
 	"fmt"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	"github.com/google/knative-gcp/pkg/utils/naming"
 )
 
 // GenerateTopicName generates a topic name for the audit log
 // source. This refers to the underlying Pub/Sub topic, and not our
 // Topic resource.
-func GenerateTopicName(s *v1beta1.CloudAuditLogsSource) string {
+func GenerateTopicName(s *v1.CloudAuditLogsSource) string {
 	return naming.TruncatedPubsubResourceName("cre-src", s.Namespace, s.Name, s.UID)
 }
 
 // Generates the resource name for the topic used by an CloudAuditLogsSource.
-func GenerateTopicResourceName(s *v1beta1.CloudAuditLogsSource) string {
+func GenerateTopicResourceName(s *v1.CloudAuditLogsSource) string {
 	return fmt.Sprintf("pubsub.googleapis.com/projects/%s/topics/%s", s.Status.ProjectID, s.Status.TopicID)
 }
 
 // GenerateSinkName generates a Stackdriver sink resource name for an
 // CloudAuditLogsSource.
-func GenerateSinkName(s *v1beta1.CloudAuditLogsSource) string {
+func GenerateSinkName(s *v1.CloudAuditLogsSource) string {
 	return naming.TruncatedLoggingSinkResourceName("cre-src", s.Namespace, s.Name, s.UID)
 }

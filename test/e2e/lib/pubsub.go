@@ -22,9 +22,10 @@ import (
 	"testing"
 	"time"
 
+	reconcilertestinv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
+
 	v1 "k8s.io/api/core/v1"
 
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
@@ -38,16 +39,16 @@ type PubSubConfig struct {
 	SinkName           string
 	TopicName          string
 	ServiceAccountName string
-	Options            []kngcptesting.CloudPubSubSourceOption
+	Options            []reconcilertestinv1beta1.CloudPubSubSourceOption
 }
 
 func MakePubSubOrDie(client *Client, config PubSubConfig) {
 	client.T.Helper()
 	so := config.Options
-	so = append(so, kngcptesting.WithCloudPubSubSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(config.TopicName))
-	so = append(so, kngcptesting.WithCloudPubSubSourceServiceAccount(config.ServiceAccountName))
-	eventsPubSub := kngcptesting.NewCloudPubSubSource(config.PubSubName, client.Namespace, so...)
+	so = append(so, reconcilertestinv1beta1.WithCloudPubSubSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestinv1beta1.WithCloudPubSubSourceTopic(config.TopicName))
+	so = append(so, reconcilertestinv1beta1.WithCloudPubSubSourceServiceAccount(config.ServiceAccountName))
+	eventsPubSub := reconcilertestinv1beta1.NewCloudPubSubSource(config.PubSubName, client.Namespace, so...)
 	client.CreatePubSubOrFail(eventsPubSub)
 
 	client.Core.WaitForResourceReadyOrFail(config.PubSubName, CloudPubSubSourceTypeMeta)

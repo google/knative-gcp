@@ -21,26 +21,25 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 )
 
 type PullSubscriptionArgs struct {
 	Namespace   string
 	Name        string
-	Spec        *duckv1beta1.PubSubSpec
+	Spec        *gcpduckv1.PubSubSpec
 	Owner       kmeta.OwnerRefable
 	Topic       string
 	AdapterType string
-	Mode        inteventsv1beta1.ModeType
 	Labels      map[string]string
 	Annotations map[string]string
 }
 
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscription
 // for a given GCS.
-func MakePullSubscription(args *PullSubscriptionArgs) *inteventsv1beta1.PullSubscription {
-	ps := &inteventsv1beta1.PullSubscription{
+func MakePullSubscription(args *PullSubscriptionArgs) *inteventsv1.PullSubscription {
+	ps := &inteventsv1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            args.Name,
 			Namespace:       args.Namespace,
@@ -48,9 +47,9 @@ func MakePullSubscription(args *PullSubscriptionArgs) *inteventsv1beta1.PullSubs
 			Annotations:     args.Annotations,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
-		Spec: inteventsv1beta1.PullSubscriptionSpec{
-			PubSubSpec: duckv1beta1.PubSubSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
+		Spec: inteventsv1.PullSubscriptionSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
+				IdentitySpec: gcpduckv1.IdentitySpec{
 					ServiceAccountName: args.Spec.IdentitySpec.ServiceAccountName,
 				},
 				Secret:  args.Spec.Secret,
@@ -61,7 +60,6 @@ func MakePullSubscription(args *PullSubscriptionArgs) *inteventsv1beta1.PullSubs
 			},
 			Topic:       args.Topic,
 			AdapterType: args.AdapterType,
-			Mode:        args.Mode,
 		},
 	}
 	if args.Spec.CloudEventOverrides != nil && args.Spec.CloudEventOverrides.Extensions != nil {

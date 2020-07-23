@@ -501,7 +501,7 @@ func TestAllCases(t *testing.T) {
 			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
 			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			channelLister: listers.GetChannelLister(),
-			topicLister:   listers.GetTopicLister(),
+			topicLister:   listers.GetV1beta1TopicLister(),
 		}
 		return channel.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetChannelLister(), r.Recorder, r)
 	}))

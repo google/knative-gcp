@@ -14,8 +14,9 @@ limitations under the License.
 package v1beta1
 
 import (
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
+	kngcpduckv1 "github.com/google/knative-gcp/pkg/duck/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis/duck"
 	"knative.dev/pkg/kmeta"
@@ -41,8 +42,8 @@ type CloudBuildSource struct {
 var (
 	_ kmeta.OwnerRefable           = (*CloudBuildSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudBuildSource)(nil)
-	_ kngcpduck.PubSubable         = (*CloudBuildSource)(nil)
-	_ kngcpduck.Identifiable       = (*CloudBuildSource)(nil)
+	_ kngcpduckv1.PubSubable       = (*CloudBuildSource)(nil)
+	_ kngcpduckv1.Identifiable     = (*CloudBuildSource)(nil)
 	_                              = duck.VerifyType(&CloudBuildSource{}, &duckv1.Conditions{})
 	_ duckv1.KRShaped              = (*CloudBuildSource)(nil)
 )
@@ -51,7 +52,7 @@ var (
 type CloudBuildSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret and Project
-	duckv1beta1.PubSubSpec `json:",inline"`
+	gcpduckv1.PubSubSpec `json:",inline"`
 }
 
 const (
@@ -66,7 +67,7 @@ var buildCondSet = apis.NewLivingConditionSet(
 
 // CloudBuildSourceStatus defines the observed state of CloudBuildSource.
 type CloudBuildSourceStatus struct {
-	duckv1beta1.PubSubStatus `json:",inline"`
+	gcpduckv1.PubSubStatus `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -85,22 +86,22 @@ func (*CloudBuildSource) GetGroupVersionKind() schema.GroupVersionKind {
 
 // Methods for identifiable interface.
 // IdentitySpec returns the IdentitySpec portion of the Spec.
-func (s *CloudBuildSource) IdentitySpec() *duckv1beta1.IdentitySpec {
+func (s *CloudBuildSource) IdentitySpec() *gcpduckv1.IdentitySpec {
 	return &s.Spec.IdentitySpec
 }
 
 // IdentityStatus returns the IdentityStatus portion of the Status.
-func (s *CloudBuildSource) IdentityStatus() *duckv1beta1.IdentityStatus {
+func (s *CloudBuildSource) IdentityStatus() *gcpduckv1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
 
 // CloudBuildSourceSpec returns the CloudBuildSourceSpec portion of the Spec.
-func (bs *CloudBuildSource) PubSubSpec() *duckv1beta1.PubSubSpec {
+func (bs *CloudBuildSource) PubSubSpec() *gcpduckv1.PubSubSpec {
 	return &bs.Spec.PubSubSpec
 }
 
 // PubSubStatus returns the PubSubStatus portion of the Status.
-func (bs *CloudBuildSource) PubSubStatus() *duckv1beta1.PubSubStatus {
+func (bs *CloudBuildSource) PubSubStatus() *gcpduckv1.PubSubStatus {
 	return &bs.Status.PubSubStatus
 }
 

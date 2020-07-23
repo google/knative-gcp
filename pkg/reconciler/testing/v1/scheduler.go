@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2020 Google LLC.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package testing
+package v1
 
 import (
 	"time"
+
+	"github.com/google/knative-gcp/pkg/reconciler/testing"
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
@@ -26,15 +28,15 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 )
 
 // CloudSchedulerSourceOption enables further configuration of a CloudSchedulerSource.
-type CloudSchedulerSourceOption func(*v1beta1.CloudSchedulerSource)
+type CloudSchedulerSourceOption func(*v1.CloudSchedulerSource)
 
 // NewCloudSchedulerSource creates a CloudSchedulerSource with CloudSchedulerSourceOptions
-func NewCloudSchedulerSource(name, namespace string, so ...CloudSchedulerSourceOption) *v1beta1.CloudSchedulerSource {
-	s := &v1beta1.CloudSchedulerSource{
+func NewCloudSchedulerSource(name, namespace string, so ...CloudSchedulerSourceOption) *v1.CloudSchedulerSource {
+	s := &v1.CloudSchedulerSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -48,10 +50,10 @@ func NewCloudSchedulerSource(name, namespace string, so ...CloudSchedulerSourceO
 }
 
 func WithCloudSchedulerSourceSink(gvk metav1.GroupVersionKind, name string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Spec.Sink = duckv1.Destination{
 			Ref: &duckv1.KReference{
-				APIVersion: apiVersion(gvk),
+				APIVersion: testing.ApiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,
 			},
@@ -60,54 +62,47 @@ func WithCloudSchedulerSourceSink(gvk metav1.GroupVersionKind, name string) Clou
 }
 
 func WithCloudSchedulerSourceLocation(location string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Spec.Location = location
 	}
 }
 
 func WithCloudSchedulerSourceProject(project string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Spec.Project = project
 	}
 }
 
 func WithCloudSchedulerSourceSchedule(schedule string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Spec.Schedule = schedule
 	}
 }
 
 func WithCloudSchedulerSourceServiceAccount(kServiceAccount string) CloudSchedulerSourceOption {
-	return func(ps *v1beta1.CloudSchedulerSource) {
+	return func(ps *v1.CloudSchedulerSource) {
 		ps.Spec.ServiceAccountName = kServiceAccount
 	}
 }
 
 func WithCloudSchedulerSourceData(data string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Spec.Data = data
 	}
 }
 
-func WithCloudSchedulerSourceDeletionTimestamp(s *v1beta1.CloudSchedulerSource) {
+func WithCloudSchedulerSourceDeletionTimestamp(s *v1.CloudSchedulerSource) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	s.ObjectMeta.SetDeletionTimestamp(&t)
 }
 
 // WithInitCloudSchedulerSourceConditions initializes the CloudSchedulerSources's conditions.
-func WithInitCloudSchedulerSourceConditions(s *v1beta1.CloudSchedulerSource) {
+func WithInitCloudSchedulerSourceConditions(s *v1.CloudSchedulerSource) {
 	s.Status.InitializeConditions()
 }
 
-// WithCloudSchedulerSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
-func WithCloudSchedulerSourceServiceAccountName(name string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
-		s.Status.ServiceAccountName = name
-	}
-}
-
 func WithCloudSchedulerSourceWorkloadIdentityFailed(reason, message string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
 	}
 }
@@ -115,7 +110,7 @@ func WithCloudSchedulerSourceWorkloadIdentityFailed(reason, message string) Clou
 // WithCloudSchedulerSourceTopicFailed marks the condition that the
 // status of topic is False.
 func WithCloudSchedulerSourceTopicFailed(reason, message string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Status.MarkTopicFailed(s.ConditionSet(), reason, message)
 	}
 }
@@ -123,7 +118,7 @@ func WithCloudSchedulerSourceTopicFailed(reason, message string) CloudSchedulerS
 // WithCloudSchedulerSourceTopicUnknown marks the condition that the
 // status of topic is Unknown.
 func WithCloudSchedulerSourceTopicUnknown(reason, message string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Status.MarkTopicUnknown(s.ConditionSet(), reason, message)
 	}
 }
@@ -131,7 +126,7 @@ func WithCloudSchedulerSourceTopicUnknown(reason, message string) CloudScheduler
 // WithCloudSchedulerSourceTopicNotReady marks the condition that the
 // topic is not ready.
 func WithCloudSchedulerSourceTopicReady(topicID, projectID string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Status.MarkTopicReady(s.ConditionSet())
 		s.Status.TopicID = topicID
 		s.Status.ProjectID = projectID
@@ -141,7 +136,7 @@ func WithCloudSchedulerSourceTopicReady(topicID, projectID string) CloudSchedule
 // WithCloudSchedulerSourcePullSubscriptionFailed marks the condition that the
 // topic is False.
 func WithCloudSchedulerSourcePullSubscriptionFailed(reason, message string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), reason, message)
 	}
 }
@@ -149,21 +144,21 @@ func WithCloudSchedulerSourcePullSubscriptionFailed(reason, message string) Clou
 // WithCloudSchedulerSourcePullSubscriptionUnknown marks the condition that the
 // topic is Unknown.
 func WithCloudSchedulerSourcePullSubscriptionUnknown(reason, message string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
 // WithCloudSchedulerSourcePullSubscriptionReady marks the condition that the
 // topic is ready.
-func WithCloudSchedulerSourcePullSubscriptionReady(s *v1beta1.CloudSchedulerSource) {
+func WithCloudSchedulerSourcePullSubscriptionReady(s *v1.CloudSchedulerSource) {
 	s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 }
 
 // WithCloudSchedulerSourceJobNotReady marks the condition that the
 // CloudSchedulerSource Job is not ready.
 func WithCloudSchedulerSourceJobNotReady(reason, message string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Status.MarkJobNotReady(reason, message)
 	}
 }
@@ -171,43 +166,43 @@ func WithCloudSchedulerSourceJobNotReady(reason, message string) CloudSchedulerS
 // WithCloudSchedulerSourceJobReady marks the condition that the
 // CloudSchedulerSource Job is ready and sets Status.JobName to jobName.
 func WithCloudSchedulerSourceJobReady(jobName string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Status.MarkJobReady(jobName)
 	}
 }
 
 // WithCloudSchedulerSourceSinkURI sets the status for sink URI
 func WithCloudSchedulerSourceSinkURI(url *apis.URL) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Status.SinkURI = url
 	}
 }
 
 func WithCloudSchedulerSourceSubscriptionID(subscriptionID string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Status.SubscriptionID = subscriptionID
 	}
 }
 
 // WithCloudSchedulerSourceJobName sets the status for job Name
 func WithCloudSchedulerSourceJobName(jobName string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Status.JobName = jobName
 	}
 }
 
 func WithCloudSchedulerSourceFinalizers(finalizers ...string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.Finalizers = finalizers
 	}
 }
 
 func WithCloudSchedulerSourceAnnotations(Annotations map[string]string) CloudSchedulerSourceOption {
-	return func(s *v1beta1.CloudSchedulerSource) {
+	return func(s *v1.CloudSchedulerSource) {
 		s.ObjectMeta.Annotations = Annotations
 	}
 }
 
-func WithCloudSchedulerSourceSetDefaults(s *v1beta1.CloudSchedulerSource) {
+func WithCloudSchedulerSourceSetDefaults(s *v1.CloudSchedulerSource) {
 	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }

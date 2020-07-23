@@ -22,8 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/webhook/resourcesemantics"
@@ -117,7 +116,7 @@ func TestChannelValidation(t *testing.T) {
 		name: "invalid k8s service account",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
+				IdentitySpec: gcpduckv1.IdentitySpec{
 					ServiceAccountName: invalidServiceAccountName,
 				},
 				SubscribableSpec: &eventingduck.SubscribableSpec{
@@ -138,7 +137,7 @@ func TestChannelValidation(t *testing.T) {
 		name: "valid k8s service account",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
+				IdentitySpec: gcpduckv1.IdentitySpec{
 					ServiceAccountName: validServiceAccountName,
 				},
 				SubscribableSpec: &eventingduck.SubscribableSpec{
@@ -153,7 +152,7 @@ func TestChannelValidation(t *testing.T) {
 		name: "have k8s service account and secret at the same time",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
+				IdentitySpec: gcpduckv1.IdentitySpec{
 					ServiceAccountName: validServiceAccountName,
 				},
 				Secret: &gcpauthtesthelper.Secret,
@@ -195,7 +194,7 @@ func TestCheckImmutableFields(t *testing.T) {
 		"ServiceAccount changed": {
 			orig: &channelSpec,
 			updated: ChannelSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
+				IdentitySpec: gcpduckv1.IdentitySpec{
 					ServiceAccountName: "new-service-account",
 				},
 			},

@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	intereventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 )
 
 var (
@@ -38,7 +38,7 @@ var (
 	KedaSchemeGroupVersion = schema.GroupVersion{Group: "keda.k8s.io", Version: "v1beta1"}
 )
 
-func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *v1beta1.PullSubscription) *unstructured.Unstructured {
+func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *intereventsv1.PullSubscription) *unstructured.Unstructured {
 	// These values should have already been validated in the webhook, and be valid ints. Not checking for errors.
 	minReplicaCount, _ := strconv.ParseInt(ps.Annotations[duck.AutoscalingMinScaleAnnotation], 10, 64)
 	maxReplicateCount, _ := strconv.ParseInt(ps.Annotations[duck.AutoscalingMaxScaleAnnotation], 10, 64)

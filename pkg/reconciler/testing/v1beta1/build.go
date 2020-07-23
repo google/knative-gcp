@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package testing
+package v1beta1
 
 import (
 	"time"
+
+	"github.com/google/knative-gcp/pkg/reconciler/testing"
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
@@ -51,7 +53,7 @@ func WithCloudBuildSourceSink(gvk metav1.GroupVersionKind, name string) CloudBui
 	return func(bs *v1beta1.CloudBuildSource) {
 		bs.Spec.Sink = duckv1.Destination{
 			Ref: &duckv1.KReference{
-				APIVersion: apiVersion(gvk),
+				APIVersion: testing.ApiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,
 			},
@@ -79,13 +81,6 @@ func WithCloudBuildSourceServiceAccount(kServiceAccount string) CloudBuildSource
 // WithInitCloudBuildSourceConditions initializes the CloudBuildSource's conditions.
 func WithInitCloudBuildSourceConditions(bs *v1beta1.CloudBuildSource) {
 	bs.Status.InitializeConditions()
-}
-
-// WithCloudBuildSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
-func WithCloudBuildSourceServiceAccountName(name string) CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.Status.ServiceAccountName = name
-	}
 }
 
 func WithCloudBuildSourceWorkloadIdentityFailed(reason, message string) CloudBuildSourceOption {

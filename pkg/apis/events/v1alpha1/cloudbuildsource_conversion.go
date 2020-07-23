@@ -31,8 +31,9 @@ func (source *CloudBuildSource) ConvertTo(_ context.Context, to apis.Convertible
 	switch sink := to.(type) {
 	case *v1beta1.CloudBuildSource:
 		sink.ObjectMeta = source.ObjectMeta
-		sink.Spec.PubSubSpec = convert.ToV1beta1PubSubSpec(source.Spec.PubSubSpec)
-		sink.Status.PubSubStatus = convert.ToV1beta1PubSubStatus(source.Status.PubSubStatus)
+		// v1beta1 CloudBuildSource implements duck v1 PubSubable
+		sink.Spec.PubSubSpec = convert.FromV1alpha1ToV1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Status.PubSubStatus = convert.FromV1alpha1ToV1PubSubStatus(source.Status.PubSubStatus)
 		return nil
 	default:
 		return fmt.Errorf("unknown conversion, got: %T", sink)
@@ -46,8 +47,9 @@ func (sink *CloudBuildSource) ConvertFrom(_ context.Context, from apis.Convertib
 	switch source := from.(type) {
 	case *v1beta1.CloudBuildSource:
 		sink.ObjectMeta = source.ObjectMeta
-		sink.Spec.PubSubSpec = convert.FromV1beta1PubSubSpec(source.Spec.PubSubSpec)
-		sink.Status.PubSubStatus = convert.FromV1beta1PubSubStatus(source.Status.PubSubStatus)
+		// v1beta1 CloudBuildSource implements duck v1 PubSubable
+		sink.Spec.PubSubSpec = convert.FromV1ToV1alpha1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Status.PubSubStatus = convert.FromV1ToV1alpha1PubSubStatus(source.Status.PubSubStatus)
 		return nil
 	default:
 		return fmt.Errorf("unknown conversion, got: %T", source)
