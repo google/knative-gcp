@@ -206,6 +206,7 @@ func (c *Client) LogsFor(namespace, name string, tm *metav1.TypeMeta) (string, e
 }
 
 // TODO make this function more generic.
+// The caller is expected to provide a valid filter that returns exact one time series.
 func (c *Client) StackDriverEventCountMetricFor(namespace, projectID, filter string) (int64, error) {
 	metricClient, err := monitoring.NewMetricClient(context.TODO())
 	if err != nil {
@@ -235,11 +236,11 @@ func (c *Client) StackDriverEventCountMetricFor(namespace, projectID, filter str
 	if err != nil {
 		return 0, fmt.Errorf("failed to iterate over result: %v", err)
 	}
-	if len(res) == 0 {
-		return 0, errors.New("no metric reported")
+	if len(res) == 0 || len(res) > 1 {
+		return 0, fmt.Errorf("want one time series but got %v", len(res))
 	}
 	if len(res[0].GetPoints()) == 0 {
 		return 0, errors.New("no metric points reported")
 	}
-	return res[0].GetPoints()[0].GetValue().GetInt64Value(), nil
+	return metrics.SumCumulative(res[0]), nil
 }
