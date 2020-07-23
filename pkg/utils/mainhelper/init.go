@@ -24,6 +24,7 @@ import (
 	"net/http"
 
 	"github.com/google/knative-gcp/pkg/observability"
+	"github.com/google/knative-gcp/pkg/utils/profiling"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -33,7 +34,7 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/profiling"
+	pkgprofiling "knative.dev/pkg/profiling"
 )
 
 // InitRes holds a collection of objects after init for convenient access by
@@ -45,10 +46,13 @@ type InitRes struct {
 	Cleanup    func()
 }
 
-// Similar to sharedmain.Main, Init runs common logic in starting a main function,
+// Init runs common logic in starting a main function, similar to sharedmain.
 // it returns a result object that contains useful artifacts for later use.
 // Unlike sharedmain.Main, Init is meant to be run as a helper function in any main
 // functions, while sharedmain.Main runs controllers with predefined method signatures.
+//
+// When a command is converted to use this function, please update the list of
+// commands that support profiling in docs/development/profiling.md.
 func Init(component string, opts ...InitOption) (context.Context, *InitRes) {
 	args := newInitArgs(component, opts...)
 	ctx := args.ctx
@@ -62,6 +66,9 @@ func Init(component string, opts ...InitOption) (context.Context, *InitRes) {
 	ctx, cmw, profilingHandler, flush := observability.SetupDynamicConfigOrDie(ctx, component, args.metricNamespace)
 	logger := logging.FromContext(ctx)
 	RunProfilingServer(ctx, logger, profilingHandler)
+
+	// Try starting the GCP Profiler if config is present.
+	ProcessGCPProfilerEnvConfigOrDie(component, logger)
 
 	// This is currently a workaround for testing where k8s APIServer is not properly setup.
 	if !args.skipK8sVersionCheck {
@@ -92,9 +99,24 @@ func ProcessEnvConfigOrDie(env interface{}) {
 	log.Printf("Running with env: %+v", env)
 }
 
+// ProcessGCPProfilerEnvConfigOrDie tries to enable the GCP Profiler if env vars
+// have configured it.
+func ProcessGCPProfilerEnvConfigOrDie(component string, logger *zap.SugaredLogger) {
+	var env profiling.GCPProfilerEnvConfig
+	if err := envconfig.Process("", &env); err != nil {
+		logger.Desugar().Fatal("Failed to process GCP Profiler env config", zap.Error(err))
+	}
+	if env.GCPProfilerEnabled() {
+		if err := profiling.StartGCPProfiler(component, env); err != nil {
+			logger.Desugar().Fatal("Failed to start GCP Profiler", zap.Error(err))
+		}
+		logger.Desugar().Info("GCP Profiler enabled", zap.Bool("gcpProfiler", true), zap.Any("gcpProfilerConfig", env))
+	}
+}
+
 // RunProfilingServer starts a profiling server.
-func RunProfilingServer(ctx context.Context, logger *zap.SugaredLogger, h *profiling.Handler) {
-	profilingServer := profiling.NewServer(h)
+func RunProfilingServer(ctx context.Context, logger *zap.SugaredLogger, h *pkgprofiling.Handler) {
+	profilingServer := pkgprofiling.NewServer(h)
 	eg, egCtx := errgroup.WithContext(ctx)
 	eg.Go(profilingServer.ListenAndServe)
 	go func() {

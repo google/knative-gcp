@@ -15,6 +15,7 @@ cloud.google.com/go/longrunning
 cloud.google.com/go/longrunning/autogen
 cloud.google.com/go/monitoring/apiv3
 cloud.google.com/go/monitoring/apiv3/v2
+cloud.google.com/go/profiler
 cloud.google.com/go/scheduler/apiv1
 cloud.google.com/go/trace/apiv1
 cloud.google.com/go/trace/apiv2
@@ -201,6 +202,8 @@ github.com/google/mako/internal/go/common
 github.com/google/mako/internal/quickstore_microservice/proto/quickstore_go_proto
 github.com/google/mako/proto/quickstore/quickstore_go_proto
 github.com/google/mako/spec/proto/mako_go_proto
+# github.com/google/pprof v0.0.0-20200708004538-1a94d8640e99
+github.com/google/pprof/profile
 # github.com/google/subcommands v1.0.1
 github.com/google/subcommands
 # github.com/google/uuid v1.1.1
@@ -489,6 +492,7 @@ google.golang.org/genproto/googleapis/cloud/audit
 google.golang.org/genproto/googleapis/cloud/scheduler/v1
 google.golang.org/genproto/googleapis/container/v1
 google.golang.org/genproto/googleapis/devtools/cloudbuild/v1
+google.golang.org/genproto/googleapis/devtools/cloudprofiler/v2
 google.golang.org/genproto/googleapis/devtools/cloudtrace/v1
 google.golang.org/genproto/googleapis/devtools/cloudtrace/v2
 google.golang.org/genproto/googleapis/iam/admin/v1
@@ -500,6 +504,7 @@ google.golang.org/genproto/googleapis/monitoring/v3
 google.golang.org/genproto/googleapis/pubsub/v1
 google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/context/attribute_context
+google.golang.org/genproto/googleapis/rpc/errdetails
 google.golang.org/genproto/googleapis/rpc/status
 google.golang.org/genproto/googleapis/type/calendarperiod
 google.golang.org/genproto/googleapis/type/expr
