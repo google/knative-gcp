@@ -21,6 +21,12 @@ choice.
 1. [Installing Broker with PubSub Channel](./docs/install/install-broker-with-pubsub-channel.md)
 1. [Managing Multiple Projects](./docs/install/managing-multiple-projects.md)
 
+## Operating Knative-GCP
+
+The following guides pertain to operating an existing Knative-GCP installation.
+
+1. [Accessing Event Traces in Cloud Trace](./docs/how-to/cloud-trace.md)
+
 ## Knative-GCP Sources
 
 In order to consume events from different GCP services, Knative-GCP provides
@@ -68,3 +74,4 @@ your Kubernetes cluster, use our custom Kubernetes resources below.
 
 _Note:_ This repo is still in development, APIs and resource names are subject
 to change in the future.
+
