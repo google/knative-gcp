@@ -26,18 +26,18 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 func TestMakePublisher(t *testing.T) {
-	topic := &v1beta1.Topic{
+	topic := &v1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "topic-name",
 			Namespace: "topic-namespace",
 		},
-		Spec: v1beta1.TopicSpec{
+		Spec: v1.TopicSpec{
 			Project: "eventing-name",
 			Topic:   "topic-name",
 			Secret: &corev1.SecretKeySelector{
@@ -70,7 +70,7 @@ func TestMakePublisher(t *testing.T) {
     },
     "ownerReferences": [
       {
-        "apiVersion": "internal.events.cloud.google.com/v1beta1",
+        "apiVersion": "internal.events.cloud.google.com/v1",
         "kind": "Topic",
         "name": "topic-name",
         "uid": "",
@@ -141,7 +141,7 @@ func TestMakePublisher(t *testing.T) {
 
 func TestMakePublisherWithServiceAccount(t *testing.T) {
 	serviceAccountName := "test"
-	topic := &v1beta1.Topic{
+	topic := &v1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "topic-name",
 			Namespace: "topic-namespace",
@@ -149,10 +149,10 @@ func TestMakePublisherWithServiceAccount(t *testing.T) {
 				duck.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			},
 		},
-		Spec: v1beta1.TopicSpec{
+		Spec: v1.TopicSpec{
 			Project: "eventing-name",
 			Topic:   "topic-name",
-			IdentitySpec: duckv1beta1.IdentitySpec{
+			IdentitySpec: duckv1.IdentitySpec{
 				ServiceAccountName: serviceAccountName,
 			},
 		},
@@ -176,7 +176,7 @@ func TestMakePublisherWithServiceAccount(t *testing.T) {
 				"internal.events.cloud.google.com/topic":      "topic-name",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "internal.events.cloud.google.com/v1beta1",
+				APIVersion:         "internal.events.cloud.google.com/v1",
 				Kind:               "Topic",
 				Name:               "topic-name",
 				Controller:         &yes,

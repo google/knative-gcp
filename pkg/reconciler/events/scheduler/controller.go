@@ -22,7 +22,7 @@ import (
 	"knative.dev/pkg/injection"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -33,10 +33,10 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	cloudschedulersourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1beta1/cloudschedulersource"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
-	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
-	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudschedulersource"
+	cloudschedulersourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1/cloudschedulersource"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/pullsubscription"
+	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/topic"
+	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudschedulersource"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 )
 
@@ -89,7 +89,7 @@ func newController(
 	c.Logger.Info("Setting up event handlers")
 	cloudschedulersourceInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
-	schedulerGK := v1beta1.Kind("CloudSchedulerSource")
+	schedulerGK := v1.Kind("CloudSchedulerSource")
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(schedulerGK),

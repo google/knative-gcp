@@ -17,6 +17,8 @@
 package v1beta1
 
 import (
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	kngcpduckv1 "github.com/google/knative-gcp/pkg/duck/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,9 +27,6 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/webhook/resourcesemantics"
-
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
 )
 
 // +genclient
@@ -56,7 +55,7 @@ var (
 	_ apis.Validatable             = (*Channel)(nil)
 	_ runtime.Object               = (*Channel)(nil)
 	_ resourcesemantics.GenericCRD = (*Channel)(nil)
-	_ kngcpduck.Identifiable       = (*Channel)(nil)
+	_ kngcpduckv1.Identifiable     = (*Channel)(nil)
 	_ duckv1.KRShaped              = (*Channel)(nil)
 )
 
@@ -64,7 +63,7 @@ var (
 // receiving events from this Channel.
 // arguments for a Channel.
 type ChannelSpec struct {
-	duckv1beta1.IdentitySpec `json:",inline"`
+	gcpduckv1.IdentitySpec `json:",inline"`
 	// Secret is the credential to use to create, publish, and poll the Pub/Sub
 	// Topic and Subscriptions. The value of the secret entry must be a
 	// service account key in the JSON format
@@ -103,7 +102,7 @@ const (
 
 // ChannelStatus represents the current state of a Channel.
 type ChannelStatus struct {
-	duckv1beta1.IdentityStatus `json:",inline"`
+	gcpduckv1.IdentityStatus `json:",inline"`
 
 	// Channel is Addressable. It currently exposes the endpoint as a
 	// fully-qualified DNS name which will distribute traffic over the
@@ -126,12 +125,12 @@ type ChannelStatus struct {
 
 // Methods for identifiable interface.
 // IdentitySpec returns the IdentitySpec portion of the Spec.
-func (c *Channel) IdentitySpec() *duckv1beta1.IdentitySpec {
+func (c *Channel) IdentitySpec() *gcpduckv1.IdentitySpec {
 	return &c.Spec.IdentitySpec
 }
 
 // IdentityStatus returns the IdentityStatus portion of the Status.
-func (c *Channel) IdentityStatus() *duckv1beta1.IdentityStatus {
+func (c *Channel) IdentityStatus() *gcpduckv1.IdentityStatus {
 	return &c.Status.IdentityStatus
 }
 

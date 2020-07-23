@@ -27,7 +27,7 @@ import (
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/intevents"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	intereventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/utils"
 
@@ -41,7 +41,7 @@ import (
 // Adapter. Every field is required.
 type ReceiveAdapterArgs struct {
 	Image            string
-	PullSubscription *v1beta1.PullSubscription
+	PullSubscription *intereventsv1.PullSubscription
 	Labels           map[string]string
 	SubscriptionID   string
 	SinkURI          *apis.URL
@@ -69,16 +69,6 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 				zap.Error(err),
 				zap.Any("extensions", args.PullSubscription.Spec.CloudEventOverrides.Extensions))
 		}
-	}
-
-	var mode converters.ModeType
-	switch args.PullSubscription.PubSubMode() {
-	case "", v1beta1.ModeCloudEventsBinary:
-		mode = converters.Binary
-	case v1beta1.ModeCloudEventsStructured:
-		mode = converters.Structured
-	case v1beta1.ModePushCompatible:
-		mode = converters.Push
 	}
 
 	var resourceGroup = defaultResourceGroup
@@ -138,9 +128,6 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 		}, {
 			Name:  "ADAPTER_TYPE",
 			Value: adapterType,
-		}, {
-			Name:  "SEND_MODE",
-			Value: string(mode),
 		}, {
 			Name:  "K_CE_EXTENSIONS",
 			Value: ceExtensions,

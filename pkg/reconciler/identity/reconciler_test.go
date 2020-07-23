@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	v1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -90,7 +92,7 @@ func TestKSACreates(t *testing.T) {
 			},
 			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1beta1",
+					APIVersion:         "events.cloud.google.com/v1",
 					Kind:               "CloudPubSubSource",
 					UID:                "test-pubsub-uid",
 					Name:               identifiableName,
@@ -107,7 +109,7 @@ func TestKSACreates(t *testing.T) {
 			config: ConfigMapFromTestFile(t, "config-gcp-auth", "default-auth-config"),
 			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1beta1",
+					APIVersion:         "events.cloud.google.com/v1",
 					Kind:               "CloudPubSubSource",
 					UID:                "test-pubsub-uid",
 					Name:               identifiableName,
@@ -137,8 +139,8 @@ func TestKSACreates(t *testing.T) {
 				policyManager: m,
 				gcpAuthStore:  NewGCPAuthTestStore(t, tc.config),
 			}
-			identifiable := NewCloudPubSubSource(identifiableName, testNS,
-				WithCloudPubSubSourceSetDefaults)
+			identifiable := v1.NewCloudPubSubSource(identifiableName, testNS,
+				v1.WithCloudPubSubSourceSetDefaults)
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
 			identifiable.SetAnnotations(map[string]string{
 				duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
@@ -253,9 +255,8 @@ func TestKSADeletes(t *testing.T) {
 				policyManager: m,
 				gcpAuthStore:  NewGCPAuthTestStore(t, tc.config),
 			}
-			identifiable := NewCloudPubSubSource(identifiableName, testNS,
-				WithCloudPubSubSourceServiceAccountName(kServiceAccountName),
-				WithCloudPubSubSourceSetDefaults,
+			identifiable := v1.NewCloudPubSubSource(identifiableName, testNS,
+				v1.WithCloudPubSubSourceSetDefaults,
 			)
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
 			identifiable.SetAnnotations(map[string]string{

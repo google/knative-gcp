@@ -28,17 +28,17 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 
-	cloudauditlogssourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1beta1/cloudauditlogssource"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
-	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
-	cloudauditlogssourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudauditlogssource"
+	cloudauditlogssourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1/cloudauditlogssource"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/pullsubscription"
+	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/topic"
+	cloudauditlogssourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudauditlogssource"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 )
@@ -95,7 +95,7 @@ func newController(
 	cloudauditlogssourceInformer.Informer().AddEventHandlerWithResyncPeriod(
 		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
-	auditLogsGK := v1beta1.Kind("CloudAuditLogsSource")
+	auditLogsGK := v1.Kind("CloudAuditLogsSource")
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(auditLogsGK),

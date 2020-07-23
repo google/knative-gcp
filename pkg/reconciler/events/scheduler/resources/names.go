@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	"github.com/google/knative-gcp/pkg/utils/naming"
 )
 
@@ -29,7 +29,7 @@ const (
 )
 
 // GenerateJobName generates a job name like this: projects/PROJECT_ID/locations/LOCATION_ID/jobs/JOB_ID.
-func GenerateJobName(scheduler *v1beta1.CloudSchedulerSource) string {
+func GenerateJobName(scheduler *v1.CloudSchedulerSource) string {
 	return fmt.Sprintf("projects/%s/locations/%s/%s-%s", scheduler.Status.ProjectID, scheduler.Spec.Location, JobPrefix, string(scheduler.UID))
 }
 
@@ -47,11 +47,11 @@ func ExtractJobID(jobName string) string {
 
 // GenerateTopicName generates a topic name for the scheduler. This refers to the underlying Pub/Sub topic, and not our
 // Topic resource.
-func GenerateTopicName(scheduler *v1beta1.CloudSchedulerSource) string {
+func GenerateTopicName(scheduler *v1.CloudSchedulerSource) string {
 	return naming.TruncatedPubsubResourceName("cre-src", scheduler.Namespace, scheduler.Name, scheduler.UID)
 }
 
 // GeneratePubSubTarget generates a topic name for the PubsubTarget used to create the CloudSchedulerSource job.
-func GeneratePubSubTargetTopic(scheduler *v1beta1.CloudSchedulerSource, topic string) string {
+func GeneratePubSubTargetTopic(scheduler *v1.CloudSchedulerSource, topic string) string {
 	return fmt.Sprintf("projects/%s/topics/%s", scheduler.Status.ProjectID, topic)
 }

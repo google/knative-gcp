@@ -27,10 +27,10 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	cloudpubsubsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1beta1/cloudpubsubsource"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
-	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudpubsubsource"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
+	cloudpubsubsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1/cloudpubsubsource"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/pullsubscription"
+	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudpubsubsource"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -86,7 +86,7 @@ func newController(
 	cloudpubsubsourceInformer.Informer().AddEventHandlerWithResyncPeriod(
 		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
-	pubsubGK := v1beta1.Kind("CloudPubSubSource")
+	pubsubGK := v1.Kind("CloudPubSubSource")
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(pubsubGK),

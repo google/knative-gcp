@@ -36,11 +36,13 @@ func (source *Channel) ConvertTo(ctx context.Context, to apis.Convertible) error
 			sink.Annotations = make(map[string]string, 1)
 		}
 		sink.Annotations[messaging.SubscribableDuckVersionAnnotation] = "v1beta1"
-		sink.Spec.IdentitySpec = convert.ToV1beta1IdentitySpec(source.Spec.IdentitySpec)
+		// v1beta1 Channel implements duck v1 identifiable
+		sink.Spec.IdentitySpec = convert.FromV1alpha1ToV1IdentitySpec(source.Spec.IdentitySpec)
 		sink.Spec.Secret = source.Spec.Secret
 		sink.Spec.Project = source.Spec.Project
 		sink.Spec.SubscribableSpec = convert.ToV1beta1SubscribableSpec(source.Spec.Subscribable)
-		sink.Status.IdentityStatus = convert.ToV1beta1IdentityStatus(source.Status.IdentityStatus)
+		// v1beta1 Channel implements duck v1 identifiable
+		sink.Status.IdentityStatus = convert.FromV1alpha1ToV1IdentityStatus(source.Status.IdentityStatus)
 		sink.Status.AddressStatus = source.Status.AddressStatus
 		source.Status.SubscribableTypeStatus.ConvertTo(ctx, &sink.Status.SubscribableStatus)
 		sink.Status.ProjectID = source.Status.ProjectID
@@ -61,11 +63,13 @@ func (sink *Channel) ConvertFrom(ctx context.Context, from apis.Convertible) err
 			sink.Annotations = make(map[string]string, 1)
 		}
 		sink.Annotations[messaging.SubscribableDuckVersionAnnotation] = "v1alpha1"
-		sink.Spec.IdentitySpec = convert.FromV1beta1IdentitySpec(source.Spec.IdentitySpec)
+		// v1beta1 Channel implements duck v1 identifiable
+		sink.Spec.IdentitySpec = convert.FromV1ToV1alpha1IdentitySpec(source.Spec.IdentitySpec)
 		sink.Spec.Secret = source.Spec.Secret
 		sink.Spec.Project = source.Spec.Project
 		sink.Spec.Subscribable = convert.FromV1beta1SubscribableSpec(source.Spec.SubscribableSpec)
-		sink.Status.IdentityStatus = convert.FromV1beta1IdentityStatus(source.Status.IdentityStatus)
+		// v1beta1 Channel implements duck v1 identifiable
+		sink.Status.IdentityStatus = convert.FromV1ToV1alpha1IdentityStatus(source.Status.IdentityStatus)
 		sink.Status.AddressStatus = source.Status.AddressStatus
 		if err := sink.Status.SubscribableTypeStatus.ConvertFrom(ctx, &source.Status.SubscribableStatus); err != nil {
 			return err

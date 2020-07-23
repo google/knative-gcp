@@ -22,8 +22,9 @@ import (
 	"os"
 	"testing"
 
+	reconcilertestinv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
+
 	"github.com/google/knative-gcp/pkg/gclient/scheduler"
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/api/option"
@@ -40,18 +41,18 @@ type SchedulerConfig struct {
 	Data               string
 	SinkName           string
 	ServiceAccountName string
-	Options            []kngcptesting.CloudSchedulerSourceOption
+	Options            []reconcilertestinv1beta1.CloudSchedulerSourceOption
 }
 
 func MakeSchedulerOrDie(client *Client, config SchedulerConfig) {
 	client.T.Helper()
 	so := config.Options
-	so = append(so, kngcptesting.WithCloudSchedulerSourceLocation("us-central1"))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceData(config.Data))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceServiceAccount(config.ServiceAccountName))
-	scheduler := kngcptesting.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
+	so = append(so, reconcilertestinv1beta1.WithCloudSchedulerSourceLocation("us-central1"))
+	so = append(so, reconcilertestinv1beta1.WithCloudSchedulerSourceData(config.Data))
+	so = append(so, reconcilertestinv1beta1.WithCloudSchedulerSourceSchedule("* * * * *"))
+	so = append(so, reconcilertestinv1beta1.WithCloudSchedulerSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestinv1beta1.WithCloudSchedulerSourceServiceAccount(config.ServiceAccountName))
+	scheduler := reconcilertestinv1beta1.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
 
 	client.CreateSchedulerOrFail(scheduler)
 	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceTypeMeta)

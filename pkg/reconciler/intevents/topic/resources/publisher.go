@@ -19,19 +19,18 @@ package resources
 import (
 	"fmt"
 
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
-
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 )
 
 // PublisherArgs are the arguments needed to create a Topic publisher.
 // Every field is required.
 type PublisherArgs struct {
 	Image  string
-	Topic  *v1beta1.Topic
+	Topic  *v1.Topic
 	Labels map[string]string
 
 	TracingConfig string

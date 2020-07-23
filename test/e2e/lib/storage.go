@@ -21,10 +21,11 @@ import (
 	"fmt"
 	"os"
 
+	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
+
 	"testing"
 
 	"cloud.google.com/go/storage"
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -39,16 +40,16 @@ type StorageConfig struct {
 	StorageName        string
 	SinkName           string
 	ServiceAccountName string
-	Options            []kngcptesting.CloudStorageSourceOption
+	Options            []reconcilertestingv1beta1.CloudStorageSourceOption
 }
 
 func MakeStorageOrDie(client *Client, config StorageConfig) {
 	client.T.Helper()
 	so := config.Options
-	so = append(so, kngcptesting.WithCloudStorageSourceBucket(config.BucketName))
-	so = append(so, kngcptesting.WithCloudStorageSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, kngcptesting.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
-	eventsStorage := kngcptesting.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
+	so = append(so, reconcilertestingv1beta1.WithCloudStorageSourceBucket(config.BucketName))
+	so = append(so, reconcilertestingv1beta1.WithCloudStorageSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1beta1.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
+	eventsStorage := reconcilertestingv1beta1.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
 	client.CreateStorageOrFail(eventsStorage)
 
 	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceTypeMeta)

@@ -20,6 +20,7 @@ import (
 	"knative.dev/pkg/apis"
 
 	"github.com/google/go-cmp/cmp"
+	v1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	"github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -42,8 +43,8 @@ func TestCloudBuildSourceGetGroupVersionKind(t *testing.T) {
 func TestCloudBuildSourceIdentitySpec(t *testing.T) {
 	s := &CloudBuildSource{
 		Spec: CloudBuildSourceSpec{
-			PubSubSpec: v1beta1.PubSubSpec{
-				IdentitySpec: v1beta1.IdentitySpec{
+			PubSubSpec: v1.PubSubSpec{
+				IdentitySpec: v1.IdentitySpec{
 					ServiceAccountName: "test",
 				},
 			},
@@ -59,10 +60,10 @@ func TestCloudBuildSourceIdentitySpec(t *testing.T) {
 func TestCloudBuildSourceIdentityStatus(t *testing.T) {
 	s := &CloudBuildSource{
 		Status: CloudBuildSourceStatus{
-			PubSubStatus: v1beta1.PubSubStatus{},
+			PubSubStatus: v1.PubSubStatus{},
 		},
 	}
-	want := &v1beta1.IdentityStatus{}
+	want := &v1.IdentityStatus{}
 	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)

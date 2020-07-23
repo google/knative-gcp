@@ -22,11 +22,12 @@ import (
 	"os"
 	"testing"
 
+	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
+
 	"google.golang.org/api/option"
 	"google.golang.org/grpc/status"
 
 	"cloud.google.com/go/logging/logadmin"
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/grpc/codes"
@@ -48,19 +49,19 @@ type AuditLogsConfig struct {
 	ResourceName       string
 	ServiceName        string
 	ServiceAccountName string
-	Options            []kngcptesting.CloudAuditLogsSourceOption
+	Options            []reconcilertestingv1beta1.CloudAuditLogsSourceOption
 }
 
 func MakeAuditLogsOrDie(client *Client, config AuditLogsConfig) {
 	client.T.Helper()
 	so := config.Options
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceName(config.ServiceName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceMethodName(config.MethodName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceProject(config.Project))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceResourceName(config.ResourceName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceAccount(config.ServiceAccountName))
-	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceServiceName(config.ServiceName))
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceMethodName(config.MethodName))
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceProject(config.Project))
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceResourceName(config.ResourceName))
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceServiceAccount(config.ServiceAccountName))
+	eventsAuditLogs := reconcilertestingv1beta1.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
 
 	client.Core.WaitForResourceReadyOrFail(config.AuditlogsName, CloudAuditLogsSourceTypeMeta)

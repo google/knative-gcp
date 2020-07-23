@@ -21,18 +21,18 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/intevents"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGenerateSubscriptionName(t *testing.T) {
 	tests := []struct {
 		name string
-		ps   *v1beta1.PullSubscription
+		ps   *v1.PullSubscription
 		want string
 	}{{
 		name: "ps-based name",
-		ps: &v1beta1.PullSubscription{
+		ps: &v1.PullSubscription{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "myname",
 				Namespace: "mynamespace",
@@ -42,7 +42,7 @@ func TestGenerateSubscriptionName(t *testing.T) {
 		want: "cre-ps_mynamespace_myname_uid",
 	}, {
 		name: "source-based name",
-		ps: &v1beta1.PullSubscription{
+		ps: &v1.PullSubscription{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "myname",
 				Namespace: "mynamespace",
@@ -55,7 +55,7 @@ func TestGenerateSubscriptionName(t *testing.T) {
 		want: "cre-src_mynamespace_myname_uid",
 	}, {
 		name: "channel-based name",
-		ps: &v1beta1.PullSubscription{
+		ps: &v1.PullSubscription{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "myname",
 				Namespace: "mynamespace",
@@ -80,11 +80,11 @@ func TestGenerateSubscriptionName(t *testing.T) {
 func TestGenerateReceiveAdapterName(t *testing.T) {
 	tests := []struct {
 		name string
-		ps   *v1beta1.PullSubscription
+		ps   *v1.PullSubscription
 		want string
 	}{{
 		name: "ps-based name",
-		ps: &v1beta1.PullSubscription{
+		ps: &v1.PullSubscription{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "myname",
 				Namespace: "mynamespace",
@@ -94,7 +94,7 @@ func TestGenerateReceiveAdapterName(t *testing.T) {
 		want: "cre-ps-myname-uid",
 	}, {
 		name: "source-based name",
-		ps: &v1beta1.PullSubscription{
+		ps: &v1.PullSubscription{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "myname",
 				Namespace: "mynamespace",
@@ -107,7 +107,7 @@ func TestGenerateReceiveAdapterName(t *testing.T) {
 		want: "cre-src-myname-uid",
 	}, {
 		name: "channel-based name",
-		ps: &v1beta1.PullSubscription{
+		ps: &v1.PullSubscription{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "myname",
 				Namespace: "mynamespace",
@@ -120,7 +120,7 @@ func TestGenerateReceiveAdapterName(t *testing.T) {
 		want: "cre-chan-myname-uid",
 	}, {
 		name: "name too long, hashed and shortened",
-		ps: &v1beta1.PullSubscription{
+		ps: &v1.PullSubscription{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mynameistoooooolongggggggggggggggggggggggggggggggggg",
 				Namespace: "mynamespace",
