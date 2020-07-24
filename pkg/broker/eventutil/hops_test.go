@@ -45,7 +45,7 @@ func TestGetRemainingHops(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e := event.New()
-			e.SetExtension(hopsAttribute, tc.val)
+			e.SetExtension(HopsAttribute, tc.val)
 			gotHops, gotOK := GetRemainingHops(context.Background(), &e)
 			if gotOK != tc.wantOK {
 				t.Errorf("Found Hops OK got=%v, want=%v", gotOK, tc.wantOK)
@@ -59,9 +59,9 @@ func TestGetRemainingHops(t *testing.T) {
 
 func TestDeleteRemainingHops(t *testing.T) {
 	e := event.New()
-	e.SetExtension(hopsAttribute, 100)
+	e.SetExtension(HopsAttribute, 100)
 	DeleteRemainingHops(context.Background(), &e)
-	_, ok := e.Extensions()[hopsAttribute]
+	_, ok := e.Extensions()[HopsAttribute]
 	if ok {
 		t.Error("After DeleteRemainingHops Hops found got=true, want=false")
 	}
@@ -93,7 +93,7 @@ func TestUpdateHops(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e := event.New()
-			e.SetExtension(hopsAttribute, tc.existingHops)
+			e.SetExtension(HopsAttribute, tc.existingHops)
 			UpdateRemainingHops(context.Background(), &e, tc.preemptive)
 			gotHops, ok := GetRemainingHops(context.Background(), &e)
 			if !ok {
@@ -124,7 +124,7 @@ func TestSetRemainingHops(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e := event.New()
-			e.SetExtension(hopsAttribute, tc.existingHops)
+			e.SetExtension(HopsAttribute, tc.existingHops)
 			SetRemainingHops(context.Background(), &e, tc.hops)
 			gotHops, ok := GetRemainingHops(context.Background(), &e)
 			if !ok {

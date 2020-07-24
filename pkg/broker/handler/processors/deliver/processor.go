@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/binding"
+	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -70,7 +71,7 @@ type Processor struct {
 var _ processors.Interface = (*Processor)(nil)
 
 // Process delivers the event based on the broker/target in the context.
-func (p *Processor) Process(ctx context.Context, event *event.Event) error {
+func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 	bk, err := handlerctx.GetBrokerKey(ctx)
 	if err != nil {
 		return err
@@ -84,7 +85,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		// If the broker no longer exists, then there is nothing to process.
 		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.String("broker", bk))
 		trace.FromContext(ctx).Annotate(
-			ceclient.EventTraceAttributes(event),
+			ceclient.EventTraceAttributes(e),
 			"event dropped: broker config no longer exists",
 		)
 		return nil
@@ -94,7 +95,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		// If the target no longer exists, then there is nothing to process.
 		logging.FromContext(ctx).Warn("target no longer exist in the config", zap.String("target", tk))
 		trace.FromContext(ctx).Annotate(
-			ceclient.EventTraceAttributes(event),
+			ceclient.EventTraceAttributes(e),
 			"event dropped: trigger config no longer exists",
 		)
 		return nil
@@ -103,11 +104,18 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	// Hops is a broker local counter so remove any hops value before forwarding.
 	// Do not modify the original event as we need to send the original
 	// event to retry queue on failure.
-	copy := event.Clone()
+
 	// This will decrement the remaining hops if there is an existing value.
-	eventutil.UpdateRemainingHops(ctx, &copy, defaultEventHopsLimit)
-	hops, _ := eventutil.GetRemainingHops(ctx, &copy)
-	eventutil.DeleteRemainingHops(ctx, &copy)
+	hops, ok := eventutil.GetRemainingHops(ctx, e)
+	if !ok {
+		logging.FromContext(ctx).Debug("Remaining hops not found in event, defaulting to the preemptive value.",
+			zap.String("event.id", e.ID()),
+			zap.Int32(eventutil.HopsAttribute, defaultEventHopsLimit),
+		)
+		hops = defaultEventHopsLimit
+	} else if hops > 0 {
+		hops -= 1
+	}
 
 	p.StatsReporter.FinishEventProcessing(ctx)
 
@@ -118,8 +126,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		defer cancel()
 	}
 
-	// Forward the event copy that has hops removed.
-	if err := p.deliver(dctx, target, broker, (*binding.EventMessage)(&copy), hops); err != nil {
+	if err := p.deliver(dctx, target, broker, binding.ToMessage(e), hops); err != nil {
 		if !p.RetryOnFailure {
 			return err
 		}
@@ -129,16 +136,18 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 			[]trace.Attribute{trace.StringAttribute("error_message", err.Error())},
 			"enqueueing for retry",
 		)
-		return p.sendToRetryTopic(ctx, target, event)
+
+		return p.sendToRetryTopic(ctx, target, e)
 	}
 	// For post-delivery processing.
-	return p.Next().Process(ctx, event)
+	return p.Next().Process(ctx, e)
 }
 
 // deliver delivers msg to target and sends the target's reply to the broker ingress.
 func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *config.Broker, msg binding.Message, hops int32) error {
 	startTime := time.Now()
-	resp, err := p.sendMsg(ctx, target.Address, msg)
+	// Remove hops from forwarded event.
+	resp, err := p.sendMsg(ctx, target.Address, msg, transformer.DeleteExtension(eventutil.HopsAttribute))
 	if err != nil {
 		return err
 	}
