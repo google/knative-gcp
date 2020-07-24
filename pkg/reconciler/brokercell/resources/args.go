@@ -47,6 +47,7 @@ type Args struct {
 	MetricsPort        int
 	AllowIstioSidecar  bool
 	CPURequest    	   string
+	CPULimit           string
 	MemoryRequest 	   string
 	MemoryLimit 	   string
 }

@@ -33,6 +33,7 @@ const (
 	avgMemoryUsageIngress string = "700Mi"
 	cpuRequest string = "1000Mi"
 	cpuRequestFanout string = "1500Mi"
+	cpuLimit string = ""
 	memoryRequest string = "500Mi"
 	memoryLimit string = "3000Mi"
 	memoryLimitIngress string = "1000Mi"
@@ -58,6 +59,9 @@ func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 	if bcs.Components.Fanout.CPURequest == nil {
 		bcs.Components.Fanout.CPURequest = ptr.String(cpuRequestFanout)
 	}
+	if bcs.Components.Fanout.CPULimit == nil {
+		bcs.Components.Fanout.CPULimit = ptr.String(cpuLimit)
+	}
 	if bcs.Components.Fanout.MemoryRequest == nil {
 		bcs.Components.Fanout.MemoryRequest = ptr.String(memoryRequest)
 	}
@@ -81,6 +85,9 @@ func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 	if bcs.Components.Retry.CPURequest == nil {
 		bcs.Components.Retry.CPURequest = ptr.String(cpuRequest)
 	}
+	if bcs.Components.Retry.CPULimit == nil {
+		bcs.Components.Retry.CPULimit = ptr.String(cpuLimit)
+	}
 	if bcs.Components.Retry.MemoryRequest == nil {
 		bcs.Components.Retry.MemoryRequest = ptr.String(memoryRequest)
 	}
@@ -103,6 +110,9 @@ func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 	}
 	if bcs.Components.Ingress.CPURequest == nil {
 		bcs.Components.Ingress.CPURequest = ptr.String(cpuRequest)
+	}
+	if bcs.Components.Ingress.CPULimit == nil {
+		bcs.Components.Ingress.CPULimit = ptr.String(cpuLimit)
 	}
 	if bcs.Components.Ingress.MemoryRequest == nil {
 		bcs.Components.Ingress.MemoryRequest = ptr.String(memoryRequest)

@@ -71,6 +71,9 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 			corev1.ResourceCPU:    resource.MustParse(args.CPURequest),
 		},
 	}
+	if len(args.CPULimit) > 0 { 
+		container.Resources.Limits[corev1.ResourceCPU] = resource.MustParse(args.CPULimit)
+	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
 
@@ -85,6 +88,9 @@ func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 			corev1.ResourceMemory: resource.MustParse(args.MemoryRequest),
 			corev1.ResourceCPU:    resource.MustParse(args.CPURequest),
 		},
+	}
+	if len(args.CPULimit) > 0 { 
+		container.Resources.Limits[corev1.ResourceCPU] = resource.MustParse(args.CPULimit)
 	}
 	container.Ports = append(container.Ports,
 		corev1.ContainerPort{
@@ -124,6 +130,9 @@ func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 			corev1.ResourceMemory: resource.MustParse(args.MemoryRequest),
 			corev1.ResourceCPU:    resource.MustParse(args.CPURequest),
 		},
+	}
+	if len(args.CPULimit) > 0 { 
+		container.Resources.Limits[corev1.ResourceCPU] = resource.MustParse(args.CPULimit)
 	}
 	container.Ports = append(container.Ports,
 		corev1.ContainerPort{
