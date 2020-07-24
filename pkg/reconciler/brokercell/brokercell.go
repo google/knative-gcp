@@ -234,9 +234,9 @@ func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.Ingre
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
 			AllowIstioSidecar:  true,
-			CPURequest: 		*bc.Spec.Components.Ingress.CPURequest,
-			CPULimit: 			*bc.Spec.Components.Ingress.CPULimit,
-			MemoryRequest: 		*bc.Spec.Components.Ingress.MemoryRequest,
+			CPURequest:         *bc.Spec.Components.Ingress.CPURequest,
+			CPULimit:           *bc.Spec.Components.Ingress.CPULimit,
+			MemoryRequest:      *bc.Spec.Components.Ingress.MemoryRequest,
 			MemoryLimit:        *bc.Spec.Components.Ingress.MemoryLimit,
 		},
 		Port: r.env.IngressPort,
@@ -262,9 +262,9 @@ func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell) resources.Fanout
 			Image:              r.env.FanoutImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
-			CPURequest: 		*bc.Spec.Components.Fanout.CPURequest,
-			CPULimit: 			*bc.Spec.Components.Fanout.CPULimit,
-			MemoryRequest: 		*bc.Spec.Components.Fanout.MemoryRequest,
+			CPURequest:         *bc.Spec.Components.Fanout.CPURequest,
+			CPULimit:           *bc.Spec.Components.Fanout.CPULimit,
+			MemoryRequest:      *bc.Spec.Components.Fanout.MemoryRequest,
 			MemoryLimit:        *bc.Spec.Components.Fanout.MemoryLimit,
 		},
 	}
@@ -275,9 +275,9 @@ func (r *Reconciler) makeFanoutHPAArgs(bc *intv1alpha1.BrokerCell) resources.Aut
 		ComponentName:     resources.FanoutName,
 		BrokerCell:        bc,
 		AvgCPUUtilization: *bc.Spec.Components.Fanout.AvgCPUUtilization,
-		AvgMemoryUsage: *bc.Spec.Components.Fanout.AvgMemoryUsage,
-		MaxReplicas:    *bc.Spec.Components.Fanout.MaxReplicas,
-		MinReplicas:    *bc.Spec.Components.Fanout.MinReplicas,
+		AvgMemoryUsage:    *bc.Spec.Components.Fanout.AvgMemoryUsage,
+		MaxReplicas:       *bc.Spec.Components.Fanout.MaxReplicas,
+		MinReplicas:       *bc.Spec.Components.Fanout.MinReplicas,
 	}
 }
 
@@ -289,9 +289,9 @@ func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell) resources.RetryAr
 			Image:              r.env.RetryImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
-			CPURequest: 		*bc.Spec.Components.Retry.CPURequest,
-			CPULimit: 			*bc.Spec.Components.Retry.CPULimit,
-			MemoryRequest: 		*bc.Spec.Components.Retry.MemoryRequest,
+			CPURequest:         *bc.Spec.Components.Retry.CPURequest,
+			CPULimit:           *bc.Spec.Components.Retry.CPULimit,
+			MemoryRequest:      *bc.Spec.Components.Retry.MemoryRequest,
 			MemoryLimit:        *bc.Spec.Components.Retry.MemoryLimit,
 		},
 	}
@@ -302,9 +302,9 @@ func (r *Reconciler) makeRetryHPAArgs(bc *intv1alpha1.BrokerCell) resources.Auto
 		ComponentName:     resources.RetryName,
 		BrokerCell:        bc,
 		AvgCPUUtilization: *bc.Spec.Components.Retry.AvgCPUUtilization,
-		AvgMemoryUsage: *bc.Spec.Components.Retry.AvgMemoryUsage,
-		MaxReplicas:    *bc.Spec.Components.Retry.MaxReplicas,
-		MinReplicas:    *bc.Spec.Components.Retry.MinReplicas,
+		AvgMemoryUsage:    *bc.Spec.Components.Retry.AvgMemoryUsage,
+		MaxReplicas:       *bc.Spec.Components.Retry.MaxReplicas,
+		MinReplicas:       *bc.Spec.Components.Retry.MinReplicas,
 	}
 }
 

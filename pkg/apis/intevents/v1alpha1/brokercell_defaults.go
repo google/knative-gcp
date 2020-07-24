@@ -24,21 +24,21 @@ import (
 
 const (
 	avgCPUUtilization int32 = 95
-	// The limit we set (for Fanout and Retry) is 3000Mi which is mostly used 
+	// The limit we set (for Fanout and Retry) is 3000Mi which is mostly used
 	// to prevent surging memory usage causing OOM.
 	// Here we only set half of the limit so that in case of surging memory
 	// usage, HPA could have enough time to kick in.
 	// See: https://github.com/google/knative-gcp/issues/1265
-	avgMemoryUsage string = "1500Mi"
+	avgMemoryUsage        string = "1500Mi"
 	avgMemoryUsageIngress string = "700Mi"
-	cpuRequest string = "1000Mi"
-	cpuRequestFanout string = "1500Mi"
-	cpuLimit string = ""
-	memoryRequest string = "500Mi"
-	memoryLimit string = "3000Mi"
-	memoryLimitIngress string = "1000Mi"
-	minReplicas int32 = 1
-	maxReplicas int32 = 10
+	cpuRequest            string = "1000Mi"
+	cpuRequestFanout      string = "1500Mi"
+	cpuLimit              string = ""
+	memoryRequest         string = "500Mi"
+	memoryLimit           string = "3000Mi"
+	memoryLimitIngress    string = "1000Mi"
+	minReplicas           int32  = 1
+	maxReplicas           int32  = 10
 )
 
 // SetDefaults sets the default field values for a BrokerCell.
@@ -74,7 +74,7 @@ func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 	if bcs.Components.Fanout.MaxReplicas == nil {
 		bcs.Components.Fanout.MaxReplicas = ptr.Int32(maxReplicas)
 	}
-	
+
 	// Retry defaults
 	if bcs.Components.Retry.AvgCPUUtilization == nil {
 		bcs.Components.Retry.AvgCPUUtilization = ptr.Int32(avgCPUUtilization)

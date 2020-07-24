@@ -73,10 +73,10 @@ var (
 type ComponentParameters struct {
 	// AvgCPUUtilization specifies the average CPU consumption for the component
 	AvgCPUUtilization *int32 `json:"avgCPUUtilization,omitempty"`
-	
+
 	// AvgMemoryUsage specifies the average memory consumption for the component
 	AvgMemoryUsage *string `json:"avgMemoryUsage,omitempty"`
-	
+
 	// CPURequest specifies the minimal amount of the CPU for the deployment to be schedulable
 	CPURequest *string `json:"cpuRequest,omitempty"`
 
@@ -91,7 +91,7 @@ type ComponentParameters struct {
 
 	// MemoryRequest specifies the minimal amount of the CPU for the deployment to be schedulable
 	MemoryRequest *string `json:"memoryRequest,omitempty"`
-	
+
 	// MemoryLimit specifies the maximal amount of memory to be consumable by the deployment
 	MemoryLimit *string `json:"memoryLimit,omitempty"`
 }
