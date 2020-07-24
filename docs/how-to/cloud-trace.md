@@ -19,11 +19,11 @@ kubectl edit configmap -n cloud-run-events config-tracing
 
 and add the following entries:
 
-| backend | stackdriver |
-| stackdriver-project-id | <project-id> |
-    backend: stackdriver
-    stackdriver-project-id: <project-id> # Replace with your project's ID.
-    sample-rate: 0.01 # Replace with the rate you want. Currently 1%.
+```
+backend: stackdriver
+stackdriver-project-id: <project-id> # Replace with your project's ID.
+sample-rate: 0.01 # Replace with the rate you want. Currently 1%.
+```
 
 ## Accessing Traces in Cloud Console
 
