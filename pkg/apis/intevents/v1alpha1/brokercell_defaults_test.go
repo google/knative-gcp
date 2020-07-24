@@ -18,7 +18,7 @@ package v1alpha1
 
 import (
 	"testing"
-
+	
 	"github.com/google/go-cmp/cmp"
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	"github.com/google/knative-gcp/pkg/apis/duck"
@@ -32,7 +32,8 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 	ingressSpecShift, fanoutSpecShift, retrySpecShift := 10, 100, 1000
 	customMinReplicas, customMaxReplicas := 4, 5
 	customAvgCPUUtilization, customAvgMemoryUsage := 101, "111Mi"
-	customCPURequest, customMemoryRequest, customMemoryLimit := "112Mi", "113Mi", "114Mi"
+	customCPURequest, customCPULimit := "112Mi", "113Mi"
+	customMemoryRequest, customMemoryLimit := "114Mi", "115Mi"
 
 	tests := []struct {
 		name  string
@@ -60,6 +61,7 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 						AvgCPUUtilization: ptr.Int32(avgCPUUtilization),
 						AvgMemoryUsage: ptr.String(avgMemoryUsage),
 						CPURequest: ptr.String(cpuRequestFanout),
+						CPULimit: ptr.String(cpuLimit),
 						MemoryRequest: ptr.String(memoryRequest),
 						MemoryLimit: ptr.String(memoryLimit),
 						MaxReplicas: ptr.Int32(maxReplicas),
@@ -69,6 +71,7 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 						AvgCPUUtilization: ptr.Int32(avgCPUUtilization),
 						AvgMemoryUsage: ptr.String(avgMemoryUsageIngress),
 						CPURequest: ptr.String(cpuRequest),
+						CPULimit: ptr.String(cpuLimit),
 						MemoryRequest: ptr.String(memoryRequest),
 						MemoryLimit: ptr.String(memoryLimitIngress),
 						MaxReplicas: ptr.Int32(maxReplicas),
@@ -78,6 +81,7 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 						AvgCPUUtilization: ptr.Int32(avgCPUUtilization),
 						AvgMemoryUsage: ptr.String(avgMemoryUsage),
 						CPURequest: ptr.String(cpuRequest),
+						CPULimit: ptr.String(cpuLimit),
 						MemoryRequest: ptr.String(memoryRequest),
 						MemoryLimit: ptr.String(memoryLimit),
 						MaxReplicas: ptr.Int32(maxReplicas),
@@ -100,6 +104,7 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 						AvgCPUUtilization: ptr.Int32(int32(fanoutSpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage: ptr.String(fanoutSpecPrefix + customAvgMemoryUsage),
 						CPURequest: ptr.String(fanoutSpecPrefix + customCPURequest),
+						CPULimit: ptr.String(fanoutSpecPrefix + customCPULimit),
 						MemoryRequest: ptr.String(fanoutSpecPrefix + customMemoryRequest),
 						MemoryLimit: ptr.String(fanoutSpecPrefix + customMemoryLimit),
 						MaxReplicas: ptr.Int32(int32(fanoutSpecShift * customMaxReplicas)),
@@ -109,6 +114,7 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 						AvgCPUUtilization: ptr.Int32(int32(ingressSpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage: ptr.String(ingressSpecPrefix + customAvgMemoryUsage),
 						CPURequest: ptr.String(ingressSpecPrefix + customCPURequest),
+						CPULimit: ptr.String(ingressSpecPrefix + customCPULimit),
 						MemoryRequest: ptr.String(ingressSpecPrefix + customMemoryRequest),
 						MemoryLimit: ptr.String(ingressSpecPrefix + customMemoryLimit),
 						MaxReplicas: ptr.Int32(int32(ingressSpecShift * customMaxReplicas)),
@@ -118,6 +124,7 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 						AvgCPUUtilization: ptr.Int32(int32(retrySpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage: ptr.String(retrySpecPrefix + customAvgMemoryUsage),
 						CPURequest: ptr.String(retrySpecPrefix + customCPURequest),
+						CPULimit: ptr.String(retrySpecPrefix + customCPULimit),
 						MemoryRequest: ptr.String(retrySpecPrefix + customMemoryRequest),
 						MemoryLimit: ptr.String(retrySpecPrefix + customMemoryLimit),
 						MaxReplicas: ptr.Int32(int32(retrySpecShift * customMaxReplicas)),
@@ -138,6 +145,7 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 						AvgCPUUtilization: ptr.Int32(int32(fanoutSpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage: ptr.String(fanoutSpecPrefix + customAvgMemoryUsage),
 						CPURequest: ptr.String(fanoutSpecPrefix + customCPURequest),
+						CPULimit: ptr.String(fanoutSpecPrefix + customCPULimit),
 						MemoryRequest: ptr.String(fanoutSpecPrefix + customMemoryRequest),
 						MemoryLimit: ptr.String(fanoutSpecPrefix + customMemoryLimit),
 						MaxReplicas: ptr.Int32(int32(fanoutSpecShift * customMaxReplicas)),
@@ -147,6 +155,7 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 						AvgCPUUtilization: ptr.Int32(int32(ingressSpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage: ptr.String(ingressSpecPrefix + customAvgMemoryUsage),
 						CPURequest: ptr.String(ingressSpecPrefix + customCPURequest),
+						CPULimit: ptr.String(ingressSpecPrefix + customCPULimit),
 						MemoryRequest: ptr.String(ingressSpecPrefix + customMemoryRequest),
 						MemoryLimit: ptr.String(ingressSpecPrefix + customMemoryLimit),
 						MaxReplicas: ptr.Int32(int32(ingressSpecShift * customMaxReplicas)),
@@ -156,6 +165,7 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 						AvgCPUUtilization: ptr.Int32(int32(retrySpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage: ptr.String(retrySpecPrefix + customAvgMemoryUsage),
 						CPURequest: ptr.String(retrySpecPrefix + customCPURequest),
+						CPULimit: ptr.String(retrySpecPrefix + customCPULimit),
 						MemoryRequest: ptr.String(retrySpecPrefix + customMemoryRequest),
 						MemoryLimit: ptr.String(retrySpecPrefix + customMemoryLimit),
 						MaxReplicas: ptr.Int32(int32(retrySpecShift * customMaxReplicas)),
