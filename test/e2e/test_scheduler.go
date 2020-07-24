@@ -121,7 +121,7 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 		}
 		if !out.Success {
 			// Log the output of scheduler pods
-			if logs, err := client.LogsFor(client.Namespace, schedulerName, lib.CloudSchedulerSourceTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, schedulerName, lib.CloudSchedulerSourceV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("scheduler log: %+v", logs)

@@ -112,7 +112,7 @@ func CloudBuildSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 		}
 		if !out.Success {
 			// Log the output pods.
-			if logs, err := client.LogsFor(client.Namespace, buildName, lib.CloudBuildSourceTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, buildName, lib.CloudBuildSourceV1beta1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("build: %+v", logs)

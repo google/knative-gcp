@@ -50,7 +50,7 @@ func MakeBuildOrDie(client *Client, config BuildConfig) {
 	build := reconcilertestingv1beta1.NewCloudBuildSource(config.BuildName, client.Namespace, so...)
 	client.CreateBuildOrFail(build)
 
-	client.Core.WaitForResourceReadyOrFail(config.BuildName, CloudBuildSourceTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(config.BuildName, CloudBuildSourceV1beta1TypeMeta)
 }
 
 func MakeBuildTargetJobOrDie(client *Client, images, targetName, eventType string) {

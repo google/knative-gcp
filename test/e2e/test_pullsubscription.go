@@ -23,14 +23,14 @@ import (
 	"os"
 	"testing"
 
-	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
+	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 
 	"cloud.google.com/go/pubsub"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
@@ -48,16 +48,16 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	defer lib.TearDown(client)
 
 	// Create PullSubscription.
-	pullsubscription := reconcilertestingv1beta1.NewPullSubscription(psName, client.Namespace,
-		reconcilertestingv1beta1.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
+	pullsubscription := reconcilertestingv1.NewPullSubscription(psName, client.Namespace,
+		reconcilertestingv1.WithPullSubscriptionSpec(inteventsv1.PullSubscriptionSpec{
 			Topic: topic,
-			PubSubSpec: duckv1beta1.PubSubSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
+			PubSubSpec: duckv1.PubSubSpec{
+				IdentitySpec: duckv1.IdentitySpec{
 					ServiceAccountName: authConfig.ServiceAccountName,
 				},
 			},
 		}),
-		reconcilertestingv1beta1.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
+		reconcilertestingv1.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)
@@ -82,15 +82,15 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 	lib.MakePubSubTargetJobOrDie(client, source, targetName, schemasv1.CloudPubSubMessagePublishedEventType)
 
 	// Create PullSubscription.
-	pullsubscription := reconcilertestingv1beta1.NewPullSubscription(psName, client.Namespace,
-		reconcilertestingv1beta1.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
+	pullsubscription := reconcilertestingv1.NewPullSubscription(psName, client.Namespace,
+		reconcilertestingv1.WithPullSubscriptionSpec(inteventsv1.PullSubscriptionSpec{
 			Topic: topicName,
-			PubSubSpec: duckv1beta1.PubSubSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
+			PubSubSpec: duckv1.PubSubSpec{
+				IdentitySpec: duckv1.IdentitySpec{
 					ServiceAccountName: authConfig.ServiceAccountName,
 				},
 			},
-		}), reconcilertestingv1beta1.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
+		}), reconcilertestingv1.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)

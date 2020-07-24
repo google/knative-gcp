@@ -123,7 +123,7 @@ func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
-	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceV1TypeMeta)
 
 	// Audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds.
 	time.Sleep(resources.WaitCALTime)
@@ -145,7 +145,7 @@ func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 		}
 		if !out.Success {
 			// Log the output cloudauditlogssource pods.
-			if logs, err := client.LogsFor(client.Namespace, auditlogsName, lib.CloudAuditLogsSourceTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, auditlogsName, lib.CloudAuditLogsSourceV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("cloudauditlogssource: %+v", logs)

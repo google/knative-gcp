@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	reconcilertestinv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
+	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -39,19 +39,19 @@ type PubSubConfig struct {
 	SinkName           string
 	TopicName          string
 	ServiceAccountName string
-	Options            []reconcilertestinv1beta1.CloudPubSubSourceOption
+	Options            []reconcilertestingv1.CloudPubSubSourceOption
 }
 
 func MakePubSubOrDie(client *Client, config PubSubConfig) {
 	client.T.Helper()
 	so := config.Options
-	so = append(so, reconcilertestinv1beta1.WithCloudPubSubSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, reconcilertestinv1beta1.WithCloudPubSubSourceTopic(config.TopicName))
-	so = append(so, reconcilertestinv1beta1.WithCloudPubSubSourceServiceAccount(config.ServiceAccountName))
-	eventsPubSub := reconcilertestinv1beta1.NewCloudPubSubSource(config.PubSubName, client.Namespace, so...)
+	so = append(so, reconcilertestingv1.WithCloudPubSubSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1.WithCloudPubSubSourceTopic(config.TopicName))
+	so = append(so, reconcilertestingv1.WithCloudPubSubSourceServiceAccount(config.ServiceAccountName))
+	eventsPubSub := reconcilertestingv1.NewCloudPubSubSource(config.PubSubName, client.Namespace, so...)
 	client.CreatePubSubOrFail(eventsPubSub)
 
-	client.Core.WaitForResourceReadyOrFail(config.PubSubName, CloudPubSubSourceTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(config.PubSubName, CloudPubSubSourceV1TypeMeta)
 }
 
 func MakePubSubTargetJobOrDie(client *Client, source, targetName, eventType string) {

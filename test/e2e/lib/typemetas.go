@@ -49,20 +49,27 @@ func messagingTypeMeta(kind string) *metav1.TypeMeta {
 	}
 }
 
-var CloudStorageSourceTypeMeta = eventsTypeMeta(resources.CloudStorageSourceKind)
+var CloudStorageSourceV1TypeMeta = eventsV1TypeMeta(resources.CloudStorageSourceKind)
 
-var CloudPubSubSourceTypeMeta = eventsTypeMeta(resources.CloudPubSubSourceKind)
+var CloudPubSubSourceV1TypeMeta = eventsV1TypeMeta(resources.CloudPubSubSourceKind)
 
-var CloudBuildSourceTypeMeta = eventsTypeMeta(resources.CloudBuildSourceKind)
+var CloudBuildSourceV1beta1TypeMeta = eventsV1beta1TypeMeta(resources.CloudBuildSourceKind)
 
-var CloudAuditLogsSourceTypeMeta = eventsTypeMeta(resources.CloudAuditLogsSourceKind)
+var CloudAuditLogsSourceV1TypeMeta = eventsV1TypeMeta(resources.CloudAuditLogsSourceKind)
 
-var CloudSchedulerSourceTypeMeta = eventsTypeMeta(resources.CloudSchedulerSourceKind)
+var CloudSchedulerSourceV1TypeMeta = eventsV1TypeMeta(resources.CloudSchedulerSourceKind)
 
-func eventsTypeMeta(kind string) *metav1.TypeMeta {
+func eventsV1TypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
-		APIVersion: resources.EventsAPIVersion,
+		APIVersion: resources.EventsV1APIVersion,
+	}
+}
+
+func eventsV1beta1TypeMeta(kind string) *metav1.TypeMeta {
+	return &metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: resources.EventsV1beta1APIVersion,
 	}
 }
 
