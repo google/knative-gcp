@@ -68,9 +68,9 @@ spec:
                       format: int64
                     avgMemoryUsage:
                       type: string
-                    cpuLimit:
-                      type: string
                     cpuRequest:
+                      type: string
+                    cpuLimit:
                       type: string
                     memoryRequest:
                       type: string
@@ -90,9 +90,9 @@ spec:
                       format: int64
                     avgMemoryUsage:
                         type: string
-                    cpuLimit:
-                      type: string
                     cpuRequest:
+                      type: string
+                    cpuLimit:
                       type: string
                     memoryRequest:
                       type: string
@@ -112,9 +112,9 @@ spec:
                       format: int64
                     avgMemoryUsage:
                         type: string
-                    cpuLimit:
-                      type: string
                     cpuRequest:
+                      type: string
+                    cpuLimit:
                       type: string
                     memoryRequest:
                       type: string
