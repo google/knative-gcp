@@ -32,7 +32,7 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 	ingressSpecShift, fanoutSpecShift, retrySpecShift := 10, 100, 1000
 	customMinReplicas, customMaxReplicas := 4, 5
 	customAvgCPUUtilization, customAvgMemoryUsage := 101, "111Mi"
-	customCPURequest, customCPULimit := "112Mi", "113Mi"
+	customCPURequest, customCPULimit := "112m", "113m"
 	customMemoryRequest, customMemoryLimit := "114Mi", "115Mi"
 
 	tests := []struct {
