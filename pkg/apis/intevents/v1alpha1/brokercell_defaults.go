@@ -31,8 +31,8 @@ const (
 	// See: https://github.com/google/knative-gcp/issues/1265
 	avgMemoryUsage        string = "1500Mi"
 	avgMemoryUsageIngress string = "700Mi"
-	cpuRequest            string = "1000Mi"
-	cpuRequestFanout      string = "1500Mi"
+	cpuRequest            string = "1000m"
+	cpuRequestFanout      string = "1500m"
 	cpuLimit              string = ""
 	memoryRequest         string = "500Mi"
 	memoryLimit           string = "3000Mi"
