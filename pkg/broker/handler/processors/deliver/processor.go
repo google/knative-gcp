@@ -126,7 +126,7 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 		defer cancel()
 	}
 
-	if err := p.deliver(dctx, target, broker, binding.ToMessage(e), hops); err != nil {
+	if err := p.deliver(dctx, target, broker, eventutil.NewImmutableEventMessage(e), hops); err != nil {
 		if !p.RetryOnFailure {
 			return err
 		}

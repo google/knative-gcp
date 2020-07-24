@@ -105,34 +105,3 @@ func TestUpdateHops(t *testing.T) {
 		})
 	}
 }
-
-func TestSetRemainingHops(t *testing.T) {
-	cases := []struct {
-		name         string
-		existingHops int32
-		hops         int32
-	}{{
-		name:         "without existing hops",
-		existingHops: 0,
-		hops:         123,
-	}, {
-		name:         "with existing hops",
-		existingHops: 99,
-		hops:         123,
-	}}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			e := event.New()
-			e.SetExtension(HopsAttribute, tc.existingHops)
-			SetRemainingHops(context.Background(), &e, tc.hops)
-			gotHops, ok := GetRemainingHops(context.Background(), &e)
-			if !ok {
-				t.Error("Found Hops after SetRemainingHops got=false, want=true")
-			}
-			if gotHops != tc.hops {
-				t.Errorf("Hops got=%d, want=%d", gotHops, tc.hops)
-			}
-		})
-	}
-}

@@ -56,12 +56,6 @@ func UpdateRemainingHops(ctx context.Context, event *event.Event, preemptiveHops
 	event.SetExtension(HopsAttribute, hops)
 }
 
-// SetRemainingHops sets the remaining hops in the event.
-// It ignores any existing hops value.
-func SetRemainingHops(ctx context.Context, event *event.Event, hops int32) {
-	event.SetExtension(HopsAttribute, hops)
-}
-
 type SetRemainingHopsTransformer int32
 
 func (h SetRemainingHopsTransformer) Transform(_ binding.MessageMetadataReader, out binding.MessageMetadataWriter) error {
