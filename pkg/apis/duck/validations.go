@@ -106,7 +106,7 @@ func CheckImmutableClusterNameAnnotation(current *metav1.ObjectMeta, original *m
 
 // CheckImmutableAutoscalingClassAnnotations checks AutoscalingClassAnnotation Annotations are immutable.
 func CheckImmutableAutoscalingClassAnnotations(current *metav1.ObjectMeta, original *metav1.ObjectMeta, errs *apis.FieldError) *apis.FieldError {
-	// If AutoscalingClassAnnotation is immutable no matter if it was defined or not
+	// The AutoscalingClassAnnotation should be immutable no matter if it was defined or not.
 	if diff := cmp.Diff(original.Annotations[AutoscalingClassAnnotation], current.Annotations[AutoscalingClassAnnotation]); diff != "" {
 		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",

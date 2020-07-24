@@ -21,6 +21,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/ptr"
+
 	v1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -35,8 +40,10 @@ var (
 			},
 			Key: "secret-key",
 		},
-		Project: "my-eventing-project",
-		Topic:   "pubsub-topic",
+		Project:           "my-eventing-project",
+		Topic:             "pubsub-topic",
+		PropagationPolicy: TopicPolicyCreateDelete,
+		EnablePublisher:   ptr.Bool(true),
 	}
 
 	topicSpecWithKSA = TopicSpec{
@@ -98,31 +105,90 @@ func TestTopicValidation(t *testing.T) {
 
 func TestTopicCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated TopicSpec
-		allowed bool
+		orig              interface{}
+		updated           TopicSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: topicSpec,
 			allowed: true,
 		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation changed": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation added": {
+			origAnnotation: map[string]string{},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation deleted": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{},
+			allowed:           false,
+		},
 		"Topic changed": {
 			orig: &topicSpec,
 			updated: TopicSpec{
-				Secret:  topicSpec.Secret,
-				Project: topicSpec.Project,
-				Topic:   "updated",
+				Secret:            topicSpec.Secret,
+				Project:           topicSpec.Project,
+				Topic:             "updated",
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher:   topicSpec.EnablePublisher,
 			},
 			allowed: false,
 		},
 		"Project changed": {
 			orig: &topicSpec,
 			updated: TopicSpec{
-				Secret:  topicSpec.Secret,
-				Project: "new-project",
-				Topic:   topicSpec.Topic,
+				Secret:            topicSpec.Secret,
+				Project:           "new-project",
+				Topic:             topicSpec.Topic,
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher:   topicSpec.EnablePublisher,
 			},
 			allowed: false,
+		},
+		"PropagationPolicy changed": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret:            topicSpec.Secret,
+				Project:           "new-project",
+				Topic:             topicSpec.Topic,
+				PropagationPolicy: TopicPolicyCreateNoDelete,
+				EnablePublisher:   topicSpec.EnablePublisher,
+			},
+			allowed: false,
+		},
+		"EnablePublisher changed": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret:            topicSpec.Secret,
+				Project:           "new-project",
+				Topic:             topicSpec.Topic,
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher:   ptr.Bool(false),
+			},
 		},
 		"Secret.Key changed": {
 			orig: &topicSpec,
@@ -133,8 +199,10 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 					},
 					Key: "some-other-key",
 				},
-				Project: topicSpec.Project,
-				Topic:   topicSpec.Topic,
+				Project:           topicSpec.Project,
+				Topic:             topicSpec.Topic,
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher:   topicSpec.EnablePublisher,
 			},
 			allowed: false,
 		},
@@ -147,8 +215,10 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 					},
 					Key: topicSpec.Secret.Key,
 				},
-				Project: topicSpec.Project,
-				Topic:   topicSpec.Topic,
+				Project:           topicSpec.Project,
+				Topic:             topicSpec.Topic,
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher:   topicSpec.EnablePublisher,
 			},
 			allowed: false,
 		},
@@ -163,13 +233,45 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
+		"ServiceAccountName added": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: topicSpec.Secret.Name,
+					},
+					Key: topicSpec.Secret.Key,
+				},
+				Project:           topicSpec.Project,
+				Topic:             topicSpec.Topic,
+				PropagationPolicy: topicSpec.PropagationPolicy,
+				EnablePublisher:   topicSpec.EnablePublisher,
+				IdentitySpec: v1.IdentitySpec{
+					ServiceAccountName: "new-service-account",
+				},
+			},
+			allowed: false,
+		},
+		"ClusterName annotation added": {
+			origAnnotation: nil,
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: true,
+		},
 	}
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			var orig *Topic
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &Topic{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*TopicSpec); ok {
 					orig = &Topic{
 						Spec: *spec,
@@ -177,6 +279,9 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &Topic{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)
