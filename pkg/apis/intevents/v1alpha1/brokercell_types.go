@@ -71,10 +71,10 @@ var (
 // ComponentParameters specifies scaling and resource parameters to be used
 // by a single component of a BrokerCell.
 type ComponentParameters struct {
-	// AvgCPUUtilization specifies the average CPU consumption for the component
+	// AvgCPUUtilization specifies the average CPU consumption targeted by the component's Horizontal Pod Autoscaler
 	AvgCPUUtilization *int32 `json:"avgCPUUtilization,omitempty"`
 
-	// AvgMemoryUsage specifies the average memory consumption for the component
+	// AvgMemoryUsage specifies the average memory consumption targeted by the component's Horizontal Pod Autoscaler
 	AvgMemoryUsage *string `json:"avgMemoryUsage,omitempty"`
 
 	// CPURequest specifies the minimal amount of the CPU for the deployment to be schedulable
