@@ -36,8 +36,51 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokeCloudStorageSourceTestImpl tests if a CloudStorageSource object can be created to ready state and delete a CloudStorageSource resource and its underlying resources..
-func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+// SmokeCloudStorageSourceTestHelper tests we can create a CloudStorageSource to ready state.
+func SmokeCloudStorageSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudStorageSourceVersion string) {
+	t.Helper()
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	ctx := context.Background()
+	project := os.Getenv(lib.ProwProjectKey)
+
+	bucketName := lib.MakeBucket(ctx, t, project)
+	defer lib.DeleteBucket(ctx, t, bucketName)
+	storageName := helpers.AppendRandomString(bucketName + "-storage")
+	svcName := helpers.AppendRandomString(bucketName + "-event-display")
+
+	if cloudStorageSourceVersion == "v1alpha1" {
+		lib.MakeStorageV1alpha1OrDie(client, lib.StorageConfig{
+			SinkGVK:            lib.ServiceGVK,
+			BucketName:         bucketName,
+			StorageName:        storageName,
+			SinkName:           svcName,
+			ServiceAccountName: authConfig.ServiceAccountName,
+		})
+	} else if cloudStorageSourceVersion == "v1beta1" {
+		lib.MakeStorageV1beta1OrDie(client, lib.StorageConfig{
+			SinkGVK:            lib.ServiceGVK,
+			BucketName:         bucketName,
+			StorageName:        storageName,
+			SinkName:           svcName,
+			ServiceAccountName: authConfig.ServiceAccountName,
+		})
+	} else if cloudStorageSourceVersion == "v1" {
+		lib.MakeStorageOrDie(client, lib.StorageConfig{
+			SinkGVK:            lib.ServiceGVK,
+			BucketName:         bucketName,
+			StorageName:        storageName,
+			SinkName:           svcName,
+			ServiceAccountName: authConfig.ServiceAccountName,
+		})
+	} else {
+		t.Fatalf("SmokeCloudStorageSourceTestHelper does not support CloudStorageSource version: %v", cloudStorageSourceVersion)
+	}
+}
+
+// SmokeCloudStorageSourceWithDeletionTestImpl tests if a CloudStorageSource object can be created to ready state and delete a CloudStorageSource resource and its underlying resources..
+func SmokeCloudStorageSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)

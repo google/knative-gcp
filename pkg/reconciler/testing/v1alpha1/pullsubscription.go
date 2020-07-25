@@ -14,26 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package v1alpha1
 
 import (
 	"github.com/google/knative-gcp/pkg/reconciler/testing"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 )
 
 // PullSubscriptionOption enables further configuration of a PullSubscription.
-type PullSubscriptionOption func(*v1beta1.PullSubscription)
+type PullSubscriptionOption func(*v1alpha1.PullSubscription)
 
 const (
 	SubscriptionID = "subID"
 )
 
 // NewPullSubscription creates a PullSubscription with PullSubscriptionOptions
-func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *v1beta1.PullSubscription {
-	s := &v1beta1.PullSubscription{
+func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *v1alpha1.PullSubscription {
+	s := &v1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -46,7 +46,7 @@ func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *
 }
 
 func WithPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PullSubscriptionOption {
-	return func(s *v1beta1.PullSubscription) {
+	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.Sink = duckv1.Destination{
 			Ref: &duckv1.KReference{
 				APIVersion: testing.ApiVersion(gvk),
@@ -57,20 +57,20 @@ func WithPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PullSubs
 	}
 }
 
-func WithPullSubscriptionSpec(spec v1beta1.PullSubscriptionSpec) PullSubscriptionOption {
-	return func(s *v1beta1.PullSubscription) {
+func WithPullSubscriptionSpec(spec v1alpha1.PullSubscriptionSpec) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
 		s.Spec = spec
 	}
 }
 
 func WithPullSubscriptionTopic(topicID string) PullSubscriptionOption {
-	return func(s *v1beta1.PullSubscription) {
+	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.Topic = topicID
 	}
 }
 
 func WithPullSubscriptionServiceAccount(kServiceAccount string) PullSubscriptionOption {
-	return func(s *v1beta1.PullSubscription) {
+	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.ServiceAccountName = kServiceAccount
 	}
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package v1alpha1
 
 import (
 	"github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -22,15 +22,15 @@ import (
 
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
 // CloudPubSubSourceOption enables further configuration of a CloudPubSubSource.
-type CloudPubSubSourceOption func(*v1beta1.CloudPubSubSource)
+type CloudPubSubSourceOption func(*v1alpha1.CloudPubSubSource)
 
 // NewCloudPubSubSource creates a CloudPubSubSource with CloudPubSubSourceOptions
-func NewCloudPubSubSource(name, namespace string, so ...CloudPubSubSourceOption) *v1beta1.CloudPubSubSource {
-	ps := &v1beta1.CloudPubSubSource{
+func NewCloudPubSubSource(name, namespace string, so ...CloudPubSubSourceOption) *v1alpha1.CloudPubSubSource {
+	ps := &v1alpha1.CloudPubSubSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -44,7 +44,7 @@ func NewCloudPubSubSource(name, namespace string, so ...CloudPubSubSourceOption)
 }
 
 func WithCloudPubSubSourceSink(gvk metav1.GroupVersionKind, name string) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Spec.Sink = duckv1.Destination{
 			Ref: &duckv1.KReference{
 				APIVersion: testing.ApiVersion(gvk),
@@ -56,13 +56,13 @@ func WithCloudPubSubSourceSink(gvk metav1.GroupVersionKind, name string) CloudPu
 }
 
 func WithCloudPubSubSourceServiceAccount(kServiceAccount string) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Spec.ServiceAccountName = kServiceAccount
 	}
 }
 
 func WithCloudPubSubSourceTopic(topicID string) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Spec.Topic = topicID
 	}
 }

@@ -28,8 +28,49 @@ import (
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
-// SmokeCloudSchedulerSourceTestImpl tests if a CloudSchedulerSource object can be created to ready state and delete a CloudSchedulerSource resource and its underlying resources..
-func SmokeCloudSchedulerSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+// SmokeCloudSchedulerSourceTestHelper tests if a CloudSchedulerSource object can be created to ready state.
+func SmokeCloudSchedulerSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudSchedulerSourceVersion string) {
+	t.Helper()
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	// Create an Addressable to receive scheduler events
+	data := helpers.AppendRandomString("smoke-scheduler-source")
+	// Create the target and scheduler
+	schedulerName := helpers.AppendRandomString("scheduler")
+	svcName := "event-display"
+
+	if cloudSchedulerSourceVersion == "v1alpha1" {
+		lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
+			SinkGVK:            lib.ServiceGVK,
+			SchedulerName:      schedulerName,
+			Data:               data,
+			SinkName:           svcName,
+			ServiceAccountName: authConfig.ServiceAccountName,
+		})
+	} else if cloudSchedulerSourceVersion == "v1beta1" {
+		lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
+			SinkGVK:            lib.ServiceGVK,
+			SchedulerName:      schedulerName,
+			Data:               data,
+			SinkName:           svcName,
+			ServiceAccountName: authConfig.ServiceAccountName,
+		})
+	} else if cloudSchedulerSourceVersion == "v1" {
+		lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
+			SinkGVK:            lib.ServiceGVK,
+			SchedulerName:      schedulerName,
+			Data:               data,
+			SinkName:           svcName,
+			ServiceAccountName: authConfig.ServiceAccountName,
+		})
+	} else {
+		t.Fatalf("SmokeCloudSchedulerSourceTestHelper does not support CloudSchedulerSource version: %v", cloudSchedulerSourceVersion)
+	}
+}
+
+// SmokeCloudSchedulerSourceWithDeletionTestImpl tests if a CloudSchedulerSource object can be created to ready state and delete a CloudSchedulerSource resource and its underlying resources..
+func SmokeCloudSchedulerSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)

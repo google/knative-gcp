@@ -35,8 +35,38 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokeCloudBuildSourceTestImpl tests we can create a CloudBuildSource to ready state and we can delete a CloudBuildSource and its underlying resources.
-func SmokeCloudBuildSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+// SmokeCloudBuildSourceWithDeletionTestHelper tests we can create a CloudBuildSource to ready state.
+func SmokeCloudBuildSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudBuildSourceVersion string) {
+	t.Helper()
+	lib.MakeTopicWithNameIfItDoesNotExist(t, events.CloudBuildTopic)
+
+	buildName := helpers.AppendRandomString("build")
+	svcName := "event-display"
+
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	if cloudBuildSourceVersion == "v1alpha1" {
+		lib.MakeBuildV1alpha1OrDie(client, lib.BuildConfig{
+			SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
+			BuildName:          buildName,
+			SinkName:           svcName,
+			ServiceAccountName: authConfig.ServiceAccountName,
+		})
+	} else if cloudBuildSourceVersion == "v1beta1" {
+		lib.MakeBuildOrDie(client, lib.BuildConfig{
+			SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
+			BuildName:          buildName,
+			SinkName:           svcName,
+			ServiceAccountName: authConfig.ServiceAccountName,
+		})
+	} else {
+		t.Fatalf("SmokeCloudBuildSourceWithDeletionTestHelper does not support CloudBuildSource version: %v", cloudBuildSourceVersion)
+	}
+}
+
+// SmokeCloudBuildSourceWithDeletionTestImpl tests we can create a CloudBuildSource to ready state and we can delete a CloudBuildSource and its underlying resources.
+func SmokeCloudBuildSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
 	lib.MakeTopicWithNameIfItDoesNotExist(t, events.CloudBuildTopic)
 

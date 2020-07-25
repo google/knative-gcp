@@ -23,6 +23,8 @@ import (
 	"time"
 
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
+	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -39,12 +41,11 @@ type PubSubConfig struct {
 	SinkName           string
 	TopicName          string
 	ServiceAccountName string
-	Options            []reconcilertestingv1.CloudPubSubSourceOption
 }
 
 func MakePubSubOrDie(client *Client, config PubSubConfig) {
 	client.T.Helper()
-	so := config.Options
+	so := make([]reconcilertestingv1.CloudPubSubSourceOption, 0)
 	so = append(so, reconcilertestingv1.WithCloudPubSubSourceSink(config.SinkGVK, config.SinkName))
 	so = append(so, reconcilertestingv1.WithCloudPubSubSourceTopic(config.TopicName))
 	so = append(so, reconcilertestingv1.WithCloudPubSubSourceServiceAccount(config.ServiceAccountName))
@@ -52,6 +53,30 @@ func MakePubSubOrDie(client *Client, config PubSubConfig) {
 	client.CreatePubSubOrFail(eventsPubSub)
 
 	client.Core.WaitForResourceReadyOrFail(config.PubSubName, CloudPubSubSourceV1TypeMeta)
+}
+
+func MakePubSubV1beta1OrDie(client *Client, config PubSubConfig) {
+	client.T.Helper()
+	so := make([]reconcilertestingv1beta1.CloudPubSubSourceOption, 0)
+	so = append(so, reconcilertestingv1beta1.WithCloudPubSubSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1beta1.WithCloudPubSubSourceTopic(config.TopicName))
+	so = append(so, reconcilertestingv1beta1.WithCloudPubSubSourceServiceAccount(config.ServiceAccountName))
+	eventsPubSub := reconcilertestingv1beta1.NewCloudPubSubSource(config.PubSubName, client.Namespace, so...)
+	client.CreatePubSubV1beta1OrFail(eventsPubSub)
+
+	client.Core.WaitForResourceReadyOrFail(config.PubSubName, CloudPubSubSourceV1beta1TypeMeta)
+}
+
+func MakePubSubV1alpha1OrDie(client *Client, config PubSubConfig) {
+	client.T.Helper()
+	so := make([]reconcilertestingv1alpha1.CloudPubSubSourceOption, 0)
+	so = append(so, reconcilertestingv1alpha1.WithCloudPubSubSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1alpha1.WithCloudPubSubSourceTopic(config.TopicName))
+	so = append(so, reconcilertestingv1alpha1.WithCloudPubSubSourceServiceAccount(config.ServiceAccountName))
+	eventsPubSub := reconcilertestingv1alpha1.NewCloudPubSubSource(config.PubSubName, client.Namespace, so...)
+	client.CreatePubSubV1alpha1OrFail(eventsPubSub)
+
+	client.Core.WaitForResourceReadyOrFail(config.PubSubName, CloudPubSubSourceV1alpha1TypeMeta)
 }
 
 func MakePubSubTargetJobOrDie(client *Client, source, targetName, eventType string) {

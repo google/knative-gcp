@@ -51,13 +51,31 @@ func messagingTypeMeta(kind string) *metav1.TypeMeta {
 
 var CloudStorageSourceV1TypeMeta = eventsV1TypeMeta(resources.CloudStorageSourceKind)
 
+var CloudStorageSourceV1beta1TypeMeta = eventsV1beta1TypeMeta(resources.CloudStorageSourceKind)
+
+var CloudStorageSourceV1alpha1TypeMeta = eventsV1alpha1TypeMeta(resources.CloudStorageSourceKind)
+
 var CloudPubSubSourceV1TypeMeta = eventsV1TypeMeta(resources.CloudPubSubSourceKind)
+
+var CloudPubSubSourceV1beta1TypeMeta = eventsV1beta1TypeMeta(resources.CloudPubSubSourceKind)
+
+var CloudPubSubSourceV1alpha1TypeMeta = eventsV1alpha1TypeMeta(resources.CloudPubSubSourceKind)
 
 var CloudBuildSourceV1beta1TypeMeta = eventsV1beta1TypeMeta(resources.CloudBuildSourceKind)
 
+var CloudBuildSourceV1alpha1TypeMeta = eventsV1alpha1TypeMeta(resources.CloudBuildSourceKind)
+
 var CloudAuditLogsSourceV1TypeMeta = eventsV1TypeMeta(resources.CloudAuditLogsSourceKind)
 
+var CloudAuditLogsSourceV1beta1TypeMeta = eventsV1beta1TypeMeta(resources.CloudAuditLogsSourceKind)
+
+var CloudAuditLogsSourceV1alpha1TypeMeta = eventsV1alpha1TypeMeta(resources.CloudAuditLogsSourceKind)
+
 var CloudSchedulerSourceV1TypeMeta = eventsV1TypeMeta(resources.CloudSchedulerSourceKind)
+
+var CloudSchedulerSourceV1beta1TypeMeta = eventsV1beta1TypeMeta(resources.CloudSchedulerSourceKind)
+
+var CloudSchedulerSourceV1alpha1TypeMeta = eventsV1alpha1TypeMeta(resources.CloudSchedulerSourceKind)
 
 func eventsV1TypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
@@ -73,11 +91,36 @@ func eventsV1beta1TypeMeta(kind string) *metav1.TypeMeta {
 	}
 }
 
-var PullSubscriptionTypeMeta = inteventsTypeMeta(resources.PullSubscriptionKind)
-
-func inteventsTypeMeta(kind string) *metav1.TypeMeta {
+func eventsV1alpha1TypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
-		APIVersion: resources.IntEventsAPIVersion,
+		APIVersion: resources.EventsV1alpha1APIVersion,
+	}
+}
+
+var PullSubscriptionV1TypeMeta = inteventsV1TypeMeta(resources.PullSubscriptionKind)
+
+var PullSubscriptionV1beta1TypeMeta = inteventsV1beta1TypeMeta(resources.PullSubscriptionKind)
+
+var PullSubscriptionV1alpha1TypeMeta = inteventsV1alpha1TypeMeta(resources.PullSubscriptionKind)
+
+func inteventsV1TypeMeta(kind string) *metav1.TypeMeta {
+	return &metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: resources.IntEventsV1APIVersion,
+	}
+}
+
+func inteventsV1beta1TypeMeta(kind string) *metav1.TypeMeta {
+	return &metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: resources.IntEventsV1beta1APIVersion,
+	}
+}
+
+func inteventsV1alpha1TypeMeta(kind string) *metav1.TypeMeta {
+	return &metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: resources.IntEventsV1alpha1APIVersion,
 	}
 }

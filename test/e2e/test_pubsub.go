@@ -36,8 +36,49 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokeCloudPubSubSourceTestImpl tests we can create a CloudPubSubSource to ready state and we can delete a CloudPubSubSource and its underlying resources.
-func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+// SmokeCloudPubSubSourceTestHelper tests we can create a CloudPubSubSource to ready state.
+func SmokeCloudPubSubSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudPubSubSourceVersion string) {
+	t.Helper()
+	topic, deleteTopic := lib.MakeTopicOrDie(t)
+	defer deleteTopic()
+
+	psName := topic + "-pubsub"
+	svcName := "event-display"
+
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	if cloudPubSubSourceVersion == "v1alpha1" {
+		lib.MakePubSubV1alpha1OrDie(client, lib.PubSubConfig{
+			SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
+			PubSubName:         psName,
+			SinkName:           svcName,
+			TopicName:          topic,
+			ServiceAccountName: authConfig.ServiceAccountName,
+		})
+	} else if cloudPubSubSourceVersion == "v1beta1" {
+		lib.MakePubSubV1beta1OrDie(client, lib.PubSubConfig{
+			SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
+			PubSubName:         psName,
+			SinkName:           svcName,
+			TopicName:          topic,
+			ServiceAccountName: authConfig.ServiceAccountName,
+		})
+	} else if cloudPubSubSourceVersion == "v1" {
+		lib.MakePubSubOrDie(client, lib.PubSubConfig{
+			SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
+			PubSubName:         psName,
+			SinkName:           svcName,
+			TopicName:          topic,
+			ServiceAccountName: authConfig.ServiceAccountName,
+		})
+	} else {
+		t.Fatalf("SmokeCloudPubSubSourceTestHelper does not support CloudPubSubSource version: %v", cloudPubSubSourceVersion)
+	}
+}
+
+// SmokeCloudPubSubSourceWithDeletionTestImpl tests we can create a CloudPubSubSource to ready state and we can delete a CloudPubSubSource and its underlying resources.
+func SmokeCloudPubSubSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()

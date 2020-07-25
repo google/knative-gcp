@@ -18,6 +18,9 @@ package lib
 
 import (
 	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	knativegcptestresources "github.com/google/knative-gcp/test/e2e/lib/resources"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -64,9 +67,53 @@ func (c *Client) CreateAuditLogsOrFail(auditlogs *eventsv1.CloudAuditLogsSource)
 	c.Tracker.AddObj(auditlogs)
 }
 
+func (c *Client) CreateAuditLogsV1beta1OrFail(auditlogs *eventsv1beta1.CloudAuditLogsSource) {
+	c.T.Helper()
+	auditlogses := c.KnativeGCP.EventsV1beta1().CloudAuditLogsSources(c.Namespace)
+	_, err := auditlogses.Create(auditlogs)
+	if err != nil {
+		c.T.Fatalf("Failed to create auditlogs %s/%s: %v", c.Namespace, auditlogs.Name, err)
+	}
+	c.T.Logf("Created auditlogs: %s/%s", c.Namespace, auditlogs.Name)
+	c.Tracker.AddObj(auditlogs)
+}
+
+func (c *Client) CreateAuditLogsV1alpha1OrFail(auditlogs *eventsv1alpha1.CloudAuditLogsSource) {
+	c.T.Helper()
+	auditlogses := c.KnativeGCP.EventsV1alpha1().CloudAuditLogsSources(c.Namespace)
+	_, err := auditlogses.Create(auditlogs)
+	if err != nil {
+		c.T.Fatalf("Failed to create auditlogs %s/%s: %v", c.Namespace, auditlogs.Name, err)
+	}
+	c.T.Logf("Created auditlogs: %s/%s", c.Namespace, auditlogs.Name)
+	c.Tracker.AddObj(auditlogs)
+}
+
 func (c *Client) CreatePubSubOrFail(pubsub *eventsv1.CloudPubSubSource) {
 	c.T.Helper()
 	pubsubs := c.KnativeGCP.EventsV1().CloudPubSubSources(c.Namespace)
+	_, err := pubsubs.Create(pubsub)
+	if err != nil {
+		c.T.Fatalf("Failed to create pubsub %s/%s: %v", c.Namespace, pubsub.Name, err)
+	}
+	c.T.Logf("Created pubsub: %s/%s", c.Namespace, pubsub.Name)
+	c.Tracker.AddObj(pubsub)
+}
+
+func (c *Client) CreatePubSubV1beta1OrFail(pubsub *eventsv1beta1.CloudPubSubSource) {
+	c.T.Helper()
+	pubsubs := c.KnativeGCP.EventsV1beta1().CloudPubSubSources(c.Namespace)
+	_, err := pubsubs.Create(pubsub)
+	if err != nil {
+		c.T.Fatalf("Failed to create pubsub %s/%s: %v", c.Namespace, pubsub.Name, err)
+	}
+	c.T.Logf("Created pubsub: %s/%s", c.Namespace, pubsub.Name)
+	c.Tracker.AddObj(pubsub)
+}
+
+func (c *Client) CreatePubSubV1alpha1OrFail(pubsub *eventsv1alpha1.CloudPubSubSource) {
+	c.T.Helper()
+	pubsubs := c.KnativeGCP.EventsV1alpha1().CloudPubSubSources(c.Namespace)
 	_, err := pubsubs.Create(pubsub)
 	if err != nil {
 		c.T.Fatalf("Failed to create pubsub %s/%s: %v", c.Namespace, pubsub.Name, err)
@@ -86,9 +133,42 @@ func (c *Client) CreateBuildOrFail(build *eventsv1beta1.CloudBuildSource) {
 	c.Tracker.AddObj(build)
 }
 
+func (c *Client) CreateBuildV1alpha1OrFail(build *eventsv1alpha1.CloudBuildSource) {
+	c.T.Helper()
+	builds := c.KnativeGCP.EventsV1alpha1().CloudBuildSources(c.Namespace)
+	_, err := builds.Create(build)
+	if err != nil {
+		c.T.Fatalf("Failed to create build %s/%s: %v", c.Namespace, build.Name, err)
+	}
+	c.T.Logf("Created build: %s/%s", c.Namespace, build.Name)
+	c.Tracker.AddObj(build)
+}
+
 func (c *Client) CreateStorageOrFail(storage *eventsv1.CloudStorageSource) {
 	c.T.Helper()
 	storages := c.KnativeGCP.EventsV1().CloudStorageSources(c.Namespace)
+	_, err := storages.Create(storage)
+	if err != nil {
+		c.T.Fatalf("Failed to create storage %s/%s: %v", c.Namespace, storage.Name, err)
+	}
+	c.T.Logf("Created storage: %s/%s", c.Namespace, storage.Name)
+	c.Tracker.AddObj(storage)
+}
+
+func (c *Client) CreateStorageV1beta1OrFail(storage *eventsv1beta1.CloudStorageSource) {
+	c.T.Helper()
+	storages := c.KnativeGCP.EventsV1beta1().CloudStorageSources(c.Namespace)
+	_, err := storages.Create(storage)
+	if err != nil {
+		c.T.Fatalf("Failed to create storage %s/%s: %v", c.Namespace, storage.Name, err)
+	}
+	c.T.Logf("Created storage: %s/%s", c.Namespace, storage.Name)
+	c.Tracker.AddObj(storage)
+}
+
+func (c *Client) CreateStorageV1alpha1OrFail(storage *eventsv1alpha1.CloudStorageSource) {
+	c.T.Helper()
+	storages := c.KnativeGCP.EventsV1alpha1().CloudStorageSources(c.Namespace)
 	_, err := storages.Create(storage)
 	if err != nil {
 		c.T.Fatalf("Failed to create storage %s/%s: %v", c.Namespace, storage.Name, err)
@@ -108,9 +188,53 @@ func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *inteventsv1.Pull
 	c.Tracker.AddObj(pullsubscription)
 }
 
+func (c *Client) CreatePullSubscriptionV1beta1OrFail(pullsubscription *inteventsv1beta1.PullSubscription) {
+	c.T.Helper()
+	pullsubscriptions := c.KnativeGCP.InternalV1beta1().PullSubscriptions(c.Namespace)
+	_, err := pullsubscriptions.Create(pullsubscription)
+	if err != nil {
+		c.T.Fatalf("Failed to create pullsubscription %s/%s: %v", c.Namespace, pullsubscription.Name, err)
+	}
+	c.T.Logf("Created pullsubscription: %s/%s", c.Namespace, pullsubscription.Name)
+	c.Tracker.AddObj(pullsubscription)
+}
+
+func (c *Client) CreatePullSubscriptionV1alpha1OrFail(pullsubscription *inteventsv1alpha1.PullSubscription) {
+	c.T.Helper()
+	pullsubscriptions := c.KnativeGCP.InternalV1alpha1().PullSubscriptions(c.Namespace)
+	_, err := pullsubscriptions.Create(pullsubscription)
+	if err != nil {
+		c.T.Fatalf("Failed to create pullsubscription %s/%s: %v", c.Namespace, pullsubscription.Name, err)
+	}
+	c.T.Logf("Created pullsubscription: %s/%s", c.Namespace, pullsubscription.Name)
+	c.Tracker.AddObj(pullsubscription)
+}
+
 func (c *Client) CreateSchedulerOrFail(scheduler *eventsv1.CloudSchedulerSource) {
 	c.T.Helper()
 	schedulers := c.KnativeGCP.EventsV1().CloudSchedulerSources(c.Namespace)
+	_, err := schedulers.Create(scheduler)
+	if err != nil {
+		c.T.Fatalf("Failed to create scheduler %s/%s: %v", c.Namespace, scheduler.Name, err)
+	}
+	c.T.Logf("Created scheduler: %s/%s", c.Namespace, scheduler.Name)
+	c.Tracker.AddObj(scheduler)
+}
+
+func (c *Client) CreateSchedulerV1beta1OrFail(scheduler *eventsv1beta1.CloudSchedulerSource) {
+	c.T.Helper()
+	schedulers := c.KnativeGCP.EventsV1beta1().CloudSchedulerSources(c.Namespace)
+	_, err := schedulers.Create(scheduler)
+	if err != nil {
+		c.T.Fatalf("Failed to create scheduler %s/%s: %v", c.Namespace, scheduler.Name, err)
+	}
+	c.T.Logf("Created scheduler: %s/%s", c.Namespace, scheduler.Name)
+	c.Tracker.AddObj(scheduler)
+}
+
+func (c *Client) CreateSchedulerV1alpha1OrFail(scheduler *eventsv1alpha1.CloudSchedulerSource) {
+	c.T.Helper()
+	schedulers := c.KnativeGCP.EventsV1alpha1().CloudSchedulerSources(c.Namespace)
 	_, err := schedulers.Create(scheduler)
 	if err != nil {
 		c.T.Fatalf("Failed to create scheduler %s/%s: %v", c.Namespace, scheduler.Name, err)
