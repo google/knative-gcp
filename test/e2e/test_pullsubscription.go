@@ -43,30 +43,20 @@ func SmokePullSubscriptionTestHelper(t *testing.T, authConfig lib.AuthConfig, pu
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
+	pullSubscriptionConfig := lib.PullSubscriptionConfig{
+		SinkGVK:              lib.ServiceGVK,
+		PullSubscriptionName: psName,
+		SinkName:             svcName,
+		TopicName:            topic,
+		ServiceAccountName:   authConfig.ServiceAccountName,
+	}
+
 	if pullsubscriptionVersion == "v1alpha1" {
-		lib.MakePullSubscriptionV1alpha1OrDie(client, lib.PullSubscriptionConfig{
-			SinkGVK:              lib.ServiceGVK,
-			PullSubscriptionName: psName,
-			SinkName:             svcName,
-			TopicName:            topic,
-			ServiceAccountName:   authConfig.ServiceAccountName,
-		})
+		lib.MakePullSubscriptionV1alpha1OrDie(client, pullSubscriptionConfig)
 	} else if pullsubscriptionVersion == "v1beta1" {
-		lib.MakePullSubscriptionV1beta1OrDie(client, lib.PullSubscriptionConfig{
-			SinkGVK:              lib.ServiceGVK,
-			PullSubscriptionName: psName,
-			SinkName:             svcName,
-			TopicName:            topic,
-			ServiceAccountName:   authConfig.ServiceAccountName,
-		})
+		lib.MakePullSubscriptionV1beta1OrDie(client, pullSubscriptionConfig)
 	} else if pullsubscriptionVersion == "v1" {
-		lib.MakePullSubscriptionOrDie(client, lib.PullSubscriptionConfig{
-			SinkGVK:              lib.ServiceGVK,
-			PullSubscriptionName: psName,
-			SinkName:             svcName,
-			TopicName:            topic,
-			ServiceAccountName:   authConfig.ServiceAccountName,
-		})
+		lib.MakePullSubscriptionOrDie(client, pullSubscriptionConfig)
 	} else {
 		t.Fatalf("SmokePullSubscriptionTestHelper does not support PullSubscription version: %v", pullsubscriptionVersion)
 	}

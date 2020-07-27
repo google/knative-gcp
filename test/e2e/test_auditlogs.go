@@ -46,39 +46,23 @@ func SmokeCloudAuditLogsSourceTestHelper(t *testing.T, authConfig lib.AuthConfig
 	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 
+	auditLogsConfig := lib.AuditLogsConfig{
+		SinkGVK:            lib.ServiceGVK,
+		SinkName:           svcName,
+		AuditlogsName:      auditlogsName,
+		MethodName:         lib.PubSubCreateTopicMethodName,
+		Project:            project,
+		ResourceName:       resourceName,
+		ServiceName:        lib.PubSubServiceName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	}
+
 	if cloudAuditLogsSourceVersion == "v1alpha1" {
-		lib.MakeAuditLogsV1alpha1OrDie(client, lib.AuditLogsConfig{
-			SinkGVK:            lib.ServiceGVK,
-			SinkName:           svcName,
-			AuditlogsName:      auditlogsName,
-			MethodName:         lib.PubSubCreateTopicMethodName,
-			Project:            project,
-			ResourceName:       resourceName,
-			ServiceName:        lib.PubSubServiceName,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakeAuditLogsV1alpha1OrDie(client, auditLogsConfig)
 	} else if cloudAuditLogsSourceVersion == "v1beta1" {
-		lib.MakeAuditLogsV1beta1OrDie(client, lib.AuditLogsConfig{
-			SinkGVK:            lib.ServiceGVK,
-			SinkName:           svcName,
-			AuditlogsName:      auditlogsName,
-			MethodName:         lib.PubSubCreateTopicMethodName,
-			Project:            project,
-			ResourceName:       resourceName,
-			ServiceName:        lib.PubSubServiceName,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakeAuditLogsV1beta1OrDie(client, auditLogsConfig)
 	} else if cloudAuditLogsSourceVersion == "v1" {
-		lib.MakeAuditLogsOrDie(client, lib.AuditLogsConfig{
-			SinkGVK:            lib.ServiceGVK,
-			SinkName:           svcName,
-			AuditlogsName:      auditlogsName,
-			MethodName:         lib.PubSubCreateTopicMethodName,
-			Project:            project,
-			ResourceName:       resourceName,
-			ServiceName:        lib.PubSubServiceName,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakeAuditLogsOrDie(client, auditLogsConfig)
 	} else {
 		t.Fatalf("SmokeCloudAuditLogsSourceTestHelper does not support CloudAuditLogsSource version: %v", cloudAuditLogsSourceVersion)
 	}

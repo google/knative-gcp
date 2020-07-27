@@ -40,30 +40,20 @@ func SmokeCloudSchedulerSourceTestHelper(t *testing.T, authConfig lib.AuthConfig
 	schedulerName := helpers.AppendRandomString("scheduler")
 	svcName := "event-display"
 
+	schedulerConfig := lib.SchedulerConfig{
+		SinkGVK:            lib.ServiceGVK,
+		SchedulerName:      schedulerName,
+		Data:               data,
+		SinkName:           svcName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	}
+
 	if cloudSchedulerSourceVersion == "v1alpha1" {
-		lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
-			SinkGVK:            lib.ServiceGVK,
-			SchedulerName:      schedulerName,
-			Data:               data,
-			SinkName:           svcName,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakeSchedulerOrDie(client, schedulerConfig)
 	} else if cloudSchedulerSourceVersion == "v1beta1" {
-		lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
-			SinkGVK:            lib.ServiceGVK,
-			SchedulerName:      schedulerName,
-			Data:               data,
-			SinkName:           svcName,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakeSchedulerOrDie(client, schedulerConfig)
 	} else if cloudSchedulerSourceVersion == "v1" {
-		lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
-			SinkGVK:            lib.ServiceGVK,
-			SchedulerName:      schedulerName,
-			Data:               data,
-			SinkName:           svcName,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakeSchedulerOrDie(client, schedulerConfig)
 	} else {
 		t.Fatalf("SmokeCloudSchedulerSourceTestHelper does not support CloudSchedulerSource version: %v", cloudSchedulerSourceVersion)
 	}

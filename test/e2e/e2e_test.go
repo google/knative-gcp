@@ -157,6 +157,7 @@ func TestChannelTracing(t *testing.T) {
 }
 
 // TestSmokePullSubscriptionV1 test we can create a v1 PullSubscription to ready state
+// We keep a set of smoke tests for each supported version of PullSubscription to make sure the webhook works.
 func TestSmokePullSubscriptionV1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -164,6 +165,7 @@ func TestSmokePullSubscriptionV1(t *testing.T) {
 }
 
 // TestSmokePullSubscriptionV1beta1 test we can create a v1beta1 PullSubscription to ready state
+// We keep a set of smoke tests for each supported version of PullSubscription to make sure the webhook works.
 func TestSmokePullSubscriptionV1beta1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -171,6 +173,7 @@ func TestSmokePullSubscriptionV1beta1(t *testing.T) {
 }
 
 // TestSmokePullSubscriptionV1alpha1 test we can create a v1alpha1 PullSubscription to ready state
+// We keep a set of smoke tests for each supported version of PullSubscription to make sure the webhook works.
 func TestSmokePullSubscriptionV1alpha1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -192,6 +195,7 @@ func TestSmokeCloudPubSubSourceWithDeletion(t *testing.T) {
 }
 
 // TestSmokeCloudPubSubSourceV1alpha1 we can create a v1alpha1 CloudPubSubSource to ready state.
+// We keep a set of smoke tests for each supported version of CloudPubSubSource to make sure the webhook works.
 func TestSmokeCloudPubSubSourceV1alpha1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -199,6 +203,7 @@ func TestSmokeCloudPubSubSourceV1alpha1(t *testing.T) {
 }
 
 // TestSmokeCloudPubSubSourceV1beta1 we can create a v1beta1 CloudPubSubSource to ready state.
+// We keep a set of smoke tests for each supported version of CloudPubSubSource to make sure the webhook works.
 func TestSmokeCloudPubSubSourceV1beta1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -243,6 +248,7 @@ func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 }
 
 // TestSmokeCloudBuildSourceV1alpha1 we can create a v1alpha1 CloudBuildSource to ready state.
+// We keep a set of smoke tests for each supported version of CloudBuildSource to make sure the webhook works.
 func TestSmokeCloudBuildSourceV1alpha1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -319,6 +325,7 @@ func TestCloudStorageSourceStackDriverMetrics(t *testing.T) {
 }
 
 // TestSmokeCloudAuditLogsSourceV1alpha1 we can create a v1alpha1 CloudAuditLogsSource to ready state.
+// We keep a set of smoke tests for each supported version of CloudAuditLogsSource to make sure the webhook works.
 func TestSmokeCloudAuditLogsSourceV1alpha1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -326,6 +333,7 @@ func TestSmokeCloudAuditLogsSourceV1alpha1(t *testing.T) {
 }
 
 // TestSmokeCloudPubSubSourceV1beta1 we can create a v1beta1 CloudAuditLogsSource to ready state.
+// We keep a set of smoke tests for each supported version of CloudAuditLogsSource to make sure the webhook works.
 func TestSmokeCloudAuditLogsSourceV1beta1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -347,6 +355,7 @@ func TestCloudAuditLogsSourceWithTarget(t *testing.T) {
 }
 
 // TestSmokeCloudSchedulerSourceV1alpha1 we can create a v1alpha1 CloudSchedulerSource to ready state.
+// We keep a set of smoke tests for each supported version of CloudSchedulerSource to make sure the webhook works.
 func TestSmokeCloudSchedulerSourceV1alpha1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -354,6 +363,7 @@ func TestSmokeCloudSchedulerSourceV1alpha1(t *testing.T) {
 }
 
 // TestSmokeCloudSchedulerSourceV1beta1 we can create a v1beta1 CloudSchedulerSource to ready state.
+// We keep a set of smoke tests for each supported version of CloudSchedulerSource to make sure the webhook works.
 func TestSmokeCloudSchedulerSourceV1beta1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -361,6 +371,7 @@ func TestSmokeCloudSchedulerSourceV1beta1(t *testing.T) {
 }
 
 // TestSmokeCloudStorageSourceV1alpha1 we can create a v1alpha1 CloudStorageSource to ready state.
+// We keep a set of smoke tests for each supported version of CloudStorageSource to make sure the webhook works.
 func TestSmokeCloudStorageSourceV1alpha1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -368,6 +379,7 @@ func TestSmokeCloudStorageSourceV1alpha1(t *testing.T) {
 }
 
 // TestSmokeCloudStorageSourceV1beta1 we can create a v1beta1 CloudStorageSource to ready state.
+// We keep a set of smoke tests for each supported version of CloudStorageSource to make sure the webhook works.
 func TestSmokeCloudStorageSourceV1beta1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()

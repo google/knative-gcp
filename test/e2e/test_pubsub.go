@@ -48,30 +48,20 @@ func SmokeCloudPubSubSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, c
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
+	pubSubConfig := lib.PubSubConfig{
+		SinkGVK:            lib.ServiceGVK,
+		PubSubName:         psName,
+		SinkName:           svcName,
+		TopicName:          topic,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	}
+
 	if cloudPubSubSourceVersion == "v1alpha1" {
-		lib.MakePubSubV1alpha1OrDie(client, lib.PubSubConfig{
-			SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
-			PubSubName:         psName,
-			SinkName:           svcName,
-			TopicName:          topic,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakePubSubV1alpha1OrDie(client, pubSubConfig)
 	} else if cloudPubSubSourceVersion == "v1beta1" {
-		lib.MakePubSubV1beta1OrDie(client, lib.PubSubConfig{
-			SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
-			PubSubName:         psName,
-			SinkName:           svcName,
-			TopicName:          topic,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakePubSubV1beta1OrDie(client, pubSubConfig)
 	} else if cloudPubSubSourceVersion == "v1" {
-		lib.MakePubSubOrDie(client, lib.PubSubConfig{
-			SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
-			PubSubName:         psName,
-			SinkName:           svcName,
-			TopicName:          topic,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakePubSubOrDie(client, pubSubConfig)
 	} else {
 		t.Fatalf("SmokeCloudPubSubSourceTestHelper does not support CloudPubSubSource version: %v", cloudPubSubSourceVersion)
 	}

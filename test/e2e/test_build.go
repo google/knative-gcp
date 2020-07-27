@@ -46,20 +46,17 @@ func SmokeCloudBuildSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cl
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
+	buildConfig := lib.BuildConfig{
+		SinkGVK:            lib.ServiceGVK,
+		BuildName:          buildName,
+		SinkName:           svcName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	}
+
 	if cloudBuildSourceVersion == "v1alpha1" {
-		lib.MakeBuildV1alpha1OrDie(client, lib.BuildConfig{
-			SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
-			BuildName:          buildName,
-			SinkName:           svcName,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakeBuildV1alpha1OrDie(client, buildConfig)
 	} else if cloudBuildSourceVersion == "v1beta1" {
-		lib.MakeBuildOrDie(client, lib.BuildConfig{
-			SinkGVK:            metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
-			BuildName:          buildName,
-			SinkName:           svcName,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakeBuildOrDie(client, buildConfig)
 	} else {
 		t.Fatalf("SmokeCloudBuildSourceWithDeletionTestHelper does not support CloudBuildSource version: %v", cloudBuildSourceVersion)
 	}

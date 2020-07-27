@@ -50,30 +50,20 @@ func SmokeCloudStorageSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, 
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	svcName := helpers.AppendRandomString(bucketName + "-event-display")
 
+	storageConfig := lib.StorageConfig{
+		SinkGVK:            lib.ServiceGVK,
+		BucketName:         bucketName,
+		StorageName:        storageName,
+		SinkName:           svcName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	}
+
 	if cloudStorageSourceVersion == "v1alpha1" {
-		lib.MakeStorageV1alpha1OrDie(client, lib.StorageConfig{
-			SinkGVK:            lib.ServiceGVK,
-			BucketName:         bucketName,
-			StorageName:        storageName,
-			SinkName:           svcName,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakeStorageV1alpha1OrDie(client, storageConfig)
 	} else if cloudStorageSourceVersion == "v1beta1" {
-		lib.MakeStorageV1beta1OrDie(client, lib.StorageConfig{
-			SinkGVK:            lib.ServiceGVK,
-			BucketName:         bucketName,
-			StorageName:        storageName,
-			SinkName:           svcName,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakeStorageV1beta1OrDie(client, storageConfig)
 	} else if cloudStorageSourceVersion == "v1" {
-		lib.MakeStorageOrDie(client, lib.StorageConfig{
-			SinkGVK:            lib.ServiceGVK,
-			BucketName:         bucketName,
-			StorageName:        storageName,
-			SinkName:           svcName,
-			ServiceAccountName: authConfig.ServiceAccountName,
-		})
+		lib.MakeStorageOrDie(client, storageConfig)
 	} else {
 		t.Fatalf("SmokeCloudStorageSourceTestHelper does not support CloudStorageSource version: %v", cloudStorageSourceVersion)
 	}
