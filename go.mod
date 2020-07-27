@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/pubsub v1.5.0
 	cloud.google.com/go/storage v1.10.0
 	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
-	github.com/cloudevents/sdk-go/v2 v2.0.1-0.20200630063327-b91da81265fe
+	github.com/cloudevents/sdk-go/v2 v2.0.1-0.20200727063607-52b184c5d780
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.0

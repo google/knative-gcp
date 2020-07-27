@@ -109,7 +109,7 @@ github.com/cespare/xxhash/v2
 github.com/cloudevents/sdk-go/protocol/pubsub/v2
 github.com/cloudevents/sdk-go/protocol/pubsub/v2/context
 github.com/cloudevents/sdk-go/protocol/pubsub/v2/internal
-# github.com/cloudevents/sdk-go/v2 v2.0.1-0.20200630063327-b91da81265fe
+# github.com/cloudevents/sdk-go/v2 v2.0.1-0.20200727063607-52b184c5d780
 ## explicit
 github.com/cloudevents/sdk-go/v2
 github.com/cloudevents/sdk-go/v2/binding
