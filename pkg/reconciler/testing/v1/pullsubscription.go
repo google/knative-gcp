@@ -271,3 +271,15 @@ func WithPullSubscriptionDefaultGCPAuth(s *v1.PullSubscription) {
 func WithPullSubscriptionSetDefaults(s *v1.PullSubscription) {
 	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }
+
+func WithPullSubscriptionTopic(topicID string) PullSubscriptionOption {
+	return func(s *v1.PullSubscription) {
+		s.Spec.Topic = topicID
+	}
+}
+
+func WithPullSubscriptionServiceAccount(kServiceAccount string) PullSubscriptionOption {
+	return func(s *v1.PullSubscription) {
+		s.Spec.ServiceAccountName = kServiceAccount
+	}
+}

@@ -416,7 +416,7 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
-	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceV1TypeMeta)
 
 	// Audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds.
 	time.Sleep(resources.WaitCALTime)

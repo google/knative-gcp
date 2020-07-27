@@ -23,20 +23,16 @@ import (
 	"os"
 	"testing"
 
-	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
-
 	"cloud.google.com/go/pubsub"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
-// SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
-func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+// SmokePullSubscriptionTestHelper tests we can create a pull subscription to ready state.
+func SmokePullSubscriptionTestHelper(t *testing.T, authConfig lib.AuthConfig, pullsubscriptionVersion string) {
 	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
@@ -47,20 +43,23 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	// Create PullSubscription.
-	pullsubscription := reconcilertestingv1beta1.NewPullSubscription(psName, client.Namespace,
-		reconcilertestingv1beta1.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
-			Topic: topic,
-			PubSubSpec: duckv1beta1.PubSubSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
-					ServiceAccountName: authConfig.ServiceAccountName,
-				},
-			},
-		}),
-		reconcilertestingv1beta1.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
-	client.CreatePullSubscriptionOrFail(pullsubscription)
+	pullSubscriptionConfig := lib.PullSubscriptionConfig{
+		SinkGVK:              lib.ServiceGVK,
+		PullSubscriptionName: psName,
+		SinkName:             svcName,
+		TopicName:            topic,
+		ServiceAccountName:   authConfig.ServiceAccountName,
+	}
 
-	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)
+	if pullsubscriptionVersion == "v1alpha1" {
+		lib.MakePullSubscriptionV1alpha1OrDie(client, pullSubscriptionConfig)
+	} else if pullsubscriptionVersion == "v1beta1" {
+		lib.MakePullSubscriptionV1beta1OrDie(client, pullSubscriptionConfig)
+	} else if pullsubscriptionVersion == "v1" {
+		lib.MakePullSubscriptionOrDie(client, pullSubscriptionConfig)
+	} else {
+		t.Fatalf("SmokePullSubscriptionTestHelper does not support PullSubscription version: %v", pullsubscriptionVersion)
+	}
 }
 
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
@@ -82,18 +81,13 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 	lib.MakePubSubTargetJobOrDie(client, source, targetName, schemasv1.CloudPubSubMessagePublishedEventType)
 
 	// Create PullSubscription.
-	pullsubscription := reconcilertestingv1beta1.NewPullSubscription(psName, client.Namespace,
-		reconcilertestingv1beta1.WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
-			Topic: topicName,
-			PubSubSpec: duckv1beta1.PubSubSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
-					ServiceAccountName: authConfig.ServiceAccountName,
-				},
-			},
-		}), reconcilertestingv1beta1.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
-	client.CreatePullSubscriptionOrFail(pullsubscription)
-
-	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)
+	lib.MakePullSubscriptionOrDie(client, lib.PullSubscriptionConfig{
+		SinkGVK:              lib.ServiceGVK,
+		PullSubscriptionName: psName,
+		SinkName:             targetName,
+		TopicName:            topicName,
+		ServiceAccountName:   authConfig.ServiceAccountName,
+	})
 
 	topic := lib.GetTopic(t, topicName)
 
@@ -118,7 +112,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 		}
 		if !out.Success {
 			// Log the output pull subscription pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, lib.PullSubscriptionTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, psName, lib.PullSubscriptionV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("pullsubscription: %+v", logs)

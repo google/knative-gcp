@@ -36,8 +36,41 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokeCloudStorageSourceTestImpl tests if a CloudStorageSource object can be created to ready state and delete a CloudStorageSource resource and its underlying resources..
-func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+// SmokeCloudStorageSourceTestHelper tests we can create a CloudStorageSource to ready state.
+func SmokeCloudStorageSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudStorageSourceVersion string) {
+	t.Helper()
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	ctx := context.Background()
+	project := os.Getenv(lib.ProwProjectKey)
+
+	bucketName := lib.MakeBucket(ctx, t, project)
+	defer lib.DeleteBucket(ctx, t, bucketName)
+	storageName := helpers.AppendRandomString(bucketName + "-storage")
+	svcName := helpers.AppendRandomString(bucketName + "-event-display")
+
+	storageConfig := lib.StorageConfig{
+		SinkGVK:            lib.ServiceGVK,
+		BucketName:         bucketName,
+		StorageName:        storageName,
+		SinkName:           svcName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	}
+
+	if cloudStorageSourceVersion == "v1alpha1" {
+		lib.MakeStorageV1alpha1OrDie(client, storageConfig)
+	} else if cloudStorageSourceVersion == "v1beta1" {
+		lib.MakeStorageV1beta1OrDie(client, storageConfig)
+	} else if cloudStorageSourceVersion == "v1" {
+		lib.MakeStorageOrDie(client, storageConfig)
+	} else {
+		t.Fatalf("SmokeCloudStorageSourceTestHelper does not support CloudStorageSource version: %v", cloudStorageSourceVersion)
+	}
+}
+
+// SmokeCloudStorageSourceWithDeletionTestImpl tests if a CloudStorageSource object can be created to ready state and delete a CloudStorageSource resource and its underlying resources..
+func SmokeCloudStorageSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
@@ -148,7 +181,7 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 		}
 		if !out.Success {
 			// Log the output storage pods.
-			if logs, err := client.LogsFor(client.Namespace, storageName, lib.CloudStorageSourceTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, storageName, lib.CloudStorageSourceV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("storage: %+v", logs)
