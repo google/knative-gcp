@@ -19,12 +19,15 @@ package trigger
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/rickb777/date/period"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/eventing/pkg/logging"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -47,6 +50,11 @@ const (
 	// Name of the corev1.Events emitted from the Trigger reconciliation process.
 	triggerReconciled = "TriggerReconciled"
 	triggerFinalized  = "TriggerFinalized"
+
+	//
+	defaultBackoffDelay        = "PT3S"
+	defaultBackoffPolicy       = eventingduckv1beta1.BackoffPolicyExponential
+	defaultRetry         int32 = 6
 )
 
 // Reconciler implements controller.Reconciler for Trigger resources.
@@ -64,11 +72,12 @@ type Reconciler struct {
 
 	projectID string
 
+	// The user-provided dead letter topic ID as part of the broker delivery spec.
+	// Stored to be able to refer to it during trigger deletion.
+	deadLetterTopicID string
+
 	// pubsubClient is used as the Pubsub client when present.
 	pubsubClient *pubsub.Client
-
-	// retryPolicy defines the retry policy for pubsub messages.
-	retryPolicy *pubsub.RetryPolicy
 }
 
 // Check that TriggerReconciler implements Interface
@@ -109,7 +118,7 @@ func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1beta1.Trigger, b 
 		return err
 	}
 
-	if err := r.reconcileRetryTopicAndSubscription(ctx, t); err != nil {
+	if err := r.reconcileRetryTopicAndSubscription(ctx, t, b.Spec.Delivery); err != nil {
 		return err
 	}
 
@@ -168,7 +177,7 @@ func hasGCPBrokerFinalizer(t *brokerv1beta1.Trigger) bool {
 	return false
 }
 
-func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
+func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger, deliverySpec *eventingduckv1beta1.DeliverySpec) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling retry topic")
 	// get ProjectID from metadata
@@ -216,12 +225,30 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	//TODO uncomment when eventing webhook allows this
 	//trig.Status.TopicID = topic.ID()
 
+	retryPolicy, err := r.getPubsubRetryPolicy(deliverySpec)
+	if err != nil {
+		logger.Error("Error getting broker retry policy", zap.Error(err))
+		return err
+	}
+	deadLetterPolicy, err := r.getPubsubDeadLetterPolicy(projectID, deliverySpec)
+	if err != nil {
+		logger.Error("Error getting broker dead letter policy", zap.Error(err))
+		return err
+	}
+	if r.deadLetterTopicID != "" {
+		// Check if dead letter topic exists, and if not, create it.
+		if _, err = pubsubReconciler.ReconcileTopic(ctx, r.deadLetterTopicID, topicConfig, trig, &trig.Status); err != nil {
+			return err
+		}
+	}
+
 	// Check if PullSub exists, and if not, create it.
 	subID := resources.GenerateRetrySubscriptionName(trig)
 	subConfig := pubsub.SubscriptionConfig{
-		Topic:       topic,
-		Labels:      labels,
-		RetryPolicy: r.retryPolicy,
+		Topic:            topic,
+		Labels:           labels,
+		RetryPolicy:      retryPolicy,
+		DeadLetterPolicy: deadLetterPolicy,
 		//TODO(grantr): configure these settings?
 		// AckDeadline
 		// RetentionDuration
@@ -234,6 +261,95 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	//trig.Status.SubscriptionID = sub.ID()
 
 	return nil
+}
+
+func (r *Reconciler) getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) (*pubsub.RetryPolicy, error) {
+	// Read the retry policy values from the broker delivery spec, or set to default.
+	var retry int32
+	var backoffDelay string
+	var backoffPolicy eventingduckv1beta1.BackoffPolicyType
+	if spec == nil || spec.Retry == nil {
+		retry = defaultRetry
+	} else {
+		retry = *spec.Retry
+	}
+	if spec == nil || spec.BackoffDelay == nil {
+		backoffDelay = defaultBackoffDelay
+	} else {
+		backoffDelay = *spec.BackoffDelay
+	}
+	if spec == nil || spec.BackoffPolicy == nil {
+		backoffPolicy = defaultBackoffPolicy
+	} else {
+		backoffPolicy = *spec.BackoffPolicy
+	}
+
+	// Translate the eventing retry policy to a pubsub retry policy according to
+	// https://github.com/google/knative-gcp/issues/1392#issuecomment-655617873
+	p, _ := period.Parse(backoffDelay)
+	minimumBackoff, _ := p.Duration()
+	var maximumBackoff time.Duration
+	switch backoffPolicy {
+	case eventingduckv1beta1.BackoffPolicyLinear:
+		maximumBackoff = minimumBackoff
+	case eventingduckv1beta1.BackoffPolicyExponential:
+		maximumBackoff = time.Duration(1<<retry) * minimumBackoff
+	default:
+		return nil, fmt.Errorf("Unrecognized backoff policy: %v", backoffPolicy)
+	}
+
+	return &pubsub.RetryPolicy{
+		MinimumBackoff: minimumBackoff,
+		MaximumBackoff: maximumBackoff,
+	}, nil
+}
+
+func getDeadLetterTopicID(spec *eventingduckv1beta1.DeliverySpec) (string, error) {
+	if spec == nil || spec.DeadLetterSink == nil {
+		return "", nil
+	}
+	if spec.DeadLetterSink.URI == nil {
+		return "", fmt.Errorf("Dead letter sink URI not specified")
+	}
+	if scheme := spec.DeadLetterSink.URI.Scheme; scheme != "pubsub" {
+		return "", fmt.Errorf("Dead letter sink URI scheme should be pubsub, instead is %v", scheme)
+	}
+	topicID := spec.DeadLetterSink.URI.Host
+	if topicID == "" {
+		return "", fmt.Errorf("Dead letter topic must not be empty")
+	}
+	if len(topicID) > 255 {
+		return "", fmt.Errorf("Dead letter topic maximum length is 255 characters: %v", topicID)
+	}
+	return topicID, nil
+}
+
+func (r *Reconciler) getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) (*pubsub.DeadLetterPolicy, error) {
+	if spec == nil || spec.DeadLetterSink == nil {
+		return nil, nil
+	}
+
+	// If the dead letter sink is specified, it must be formatted properly.
+	topicID, err := getDeadLetterTopicID(spec)
+	if err != nil || topicID == "" {
+		return nil, err
+	}
+	// Store the dead letter topic ID to track it for deletion later.
+	r.deadLetterTopicID = topicID
+
+	// Read the default broker delivery spec values if nil.
+	var retry int32
+	if spec.Retry == nil {
+		retry = defaultRetry
+	} else {
+		retry = *spec.Retry
+	}
+
+	// Translate to the pubsub dead letter policy format.
+	return &pubsub.DeadLetterPolicy{
+		MaxDeliveryAttempts: int(retry),
+		DeadLetterTopic:     fmt.Sprintf("projects/%s/topics/%s", projectID, topicID),
+	}, nil
 }
 
 func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
@@ -267,9 +383,13 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 	// topic until deleted themselves.
 	topicID := resources.GenerateRetryTopicName(trig)
 	err = multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, trig, &trig.Status))
+	// Delete dead letter topic if it exists.
+	if r.deadLetterTopicID != "" {
+		err = multierr.Append(err, pubsubReconciler.DeleteTopic(ctx, r.deadLetterTopicID, trig, &trig.Status))
+	}
 	// Delete pull subscription if it exists.
 	subID := resources.GenerateRetrySubscriptionName(trig)
-	err = multierr.Append(nil, pubsubReconciler.DeleteSubscription(ctx, subID, trig, &trig.Status))
+	err = multierr.Append(err, pubsubReconciler.DeleteSubscription(ctx, subID, trig, &trig.Status))
 	return err
 }
 

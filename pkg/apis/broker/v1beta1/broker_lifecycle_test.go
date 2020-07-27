@@ -348,9 +348,9 @@ func TestBrokerConditionStatus(t *testing.T) {
 			if test.brokerCellStatus == corev1.ConditionTrue {
 				bs.MarkBrokerCellReady()
 			} else if test.brokerCellStatus == corev1.ConditionFalse {
-				bs.MarkBrokerCelllFailed("Unable to create brokercell", "induced failure")
+				bs.MarkBrokerCellFailed("Unable to create brokercell", "induced failure")
 			} else {
-				bs.MarkBrokerCelllUnknown("Unable to create brokercell", "induced unknown")
+				bs.MarkBrokerCellUnknown("Unable to create brokercell", "induced unknown")
 			}
 			if test.subscriptionStatus == corev1.ConditionTrue {
 				bs.MarkSubscriptionReady()
