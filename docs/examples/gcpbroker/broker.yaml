@@ -19,10 +19,3 @@ metadata:
   namespace: cloud-run-events-example
   annotations:
     "eventing.knative.dev/broker.class": "googlecloud"
-spec:
-  delivery:
-    deadLetterSink:
-      uri: pubsub://test-sub
-    retry: 5
-    backoffPolicy: exponential
-    backoffDelay: PT3S

@@ -50,11 +50,6 @@ const (
 	// Name of the corev1.Events emitted from the Trigger reconciliation process.
 	triggerReconciled = "TriggerReconciled"
 	triggerFinalized  = "TriggerFinalized"
-
-	//
-	defaultBackoffDelay        = "PT3S"
-	defaultBackoffPolicy       = eventingduckv1beta1.BackoffPolicyExponential
-	defaultRetry         int32 = 6
 )
 
 // Reconciler implements controller.Reconciler for Trigger resources.
@@ -71,10 +66,6 @@ type Reconciler struct {
 	uriResolver        *resolver.URIResolver
 
 	projectID string
-
-	// The user-provided dead letter topic ID as part of the broker delivery spec.
-	// Stored to be able to refer to it during trigger deletion.
-	deadLetterTopicID string
 
 	// pubsubClient is used as the Pubsub client when present.
 	pubsubClient *pubsub.Client
@@ -235,12 +226,6 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 		logger.Error("Error getting broker dead letter policy", zap.Error(err))
 		return err
 	}
-	if r.deadLetterTopicID != "" {
-		// Check if dead letter topic exists, and if not, create it.
-		if _, err = pubsubReconciler.ReconcileTopic(ctx, r.deadLetterTopicID, topicConfig, trig, &trig.Status); err != nil {
-			return err
-		}
-	}
 
 	// Check if PullSub exists, and if not, create it.
 	subID := resources.GenerateRetrySubscriptionName(trig)
@@ -263,58 +248,39 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	return nil
 }
 
+// getPubsubRetryPolicy gets the eventing retry policy from the Broker delivery
+// spec and translates it to a pubsub retry policy.
 func (r *Reconciler) getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) (*pubsub.RetryPolicy, error) {
-	// Read the retry policy values from the broker delivery spec, or set to default.
-	var retry int32
-	var backoffDelay string
-	var backoffPolicy eventingduckv1beta1.BackoffPolicyType
-	if spec == nil || spec.Retry == nil {
-		retry = defaultRetry
-	} else {
-		retry = *spec.Retry
-	}
-	if spec == nil || spec.BackoffDelay == nil {
-		backoffDelay = defaultBackoffDelay
-	} else {
-		backoffDelay = *spec.BackoffDelay
-	}
-	if spec == nil || spec.BackoffPolicy == nil {
-		backoffPolicy = defaultBackoffPolicy
-	} else {
-		backoffPolicy = *spec.BackoffPolicy
-	}
-
-	// Translate the eventing retry policy to a pubsub retry policy according to
+	// The Broker delivery spec is translated to a pubsub retry policy in the
+	// manner defined in the following post:
 	// https://github.com/google/knative-gcp/issues/1392#issuecomment-655617873
-	p, _ := period.Parse(backoffDelay)
+	p, _ := period.Parse(*spec.BackoffDelay)
 	minimumBackoff, _ := p.Duration()
 	var maximumBackoff time.Duration
-	switch backoffPolicy {
+	switch *spec.BackoffPolicy {
 	case eventingduckv1beta1.BackoffPolicyLinear:
 		maximumBackoff = minimumBackoff
 	case eventingduckv1beta1.BackoffPolicyExponential:
-		maximumBackoff = time.Duration(1<<retry) * minimumBackoff
+		maximumBackoff = time.Duration(1<<*spec.Retry) * minimumBackoff
 	default:
-		return nil, fmt.Errorf("Unrecognized backoff policy: %v", backoffPolicy)
+		return nil, fmt.Errorf("Unrecognized backoff policy: %v", *spec.BackoffPolicy)
 	}
-
 	return &pubsub.RetryPolicy{
 		MinimumBackoff: minimumBackoff,
 		MaximumBackoff: maximumBackoff,
 	}, nil
 }
 
-func getDeadLetterTopicID(spec *eventingduckv1beta1.DeliverySpec) (string, error) {
-	if spec == nil || spec.DeadLetterSink == nil {
-		return "", nil
-	}
-	if spec.DeadLetterSink.URI == nil {
+// getDeadLetterTopic extracts the dead letter topic ID from its destination
+// URI. A dead letter topic should be specified as `pubsub://<dead-letter-topic-id>`.
+func getDeadLetterTopicID(sink *duckv1.Destination) (string, error) {
+	if sink.URI == nil {
 		return "", fmt.Errorf("Dead letter sink URI not specified")
 	}
-	if scheme := spec.DeadLetterSink.URI.Scheme; scheme != "pubsub" {
+	if scheme := sink.URI.Scheme; scheme != "pubsub" {
 		return "", fmt.Errorf("Dead letter sink URI scheme should be pubsub, instead is %v", scheme)
 	}
-	topicID := spec.DeadLetterSink.URI.Host
+	topicID := sink.URI.Host
 	if topicID == "" {
 		return "", fmt.Errorf("Dead letter topic must not be empty")
 	}
@@ -324,30 +290,22 @@ func getDeadLetterTopicID(spec *eventingduckv1beta1.DeliverySpec) (string, error
 	return topicID, nil
 }
 
+// getPubsubDeadLetterPolicy gets the eventing dead letter policy from the
+// Broker delivery spec and translates it to a pubsub dead letter policy.
 func (r *Reconciler) getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) (*pubsub.DeadLetterPolicy, error) {
-	if spec == nil || spec.DeadLetterSink == nil {
+	if spec.DeadLetterSink == nil {
 		return nil, nil
 	}
 
 	// If the dead letter sink is specified, it must be formatted properly.
-	topicID, err := getDeadLetterTopicID(spec)
+	topicID, err := getDeadLetterTopicID(spec.DeadLetterSink)
 	if err != nil || topicID == "" {
 		return nil, err
-	}
-	// Store the dead letter topic ID to track it for deletion later.
-	r.deadLetterTopicID = topicID
-
-	// Read the default broker delivery spec values if nil.
-	var retry int32
-	if spec.Retry == nil {
-		retry = defaultRetry
-	} else {
-		retry = *spec.Retry
 	}
 
 	// Translate to the pubsub dead letter policy format.
 	return &pubsub.DeadLetterPolicy{
-		MaxDeliveryAttempts: int(retry),
+		MaxDeliveryAttempts: int(*spec.Retry),
 		DeadLetterTopic:     fmt.Sprintf("projects/%s/topics/%s", projectID, topicID),
 	}, nil
 }
@@ -383,10 +341,6 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 	// topic until deleted themselves.
 	topicID := resources.GenerateRetryTopicName(trig)
 	err = multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, trig, &trig.Status))
-	// Delete dead letter topic if it exists.
-	if r.deadLetterTopicID != "" {
-		err = multierr.Append(err, pubsubReconciler.DeleteTopic(ctx, r.deadLetterTopicID, trig, &trig.Status))
-	}
 	// Delete pull subscription if it exists.
 	subID := resources.GenerateRetrySubscriptionName(trig)
 	err = multierr.Append(err, pubsubReconciler.DeleteSubscription(ctx, subID, trig, &trig.Status))

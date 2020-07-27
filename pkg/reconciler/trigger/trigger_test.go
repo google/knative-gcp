@@ -30,8 +30,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
 	"knative.dev/pkg/configmap"
@@ -45,8 +47,6 @@ import (
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 const (
@@ -66,7 +66,7 @@ const (
 var (
 	backoffPolicy           = eventingduckv1beta1.BackoffPolicyLinear
 	backoffDelay            = "PT5S"
-	deadLetterTopicID       = "test-topic-id"
+	deadLetterTopicID       = "test-dead-letter-topic-id"
 	retry             int32 = 3
 
 	testKey = fmt.Sprintf("%s/%s", testNS, triggerName)
@@ -75,8 +75,10 @@ var (
 	triggerReconciledEvent       = Eventf(corev1.EventTypeNormal, "TriggerReconciled", `Trigger reconciled: "testnamespace/test-trigger"`)
 	triggerFinalizedEvent        = Eventf(corev1.EventTypeNormal, "TriggerFinalized", `Trigger finalized: "testnamespace/test-trigger"`)
 	topicCreatedEvent            = Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`)
-	deadLetterTopicCreatedEvent  = Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "test-topic-id"`)
+	topicDeletedEvent            = Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`)
+	deadLetterTopicCreatedEvent  = Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "test-dead-letter-topic-id"`)
 	subscriptionCreatedEvent     = Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`)
+	subscriptionDeletedEvent     = Eventf(corev1.EventTypeNormal, "SubscriptionDeleted", `Deleted PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`)
 	subscriberAPIVersion         = fmt.Sprintf("%s/%s", subscriberGroup, subscriberVersion)
 	subscriberGVK                = metav1.GroupVersionKind{
 		Group:   subscriberGroup,
@@ -93,10 +95,6 @@ var (
 				Host:   deadLetterTopicID,
 			},
 		},
-	}
-	retryPolicy = &pubsub.RetryPolicy{
-		MaximumBackoff: time.Minute,
-		MinimumBackoff: time.Second,
 	}
 )
 
@@ -153,8 +151,8 @@ func TestAllCasesTrigger(t *testing.T) {
 					WithTriggerSetDefaults),
 			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`),
-				Eventf(corev1.EventTypeNormal, "SubscriptionDeleted", `Deleted PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`),
+				topicDeletedEvent,
+				subscriptionDeletedEvent,
 				triggerFinalizerUpdatedEvent,
 				triggerFinalizedEvent,
 			},
@@ -179,8 +177,8 @@ func TestAllCasesTrigger(t *testing.T) {
 				),
 			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`),
-				Eventf(corev1.EventTypeNormal, "SubscriptionDeleted", `Deleted PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`),
+				topicDeletedEvent,
+				subscriptionDeletedEvent,
 				triggerFinalizedEvent,
 			},
 			OtherTestData: map[string]interface{}{
@@ -205,8 +203,8 @@ func TestAllCasesTrigger(t *testing.T) {
 				),
 			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`),
-				Eventf(corev1.EventTypeNormal, "SubscriptionDeleted", `Deleted PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`),
+				topicDeletedEvent,
+				subscriptionDeletedEvent,
 				triggerFinalizedEvent,
 			},
 			OtherTestData: map[string]interface{}{
@@ -231,8 +229,8 @@ func TestAllCasesTrigger(t *testing.T) {
 				),
 			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`),
-				Eventf(corev1.EventTypeNormal, "SubscriptionDeleted", `Deleted PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`),
+				topicDeletedEvent,
+				subscriptionDeletedEvent,
 				triggerFinalizedEvent,
 			},
 			OtherTestData: map[string]interface{}{
@@ -282,6 +280,11 @@ func TestAllCasesTrigger(t *testing.T) {
 			PostConditions: []func(*testing.T, *TableRow){
 				OnlyTopics("cre-tgr_testnamespace_test-trigger_abc123"),
 				OnlySubscriptions("cre-tgr_testnamespace_test-trigger_abc123"),
+				SubscriptionHasRetryPolicy("cre-tgr_testnamespace_test-trigger_abc123",
+					&pubsub.RetryPolicy{
+						MaximumBackoff: 64 * time.Second,
+						MinimumBackoff: time.Second,
+					}),
 			},
 		},
 		{
@@ -350,16 +353,19 @@ func TestAllCasesTrigger(t *testing.T) {
 			WantEvents: []string{
 				triggerFinalizerUpdatedEvent,
 				topicCreatedEvent,
-				deadLetterTopicCreatedEvent,
 				subscriptionCreatedEvent,
 				triggerReconciledEvent,
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, triggerName, finalizerName),
 			},
-			OtherTestData: map[string]interface{}{},
+			OtherTestData: map[string]interface{}{
+				"pre": []PubsubAction{
+					Topic("test-dead-letter-topic-id"),
+				},
+			},
 			PostConditions: []func(*testing.T, *TableRow){
-				OnlyTopics("cre-tgr_testnamespace_test-trigger_abc123", "test-topic-id"),
+				OnlyTopics("cre-tgr_testnamespace_test-trigger_abc123", "test-dead-letter-topic-id"),
 				OnlySubscriptions("cre-tgr_testnamespace_test-trigger_abc123"),
 				SubscriptionHasRetryPolicy("cre-tgr_testnamespace_test-trigger_abc123",
 					&pubsub.RetryPolicy{
@@ -369,7 +375,7 @@ func TestAllCasesTrigger(t *testing.T) {
 				SubscriptionHasDeadLetterPolicy("cre-tgr_testnamespace_test-trigger_abc123",
 					&pubsub.DeadLetterPolicy{
 						MaxDeliveryAttempts: 3,
-						DeadLetterTopic:     "projects/test-project-id/topics/test-topic-id",
+						DeadLetterTopic:     "projects/test-project-id/topics/test-dead-letter-topic-id",
 					}),
 			},
 		},
