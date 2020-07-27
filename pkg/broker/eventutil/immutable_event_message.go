@@ -23,7 +23,6 @@ import (
 
 // ImmutableEventMessage wraps binding.EventMessage and sets binary encoding to avoid mutation of
 // the underlying event.
-
 type ImmutableEventMessage struct {
 	*binding.EventMessage
 }
@@ -32,6 +31,8 @@ func NewImmutableEventMessage(e *event.Event) ImmutableEventMessage {
 	return ImmutableEventMessage{(*binding.EventMessage)(e)}
 }
 
+// ReadEncoding overrides the encoding used by EventMessage with EncodingBinary instead of
+// EncodingEvent to avoid unnecessarily converting the message to an event.
 func (m ImmutableEventMessage) ReadEncoding() binding.Encoding {
 	return binding.EncodingBinary
 }
