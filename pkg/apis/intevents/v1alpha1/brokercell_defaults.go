@@ -19,6 +19,8 @@ package v1alpha1
 import (
 	"context"
 
+	quantityutil "github.com/google/knative-gcp/pkg/utils/resource"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"knative.dev/pkg/ptr"
 )
 
@@ -29,16 +31,18 @@ const (
 	// Here we only set half of the limit so that in case of surging memory
 	// usage, HPA could have enough time to kick in.
 	// See: https://github.com/google/knative-gcp/issues/1265
-	avgMemoryUsage        string = "1500Mi"
-	avgMemoryUsageIngress string = "700Mi"
-	cpuRequest            string = "1000m"
-	cpuRequestFanout      string = "1500m"
-	cpuLimit              string = ""
-	memoryRequest         string = "500Mi"
-	memoryLimit           string = "3000Mi"
-	memoryLimitIngress    string = "1000Mi"
-	minReplicas           int32  = 1
-	maxReplicas           int32  = 10
+	avgMemoryUsage                         string  = "1500Mi"
+	avgMemoryUsageIngress                  string  = "700Mi"
+	cpuRequest                             string  = "1000m"
+	cpuRequestFanout                       string  = "1500m"
+	cpuLimit                               string  = ""
+	memoryRequest                          string  = "500Mi"
+	memoryLimitToRequestCoefficient        float64 = 6.0
+	memoryLimitToRequestCoefficientIngress float64 = 2.0
+	targetMemoryUsageCoefficient           float64 = 0.5
+	targetMemoryUsageCoefficientIngress    float64 = 0.7
+	minReplicas                            int32   = 1
+	maxReplicas                            int32   = 10
 )
 
 // SetDefaults sets the default field values for a BrokerCell.
@@ -50,80 +54,66 @@ func (bc *BrokerCell) SetDefaults(ctx context.Context) {
 // SetDefaults sets the default field values for a BrokerCellSpec.
 func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 	// Fanout defaults
-	if bcs.Components.Fanout.AvgCPUUtilization == nil {
-		bcs.Components.Fanout.AvgCPUUtilization = ptr.Int32(avgCPUUtilization)
-	}
-	if bcs.Components.Fanout.AvgMemoryUsage == nil {
-		bcs.Components.Fanout.AvgMemoryUsage = ptr.String(avgMemoryUsage)
-	}
-	if bcs.Components.Fanout.CPURequest == nil {
-		bcs.Components.Fanout.CPURequest = ptr.String(cpuRequestFanout)
-	}
-	if bcs.Components.Fanout.CPULimit == nil {
-		bcs.Components.Fanout.CPULimit = ptr.String(cpuLimit)
-	}
-	if bcs.Components.Fanout.MemoryRequest == nil {
-		bcs.Components.Fanout.MemoryRequest = ptr.String(memoryRequest)
-	}
-	if bcs.Components.Fanout.MemoryLimit == nil {
-		bcs.Components.Fanout.MemoryLimit = ptr.String(memoryLimit)
-	}
-	if bcs.Components.Fanout.MinReplicas == nil {
-		bcs.Components.Fanout.MinReplicas = ptr.Int32(minReplicas)
-	}
-	if bcs.Components.Fanout.MaxReplicas == nil {
-		bcs.Components.Fanout.MaxReplicas = ptr.Int32(maxReplicas)
-	}
-
+	bcs.Components.Fanout.SetCPUDefaults(cpuRequestFanout, cpuLimit)
+	bcs.Components.Fanout.SetMemoryDefaults(memoryLimitToRequestCoefficient)
+	bcs.Components.Fanout.SetAutoScalingDefaults(targetMemoryUsageCoefficient)
 	// Retry defaults
-	if bcs.Components.Retry.AvgCPUUtilization == nil {
-		bcs.Components.Retry.AvgCPUUtilization = ptr.Int32(avgCPUUtilization)
-	}
-	if bcs.Components.Retry.AvgMemoryUsage == nil {
-		bcs.Components.Retry.AvgMemoryUsage = ptr.String(avgMemoryUsage)
-	}
-	if bcs.Components.Retry.CPURequest == nil {
-		bcs.Components.Retry.CPURequest = ptr.String(cpuRequest)
-	}
-	if bcs.Components.Retry.CPULimit == nil {
-		bcs.Components.Retry.CPULimit = ptr.String(cpuLimit)
-	}
-	if bcs.Components.Retry.MemoryRequest == nil {
-		bcs.Components.Retry.MemoryRequest = ptr.String(memoryRequest)
-	}
-	if bcs.Components.Retry.MemoryLimit == nil {
-		bcs.Components.Retry.MemoryLimit = ptr.String(memoryLimit)
-	}
-	if bcs.Components.Retry.MinReplicas == nil {
-		bcs.Components.Retry.MinReplicas = ptr.Int32(minReplicas)
-	}
-	if bcs.Components.Retry.MaxReplicas == nil {
-		bcs.Components.Retry.MaxReplicas = ptr.Int32(maxReplicas)
-	}
-
+	bcs.Components.Retry.SetCPUDefaults(cpuRequest, cpuLimit)
+	bcs.Components.Retry.SetMemoryDefaults(memoryLimitToRequestCoefficient)
+	bcs.Components.Retry.SetAutoScalingDefaults(targetMemoryUsageCoefficient)
 	// Ingress defaults
-	if bcs.Components.Ingress.AvgCPUUtilization == nil {
-		bcs.Components.Ingress.AvgCPUUtilization = ptr.Int32(avgCPUUtilization)
+	bcs.Components.Ingress.SetCPUDefaults(cpuRequest, cpuLimit)
+	bcs.Components.Ingress.SetMemoryDefaults(memoryLimitToRequestCoefficientIngress)
+	bcs.Components.Ingress.SetAutoScalingDefaults(targetMemoryUsageCoefficientIngress)
+}
+
+// SetMemoryDefaults sets the memory consumption related default field values for ComponentParameters.
+func (componentParams *ComponentParameters) SetMemoryDefaults(memoryLimitToRequestCoefficient float64) {
+	if componentParams.MemoryRequest == nil {
+		componentParams.MemoryRequest = ptr.String(memoryRequest)
 	}
-	if bcs.Components.Ingress.AvgMemoryUsage == nil {
-		bcs.Components.Ingress.AvgMemoryUsage = ptr.String(avgMemoryUsageIngress)
+	requestedMemoryQuantity := resource.MustParse(*componentParams.MemoryRequest)
+	if componentParams.MemoryLimit == nil {
+		autoSelectedLimit := quantityutil.MultiplyQuantity(requestedMemoryQuantity, memoryLimitToRequestCoefficient)
+		componentParams.MemoryLimit = ptr.String(autoSelectedLimit.String())
 	}
-	if bcs.Components.Ingress.CPURequest == nil {
-		bcs.Components.Ingress.CPURequest = ptr.String(cpuRequest)
+	// Make sure the limit is not lower than what's requested
+	memoryLimitQuantity := resource.MustParse(*componentParams.MemoryLimit)
+	if memoryLimitQuantity.Cmp(requestedMemoryQuantity) < 0 {
+		componentParams.MemoryLimit = ptr.String(requestedMemoryQuantity.String())
+		memoryLimitQuantity = requestedMemoryQuantity
 	}
-	if bcs.Components.Ingress.CPULimit == nil {
-		bcs.Components.Ingress.CPULimit = ptr.String(cpuLimit)
+}
+
+// SetCPUDefaults sets the CPU consumption related default field values for ComponentParameters.
+func (componentParams *ComponentParameters) SetCPUDefaults(defaultCPURequest, defaultCPULimit string) {
+	if componentParams.CPURequest == nil {
+		componentParams.CPURequest = ptr.String(defaultCPURequest)
 	}
-	if bcs.Components.Ingress.MemoryRequest == nil {
-		bcs.Components.Ingress.MemoryRequest = ptr.String(memoryRequest)
+	if componentParams.CPULimit == nil {
+		componentParams.CPULimit = ptr.String(defaultCPULimit)
 	}
-	if bcs.Components.Ingress.MemoryLimit == nil {
-		bcs.Components.Ingress.MemoryLimit = ptr.String(memoryLimitIngress)
+}
+
+// SetAutoScalingDefaults sets the autoscaling-related default field values for ComponentParameters.
+func (componentParams *ComponentParameters) SetAutoScalingDefaults(targetMemoryUsageCoefficient float64) {
+	if componentParams.MemoryLimit == nil {
+		panic("Memory limit should be specified on the component before setting auto-scaling parameters")
 	}
-	if bcs.Components.Ingress.MinReplicas == nil {
-		bcs.Components.Ingress.MinReplicas = ptr.Int32(minReplicas)
+	if componentParams.MinReplicas == nil {
+		componentParams.MinReplicas = ptr.Int32(minReplicas)
 	}
-	if bcs.Components.Ingress.MaxReplicas == nil {
-		bcs.Components.Ingress.MaxReplicas = ptr.Int32(maxReplicas)
+	if componentParams.MaxReplicas == nil {
+		componentParams.MaxReplicas = ptr.Int32(maxReplicas)
+	}
+	if componentParams.AvgCPUUtilization == nil {
+		componentParams.AvgCPUUtilization = ptr.Int32(avgCPUUtilization)
+	}
+	// If target average consumption for the auto-scaler is not explicitly specified or falls beyond reasonable range,
+	// default it based on the memory limit
+	memoryLimitQuantity := resource.MustParse(*componentParams.MemoryLimit)
+	if componentParams.AvgMemoryUsage == nil || memoryLimitQuantity.Cmp(resource.MustParse(*componentParams.AvgMemoryUsage)) < 0 {
+		autoSelectedAvgMemoryUsage := quantityutil.MultiplyQuantity(memoryLimitQuantity, targetMemoryUsageCoefficient)
+		componentParams.AvgMemoryUsage = ptr.String(autoSelectedAvgMemoryUsage.String())
 	}
 }
