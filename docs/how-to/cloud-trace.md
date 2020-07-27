@@ -11,7 +11,7 @@ Follow [these instructions](../install/dataplane-service-account.md#create-a-goo
 
 ## Enable Tracing in the `config-tracing` ConfigMap
 
-Edit the `config-tracing` ConfigMap under the `cloud-run-events` namespace in Cloud Console or with the Following `kubectl` command:
+Edit the `config-tracing` ConfigMap under the `cloud-run-events` namespace in Cloud Console or with the following `kubectl` command:
 
 ```shell
 kubectl edit configmap -n cloud-run-events config-tracing
