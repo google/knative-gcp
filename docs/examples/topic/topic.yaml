@@ -16,7 +16,7 @@
 #   TOPIC_NAME: Replace with the Cloud PubSub Topic name.
 #   MY_PROJECT: Replace with the Google Cloud Project's ID.
 
-apiVersion: internal.events.cloud.google.com/v1beta1
+apiVersion: internal.events.cloud.google.com/v1
 kind: Topic
 metadata:
   name: TOPIC_NAME-sample
