@@ -282,7 +282,7 @@ func TestAllCasesTrigger(t *testing.T) {
 				OnlySubscriptions("cre-tgr_testnamespace_test-trigger_abc123"),
 				SubscriptionHasRetryPolicy("cre-tgr_testnamespace_test-trigger_abc123",
 					&pubsub.RetryPolicy{
-						MaximumBackoff: 64 * time.Second,
+						MaximumBackoff: 600 * time.Second,
 						MinimumBackoff: time.Second,
 					}),
 			},
