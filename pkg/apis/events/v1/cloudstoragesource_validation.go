@@ -30,6 +30,11 @@ import (
 
 func (current *CloudStorageSource) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
+
+	if apis.IsInUpdate(ctx) {
+		original := apis.GetBaseline(ctx).(*CloudStorageSource)
+		errs = errs.Also(current.CheckImmutableFields(ctx, original))
+	}
 	return duck.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 

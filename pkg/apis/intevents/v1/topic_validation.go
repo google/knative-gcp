@@ -28,7 +28,13 @@ import (
 )
 
 func (t *Topic) Validate(ctx context.Context) *apis.FieldError {
-	return t.Spec.Validate(ctx).ViaField("spec")
+	err := t.Spec.Validate(ctx).ViaField("spec")
+
+	if apis.IsInUpdate(ctx) {
+		original := apis.GetBaseline(ctx).(*Topic)
+		err = err.Also(t.CheckImmutableFields(ctx, original))
+	}
+	return err
 }
 
 func (ts *TopicSpec) Validate(ctx context.Context) *apis.FieldError {
