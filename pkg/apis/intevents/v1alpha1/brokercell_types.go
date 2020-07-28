@@ -83,17 +83,17 @@ type ComponentParameters struct {
 	// CPULimit specifies the maximal amount of the CPU to be consumable by the deployment
 	CPULimit *string `json:"cpuLimit,omitempty"`
 
+	// MemoryRequest specifies the minimal amount of memory for the deployment to be schedulable
+	MemoryRequest *string `json:"memoryRequest,omitempty"`
+
+	// MemoryLimit specifies the maximal amount of memory to be consumable by the deployment
+	MemoryLimit *string `json:"memoryLimit,omitempty"`
+
 	// MinReplicas specifies the minimum replica count for the component.
 	MinReplicas *int32 `json:"minReplicas,omitempty"`
 
 	// MaxReplicas specifies the maximum replica count for the component.
 	MaxReplicas *int32 `json:"maxReplicas,omitempty"`
-
-	// MemoryRequest specifies the minimal amount of the CPU for the deployment to be schedulable
-	MemoryRequest *string `json:"memoryRequest,omitempty"`
-
-	// MemoryLimit specifies the maximal amount of memory to be consumable by the deployment
-	MemoryLimit *string `json:"memoryLimit,omitempty"`
 }
 
 // ComponentsParametersSpec specifies separate parameters for each component

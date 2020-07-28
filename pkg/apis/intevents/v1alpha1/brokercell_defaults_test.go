@@ -198,37 +198,37 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 }
 
 func makeDefaultBrokerCellSpec() BrokerCellSpec {
-	memoryLimit, memoryLimitIngress := "3000Mi", "1000Mi"
+	memoryLimitFanout, memoryLimitIngress, memoryLimitRetry := "3000Mi", "1000Mi", "3000Mi"
 
 	defaultBrokerCell := BrokerCellSpec{
 		ComponentsParametersSpec{
 			Fanout: ComponentParameters{
 				CPURequest:        ptr.String(cpuRequestFanout),
-				CPULimit:          ptr.String(cpuLimit),
-				MemoryRequest:     ptr.String(memoryRequest),
-				MemoryLimit:       ptr.String(memoryLimit),
-				AvgCPUUtilization: ptr.Int32(avgCPUUtilization),
-				AvgMemoryUsage:    ptr.String(avgMemoryUsage),
+				CPULimit:          ptr.String(cpuLimitFanout),
+				MemoryRequest:     ptr.String(memoryRequestFanout),
+				MemoryLimit:       ptr.String(memoryLimitFanout),
+				AvgCPUUtilization: ptr.Int32(avgCPUUtilizationFanout),
+				AvgMemoryUsage:    ptr.String(avgMemoryUsageFanout),
 				MaxReplicas:       ptr.Int32(maxReplicas),
 				MinReplicas:       ptr.Int32(minReplicas),
 			},
 			Ingress: ComponentParameters{
-				CPURequest:        ptr.String(cpuRequest),
-				CPULimit:          ptr.String(cpuLimit),
-				MemoryRequest:     ptr.String(memoryRequest),
+				CPURequest:        ptr.String(cpuRequestIngress),
+				CPULimit:          ptr.String(cpuLimitIngress),
+				MemoryRequest:     ptr.String(memoryRequestIngress),
 				MemoryLimit:       ptr.String(memoryLimitIngress),
-				AvgCPUUtilization: ptr.Int32(avgCPUUtilization),
+				AvgCPUUtilization: ptr.Int32(avgCPUUtilizationIngress),
 				AvgMemoryUsage:    ptr.String(avgMemoryUsageIngress),
 				MaxReplicas:       ptr.Int32(maxReplicas),
 				MinReplicas:       ptr.Int32(minReplicas),
 			},
 			Retry: ComponentParameters{
-				CPURequest:        ptr.String(cpuRequest),
-				CPULimit:          ptr.String(cpuLimit),
-				MemoryRequest:     ptr.String(memoryRequest),
-				MemoryLimit:       ptr.String(memoryLimit),
-				AvgCPUUtilization: ptr.Int32(avgCPUUtilization),
-				AvgMemoryUsage:    ptr.String(avgMemoryUsage),
+				CPURequest:        ptr.String(cpuRequestRetry),
+				CPULimit:          ptr.String(cpuLimitRetry),
+				MemoryRequest:     ptr.String(memoryRequestRetry),
+				MemoryLimit:       ptr.String(memoryLimitRetry),
+				AvgCPUUtilization: ptr.Int32(avgCPUUtilizationRetry),
+				AvgMemoryUsage:    ptr.String(avgMemoryUsageRetry),
 				MaxReplicas:       ptr.Int32(maxReplicas),
 				MinReplicas:       ptr.Int32(minReplicas),
 			},

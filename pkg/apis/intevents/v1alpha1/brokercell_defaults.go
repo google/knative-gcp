@@ -25,22 +25,32 @@ import (
 )
 
 const (
-	avgCPUUtilization int32 = 95
+	avgCPUUtilizationFanout  int32 = 95
+	avgCPUUtilizationIngress int32 = 95
+	avgCPUUtilizationRetry   int32 = 95
 	// The limit we set (for Fanout and Retry) is 3000Mi which is mostly used
 	// to prevent surging memory usage causing OOM.
 	// Here we only set half of the limit so that in case of surging memory
 	// usage, HPA could have enough time to kick in.
 	// See: https://github.com/google/knative-gcp/issues/1265
-	avgMemoryUsage                         string  = "1500Mi"
+	avgMemoryUsageFanout                   string  = "1500Mi"
 	avgMemoryUsageIngress                  string  = "700Mi"
-	cpuRequest                             string  = "1000m"
+	avgMemoryUsageRetry                    string  = "1500Mi"
 	cpuRequestFanout                       string  = "1500m"
-	cpuLimit                               string  = ""
-	memoryRequest                          string  = "500Mi"
-	memoryLimitToRequestCoefficient        float64 = 6.0
+	cpuRequestIngress                      string  = "1000m"
+	cpuRequestRetry                        string  = "1000m"
+	cpuLimitFanout                         string  = ""
+	cpuLimitIngress                        string  = ""
+	cpuLimitRetry                          string  = ""
+	memoryRequestFanout                    string  = "500Mi"
+	memoryRequestIngress                   string  = "500Mi"
+	memoryRequestRetry                     string  = "500Mi"
+	memoryLimitToRequestCoefficientFanout  float64 = 6.0
 	memoryLimitToRequestCoefficientIngress float64 = 2.0
-	targetMemoryUsageCoefficient           float64 = 0.5
+	memoryLimitToRequestCoefficientRetry   float64 = 6.0
+	targetMemoryUsageCoefficientFanout     float64 = 0.5
 	targetMemoryUsageCoefficientIngress    float64 = 0.7
+	targetMemoryUsageCoefficientRetry      float64 = 0.5
 	minReplicas                            int32   = 1
 	maxReplicas                            int32   = 10
 )
@@ -54,21 +64,21 @@ func (bc *BrokerCell) SetDefaults(ctx context.Context) {
 // SetDefaults sets the default field values for a BrokerCellSpec.
 func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 	// Fanout defaults
-	bcs.Components.Fanout.SetCPUDefaults(cpuRequestFanout, cpuLimit)
-	bcs.Components.Fanout.SetMemoryDefaults(memoryLimitToRequestCoefficient)
-	bcs.Components.Fanout.SetAutoScalingDefaults(targetMemoryUsageCoefficient)
+	bcs.Components.Fanout.SetCPUDefaults(cpuRequestFanout, cpuLimitFanout)
+	bcs.Components.Fanout.SetMemoryDefaults(memoryLimitToRequestCoefficientFanout, memoryRequestFanout)
+	bcs.Components.Fanout.SetAutoScalingDefaults(targetMemoryUsageCoefficientFanout, avgCPUUtilizationFanout)
 	// Retry defaults
-	bcs.Components.Retry.SetCPUDefaults(cpuRequest, cpuLimit)
-	bcs.Components.Retry.SetMemoryDefaults(memoryLimitToRequestCoefficient)
-	bcs.Components.Retry.SetAutoScalingDefaults(targetMemoryUsageCoefficient)
+	bcs.Components.Retry.SetCPUDefaults(cpuRequestRetry, cpuLimitRetry)
+	bcs.Components.Retry.SetMemoryDefaults(memoryLimitToRequestCoefficientRetry, memoryRequestRetry)
+	bcs.Components.Retry.SetAutoScalingDefaults(targetMemoryUsageCoefficientRetry, avgCPUUtilizationRetry)
 	// Ingress defaults
-	bcs.Components.Ingress.SetCPUDefaults(cpuRequest, cpuLimit)
-	bcs.Components.Ingress.SetMemoryDefaults(memoryLimitToRequestCoefficientIngress)
-	bcs.Components.Ingress.SetAutoScalingDefaults(targetMemoryUsageCoefficientIngress)
+	bcs.Components.Ingress.SetCPUDefaults(cpuRequestIngress, cpuLimitIngress)
+	bcs.Components.Ingress.SetMemoryDefaults(memoryLimitToRequestCoefficientIngress, memoryRequestIngress)
+	bcs.Components.Ingress.SetAutoScalingDefaults(targetMemoryUsageCoefficientIngress, avgCPUUtilizationIngress)
 }
 
 // SetMemoryDefaults sets the memory consumption related default field values for ComponentParameters.
-func (componentParams *ComponentParameters) SetMemoryDefaults(memoryLimitToRequestCoefficient float64) {
+func (componentParams *ComponentParameters) SetMemoryDefaults(memoryLimitToRequestCoefficient float64, memoryRequest string) {
 	if componentParams.MemoryRequest == nil {
 		componentParams.MemoryRequest = ptr.String(memoryRequest)
 	}
@@ -96,7 +106,7 @@ func (componentParams *ComponentParameters) SetCPUDefaults(defaultCPURequest, de
 }
 
 // SetAutoScalingDefaults sets the autoscaling-related default field values for ComponentParameters.
-func (componentParams *ComponentParameters) SetAutoScalingDefaults(targetMemoryUsageCoefficient float64) {
+func (componentParams *ComponentParameters) SetAutoScalingDefaults(targetMemoryUsageCoefficient float64, avgCPUUtilization int32) {
 	if componentParams.MemoryLimit == nil {
 		panic("Memory limit should be specified on the component before setting auto-scaling parameters")
 	}
