@@ -145,16 +145,6 @@ func (in *ComponentParameters) DeepCopyInto(out *ComponentParameters) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.MinReplicas != nil {
-		in, out := &in.MinReplicas, &out.MinReplicas
-		*out = new(int32)
-		**out = **in
-	}
-	if in.MaxReplicas != nil {
-		in, out := &in.MaxReplicas, &out.MaxReplicas
-		*out = new(int32)
-		**out = **in
-	}
 	if in.MemoryRequest != nil {
 		in, out := &in.MemoryRequest, &out.MemoryRequest
 		*out = new(string)
@@ -163,6 +153,16 @@ func (in *ComponentParameters) DeepCopyInto(out *ComponentParameters) {
 	if in.MemoryLimit != nil {
 		in, out := &in.MemoryLimit, &out.MemoryLimit
 		*out = new(string)
+		**out = **in
+	}
+	if in.MinReplicas != nil {
+		in, out := &in.MinReplicas, &out.MinReplicas
+		*out = new(int32)
+		**out = **in
+	}
+	if in.MaxReplicas != nil {
+		in, out := &in.MaxReplicas, &out.MaxReplicas
+		*out = new(int32)
 		**out = **in
 	}
 	return
