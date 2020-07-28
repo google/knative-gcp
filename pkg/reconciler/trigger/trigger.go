@@ -50,6 +50,10 @@ const (
 	// Name of the corev1.Events emitted from the Trigger reconciliation process.
 	triggerReconciled = "TriggerReconciled"
 	triggerFinalized  = "TriggerFinalized"
+
+	// Default maximum backoff duration used in the backoff retry policy for
+	// pubsub subscriptions. 600 seconds is the longest supported time.
+	defaultMaximumBackoff = 600 * time.Second
 )
 
 // Reconciler implements controller.Reconciler for Trigger resources.
@@ -216,12 +220,12 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	//TODO uncomment when eventing webhook allows this
 	//trig.Status.TopicID = topic.ID()
 
-	retryPolicy, err := r.getPubsubRetryPolicy(deliverySpec)
+	retryPolicy, err := getPubsubRetryPolicy(deliverySpec)
 	if err != nil {
 		logger.Error("Error getting broker retry policy", zap.Error(err))
 		return err
 	}
-	deadLetterPolicy, err := r.getPubsubDeadLetterPolicy(projectID, deliverySpec)
+	deadLetterPolicy, err := getPubsubDeadLetterPolicy(projectID, deliverySpec)
 	if err != nil {
 		logger.Error("Error getting broker dead letter policy", zap.Error(err))
 		return err
@@ -250,7 +254,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 
 // getPubsubRetryPolicy gets the eventing retry policy from the Broker delivery
 // spec and translates it to a pubsub retry policy.
-func (r *Reconciler) getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) (*pubsub.RetryPolicy, error) {
+func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) (*pubsub.RetryPolicy, error) {
 	// The Broker delivery spec is translated to a pubsub retry policy in the
 	// manner defined in the following post:
 	// https://github.com/google/knative-gcp/issues/1392#issuecomment-655617873
@@ -261,7 +265,7 @@ func (r *Reconciler) getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec
 	case eventingduckv1beta1.BackoffPolicyLinear:
 		maximumBackoff = minimumBackoff
 	case eventingduckv1beta1.BackoffPolicyExponential:
-		maximumBackoff = time.Duration(1<<*spec.Retry) * minimumBackoff
+		maximumBackoff = defaultMaximumBackoff
 	default:
 		return nil, fmt.Errorf("Unrecognized backoff policy: %v", *spec.BackoffPolicy)
 	}
@@ -292,7 +296,7 @@ func getDeadLetterTopicID(sink *duckv1.Destination) (string, error) {
 
 // getPubsubDeadLetterPolicy gets the eventing dead letter policy from the
 // Broker delivery spec and translates it to a pubsub dead letter policy.
-func (r *Reconciler) getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) (*pubsub.DeadLetterPolicy, error) {
+func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) (*pubsub.DeadLetterPolicy, error) {
 	if spec.DeadLetterSink == nil {
 		return nil, nil
 	}
