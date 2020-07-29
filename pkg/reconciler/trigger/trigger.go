@@ -255,6 +255,9 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 // getPubsubRetryPolicy gets the eventing retry policy from the Broker delivery
 // spec and translates it to a pubsub retry policy.
 func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) (*pubsub.RetryPolicy, error) {
+	if spec == nil || spec.BackoffDelay == nil || spec.BackoffPolicy == nil {
+		return nil, nil
+	}
 	// The Broker delivery spec is translated to a pubsub retry policy in the
 	// manner defined in the following post:
 	// https://github.com/google/knative-gcp/issues/1392#issuecomment-655617873
@@ -297,7 +300,7 @@ func getDeadLetterTopicID(sink *duckv1.Destination) (string, error) {
 // getPubsubDeadLetterPolicy gets the eventing dead letter policy from the
 // Broker delivery spec and translates it to a pubsub dead letter policy.
 func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) (*pubsub.DeadLetterPolicy, error) {
-	if spec.DeadLetterSink == nil {
+	if spec == nil || spec.DeadLetterSink == nil {
 		return nil, nil
 	}
 

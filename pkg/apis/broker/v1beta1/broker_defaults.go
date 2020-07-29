@@ -36,7 +36,7 @@ var (
 
 // SetDefaults sets the default field values for a Broker.
 func (b *Broker) SetDefaults(ctx context.Context) {
-	// Set the default delivery spec values for the backoff retry policy.
+	// Default delivery spec fields.
 	b.Spec.Delivery = &eventingduckv1beta1.DeliverySpec{
 		BackoffDelay:  &backoffDelay,
 		BackoffPolicy: &backoffPolicy,
