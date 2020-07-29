@@ -68,7 +68,7 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, original *Chan
 
 	// Modification of Secret, ServiceAccountName and Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
-		cmpopts.IgnoreFields(ChannelSpec{}, "SubscribableSpec")); diff != "" {
+		cmpopts.IgnoreFields(ChannelSpec{}, "Subscribable")); diff != "" {
 		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
