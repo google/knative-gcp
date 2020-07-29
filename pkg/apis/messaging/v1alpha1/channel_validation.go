@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/google/knative-gcp/pkg/apis/duck"
 
 	"github.com/google/go-cmp/cmp"
@@ -64,24 +66,18 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, original *Chan
 
 	var errs *apis.FieldError
 
-	// Modification of TopicID is not allowed.
-	if original.Status.TopicID != "" {
-		if diff := cmp.Diff(original.Status.TopicID, current.Status.TopicID); diff != "" {
-			errs = errs.Also(&apis.FieldError{
-				Message: "Immutable fields changed (-old +new)",
-				Paths:   []string{"status", "topicId"},
-				Details: diff,
-			})
-		}
-	}
-
-	if diff := cmp.Diff(original.Spec.ServiceAccountName, current.Spec.ServiceAccountName); diff != "" {
+	// Modification of Secret, ServiceAccountName and Project are not allowed. Everything else is mutable.
+	if diff := cmp.Diff(original.Spec, current.Spec,
+		cmpopts.IgnoreFields(ChannelSpec{}, "SubscribableSpec")); diff != "" {
 		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
-			Paths:   []string{"status", "serviceAccount"},
+			Paths:   []string{"spec"},
 			Details: diff,
 		})
 	}
+
+	// Modification of AutoscalingClassAnnotations is not allowed.
+	errs = duck.CheckImmutableAutoscalingClassAnnotations(&current.ObjectMeta, &original.ObjectMeta, errs)
 
 	// Modification of non-empty cluster name annotation is not allowed.
 	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
