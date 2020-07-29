@@ -74,4 +74,3 @@ your Kubernetes cluster, use our custom Kubernetes resources below.
 
 _Note:_ This repo is still in development, APIs and resource names are subject
 to change in the future.
-
