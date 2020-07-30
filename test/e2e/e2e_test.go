@@ -21,6 +21,8 @@ package e2e
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/cloudevents/sdk-go/v2/binding"
 	conformancehelpers "knative.dev/eventing/test/conformance/helpers"
 	e2ehelpers "knative.dev/eventing/test/e2e/helpers"
@@ -108,7 +110,15 @@ func TestEventTransformationForTrigger(t *testing.T) {
 	brokerClass := "MTChannelBasedBroker"
 	brokerVersion := "v1beta1"
 	triggerVersion := "v1beta1"
-	e2ehelpers.EventTransformationForTriggerTestHelper(t, brokerClass, brokerVersion, triggerVersion, channelTestRunner, lib.DuplicatePubSubSecret)
+	channelTestRunner.RunTests(t, eventingtestlib.FeatureBasic, func(t *testing.T, component metav1.TypeMeta) {
+		e2ehelpers.EventTransformationForTriggerTestHelper(
+			t,
+			brokerVersion,
+			triggerVersion,
+			e2ehelpers.ChannelBasedBrokerCreator(component, brokerClass),
+			lib.DuplicatePubSubSecret,
+		)
+	})
 }
 
 func TestBrokerChannelFlow(t *testing.T) {
