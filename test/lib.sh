@@ -21,7 +21,7 @@ readonly CLOUD_RUN_EVENTS_ISTIO_CONFIG="config/istio"
 
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
-  start_release_knative_serving || return 1
+  start_release_knative_serving 0.16.0|| return 1
   start_latest_knative_eventing || return 1
   start_knative_monitoring "$KNATIVE_MONITORING_RELEASE" || return 1
   cloud_run_events_setup || return 1
