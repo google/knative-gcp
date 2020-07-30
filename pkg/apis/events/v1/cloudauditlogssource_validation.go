@@ -29,7 +29,13 @@ import (
 )
 
 func (current *CloudAuditLogsSource) Validate(ctx context.Context) *apis.FieldError {
-	return current.Spec.Validate(ctx).ViaField("spec")
+	err := current.Spec.Validate(ctx).ViaField("spec")
+
+	if apis.IsInUpdate(ctx) {
+		original := apis.GetBaseline(ctx).(*CloudAuditLogsSource)
+		err = err.Also(current.CheckImmutableFields(ctx, original))
+	}
+	return err
 }
 
 func (current *CloudAuditLogsSourceSpec) Validate(ctx context.Context) *apis.FieldError {

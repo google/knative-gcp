@@ -29,7 +29,7 @@ import (
 const (
 	// Intentionally make it short because the additional attribute
 	// increases Pubsub message size and could incur additional cost.
-	hopsAttribute = "kgcphops"
+	HopsAttribute = "kgcphops"
 )
 
 // UpdateRemainingHops update an event with proper remaining hops.
@@ -48,31 +48,25 @@ func UpdateRemainingHops(ctx context.Context, event *event.Event, preemptiveHops
 	} else {
 		logging.FromContext(ctx).Debug("Remaining hops not found in event, defaulting to the preemptive value.",
 			zap.String("event.id", event.ID()),
-			zap.Int32(hopsAttribute, preemptiveHops),
+			zap.Int32(HopsAttribute, preemptiveHops),
 		)
 		hops = preemptiveHops
 	}
 
-	event.SetExtension(hopsAttribute, hops)
-}
-
-// SetRemainingHops sets the remaining hops in the event.
-// It ignores any existing hops value.
-func SetRemainingHops(ctx context.Context, event *event.Event, hops int32) {
-	event.SetExtension(hopsAttribute, hops)
+	event.SetExtension(HopsAttribute, hops)
 }
 
 type SetRemainingHopsTransformer int32
 
 func (h SetRemainingHopsTransformer) Transform(_ binding.MessageMetadataReader, out binding.MessageMetadataWriter) error {
-	out.SetExtension(hopsAttribute, int32(h))
+	out.SetExtension(HopsAttribute, int32(h))
 	return nil
 }
 
 // GetRemainingHops returns the remaining hops of the event if it presents.
 // If there is no existing hops value or an invalid one, (0, false) will be returned.
 func GetRemainingHops(ctx context.Context, event *event.Event) (int32, bool) {
-	hopsRaw, ok := event.Extensions()[hopsAttribute]
+	hopsRaw, ok := event.Extensions()[HopsAttribute]
 	if !ok {
 		return 0, false
 	}
@@ -80,7 +74,7 @@ func GetRemainingHops(ctx context.Context, event *event.Event) (int32, bool) {
 	if err != nil {
 		logging.FromContext(ctx).Warn("Failed to convert existing hops value into integer, regarding it as there is no hops value.",
 			zap.String("event.id", event.ID()),
-			zap.Any(hopsAttribute, hopsRaw),
+			zap.Any(HopsAttribute, hopsRaw),
 			zap.Error(err),
 		)
 		return 0, false
@@ -90,5 +84,5 @@ func GetRemainingHops(ctx context.Context, event *event.Event) (int32, bool) {
 
 // DeleteRemainingHops deletes hops from the event extensions.
 func DeleteRemainingHops(_ context.Context, event *event.Event) {
-	event.SetExtension(hopsAttribute, nil)
+	event.SetExtension(HopsAttribute, nil)
 }

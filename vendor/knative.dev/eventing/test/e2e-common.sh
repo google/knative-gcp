@@ -82,6 +82,12 @@ UNINSTALL_LIST=()
 # Setup the Knative environment for running tests.
 function knative_setup() {
   install_knative_eventing
+
+  install_mt_broker || fail_test "Could not install MT Channel Based Broker"
+
+  install_sugar || fail_test "Could not install Sugar Controller"
+
+  unleash_duck || fail_test "Could not unleash the chaos duck"
 }
 
 function scale_controlplane() {
@@ -190,8 +196,7 @@ function install_mt_broker() {
   find ${TMP_MT_CHANNEL_BASED_BROKER_CONFIG_DIR} -type f -name "*.yaml" -exec sed -i "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${TEST_EVENTING_NAMESPACE}/g" {} +
   ko apply --strict -f ${TMP_MT_CHANNEL_BASED_BROKER_CONFIG_DIR} || return 1
 
-  # TODO(https://github.com/knative/eventing/issues/3591): Enable once MT Broker chaos issues are fixed.
-  # scale_controlplane mt-broker-controller
+  scale_controlplane mt-broker-controller
 
   wait_until_pods_running ${TEST_EVENTING_NAMESPACE} || fail_test "Knative Eventing with MT Broker did not come up"
 }
@@ -210,6 +215,11 @@ function install_sugar() {
 }
 
 function unleash_duck() {
+  echo "enable debug logging"
+  cat test/config/config-logging.yaml | \
+    sed "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${TEST_EVENTING_NAMESPACE}/g" | \
+    ko apply --strict -f - || return $?
+
   echo "unleash the duck"
   cat test/config/chaosduck.yaml | \
     sed "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${TEST_EVENTING_NAMESPACE}/g" | \
