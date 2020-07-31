@@ -155,12 +155,14 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1.CloudSchedu
 // in the Scheduler, remove it.
 func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1.CloudSchedulerSource) error {
 	if scheduler.Status.JobName == "" {
+		scheduler.Status.MarkJobNotReady("JobFinalized", "No job to delete.")
 		return nil
 	}
 
 	client, err := r.createClientFn(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create CloudSchedulerSource client", zap.Error(err))
+		scheduler.Status.MarkJobNotReady(deleteJobFailed, "Failed to create CloudSchedulerSource client: %s", err.Error())
 		return err
 	}
 	defer client.Close()
@@ -172,11 +174,14 @@ func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1.CloudScheduler
 	}
 	if st, ok := gstatus.FromError(err); !ok {
 		logging.FromContext(ctx).Desugar().Error("Failed from CloudSchedulerSource client while deleting CloudSchedulerSource job", zap.String("jobName", scheduler.Status.JobName), zap.Error(err))
+		scheduler.Status.MarkJobNotReady(deleteJobFailed, "Failed from CloudSchedulerSource client while deleting CloudSchedulerSource job: %s", err.Error())
 		return err
 	} else if st.Code() != codes.NotFound {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete CloudSchedulerSource job", zap.String("jobName", scheduler.Status.JobName), zap.Error(err))
+		scheduler.Status.MarkJobNotReady(deleteJobFailed, "Failed to delete CloudSchedulerSource job: %s", err.Error())
 		return err
 	}
+	scheduler.Status.MarkJobNotReady("JobDeleted", "Successfully deleted job: %s", scheduler.Status.JobName)
 	return nil
 }
 

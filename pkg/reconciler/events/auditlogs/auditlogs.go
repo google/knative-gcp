@@ -171,16 +171,20 @@ func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, s *v1.CloudAudit
 // previously created stackdriver sink.
 func (c *Reconciler) deleteSink(ctx context.Context, s *v1.CloudAuditLogsSource) error {
 	if s.Status.StackdriverSink == "" {
+		s.Status.MarkSinkNotReady("SinkFinalized","No sink to delete.")
 		return nil
 	}
 	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create LogAdmin client", zap.Error(err))
+		s.Status.MarkSinkNotReady(deleteSinkFailed,"Failed to create LogAdmin Client: %s", err.Error())
 		return err
 	}
-	if err = logadminClient.DeleteSink(ctx, s.Status.StackdriverSink); status.Code(err) != codes.NotFound {
+	if err = logadminClient.DeleteSink(ctx, s.Status.StackdriverSink); err != nil && status.Code(err) != codes.NotFound {
+		s.Status.MarkSinkNotReady(deleteSinkFailed,"Failed to delete Stackdriver sink: %s", err.Error())
 		return err
 	}
+	s.Status.MarkSinkNotReady("SinkDeleted","Sink successfully deleted: %s", s.Status.StackdriverSink)
 	return nil
 }
 
