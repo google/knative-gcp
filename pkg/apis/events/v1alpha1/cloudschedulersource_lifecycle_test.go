@@ -116,7 +116,7 @@ func TestCloudSchedulerSourceStatusIsReady(t *testing.T) {
 			return &s.Status
 		}(),
 		wantConditionStatus: corev1.ConditionTrue,
-		want: true,
+		want:                true,
 	}}
 
 	for _, test := range tests {

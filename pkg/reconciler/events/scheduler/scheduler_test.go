@@ -1145,7 +1145,7 @@ func TestAllCases(t *testing.T) {
 				),
 				newSink(),
 			},
-			Key:               testNS + "/" + schedulerName,
+			Key: testNS + "/" + schedulerName,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: reconcilertestingv1.NewCloudSchedulerSource(schedulerName, testNS,
 					reconcilertestingv1.WithCloudSchedulerSourceProject(testProject),
@@ -1201,7 +1201,7 @@ func TestAllCases(t *testing.T) {
 				),
 				newSink(),
 			},
-			Key:               testNS + "/" + schedulerName,
+			Key: testNS + "/" + schedulerName,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: reconcilertestingv1.NewCloudSchedulerSource(schedulerName, testNS,
 					reconcilertestingv1.WithCloudSchedulerSourceProject(testProject),

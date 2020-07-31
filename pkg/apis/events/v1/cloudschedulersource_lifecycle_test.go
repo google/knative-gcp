@@ -70,17 +70,17 @@ func TestCloudSchedulerSourceStatusIsReady(t *testing.T) {
 		wantConditionStatus: corev1.ConditionUnknown,
 		want:                false,
 	}, {
-			name: "the status pullsubscription is false",
-			s: func() *CloudSchedulerSourceStatus {
-				s := &CloudSchedulerSource{}
-				s.Status.InitializeConditions()
-				s.Status.MarkTopicReady(s.ConditionSet())
-				s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), "PullSubscriptionFailed", "the status of pullsubscription is false")
-				s.Status.MarkJobReady("jobName")
-				return &s.Status
-			}(),
-			wantConditionStatus: corev1.ConditionFalse,
-			want:                false,
+		name: "the status pullsubscription is false",
+		s: func() *CloudSchedulerSourceStatus {
+			s := &CloudSchedulerSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkTopicReady(s.ConditionSet())
+			s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), "PullSubscriptionFailed", "the status of pullsubscription is false")
+			s.Status.MarkJobReady("jobName")
+			return &s.Status
+		}(),
+		wantConditionStatus: corev1.ConditionFalse,
+		want:                false,
 	}, {
 		name: "the status pullsubscription is unknown",
 		s: func() *CloudSchedulerSourceStatus {
@@ -116,7 +116,7 @@ func TestCloudSchedulerSourceStatusIsReady(t *testing.T) {
 			return &s.Status
 		}(),
 		wantConditionStatus: corev1.ConditionTrue,
-		want: true,
+		want:                true,
 	}}
 
 	for _, test := range tests {

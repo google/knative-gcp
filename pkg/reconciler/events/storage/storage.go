@@ -190,7 +190,7 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1.CloudSt
 	client, err := r.createClientFn(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create CloudStorageSource client", zap.Error(err))
-		storage.Status.MarkNotificationNotReady(deleteNotificationFailed,  "Failed to create CloudStorageSource client: %s", err.Error())
+		storage.Status.MarkNotificationNotReady(deleteNotificationFailed, "Failed to create CloudStorageSource client: %s", err.Error())
 		return err
 	}
 	defer client.Close()
@@ -226,7 +226,7 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1.CloudSt
 		err = bucket.DeleteNotification(ctx, storage.Status.NotificationID)
 		if err == nil {
 			logging.FromContext(ctx).Desugar().Debug("Deleted Notification", zap.String("notificationId", storage.Status.NotificationID))
-			storage.Status.MarkNotificationNotReady("NotificationDeleted", "Successfully deleted notification: %s.",storage.Status.NotificationID)
+			storage.Status.MarkNotificationNotReady("NotificationDeleted", "Successfully deleted notification: %s.", storage.Status.NotificationID)
 			return nil
 		}
 		if st, ok := gstatus.FromError(err); !ok {
