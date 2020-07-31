@@ -335,8 +335,8 @@ func TestDeliverFailure(t *testing.T) {
 type NoReplyHandler struct{}
 
 func (NoReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	w.WriteHeader(http.StatusAccepted)
 	io.Copy(ioutil.Discard, req.Body)
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func BenchmarkDeliveryNoReply(b *testing.B) {
@@ -360,8 +360,8 @@ type ReplyHandler struct {
 }
 
 func (h ReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	cehttp.WriteResponseWriter(req.Context(), h.msg, http.StatusOK, w)
 	io.Copy(ioutil.Discard, req.Body)
+	cehttp.WriteResponseWriter(req.Context(), h.msg, http.StatusOK, w)
 }
 
 func BenchmarkDeliveryWithReply(b *testing.B) {
@@ -541,6 +541,91 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, eventSize int, make
 	})
 }
 
+type RetryHandler struct{}
+
+func (RetryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	io.Copy(ioutil.Discard, req.Body)
+	w.WriteHeader(http.StatusInternalServerError)
+}
+
+func BenchmarkDeliveryWithRetry(b *testing.B) {
+	httpClient := http.Client{
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: runtime.NumCPU(),
+		},
+	}
+	targetSvr := httptest.NewServer(RetryHandler(struct{}{}))
+	defer targetSvr.Close()
+
+	for _, eventSize := range []int{0, 1000, 1000000} {
+		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
+			benchmarkRetry(b, &httpClient, targetSvr.URL, eventSize)
+		})
+	}
+}
+
+func benchmarkRetry(b *testing.B, httpClient *http.Client, targetAddress string, eventSize int) {
+	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(b, zaptest.Level(zap.ErrorLevel)).Sugar())
+
+	// Disable pubsub batching
+	pubsub.DefaultPublishSettings.CountThreshold = 1
+	_, c, close := testPubsubClient(ctx, b, "test-project")
+	defer close()
+
+	if _, err := c.CreateTopic(ctx, "test-retry-topic"); err != nil {
+		b.Fatalf("failed to create test pubsub topc: %v", err)
+	}
+
+	ps, err := cepubsub.New(ctx, cepubsub.WithClient(c), cepubsub.WithProjectID("test-project"))
+	if err != nil {
+		b.Fatalf("failed to create pubsub protocol: %v", err)
+	}
+	deliverRetryClient, err := ceclient.New(ps)
+	if err != nil {
+		b.Fatalf("failed to create cloudevents client: %v", err)
+	}
+
+	reportertest.ResetDeliveryMetrics()
+	statsReporter, err := metrics.NewDeliveryReporter("pod", "container")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	sampleEvent := kgcptesting.NewTestEvent(b, eventSize)
+
+	broker := &config.Broker{Namespace: "ns", Name: "broker"}
+	target := &config.Target{
+		Namespace:  "ns",
+		Name:       "target",
+		Broker:     "broker",
+		Address:    targetAddress,
+		RetryQueue: &config.Queue{Topic: "test-retry-topic"},
+	}
+	testTargets := memory.NewEmptyTargets()
+	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+		bm.UpsertTargets(target)
+	})
+	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
+	ctx = handlerctx.WithTargetKey(ctx, target.Key())
+
+	p := &Processor{
+		DeliverClient:      httpClient,
+		Targets:            testTargets,
+		StatsReporter:      statsReporter,
+		RetryOnFailure:     true,
+		DeliverRetryClient: deliverRetryClient,
+	}
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			if err := p.Process(ctx, sampleEvent); err != nil {
+				b.Errorf("unexpected error from processing: %v", err)
+			}
+		}
+	})
+}
+
 func toFakePubsubMessage(m *pstest.Message) *pubsub.Message {
 	return &pubsub.Message{
 		ID:         m.ID,
@@ -549,7 +634,7 @@ func toFakePubsubMessage(m *pstest.Message) *pubsub.Message {
 	}
 }
 
-func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pstest.Server, *pubsub.Client, func()) {
+func testPubsubClient(ctx context.Context, t testing.TB, projectID string) (*pstest.Server, *pubsub.Client, func()) {
 	t.Helper()
 	srv := pstest.NewServer()
 	conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
