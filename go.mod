@@ -3,7 +3,7 @@ module github.com/google/knative-gcp
 go 1.14
 
 require (
-	cloud.google.com/go v0.61.0
+	cloud.google.com/go v0.62.0
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
 	cloud.google.com/go/pubsub v1.6.1
 	cloud.google.com/go/storage v1.10.0
@@ -22,16 +22,15 @@ require (
 	go.uber.org/zap v1.15.0
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	google.golang.org/api v0.29.0
-	google.golang.org/genproto v0.0.0-20200728010541-3dc8dca74b7b
-	google.golang.org/grpc v1.30.0
+	google.golang.org/genproto v0.0.0-20200731012542-8145dea6a485
+	google.golang.org/grpc v1.31.0
 	google.golang.org/protobuf v1.25.0
 	k8s.io/api v0.18.1
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.16.1-0.20200729140059-324a54f95a4c
-	knative.dev/pkg v0.0.0-20200729172100-7726ec60dbbc
-	knative.dev/serving v0.16.1-0.20200729171159-0633c628d3e0
-	knative.dev/test-infra v0.0.0-20200729161259-d21e6ed450cb // indirect
+	knative.dev/eventing v0.16.1-0.20200803090001-4cd17b80636f
+	knative.dev/pkg v0.0.0-20200731005101-694087017879
+	knative.dev/serving v0.16.1-0.20200803111101-9278b3110e97
 	sigs.k8s.io/yaml v1.2.0
 )
 
