@@ -20,9 +20,9 @@ import (
 	"strconv"
 
 	"github.com/google/knative-gcp/pkg/broker/handler"
+	resourceutil "github.com/google/knative-gcp/pkg/utils/resource"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"knative.dev/pkg/kmeta"
@@ -62,36 +62,14 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 		SuccessThreshold:    1,
 		TimeoutSeconds:      5,
 	}
-	container.Resources = corev1.ResourceRequirements{
-		Limits: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse(args.MemoryLimit),
-		},
-		Requests: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse(args.MemoryRequest),
-			corev1.ResourceCPU:    resource.MustParse(args.CPURequest),
-		},
-	}
-	if len(args.CPULimit) > 0 {
-		container.Resources.Limits[corev1.ResourceCPU] = resource.MustParse(args.CPULimit)
-	}
+	container.Resources = resourceutil.BuildResourceRequirements(args.CPURequest, args.CPULimit, args.MemoryRequest, args.MemoryLimit)
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
 
 // MakeFanoutDeployment creates the fanout Deployment object.
 func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 	container := containerTemplate(args.Args)
-	container.Resources = corev1.ResourceRequirements{
-		Limits: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse(args.MemoryLimit),
-		},
-		Requests: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse(args.MemoryRequest),
-			corev1.ResourceCPU:    resource.MustParse(args.CPURequest),
-		},
-	}
-	if len(args.CPULimit) > 0 {
-		container.Resources.Limits[corev1.ResourceCPU] = resource.MustParse(args.CPULimit)
-	}
+	container.Resources = resourceutil.BuildResourceRequirements(args.CPURequest, args.CPULimit, args.MemoryRequest, args.MemoryLimit)
 	container.Ports = append(container.Ports,
 		corev1.ContainerPort{
 			Name:          "http-health",
@@ -122,18 +100,7 @@ func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 // MakeRetryDeployment creates the retry Deployment object.
 func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 	container := containerTemplate(args.Args)
-	container.Resources = corev1.ResourceRequirements{
-		Limits: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse(args.MemoryLimit),
-		},
-		Requests: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse(args.MemoryRequest),
-			corev1.ResourceCPU:    resource.MustParse(args.CPURequest),
-		},
-	}
-	if len(args.CPULimit) > 0 {
-		container.Resources.Limits[corev1.ResourceCPU] = resource.MustParse(args.CPULimit)
-	}
+	container.Resources = resourceutil.BuildResourceRequirements(args.CPURequest, args.CPULimit, args.MemoryRequest, args.MemoryLimit)
 	container.Ports = append(container.Ports,
 		corev1.ContainerPort{
 			Name:          "http-health",

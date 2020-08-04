@@ -68,6 +68,21 @@ var (
 	_ duckv1.KRShaped = (*BrokerCell)(nil)
 )
 
+// SystemResource specifies quantities for resources such as CPU and memory
+type SystemResource struct {
+	CPU    *string `json:"cpu,omitempty"`
+	Memory *string `json:"memory,omitempty"`
+}
+
+// ResourceSpecification defines requests and limits for the system resources
+type ResourceSpecification struct {
+	// Request specifies the minimal amount of the resource for the deployment to be schedulable
+	Requests SystemResource `json:"requests,omitempty"`
+
+	// Limit specifies the maximal amount of the resource that the deployment is allowed to consume
+	Limits SystemResource `json:"limits,omitempty"`
+}
+
 // ComponentParameters specifies scaling and resource parameters to be used
 // by a single component of a BrokerCell.
 type ComponentParameters struct {
@@ -77,17 +92,8 @@ type ComponentParameters struct {
 	// AvgMemoryUsage specifies the average memory consumption targeted by the component's Horizontal Pod Autoscaler
 	AvgMemoryUsage *string `json:"avgMemoryUsage,omitempty"`
 
-	// CPURequest specifies the minimal amount of the CPU for the deployment to be schedulable
-	CPURequest *string `json:"cpuRequest,omitempty"`
-
-	// CPULimit specifies the maximal amount of the CPU to be consumable by the deployment
-	CPULimit *string `json:"cpuLimit,omitempty"`
-
-	// MemoryRequest specifies the minimal amount of memory for the deployment to be schedulable
-	MemoryRequest *string `json:"memoryRequest,omitempty"`
-
-	// MemoryLimit specifies the maximal amount of memory to be consumable by the deployment
-	MemoryLimit *string `json:"memoryLimit,omitempty"`
+	// Requests and limits for system resources (CPU, memory)
+	Resources ResourceSpecification `json:"resources,omitempty"`
 
 	// MinReplicas specifies the minimum replica count for the component.
 	MinReplicas *int32 `json:"minReplicas,omitempty"`
