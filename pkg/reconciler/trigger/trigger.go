@@ -220,12 +220,12 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	//TODO uncomment when eventing webhook allows this
 	//trig.Status.TopicID = topic.ID()
 
-	retryPolicy, err := getPubsubRetryPolicy(deliverySpec)
+	retryPolicy := getPubsubRetryPolicy(deliverySpec)
 	if err != nil {
 		logger.Error("Error getting broker retry policy", zap.Error(err))
 		return err
 	}
-	deadLetterPolicy, err := getPubsubDeadLetterPolicy(projectID, deliverySpec)
+	deadLetterPolicy := getPubsubDeadLetterPolicy(projectID, deliverySpec)
 	if err != nil {
 		logger.Error("Error getting broker dead letter policy", zap.Error(err))
 		return err
@@ -255,22 +255,26 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 // getPubsubRetryPolicy gets the eventing retry policy from the Broker delivery
 // spec and translates it to a pubsub retry policy.
 func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryPolicy {
-	if spec == nil || spec.BackoffDelay == nil || spec.BackoffPolicy == nil {
-		return nil
+	var backoffDelay *string
+	var backoffPolicy *eventingduckv1beta1.BackoffPolicyType
+	if spec == nil {
+		backoffDelay = &brokerv1beta1.DefaultBackoffDelay
+		backoffPolicy = &brokerv1beta1.DefaultBackoffPolicy
+	} else {
+		backoffDelay = spec.BackoffDelay
+		backoffPolicy = spec.BackoffPolicy
 	}
 	// The Broker delivery spec is translated to a pubsub retry policy in the
 	// manner defined in the following post:
 	// https://github.com/google/knative-gcp/issues/1392#issuecomment-655617873
-	p, _ := period.Parse(*spec.BackoffDelay)
+	p, _ := period.Parse(*backoffDelay)
 	minimumBackoff, _ := p.Duration()
 	var maximumBackoff time.Duration
-	switch *spec.BackoffPolicy {
+	switch *backoffPolicy {
 	case eventingduckv1beta1.BackoffPolicyLinear:
 		maximumBackoff = minimumBackoff
 	case eventingduckv1beta1.BackoffPolicyExponential:
 		maximumBackoff = defaultMaximumBackoff
-	default:
-		return nil
 	}
 	return &pubsub.RetryPolicy{
 		MinimumBackoff: minimumBackoff,
@@ -284,9 +288,15 @@ func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.Deliv
 	if spec == nil || spec.DeadLetterSink == nil {
 		return nil
 	}
+	var retry *int32
+	if spec.Retry == nil {
+		retry = &brokerv1beta1.DefaultRetry
+	} else {
+		retry = spec.Retry
+	}
 	// Translate to the pubsub dead letter policy format.
 	return &pubsub.DeadLetterPolicy{
-		MaxDeliveryAttempts: int(*spec.Retry),
+		MaxDeliveryAttempts: int(*retry),
 		DeadLetterTopic:     fmt.Sprintf("projects/%s/topics/%s", projectID, spec.DeadLetterSink.URI.Host),
 	}
 }

@@ -19,30 +19,39 @@ package v1beta1
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/api/equality"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 var (
-	// backoffDelay is the default backoff delay used in the backoff retry policy
+	// DefaultBackoffDelay is the default backoff delay used in the backoff retry policy
 	// for the Broker delivery spec.
-	backoffDelay = "PT1S"
-	// backoffPolicy is the default backoff policy type used in the backoff retry
+	DefaultBackoffDelay = "PT1S"
+	// DefaultBackoffPolicy is the default backoff policy type used in the backoff retry
 	// policy for the Broker delivery spec.
-	backoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
-	// retry is the default number of maximum delivery attempts for unacked messages
+	DefaultBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
+	// DefaultRetry is the default number of maximum delivery attempts for unacked messages
 	// before they are sent to a dead letter topic in the Broker delivery spec, in
 	// case a dead letter topic is specified. Without a dead letter topic specified,
 	// the retry count is infinite.
-	retry int32 = 6
+	DefaultRetry int32 = 6
 )
 
 // SetDefaults sets the default field values for a Broker.
 func (b *Broker) SetDefaults(ctx context.Context) {
-	// Default delivery spec fields.
-	b.Spec.Delivery = &eventingduckv1beta1.DeliverySpec{
-		BackoffDelay:  &backoffDelay,
-		BackoffPolicy: &backoffPolicy,
-		Retry:         &retry,
+	// Set the default delivery spec.
+	if b.Spec.Delivery == nil {
+		b.Spec.Delivery = &eventingduckv1beta1.DeliverySpec{}
+	}
+	if b.Spec.Delivery.BackoffPolicy == nil &&
+		b.Spec.Delivery.BackoffDelay == nil {
+		b.Spec.Delivery.BackoffPolicy = &DefaultBackoffPolicy
+		b.Spec.Delivery.BackoffDelay = &DefaultBackoffDelay
+	}
+	if b.Spec.Delivery.Retry == nil &&
+		(b.Spec.Delivery.DeadLetterSink != nil && !equality.Semantic.DeepEqual(b.Spec.Delivery.DeadLetterSink, &duckv1.Destination{})) {
+		b.Spec.Delivery.Retry = &DefaultRetry
 	}
 	// Besides this, the eventing webhook will add the usual defaults.
 }
