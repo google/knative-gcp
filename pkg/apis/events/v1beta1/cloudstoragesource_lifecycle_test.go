@@ -81,42 +81,43 @@ func TestCloudStorageSourceStatusIsReady(t *testing.T) {
 		}(),
 		wantConditionStatus: corev1.ConditionFalse,
 		want:                false,
-	},
-		{
-			name: "the status of pullsubscription is unknown",
-			s: func() *CloudStorageSourceStatus {
-				s := &CloudStorageSource{}
-				s.Status.InitializeConditions()
-				s.Status.MarkTopicReady(s.ConditionSet())
-				s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), "PullSubscriptionUnknown", "the status of pullsubscription is unknown")
-				s.Status.MarkNotificationReady("notificationID")
-				return &s.Status
-			}(),
-			wantConditionStatus: corev1.ConditionUnknown,
-			want:                false,
-		}, {
-			name: "notification not ready",
-			s: func() *CloudStorageSourceStatus {
-				s := &CloudStorageSource{}
-				s.Status.InitializeConditions()
-				s.Status.MarkTopicReady(s.ConditionSet())
-				s.Status.MarkPullSubscriptionReady(s.ConditionSet())
-				s.Status.MarkNotificationNotReady("NotReady", "notification not ready")
-				return &s.Status
-			}(),
-		}, {
-			name: "ready",
-			s: func() *CloudStorageSourceStatus {
-				s := &CloudStorageSource{}
-				s.Status.InitializeConditions()
-				s.Status.MarkTopicReady(s.ConditionSet())
-				s.Status.MarkPullSubscriptionReady(s.ConditionSet())
-				s.Status.MarkNotificationReady("notificationID")
-				return &s.Status
-			}(),
-			wantConditionStatus: corev1.ConditionTrue,
-			want:                true,
-		}}
+	}, {
+		name: "the status of pullsubscription is unknown",
+		s: func() *CloudStorageSourceStatus {
+			s := &CloudStorageSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkTopicReady(s.ConditionSet())
+			s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), "PullSubscriptionUnknown", "the status of pullsubscription is unknown")
+			s.Status.MarkNotificationReady("notificationID")
+			return &s.Status
+		}(),
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
+	}, {
+		name: "notification not ready",
+		s: func() *CloudStorageSourceStatus {
+			s := &CloudStorageSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkTopicReady(s.ConditionSet())
+			s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+			s.Status.MarkNotificationNotReady("NotReady", "notification not ready")
+			return &s.Status
+		}(),
+		wantConditionStatus: corev1.ConditionFalse,
+		want:                false,
+	}, {
+		name: "ready",
+		s: func() *CloudStorageSourceStatus {
+			s := &CloudStorageSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkTopicReady(s.ConditionSet())
+			s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+			s.Status.MarkNotificationReady("notificationID")
+			return &s.Status
+		}(),
+		wantConditionStatus: corev1.ConditionTrue,
+		want:                true,
+	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -1274,9 +1274,25 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, deleteSinkFailed, "Failed to delete Stackdriver sink: delete-sink-induced-error"),
+			Eventf(corev1.EventTypeWarning, deleteSinkFailed, fmt.Sprintf("%s: delete-sink-induced-error", failedToDeleteSinkMsg)),
 		},
-		WantStatusUpdates: nil,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: v1.NewCloudAuditLogsSource(sourceName, testNS,
+				v1.WithCloudAuditLogsSourceUID(sourceUID),
+				v1.WithCloudAuditLogsSourceMethodName(testMethodName),
+				v1.WithCloudAuditLogsSourceServiceName(testServiceName),
+				v1.WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				v1.WithCloudAuditLogsSourceProjectID(testProject),
+				v1.WithInitCloudAuditLogsSourceConditions,
+				v1.WithCloudAuditLogsSourceSinkUnknown(deleteSinkFailed, fmt.Sprintf("%s: delete-sink-induced-error", failedToDeleteSinkMsg)),
+				v1.WithCloudAuditLogsSourceSinkURI(calSinkURL),
+				v1.WithCloudAuditLogsSourceSinkID(testSinkID),
+				v1.WithCloudAuditLogsSourceTopicReady(testTopicID),
+				v1.WithCloudAuditLogsSourcePullSubscriptionReady(),
+				v1.WithCloudAuditLogsSourceDeletionTimestamp,
+				v1.WithCloudAuditLogsSourceSetDefaults,
+			),
+		}},
 	}, {
 		Name: "sink delete succeeds",
 		Objects: []runtime.Object{

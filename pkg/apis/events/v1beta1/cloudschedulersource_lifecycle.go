@@ -47,7 +47,7 @@ func (s *CloudSchedulerSourceStatus) MarkJobNotReady(reason, messageFormat strin
 }
 
 // MarkJobReady sets the condition for CloudSchedulerSource Job as Read and sets the
-// Status.JobName to jobName
+// Status.JobName to jobName.
 func (s *CloudSchedulerSourceStatus) MarkJobReady(jobName string) {
 	schedulerCondSet.Manage(s).MarkTrue(JobReady)
 	s.JobName = jobName

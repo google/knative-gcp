@@ -105,6 +105,12 @@ func WithCloudAuditLogsSourceSinkNotReady(reason, messageFmt string, messageA ..
 	}
 }
 
+func WithCloudAuditLogsSourceSinkUnknown(reason, messageFmt string, messageA ...interface{}) CloudAuditLogsSourceOption {
+	return func(s *v1.CloudAuditLogsSource) {
+		s.Status.MarkSinkUnknown(reason, messageFmt, messageA...)
+	}
+}
+
 func WithCloudAuditLogsSourceSinkReady(s *v1.CloudAuditLogsSource) {
 	s.Status.MarkSinkReady()
 }

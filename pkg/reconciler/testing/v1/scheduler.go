@@ -163,6 +163,14 @@ func WithCloudSchedulerSourceJobNotReady(reason, message string) CloudSchedulerS
 	}
 }
 
+// WithCloudSchedulerSourceJobUnknown marks the condition that the
+// CloudSchedulerSource Job is unknown.
+func WithCloudSchedulerSourceJobUnknown(reason, message string) CloudSchedulerSourceOption {
+	return func(s *v1.CloudSchedulerSource) {
+		s.Status.MarkJobUnknown(reason, message)
+	}
+}
+
 // WithCloudSchedulerSourceJobReady marks the condition that the
 // CloudSchedulerSource Job is ready and sets Status.JobName to jobName.
 func WithCloudSchedulerSourceJobReady(jobName string) CloudSchedulerSourceOption {
