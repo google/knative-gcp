@@ -30,7 +30,9 @@ var (
 	// policy for the Broker delivery spec.
 	backoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
 	// retry is the default number of maximum delivery attempts for unacked messages
-	// before they are sent to a dead letter topic in the Broker delivery spec.
+	// before they are sent to a dead letter topic in the Broker delivery spec, in
+	// case a dead letter topic is specified. Without a dead letter topic specified,
+	// the retry count is infinite.
 	retry int32 = 6
 )
 

@@ -254,9 +254,9 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 
 // getPubsubRetryPolicy gets the eventing retry policy from the Broker delivery
 // spec and translates it to a pubsub retry policy.
-func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) (*pubsub.RetryPolicy, error) {
+func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryPolicy {
 	if spec == nil || spec.BackoffDelay == nil || spec.BackoffPolicy == nil {
-		return nil, nil
+		return nil
 	}
 	// The Broker delivery spec is translated to a pubsub retry policy in the
 	// manner defined in the following post:
@@ -270,51 +270,25 @@ func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) (*pubsub.Retry
 	case eventingduckv1beta1.BackoffPolicyExponential:
 		maximumBackoff = defaultMaximumBackoff
 	default:
-		return nil, fmt.Errorf("Unrecognized backoff policy: %v", *spec.BackoffPolicy)
+		return nil
 	}
 	return &pubsub.RetryPolicy{
 		MinimumBackoff: minimumBackoff,
 		MaximumBackoff: maximumBackoff,
-	}, nil
-}
-
-// getDeadLetterTopic extracts the dead letter topic ID from its destination
-// URI. A dead letter topic should be specified as `pubsub://<dead-letter-topic-id>`.
-func getDeadLetterTopicID(sink *duckv1.Destination) (string, error) {
-	if sink.URI == nil {
-		return "", fmt.Errorf("Dead letter sink URI not specified")
 	}
-	if scheme := sink.URI.Scheme; scheme != "pubsub" {
-		return "", fmt.Errorf("Dead letter sink URI scheme should be pubsub, instead is %v", scheme)
-	}
-	topicID := sink.URI.Host
-	if topicID == "" {
-		return "", fmt.Errorf("Dead letter topic must not be empty")
-	}
-	if len(topicID) > 255 {
-		return "", fmt.Errorf("Dead letter topic maximum length is 255 characters: %v", topicID)
-	}
-	return topicID, nil
 }
 
 // getPubsubDeadLetterPolicy gets the eventing dead letter policy from the
 // Broker delivery spec and translates it to a pubsub dead letter policy.
-func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) (*pubsub.DeadLetterPolicy, error) {
+func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) *pubsub.DeadLetterPolicy {
 	if spec == nil || spec.DeadLetterSink == nil {
-		return nil, nil
+		return nil
 	}
-
-	// If the dead letter sink is specified, it must be formatted properly.
-	topicID, err := getDeadLetterTopicID(spec.DeadLetterSink)
-	if err != nil || topicID == "" {
-		return nil, err
-	}
-
 	// Translate to the pubsub dead letter policy format.
 	return &pubsub.DeadLetterPolicy{
 		MaxDeliveryAttempts: int(*spec.Retry),
-		DeadLetterTopic:     fmt.Sprintf("projects/%s/topics/%s", projectID, topicID),
-	}, nil
+		DeadLetterTopic:     fmt.Sprintf("projects/%s/topics/%s", projectID, spec.DeadLetterSink.URI.Host),
+	}
 }
 
 func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
