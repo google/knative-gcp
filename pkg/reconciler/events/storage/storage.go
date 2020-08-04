@@ -181,7 +181,6 @@ func (r *Reconciler) toCloudStorageSourceEventTypes(eventTypes []string) []strin
 // in the CloudStorageSource, remove it.
 func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1.CloudStorageSource) error {
 	if storage.Status.NotificationID == "" {
-		storage.Status.MarkNotificationNotReady("NotificationFinalized", "No notification to delete.")
 		return nil
 	}
 
@@ -190,7 +189,7 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1.CloudSt
 	client, err := r.createClientFn(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create CloudStorageSource client", zap.Error(err))
-		storage.Status.MarkNotificationNotReady(deleteNotificationFailed, "Failed to create CloudStorageSource client: %s", err.Error())
+		storage.Status.MarkNotificationUnknown(deleteNotificationFailed, "Failed to create CloudStorageSource client: %s", err.Error())
 		return err
 	}
 	defer client.Close()
@@ -203,18 +202,17 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1.CloudSt
 		// If the bucket was already deleted, then we should  proceed.
 		if err == ErrBucketNotExist {
 			logging.FromContext(ctx).Desugar().Info("Bucket does not exist.", zap.String("bucketName", storage.Spec.Bucket), zap.Error(err))
-			storage.Status.MarkNotificationNotReady("NotificationFinalized", "Bucket does not exist.")
 			return nil
 		}
 		logging.FromContext(ctx).Desugar().Error("Failed to fetch attrs of bucket", zap.String("bucketName", storage.Spec.Bucket), zap.Error(err))
-		storage.Status.MarkNotificationNotReady(deleteNotificationFailed, "Failed to fetch attrs of bucket: %s", err.Error())
+		storage.Status.MarkNotificationUnknown(deleteNotificationFailed, "Failed to fetch attrs of bucket: %s", err.Error())
 		return err
 	}
 
 	notifications, err := bucket.Notifications(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to fetch existing notifications", zap.Error(err))
-		storage.Status.MarkNotificationNotReady(deleteNotificationFailed, "Failed to fetch existing notifications: %s", err.Error())
+		storage.Status.MarkNotificationUnknown(deleteNotificationFailed, "Failed to fetch existing notifications: %s", err.Error())
 		return err
 	}
 
@@ -226,16 +224,15 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1.CloudSt
 		err = bucket.DeleteNotification(ctx, storage.Status.NotificationID)
 		if err == nil {
 			logging.FromContext(ctx).Desugar().Debug("Deleted Notification", zap.String("notificationId", storage.Status.NotificationID))
-			storage.Status.MarkNotificationNotReady("NotificationDeleted", "Successfully deleted notification: %s.", storage.Status.NotificationID)
 			return nil
 		}
 		if st, ok := gstatus.FromError(err); !ok {
 			logging.FromContext(ctx).Desugar().Error("Failed from CloudStorageSource client while deleting CloudStorageSource notification", zap.String("notificationId", storage.Status.NotificationID), zap.Error(err))
-			storage.Status.MarkNotificationNotReady(deleteNotificationFailed, "Failed from CloudStorageSource client while deleting CloudStorageSource notification: %s", err.Error())
+			storage.Status.MarkNotificationUnknown(deleteNotificationFailed, "Failed from CloudStorageSource client while deleting CloudStorageSource notification: %s", err.Error())
 			return err
 		} else if st.Code() != codes.NotFound {
 			logging.FromContext(ctx).Desugar().Error("Failed to delete CloudStorageSource notification", zap.String("notificationId", storage.Status.NotificationID), zap.Error(err))
-			storage.Status.MarkNotificationNotReady(deleteNotificationFailed, "Failed to delete CloudStorageSource notification: %s", err.Error())
+			storage.Status.MarkNotificationUnknown(deleteNotificationFailed, "Failed to delete CloudStorageSource notification: %s", err.Error())
 			return err
 		}
 	}

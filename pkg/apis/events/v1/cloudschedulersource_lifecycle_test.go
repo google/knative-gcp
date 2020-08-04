@@ -106,6 +106,18 @@ func TestCloudSchedulerSourceStatusIsReady(t *testing.T) {
 		wantConditionStatus: corev1.ConditionFalse,
 		want:                false,
 	}, {
+		name: "the status of job is unknown",
+		s: func() *CloudSchedulerSourceStatus {
+			s := &CloudSchedulerSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkTopicReady(s.ConditionSet())
+			s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+			s.Status.MarkJobUnknown("Unknown", "ps unknown")
+			return &s.Status
+		}(),
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
+	}, {
 		name: "ready",
 		s: func() *CloudSchedulerSourceStatus {
 			s := &CloudSchedulerSource{}
@@ -171,6 +183,21 @@ func TestCloudSchedulerSourceStatusGetCondition(t *testing.T) {
 			Type:    JobReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  "NotReady",
+			Message: "test message",
+		},
+	}, {
+		name: "unknown",
+		s: func() *CloudSchedulerSourceStatus {
+			s := &CloudSchedulerSourceStatus{}
+			s.InitializeConditions()
+			s.MarkJobUnknown("Unknown", "test message")
+			return s
+		}(),
+		condQuery: JobReady,
+		want: &apis.Condition{
+			Type:    JobReady,
+			Status:  corev1.ConditionUnknown,
+			Reason:  "Unknown",
 			Message: "test message",
 		},
 	}, {
