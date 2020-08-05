@@ -28,8 +28,7 @@ import (
 func (b *Broker) Validate(ctx context.Context) *apis.FieldError {
 	// We validate the GCP Broker's delivery spec. The eventing webhook will run
 	// the other usual validations.
-	withNS := apis.AllowDifferentNamespace(apis.WithinParent(ctx, b.ObjectMeta))
-	return ValidateDeliverySpec(withNS, b.Spec.Delivery).ViaField("spec", "delivery")
+	return ValidateDeliverySpec(ctx, b.Spec.Delivery).ViaField("spec", "delivery")
 }
 
 func ValidateDeliverySpec(ctx context.Context, spec *eventingduckv1beta1.DeliverySpec) *apis.FieldError {

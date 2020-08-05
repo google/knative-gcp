@@ -49,8 +49,7 @@ func (b *Broker) SetDefaults(ctx context.Context) {
 		b.Spec.Delivery.BackoffPolicy = &DefaultBackoffPolicy
 		b.Spec.Delivery.BackoffDelay = &DefaultBackoffDelay
 	}
-	if b.Spec.Delivery.Retry == nil &&
-		(b.Spec.Delivery.DeadLetterSink != nil && !equality.Semantic.DeepEqual(b.Spec.Delivery.DeadLetterSink, &duckv1.Destination{})) {
+	if b.Spec.Delivery.Retry == nil && b.Spec.Delivery.DeadLetterSink != nil {
 		b.Spec.Delivery.Retry = &DefaultRetry
 	}
 	// Besides this, the eventing webhook will add the usual defaults.
