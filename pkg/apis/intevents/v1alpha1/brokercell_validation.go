@@ -42,7 +42,7 @@ func (bcs *BrokerCellSpec) Validate(ctx context.Context) *apis.FieldError {
 	fieldErrors = bcs.Components.Fanout.ValidateResourceRequirementSpecification(fieldErrors, "components.fanout")
 	fieldErrors = bcs.Components.Ingress.ValidateResourceRequirementSpecification(fieldErrors, "components.ingress")
 	fieldErrors = bcs.Components.Retry.ValidateResourceRequirementSpecification(fieldErrors, "components.retry")
-	
+
 	return fieldErrors
 }
 
