@@ -32,13 +32,14 @@ Run the following command:
 SKIP_TESTS=true ./test/e2e-tests.sh --skip-teardowns
 ```
 
-`SKIP_TESTS` will skip the actual tests so only the cluster initialization is run.
-`--skip-teardowns` tells the script to not tear down the cluster.
-This command runs the cluster initialization logic and leaves the cluster in a state
+`SKIP_TESTS` will skip the actual tests so only the cluster initialization is
+run. `--skip-teardowns` tells the script to not tear down the cluster. This
+command runs the cluster initialization logic and leaves the cluster in a state
 that's ready to run tests.
 
-If you run into `Something went wrong: error creating deployer: --gcp-zone and --gcp-region cannot both be set`,
-you may have set the `ZONE` environment variable. Try `unset ZONE`. 
+If you run into
+`Something went wrong: error creating deployer: --gcp-zone and --gcp-region cannot both be set`,
+you may have set the `ZONE` environment variable. Try `unset ZONE`.
 
 ## Running E2E Tests on an existing cluster
 
