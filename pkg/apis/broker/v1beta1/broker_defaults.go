@@ -19,9 +19,7 @@ package v1beta1
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/api/equality"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 var (
