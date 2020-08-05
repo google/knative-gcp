@@ -14,6 +14,7 @@ limitations under the License.
 package v1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 )
 
@@ -32,4 +33,14 @@ func (s *IdentityStatus) MarkWorkloadIdentityFailed(cs *apis.ConditionSet, reaso
 	// This is because if Workload Identity is not enabled, IdentityConfigured will be unknown.
 	// It will be counted for conditionReady only if it is failed.
 	cs.Manage(s).MarkFalse(apis.ConditionReady, "WorkloadIdentityFailed", messageFormat, messageA...)
+}
+
+func (s *IdentityStatus) MarkWorkloadIdentityUnknown(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
+	cs.Manage(s).MarkUnknown(IdentityConfigured, reason, messageFormat, messageA...)
+	// ConditionType IdentityConfigured is not included in apis.NewLivingConditionSet{}, so it is not counted for conditionReady.
+	// Set ConditionReady to be Unknown if the initial status of ConditionReady is Ready.
+	// If the initial status of ConditionReady is not Ready, we keep it as it.
+	if c := cs.Manage(s).GetCondition(apis.ConditionReady); c != nil && c.Status == corev1.ConditionTrue {
+		cs.Manage(s).MarkUnknown(apis.ConditionReady, "WorkloadIdentityUnknown", messageFormat, messageA...)
+	}
 }

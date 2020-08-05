@@ -155,7 +155,7 @@ func WithCloudStorageSourcePullSubscriptionUnknown(reason, message string) Cloud
 }
 
 // WithCloudStorageSourcePullSubscriptionReady marks the condition that the
-// topic is ready.
+// pullSubscription is ready.
 func WithCloudStorageSourcePullSubscriptionReady() CloudStorageSourceOption {
 	return func(s *v1.CloudStorageSource) {
 		s.Status.MarkPullSubscriptionReady(s.ConditionSet())

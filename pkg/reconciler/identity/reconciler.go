@@ -116,7 +116,7 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 	identityNames, err := i.getGoogleServiceAccountName(ctx, identifiable)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("failed to get Google service account name", zap.Error(err))
-		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
+		status.MarkWorkloadIdentityUnknown(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return fmt.Errorf(`failed to get Google service account name: %w`, err)
 	} else if identityNames.GoogleServiceAccountName == "" {
 		// If there is no Google service account paired with current Kubernetes service account in GCP auth configmap, no further reconciliation.
@@ -125,14 +125,14 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 
 	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(identityNames.Namespace).Get(identityNames.KServiceAccountName, metav1.GetOptions{})
 	if err != nil {
-		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
+		status.MarkWorkloadIdentityUnknown(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
 		// k8s ServiceAccount should be there.
 		return fmt.Errorf("getting k8s service account failed with: %w", err)
 	}
 	if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
 		logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
 		if err := i.removeIamPolicyBinding(ctx, projectID, identityNames); err != nil {
-			status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
+			status.MarkWorkloadIdentityUnknown(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
 			return fmt.Errorf("removing iam policy binding failed with: %w", err)
 		}
 	}

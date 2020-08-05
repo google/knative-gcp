@@ -33,7 +33,7 @@ func TestMarkWorkloadIdentityConfigured(t *testing.T) {
 	}
 }
 
-func TestMarkWorkloadIdentityNotConfigured(t *testing.T) {
+func TestMarkWorkloadIdentityFailed(t *testing.T) {
 	status := &IdentityStatus{}
 	condSet := apis.NewLivingConditionSet()
 	status.MarkWorkloadIdentityFailed(&condSet, "failed", "failed")
@@ -44,13 +44,24 @@ func TestMarkWorkloadIdentityNotConfigured(t *testing.T) {
 	}
 }
 
-func TestMarkWorkloadIdentityFailed(t *testing.T) {
+func TestMarkWorkloadIdentityNotConfigured(t *testing.T) {
 	status := &IdentityStatus{}
 	condSet := apis.NewLivingConditionSet()
 	status.MarkWorkloadIdentityNotConfigured(&condSet, "failed", "failed")
 	got := status.IsReady()
 	want := true
 	if got != false {
+		t.Errorf("unexpected readiness: want %v, got %v", want, got)
+	}
+}
+
+func TestMarkWorkloadIdentityUnknown(t *testing.T) {
+	status := &IdentityStatus{}
+	condSet := apis.NewLivingConditionSet()
+	status.MarkWorkloadIdentityUnknown(&condSet, "unknown", "unknown")
+	got := status.IsReady()
+	want := false
+	if got != want {
 		t.Errorf("unexpected readiness: want %v, got %v", want, got)
 	}
 }
