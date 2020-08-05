@@ -46,8 +46,13 @@ func (s *CloudSchedulerSourceStatus) MarkJobNotReady(reason, messageFormat strin
 	schedulerCondSet.Manage(s).MarkFalse(JobReady, reason, messageFormat, messageA...)
 }
 
+// MarkJobNotUnknown sets the condition that the status of CloudSchedulerSource Job is unknown.
+func (s *CloudSchedulerSourceStatus) MarkJobUnknown(reason, messageFormat string, messageA ...interface{}) {
+	schedulerCondSet.Manage(s).MarkUnknown(JobReady, reason, messageFormat, messageA...)
+}
+
 // MarkJobReady sets the condition for CloudSchedulerSource Job as Read and sets the
-// Status.JobName to jobName
+// Status.JobName to jobName.
 func (s *CloudSchedulerSourceStatus) MarkJobReady(jobName string) {
 	schedulerCondSet.Manage(s).MarkTrue(JobReady)
 	s.JobName = jobName

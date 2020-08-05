@@ -164,7 +164,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	defer cancel()
 	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode) }()
 	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
-		msg := fmt.Sprintf("Error publishing to PubSub for broker %s. event: %+v, err: %v.", broker, event, res)
+		msg := fmt.Sprintf("Error publishing to PubSub for broker %s: %v.", broker, res)
 		h.logger.Error(msg)
 		statusCode = nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {

@@ -26,12 +26,12 @@ require (
 	google.golang.org/genproto v0.0.0-20200731012542-8145dea6a485
 	google.golang.org/grpc v1.31.0
 	google.golang.org/protobuf v1.25.0
-	k8s.io/api v0.18.1
-	k8s.io/apimachinery v0.18.6
+	k8s.io/api v0.18.7-rc.0
+	k8s.io/apimachinery v0.18.7-rc.0
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.16.1-0.20200803090001-4cd17b80636f
-	knative.dev/pkg v0.0.0-20200731005101-694087017879
-	knative.dev/serving v0.16.1-0.20200803111101-9278b3110e97
+	knative.dev/eventing v0.16.1-0.20200805125228-0b129d3eca14
+	knative.dev/pkg v0.0.0-20200805045628-bb91a15b1a18
+	knative.dev/serving v0.16.1-0.20200805123829-d1889a3bb339
 	sigs.k8s.io/yaml v1.2.0
 )
 

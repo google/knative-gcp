@@ -170,6 +170,14 @@ func WithCloudStorageSourceNotificationNotReady(reason, message string) CloudSto
 	}
 }
 
+// WithCloudStorageSourceNotificationNotReady marks the condition that the
+// GCS Notification is unknown.
+func WithCloudStorageSourceNotificationUnknown(reason, message string) CloudStorageSourceOption {
+	return func(s *v1.CloudStorageSource) {
+		s.Status.MarkNotificationUnknown(reason, message)
+	}
+}
+
 // WithCloudStorageSourceNotificationReady marks the condition that the GCS
 // Notification is ready.
 func WithCloudStorageSourceNotificationReady(notificationID string) CloudStorageSourceOption {
