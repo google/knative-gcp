@@ -36,293 +36,189 @@ spec:
     shortNames:
       - pschan
   scope: Namespaced
-  subresources:
-    status: {}
   preserveUnknownFields: false
   conversion:
     strategy: Webhook
-    webhookClientConfig:
+    # conversionReviewVersions indicates what ConversionReview versions are understood/preferred by the webhook.
+    # The first version in the list understood by the API server is sent to the webhook.
+    # The webhook must respond with a ConversionReview object in the same version it received.
+    conversionReviewVersions: ["v1", "v1beta1"]
+    clientConfig:
       service:
         name: webhook
         namespace: cloud-run-events
-  additionalPrinterColumns:
+  versions:
+  - &version
+    name: v1
+    served: true
+    storage: false
+    subresources:
+      status: {}
+    additionalPrinterColumns:
     - name: Ready
       type: string
-      JSONPath: ".status.conditions[?(@.type==\"Ready\")].status"
+      jsonPath: ".status.conditions[?(@.type==\"Ready\")].status"
     - name: Reason
       type: string
-      JSONPath: ".status.conditions[?(@.type==\"Ready\")].reason"
+      jsonPath: ".status.conditions[?(@.type==\"Ready\")].reason"
     - name: Address
       type: string
-      JSONPath: .status.address.url
+      jsonPath: .status.address.url
     - name: Age
       type: date
-      JSONPath: .metadata.creationTimestamp
-  versions:
-    - name: v1alpha1
-      served: true
-      storage: false
-      schema:
-        openAPIV3Schema:
-          type: object
-          properties:
-            spec:
-              type: object
-              properties:
-                serviceAccountName:
-                  type: string
-                  description: >
-                    k8s service account used to bind to a google service account to poll the Cloud Pub/Sub Subscription.
-                    The value of the k8s service account must be a valid DNS subdomain name.
-                    (see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names)
-                secret:
-                  type: object
-                  description: >
-                    Credential to use to manage Cloud Pub/Sub. The value of the secret entry must be a service
-                    account key in the JSON format (see
-                    https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to
-                    secret.name of 'google-cloud-key' and secret.key of 'key.json'.
-                  properties:
-                    name:
-                      type: string
-                    key:
-                      type: string
-                    optional:
-                      type: boolean
-                project:
-                  type: string
-                  description: >
-                    ID of the Google Cloud Project to own the Pub/Sub credentials. E.g.
-                    'my-project-1234' rather than its display name, 'My Project' or its number
-                    '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service.
-                subscribable:
-                  type: object
-                  properties:
-                    subscribers:
-                      type: array
-                      items:
-                        type: object
-                        required:
-                          - uid
-                        properties:
-                          uid:
-                            type: string
-                            minLength: 1
-                          generation:
-                            type: integer
-                          subscriberURI:
-                            type: string
-                          replyURI:
-                            type: string
-                          deadLetterSink:
-                            type: string
-                          delivery:
-                            type: object
-                            properties:
-                              deadLetterSink:
-                                type: object
-                                properties:
-                                  ref:
-                                    type: object
-                                    properties:
-                                      kind:
-                                        type: string
-                                      namespace:
-                                        type: string
-                                      name:
-                                        type: string
-                                      apiVersion:
-                                        type: string
-                                  uri:
-                                    type: string
-                              retry:
-                                type: integer
-                              backoffPolicy:
-                                type: string
-                              backoffDelay:
-                                type: string
-            status:
-              type: object
-              properties:
-                observedGeneration:
-                  type: integer
-                  format: int64
-                conditions:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      lastTransitionTime:
-                        # We use a string in the stored object but a wrapper object at runtime.
-                        type: string
-                      message:
-                        type: string
-                      reason:
-                        type: string
-                      severity:
-                        type: string
-                      status:
-                        type: string
-                      type:
-                        type: string
-                    required:
-                      - type
-                      - status
-                serviceAccountName:
-                  type: string
-                address:
+      jsonPath: .metadata.creationTimestamp
+    # We remove status.ServiceAccountName from the schema in v1.
+    schema:
+      openAPIV3Schema: &openAPIV3Schema
+        type: object
+        properties: &properties
+          spec:
+            type: object
+            properties:
+              serviceAccountName:
+                type: string
+                description: >
+                  k8s service account used to bind to a google service account to poll the Cloud Pub/Sub Subscription.
+                  The value of the k8s service account must be a valid DNS subdomain name.
+                  (see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names)
+              secret:
+                type: object
+                description: >
+                  Credential to use to manage Cloud Pub/Sub. The value of the secret entry must be a service
+                  account key in the JSON format (see
+                  https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to
+                  secret.name of 'google-cloud-key' and secret.key of 'key.json'.
+                properties:
+                  name:
+                    type: string
+                  key:
+                    type: string
+                  optional:
+                    type: boolean
+              project:
+                type: string
+                description: >
+                  ID of the Google Cloud Project to own the Pub/Sub credentials. E.g.
+                  'my-project-1234' rather than its display name, 'My Project' or its number
+                  '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service.
+              subscribable:
+                type: object
+                properties:
+                  subscribers:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - uid
+                      properties:
+                        uid:
+                          type: string
+                          minLength: 1
+                        generation:
+                          type: integer
+                        subscriberURI:
+                          type: string
+                        replyURI:
+                          type: string
+                        deadLetterSink:
+                          type: string
+                        delivery:
+                          type: object
+                          properties:
+                            deadLetterSink:
+                              type: object
+                              properties:
+                                ref:
+                                  type: object
+                                  properties:
+                                    kind:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                    name:
+                                      type: string
+                                    apiVersion:
+                                      type: string
+                                uri:
+                                  type: string
+                            retry:
+                              type: integer
+                            backoffPolicy:
+                              type: string
+                            backoffDelay:
+                              type: string
+          status: &status
+            type: object
+            properties: &statusProperties
+              observedGeneration:
+                type: integer
+                format: int64
+              conditions:
+                type: array
+                items:
                   type: object
                   properties:
-                    url:
+                    lastTransitionTime:
+                      # We use a string in the stored object but a wrapper object at runtime.
                       type: string
-                subscribableStatus:
-                  type: object
-                  properties:
-                    subscribers:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          uid:
-                            type: string
-                          observedGeneration:
-                            type: integer
-                            format: int64
-                          ready:
-                            type: string
-                          message:
-                            type: string
-                projectId:
-                  type: string
-                subscriptionId:
-                  type: string
-    - name: v1beta1
-      served: true
-      # Note that the storage version here _must_ match StoredChannelVersion in
-      # pkg/apis/messaging/internal/constants.go. If the storage version is changing here, update
-      # the constant in code too.
-      storage: true
-      schema:
-        openAPIV3Schema:
-          type: object
-          properties:
-            spec:
-              type: object
-              properties:
-                serviceAccountName:
-                  type: string
-                  description: >
-                    Kubernetes service account used to bind to a google service account to poll the Cloud Pub/Sub Subscription.
-                    The value of the Kubernetes service account must be a valid DNS subdomain name.
-                    (see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names)
-                secret:
-                  type: object
-                  description: >
-                    Credential to use to manage Cloud Pub/Sub. The value of the secret entry must be a service
-                    account key in the JSON format (see
-                    https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to
-                    secret.name of 'google-cloud-key' and secret.key of 'key.json'.
-                  properties:
-                    name:
+                    message:
                       type: string
-                    key:
+                    reason:
                       type: string
-                    optional:
-                      type: boolean
-                project:
-                  type: string
-                  description: >
-                    ID of the Google Cloud Project to own the Pub/Sub credentials. E.g.
-                    'my-project-1234' rather than its display name, 'My Project' or its number
-                    '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service.
-                subscribers:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - uid
-                    properties:
-                      uid:
-                        type: string
-                        minLength: 1
-                      generation:
-                        type: integer
-                      subscriberUri:
-                        type: string
-                      replyUri:
-                        type: string
-                      delivery:
-                        type: object
-                        properties:
-                          deadLetterSink:
-                                type: object
-                                properties:
-                                  ref:
-                                    type: object
-                                    properties:
-                                      kind:
-                                        type: string
-                                      namespace:
-                                        type: string
-                                      name:
-                                        type: string
-                                      apiVersion:
-                                        type: string
-                                  uri:
-                                    type: string
-                          retry:
-                            type: integer
-                          backoffPolicy:
-                            type: string
-                          backoffDelay:
-                            type: string
-            status:
-              type: object
-              properties:
-                observedGeneration:
-                  type: integer
-                  format: int64
-                conditions:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      lastTransitionTime:
-                        # We use a string in the stored object but a wrapper object at runtime.
-                        type: string
-                      message:
-                        type: string
-                      reason:
-                        type: string
-                      severity:
-                        type: string
-                      status:
-                        type: string
-                      type:
-                        type: string
-                    required:
-                      - type
-                      - status
-                address:
-                  type: object
-                  properties:
-                    url:
+                    severity:
                       type: string
-                subscribers:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      uid:
-                        type: string
-                      observedGeneration:
-                        type: integer
-                        format: int64
-                      ready:
-                        type: string
-                      message:
-                        type: string
-                projectId:
-                  type: string
-                subscriptionId:
-                  type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                    - type
+                    - status
+              address:
+                type: object
+                properties:
+                  url:
+                    type: string
+              subscribableStatus:
+                type: object
+                properties:
+                  subscribers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        uid:
+                          type: string
+                        observedGeneration:
+                          type: integer
+                          format: int64
+                        ready:
+                          type: string
+                        message:
+                          type: string
+              projectId:
+                type: string
+              subscriptionId:
+                type: string
+  - <<: *version
+    name: v1alpha1
+    served: true
+    storage: false
+    # v1alpha1 and v1beta have status.properties.serviceAccountName in the schema
+    schema: &v1alpha1Schema
+      openAPIV3Schema:
+        <<: *openAPIV3Schema
+        properties:
+          <<: *properties
+          status:
+            <<: *status
+            properties:
+              <<: *statusProperties
+              serviceAccountName:
+                type: string
+  - <<: *version
+    name: v1beta1
+    served: true
+    storage: true
+    # the schema of v1beta1 is exactly the same as v1alpha1 schema
+    schema: *v1alpha1Schema
