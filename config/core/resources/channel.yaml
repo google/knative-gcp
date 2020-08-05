@@ -68,11 +68,11 @@ spec:
     - name: Age
       type: date
       jsonPath: .metadata.creationTimestamp
-    schema: &v1alpha1Schema
+    schema:
       openAPIV3Schema: &openAPIV3Schema
         type: object
         properties: &properties
-          spec:
+          spec: &spec
             type: object
             properties:
               serviceAccountName: &serviceAccountName
@@ -210,29 +210,30 @@ spec:
       openAPIV3Schema:
         <<: *openAPIV3Schema
         properties:
-          <<: *properties
-          properties:
-            # No subscribable in v1beta1
-            serviceAccountName:
-              <<: *serviceAccountName
-            secret:
-              <<: *secret
-            project:
-              <<: *project
-            subscribers:
-              <<: *subscribers
-              properties:
-                # No deadLetterSink in subscribers properties in v1beta1
-                uid:
-                  <<: *uid
-                generation:
-                  <<: *generation
-                subscriberURI:
-                  <<: *subscriberURI
-                replyURI:
-                  <<: *replyURI
-                delivery:
-                  <<: *delivery
+          spec:
+            <<: *spec
+            properties:
+              # No subscribable in v1beta1
+              serviceAccountName:
+                <<: *serviceAccountName
+              secret:
+                <<: *secret
+              project:
+                <<: *project
+              subscribers:
+                <<: *subscribers
+                properties:
+                  # No deadLetterSink in subscribers properties in v1beta1
+                  uid:
+                    <<: *uid
+                  generation:
+                    <<: *generation
+                  subscriberURI:
+                    <<: *subscriberURI
+                  replyURI:
+                    <<: *replyURI
+                  delivery:
+                    <<: *delivery
           status:
             <<: *status
             properties:
