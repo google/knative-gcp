@@ -206,7 +206,7 @@ spec:
     name: v1beta1
     served: true
     storage: true
-    schema: *v1alpha1Schema
+    schema:
       openAPIV3Schema:
         <<: *openAPIV3Schema
         properties:
