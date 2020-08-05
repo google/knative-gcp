@@ -25,12 +25,6 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-const (
-	avgMemoryUsageOutOfRangeErrorDetail  string = "AvgMemoryUsage should not exceed the memory limit"
-	resourceRequestOutOfRangeErrorDetail string = "Resource request should not exceed the resource limit"
-	unexpectedQuantityFormatErrorDetail  string = "The quantity is specified in an unexpected format"
-)
-
 // Validate verifies that the BrokerCell is valid.
 func (bc *BrokerCell) Validate(ctx context.Context) *apis.FieldError {
 	fieldErrors := bc.Spec.Validate(ctx).ViaField("spec")
@@ -61,7 +55,7 @@ func (componentParams *ComponentParameters) ValidateMemorySpecification(fieldErr
 		memoryLimitQuantity, errLimit := resource.ParseQuantity(*componentParams.Resources.Limits.Memory)
 		if errRequest == nil && errLimit == nil && memoryLimitQuantity.Cmp(memoryRequestQuantity) < 0 {
 			invalidValueError := apis.ErrInvalidValue(*componentParams.Resources.Requests.Memory, "memory").ViaField(fmt.Sprintf("%s.resources.requests", componentPath))
-			invalidValueError.Details = resourceRequestOutOfRangeErrorDetail
+			invalidValueError.Details = "Resource request should not exceed the resource limit"
 			fieldErrors = fieldErrors.Also(invalidValueError)
 		}
 	}
@@ -75,7 +69,7 @@ func (componentParams *ComponentParameters) ValidateCPUSpecification(fieldErrors
 		cpuLimitQuantity, errLimit := resource.ParseQuantity(*componentParams.Resources.Limits.CPU)
 		if errRequest == nil && errLimit == nil && cpuLimitQuantity.Cmp(cpuRequestQuantity) < 0 {
 			invalidValueError := apis.ErrInvalidValue(*componentParams.Resources.Requests.CPU, "cpu").ViaField(fmt.Sprintf("%s.resources.requests", componentPath))
-			invalidValueError.Details = resourceRequestOutOfRangeErrorDetail
+			invalidValueError.Details = "Resource request should not exceed the resource limit"
 			fieldErrors = fieldErrors.Also(invalidValueError)
 		}
 	}
@@ -90,10 +84,15 @@ func (componentParams *ComponentParameters) ValidateAutoscalingSpecification(fie
 		if componentParams.AvgMemoryUsage != nil && errLimit == nil && errAvgMemoryUsage == nil {
 			if memoryLimitQuantity.Cmp(avgMemoryUsageQuantity) < 0 {
 				invalidValueError := apis.ErrInvalidValue(*componentParams.AvgMemoryUsage, fmt.Sprintf("%s.AvgMemoryUsage", componentPath))
-				invalidValueError.Details = avgMemoryUsageOutOfRangeErrorDetail
+				invalidValueError.Details = "AvgMemoryUsage should not exceed the memory limit"
 				fieldErrors = fieldErrors.Also(invalidValueError)
 			}
 		}
+	}
+	if componentParams.MinReplicas != nil && componentParams.MaxReplicas != nil && *componentParams.MinReplicas > *componentParams.MaxReplicas {
+		invalidValueError := apis.ErrInvalidValue(*componentParams.MinReplicas, fmt.Sprintf("%s.MinReplicas", componentPath))
+		invalidValueError.Details = "MinReplicas value can not exceed the value of MaxReplicas"
+		fieldErrors = fieldErrors.Also(invalidValueError)
 	}
 	return fieldErrors
 }
@@ -128,7 +127,7 @@ func (componentParams *ComponentParameters) ValidateQuantityFormats(fieldErrors 
 	for _, validation := range fieldsToValidate {
 		if !resourceutil.IsValidQuantity(validation.value) {
 			unexpectedFormatError := apis.ErrInvalidValue(*validation.value, validation.fieldName)
-			unexpectedFormatError.Details = unexpectedQuantityFormatErrorDetail
+			unexpectedFormatError.Details = "The quantity is specified in an unexpected format"
 			fieldErrors = fieldErrors.Also(unexpectedFormatError)
 		}
 	}

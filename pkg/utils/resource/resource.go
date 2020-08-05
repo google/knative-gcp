@@ -36,27 +36,23 @@ func BuildResourceRequirements(cpuRequest, cpuLimit, memoryRequest, memoryLimit 
 		Limits:   corev1.ResourceList{},
 		Requests: corev1.ResourceList{},
 	}
-	if len(cpuRequest) > 0 {
-		cpuRequestQuantity, err := resource.ParseQuantity(cpuRequest)
-		if err == nil {
+	if cpuRequest != "" {
+		if cpuRequestQuantity, err := resource.ParseQuantity(cpuRequest); err == nil {
 			resourceRequirements.Requests[corev1.ResourceCPU] = cpuRequestQuantity
 		}
 	}
-	if len(cpuLimit) > 0 {
-		cpuLimitQuantity, err := resource.ParseQuantity(cpuLimit)
-		if err == nil {
+	if cpuLimit != "" {
+		if cpuLimitQuantity, err := resource.ParseQuantity(cpuLimit); err == nil {
 			resourceRequirements.Limits[corev1.ResourceCPU] = cpuLimitQuantity
 		}
 	}
-	if len(memoryRequest) > 0 {
-		memoryRequestQuantity, err := resource.ParseQuantity(memoryRequest)
-		if err == nil {
+	if memoryRequest != "" {
+		if memoryRequestQuantity, err := resource.ParseQuantity(memoryRequest); err == nil {
 			resourceRequirements.Requests[corev1.ResourceMemory] = memoryRequestQuantity
 		}
 	}
-	if len(memoryLimit) > 0 {
-		memoryLimitQuantity, err := resource.ParseQuantity(memoryLimit)
-		if err == nil {
+	if memoryLimit != "" {
+		if memoryLimitQuantity, err := resource.ParseQuantity(memoryLimit); err == nil {
 			resourceRequirements.Limits[corev1.ResourceMemory] = memoryLimitQuantity
 		}
 	}
@@ -75,9 +71,6 @@ func IsValidQuantityValue(value string) bool {
 	if len(value) == 0 {
 		return true
 	}
-	_, parsingErr := resource.ParseQuantity(value)
-	if parsingErr != nil {
-		return false
-	}
-	return true
+	_, err := resource.ParseQuantity(value)
+	return err == nil
 }

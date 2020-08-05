@@ -51,7 +51,7 @@ func TestBrokerCell_Validate(t *testing.T) {
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
 				fe := apis.ErrInvalidValue("2001Mi", "spec.components.ingress.resources.requests.memory")
-				fe.Details = resourceRequestOutOfRangeErrorDetail
+				fe.Details = "Resource request should not exceed the resource limit"
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
 
@@ -71,7 +71,7 @@ func TestBrokerCell_Validate(t *testing.T) {
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
 				fe := apis.ErrInvalidValue("1001Mi", "spec.components.ingress.AvgMemoryUsage")
-				fe.Details = avgMemoryUsageOutOfRangeErrorDetail
+				fe.Details = "AvgMemoryUsage should not exceed the memory limit"
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
 			}(),
@@ -89,7 +89,7 @@ func TestBrokerCell_Validate(t *testing.T) {
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
 				fe := apis.ErrInvalidValue("1001m", "spec.components.ingress.resources.requests.cpu")
-				fe.Details = resourceRequestOutOfRangeErrorDetail
+				fe.Details = "Resource request should not exceed the resource limit"
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
 
@@ -110,6 +110,7 @@ func TestBrokerCell_Validate(t *testing.T) {
 			},
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
+				unexpectedQuantityFormatErrorDetail := "The quantity is specified in an unexpected format"
 				cpuRequestFE := apis.ErrInvalidValue("invalid_requests_cpu", "spec.components.ingress.resources.requests.cpu")
 				cpuRequestFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(cpuRequestFE)
@@ -126,6 +127,26 @@ func TestBrokerCell_Validate(t *testing.T) {
 				avgMemoryUsageFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(avgMemoryUsageFE)
 				return fieldErrors
+			}(),
+		},
+		{
+			name: "MinRelicas can not be larger than MaxReplicas",
+			brokerCell: BrokerCell{
+				Spec: (func() BrokerCellSpec {
+					brokerCellWithInvalidMinReplicas := MakeDefaultBrokerCellSpec()
+					testComponent := &brokerCellWithInvalidMinReplicas.Components.Ingress
+					testComponent.MinReplicas = ptr.Int32(11)
+					testComponent.MaxReplicas = ptr.Int32(10)
+					return brokerCellWithInvalidMinReplicas
+				}()),
+			},
+			want: func() *apis.FieldError {
+				var fieldErrors *apis.FieldError
+				fe := apis.ErrInvalidValue(11, "spec.components.ingress.MinReplicas")
+				fe.Details = "MinReplicas value can not exceed the value of MaxReplicas"
+				fieldErrors = fieldErrors.Also(fe)
+				return fieldErrors
+
 			}(),
 		},
 		{

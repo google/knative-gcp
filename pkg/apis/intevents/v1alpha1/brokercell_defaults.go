@@ -105,8 +105,8 @@ func (componentParams *ComponentParameters) SetMemoryDefaults(memoryLimitToReque
 		autoSelectLimit = true
 	}
 	if autoSelectLimit {
-		requestedMemoryQuantity, parsingError := resource.ParseQuantity(*componentParams.Resources.Requests.Memory)
-		if parsingError == nil {
+		requestedMemoryQuantity, err := resource.ParseQuantity(*componentParams.Resources.Requests.Memory)
+		if err == nil {
 			autoSelectedLimit := resourceutil.MultiplyQuantity(requestedMemoryQuantity, memoryLimitToRequestCoefficient)
 			componentParams.Resources.Limits.Memory = ptr.String(autoSelectedLimit.String())
 		}
@@ -132,9 +132,9 @@ func (componentParams *ComponentParameters) SetAutoScalingDefaults(targetMemoryU
 		} else if componentParams.Resources.Requests.Memory != nil {
 			anchorValue = *componentParams.Resources.Requests.Memory
 		}
-		if len(anchorValue) > 0 {
-			memoryAnchorQuantity, parsingError := resource.ParseQuantity(anchorValue)
-			if parsingError == nil {
+		if anchorValue != "" {
+			memoryAnchorQuantity, err := resource.ParseQuantity(anchorValue)
+			if err == nil {
 				autoSelectedAvgMemoryUsage := resourceutil.MultiplyQuantity(memoryAnchorQuantity, targetMemoryUsageCoefficient)
 				componentParams.AvgMemoryUsage = ptr.String(autoSelectedAvgMemoryUsage.String())
 			}
