@@ -50,7 +50,7 @@ func TestBrokerCell_Validate(t *testing.T) {
 			},
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
-				fe := apis.ErrInvalidValue("2001Mi", "components/ingress/resources/requests/memory")
+				fe := apis.ErrInvalidValue("2001Mi", "spec.components.ingress.resources.requests.memory")
 				fe.Details = resourceRequestOutOfRangeErrorDetail
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
@@ -70,7 +70,7 @@ func TestBrokerCell_Validate(t *testing.T) {
 			},
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
-				fe := apis.ErrInvalidValue("1001Mi", "components/ingress/AvgMemoryUsage")
+				fe := apis.ErrInvalidValue("1001Mi", "spec.components.ingress.AvgMemoryUsage")
 				fe.Details = avgMemoryUsageOutOfRangeErrorDetail
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
@@ -88,7 +88,7 @@ func TestBrokerCell_Validate(t *testing.T) {
 			},
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
-				fe := apis.ErrInvalidValue("1001m", "components/ingress/resources/requests/cpu")
+				fe := apis.ErrInvalidValue("1001m", "spec.components.ingress.resources.requests.cpu")
 				fe.Details = resourceRequestOutOfRangeErrorDetail
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
@@ -110,19 +110,19 @@ func TestBrokerCell_Validate(t *testing.T) {
 			},
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
-				cpuRequestFE := apis.ErrInvalidValue("invalid_requests_cpu", "components/ingress/resources/requests/cpu")
+				cpuRequestFE := apis.ErrInvalidValue("invalid_requests_cpu", "spec.components.ingress.resources.requests.cpu")
 				cpuRequestFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(cpuRequestFE)
-				cpuLimitFE := apis.ErrInvalidValue("invalid_limits_cpu", "components/ingress/resources/limits/cpu")
+				cpuLimitFE := apis.ErrInvalidValue("invalid_limits_cpu", "spec.components.ingress.resources.limits.cpu")
 				cpuLimitFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(cpuLimitFE)
-				memoryRequestFE := apis.ErrInvalidValue("invalid_requests_memory", "components/ingress/resources/requests/memory")
+				memoryRequestFE := apis.ErrInvalidValue("invalid_requests_memory", "spec.components.ingress.resources.requests.memory")
 				memoryRequestFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(memoryRequestFE)
-				memoryLimitsFE := apis.ErrInvalidValue("invalid_limits_memory", "components/ingress/resources/limits/memory")
+				memoryLimitsFE := apis.ErrInvalidValue("invalid_limits_memory", "spec.components.ingress.resources.limits.memory")
 				memoryLimitsFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(memoryLimitsFE)
-				avgMemoryUsageFE := apis.ErrInvalidValue("invalid_value_AvgMemoryUsage", "components/ingress/AvgMemoryUsage")
+				avgMemoryUsageFE := apis.ErrInvalidValue("invalid_value_AvgMemoryUsage", "spec.components.ingress.AvgMemoryUsage")
 				avgMemoryUsageFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(avgMemoryUsageFE)
 				return fieldErrors

@@ -79,6 +79,7 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	inteventsv1beta1.SchemeGroupVersion.WithKind("Topic"):             &inteventsv1beta1.Topic{},
 	inteventsv1.SchemeGroupVersion.WithKind("PullSubscription"):       &inteventsv1.PullSubscription{},
 	inteventsv1.SchemeGroupVersion.WithKind("Topic"):                  &inteventsv1.Topic{},
+	inteventsv1alpha1.SchemeGroupVersion.WithKind("BrokerCell"):       &inteventsv1alpha1.BrokerCell{},
 }
 
 type defaultingAdmissionController func(context.Context, configmap.Watcher) *controller.Impl

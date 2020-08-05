@@ -33,15 +33,16 @@ const (
 
 // Validate verifies that the BrokerCell is valid.
 func (bc *BrokerCell) Validate(ctx context.Context) *apis.FieldError {
-	fieldErrors := bc.Spec.ValidateComponents()
+	fieldErrors := bc.Spec.Validate(ctx).ViaField("spec")
 	return fieldErrors
 }
 
-func (bcs *BrokerCellSpec) ValidateComponents() *apis.FieldError {
+func (bcs *BrokerCellSpec) Validate(ctx context.Context) *apis.FieldError {
 	var fieldErrors *apis.FieldError
-	fieldErrors = bcs.Components.Fanout.ValidateResourceRequirementSpecification(fieldErrors, "components/fanout")
-	fieldErrors = bcs.Components.Ingress.ValidateResourceRequirementSpecification(fieldErrors, "components/ingress")
-	fieldErrors = bcs.Components.Retry.ValidateResourceRequirementSpecification(fieldErrors, "components/retry")
+	fieldErrors = bcs.Components.Fanout.ValidateResourceRequirementSpecification(fieldErrors, "components.fanout")
+	fieldErrors = bcs.Components.Ingress.ValidateResourceRequirementSpecification(fieldErrors, "components.ingress")
+	fieldErrors = bcs.Components.Retry.ValidateResourceRequirementSpecification(fieldErrors, "components.retry")
+	
 	return fieldErrors
 }
 
@@ -59,7 +60,7 @@ func (componentParams *ComponentParameters) ValidateMemorySpecification(fieldErr
 		memoryRequestQuantity, errRequest := resource.ParseQuantity(*componentParams.Resources.Requests.Memory)
 		memoryLimitQuantity, errLimit := resource.ParseQuantity(*componentParams.Resources.Limits.Memory)
 		if errRequest == nil && errLimit == nil && memoryLimitQuantity.Cmp(memoryRequestQuantity) < 0 {
-			invalidValueError := apis.ErrInvalidValue(*componentParams.Resources.Requests.Memory, fmt.Sprintf("%s/resources/requests/memory", componentPath))
+			invalidValueError := apis.ErrInvalidValue(*componentParams.Resources.Requests.Memory, "memory").ViaField(fmt.Sprintf("%s.resources.requests", componentPath))
 			invalidValueError.Details = resourceRequestOutOfRangeErrorDetail
 			fieldErrors = fieldErrors.Also(invalidValueError)
 		}
@@ -73,7 +74,7 @@ func (componentParams *ComponentParameters) ValidateCPUSpecification(fieldErrors
 		cpuRequestQuantity, errRequest := resource.ParseQuantity(*componentParams.Resources.Requests.CPU)
 		cpuLimitQuantity, errLimit := resource.ParseQuantity(*componentParams.Resources.Limits.CPU)
 		if errRequest == nil && errLimit == nil && cpuLimitQuantity.Cmp(cpuRequestQuantity) < 0 {
-			invalidValueError := apis.ErrInvalidValue(*componentParams.Resources.Requests.CPU, fmt.Sprintf("%s/resources/requests/cpu", componentPath))
+			invalidValueError := apis.ErrInvalidValue(*componentParams.Resources.Requests.CPU, "cpu").ViaField(fmt.Sprintf("%s.resources.requests", componentPath))
 			invalidValueError.Details = resourceRequestOutOfRangeErrorDetail
 			fieldErrors = fieldErrors.Also(invalidValueError)
 		}
@@ -88,7 +89,7 @@ func (componentParams *ComponentParameters) ValidateAutoscalingSpecification(fie
 		memoryLimitQuantity, errLimit := resource.ParseQuantity(*componentParams.Resources.Limits.Memory)
 		if componentParams.AvgMemoryUsage != nil && errLimit == nil && errAvgMemoryUsage == nil {
 			if memoryLimitQuantity.Cmp(avgMemoryUsageQuantity) < 0 {
-				invalidValueError := apis.ErrInvalidValue(*componentParams.AvgMemoryUsage, fmt.Sprintf("%s/AvgMemoryUsage", componentPath))
+				invalidValueError := apis.ErrInvalidValue(*componentParams.AvgMemoryUsage, fmt.Sprintf("%s.AvgMemoryUsage", componentPath))
 				invalidValueError.Details = avgMemoryUsageOutOfRangeErrorDetail
 				fieldErrors = fieldErrors.Also(invalidValueError)
 			}
@@ -103,23 +104,23 @@ func (componentParams *ComponentParameters) ValidateQuantityFormats(fieldErrors 
 		value     *string
 	}{
 		{
-			fieldName: fmt.Sprintf("%s/resources/requests/cpu", componentPath),
+			fieldName: fmt.Sprintf("%s.resources.requests.cpu", componentPath),
 			value:     componentParams.Resources.Requests.CPU,
 		},
 		{
-			fieldName: fmt.Sprintf("%s/resources/requests/memory", componentPath),
+			fieldName: fmt.Sprintf("%s.resources.requests.memory", componentPath),
 			value:     componentParams.Resources.Requests.Memory,
 		},
 		{
-			fieldName: fmt.Sprintf("%s/resources/limits/cpu", componentPath),
+			fieldName: fmt.Sprintf("%s.resources.limits.cpu", componentPath),
 			value:     componentParams.Resources.Limits.CPU,
 		},
 		{
-			fieldName: fmt.Sprintf("%s/resources/limits/memory", componentPath),
+			fieldName: fmt.Sprintf("%s.resources.limits.memory", componentPath),
 			value:     componentParams.Resources.Limits.Memory,
 		},
 		{
-			fieldName: fmt.Sprintf("%s/AvgMemoryUsage", componentPath),
+			fieldName: fmt.Sprintf("%s.AvgMemoryUsage", componentPath),
 			value:     componentParams.AvgMemoryUsage,
 		},
 	}
