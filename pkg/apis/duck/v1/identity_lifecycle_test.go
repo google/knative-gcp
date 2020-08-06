@@ -22,10 +22,10 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func TestMarkWorkloadIdentityConfigured(t *testing.T) {
+func TestMarkWorkloadIdentityReady(t *testing.T) {
 	status := &IdentityStatus{}
 	condSet := apis.NewLivingConditionSet()
-	status.MarkWorkloadIdentityConfigured(&condSet)
+	status.MarkWorkloadIdentityReady(&condSet)
 	got := status.IsReady()
 	want := true
 	if got != want {
@@ -40,17 +40,6 @@ func TestMarkWorkloadIdentityFailed(t *testing.T) {
 	got := status.IsReady()
 	want := false
 	if got != want {
-		t.Errorf("unexpected readiness: want %v, got %v", want, got)
-	}
-}
-
-func TestMarkWorkloadIdentityNotConfigured(t *testing.T) {
-	status := &IdentityStatus{}
-	condSet := apis.NewLivingConditionSet()
-	status.MarkWorkloadIdentityNotConfigured(&condSet, "failed", "failed")
-	got := status.IsReady()
-	want := true
-	if got != false {
 		t.Errorf("unexpected readiness: want %v, got %v", want, got)
 	}
 }

@@ -104,7 +104,7 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return kServiceAccount, fmt.Errorf("adding iam policy binding failed with: %w", err)
 	}
-	status.MarkWorkloadIdentityConfigured(identifiable.ConditionSet())
+	status.MarkWorkloadIdentityReady(identifiable.ConditionSet())
 	return kServiceAccount, nil
 }
 
@@ -116,7 +116,7 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 	identityNames, err := i.getGoogleServiceAccountName(ctx, identifiable)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("failed to get Google service account name", zap.Error(err))
-		status.MarkWorkloadIdentityUnknown(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
+		status.MarkWorkloadIdentityUnknown(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
 		return fmt.Errorf(`failed to get Google service account name: %w`, err)
 	} else if identityNames.GoogleServiceAccountName == "" {
 		// If there is no Google service account paired with current Kubernetes service account in GCP auth configmap, no further reconciliation.
