@@ -108,7 +108,7 @@ func WithCloudStorageSourceServiceAccount(kServiceAccount string) CloudStorageSo
 }
 
 // WithCloudStorageSourceTopicFailed marks the condition that the
-// topic is False
+// topic is False.
 func WithCloudStorageSourceTopicFailed(reason, message string) CloudStorageSourceOption {
 	return func(s *v1.CloudStorageSource) {
 		s.Status.MarkTopicFailed(s.ConditionSet(), reason, message)
@@ -116,7 +116,7 @@ func WithCloudStorageSourceTopicFailed(reason, message string) CloudStorageSourc
 }
 
 // WithCloudStorageSourceTopicUnknown marks the condition that the
-// topic is False
+// topic is Unknown.
 func WithCloudStorageSourceTopicUnknown(reason, message string) CloudStorageSourceOption {
 	return func(s *v1.CloudStorageSource) {
 		s.Status.MarkTopicUnknown(s.ConditionSet(), reason, message)
@@ -124,12 +124,20 @@ func WithCloudStorageSourceTopicUnknown(reason, message string) CloudStorageSour
 }
 
 // WithCloudStorageSourceTopicNotReady marks the condition that the
-// topic is not ready
+// topic is not ready.
 func WithCloudStorageSourceTopicReady(topicID string) CloudStorageSourceOption {
 	return func(s *v1.CloudStorageSource) {
 		s.Status.MarkTopicReady(s.ConditionSet())
 		s.Status.TopicID = topicID
 	}
+}
+
+// WithCloudStorageSourceTopicDeleted is a wrapper to indicate that the
+// topic is deleted. Inside the function, we still mark the status of topic to be ready,
+// as the status of topic is unchanged if the deletion is successful. We do not set the
+// topicID because the topicID is set to empty when deleting the topic.
+func WithCloudStorageSourceTopicDeleted(s *v1.CloudStorageSource) {
+	s.Status.MarkTopicReady(s.ConditionSet())
 }
 
 func WithCloudStorageSourceTopicID(topicID string) CloudStorageSourceOption {
@@ -139,7 +147,7 @@ func WithCloudStorageSourceTopicID(topicID string) CloudStorageSourceOption {
 }
 
 // WithCloudStorageSourcePullSubscriptionFailed marks the condition that the
-// status of topic is False
+// status of topic is False.
 func WithCloudStorageSourcePullSubscriptionFailed(reason, message string) CloudStorageSourceOption {
 	return func(s *v1.CloudStorageSource) {
 		s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), reason, message)
@@ -155,11 +163,17 @@ func WithCloudStorageSourcePullSubscriptionUnknown(reason, message string) Cloud
 }
 
 // WithCloudStorageSourcePullSubscriptionReady marks the condition that the
-// topic is ready.
-func WithCloudStorageSourcePullSubscriptionReady() CloudStorageSourceOption {
-	return func(s *v1.CloudStorageSource) {
-		s.Status.MarkPullSubscriptionReady(s.ConditionSet())
-	}
+// pullSubscription is ready.
+func WithCloudStorageSourcePullSubscriptionReady(s *v1.CloudStorageSource) {
+	s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+}
+
+// WithCloudStorageSourcePullSubscriptionDeleted a wrapper to indicate that the
+// pullSubscription is deleted. Inside the function, we still mark the status of
+// pullSubscription to be ready, as the status of pullSubscription is unchanged
+// if the deletion is successful.
+func WithCloudStorageSourcePullSubscriptionDeleted(s *v1.CloudStorageSource) {
+	s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 }
 
 // WithCloudStorageSourceNotificationNotReady marks the condition that the
@@ -186,21 +200,31 @@ func WithCloudStorageSourceNotificationReady(notificationID string) CloudStorage
 	}
 }
 
-// WithCloudStorageSourceSinkURI sets the status for sink URI
+// WithCloudStorageSourceNotificationDeleted a wrapper to indicate that the
+// notification is deleted. Inside the function, we still mark the status of
+// notification to be ready, as the status of notification is unchanged if
+// the deletion is successful.
+func WithCloudStorageSourceNotificationDeleted(notificationID string) CloudStorageSourceOption {
+	return func(s *v1.CloudStorageSource) {
+		s.Status.MarkNotificationReady(notificationID)
+	}
+}
+
+// WithCloudStorageSourceSinkURI sets the status for sink URI.
 func WithCloudStorageSourceSinkURI(url *apis.URL) CloudStorageSourceOption {
 	return func(s *v1.CloudStorageSource) {
 		s.Status.SinkURI = url
 	}
 }
 
-// WithCloudStorageSourceNotificationId sets the status for Notification ID
+// WithCloudStorageSourceNotificationId sets the status for Notification ID.
 func WithCloudStorageSourceNotificationID(notificationID string) CloudStorageSourceOption {
 	return func(s *v1.CloudStorageSource) {
 		s.Status.NotificationID = notificationID
 	}
 }
 
-// WithCloudStorageSourceProjectId sets the status for Project ID
+// WithCloudStorageSourceProjectId sets the status for Project ID.
 func WithCloudStorageSourceProjectID(projectID string) CloudStorageSourceOption {
 	return func(s *v1.CloudStorageSource) {
 		s.Status.ProjectID = projectID
