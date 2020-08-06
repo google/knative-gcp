@@ -106,7 +106,7 @@ spec:
                 properties:
                   subscribers: &subscribers
                     type: array
-                    items:
+                    items: &items
                       type: object
                       required:
                         - uid
@@ -222,18 +222,20 @@ spec:
                 <<: *project
               subscribers:
                 <<: *subscribers
-                properties:
-                  # No deadLetterSink in subscribers properties in v1beta1
-                  uid:
-                    <<: *uid
-                  generation:
-                    <<: *generation
-                  subscriberURI:
-                    <<: *subscriberURI
-                  replyURI:
-                    <<: *replyURI
-                  delivery:
-                    <<: *delivery
+                items:
+                  <<: *items
+                  properties:
+                    # No deadLetterSink in subscribers properties in v1beta1
+                    uid:
+                      <<: *uid
+                    generation:
+                      <<: *generation
+                    subscriberUri:
+                      <<: *subscriberURI
+                    replyUri:
+                      <<: *replyURI
+                    delivery:
+                      <<: *delivery
           status:
             <<: *status
             properties:
