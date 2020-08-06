@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
 	cloud.google.com/go/pubsub v1.6.1
 	cloud.google.com/go/storage v1.10.0
-	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200729225950-2d83dc10864e
+	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200806165906-9ae0708e27fa
 	github.com/cloudevents/sdk-go/v2 v2.2.1-0.20200729225950-2d83dc10864e
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.4.2

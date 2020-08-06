@@ -280,8 +280,8 @@ github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDk
 github.com/cloudevents/sdk-go v0.0.0-20190509003705-56931988abe3/go.mod h1:j1nZWMLGg3om8SswStBoY6/SHvcLM19MuZqwDtMtmzs=
 github.com/cloudevents/sdk-go v1.0.0 h1:gS5I0s2qPmdc4GBPlUmzZU7RH30BaiOdcRJ1RkXnPrc=
 github.com/cloudevents/sdk-go v1.0.0/go.mod h1:3TkmM0cFqkhCHOq5JzzRU/RxRkwzoS8TZ+G448qVTog=
-github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200729225950-2d83dc10864e h1:LYsfarHHum3oV7zTEihAu1ApT3x//8UOqfYs0mGxMwI=
-github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200729225950-2d83dc10864e/go.mod h1:KyGtbsR84tpP870ydX77lvHVq++zh3iUoY9dzUxj+cM=
+github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200806165906-9ae0708e27fa h1:FAj/qLSnlOc1sXV4JEXgqNn+2rdfB/848JnHSf70uA0=
+github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200806165906-9ae0708e27fa/go.mod h1:KyGtbsR84tpP870ydX77lvHVq++zh3iUoY9dzUxj+cM=
 github.com/cloudevents/sdk-go/v2 v2.0.0 h1:AUdGJwaSUnA+VvepKqgjy6XDkPcf0hf/3L7icEs1ibs=
 github.com/cloudevents/sdk-go/v2 v2.0.0/go.mod h1:3CTrpB4+u7Iaj6fd7E2Xvm5IxMdRoaAhqaRVnOr2rCU=
 github.com/cloudevents/sdk-go/v2 v2.2.0 h1:FlBJg7W0QywbOjuZGmRXUyFk8qkCHx2euETp+tuopSU=
