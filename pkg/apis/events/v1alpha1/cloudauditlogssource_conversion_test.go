@@ -18,10 +18,11 @@ package v1alpha1
 
 import (
 	"context"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/knative-gcp/pkg/apis/convert"
 	"net/url"
 	"testing"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/knative-gcp/pkg/apis/convert"
 
 	"github.com/google/go-cmp/cmp"
 	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
@@ -103,7 +104,7 @@ func TestCloudAuditLogsSourceConversionBetweenV1beta1(t *testing.T) {
 				if dc == nil {
 					t.Errorf("ConvertFrom() should add a deprecated warning condition but it does not.")
 				} else if diff := cmp.Diff(*dc, convert.DeprecatedV1Alpha1Condition,
-					cmpopts.IgnoreFields(apis.Condition{}, "LastTransitionTime")); diff !="" {
+					cmpopts.IgnoreFields(apis.Condition{}, "LastTransitionTime")); diff != "" {
 					t.Errorf("Failed to verify deprecated condition (-want, + got) = %v", diff)
 				}
 				// Remove the Deprecated Condition from Status to compare the remaining of fields.
@@ -159,7 +160,7 @@ func TestCloudAuditLogsSourceConversionBetweenV1(t *testing.T) {
 				if dc == nil {
 					t.Errorf("ConvertFrom() should add a deprecated warning condition but it does not.")
 				} else if diff := cmp.Diff(*dc, convert.DeprecatedV1Alpha1Condition,
-					cmpopts.IgnoreFields(apis.Condition{}, "LastTransitionTime")); diff !="" {
+					cmpopts.IgnoreFields(apis.Condition{}, "LastTransitionTime")); diff != "" {
 					t.Errorf("Failed to verify deprecated condition (-want, + got) = %v", diff)
 				}
 				// Remove the Deprecated Condition from Status to compare the remaining of fields.

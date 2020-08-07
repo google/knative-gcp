@@ -18,6 +18,7 @@ package convert
 
 import (
 	"context"
+
 	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
@@ -32,7 +33,7 @@ import (
 
 const (
 	deprecatedV1Alpha1Reason = "v1alpha1Deprecated"
-	deprecatedV1Alpha1Msg = "V1alpha1 Sources will be deprecated after 0.18 cut."
+	deprecatedV1Alpha1Msg    = "V1alpha1 Sources will be deprecated after 0.18 cut."
 )
 
 var (
