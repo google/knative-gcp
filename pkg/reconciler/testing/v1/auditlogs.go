@@ -46,34 +46,44 @@ func NewCloudAuditLogsSource(name, namespace string, opts ...CloudAuditLogsSourc
 	return cal
 }
 
+// WithInitCloudAuditLogsSourceConditions initializes the CloudAuditLogsSource's conditions.
 func WithInitCloudAuditLogsSourceConditions(s *v1.CloudAuditLogsSource) {
 	s.Status.InitializeConditions()
 }
 
+// WithCloudAuditLogsSourceUID sets the CloudAuditLogsSource's ObjectMeta.UID.
 func WithCloudAuditLogsSourceUID(uid string) CloudAuditLogsSourceOption {
 	return func(s *v1.CloudAuditLogsSource) {
 		s.ObjectMeta.UID = types.UID(uid)
 	}
 }
 
-func WithCloudAuditLogsSourceTopicFailed(reason, message string) CloudAuditLogsSourceOption {
-	return func(s *v1.CloudAuditLogsSource) {
-		s.Status.MarkTopicFailed(s.ConditionSet(), reason, message)
-	}
-}
-
+// WithCloudAuditLogsSourceWorkloadIdentityFailed marks the condition that the
+// WorkloadIdentity is False.
 func WithCloudAuditLogsSourceWorkloadIdentityFailed(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1.CloudAuditLogsSource) {
 		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
 	}
 }
 
+// WithCloudAuditLogsSourceTopicFailed marks the condition that the
+// topic is False.
+func WithCloudAuditLogsSourceTopicFailed(reason, message string) CloudAuditLogsSourceOption {
+	return func(s *v1.CloudAuditLogsSource) {
+		s.Status.MarkTopicFailed(s.ConditionSet(), reason, message)
+	}
+}
+
+// WithCloudStorageSourceTopicUnknown marks the condition that the
+// topic is Unknown.
 func WithCloudAuditLogsSourceTopicUnknown(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1.CloudAuditLogsSource) {
 		s.Status.MarkTopicUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
+// WithCloudStorageSourceTopicUnknown marks the condition that the
+// topic is Ready.
 func WithCloudAuditLogsSourceTopicReady(topicID string) CloudAuditLogsSourceOption {
 	return func(s *v1.CloudAuditLogsSource) {
 		s.Status.MarkTopicReady(s.ConditionSet())
@@ -81,37 +91,70 @@ func WithCloudAuditLogsSourceTopicReady(topicID string) CloudAuditLogsSourceOpti
 	}
 }
 
+// WithCloudAuditLogsSourceTopicDeleted is a wrapper to indicate that the
+// topic is deleted. Inside the function, we still mark the status of topic to be ready,
+// as the status of topic is unchanged if the deletion is successful. We do not set the
+// topicID because the topicID is set to empty when deleting the topic.
+func WithCloudAuditLogsSourceTopicDeleted(s *v1.CloudAuditLogsSource) {
+	s.Status.MarkTopicReady(s.ConditionSet())
+}
+
+// WithCloudAuditLogsSourcePullSubscriptionFailed marks the condition that the
+// PullSubscription is False.
 func WithCloudAuditLogsSourcePullSubscriptionFailed(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1.CloudAuditLogsSource) {
 		s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), reason, message)
 	}
 }
 
+// WithCloudAuditLogsSourcePullSubscriptionUnknown marks the condition that the
+// PullSubscription is Unknown.
 func WithCloudAuditLogsSourcePullSubscriptionUnknown(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1.CloudAuditLogsSource) {
 		s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
-func WithCloudAuditLogsSourcePullSubscriptionReady() CloudAuditLogsSourceOption {
-	return func(s *v1.CloudAuditLogsSource) {
-		s.Status.MarkPullSubscriptionReady(s.ConditionSet())
-	}
+// WithCloudAuditLogsSourcePullSubscriptionReady marks the condition that the
+// PullSubscription is Ready.
+func WithCloudAuditLogsSourcePullSubscriptionReady(s *v1.CloudAuditLogsSource) {
+	s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 }
 
+// WithCloudAuditLogsSourcePullSubscriptionDeleted is a wrapper to indicate that the
+// PullSubscription is deleted. Inside the function, we still mark the status of
+// PullSubscription to be ready, as the status of PullSubscription is unchanged
+// if the deletion is successful.
+func WithCloudAuditLogsSourcePullSubscriptionDeleted(s *v1.CloudAuditLogsSource) {
+	s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+}
+
+// WithCloudAuditLogsSourceSinkNotReady marks the condition that the
+// sink is False.
 func WithCloudAuditLogsSourceSinkNotReady(reason, messageFmt string, messageA ...interface{}) CloudAuditLogsSourceOption {
 	return func(s *v1.CloudAuditLogsSource) {
 		s.Status.MarkSinkNotReady(reason, messageFmt, messageA...)
 	}
 }
 
+// WithCloudAuditLogsSourceSinkUnknown marks the condition that the
+// sink is unknown.
 func WithCloudAuditLogsSourceSinkUnknown(reason, messageFmt string, messageA ...interface{}) CloudAuditLogsSourceOption {
 	return func(s *v1.CloudAuditLogsSource) {
 		s.Status.MarkSinkUnknown(reason, messageFmt, messageA...)
 	}
 }
 
+// WithCloudAuditLogsSourceSinkReady marks the condition that the
+// sink is ready.
 func WithCloudAuditLogsSourceSinkReady(s *v1.CloudAuditLogsSource) {
+	s.Status.MarkSinkReady()
+}
+
+// WithCloudAuditLogsSourceSinkDeleted is a wrapper to indicate that the
+// sink is deleted. Inside the function, we still mark the status of sink to be ready,
+// as the status of sink is unchanged if the deletion is successful.
+func WithCloudAuditLogsSourceSinkDeleted(s *v1.CloudAuditLogsSource) {
 	s.Status.MarkSinkReady()
 }
 
