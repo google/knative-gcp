@@ -23,6 +23,7 @@ import (
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/pkg/apis"
 )
@@ -123,13 +124,13 @@ func WithBrokerReadyURI(address *apis.URL) BrokerOption {
 
 func WithBrokerBrokerCellFailed(reason, msg string) BrokerOption {
 	return func(b *brokerv1beta1.Broker) {
-		b.Status.MarkBrokerCelllFailed(reason, msg)
+		b.Status.MarkBrokerCellFailed(reason, msg)
 	}
 }
 
 func WithBrokerBrokerCellUnknown(reason, msg string) BrokerOption {
 	return func(b *brokerv1beta1.Broker) {
-		b.Status.MarkBrokerCelllUnknown(reason, msg)
+		b.Status.MarkBrokerCellUnknown(reason, msg)
 	}
 }
 
@@ -158,4 +159,11 @@ func WithBrokerClass(bc string) BrokerOption {
 
 func WithBrokerSetDefaults(b *brokerv1beta1.Broker) {
 	b.SetDefaults(context.Background())
+}
+
+// WithBrokerDeliverySpec sets the Broker's delivery spec.
+func WithBrokerDeliverySpec(deliverySpec *eventingduckv1beta1.DeliverySpec) BrokerOption {
+	return func(b *brokerv1beta1.Broker) {
+		b.Spec.Delivery = deliverySpec
+	}
 }
