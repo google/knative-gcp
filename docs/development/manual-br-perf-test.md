@@ -2,8 +2,8 @@
 
 ## When?
 
-At the moment the continuous [performance tests]() we run with [Mako]() doesn't
-provide the following features:
+At the moment the continuous [performance tests](../../test/performance) we run
+with [Mako](https://mako.dev/) doesn't provide the following features:
 
 - The ability to configure test events. E.g. Event payload size.
 - The ability to configure different trigger receiver behaviors. E.g. Delay
