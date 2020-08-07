@@ -23,6 +23,27 @@ spec: {}
 
 ---
 
+apiVersion: internal.events.cloud.google.com/v1alpha1
+kind: BrokerCell
+metadata:
+  annotations:
+    internal.events.cloud.google.com/creator: googlecloud
+  name: default
+  namespace: cloud-run-events
+spec:
+  components:
+    fanout:
+      minReplicas: 1
+      maxReplicas: 2
+    ingress:
+      minReplicas: 1
+      maxReplicas: 2
+    retry:
+      minReplicas: 1
+      maxReplicas: 2
+
+---
+
 apiVersion: eventing.knative.dev/v1beta1
 kind: Trigger
 metadata:
