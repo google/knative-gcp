@@ -20,6 +20,7 @@ import (
 
 	"knative.dev/pkg/signals"
 
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/kelseyhightower/envconfig"
@@ -28,8 +29,14 @@ import (
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
 
 type envConfig struct {
-	// Environment variable containing the sink URL (broker URL) that the event will be forwarded to by the probeHelper
+	// Environment variable containing the project ID
+	ProjectID string `envconfig:"PROJECT_ID" default:"cr-eventing-prober-default"`
+
+	// Environment variable containing the sink URL (broker URL) that the event will be forwarded to by the probeHelper for the e2e delivery probe
 	BrokerURL string `envconfig:"K_SINK" default:"http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"`
+
+	// Environment variable containing the CloudPubSubSource Topic ID that the event will be forwarded to by the probeHelper for the CloudPubSubSource probe
+	CloudPubSubSourceTopicID string `envconfig:"CLOUDPUBSUBSOURCE_TOPIC_ID" default:"cloudpubsubsource-topic"`
 
 	// Environment variable containing the port which listens to the probe to deliver the event
 	ProbePort int `envconfig:"PROBE_PORT" default:"8070"`
@@ -41,15 +48,26 @@ type envConfig struct {
 	Timeout int `envconfig:"TIMEOUT_MINS" default:"30"`
 }
 
-func forwardFromProbe(ctx context.Context, c cloudevents.Client, receivedEvents map[string]chan bool, timeout int) cloudEventsFunc {
+func forwardFromProbe(ctx context.Context, sc cloudevents.Client, psc cloudevents.Client, receivedEvents map[string]chan bool, timeout int) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		log.Printf("Received probe request: %+v \n", event)
 		eventID := event.ID()
 		receivedEvents[eventID] = make(chan bool, 1)
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
 		defer cancel()
-		if res := c.Send(ctx, event); !cloudevents.IsACK(res) {
-			return res
+		switch event.Type() {
+		case "broker-e2e-delivery-probe", "broker-e2e-delivery-probe-kubectl-exec", "broker-e2e-delivery-probe-kubectl-exec-warm-up":
+			// The sender client forwards the event to the broker.
+			if res := sc.Send(ctx, event); !cloudevents.IsACK(res) {
+				return res
+			}
+		case "cloudpubsubsource-probe", "cloudpubsubsource-probe-kubectl-exec", "cloudpubsubsource-probe-kubectl-exec-warm-up":
+			// The pubsub client forwards the event as a message to a pubsub topic.
+			if res := psc.Send(ctx, event); !cloudevents.IsACK(res) {
+				return res
+			}
+		default:
+			return cloudevents.NewReceipt(false, "probe forwarding failed, unrecognized event type, %v", event.Type())
 		}
 		select {
 		case <-receivedEvents[eventID]:
@@ -84,7 +102,19 @@ func runProbeHelper() {
 	probePort := env.ProbePort
 	receiverPort := env.ReceiverPort
 	timeout := env.Timeout
+	ctx := signals.NewContext()
 	log.Printf("Running Probe Helper with env config: %+v \n", env)
+	// create pubsub client
+	pst, err := cepubsub.New(ctx,
+		cepubsub.WithProjectID(env.ProjectID),
+		cepubsub.WithTopicID(env.CloudPubSubSourceTopicID))
+	if err != nil {
+		log.Fatalf("Failed to create pubsub transport, %v", err)
+	}
+	psc, err := cloudevents.NewClient(pst)
+	if err != nil {
+		log.Fatal("Failed to create pubsub client, ", err)
+	}
 	// create sender client
 	sp, err := cloudevents.NewHTTP(cloudevents.WithPort(probePort), cloudevents.WithTarget(brokerURL))
 	if err != nil {
@@ -105,11 +135,10 @@ func runProbeHelper() {
 	}
 	// make a map to store the channel for each event
 	receivedEvents := make(map[string]chan bool)
-	ctx := signals.NewContext()
-	// start a goroutine to receive the event from probe and forward the event to the broker
+	// start a goroutine to receive the event from probe and forward it appropriately
 	log.Println("Starting Probe Helper server...")
-	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, receivedEvents, timeout))
-	// Receive the event from the trigger and return the result back to the probe
+	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, receivedEvents, timeout))
+	// Receive the event from a trigger and return the result back to the probe
 	log.Println("Starting event receiver...")
 	rc.StartReceiver(ctx, receiveFromTrigger(receivedEvents))
 }
