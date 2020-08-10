@@ -100,7 +100,7 @@ func TestCloudAuditLogsSourceConversionBetweenV1beta1(t *testing.T) {
 
 				// Make sure the Deprecated Condition is added to the Status after converted back to v1alpha1,
 				// We need to ignore the LastTransitionTime as it is set in real time when doing the comparison.
-				dc := got.Status.GetCondition("Deprecated")
+				dc := got.Status.GetCondition(convert.DeprecatedType)
 				if dc == nil {
 					t.Errorf("ConvertFrom() should add a deprecated warning condition but it does not.")
 				} else if diff := cmp.Diff(*dc, convert.DeprecatedV1Alpha1Condition,
@@ -109,7 +109,7 @@ func TestCloudAuditLogsSourceConversionBetweenV1beta1(t *testing.T) {
 				}
 				// Remove the Deprecated Condition from Status to compare the remaining of fields.
 				cs := apis.NewLivingConditionSet()
-				cs.Manage(&got.Status).ClearCondition("Deprecated")
+				cs.Manage(&got.Status).ClearCondition(convert.DeprecatedType)
 				ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 				if diff := cmp.Diff(test.in, got, ignoreUsername); diff != "" {
 					t.Errorf("roundtrip (-want, +got) = %v", diff)
@@ -156,7 +156,7 @@ func TestCloudAuditLogsSourceConversionBetweenV1(t *testing.T) {
 
 				// Make sure the Deprecated Condition is added to the Status after converted back to v1alpha1,
 				// We need to ignore the LastTransitionTime as it is set in real time when doing the comparison.
-				dc := got.Status.GetCondition("Deprecated")
+				dc := got.Status.GetCondition(convert.DeprecatedType)
 				if dc == nil {
 					t.Errorf("ConvertFrom() should add a deprecated warning condition but it does not.")
 				} else if diff := cmp.Diff(*dc, convert.DeprecatedV1Alpha1Condition,
@@ -165,7 +165,8 @@ func TestCloudAuditLogsSourceConversionBetweenV1(t *testing.T) {
 				}
 				// Remove the Deprecated Condition from Status to compare the remaining of fields.
 				cs := apis.NewLivingConditionSet()
-				cs.Manage(&got.Status).ClearCondition("Deprecated")
+				cs.Manage(&got.Status).ClearCondition(convert.DeprecatedType)
+
 				ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 				// IdentityStatus.ServiceAccountName in v1alpha1 and v1beta1, it doesn't exist in v1.
 				// So this is not a round trip, the field will be silently removed.
