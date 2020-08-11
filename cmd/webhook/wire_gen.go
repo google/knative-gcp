@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"github.com/google/knative-gcp/pkg/apis/configs/broker"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"knative.dev/pkg/injection"
 )
@@ -14,10 +15,11 @@ import (
 // Injectors from wire.go:
 
 func InitializeControllers(ctx context.Context) ([]injection.ControllerConstructor, error) {
-	storeSingleton := &gcpauth.StoreSingleton{}
-	mainConversionController := newConversionConstructor(storeSingleton)
-	mainDefaultingAdmissionController := newDefaultingAdmissionConstructor(storeSingleton)
-	mainValidationController := newValidationConstructor(storeSingleton)
+	storeSingleton := &broker.StoreSingleton{}
+	gcpauthStoreSingleton := &gcpauth.StoreSingleton{}
+	mainConversionController := newConversionConstructor(storeSingleton, gcpauthStoreSingleton)
+	mainDefaultingAdmissionController := newDefaultingAdmissionConstructor(storeSingleton, gcpauthStoreSingleton)
+	mainValidationController := newValidationConstructor(storeSingleton, gcpauthStoreSingleton)
 	v := Controllers(mainConversionController, mainDefaultingAdmissionController, mainValidationController)
 	return v, nil
 }

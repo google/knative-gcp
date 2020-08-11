@@ -20,35 +20,38 @@ import (
 	"context"
 
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-)
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/logging"
 
-var (
-	// DefaultBackoffDelay is the default backoff delay used in the backoff retry policy
-	// for the Broker delivery spec.
-	DefaultBackoffDelay = "PT1S"
-	// DefaultBackoffPolicy is the default backoff policy type used in the backoff retry
-	// policy for the Broker delivery spec.
-	DefaultBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
-	// DefaultRetry is the default number of maximum delivery attempts for unacked messages
-	// before they are sent to a dead letter topic in the Broker delivery spec, in
-	// case a dead letter topic is specified. Without a dead letter topic specified,
-	// the retry count is infinite.
-	DefaultRetry int32 = 6
+	"github.com/google/knative-gcp/pkg/apis/configs/broker"
 )
 
 // SetDefaults sets the default field values for a Broker.
 func (b *Broker) SetDefaults(ctx context.Context) {
+	// Apply the default Broker delivery settings from the context.
+	withNS := apis.WithinParent(ctx, b.ObjectMeta)
+	deliverySpecDefaults := broker.FromContextOrDefaults(withNS).BrokerDeliverySpecDefaults
+	if deliverySpecDefaults == nil {
+		logging.FromContext(ctx).Error("Failed to get the BrokerDeliverySpecDefaults")
+		return
+	}
 	// Set the default delivery spec.
 	if b.Spec.Delivery == nil {
 		b.Spec.Delivery = &eventingduckv1beta1.DeliverySpec{}
 	}
-	if b.Spec.Delivery.BackoffPolicy == nil &&
-		b.Spec.Delivery.BackoffDelay == nil {
-		b.Spec.Delivery.BackoffPolicy = &DefaultBackoffPolicy
-		b.Spec.Delivery.BackoffDelay = &DefaultBackoffDelay
+	ns := apis.ParentMeta(withNS).Namespace
+	if b.Spec.Delivery.BackoffPolicy == nil {
+		b.Spec.Delivery.BackoffPolicy = deliverySpecDefaults.BackoffPolicy(ns)
+	}
+	if b.Spec.Delivery.BackoffDelay == nil {
+		b.Spec.Delivery.BackoffDelay = deliverySpecDefaults.BackoffDelay(ns)
+	}
+	if b.Spec.Delivery.DeadLetterSink == nil {
+		b.Spec.Delivery.DeadLetterSink = deliverySpecDefaults.DeadLetterSink(ns)
 	}
 	if b.Spec.Delivery.Retry == nil && b.Spec.Delivery.DeadLetterSink != nil {
-		b.Spec.Delivery.Retry = &DefaultRetry
+		// Only set the retry count if a dead letter sink is specified.
+		b.Spec.Delivery.Retry = deliverySpecDefaults.Retry(ns)
 	}
 	// Besides this, the eventing webhook will add the usual defaults.
 }

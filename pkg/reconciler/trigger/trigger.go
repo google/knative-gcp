@@ -56,6 +56,14 @@ const (
 	defaultMaximumBackoff = 600 * time.Second
 )
 
+var (
+	// Default backoff policy settings. Should normally be configured through the
+	// br-delivery ConfigMap, but these values serve in case the intended
+	// defaulting fails.
+	defaultBackoffDelay  = "PT1S"
+	defaultBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
+)
+
 // Reconciler implements controller.Reconciler for Trigger resources.
 type Reconciler struct {
 	*reconciler.Base
@@ -257,11 +265,15 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryPolicy {
 	var backoffDelay *string
 	var backoffPolicy *eventingduckv1beta1.BackoffPolicyType
-	if spec == nil {
-		backoffDelay = &brokerv1beta1.DefaultBackoffDelay
-		backoffPolicy = &brokerv1beta1.DefaultBackoffPolicy
+	// Read the default backoff policy settings in case the defaulting failed.
+	if spec == nil || spec.BackoffDelay == nil {
+		backoffDelay = &defaultBackoffDelay
 	} else {
 		backoffDelay = spec.BackoffDelay
+	}
+	if spec == nil || spec.BackoffPolicy == nil {
+		backoffPolicy = &defaultBackoffPolicy
+	} else {
 		backoffPolicy = spec.BackoffPolicy
 	}
 	// The Broker delivery spec is translated to a pubsub retry policy in the
@@ -288,15 +300,9 @@ func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.Deliv
 	if spec == nil || spec.DeadLetterSink == nil {
 		return nil
 	}
-	var retry *int32
-	if spec.Retry == nil {
-		retry = &brokerv1beta1.DefaultRetry
-	} else {
-		retry = spec.Retry
-	}
 	// Translate to the pubsub dead letter policy format.
 	return &pubsub.DeadLetterPolicy{
-		MaxDeliveryAttempts: int(*retry),
+		MaxDeliveryAttempts: int(*spec.Retry),
 		DeadLetterTopic:     fmt.Sprintf("projects/%s/topics/%s", projectID, spec.DeadLetterSink.URI.Host),
 	}
 }
