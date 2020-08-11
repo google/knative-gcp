@@ -45,10 +45,10 @@ type envConfig struct {
 var defaultRetry = wait.Backoff{
 	Steps:    3,
 	Duration: 30 * time.Second,
-	Factor:   1.0,
+	Factor:   2.0,
 	// The sleep at each iteration is the duration plus an additional
 	// amount chosen uniformly at random from the interval between 0 and jitter*duration.
-	Jitter: 2.0,
+	Jitter: 1.0,
 }
 
 func main() {
