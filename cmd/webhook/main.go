@@ -88,9 +88,9 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 
 type defaultingAdmissionController func(context.Context, configmap.Watcher) *controller.Impl
 
-func newDefaultingAdmissionConstructor(brokers *broker.StoreSingleton, gcpas *gcpauth.StoreSingleton) defaultingAdmissionController {
+func newDefaultingAdmissionConstructor(brokers *broker.Store, gcpas *gcpauth.StoreSingleton) defaultingAdmissionController {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-		return newDefaultingAdmissionController(ctx, cmw, brokers.Store(ctx, cmw), gcpas.Store(ctx, cmw))
+		return newDefaultingAdmissionController(ctx, cmw, brokers, gcpas.Store(ctx, cmw))
 	}
 }
 
@@ -121,9 +121,9 @@ func newDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher
 
 type validationController func(context.Context, configmap.Watcher) *controller.Impl
 
-func newValidationConstructor(brokers *broker.StoreSingleton, gcpas *gcpauth.StoreSingleton) validationController {
+func newValidationConstructor(brokers *broker.Store, gcpas *gcpauth.StoreSingleton) validationController {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-		return newValidationAdmissionController(ctx, cmw, brokers.Store(ctx, cmw), gcpas.Store(ctx, cmw))
+		return newValidationAdmissionController(ctx, cmw, brokers, gcpas.Store(ctx, cmw))
 	}
 }
 
@@ -174,9 +174,9 @@ func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *co
 
 type conversionController func(context.Context, configmap.Watcher) *controller.Impl
 
-func newConversionConstructor(brokers *broker.StoreSingleton, gcpas *gcpauth.StoreSingleton) conversionController {
+func newConversionConstructor(brokers *broker.Store, gcpas *gcpauth.StoreSingleton) conversionController {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-		return newConversionController(ctx, cmw, brokers.Store(ctx, cmw), gcpas.Store(ctx, cmw))
+		return newConversionController(ctx, cmw, brokers, gcpas.Store(ctx, cmw))
 	}
 }
 

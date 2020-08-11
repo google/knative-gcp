@@ -27,7 +27,7 @@ import (
 func InitializeControllers(ctx context.Context) ([]injection.ControllerConstructor, error) {
 	panic(wire.Build(
 		Controllers,
-		wire.Struct(new(broker.StoreSingleton)),
+		wire.Struct(new(broker.Store)),
 		wire.Struct(new(gcpauth.StoreSingleton)),
 		newConversionConstructor,
 		newDefaultingAdmissionConstructor,
