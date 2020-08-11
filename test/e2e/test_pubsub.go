@@ -97,7 +97,7 @@ func SmokeCloudPubSubSourceWithDeletionTestImpl(t *testing.T, authConfig lib.Aut
 	}
 
 	client.DeletePubSubOrFail(psName)
-	//Wait for 40 seconds for subscription to get deleted in gcp
+	//Wait for 60 seconds for subscription to get deleted in gcp
 	time.Sleep(resources.WaitDeletionTime)
 	deletedSubExists := lib.SubscriptionExists(t, subID)
 	if deletedSubExists {

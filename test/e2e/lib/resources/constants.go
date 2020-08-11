@@ -63,8 +63,9 @@ const (
 
 const (
 	// Tried with 20 seconds but the test has been quite flaky.
+	// Increase from 40 seconds to 60 seconds, for issue: https://github.com/google/knative-gcp/issues/1568.
 	// WaitDeletionTime for deleting resources
-	WaitDeletionTime = 40 * time.Second
+	WaitDeletionTime = 60 * time.Second
 	// WaitCALTime for time needed to wait to fire an event after CAL Source is ready
 	// Tried with 45 seconds but the test has been quite flaky.
 	// Tried with 90 seconds but the test has been quite flaky.
