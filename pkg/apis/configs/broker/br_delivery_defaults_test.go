@@ -140,7 +140,9 @@ func TestNewDefaultsConfigFromConfigMapWithError(t *testing.T) {
 					Name:      configName,
 				},
 				Data: map[string]string{
-					"default-br-delivery-config": "!!binary",
+					"default-br-delivery-config": `
+	clusterDefaults: !!binary
+`,
 				},
 			},
 		},
