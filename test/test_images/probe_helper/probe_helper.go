@@ -59,11 +59,13 @@ func forwardFromProbe(ctx context.Context, sc cloudevents.Client, psc cloudevent
 		case "broker-e2e-delivery-probe", "broker-e2e-delivery-probe-kubectl-exec", "broker-e2e-delivery-probe-kubectl-exec-warm-up":
 			// The sender client forwards the event to the broker.
 			if res := sc.Send(ctx, event); !cloudevents.IsACK(res) {
+				log.Printf("Error when sending event %v to broker: %+v \n", eventID, res)
 				return res
 			}
 		case "cloudpubsubsource-probe", "cloudpubsubsource-probe-kubectl-exec", "cloudpubsubsource-probe-kubectl-exec-warm-up":
 			// The pubsub client forwards the event as a message to a pubsub topic.
 			if res := psc.Send(ctx, event); !cloudevents.IsACK(res) {
+				log.Printf("Error when publishing event %v to pubsub topic: %+v \n", eventID, res)
 				return res
 			}
 		default:
@@ -74,6 +76,7 @@ func forwardFromProbe(ctx context.Context, sc cloudevents.Client, psc cloudevent
 			delete(receivedEvents, eventID)
 			return cloudevents.ResultACK
 		case <-ctx.Done():
+			log.Printf("Timed out waiting for the event to be sent back: %v \n", eventID)
 			return cloudevents.NewReceipt(false, "timed out waiting for event to be sent back")
 		}
 	}

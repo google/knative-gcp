@@ -49,6 +49,8 @@ func (source *Topic) ConvertTo(ctx context.Context, to apis.Convertible) error {
 		}
 		sink.Status.ProjectID = source.Status.ProjectID
 		sink.Status.TopicID = source.Status.TopicID
+		// Remove v1alpha1 as deprecated from the Status Condition when converting to a higher version.
+		convert.RemoveV1alpha1Deprecated(sink.ConditionSet(), &sink.Status.Status)
 		return nil
 	default:
 		return apis.ConvertToViaProxy(ctx, source, &v1beta1.Topic{}, sink)
@@ -80,6 +82,8 @@ func (sink *Topic) ConvertFrom(ctx context.Context, from apis.Convertible) error
 		}
 		sink.Status.ProjectID = source.Status.ProjectID
 		sink.Status.TopicID = source.Status.TopicID
+		// Mark v1alpha1 as deprecated as a Status Condition when converting to v1alpha1.
+		convert.MarkV1alpha1Deprecated(sink.ConditionSet(), &sink.Status.Status)
 		return nil
 	default:
 		return apis.ConvertFromViaProxy(ctx, source, &v1beta1.Topic{}, sink)
