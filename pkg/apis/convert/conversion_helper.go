@@ -19,15 +19,32 @@ package convert
 import (
 	"context"
 
-	pkgduckv1 "knative.dev/pkg/apis/duck/v1"
-
 	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/apis"
+	pkgduckv1 "knative.dev/pkg/apis/duck/v1"
 	pkgduckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	pkgduckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+)
+
+const (
+	DeprecatedType           = "Deprecated"
+	deprecatedV1Alpha1Reason = "v1alpha1Deprecated"
+	deprecatedV1Alpha1Msg    = "V1alpha1 has been deprecated and will be removed in 0.18."
+)
+
+var (
+	DeprecatedV1Alpha1Condition = apis.Condition{
+		Type:     DeprecatedType,
+		Reason:   deprecatedV1Alpha1Reason,
+		Status:   corev1.ConditionTrue,
+		Severity: apis.ConditionSeverityWarning,
+		Message:  deprecatedV1Alpha1Msg,
+	}
 )
 
 func ToV1beta1PubSubSpec(from duckv1alpha1.PubSubSpec) duckv1beta1.PubSubSpec {
@@ -308,4 +325,18 @@ func FromV1beta1SubscribableSpec(from *eventingduckv1beta1.SubscribableSpec) *ev
 		}
 	}
 	return &to
+}
+
+// A helper function to mark v1alpha1 Deprecated Condition in the Status.
+// We mark the Condition in status during conversion from a higher version to v1alpha1.
+// TODO: remove after the 0.17 cut.
+func MarkV1alpha1Deprecated(cs *apis.ConditionSet, s *pkgduckv1.Status) {
+	cs.Manage(s).SetCondition(DeprecatedV1Alpha1Condition)
+}
+
+// A helper function to remove Deprecated Condition from the Status during conversion
+// from v1alpha1 to a higher version.
+// TODO: remove after the 0.17 cut.
+func RemoveV1alpha1Deprecated(cs *apis.ConditionSet, s *pkgduckv1.Status) {
+	cs.Manage(s).ClearCondition(DeprecatedType)
 }

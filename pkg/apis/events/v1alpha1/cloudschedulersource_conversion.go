@@ -36,6 +36,8 @@ func (source *CloudSchedulerSource) ConvertTo(ctx context.Context, to apis.Conve
 		sink.Spec.Data = source.Spec.Data
 		sink.Status.PubSubStatus = convert.ToV1beta1PubSubStatus(source.Status.PubSubStatus)
 		sink.Status.JobName = source.Status.JobName
+		// Remove v1alpha1 as deprecated from the Status Condition when converting to a higher version.
+		convert.RemoveV1alpha1Deprecated(sink.ConditionSet(), &sink.Status.Status)
 		return nil
 	default:
 		return apis.ConvertToViaProxy(ctx, source, &v1beta1.CloudSchedulerSource{}, sink)
@@ -54,6 +56,8 @@ func (sink *CloudSchedulerSource) ConvertFrom(ctx context.Context, from apis.Con
 		sink.Spec.Data = source.Spec.Data
 		sink.Status.PubSubStatus = convert.FromV1beta1PubSubStatus(source.Status.PubSubStatus)
 		sink.Status.JobName = source.Status.JobName
+		// Mark v1alpha1 as deprecated as a Status Condition when converting to v1alpha1.
+		convert.MarkV1alpha1Deprecated(sink.ConditionSet(), &sink.Status.Status)
 		return nil
 	default:
 		return apis.ConvertFromViaProxy(ctx, source, &v1beta1.CloudSchedulerSource{}, sink)

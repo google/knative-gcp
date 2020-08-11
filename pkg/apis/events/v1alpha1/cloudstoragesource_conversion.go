@@ -38,6 +38,8 @@ func (source *CloudStorageSource) ConvertTo(ctx context.Context, to apis.Convert
 		sink.Spec.PayloadFormat = source.Spec.PayloadFormat
 		sink.Status.PubSubStatus = convert.ToV1beta1PubSubStatus(source.Status.PubSubStatus)
 		sink.Status.NotificationID = source.Status.NotificationID
+		// Remove v1alpha1 as deprecated from the Status Condition when converting to a higher version.
+		convert.RemoveV1alpha1Deprecated(sink.ConditionSet(), &sink.Status.Status)
 		return nil
 	default:
 		return apis.ConvertToViaProxy(ctx, source, &v1beta1.CloudStorageSource{}, sink)
@@ -59,6 +61,8 @@ func (sink *CloudStorageSource) ConvertFrom(ctx context.Context, from apis.Conve
 		sink.Spec.PayloadFormat = source.Spec.PayloadFormat
 		sink.Status.PubSubStatus = convert.FromV1beta1PubSubStatus(source.Status.PubSubStatus)
 		sink.Status.NotificationID = source.Status.NotificationID
+		// Mark v1alpha1 as deprecated as a Status Condition when converting to v1alpha1.
+		convert.MarkV1alpha1Deprecated(sink.ConditionSet(), &sink.Status.Status)
 		return nil
 	default:
 		return apis.ConvertFromViaProxy(ctx, source, &v1beta1.CloudStorageSource{}, sink)
