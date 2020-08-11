@@ -62,7 +62,7 @@ func forwardFromProbe(ctx context.Context, sc cloudevents.Client, psc cloudevent
 				log.Printf("Error when sending event %v to broker: %+v \n", eventID, res)
 				return res
 			}
-		case "cloudpubsubsource-probe", "cloudpubsubsource-probe-kubectl-exec", "cloudpubsubsource-probe-kubectl-exec-warm-up":
+		case "source-cloudpubsub-probe", "source-cloudpubsub-probe-kubectl-exec", "source-cloudpubsub-probe-kubectl-exec-warm-up":
 			// The pubsub client forwards the event as a message to a pubsub topic.
 			if res := psc.Send(ctx, event); !cloudevents.IsACK(res) {
 				log.Printf("Error when publishing event %v to pubsub topic: %+v \n", eventID, res)
