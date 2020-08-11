@@ -133,6 +133,17 @@ func TestNewDefaultsConfigFromConfigMapWithError(t *testing.T) {
 				},
 			},
 		},
+		"invalid YAML": {
+			config: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "cloud-run-events",
+					Name:      configName,
+				},
+				Data: map[string]string{
+					"default-br-delivery-config": "!!binary",
+				},
+			},
+		},
 	}
 
 	for n, tc := range testCases {

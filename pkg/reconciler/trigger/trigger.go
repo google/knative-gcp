@@ -229,15 +229,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	//trig.Status.TopicID = topic.ID()
 
 	retryPolicy := getPubsubRetryPolicy(deliverySpec)
-	if err != nil {
-		logger.Error("Error getting broker retry policy", zap.Error(err))
-		return err
-	}
 	deadLetterPolicy := getPubsubDeadLetterPolicy(projectID, deliverySpec)
-	if err != nil {
-		logger.Error("Error getting broker dead letter policy", zap.Error(err))
-		return err
-	}
 
 	// Check if PullSub exists, and if not, create it.
 	subID := resources.GenerateRetrySubscriptionName(trig)
