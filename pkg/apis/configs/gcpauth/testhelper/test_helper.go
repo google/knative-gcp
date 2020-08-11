@@ -40,7 +40,7 @@ func ContextWithDefaults() context.Context {
 // WithDefaults adds Secret() as the cluster default authorization to the passed in context.
 func WithDefaults(ctx context.Context) context.Context {
 	d, _ := gcpauth.NewDefaultsConfigFromMap(map[string]string{
-		"default-auth-config": `
+		"default-auth-config": ` 
   clusterDefaults:
     secret:
       name: google-cloud-key
