@@ -19,6 +19,8 @@ package scheduler
 import (
 	"context"
 
+	"google.golang.org/api/option"
+
 	"go.uber.org/zap"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
 	"google.golang.org/grpc/codes"
@@ -103,8 +105,8 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1.CloudSchedu
 		// Set the projectID in the status.
 		scheduler.Status.ProjectID = projectID
 	}
-
-	client, err := r.createClientFn(ctx)
+	opt := option.WithQuotaProject(scheduler.Status.ProjectID)
+	client, err := r.createClientFn(ctx, opt)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create CloudSchedulerSource client", zap.Error(err))
 		return err
@@ -158,7 +160,8 @@ func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1.CloudScheduler
 		return nil
 	}
 
-	client, err := r.createClientFn(ctx)
+	opt := option.WithQuotaProject(scheduler.Status.ProjectID)
+	client, err := r.createClientFn(ctx, opt)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create CloudSchedulerSource client", zap.Error(err))
 		scheduler.Status.MarkJobUnknown(deleteJobFailed, "Failed to create CloudSchedulerSource client: %s", err.Error())

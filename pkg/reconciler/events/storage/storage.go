@@ -19,6 +19,8 @@ package storage
 import (
 	"context"
 
+	"google.golang.org/api/option"
+
 	"go.uber.org/zap"
 
 	"google.golang.org/grpc/codes"
@@ -120,7 +122,8 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1.Clou
 		storage.Status.ProjectID = projectID
 	}
 
-	client, err := r.createClientFn(ctx)
+	opt := option.WithQuotaProject(storage.Status.ProjectID)
+	client, err := r.createClientFn(ctx, opt)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create CloudStorageSource client", zap.Error(err))
 		return "", err
@@ -186,7 +189,8 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1.CloudSt
 
 	// At this point the project should have been populated.
 	// Querying CloudStorageSource as the notification could have been deleted outside the cluster (e.g, through gcloud).
-	client, err := r.createClientFn(ctx)
+	opt := option.WithQuotaProject(storage.Status.ProjectID)
+	client, err := r.createClientFn(ctx, opt)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create CloudStorageSource client", zap.Error(err))
 		storage.Status.MarkNotificationUnknown(deleteNotificationFailed, "Failed to create CloudStorageSource client: %s", err.Error())

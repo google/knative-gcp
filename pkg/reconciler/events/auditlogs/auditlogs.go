@@ -19,6 +19,8 @@ package auditlogs
 import (
 	"context"
 
+	"google.golang.org/api/option"
+
 	"cloud.google.com/go/logging/logadmin"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -116,7 +118,8 @@ func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1.CloudAuditLogs
 	if sinkID == "" {
 		sinkID = resources.GenerateSinkName(s)
 	}
-	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID)
+	opt := option.WithQuotaProject(s.Status.ProjectID)
+	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID, opt)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create LogAdmin client", zap.Error(err))
 		return nil, err
@@ -144,7 +147,8 @@ func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1.CloudAuditLogs
 
 // Ensures that the sink has been granted the pubsub.publisher role on the source topic.
 func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, s *v1.CloudAuditLogsSource, sink *logadmin.Sink) error {
-	pubsubClient, err := c.pubsubClientProvider(ctx, s.Status.ProjectID)
+	opt := option.WithQuotaProject(s.Status.ProjectID)
+	pubsubClient, err := c.pubsubClientProvider(ctx, s.Status.ProjectID, opt)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create PubSub client", zap.Error(err))
 		return err
@@ -173,7 +177,8 @@ func (c *Reconciler) deleteSink(ctx context.Context, s *v1.CloudAuditLogsSource)
 	if s.Status.StackdriverSink == "" {
 		return nil
 	}
-	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID)
+	opt := option.WithQuotaProject(s.Status.ProjectID)
+	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID, opt)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create LogAdmin client", zap.Error(err))
 		s.Status.MarkSinkUnknown(deleteSinkFailed, "Failed to create LogAdmin Client: %s", err.Error())
