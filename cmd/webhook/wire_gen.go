@@ -15,11 +15,11 @@ import (
 // Injectors from wire.go:
 
 func InitializeControllers(ctx context.Context) ([]injection.ControllerConstructor, error) {
-	store := &broker.Store{}
-	storeSingleton := &gcpauth.StoreSingleton{}
-	mainConversionController := newConversionConstructor(store, storeSingleton)
-	mainDefaultingAdmissionController := newDefaultingAdmissionConstructor(store, storeSingleton)
-	mainValidationController := newValidationConstructor(store, storeSingleton)
+	storeSingleton := &broker.StoreSingleton{}
+	gcpauthStoreSingleton := &gcpauth.StoreSingleton{}
+	mainConversionController := newConversionConstructor(storeSingleton, gcpauthStoreSingleton)
+	mainDefaultingAdmissionController := newDefaultingAdmissionConstructor(storeSingleton, gcpauthStoreSingleton)
+	mainValidationController := newValidationConstructor(storeSingleton, gcpauthStoreSingleton)
 	v := Controllers(mainConversionController, mainDefaultingAdmissionController, mainValidationController)
 	return v, nil
 }
