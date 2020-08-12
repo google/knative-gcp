@@ -130,6 +130,7 @@ func StackdriverSinkExists(t *testing.T, sinkID string) bool {
 	ctx := context.Background()
 	project := os.Getenv(ProwProjectKey)
 	opt := option.WithQuotaProject(project)
+	t.Logf("binded auditlogs quota to project: %s", project)
 	client, err := logadmin.NewClient(ctx, project, opt)
 	if err != nil {
 		t.Fatalf("failed to create LogAdmin client, %s", err.Error())
