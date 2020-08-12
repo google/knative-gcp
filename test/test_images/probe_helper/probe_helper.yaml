@@ -33,8 +33,6 @@ spec:
         - name: probe-helper
           image: ko://github.com/google/knative-gcp/test/test_images/probe_helper
           env:
-            - name: PROJECT_ID
-              value: cr-eventing-prober-default
             - name: K_SINK
               value: "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"
             - name: CLOUDPUBSUBSOURCE_TOPIC_ID

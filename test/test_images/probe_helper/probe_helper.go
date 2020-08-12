@@ -18,19 +18,22 @@ import (
 	"log"
 	"time"
 
-	"knative.dev/pkg/signals"
-
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/kelseyhightower/envconfig"
+
+	"knative.dev/pkg/signals"
+
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/utils"
 )
 
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
 
 type envConfig struct {
 	// Environment variable containing the project ID
-	ProjectID string `envconfig:"PROJECT_ID" default:"cr-eventing-prober-default"`
+	ProjectID string `envconfig:"PROJECT_ID"`
 
 	// Environment variable containing the sink URL (broker URL) that the event will be forwarded to by the probeHelper for the e2e delivery probe
 	BrokerURL string `envconfig:"K_SINK" default:"http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"`
@@ -62,7 +65,7 @@ func forwardFromProbe(ctx context.Context, sc cloudevents.Client, psc cloudevent
 				log.Printf("Error when sending event %v to broker: %+v \n", eventID, res)
 				return res
 			}
-		case "source-cloudpubsub-probe", "source-cloudpubsub-probe-kubectl-exec", "source-cloudpubsub-probe-kubectl-exec-warm-up":
+		case "cloudpubsubsource-probe", "cloudpubsubsource-probe-kubectl-exec", "cloudpubsubsource-probe-kubectl-exec-warm-up":
 			// The pubsub client forwards the event as a message to a pubsub topic.
 			if res := psc.Send(ctx, event); !cloudevents.IsACK(res) {
 				log.Printf("Error when publishing event %v to pubsub topic: %+v \n", eventID, res)
@@ -101,6 +104,10 @@ func runProbeHelper() {
 	if err := envconfig.Process("", &env); err != nil {
 		log.Fatalf("Failed to process env var, %v", err)
 	}
+	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
+	if err != nil {
+		log.Fatalf("Failed to get the default project ID, %v", err)
+	}
 	brokerURL := env.BrokerURL
 	probePort := env.ProbePort
 	receiverPort := env.ReceiverPort
@@ -109,7 +116,7 @@ func runProbeHelper() {
 	log.Printf("Running Probe Helper with env config: %+v \n", env)
 	// create pubsub client
 	pst, err := cepubsub.New(ctx,
-		cepubsub.WithProjectID(env.ProjectID),
+		cepubsub.WithProjectID(projectID),
 		cepubsub.WithTopicID(env.CloudPubSubSourceTopicID))
 	if err != nil {
 		log.Fatalf("Failed to create pubsub transport, %v", err)
