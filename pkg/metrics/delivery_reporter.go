@@ -22,17 +22,20 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/broker/config"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"knative.dev/pkg/metrics"
+
+	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
 type DeliveryMetricsKey int
+type RespStatusCodeKey int
 
 const (
 	startDeliveryProcessingTime DeliveryMetricsKey = iota
+	respStatusCode              RespStatusCodeKey  = iota
 )
 
 type DeliveryReporter struct {
@@ -120,15 +123,25 @@ func NewDeliveryReporter(podName PodName, containerName ContainerName) (*Deliver
 	return r, nil
 }
 
+func WithRespStatusCode(ctx context.Context, responseCode int) context.Context {
+	return context.WithValue(ctx, respStatusCode, responseCode)
+}
+
 // ReportEventDispatchTime captures dispatch times.
-func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration, responseCode int) {
-	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)),
-		stats.WithTags(
-			tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
-			tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
-		),
-	)
+func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration) {
+	responseCode, err := getRespStatusCode(ctx)
+	if err != nil {
+		// convert time.Duration in nanoseconds to milliseconds.
+		// If status code doesn't present, report metrics record without status code.
+		metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
+	} else {
+		metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)),
+			stats.WithTags(
+				tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
+				tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
+			),
+		)
+	}
 }
 
 // StartEventProcessing records the start of event processing for delivery within the given context.
@@ -184,4 +197,12 @@ func getStartDeliveryProcessingTime(ctx context.Context) (time.Time, error) {
 		return time, nil
 	}
 	return time.Time{}, fmt.Errorf("missing or invalid start time: %v", v)
+}
+
+func getRespStatusCode(ctx context.Context) (int, error) {
+	v := ctx.Value(respStatusCode)
+	if statusCode, ok := v.(int); ok {
+		return statusCode, nil
+	}
+	return 0, fmt.Errorf("missing or invalid status code: %v", v)
 }

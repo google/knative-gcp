@@ -64,11 +64,11 @@ func TestReportEventDispatchTime(t *testing.T) {
 		t.Fatal(err)
 	}
 	reportertest.ExpectMetrics(t, func() error {
-		r.ReportEventDispatchTime(ctx, 1100*time.Millisecond, 202)
+		r.ReportEventDispatchTime(WithRespStatusCode(ctx, 202), 1100*time.Millisecond)
 		return nil
 	})
 	reportertest.ExpectMetrics(t, func() error {
-		r.ReportEventDispatchTime(ctx, 9100*time.Millisecond, 202)
+		r.ReportEventDispatchTime(WithRespStatusCode(ctx, 202), 9100*time.Millisecond)
 		return nil
 	})
 	metricstest.CheckCountData(t, "event_count", wantTags, 2)
@@ -120,8 +120,17 @@ func TestReportEventProcessingTime(t *testing.T) {
 	reportertest.ExpectMetrics(t, func() error {
 		return r.reportEventProcessingTime(ctx, startTime.Add(9100*time.Millisecond))
 	})
-
+	// Test report event dispatch time without status code.
+	reportertest.ExpectMetrics(t, func() error {
+		r.ReportEventDispatchTime(ctx, 1100*time.Millisecond)
+		return nil
+	})
+	reportertest.ExpectMetrics(t, func() error {
+		r.ReportEventDispatchTime(ctx, 9100*time.Millisecond)
+		return nil
+	})
 	metricstest.CheckDistributionData(t, "event_processing_latencies", wantTags, 2, 1100.0, 9100.0)
+	metricstest.CheckDistributionData(t, "event_dispatch_latencies", wantTags, 2, 1100.0, 9100.0)
 }
 
 func TestMetricsWithEmptySourceAndTypeFilter(t *testing.T) {
@@ -156,7 +165,7 @@ func TestMetricsWithEmptySourceAndTypeFilter(t *testing.T) {
 	}
 
 	reportertest.ExpectMetrics(t, func() error {
-		r.ReportEventDispatchTime(ctx, 1100*time.Millisecond, 202)
+		r.ReportEventDispatchTime(WithRespStatusCode(ctx, 202), 1100*time.Millisecond)
 		return nil
 	})
 	metricstest.CheckCountData(t, "event_count", wantTags, 1)
