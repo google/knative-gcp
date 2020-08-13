@@ -86,6 +86,12 @@ func BrokerKey(namespace, name string) string {
 	return namespace + "/" + name
 }
 
+// BrokerPath returns the path to be set in the status of a broker.
+// The format is brokerNamespace/brokerName
+func BrokerPath(namespace, name string) string {
+	return fmt.Sprintf("/%s/%s", namespace, name)
+}
+
 // TriggerKey returns the key of a trigger. Format is namespace/brokerName/targetName.
 func TriggerKey(namespace, broker, target string) string {
 	return fmt.Sprintf("%s/%s/%s", namespace, broker, target)

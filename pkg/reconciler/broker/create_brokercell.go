@@ -18,9 +18,7 @@ package broker
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -32,6 +30,8 @@ import (
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 )
 
@@ -83,7 +83,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 	b.Status.SetAddress(&apis.URL{
 		Scheme: "http",
 		Host:   names.ServiceHostName(ingressServiceName, bc.Namespace),
-		Path:   fmt.Sprintf("/%s/%s", b.Namespace, b.Name),
+		Path:   config.BrokerPath(b.Namespace, b.Name),
 	})
 
 	return nil
