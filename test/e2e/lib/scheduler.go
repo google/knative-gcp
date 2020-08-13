@@ -21,20 +21,22 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
 	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
 
-	"github.com/google/knative-gcp/pkg/gclient/scheduler"
-	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/api/option"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/google/knative-gcp/pkg/gclient/scheduler"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 type SchedulerConfig struct {
@@ -56,6 +58,8 @@ func MakeSchedulerOrDie(client *Client, config SchedulerConfig) {
 	scheduler := reconcilertestingv1.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
 
 	client.CreateSchedulerOrFail(scheduler)
+	// Scheduler source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceV1TypeMeta)
 }
 
@@ -70,6 +74,8 @@ func MakeSchedulerV1beta1OrDie(client *Client, config SchedulerConfig) {
 	scheduler := reconcilertestingv1beta1.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
 
 	client.CreateSchedulerV1beta1OrFail(scheduler)
+	// Scheduler source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceV1beta1TypeMeta)
 }
 
@@ -84,6 +90,8 @@ func MakeSchedulerV1alpha1OrDie(client *Client, config SchedulerConfig) {
 	scheduler := reconcilertestingv1alpha1.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
 
 	client.CreateSchedulerV1alpha1OrFail(scheduler)
+	// Scheduler source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceV1alpha1TypeMeta)
 }
 
