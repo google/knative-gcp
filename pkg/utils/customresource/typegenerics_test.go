@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	apis "knative.dev/pkg/apis"
@@ -64,14 +65,14 @@ func TestRetrieveLatestUpdateTime(t *testing.T) {
 					TriggerStatus: eventingv1beta1.TriggerStatus{
 						Status: duckv1.Status{
 							Conditions: []apis.Condition{
-								apis.Condition{
+								{
 									LastTransitionTime: apis.VolatileTime{
 										Inner: metav1.Time{
 											Time: trigger2StatusUpdate1,
 										},
 									},
 								},
-								apis.Condition{
+								{
 									LastTransitionTime: apis.VolatileTime{
 										Inner: metav1.Time{
 											Time: trigger2StatusUpdate2,
@@ -100,14 +101,14 @@ func TestRetrieveLatestUpdateTime(t *testing.T) {
 					TriggerStatus: eventingv1beta1.TriggerStatus{
 						Status: duckv1.Status{
 							Conditions: []apis.Condition{
-								apis.Condition{
+								{
 									LastTransitionTime: apis.VolatileTime{
 										Inner: metav1.Time{
 											Time: trigger2StatusUpdate1,
 										},
 									},
 								},
-								apis.Condition{
+								{
 									LastTransitionTime: apis.VolatileTime{
 										Inner: metav1.Time{
 											Time: trigger2StatusUpdate2,
