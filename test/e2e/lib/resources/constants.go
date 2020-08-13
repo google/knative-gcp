@@ -69,7 +69,8 @@ const (
 	// WaitCALTime for time needed to wait to fire an event after CAL Source is ready
 	// Tried with 45 seconds but the test has been quite flaky.
 	// Tried with 90 seconds but the test has been quite flaky.
-	WaitCALTime = 120 * time.Second
+	// Tried with 120 seconds but the test still has some flakiness.
+	WaitCALTime = 150 * time.Second
 
 	// As initially suspected in https://github.com/google/knative-gcp/issues/1437,
 	// sometimes brokercell seems to take much longer than expected to reconcile
