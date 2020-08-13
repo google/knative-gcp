@@ -106,7 +106,7 @@ github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
-# github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200729225950-2d83dc10864e
+# github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200806165906-9ae0708e27fa
 ## explicit
 github.com/cloudevents/sdk-go/protocol/pubsub/v2
 github.com/cloudevents/sdk-go/protocol/pubsub/v2/context
