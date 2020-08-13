@@ -433,7 +433,11 @@ function initialize() {
 
   (( IS_PROW )) && [[ -z "${GCP_PROJECT}" ]] && IS_BOSKOS=1
 
-  (( SKIP_ISTIO_ADDON )) || GKE_ADDONS="--addons=Istio"
+  if (( SKIP_ISTIO_ADDON )); then
+    GKE_ADDONS="--addons=NodeLocalDNS"
+  else
+    GKE_ADDONS="--addons=Istio,NodeLocalDNS"
+  fi
 
   readonly RUN_TESTS
   readonly GCP_PROJECT
