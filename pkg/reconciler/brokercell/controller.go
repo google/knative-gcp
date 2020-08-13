@@ -20,6 +20,7 @@ package brokercell
 
 import (
 	"context"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -29,9 +30,11 @@ import (
 	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	hpainformer "github.com/google/knative-gcp/pkg/client/injection/kube/informers/autoscaling/v2beta2/horizontalpodautoscaler"
 	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
+	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
+	customresourceutil "github.com/google/knative-gcp/pkg/utils/customresource"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/logging"
@@ -74,6 +77,10 @@ func NewController(
 		logger.Fatal("Failed to create BrokerCell reconciler", zap.Error(err))
 	}
 	impl := v1alpha1brokercell.NewImpl(ctx, r)
+	metricsReporter, err := metrics.NewLatencyReporter()
+	if err != nil {
+		logger.Error("Failed to create latency reporter", zap.Error(err))
+	}
 
 	logger.Info("Setting up event handlers.")
 
@@ -85,6 +92,7 @@ func NewController(
 			if b, ok := obj.(*brokerv1beta1.Broker); ok {
 				// TODO(#866) Select the brokercell that's associated with the given broker.
 				impl.EnqueueKey(types.NamespacedName{Namespace: b.Namespace, Name: brokerresources.DefaultBrokerCellName})
+				reportLatency(&ctx, obj, metricsReporter, "Broker")
 			}
 		},
 	))
@@ -98,6 +106,7 @@ func NewController(
 				}
 				// TODO(#866) Select the brokercell that's associated with the given broker.
 				impl.EnqueueKey(types.NamespacedName{Namespace: b.Namespace, Name: brokerresources.DefaultBrokerCellName})
+				reportLatency(&ctx, obj, metricsReporter, "Trigger")
 			}
 		},
 	))
@@ -124,4 +133,15 @@ func handleResourceUpdate(impl *controller.Impl) cache.ResourceEventHandler {
 	// have such a label resources.BrokerCellLabelKey=<brokercellName>. Resources without this label
 	// will be skipped by the function.
 	return controller.HandleAll(impl.EnqueueLabelOfNamespaceScopedResource(namespaceLabel, resources.BrokerCellLabelKey))
+}
+
+// reportLatency estimates the time spent since the last update of the resource object and records it to the latency metric
+func reportLatency(ctx *context.Context, resourceObj interface{}, metricsReporter *metrics.LatencyReporter, entityName string) {
+	if latestUpdateTime, err := customresourceutil.RetrieveLatestUpdateTime(resourceObj); err == nil {
+		if err := metricsReporter.ReportLatency(*ctx, time.Now().Sub(*latestUpdateTime), metrics.ResourceUpdateToBrokerCellNotified, entityName); err != nil {
+			logging.FromContext(*ctx).Error("Failed to report latency", zap.Error(err))
+		}
+	} else {
+		logging.FromContext(*ctx).Error("Failed to retrieve the resource update time", zap.Error(err))
+	}
 }
