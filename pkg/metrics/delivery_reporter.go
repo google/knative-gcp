@@ -129,8 +129,8 @@ func WithRespStatusCode(ctx context.Context, responseCode int) context.Context {
 
 // ReportEventDispatchTime captures dispatch times.
 func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration) {
-	responseCode, err := getRespStatusCode(ctx)
-	if err != nil {
+	responseCode, haveCode := getRespStatusCode(ctx)
+	if !haveCode {
 		// convert time.Duration in nanoseconds to milliseconds.
 		// If status code doesn't present, report metrics record without status code.
 		metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
@@ -199,10 +199,10 @@ func getStartDeliveryProcessingTime(ctx context.Context) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("missing or invalid start time: %v", v)
 }
 
-func getRespStatusCode(ctx context.Context) (int, error) {
+func getRespStatusCode(ctx context.Context) (int, bool) {
 	v := ctx.Value(respStatusCode)
 	if statusCode, ok := v.(int); ok {
-		return statusCode, nil
+		return statusCode, true
 	}
-	return 0, fmt.Errorf("missing or invalid status code: %v", v)
+	return 0, false
 }
