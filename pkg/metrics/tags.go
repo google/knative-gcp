@@ -23,7 +23,11 @@ import (
 	"knative.dev/pkg/metrics/metricskey"
 )
 
-const defaultEventType = "custom"
+const (
+	defaultEventType = "custom"
+	labelProcessType = "process_type"
+	labelEntityName  = "entity_name"
+)
 
 type PodName string
 type ContainerName string
@@ -38,6 +42,8 @@ var (
 
 	BrokerNameKey        = tag.MustNewKey(metricskey.LabelBrokerName)
 	EventTypeKey         = tag.MustNewKey(metricskey.LabelEventType)
+	ProcessTypeKey       = tag.MustNewKey(labelProcessType)
+	EntityNameKey        = tag.MustNewKey(labelEntityName)
 	TriggerNameKey       = tag.MustNewKey(metricskey.LabelTriggerName)
 	TriggerFilterTypeKey = tag.MustNewKey(metricskey.LabelFilterType)
 
