@@ -31,11 +31,9 @@ import (
 )
 
 type DeliveryMetricsKey int
-type RespStatusCodeKey int
 
 const (
 	startDeliveryProcessingTime DeliveryMetricsKey = iota
-	respStatusCode              RespStatusCodeKey  = iota
 )
 
 type DeliveryReporter struct {
@@ -123,25 +121,10 @@ func NewDeliveryReporter(podName PodName, containerName ContainerName) (*Deliver
 	return r, nil
 }
 
-func WithRespStatusCode(ctx context.Context, responseCode int) context.Context {
-	return context.WithValue(ctx, respStatusCode, responseCode)
-}
-
 // ReportEventDispatchTime captures dispatch times.
 func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration) {
-	responseCode, haveCode := getRespStatusCode(ctx)
-	if !haveCode {
-		// convert time.Duration in nanoseconds to milliseconds.
-		// If status code doesn't present, report metrics record without status code.
-		metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
-	} else {
-		metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)),
-			stats.WithTags(
-				tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
-				tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
-			),
-		)
-	}
+	// convert time.Duration in nanoseconds to milliseconds.
+	metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
 }
 
 // StartEventProcessing records the start of event processing for delivery within the given context.
@@ -182,6 +165,13 @@ func (r *DeliveryReporter) AddTags(ctx context.Context) (context.Context, error)
 	)
 }
 
+func AddRespStatusCodeTags(ctx context.Context, responseCode int) (context.Context, error) {
+	return tag.New(ctx,
+		tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
+		tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
+	)
+}
+
 func AddTargetTags(ctx context.Context, target *config.Target) (context.Context, error) {
 	return tag.New(ctx,
 		tag.Insert(NamespaceNameKey, target.Namespace),
@@ -197,12 +187,4 @@ func getStartDeliveryProcessingTime(ctx context.Context) (time.Time, error) {
 		return time, nil
 	}
 	return time.Time{}, fmt.Errorf("missing or invalid start time: %v", v)
-}
-
-func getRespStatusCode(ctx context.Context) (int, bool) {
-	v := ctx.Value(respStatusCode)
-	if statusCode, ok := v.(int); ok {
-		return statusCode, true
-	}
-	return 0, false
 }

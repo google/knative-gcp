@@ -164,8 +164,14 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 		}
 	}()
 
+	// Insert status code tag into context.
+	cctx, err := metrics.AddRespStatusCodeTags(ctx, resp.StatusCode)
+	if err != nil {
+		logging.FromContext(ctx).Error("failed to add status code tags to context", zap.Error(err))
+	}
 	// Report event dispatch time with resp status code.
-	p.StatsReporter.ReportEventDispatchTime(metrics.WithRespStatusCode(ctx, resp.StatusCode), time.Since(startTime))
+	p.StatsReporter.ReportEventDispatchTime(cctx, time.Since(startTime))
+
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("event delivery failed: HTTP status code %d", resp.StatusCode)
 	}
