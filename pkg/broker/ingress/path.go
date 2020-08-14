@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -31,17 +30,14 @@ func BrokerPath(namespace, name string) string {
 }
 
 // convertPathToNamespacedName converts the broker path to a NamespaceName.
-func (h *Handler) convertPathToNamespacedName(path string) (*types.NamespacedName, error) {
+func ConvertPathToNamespacedName(path string) (types.NamespacedName, error) {
 	// Path should be in the form of "/<ns>/<broker>".
 	pieces := strings.Split(path, "/")
 	if len(pieces) != 3 {
-		h.logger.Debug("Malformed request path", zap.String("path", path))
-		err := fmt.Errorf("Malformed request path; expect format '/<ns>/<broker>'")
-		return nil, err
+		return types.NamespacedName{}, fmt.Errorf("Malformed request path; expect format '/<ns>/<broker>'")
 	}
-	broker := types.NamespacedName{
+	return types.NamespacedName{
 		Namespace: pieces[1],
 		Name:      pieces[2],
-	}
-	return &broker, nil
+	}, nil
 }

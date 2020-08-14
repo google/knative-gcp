@@ -38,12 +38,11 @@ func TestBrokerPath(t *testing.T) {
 }
 
 func TestConvertPathtoNamespacedName(t *testing.T) {
-	h := Handler{}
-	want := &types.NamespacedName{
+	want := types.NamespacedName{
 		Namespace: testNS,
 		Name:      testName,
 	}
-	got, err := h.convertPathToNamespacedName(testPath)
+	got, err := ConvertPathToNamespacedName(testPath)
 	if err != nil {
 		t.Errorf("unexpected error parsing broker path: %v", err)
 	}

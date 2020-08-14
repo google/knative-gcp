@@ -119,8 +119,9 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 
-	broker, err := h.convertPathToNamespacedName(request.URL.Path)
+	broker, err := ConvertPathToNamespacedName(request.URL.Path)
 	if err != nil {
+		h.logger.Debug("Malformed request path", zap.String("path", request.URL.Path))
 		nethttp.Error(response, err.Error(), nethttp.StatusNotFound)
 		return
 	}
@@ -133,7 +134,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 
 	event.SetExtension(EventArrivalTime, cev2.Timestamp{Time: time.Now()})
 
-	ctx, span := trace.StartSpan(ctx, kntracing.BrokerMessagingDestination(*broker))
+	ctx, span := trace.StartSpan(ctx, kntracing.BrokerMessagingDestination(broker))
 	defer span.End()
 	if span.IsRecordingEvents() {
 		span.AddAttributes(
@@ -141,7 +142,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 				ceclient.EventTraceAttributes(event),
 				kntracing.MessagingSystemAttribute,
 				tracing.PubSubProtocolAttribute,
-				kntracing.BrokerMessagingDestinationAttribute(*broker),
+				kntracing.BrokerMessagingDestinationAttribute(broker),
 				kntracing.MessagingMessageIDAttribute(event.ID()),
 			)...,
 		)
@@ -153,8 +154,8 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	statusCode := nethttp.StatusAccepted
 	ctx, cancel := context.WithTimeout(ctx, decoupleSinkTimeout)
 	defer cancel()
-	defer func() { h.reportMetrics(request.Context(), *broker, event, statusCode) }()
-	if res := h.decouple.Send(ctx, *broker, *event); !cev2.IsACK(res) {
+	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode) }()
+	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
 		h.logger.Error("Error publishing to PubSub", zap.String("broker", broker.String()), zap.Error(res))
 		statusCode = nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {
