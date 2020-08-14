@@ -334,6 +334,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		}
 
 		expectMetrics.ExpectProcessing(t, t1.Name)
+		expectMetrics.ExpectTimeout(t, t1.Name)
 		expectMetrics.Expect200(t, t2.Name)
 		expectMetrics.Verify(t)
 	})
