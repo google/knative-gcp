@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -149,15 +150,28 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	// Remove hops from forwarded event.
 	resp, err := p.sendMsg(ctx, target.Address, msg, transformer.DeleteExtension(eventutil.HopsAttribute))
 	if err != nil {
+		var result *url.Error
+		if errors.As(err, &result) && result.Timeout() {
+			// If the delivery is cancelled because of timeout, report event dispatch time without resp status code.
+			p.StatsReporter.ReportEventDispatchTime(ctx, time.Since(startTime))
+		}
 		return err
 	}
+
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
 			logging.FromContext(ctx).Warn("failed to close response body", zap.Error(err))
 		}
 	}()
 
-	p.StatsReporter.ReportEventDispatchTime(ctx, time.Since(startTime), resp.StatusCode)
+	// Insert status code tag into context.
+	cctx, err := metrics.AddRespStatusCodeTags(ctx, resp.StatusCode)
+	if err != nil {
+		logging.FromContext(ctx).Error("failed to add status code tags to context", zap.Error(err))
+	}
+	// Report event dispatch time with resp status code.
+	p.StatsReporter.ReportEventDispatchTime(cctx, time.Since(startTime))
+
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("event delivery failed: HTTP status code %d", resp.StatusCode)
 	}
