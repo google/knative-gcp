@@ -33,7 +33,6 @@ func TestReportLatency(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	processType := ResourceUpdateToBrokerCellNotified
 	latencySamples := []time.Duration{
 		10 * time.Millisecond,
 		100 * time.Millisecond,
@@ -42,14 +41,14 @@ func TestReportLatency(t *testing.T) {
 	// Act
 	for _, latencySample := range latencySamples {
 		reportertest.ExpectMetrics(t, func() error {
-			r.ReportLatency(context.Background(), latencySample, processType, "Trigger")
+			r.ReportLatency(context.Background(), latencySample, "Trigger", "Test trigger")
 			return nil
 		})
 	}
 	// Assert
 	expectedTags := map[string]string{
-		labelProcessType: string(processType),
-		labelEntityName:  "Trigger",
+		labelResourceKind: "Trigger",
+		labelResourceName: "Test trigger",
 	}
 	metricstest.CheckDistributionData(t, LatencyMetricName, expectedTags, 3, 10.0, 1000.0)
 }

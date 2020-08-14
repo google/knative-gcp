@@ -18,7 +18,7 @@ func ResetDeliveryMetrics() {
 
 func ResetLatencyMetrics() {
 	// OpenCensus metrics carry global state that need to be reset between unit tests.
-	metricstest.Unregister("process_latencies")
+	metricstest.Unregister("brokercell_delay")
 }
 
 func ExpectMetrics(t *testing.T, f func() error) {

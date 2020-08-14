@@ -92,7 +92,7 @@ func NewController(
 			if b, ok := obj.(*brokerv1beta1.Broker); ok {
 				// TODO(#866) Select the brokercell that's associated with the given broker.
 				impl.EnqueueKey(types.NamespacedName{Namespace: b.Namespace, Name: brokerresources.DefaultBrokerCellName})
-				reportLatency(&ctx, obj, metricsReporter, "Broker")
+				reportLatency(&ctx, obj, metricsReporter, "Broker", b.Name)
 			}
 		},
 	))
@@ -106,7 +106,7 @@ func NewController(
 				}
 				// TODO(#866) Select the brokercell that's associated with the given broker.
 				impl.EnqueueKey(types.NamespacedName{Namespace: b.Namespace, Name: brokerresources.DefaultBrokerCellName})
-				reportLatency(&ctx, obj, metricsReporter, "Trigger")
+				reportLatency(&ctx, obj, metricsReporter, "Trigger", t.Name)
 			}
 		},
 	))
@@ -136,9 +136,9 @@ func handleResourceUpdate(impl *controller.Impl) cache.ResourceEventHandler {
 }
 
 // reportLatency estimates the time spent since the last update of the resource object and records it to the latency metric
-func reportLatency(ctx *context.Context, resourceObj interface{}, metricsReporter *metrics.LatencyReporter, entityName string) {
+func reportLatency(ctx *context.Context, resourceObj interface{}, metricsReporter *metrics.LatencyReporter, resourceKind, resourceName string) {
 	if latestUpdateTime, err := customresourceutil.RetrieveLatestUpdateTime(resourceObj); err == nil {
-		if err := metricsReporter.ReportLatency(*ctx, time.Now().Sub(*latestUpdateTime), metrics.ResourceUpdateToBrokerCellNotified, entityName); err != nil {
+		if err := metricsReporter.ReportLatency(*ctx, time.Now().Sub(*latestUpdateTime), resourceKind, resourceName); err != nil {
 			logging.FromContext(*ctx).Error("Failed to report latency", zap.Error(err))
 		}
 	} else {

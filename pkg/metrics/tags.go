@@ -24,9 +24,9 @@ import (
 )
 
 const (
-	defaultEventType = "custom"
-	labelProcessType = "process_type"
-	labelEntityName  = "entity_name"
+	defaultEventType  = "custom"
+	labelResourceKind = "resource_kind"
+	labelResourceName = "resource_name"
 )
 
 type PodName string
@@ -42,8 +42,8 @@ var (
 
 	BrokerNameKey        = tag.MustNewKey(metricskey.LabelBrokerName)
 	EventTypeKey         = tag.MustNewKey(metricskey.LabelEventType)
-	ProcessTypeKey       = tag.MustNewKey(labelProcessType)
-	EntityNameKey        = tag.MustNewKey(labelEntityName)
+	ResourceKindKey      = tag.MustNewKey(labelResourceKind)
+	ResourceNameKey      = tag.MustNewKey(labelResourceName)
 	TriggerNameKey       = tag.MustNewKey(metricskey.LabelTriggerName)
 	TriggerFilterTypeKey = tag.MustNewKey(metricskey.LabelFilterType)
 

@@ -27,17 +27,11 @@ import (
 	"knative.dev/pkg/metrics"
 )
 
-const LatencyMetricName string = "process_latencies"
+const LatencyMetricName string = "brokercell_delay"
 
 type LatencyReporter struct {
 	durationInMsecM *stats.Float64Measure
 }
-
-type ProcessType string
-
-const (
-	ResourceUpdateToBrokerCellNotified ProcessType = "ResourceUpdateToBrokerCellNotified"
-)
 
 func (r *LatencyReporter) register() error {
 	return metrics.RegisterResourceView(
@@ -47,9 +41,8 @@ func (r *LatencyReporter) register() error {
 			Measure:     r.durationInMsecM,
 			Aggregation: view.Distribution(metrics.Buckets125(1, 100000)...), // 1, 2, 5, 10, 20, 50, 100, 1000, 5000, 10000, 20000, 50000, 1000000
 			TagKeys: []tag.Key{
-				NamespaceNameKey,
-				ProcessTypeKey,
-				EntityNameKey,
+				ResourceKindKey,
+				ResourceNameKey,
 			},
 		},
 	)
@@ -71,11 +64,11 @@ func NewLatencyReporter() (*LatencyReporter, error) {
 }
 
 // ReportLatency records the value to the latency metric
-func (r *LatencyReporter) ReportLatency(ctx context.Context, duration time.Duration, processType ProcessType, entityName string) error {
+func (r *LatencyReporter) ReportLatency(ctx context.Context, duration time.Duration, resourceKind, resourceName string) error {
 	tag, err := tag.New(
 		ctx,
-		tag.Insert(ProcessTypeKey, string(processType)),
-		tag.Insert(EntityNameKey, entityName),
+		tag.Insert(ResourceKindKey, resourceKind),
+		tag.Insert(ResourceNameKey, resourceName),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create metrics tag: %v", err)
