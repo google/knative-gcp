@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	nethttp "net/http"
-	"strings"
 	"time"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
@@ -120,16 +119,11 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 
-	// Path should be in the form of "/<ns>/<broker>".
-	pieces := strings.Split(request.URL.Path, "/")
-	if len(pieces) != 3 {
+	broker, err := ConvertPathToNamespacedName(request.URL.Path)
+	if err != nil {
 		h.logger.Debug("Malformed request path", zap.String("path", request.URL.Path))
-		nethttp.Error(response, "Malformed request path; expect format '/<ns>/<broker>'", nethttp.StatusNotFound)
+		nethttp.Error(response, err.Error(), nethttp.StatusNotFound)
 		return
-	}
-	broker := types.NamespacedName{
-		Namespace: pieces[1],
-		Name:      pieces[2],
 	}
 
 	event, err := h.toEvent(request)
