@@ -15,6 +15,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"time"
 
@@ -26,7 +27,9 @@ import (
 	"knative.dev/pkg/signals"
 
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
@@ -51,7 +54,7 @@ type envConfig struct {
 	Timeout int `envconfig:"TIMEOUT_MINS" default:"30"`
 }
 
-func forwardFromProbe(ctx context.Context, sc cloudevents.Client, psc cloudevents.Client, receivedEvents map[string]chan bool, timeout int) cloudEventsFunc {
+func forwardFromProbe(ctx context.Context, sc cloudevents.Client, pssc cloudevents.Client, receivedEvents map[string]chan bool, timeout int) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		log.Printf("Received probe request: %+v \n", event)
 		eventID := event.ID()
@@ -59,15 +62,15 @@ func forwardFromProbe(ctx context.Context, sc cloudevents.Client, psc cloudevent
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
 		defer cancel()
 		switch event.Type() {
-		case "broker-e2e-delivery-probe", "broker-e2e-delivery-probe-kubectl-exec", "broker-e2e-delivery-probe-kubectl-exec-warm-up":
+		case "broker-e2e-delivery-probe":
 			// The sender client forwards the event to the broker.
 			if res := sc.Send(ctx, event); !cloudevents.IsACK(res) {
 				log.Printf("Error when sending event %v to broker: %+v \n", eventID, res)
 				return res
 			}
-		case "cloudpubsubsource-probe", "cloudpubsubsource-probe-kubectl-exec", "cloudpubsubsource-probe-kubectl-exec-warm-up":
-			// The pubsub client forwards the event as a message to a pubsub topic.
-			if res := psc.Send(ctx, event); !cloudevents.IsACK(res) {
+		case "cloudpubsubsource-probe":
+			// The pubsub sender client forwards the event as a message to a pubsub topic.
+			if res := pssc.Send(ctx, event); !cloudevents.IsACK(res) {
 				log.Printf("Error when publishing event %v to pubsub topic: %+v \n", eventID, res)
 				return res
 			}
@@ -85,10 +88,40 @@ func forwardFromProbe(ctx context.Context, sc cloudevents.Client, psc cloudevent
 	}
 }
 
+type cloudEvent struct {
+	ID string `json:"ce-id"`
+}
+
+type message struct {
+	Attributes cloudEvent `json:"attributes"`
+}
+
+type eventData struct {
+	Message message `json:"message"`
+}
+
 func receiveFromTrigger(receivedEvents map[string]chan bool) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		log.Printf("Received event: %+v \n", event)
-		eventID := event.ID()
+		var eventID string
+		switch event.Type() {
+		case "broker-e2e-delivery-probe":
+			// The event is received as sent.
+			eventID = event.ID()
+		case schemasv1.CloudPubSubMessagePublishedEventType:
+			// The original event is wrapped into a pubsub Message by the CloudEvents
+			// pubsub sender client, and encoded as data in a CloudEvent by the CloudPubSubSource.
+			data := eventData{}
+			err := json.Unmarshal(event.Data(), &data)
+			if err != nil {
+				log.Printf("Failed to unmarshal event data: %v", err)
+				return cloudevents.ResultACK
+			}
+			eventID = data.Message.Attributes.ID
+		default:
+			log.Printf("Unrecognized event type")
+			return cloudevents.ResultACK
+		}
 		ch, ok := receivedEvents[eventID]
 		if !ok {
 			log.Printf("This event is not received by the probe receiver client: %v \n", eventID)
@@ -100,6 +133,8 @@ func receiveFromTrigger(receivedEvents map[string]chan bool) cloudEventsFunc {
 }
 
 func runProbeHelper() {
+	appcredentials.MustExistOrUnsetEnv()
+
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		log.Fatalf("Failed to process env var, %v", err)
@@ -121,9 +156,9 @@ func runProbeHelper() {
 	if err != nil {
 		log.Fatalf("Failed to create pubsub transport, %v", err)
 	}
-	psc, err := cloudevents.NewClient(pst)
+	pssc, err := cloudevents.NewClient(pst)
 	if err != nil {
-		log.Fatal("Failed to create pubsub client, ", err)
+		log.Fatal("Failed to create CloudEvents pubsub client, ", err)
 	}
 	// create sender client
 	sp, err := cloudevents.NewHTTP(cloudevents.WithPort(probePort), cloudevents.WithTarget(brokerURL))
@@ -147,7 +182,7 @@ func runProbeHelper() {
 	receivedEvents := make(map[string]chan bool)
 	// start a goroutine to receive the event from probe and forward it appropriately
 	log.Println("Starting Probe Helper server...")
-	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, receivedEvents, timeout))
+	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, pssc, receivedEvents, timeout))
 	// Receive the event from a trigger and return the result back to the probe
 	log.Println("Starting event receiver...")
 	rc.StartReceiver(ctx, receiveFromTrigger(receivedEvents))
