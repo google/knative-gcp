@@ -30,9 +30,8 @@ const (
 	// FanoutName is the name used for the fanout container.
 	FanoutName = "fanout"
 	// RetryName is the name used for the retry container.
-	RetryName             = "retry"
-	BrokerCellLabelKey    = "brokerCell"
-	BrokerSystemNamespace = "cloud-run-events"
+	RetryName          = "retry"
+	BrokerCellLabelKey = "brokerCell"
 )
 
 var (
@@ -85,7 +84,7 @@ func Labels(brokerCellName, componentName string) map[string]string {
 
 func CommonLabels(brokerCellName string) map[string]string {
 	return map[string]string{
-		"app":              BrokerSystemNamespace,
+		"app":              "cloud-run-events",
 		BrokerCellLabelKey: brokerCellName,
 	}
 }

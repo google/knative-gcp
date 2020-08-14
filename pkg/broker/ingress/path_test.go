@@ -14,24 +14,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package ingress
 
 import (
+	"reflect"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/types"
 )
 
-func TestBrokerKey(t *testing.T) {
-	want := "namespace/broker"
-	got := BrokerKey("namespace", "broker")
+const (
+	testPath = "/namespace/broker"
+	testNS   = "namespace"
+	testName = "broker"
+)
+
+func TestBrokerPath(t *testing.T) {
+	want := testPath
+	got := BrokerPath(testNS, testName)
 	if got != want {
 		t.Errorf("unexpected readiness: want %v, got %v", want, got)
 	}
 }
 
-func TestTriggerKeyAndSplitTriggerKey(t *testing.T) {
-	want := "namespace/broker/target"
-	got := TriggerKey(SplitTriggerKey(want))
-	if got != want {
-		t.Errorf("unexpected readiness: want %v, got %v", want, got)
+func TestConvertPathtoNamespacedName(t *testing.T) {
+	h := Handler{}
+	want := &types.NamespacedName{
+		Namespace: testNS,
+		Name:      testName,
+	}
+	got, err := h.convertPathToNamespacedName(testPath)
+	if err != nil {
+		t.Errorf("unexpected error parsing broker path: %v", err)
+	}
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("unexpected conversion result: want %v, got %v", want, got)
 	}
 }
