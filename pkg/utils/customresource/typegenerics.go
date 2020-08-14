@@ -26,11 +26,11 @@ import (
 
 // RetrieveLatestUpdateTime takes an arbitrary custom resource and retrives its latest update time
 // based on the resource's metadata
-func RetrieveLatestUpdateTime(customResource interface{}) (*time.Time, error) {
+func RetrieveLatestUpdateTime(customResource interface{}) (time.Time, error) {
 	metaAccessor, maAssertable := customResource.(metav1.ObjectMetaAccessor)
 	resourceKR, krAssertable := customResource.(duckv1.KRShaped)
 	if !maAssertable || !krAssertable {
-		return nil, fmt.Errorf("The specified customResource does not support an expected type assertion (ObjectMetaAccessor: %v, KRShaped: %v) %#v", maAssertable, maAssertable, customResource)
+		return time.Time{}, fmt.Errorf("The specified customResource does not support an expected type assertion (ObjectMetaAccessor: %v, KRShaped: %v) %#v", maAssertable, maAssertable, customResource)
 	}
 	latestUpdateTime := metaAccessor.GetObjectMeta().GetCreationTimestamp()
 	if metaAccessor.GetObjectMeta().GetDeletionTimestamp() != nil {
@@ -45,5 +45,5 @@ func RetrieveLatestUpdateTime(customResource interface{}) (*time.Time, error) {
 			}
 		}
 	}
-	return &latestUpdateTime.Time, nil
+	return latestUpdateTime.Time, nil
 }

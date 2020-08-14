@@ -129,10 +129,10 @@ func TestRetrieveLatestUpdateTime(t *testing.T) {
 			result, err := RetrieveLatestUpdateTime(test.resource)
 
 			if err != nil {
-				t.Errorf("An error: %v", err)
+				t.Errorf("An error: %w", err)
 			}
 
-			if diff := cmp.Diff(test.expected, *result); diff != "" {
+			if diff := cmp.Diff(test.expected, result); diff != "" {
 				t.Errorf("failed to get expected (-want, +got) = %v", diff)
 			}
 		})

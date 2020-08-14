@@ -71,7 +71,7 @@ func (r *LatencyReporter) ReportLatency(ctx context.Context, duration time.Durat
 		tag.Insert(ResourceNameKey, resourceName),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create metrics tag: %v", err)
+		return fmt.Errorf("failed to create metrics tag: %w", err)
 	}
 	durationMetricValue := r.durationInMsecM.M(float64(duration / time.Millisecond))
 	metrics.Record(tag, durationMetricValue)

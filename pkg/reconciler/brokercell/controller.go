@@ -138,7 +138,7 @@ func handleResourceUpdate(impl *controller.Impl) cache.ResourceEventHandler {
 // reportLatency estimates the time spent since the last update of the resource object and records it to the latency metric
 func reportLatency(ctx *context.Context, resourceObj interface{}, metricsReporter *metrics.LatencyReporter, resourceKind, resourceName string) {
 	if latestUpdateTime, err := customresourceutil.RetrieveLatestUpdateTime(resourceObj); err == nil {
-		if err := metricsReporter.ReportLatency(*ctx, time.Now().Sub(*latestUpdateTime), resourceKind, resourceName); err != nil {
+		if err := metricsReporter.ReportLatency(*ctx, time.Now().Sub(latestUpdateTime), resourceKind, resourceName); err != nil {
 			logging.FromContext(*ctx).Error("Failed to report latency", zap.Error(err))
 		}
 	} else {
