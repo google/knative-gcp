@@ -534,10 +534,10 @@ func (c *Client) CreateContainerSourceV1Beta1OrFail(containerSource *sourcesv1be
 	c.Tracker.AddObj(containerSource)
 }
 
-// CreatePingSourceV1Alpha1OrFail will create an PingSource
-func (c *Client) CreatePingSourceV1Alpha1OrFail(pingSource *sourcesv1alpha1.PingSource) {
+// CreatePingSourceV1Alpha2OrFail will create an PingSource
+func (c *Client) CreatePingSourceV1Alpha2OrFail(pingSource *sourcesv1alpha2.PingSource) {
 	c.T.Logf("Creating pingsource %+v", pingSource)
-	pingInterface := c.Eventing.SourcesV1alpha1().PingSources(c.Namespace)
+	pingInterface := c.Eventing.SourcesV1alpha2().PingSources(c.Namespace)
 	err := c.RetryWebhookErrors(func(attempts int) (err error) {
 		_, e := pingInterface.Create(pingSource)
 		if e != nil {
@@ -551,10 +551,10 @@ func (c *Client) CreatePingSourceV1Alpha1OrFail(pingSource *sourcesv1alpha1.Ping
 	c.Tracker.AddObj(pingSource)
 }
 
-// CreatePingSourceV1Alpha2OrFail will create an PingSource
-func (c *Client) CreatePingSourceV1Alpha2OrFail(pingSource *sourcesv1alpha2.PingSource) {
+// CreatePingSourceV1Beta1OrFail will create an PingSource
+func (c *Client) CreatePingSourceV1Beta1OrFail(pingSource *sourcesv1beta1.PingSource) {
 	c.T.Logf("Creating pingsource %+v", pingSource)
-	pingInterface := c.Eventing.SourcesV1alpha2().PingSources(c.Namespace)
+	pingInterface := c.Eventing.SourcesV1beta1().PingSources(c.Namespace)
 	err := c.RetryWebhookErrors(func(attempts int) (err error) {
 		_, e := pingInterface.Create(pingSource)
 		if e != nil {

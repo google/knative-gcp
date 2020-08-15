@@ -22,11 +22,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/broker/config"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"knative.dev/pkg/metrics"
+
+	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
 type DeliveryMetricsKey int
@@ -121,14 +122,9 @@ func NewDeliveryReporter(podName PodName, containerName ContainerName) (*Deliver
 }
 
 // ReportEventDispatchTime captures dispatch times.
-func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration, responseCode int) {
+func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration) {
 	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)),
-		stats.WithTags(
-			tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
-			tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
-		),
-	)
+	metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
 }
 
 // StartEventProcessing records the start of event processing for delivery within the given context.
@@ -166,6 +162,13 @@ func (r *DeliveryReporter) AddTags(ctx context.Context) (context.Context, error)
 	return tag.New(ctx,
 		tag.Insert(PodNameKey, string(r.podName)),
 		tag.Insert(ContainerNameKey, string(r.containerName)),
+	)
+}
+
+func AddRespStatusCodeTags(ctx context.Context, responseCode int) (context.Context, error) {
+	return tag.New(ctx,
+		tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
+		tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
 	)
 }
 
