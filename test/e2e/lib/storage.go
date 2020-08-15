@@ -20,20 +20,21 @@ import (
 	"context"
 	"fmt"
 	"os"
-
 	"testing"
+	"time"
 
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
 	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
 
 	"cloud.google.com/go/storage"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/test/helpers"
+
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 type StorageConfig struct {
@@ -53,7 +54,8 @@ func MakeStorageOrDie(client *Client, config StorageConfig) {
 	so = append(so, reconcilertestingv1.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
 	eventsStorage := reconcilertestingv1.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
 	client.CreateStorageOrFail(eventsStorage)
-
+	// Storage source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceV1TypeMeta)
 }
 
@@ -65,7 +67,8 @@ func MakeStorageV1beta1OrDie(client *Client, config StorageConfig) {
 	so = append(so, reconcilertestingv1beta1.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
 	eventsStorage := reconcilertestingv1beta1.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
 	client.CreateStorageV1beta1OrFail(eventsStorage)
-
+	// Storage source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceV1beta1TypeMeta)
 }
 
@@ -77,7 +80,8 @@ func MakeStorageV1alpha1OrDie(client *Client, config StorageConfig) {
 	so = append(so, reconcilertestingv1alpha1.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
 	eventsStorage := reconcilertestingv1alpha1.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
 	client.CreateStorageV1alpha1OrFail(eventsStorage)
-
+	// Storage source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceV1alpha1TypeMeta)
 }
 
