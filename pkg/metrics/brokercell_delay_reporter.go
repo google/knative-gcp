@@ -29,11 +29,11 @@ import (
 
 const LatencyMetricName string = "brokercell_delay"
 
-type LatencyReporter struct {
+type BrokerCellLatencyReporter struct {
 	durationInMsecM *stats.Float64Measure
 }
 
-func (r *LatencyReporter) register() error {
+func (r *BrokerCellLatencyReporter) register() error {
 	return metrics.RegisterResourceView(
 		&view.View{
 			Name:        r.durationInMsecM.Name(),
@@ -42,33 +42,35 @@ func (r *LatencyReporter) register() error {
 			Aggregation: view.Distribution(metrics.Buckets125(1, 100000)...), // 1, 2, 5, 10, 20, 50, 100, 1000, 5000, 10000, 20000, 50000, 1000000
 			TagKeys: []tag.Key{
 				ResourceKindKey,
+				NamespaceNameKey,
 				ResourceNameKey,
 			},
 		},
 	)
 }
 
-// NewLatencyReporter creates a new LatencyReporter
-func NewLatencyReporter() (*LatencyReporter, error) {
-	r := &LatencyReporter{
+// NewBrokerCellLatencyReporter creates a new BrokerCellLatencyReporter
+func NewBrokerCellLatencyReporter() (*BrokerCellLatencyReporter, error) {
+	r := &BrokerCellLatencyReporter{
 		durationInMsecM: stats.Float64(
 			LatencyMetricName,
-			"Latency of a process in milliseconds",
+			"Latency of the delay between a resource update and the time the informer gets it in milliseconds",
 			stats.UnitMilliseconds,
 		),
 	}
 	if err := r.register(); err != nil {
-		return nil, fmt.Errorf("failed to register the latency reporter: %w", err)
+		return nil, fmt.Errorf("failed to register BrokerCellLatencyReporter: %w", err)
 	}
 	return r, nil
 }
 
 // ReportLatency records the value to the latency metric
-func (r *LatencyReporter) ReportLatency(ctx context.Context, duration time.Duration, resourceKind, resourceName string) error {
+func (r *BrokerCellLatencyReporter) ReportLatency(ctx context.Context, duration time.Duration, resourceKind, resourceName, namespace string) error {
 	tag, err := tag.New(
 		ctx,
 		tag.Insert(ResourceKindKey, resourceKind),
 		tag.Insert(ResourceNameKey, resourceName),
+		tag.Insert(NamespaceNameKey, namespace),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create metrics tag: %w", err)

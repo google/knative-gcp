@@ -16,7 +16,7 @@ func ResetDeliveryMetrics() {
 	metricstest.Unregister("event_count", "event_dispatch_latencies", "event_processing_latencies")
 }
 
-func ResetLatencyMetrics() {
+func ResetBrokerCellMetrics() {
 	// OpenCensus metrics carry global state that need to be reset between unit tests.
 	metricstest.Unregister("brokercell_delay")
 }

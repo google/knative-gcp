@@ -23,13 +23,14 @@ import (
 
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 
+	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
 )
 
 func TestReportLatency(t *testing.T) {
 	// Arrange
-	reportertest.ResetLatencyMetrics()
-	r, err := NewLatencyReporter()
+	reportertest.ResetBrokerCellMetrics()
+	r, err := NewBrokerCellLatencyReporter()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,14 +42,15 @@ func TestReportLatency(t *testing.T) {
 	// Act
 	for _, latencySample := range latencySamples {
 		reportertest.ExpectMetrics(t, func() error {
-			r.ReportLatency(context.Background(), latencySample, "Trigger", "Test trigger")
+			r.ReportLatency(context.Background(), latencySample, "Trigger", "Test trigger", "TestNamespace")
 			return nil
 		})
 	}
 	// Assert
 	expectedTags := map[string]string{
-		labelResourceKind: "Trigger",
-		labelResourceName: "Test trigger",
+		labelResourceKind:             "Trigger",
+		labelResourceName:             "Test trigger",
+		metricskey.LabelNamespaceName: "TestNamespace",
 	}
 	metricstest.CheckDistributionData(t, LatencyMetricName, expectedTags, 3, 10.0, 1000.0)
 }

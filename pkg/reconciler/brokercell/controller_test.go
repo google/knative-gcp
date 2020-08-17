@@ -81,4 +81,5 @@ func setReconcilerEnv() {
 	_ = os.Setenv("BROKER_CELL_INGRESS_IMAGE", "ingress")
 	_ = os.Setenv("BROKER_CELL_FANOUT_IMAGE", "fanout")
 	_ = os.Setenv("BROKER_CELL_RETRY_IMAGE", "retry")
+	_ = os.Setenv("INTERNAL_METRICS_ENABLED", "false")
 }
