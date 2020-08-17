@@ -35,6 +35,7 @@ import (
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	customresourceutil "github.com/google/knative-gcp/pkg/utils/customresource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/logging"
@@ -96,7 +97,7 @@ func NewController(
 			if b, ok := obj.(*brokerv1beta1.Broker); ok {
 				// TODO(#866) Select the brokercell that's associated with the given broker.
 				impl.EnqueueKey(types.NamespacedName{Namespace: b.Namespace, Name: brokerresources.DefaultBrokerCellName})
-				reportLatency(&ctx, obj, latencyReporter, "Broker", b.Name, b.Namespace)
+				reportLatency(ctx, b, latencyReporter, "Broker", b.Name, b.Namespace)
 			}
 		},
 	))
@@ -110,7 +111,7 @@ func NewController(
 				}
 				// TODO(#866) Select the brokercell that's associated with the given broker.
 				impl.EnqueueKey(types.NamespacedName{Namespace: b.Namespace, Name: brokerresources.DefaultBrokerCellName})
-				reportLatency(&ctx, obj, latencyReporter, "Trigger", t.Name, t.Namespace)
+				reportLatency(ctx, t, latencyReporter, "Trigger", t.Name, t.Namespace)
 			}
 		},
 	))
@@ -140,15 +141,15 @@ func handleResourceUpdate(impl *controller.Impl) cache.ResourceEventHandler {
 }
 
 // reportLatency estimates the time spent since the last update of the resource object and records it to the latency metric
-func reportLatency(ctx *context.Context, resourceObj interface{}, latencyReporter *metrics.BrokerCellLatencyReporter, resourceKind, resourceName, namespace string) {
+func reportLatency(ctx context.Context, resourceObj metav1.ObjectMetaAccessor, latencyReporter *metrics.BrokerCellLatencyReporter, resourceKind, resourceName, namespace string) {
 	if latencyReporter == nil {
 		return
 	}
 	if latestUpdateTime, err := customresourceutil.RetrieveLatestUpdateTime(resourceObj); err == nil {
-		if err := latencyReporter.ReportLatency(*ctx, time.Now().Sub(latestUpdateTime), resourceKind, resourceName, namespace); err != nil {
-			logging.FromContext(*ctx).Error("Failed to report latency", zap.Error(err))
+		if err := latencyReporter.ReportLatency(ctx, time.Now().Sub(latestUpdateTime), resourceKind, resourceName, namespace); err != nil {
+			logging.FromContext(ctx).Error("Failed to report latency", zap.Error(err))
 		}
 	} else {
-		logging.FromContext(*ctx).Error("Failed to retrieve the resource update time", zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to retrieve the resource update time", zap.Error(err))
 	}
 }
