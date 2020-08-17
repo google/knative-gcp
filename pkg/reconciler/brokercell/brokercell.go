@@ -113,7 +113,7 @@ type Reconciler struct {
 var _ bcreconciler.Interface = (*Reconciler)(nil)
 
 // ReconcileKind implements Interface.ReconcileKind.
-func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCell) pkgreconciler.Event { //
+func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCell) pkgreconciler.Event {
 	// Why are we doing GC here instead of in the broker controller?
 	// 1. It's tricky to handle concurrency in broker controller. Suppose you are deleting all
 	// brokers at the same time, hard to tell if the brokercell should be gc'ed.
