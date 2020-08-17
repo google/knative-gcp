@@ -33,11 +33,23 @@ spec:
         - name: probe-helper
           image: ko://github.com/google/knative-gcp/test/test_images/probe_helper
           env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/key.json
             - name: K_SINK
               value: "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"
+            - name: CLOUDPUBSUBSOURCE_TOPIC_ID
+              value: "cloudpubsubsource-topic"
             - name: PROBE_PORT
               value: "8070"
             - name: RECEIVER_PORT
               value: "8080"
             - name: TIMEOUT_MINS
               value: "30"
+          volumeMounts:
+          - name: google-cloud-key
+            mountPath: /var/secrets/google
+      volumes:
+      - name: google-cloud-key
+        secret:
+          secretName: google-cloud-key
+          optional: true
