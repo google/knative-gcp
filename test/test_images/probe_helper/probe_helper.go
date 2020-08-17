@@ -174,7 +174,7 @@ func runProbeHelper() {
 	// start a goroutine to receive the event from probe and forward it appropriately
 	log.Println("Starting Probe Helper server...")
 	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, receivedEvents, timeout))
-	// Receive the event and and return the result back to the probe
+	// Receive the event and return the result back to the probe
 	log.Println("Starting event receiver...")
 	rc.StartReceiver(ctx, receiveEvent(receivedEvents))
 }
