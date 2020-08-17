@@ -23,7 +23,11 @@ import (
 	"knative.dev/pkg/metrics/metricskey"
 )
 
-const defaultEventType = "custom"
+const (
+	defaultEventType  = "custom"
+	labelResourceKind = "resource_kind"
+	labelResourceName = "resource_name"
+)
 
 type PodName string
 type ContainerName string
@@ -38,6 +42,8 @@ var (
 
 	BrokerNameKey        = tag.MustNewKey(metricskey.LabelBrokerName)
 	EventTypeKey         = tag.MustNewKey(metricskey.LabelEventType)
+	ResourceKindKey      = tag.MustNewKey(labelResourceKind)
+	ResourceNameKey      = tag.MustNewKey(labelResourceName)
 	TriggerNameKey       = tag.MustNewKey(metricskey.LabelTriggerName)
 	TriggerFilterTypeKey = tag.MustNewKey(metricskey.LabelFilterType)
 

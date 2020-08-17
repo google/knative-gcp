@@ -43,12 +43,13 @@ import (
 )
 
 type envConfig struct {
-	IngressImage       string `envconfig:"INGRESS_IMAGE" required:"true"`
-	FanoutImage        string `envconfig:"FANOUT_IMAGE" required:"true"`
-	RetryImage         string `envconfig:"RETRY_IMAGE" required:"true"`
-	ServiceAccountName string `envconfig:"SERVICE_ACCOUNT" default:"broker"`
-	IngressPort        int    `envconfig:"INGRESS_PORT" default:"8080"`
-	MetricsPort        int    `envconfig:"METRICS_PORT" default:"9090"`
+	IngressImage           string `envconfig:"INGRESS_IMAGE" required:"true"`
+	FanoutImage            string `envconfig:"FANOUT_IMAGE" required:"true"`
+	RetryImage             string `envconfig:"RETRY_IMAGE" required:"true"`
+	ServiceAccountName     string `envconfig:"SERVICE_ACCOUNT" default:"broker"`
+	IngressPort            int    `envconfig:"INGRESS_PORT" default:"8080"`
+	MetricsPort            int    `envconfig:"METRICS_PORT" default:"9090"`
+	InternalMetricsEnabled bool   `envconfig:"INTERNAL_METRICS_ENABLED" default:"false"`
 }
 
 type listers struct {
