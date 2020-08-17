@@ -88,7 +88,7 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 	}
 }
 
-func receiveFromTrigger(receivedEvents map[string]chan bool) cloudEventsFunc {
+func receiveEvent(receivedEvents map[string]chan bool) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		log.Printf("Received event: %+v \n", event)
 		var eventID string
@@ -174,7 +174,7 @@ func runProbeHelper() {
 	// start a goroutine to receive the event from probe and forward it appropriately
 	log.Println("Starting Probe Helper server...")
 	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, receivedEvents, timeout))
-	// Receive the event from a trigger and return the result back to the probe
+	// Receive the event and and return the result back to the probe
 	log.Println("Starting event receiver...")
-	rc.StartReceiver(ctx, receiveFromTrigger(receivedEvents))
+	rc.StartReceiver(ctx, receiveEvent(receivedEvents))
 }
