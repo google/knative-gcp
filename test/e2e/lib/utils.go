@@ -20,16 +20,15 @@ limitations under the License.
 package lib
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
 
-// Returns the value of the environment variable if it exists, otherwise exits the test with an error
+// GetEnvOrFail gets the specified environment variable. If the variable is not set, then the test exits with an error.
 func GetEnvOrFail(t *testing.T, key string) string {
 	value, success := os.LookupEnv(key)
 	if !success {
-		t.Fatal(fmt.Sprintf("Environment variable %s not set", key))
+		t.Fatalf("Environment variable %q not set", key)
 	}
 	return value
 }
