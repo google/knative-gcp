@@ -95,12 +95,12 @@ There are two ways to set up authentication mechanism.
     If you also plan on running tracing-related E2E tests using the StackDriver
     backend, your
     [Service Account](../../docs/install/dataplane-service-account.md) needs
-    additional `cloudtrace.agent` role:
+    additional `cloudtrace.admin` role:
 
     ```shell
-    gcloud projects add-iam-policy-binding $$PROJECT_ID \
+    gcloud projects add-iam-policy-binding $PROJECT_ID \
       --member=serviceAccount:"${your_service_account}"@$PROJECT_ID.iam.gserviceaccount.com \
-      --role roles/cloudtrace.agent
+      --role roles/cloudtrace.admin
     ```
 
 1.  (Optional) Note that if plan on running tracing-related E2E tests using the
