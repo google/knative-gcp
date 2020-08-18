@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 
 	"cloud.google.com/go/pubsub"
@@ -65,7 +64,7 @@ func SmokePullSubscriptionTestHelper(t *testing.T, authConfig lib.AuthConfig, pu
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
 func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 

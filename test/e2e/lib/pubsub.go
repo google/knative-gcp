@@ -18,7 +18,6 @@ package lib
 
 import (
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -103,7 +102,7 @@ func AssertMetrics(t *testing.T, client *Client, topicName, psName string) {
 	time.Sleep(sleepTime)
 
 	// If we reach this point, the projectID should have been set.
-	projectID := os.Getenv(ProwProjectKey)
+	projectID := GetEnvOrFail(t, ProwProjectKey)
 	f := map[string]interface{}{
 		"metric.type":                 EventCountMetricType,
 		"resource.type":               GlobalMetricResourceType,

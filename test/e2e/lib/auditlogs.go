@@ -19,7 +19,6 @@ package lib
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -133,7 +132,7 @@ func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, se
 func StackdriverSinkExists(t *testing.T, sinkID string) bool {
 	t.Helper()
 	ctx := context.Background()
-	project := os.Getenv(ProwProjectKey)
+	project := GetEnvOrFail(t, ProwProjectKey)
 	opt := option.WithQuotaProject(project)
 	client, err := logadmin.NewClient(ctx, project, opt)
 	if err != nil {

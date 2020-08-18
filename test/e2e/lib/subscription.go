@@ -18,7 +18,6 @@ package lib
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"cloud.google.com/go/pubsub"
@@ -32,10 +31,7 @@ func SubscriptionExists(t *testing.T, subID string) bool {
 	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key
-	project := os.Getenv(ProwProjectKey)
-	if project == "" {
-		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
-	}
+	project := GetEnvOrFail(t, ProwProjectKey)
 	opt := option.WithQuotaProject(project)
 	client, err := pubsub.NewClient(ctx, project, opt)
 	if err != nil {

@@ -19,7 +19,6 @@ package lib
 import (
 	"context"
 	"encoding/json"
-	"os"
 	"testing"
 	"time"
 
@@ -123,7 +122,7 @@ func schedulerEventPayload(customData string) string {
 func SchedulerJobExists(t *testing.T, jobName string) bool {
 	t.Helper()
 	ctx := context.Background()
-	project := os.Getenv(ProwProjectKey)
+	project := GetEnvOrFail(t, ProwProjectKey)
 	opt := option.WithQuotaProject(project)
 	client, err := scheduler.NewClient(ctx, opt)
 	if err != nil {

@@ -19,7 +19,6 @@ package lib
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -166,7 +165,7 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 
 func DeleteBucket(ctx context.Context, t *testing.T, bucketName string) {
 	t.Helper()
-	project := os.Getenv(ProwProjectKey)
+	project := GetEnvOrFail(t, ProwProjectKey)
 	opt := option.WithQuotaProject(project)
 	client, err := storage.NewClient(ctx, opt)
 	if err != nil {
@@ -210,7 +209,7 @@ func getBucketHandle(ctx context.Context, t *testing.T, bucketName, project stri
 func NotificationExists(t *testing.T, bucketName, notificationID string) bool {
 	t.Helper()
 	ctx := context.Background()
-	project := os.Getenv(ProwProjectKey)
+	project := GetEnvOrFail(t, ProwProjectKey)
 	opt := option.WithQuotaProject(project)
 	client, err := storage.NewClient(ctx, opt)
 	if err != nil {
