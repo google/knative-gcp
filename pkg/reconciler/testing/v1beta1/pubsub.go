@@ -17,13 +17,9 @@ limitations under the License.
 package v1beta1
 
 import (
-	"time"
-
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	"github.com/google/knative-gcp/pkg/reconciler/testing"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
@@ -65,100 +61,8 @@ func WithCloudPubSubSourceServiceAccount(kServiceAccount string) CloudPubSubSour
 	}
 }
 
-func WithCloudPubSubSourceDeletionTimestamp(s *v1beta1.CloudPubSubSource) {
-	t := metav1.NewTime(time.Unix(1e9, 0))
-	s.ObjectMeta.SetDeletionTimestamp(&t)
-}
-
-func WithCloudPubSubSourceProject(project string) CloudPubSubSourceOption {
-	return func(s *v1beta1.CloudPubSubSource) {
-		s.Spec.Project = project
-	}
-}
-
 func WithCloudPubSubSourceTopic(topicID string) CloudPubSubSourceOption {
 	return func(ps *v1beta1.CloudPubSubSource) {
 		ps.Spec.Topic = topicID
 	}
-}
-
-// WithInitCloudPubSubSourceConditions initializes the CloudPubSubSource's conditions.
-func WithInitCloudPubSubSourceConditions(ps *v1beta1.CloudPubSubSource) {
-	ps.Status.InitializeConditions()
-}
-
-// WithCloudPubSubSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
-func WithCloudPubSubSourceServiceAccountName(name string) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
-		ps.Status.ServiceAccountName = name
-	}
-}
-
-func WithCloudPubSubSourceWorkloadIdentityFailed(reason, message string) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
-		ps.Status.MarkWorkloadIdentityFailed(ps.ConditionSet(), reason, message)
-	}
-}
-
-// WithCloudPubSubSourcePullSubscriptionFailed marks the condition that the
-// status of PullSubscription is False
-func WithCloudPubSubSourcePullSubscriptionFailed(reason, message string) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
-		ps.Status.MarkPullSubscriptionFailed(ps.ConditionSet(), reason, message)
-	}
-}
-
-// WithCloudPubSubSourcePullSubscriptionUnknown marks the condition that the
-// topic is Unknown
-func WithCloudPubSubSourcePullSubscriptionUnknown(reason, message string) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
-		ps.Status.MarkPullSubscriptionUnknown(ps.ConditionSet(), reason, message)
-	}
-}
-
-// WithCloudPubSubSourcePullSubscriptionReady marks the condition that the
-// topic is not ready
-func WithCloudPubSubSourcePullSubscriptionReady(ps *v1beta1.CloudPubSubSource) {
-	ps.Status.MarkPullSubscriptionReady(ps.ConditionSet())
-}
-
-// WithCloudPubSubSourceSinkURI sets the status for sink URI
-func WithCloudPubSubSourceSinkURI(url *apis.URL) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
-		ps.Status.SinkURI = url
-	}
-}
-
-func WithCloudPubSubSourceSubscriptionID(subscriptionID string) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
-		ps.Status.SubscriptionID = subscriptionID
-	}
-}
-
-func WithCloudPubSubSourceFinalizers(finalizers ...string) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
-		ps.Finalizers = finalizers
-	}
-}
-
-func WithCloudPubSubSourceStatusObservedGeneration(generation int64) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
-		ps.Status.Status.ObservedGeneration = generation
-	}
-}
-
-func WithCloudPubSubSourceObjectMetaGeneration(generation int64) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
-		ps.ObjectMeta.Generation = generation
-	}
-}
-
-func WithCloudPubSubSourceAnnotations(Annotations map[string]string) CloudPubSubSourceOption {
-	return func(ps *v1beta1.CloudPubSubSource) {
-		ps.ObjectMeta.Annotations = Annotations
-	}
-}
-
-func WithCloudPubSubSourceSetDefaults(ps *v1beta1.CloudPubSubSource) {
-	ps.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }

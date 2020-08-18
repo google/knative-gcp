@@ -46,6 +46,11 @@ func (s *CloudStorageSourceStatus) MarkNotificationNotReady(reason, messageForma
 	storageCondSet.Manage(s).MarkFalse(NotificationReady, reason, messageFormat, messageA...)
 }
 
+// MarkNotificationNotReady sets the condition that the status of GCS is unknown and why.
+func (s *CloudStorageSourceStatus) MarkNotificationUnknown(reason, messageFormat string, messageA ...interface{}) {
+	storageCondSet.Manage(s).MarkUnknown(NotificationReady, reason, messageFormat, messageA...)
+}
+
 func (s *CloudStorageSourceStatus) MarkNotificationReady(notificationID string) {
 	s.NotificationID = notificationID
 	storageCondSet.Manage(s).MarkTrue(NotificationReady)

@@ -49,6 +49,7 @@ func forwardFromProbe(ctx context.Context, c cloudevents.Client, receivedEvents 
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
 		defer cancel()
 		if res := c.Send(ctx, event); !cloudevents.IsACK(res) {
+			log.Printf("Error when sending event %v to broker: %+v \n", eventID, res)
 			return res
 		}
 		select {
@@ -56,6 +57,7 @@ func forwardFromProbe(ctx context.Context, c cloudevents.Client, receivedEvents 
 			delete(receivedEvents, eventID)
 			return cloudevents.ResultACK
 		case <-ctx.Done():
+			log.Printf("Timed out waiting for the event to be sent back: %v \n", eventID)
 			return cloudevents.NewReceipt(false, "timed out waiting for event to be sent back")
 		}
 	}

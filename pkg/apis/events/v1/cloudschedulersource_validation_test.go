@@ -20,6 +20,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/google/go-cmp/cmp"
 	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -370,13 +374,47 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 
 func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudSchedulerSourceSpec
-		allowed bool
+		orig              interface{}
+		updated           CloudSchedulerSourceSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: schedulerWithSecret,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation changed": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation added": {
+			origAnnotation: map[string]string{},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation deleted": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{},
+			allowed:           false,
 		},
 		"Location changed": {
 			orig: &schedulerWithSecret,
@@ -456,13 +494,170 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
+		"ServiceAccountName added": {
+			orig: &schedulerWithSecret,
+			updated: CloudSchedulerSourceSpec{
+				Location: schedulerWithSecret.Location,
+				Schedule: schedulerWithSecret.Schedule,
+				Data:     schedulerWithSecret.Data,
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					SourceSpec: schedulerWithSecret.SourceSpec,
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: schedulerWithSecret.Secret.Name,
+						},
+						Key: schedulerWithSecret.Secret.Key,
+					},
+					IdentitySpec: gcpduckv1.IdentitySpec{
+						ServiceAccountName: "new-service-account",
+					},
+					Project: schedulerWithSecret.Project,
+				},
+			},
+			allowed: false,
+		},
+		"ClusterName annotation added": {
+			origAnnotation: nil,
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: true,
+		},
+		"Sink.APIVersion changed": {
+			orig: &schedulerWithSecret,
+			updated: CloudSchedulerSourceSpec{
+				Location: schedulerWithSecret.Location,
+				Schedule: schedulerWithSecret.Schedule,
+				Data:     schedulerWithSecret.Data,
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: schedulerWithSecret.Secret.Name,
+						},
+						Key: schedulerWithSecret.Secret.Key,
+					},
+					Project: schedulerWithSecret.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: "some-other-api-version",
+								Kind:       schedulerWithSecret.Sink.Ref.Kind,
+								Namespace:  schedulerWithSecret.Sink.Ref.Namespace,
+								Name:       schedulerWithSecret.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"Sink.Kind changed": {
+			orig: &schedulerWithSecret,
+			updated: CloudSchedulerSourceSpec{
+				Location: schedulerWithSecret.Location,
+				Schedule: schedulerWithSecret.Schedule,
+				Data:     schedulerWithSecret.Data,
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: schedulerWithSecret.Secret.Name,
+						},
+						Key: schedulerWithSecret.Secret.Key,
+					},
+					Project: schedulerWithSecret.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: schedulerWithSecret.Sink.Ref.APIVersion,
+								Kind:       "some-other-kind",
+								Namespace:  schedulerWithSecret.Sink.Ref.Namespace,
+								Name:       schedulerWithSecret.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"Sink.Namespace changed": {
+			orig: &schedulerWithSecret,
+			updated: CloudSchedulerSourceSpec{
+				Location: schedulerWithSecret.Location,
+				Schedule: schedulerWithSecret.Schedule,
+				Data:     schedulerWithSecret.Data,
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: schedulerWithSecret.Secret.Name,
+						},
+						Key: schedulerWithSecret.Secret.Key,
+					},
+					Project: schedulerWithSecret.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: schedulerWithSecret.Sink.Ref.APIVersion,
+								Kind:       schedulerWithSecret.Sink.Ref.Kind,
+								Namespace:  "some-other-namespace",
+								Name:       schedulerWithSecret.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"Sink.Name changed": {
+			orig: &schedulerWithSecret,
+			updated: CloudSchedulerSourceSpec{
+				Location: schedulerWithSecret.Location,
+				Schedule: schedulerWithSecret.Schedule,
+				Data:     schedulerWithSecret.Data,
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: schedulerWithSecret.Secret.Name,
+						},
+						Key: schedulerWithSecret.Secret.Key,
+					},
+					Project: schedulerWithSecret.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: schedulerWithSecret.Sink.Ref.APIVersion,
+								Kind:       schedulerWithSecret.Sink.Ref.Kind,
+								Namespace:  schedulerWithSecret.Sink.Ref.Namespace,
+								Name:       "some-other-name",
+							},
+						},
+					},
+				},
+			},
+			allowed: true,
+		},
+		"no change": {
+			orig:    &schedulerWithSecret,
+			updated: schedulerWithSecret,
+			allowed: true,
+		},
+		"no spec": {
+			orig:    []string{"wrong"},
+			updated: schedulerWithSecret,
+			allowed: true,
+		},
 	}
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			var orig *CloudSchedulerSource
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &CloudSchedulerSource{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*CloudSchedulerSourceSpec); ok {
 					orig = &CloudSchedulerSource{
 						Spec: *spec,
@@ -470,6 +665,9 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &CloudSchedulerSource{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

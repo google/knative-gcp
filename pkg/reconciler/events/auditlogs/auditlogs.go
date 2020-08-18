@@ -176,9 +176,11 @@ func (c *Reconciler) deleteSink(ctx context.Context, s *v1.CloudAuditLogsSource)
 	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create LogAdmin client", zap.Error(err))
+		s.Status.MarkSinkUnknown(deleteSinkFailed, "Failed to create LogAdmin Client: %s", err.Error())
 		return err
 	}
-	if err = logadminClient.DeleteSink(ctx, s.Status.StackdriverSink); status.Code(err) != codes.NotFound {
+	if err = logadminClient.DeleteSink(ctx, s.Status.StackdriverSink); err != nil && status.Code(err) != codes.NotFound {
+		s.Status.MarkSinkUnknown(deleteSinkFailed, "Failed to delete Stackdriver sink: %s", err.Error())
 		return err
 	}
 	return nil

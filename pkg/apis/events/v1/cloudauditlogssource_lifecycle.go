@@ -46,6 +46,12 @@ func (s *CloudAuditLogsSourceStatus) MarkSinkNotReady(reason, messageFormat stri
 	auditLogsSourceCondSet.Manage(s).MarkFalse(SinkReady, reason, messageFormat, messageA...)
 }
 
+// MarkSinkUnknown sets the condition that a CloudAuditLogsSource pubsub sink
+// status is unknown and why.
+func (s *CloudAuditLogsSourceStatus) MarkSinkUnknown(reason, messageFormat string, messageA ...interface{}) {
+	auditLogsSourceCondSet.Manage(s).MarkUnknown(SinkReady, reason, messageFormat, messageA...)
+}
+
 func (s *CloudAuditLogsSourceStatus) MarkSinkReady() {
 	auditLogsSourceCondSet.Manage(s).MarkTrue(SinkReady)
 }

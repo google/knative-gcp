@@ -159,6 +159,13 @@ function gcp_auth_setup() {
 # We could specify --cluster-version to force the cluster using a particular GKE version.
 initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
 
+if [ "${SKIP_TESTS:-}" == "true" ]; then
+  echo "**************************************"
+  echo "***         TESTS SKIPPED          ***"
+  echo "**************************************"
+  exit 0
+fi
+
 # Channel related e2e tests we have in Eventing is not running here.
 go_test_e2e -timeout=30m -parallel=6 ./test/e2e -workloadIndentity=true -serviceAccountName="${K8S_SERVICE_ACCOUNT_NAME}" || fail_test
 

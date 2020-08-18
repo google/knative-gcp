@@ -128,6 +128,20 @@ func SubscriptionHasRetryPolicy(id string, wantPolicy *pubsub.RetryPolicy) func(
 	}
 }
 
+func SubscriptionHasDeadLetterPolicy(id string, wantPolicy *pubsub.DeadLetterPolicy) func(*testing.T, *rtesting.TableRow) {
+	return func(t *testing.T, r *rtesting.TableRow) {
+		c := getPubsubClient(r)
+		sub := c.Subscription(id)
+		cfg, err := sub.Config(context.Background())
+		if err != nil {
+			t.Errorf("Error getting pubsub config: %v", err)
+		}
+		if diff := cmp.Diff(wantPolicy, cfg.DeadLetterPolicy); diff != "" {
+			t.Errorf("Pubsub config dead letter policy (-want,+got): %v", diff)
+		}
+	}
+}
+
 func OnlySubscriptions(ids ...string) func(*testing.T, *rtesting.TableRow) {
 	return func(t *testing.T, r *rtesting.TableRow) {
 		c := getPubsubClient(r)

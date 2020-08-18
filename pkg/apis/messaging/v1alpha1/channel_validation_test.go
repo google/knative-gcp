@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/google/go-cmp/cmp"
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	"github.com/google/knative-gcp/pkg/apis/duck"
@@ -243,6 +245,25 @@ func TestCheckImmutableFields(t *testing.T) {
 				IdentitySpec: duckv1alpha1.IdentitySpec{
 					ServiceAccountName: "new-service-account",
 				},
+			},
+			allowed: false,
+		},
+		"Secret changed": {
+			orig: &channelSpec,
+			updated: ChannelSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "some-other-name",
+					},
+					Key: "some-other-secret-key",
+				},
+			},
+			allowed: false,
+		},
+		"Project changed": {
+			orig: &channelSpec,
+			updated: ChannelSpec{
+				Project: "some-other-project",
 			},
 			allowed: false,
 		},

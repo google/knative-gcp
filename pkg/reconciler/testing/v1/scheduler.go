@@ -133,6 +133,14 @@ func WithCloudSchedulerSourceTopicReady(topicID, projectID string) CloudSchedule
 	}
 }
 
+// WithCloudAuditLogsSourceTopicDeleted is a wrapper to indicate that the
+// topic is deleted. Inside the function, we still mark the status of topic to be ready,
+// as the status of topic is unchanged if the deletion is successful. We do not set the
+// topicID and projectID because they are set to empty when deleting the topic.
+func WithCloudSchedulerSourceTopicDeleted(s *v1.CloudSchedulerSource) {
+	s.Status.MarkTopicReady(s.ConditionSet())
+}
+
 // WithCloudSchedulerSourcePullSubscriptionFailed marks the condition that the
 // topic is False.
 func WithCloudSchedulerSourcePullSubscriptionFailed(reason, message string) CloudSchedulerSourceOption {
@@ -155,6 +163,14 @@ func WithCloudSchedulerSourcePullSubscriptionReady(s *v1.CloudSchedulerSource) {
 	s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 }
 
+// WithCloudSchedulerSourcePullSubscriptionDeleted is a wrapper to indicate that the
+// PullSubscription is deleted. Inside the function, we still mark the status of
+// PullSubscription to be ready, as the status of PullSubscription is unchanged
+// if the deletion is successful.
+func WithCloudSchedulerSourcePullSubscriptionDeleted(s *v1.CloudSchedulerSource) {
+	s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+}
+
 // WithCloudSchedulerSourceJobNotReady marks the condition that the
 // CloudSchedulerSource Job is not ready.
 func WithCloudSchedulerSourceJobNotReady(reason, message string) CloudSchedulerSourceOption {
@@ -163,9 +179,26 @@ func WithCloudSchedulerSourceJobNotReady(reason, message string) CloudSchedulerS
 	}
 }
 
+// WithCloudSchedulerSourceJobUnknown marks the condition that the
+// CloudSchedulerSource Job is unknown.
+func WithCloudSchedulerSourceJobUnknown(reason, message string) CloudSchedulerSourceOption {
+	return func(s *v1.CloudSchedulerSource) {
+		s.Status.MarkJobUnknown(reason, message)
+	}
+}
+
 // WithCloudSchedulerSourceJobReady marks the condition that the
 // CloudSchedulerSource Job is ready and sets Status.JobName to jobName.
 func WithCloudSchedulerSourceJobReady(jobName string) CloudSchedulerSourceOption {
+	return func(s *v1.CloudSchedulerSource) {
+		s.Status.MarkJobReady(jobName)
+	}
+}
+
+// WithCloudSchedulerSourceJobDeleted is a wrapper to indicate that the
+// job is deleted. Inside the function, we still mark the status of job to be ready,
+// as the status of job is unchanged if the deletion is successful.
+func WithCloudSchedulerSourceJobDeleted(jobName string) CloudSchedulerSourceOption {
 	return func(s *v1.CloudSchedulerSource) {
 		s.Status.MarkJobReady(jobName)
 	}

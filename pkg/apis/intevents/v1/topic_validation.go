@@ -19,6 +19,8 @@ package v1
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
@@ -26,7 +28,13 @@ import (
 )
 
 func (t *Topic) Validate(ctx context.Context) *apis.FieldError {
-	return t.Spec.Validate(ctx).ViaField("spec")
+	err := t.Spec.Validate(ctx).ViaField("spec")
+
+	if apis.IsInUpdate(ctx) {
+		original := apis.GetBaseline(ctx).(*Topic)
+		err = err.Also(t.CheckImmutableFields(ctx, original))
+	}
+	return err
 }
 
 func (ts *TopicSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -56,14 +64,19 @@ func (current *Topic) CheckImmutableFields(ctx context.Context, original *Topic)
 		return nil
 	}
 
-	// Modification of Topic, Secret, ServiceAccountName and Project are not allowed. Everything else is mutable.
+	var errs *apis.FieldError
+	// Modification of Topic, Secret, ServiceAccountName, PropagationPolicy, EnablePublisher and Project are not allowed.
 	if diff := cmp.Diff(original.Spec, current.Spec,
-		cmpopts.IgnoreFields(TopicSpec{}, "PropagationPolicy", "EnablePublisher")); diff != "" {
-		return &apis.FieldError{
+		cmpopts.IgnoreFields(TopicSpec{})); diff != "" {
+		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
 			Details: diff,
-		}
+		})
 	}
-	return nil
+	// Modification of AutoscalingClassAnnotations is not allowed.
+	errs = duck.CheckImmutableAutoscalingClassAnnotations(&current.ObjectMeta, &original.ObjectMeta, errs)
+
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

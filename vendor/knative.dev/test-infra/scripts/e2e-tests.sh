@@ -79,10 +79,26 @@ function teardown_test_resources() {
 # Run the given E2E tests. Assume tests are tagged e2e, unless `-tags=XXX` is passed.
 # Parameters: $1..$n - any go test flags, then directories containing the tests to run.
 function go_test_e2e() {
-  local test_options=""
-  local go_options=""
-  [[ ! " $@" == *" -tags="* ]] && go_options="-tags=e2e"
-  report_go_test -v -race -count=1 ${go_options} $@ "${test_options}"
+  local go_test_args=()
+  # Remove empty args as `go test` will consider it as running tests for the current directory, which is not expected.
+  for arg in "$@"; do
+    [[ -n "$arg" ]] && go_test_args+=("$arg")
+  done
+  [[ ! " $*" == *" -tags="* ]] && go_test_args+=("-tags=e2e")
+  report_go_test -race -count=1 "${go_test_args[@]}"
+}
+
+# Dumps the k8s api server metrics. Spins up a proxy, waits a little bit and
+# dumps the metrics to ${ARTIFACTS}/k8s.metrics.txt
+function dump_metrics() {
+    header ">> Starting kube proxy"
+    kubectl proxy --port=8080 &
+    local proxy_pid=$!
+    sleep 5
+    header ">> Grabbing k8s metrics"
+    curl -s http://localhost:8080/metrics > "${ARTIFACTS}"/k8s.metrics.txt
+    # Clean up proxy so it doesn't interfere with job shutting down
+    kill $proxy_pid || true
 }
 
 # Dump info about the test cluster. If dump_extra_cluster_info() is defined, calls it too.
@@ -410,6 +426,7 @@ function success() {
   echo "**************************************"
   echo "***        E2E TESTS PASSED        ***"
   echo "**************************************"
+  dump_metrics
   exit 0
 }
 
@@ -419,6 +436,7 @@ function fail_test() {
   set_test_return_code 1
   [[ -n $1 ]] && echo "ERROR: $1"
   dump_cluster_state
+  dump_metrics
   exit 1
 }
 

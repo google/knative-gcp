@@ -18,6 +18,8 @@ package handler
 
 import (
 	"context"
+	"fmt"
+	"runtime"
 	"testing"
 	"time"
 
@@ -27,10 +29,12 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/go-cmp/cmp"
+	"golang.org/x/sync/semaphore"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
+	kgcptesting "github.com/google/knative-gcp/pkg/testing"
 )
 
 const (
@@ -39,7 +43,7 @@ const (
 	testSub       = "test-testSub"
 )
 
-func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pubsub.Client, func()) {
+func testPubsubClient(ctx context.Context, t testing.TB, projectID string) (*pubsub.Client, func()) {
 	t.Helper()
 	srv := pstest.NewServer()
 	conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
@@ -154,6 +158,64 @@ func TestHandler(t *testing.T) {
 		}
 		unlock()
 	})
+}
+
+type BenchProcessor struct {
+	processors.BaseProcessor
+
+	processed *semaphore.Weighted
+}
+
+func (p *BenchProcessor) Process(ctx context.Context, e *event.Event) error {
+	p.processed.Release(1)
+	return nil
+}
+
+func BenchmarkHandlerReceive(b *testing.B) {
+	for _, eventSize := range []int{0, 1000, 1000000} {
+		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
+			runBench(b, eventSize)
+		})
+	}
+}
+
+func runBench(b *testing.B, eventSize int) {
+	ctx := context.Background()
+	c, close := testPubsubClient(ctx, b, testProjectID)
+	defer close()
+
+	topic, err := c.CreateTopic(ctx, testTopic)
+	if err != nil {
+		b.Fatalf("failed to create topic: %v", err)
+	}
+	sub, err := c.CreateSubscription(ctx, testSub, pubsub.SubscriptionConfig{
+		Topic: topic,
+	})
+	if err != nil {
+		b.Fatalf("failed to create subscription: %v", err)
+	}
+
+	maxMsgs := 2 * int64(runtime.NumCPU())
+	processor := &BenchProcessor{
+		processed: semaphore.NewWeighted(maxMsgs),
+	}
+	h := NewHandler(sub, processor, time.Second)
+	h.Start(ctx, func(err error) {})
+	defer h.Stop()
+	if !h.IsAlive() {
+		b.Error("start handler didn't bring it alive")
+	}
+	testEvent := kgcptesting.NewTestEvent(b, eventSize)
+	msg := new(pubsub.Message)
+	if err := cepubsub.WritePubSubMessage(ctx, binding.ToMessage(testEvent), msg); err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		processor.processed.Acquire(ctx, 1)
+		topic.Publish(ctx, msg)
+	}
+	processor.processed.Acquire(ctx, maxMsgs)
 }
 
 func nextEventWithTimeout(eventCh <-chan *event.Event) *event.Event {

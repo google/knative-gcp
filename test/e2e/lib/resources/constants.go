@@ -20,12 +20,16 @@ import "time"
 
 // API versions for the resources.
 const (
-	BatchAPIVersion            = "batch/v1"
-	MessagingAPIVersion        = "messaging.cloud.google.com/v1alpha1"
-	MessagingV1beta1APIVersion = "messaging.cloud.google.com/v1beta1"
-	EventsAPIVersion           = "events.cloud.google.com/v1beta1"
-	IntEventsAPIVersion        = "internal.events.cloud.google.com/v1beta1"
-	ServingAPIVersion          = "serving.knative.dev/v1"
+	BatchAPIVersion             = "batch/v1"
+	MessagingAPIVersion         = "messaging.cloud.google.com/v1alpha1"
+	MessagingV1beta1APIVersion  = "messaging.cloud.google.com/v1beta1"
+	EventsV1APIVersion          = "events.cloud.google.com/v1"
+	EventsV1beta1APIVersion     = "events.cloud.google.com/v1beta1"
+	EventsV1alpha1APIVersion    = "events.cloud.google.com/v1alpha1"
+	IntEventsV1APIVersion       = "internal.events.cloud.google.com/v1"
+	IntEventsV1beta1APIVersion  = "internal.events.cloud.google.com/v1beta1"
+	IntEventsV1alpha1APIVersion = "internal.events.cloud.google.com/v1alpha1"
+	ServingAPIVersion           = "serving.knative.dev/v1"
 )
 
 // Kind for batch resources.
@@ -59,8 +63,9 @@ const (
 
 const (
 	// Tried with 20 seconds but the test has been quite flaky.
+	// Increase from 40 seconds to 60 seconds, for issue: https://github.com/google/knative-gcp/issues/1568.
 	// WaitDeletionTime for deleting resources
-	WaitDeletionTime = 40 * time.Second
+	WaitDeletionTime = 60 * time.Second
 	// WaitCALTime for time needed to wait to fire an event after CAL Source is ready
 	// Tried with 45 seconds but the test has been quite flaky.
 	// Tried with 90 seconds but the test has been quite flaky.

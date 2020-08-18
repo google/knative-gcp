@@ -20,6 +20,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
@@ -165,13 +169,47 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 
 func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudAuditLogsSourceSpec
-		allowed bool
+		orig              interface{}
+		updated           CloudAuditLogsSourceSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: auditLogsSourceSpec,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation changed": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA + "new",
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation added": {
+			origAnnotation: map[string]string{},
+			updatedAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			allowed: false,
+		},
+		"AnnotationClass annotation deleted": {
+			origAnnotation: map[string]string{
+				duck.AutoscalingClassAnnotation: duck.KEDA,
+			},
+			updatedAnnotation: map[string]string{},
+			allowed:           false,
 		},
 		"ServiceName changed": {
 			orig: &auditLogsSourceSpec,
@@ -284,12 +322,169 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
+		"ServiceAccountName added": {
+			orig: &auditLogsSourceSpec,
+			updated: CloudAuditLogsSourceSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: auditLogsSourceSpec.Secret.Name,
+						},
+						Key: auditLogsSourceSpec.Secret.Key,
+					},
+					Project:    auditLogsSourceSpec.Project,
+					SourceSpec: auditLogsSourceSpec.SourceSpec,
+					IdentitySpec: gcpduckv1.IdentitySpec{
+						ServiceAccountName: "old-service-account",
+					},
+				},
+				MethodName:   auditLogsSourceSpec.MethodName,
+				ResourceName: auditLogsSourceSpec.ResourceName,
+				ServiceName:  auditLogsSourceSpec.ServiceName,
+			},
+			allowed: false,
+		},
+		"ClusterName annotation added": {
+			origAnnotation: nil,
+			updatedAnnotation: map[string]string{
+				duck.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: true,
+		},
+		"Sink.APIVersion changed": {
+			orig: &auditLogsSourceSpec,
+			updated: CloudAuditLogsSourceSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: auditLogsSourceSpec.Secret.Name,
+						},
+						Key: auditLogsSourceSpec.Secret.Key,
+					},
+					Project: auditLogsSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: "some-other-api-version",
+								Kind:       auditLogsSourceSpec.Sink.Ref.Kind,
+								Namespace:  auditLogsSourceSpec.Sink.Ref.Namespace,
+								Name:       auditLogsSourceSpec.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+				MethodName:   auditLogsSourceSpec.MethodName,
+				ResourceName: auditLogsSourceSpec.ResourceName,
+				ServiceName:  auditLogsSourceSpec.ServiceName,
+			},
+			allowed: true,
+		},
+		"Sink.Kind changed": {
+			orig: &auditLogsSourceSpec,
+			updated: CloudAuditLogsSourceSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: auditLogsSourceSpec.Secret.Name,
+						},
+						Key: auditLogsSourceSpec.Secret.Key,
+					},
+					Project: auditLogsSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: auditLogsSourceSpec.Sink.Ref.APIVersion,
+								Kind:       "some-other-kind",
+								Namespace:  auditLogsSourceSpec.Sink.Ref.Namespace,
+								Name:       auditLogsSourceSpec.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+				MethodName:   auditLogsSourceSpec.MethodName,
+				ResourceName: auditLogsSourceSpec.ResourceName,
+				ServiceName:  auditLogsSourceSpec.ServiceName,
+			},
+			allowed: true,
+		},
+		"Sink.Namespace changed": {
+			orig: &auditLogsSourceSpec,
+			updated: CloudAuditLogsSourceSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: auditLogsSourceSpec.Secret.Name,
+						},
+						Key: auditLogsSourceSpec.Secret.Key,
+					},
+					Project: auditLogsSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: auditLogsSourceSpec.Sink.Ref.APIVersion,
+								Kind:       auditLogsSourceSpec.Sink.Ref.Kind,
+								Namespace:  "some-other-namespace",
+								Name:       auditLogsSourceSpec.Sink.Ref.Name,
+							},
+						},
+					},
+				},
+				MethodName:   auditLogsSourceSpec.MethodName,
+				ResourceName: auditLogsSourceSpec.ResourceName,
+				ServiceName:  auditLogsSourceSpec.ServiceName,
+			},
+			allowed: true,
+		},
+		"Sink.Name changed": {
+			orig: &auditLogsSourceSpec,
+			updated: CloudAuditLogsSourceSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: auditLogsSourceSpec.Secret.Name,
+						},
+						Key: auditLogsSourceSpec.Secret.Key,
+					},
+					Project: auditLogsSourceSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: auditLogsSourceSpec.Sink.Ref.APIVersion,
+								Kind:       auditLogsSourceSpec.Sink.Ref.Kind,
+								Namespace:  auditLogsSourceSpec.Sink.Ref.Namespace,
+								Name:       "some-other-name",
+							},
+						},
+					},
+				},
+				MethodName:   auditLogsSourceSpec.MethodName,
+				ResourceName: auditLogsSourceSpec.ResourceName,
+				ServiceName:  auditLogsSourceSpec.ServiceName,
+			},
+			allowed: true,
+		},
+		"no change": {
+			orig:    &auditLogsSourceSpec,
+			updated: auditLogsSourceSpec,
+			allowed: true,
+		},
+		"no spec": {
+			orig:    []string{"wrong"},
+			updated: auditLogsSourceSpec,
+			allowed: true,
+		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			var orig *CloudAuditLogsSource
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &CloudAuditLogsSource{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*CloudAuditLogsSourceSpec); ok {
 					orig = &CloudAuditLogsSource{
 						Spec: *spec,
@@ -297,6 +492,9 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &CloudAuditLogsSource{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

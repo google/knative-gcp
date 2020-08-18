@@ -443,6 +443,7 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 // If wantEvent is nil, then it means such an event is not expected.
 // This function is blocking and should be invoked in a separate goroutine with context timeout.
 func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, targetKey string, wantEvent *event.Event) {
+	t.Helper()
 	target, ok := h.Targets.GetTargetByKey(targetKey)
 	if !ok {
 		t.Fatalf("target with key %q doesn't exist", targetKey)
@@ -450,6 +451,7 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 
 	var gotEvent *event.Event
 	defer func() {
+		t.Helper()
 		assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("target (key=%q)", targetKey))
 	}()
 
@@ -482,6 +484,7 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 }
 
 func assertEvent(t *testing.T, want, got *event.Event, msg string) {
+	t.Helper()
 	if got != nil && want != nil {
 		// Clone events so that we don't modify the original copy.
 		gotCopy, wantCopy := got.Clone(), want.Clone()

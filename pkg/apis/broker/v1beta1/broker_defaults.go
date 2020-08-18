@@ -18,10 +18,37 @@ package v1beta1
 
 import (
 	"context"
+
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+)
+
+var (
+	// DefaultBackoffDelay is the default backoff delay used in the backoff retry policy
+	// for the Broker delivery spec.
+	DefaultBackoffDelay = "PT1S"
+	// DefaultBackoffPolicy is the default backoff policy type used in the backoff retry
+	// policy for the Broker delivery spec.
+	DefaultBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
+	// DefaultRetry is the default number of maximum delivery attempts for unacked messages
+	// before they are sent to a dead letter topic in the Broker delivery spec, in
+	// case a dead letter topic is specified. Without a dead letter topic specified,
+	// the retry count is infinite.
+	DefaultRetry int32 = 6
 )
 
 // SetDefaults sets the default field values for a Broker.
 func (b *Broker) SetDefaults(ctx context.Context) {
-	// The Google Cloud Broker doesn't have any custom defaults. The
-	// eventing webhook will add the usual defaults.
+	// Set the default delivery spec.
+	if b.Spec.Delivery == nil {
+		b.Spec.Delivery = &eventingduckv1beta1.DeliverySpec{}
+	}
+	if b.Spec.Delivery.BackoffPolicy == nil &&
+		b.Spec.Delivery.BackoffDelay == nil {
+		b.Spec.Delivery.BackoffPolicy = &DefaultBackoffPolicy
+		b.Spec.Delivery.BackoffDelay = &DefaultBackoffDelay
+	}
+	if b.Spec.Delivery.Retry == nil && b.Spec.Delivery.DeadLetterSink != nil {
+		b.Spec.Delivery.Retry = &DefaultRetry
+	}
+	// Besides this, the eventing webhook will add the usual defaults.
 }

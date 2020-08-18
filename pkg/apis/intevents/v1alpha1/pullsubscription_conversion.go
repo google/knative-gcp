@@ -46,6 +46,8 @@ func (source *PullSubscription) ConvertTo(ctx context.Context, to apis.Convertib
 		sink.Status.PubSubStatus = convert.ToV1beta1PubSubStatus(source.Status.PubSubStatus)
 		sink.Status.TransformerURI = source.Status.TransformerURI
 		sink.Status.SubscriptionID = source.Status.SubscriptionID
+		// Remove v1alpha1 as deprecated from the Status Condition when converting to a higher version.
+		convert.RemoveV1alpha1Deprecated(sink.ConditionSet(), &sink.Status.Status)
 		return nil
 	default:
 		return apis.ConvertToViaProxy(ctx, source, &v1beta1.PullSubscription{}, sink)
@@ -73,6 +75,8 @@ func (sink *PullSubscription) ConvertFrom(ctx context.Context, from apis.Convert
 		sink.Status.PubSubStatus = convert.FromV1beta1PubSubStatus(source.Status.PubSubStatus)
 		sink.Status.TransformerURI = source.Status.TransformerURI
 		sink.Status.SubscriptionID = source.Status.SubscriptionID
+		// Mark v1alpha1 as deprecated as a Status Condition when converting to v1alpha1.
+		convert.MarkV1alpha1Deprecated(sink.ConditionSet(), &sink.Status.Status)
 		return nil
 	default:
 		return apis.ConvertFromViaProxy(ctx, source, &v1beta1.PullSubscription{}, sink)

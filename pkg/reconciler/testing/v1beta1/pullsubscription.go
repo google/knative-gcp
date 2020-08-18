@@ -62,3 +62,15 @@ func WithPullSubscriptionSpec(spec v1beta1.PullSubscriptionSpec) PullSubscriptio
 		s.Spec = spec
 	}
 }
+
+func WithPullSubscriptionTopic(topicID string) PullSubscriptionOption {
+	return func(s *v1beta1.PullSubscription) {
+		s.Spec.Topic = topicID
+	}
+}
+
+func WithPullSubscriptionServiceAccount(kServiceAccount string) PullSubscriptionOption {
+	return func(s *v1beta1.PullSubscription) {
+		s.Spec.ServiceAccountName = kServiceAccount
+	}
+}

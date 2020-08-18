@@ -20,13 +20,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	"knative.dev/pkg/apis"
 )
 
 func (c *Channel) Validate(ctx context.Context) *apis.FieldError {
-	return c.Spec.Validate(ctx).ViaField("spec")
+	err := c.Spec.Validate(ctx).ViaField("spec")
+
+	if apis.IsInUpdate(ctx) {
+		original := apis.GetBaseline(ctx).(*Channel)
+		err = err.Also(c.CheckImmutableFields(ctx, original))
+	}
+	return err
 }
 
 func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -54,24 +62,21 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, original *Chan
 		return nil
 	}
 
-	// Modification of TopicID is not allowed.
-	if original.Status.TopicID != "" {
-		if diff := cmp.Diff(original.Status.TopicID, current.Status.TopicID); diff != "" {
-			return &apis.FieldError{
-				Message: "Immutable fields changed (-old +new)",
-				Paths:   []string{"status", "topicId"},
-				Details: diff,
-			}
-		}
-	}
+	var errs *apis.FieldError
 
-	if diff := cmp.Diff(original.Spec.ServiceAccountName, current.Spec.ServiceAccountName); diff != "" {
-		return &apis.FieldError{
+	// Modification of Secret, ServiceAccountName and Project are not allowed. Everything else is mutable.
+	if diff := cmp.Diff(original.Spec, current.Spec,
+		cmpopts.IgnoreFields(ChannelSpec{}, "SubscribableSpec")); diff != "" {
+		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
-			Paths:   []string{"status", "serviceAccount"},
+			Paths:   []string{"spec"},
 			Details: diff,
-		}
+		})
 	}
 
-	return nil
+	// Modification of AutoscalingClassAnnotations is not allowed.
+	errs = duck.CheckImmutableAutoscalingClassAnnotations(&current.ObjectMeta, &original.ObjectMeta, errs)
+
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

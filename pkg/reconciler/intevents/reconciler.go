@@ -264,10 +264,9 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	err := psb.pubsubClient.InternalV1().Topics(namespace).Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete Topic", zap.String("name", name), zap.Error(err))
-		status.MarkTopicFailed(cs, "TopicDeleteFailed", "Failed to delete Topic: %s", err.Error())
+		status.MarkTopicUnknown(cs, "TopicDeleteFailed", "Failed to delete Topic: %s", err.Error())
 		return fmt.Errorf("failed to delete topic: %w", err)
 	}
-	status.MarkTopicFailed(cs, "TopicDeleted", "Successfully deleted Topic: %s", name)
 	status.TopicID = ""
 	status.ProjectID = ""
 
@@ -275,10 +274,9 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	err = psb.pubsubClient.InternalV1().PullSubscriptions(namespace).Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete PullSubscription", zap.String("name", name), zap.Error(err))
-		status.MarkPullSubscriptionFailed(cs, "PullSubscriptionDeleteFailed", "Failed to delete PullSubscription: %s", err.Error())
+		status.MarkPullSubscriptionUnknown(cs, "PullSubscriptionDeleteFailed", "Failed to delete PullSubscription: %s", err.Error())
 		return fmt.Errorf("failed to delete PullSubscription: %w", err)
 	}
-	status.MarkPullSubscriptionFailed(cs, "PullSubscriptionDeleted", "Successfully deleted PullSubscription: %s", name)
 	status.SinkURI = nil
 	return nil
 }
