@@ -70,6 +70,28 @@ spec:
                   fanout:
                     type: object
                     properties:
+                      avgCPUUtilization:
+                        type: integer
+                        format: int64
+                      avgMemoryUsage:
+                        type: string
+                      resources:
+                        type: object
+                        properties:
+                          requests:
+                            type: object
+                            properties:
+                              cpu:
+                                type: string
+                              memory:
+                                type: string
+                          limits:
+                            type: object
+                            properties:
+                              cpu:
+                                type: string
+                              memory:
+                                type: string
                       minReplicas:
                         type: integer
                         format: int64
@@ -79,6 +101,28 @@ spec:
                   ingress:
                     type: object
                     properties:
+                      avgCPUUtilization:
+                        type: integer
+                        format: int64
+                      avgMemoryUsage:
+                        type: string
+                      resources:
+                        type: object
+                        properties:
+                          requests:
+                            type: object
+                            properties:
+                              cpu:
+                                type: string
+                              memory:
+                                type: string
+                          limits:
+                            type: object
+                            properties:
+                              cpu:
+                                type: string
+                              memory:
+                                type: string
                       minReplicas:
                         type: integer
                         format: int64
@@ -88,6 +132,28 @@ spec:
                   retry:
                     type: object
                     properties:
+                      avgCPUUtilization:
+                        type: integer
+                        format: int64
+                      avgMemoryUsage:
+                        type: string
+                      resources:
+                        type: object
+                        properties:
+                          requests:
+                            type: object
+                            properties:
+                              cpu:
+                                type: string
+                              memory:
+                                type: string
+                          limits:
+                            type: object
+                            properties:
+                              cpu:
+                                type: string
+                              memory:
+                                type: string
                       minReplicas:
                         type: integer
                         format: int64
