@@ -246,6 +246,7 @@ func TestAllCasesTrigger(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerv1beta1.BrokerClass),
 					WithInitBrokerConditions,
+					WithBrokerDeliverySpec(brokerDeliverySpec),
 					WithBrokerSetDefaults,
 				),
 				makeSubscriberAddressableAsUnstructured(),
@@ -282,8 +283,8 @@ func TestAllCasesTrigger(t *testing.T) {
 				OnlySubscriptions("cre-tgr_testnamespace_test-trigger_abc123"),
 				SubscriptionHasRetryPolicy("cre-tgr_testnamespace_test-trigger_abc123",
 					&pubsub.RetryPolicy{
-						MaximumBackoff: 600 * time.Second,
-						MinimumBackoff: time.Second,
+						MaximumBackoff: 5 * time.Second,
+						MinimumBackoff: 5 * time.Second,
 					}),
 			},
 		},
