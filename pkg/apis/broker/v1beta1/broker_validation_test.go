@@ -36,11 +36,10 @@ func TestBroker_Validate(t *testing.T) {
 		broker Broker
 		want   *apis.FieldError
 	}{{
-		name: "missing delivery spec",
+		name: "no error on missing delivery spec",
 		broker: Broker{
 			Spec: v1beta1.BrokerSpec{},
 		},
-		want: apis.ErrMissingField("spec.delivery"),
 	}, {
 		name: "missing backoff policy",
 		broker: Broker{

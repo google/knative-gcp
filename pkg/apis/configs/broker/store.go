@@ -45,10 +45,7 @@ func FromContextOrDefaults(ctx context.Context) *Config {
 	if cfg := FromContext(ctx); cfg != nil {
 		return cfg
 	}
-	defaults, _ := NewDefaultsConfigFromMap(map[string]string{})
-	return &Config{
-		BrokerDeliverySpecDefaults: defaults,
-	}
+	return &Config{}
 }
 
 // ToContext attaches the provided Config to the provided context, returning the

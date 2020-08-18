@@ -40,10 +40,9 @@ func (b *Broker) SetDefaults(ctx context.Context) {
 		b.Spec.Delivery = &eventingduckv1beta1.DeliverySpec{}
 	}
 	ns := apis.ParentMeta(withNS).Namespace
-	if b.Spec.Delivery.BackoffPolicy == nil {
+	if b.Spec.Delivery.BackoffPolicy == nil || b.Spec.Delivery.BackoffDelay == nil {
+		// Set both defaults if one of the backoff delay or backoff policy are not specified.
 		b.Spec.Delivery.BackoffPolicy = deliverySpecDefaults.BackoffPolicy(ns)
-	}
-	if b.Spec.Delivery.BackoffDelay == nil {
 		b.Spec.Delivery.BackoffDelay = deliverySpecDefaults.BackoffDelay(ns)
 	}
 	if b.Spec.Delivery.DeadLetterSink == nil {

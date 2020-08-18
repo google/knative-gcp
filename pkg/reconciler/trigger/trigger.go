@@ -121,6 +121,9 @@ func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1beta1.Trigger, b 
 		return err
 	}
 
+	if b.Spec.Delivery == nil {
+		b.SetDefaults(ctx)
+	}
 	if err := r.reconcileRetryTopicAndSubscription(ctx, t, b.Spec.Delivery); err != nil {
 		return err
 	}
