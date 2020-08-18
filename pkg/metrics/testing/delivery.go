@@ -38,6 +38,7 @@ type ExpectDelivery struct {
 	TriggerTags     map[string]Tags
 	ProcessingCount map[string]int64
 	DeliveryCount   map[deliveryKey]int64
+	TimeoutCount    map[string]int64
 }
 
 func NewExpectDelivery() ExpectDelivery {
@@ -45,6 +46,7 @@ func NewExpectDelivery() ExpectDelivery {
 		TriggerTags:     make(map[string]Tags),
 		ProcessingCount: make(map[string]int64),
 		DeliveryCount:   make(map[deliveryKey]int64),
+		TimeoutCount:    make(map[string]int64),
 	}
 }
 
@@ -74,6 +76,13 @@ func (e ExpectDelivery) ExpectDelivery(t *testing.T, trigger string, code int) {
 	}
 	key := deliveryKey{Trigger: trigger, Code: code}
 	e.DeliveryCount[key] = e.DeliveryCount[key] + 1
+}
+
+func (e ExpectDelivery) ExpectTimeout(t *testing.T, trigger string) {
+	if _, ok := e.TriggerTags[trigger]; !ok {
+		t.Fatalf("trigger %q not defined", trigger)
+	}
+	e.TimeoutCount[trigger] = e.TimeoutCount[trigger] + 1
 }
 
 func (e ExpectDelivery) Expect200(t *testing.T, trigger string) {
@@ -109,6 +118,9 @@ func (e ExpectDelivery) attemptVerify() error {
 	if err := e.verifyDelivery("event_dispatch_latencies"); err != nil {
 		return err
 	}
+	if err := e.verifyTimeout(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -127,7 +139,10 @@ func (e ExpectDelivery) verifyDelivery(viewName string) error {
 		if !ok {
 			return fmt.Errorf("missing trigger_name tag for row: %v", row)
 		}
-		if code, err := strconv.Atoi(tags["response_code"]); err != nil {
+		if tags["response_code"] == "" {
+			// Skip time out record which doesn't have response code.
+			continue
+		} else if code, err := strconv.Atoi(tags["response_code"]); err != nil {
 			return fmt.Errorf("invalid response code in tags: %v", tags)
 		} else {
 			if got[deliveryKey{Trigger: trigger, Code: code}], err = getCount(row); err != nil {
@@ -174,6 +189,40 @@ func (e ExpectDelivery) verifyProcessing() error {
 
 	if diff := cmp.Diff(e.ProcessingCount, got); diff != "" {
 		return fmt.Errorf("unexpected event_processing_latencies measurement count (-want, +got) = %v", diff)
+	}
+	return nil
+}
+
+func (e ExpectDelivery) verifyTimeout() error {
+	rows, err := view.RetrieveData("event_dispatch_latencies")
+	if err != nil {
+		return err
+	}
+	got := make(map[string]int64)
+	for _, row := range rows {
+		tags := make(map[string]string)
+		for _, t := range row.Tags {
+			tags[t.Key.Name()] = t.Value
+		}
+		trigger, ok := tags["trigger_name"]
+		if !ok {
+			return fmt.Errorf("missing trigger_name tag for row: %v", row)
+		}
+
+		if tags["response_code"] != "" {
+			continue
+		}
+
+		if diff := cmp.Diff(e.TriggerTags[trigger], Tags(tags)); diff != "" {
+			return fmt.Errorf("unexpected tags (-want, +got) = %v", diff)
+		}
+		if got[trigger], err = getCount(row); err != nil {
+			return err
+		}
+	}
+
+	if diff := cmp.Diff(e.TimeoutCount, got); diff != "" {
+		return fmt.Errorf("unexpected timeout event_dispatch_latencies measurement count (-want, +got) = %v", diff)
 	}
 	return nil
 }

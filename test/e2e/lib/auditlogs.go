@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
@@ -30,11 +31,12 @@ import (
 	"google.golang.org/grpc/status"
 
 	"cloud.google.com/go/logging/logadmin"
-	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/grpc/codes"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 const (
@@ -64,7 +66,8 @@ func MakeAuditLogsOrDie(client *Client, config AuditLogsConfig) {
 	so = append(so, reconcilertestingv1.WithCloudAuditLogsSourceServiceAccount(config.ServiceAccountName))
 	eventsAuditLogs := reconcilertestingv1.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
-
+	// AuditLog source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.AuditlogsName, CloudAuditLogsSourceV1TypeMeta)
 }
 
@@ -79,7 +82,8 @@ func MakeAuditLogsV1beta1OrDie(client *Client, config AuditLogsConfig) {
 	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceServiceAccount(config.ServiceAccountName))
 	eventsAuditLogs := reconcilertestingv1beta1.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsV1beta1OrFail(eventsAuditLogs)
-
+	// AuditLog source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.AuditlogsName, CloudAuditLogsSourceV1beta1TypeMeta)
 }
 
@@ -94,7 +98,8 @@ func MakeAuditLogsV1alpha1OrDie(client *Client, config AuditLogsConfig) {
 	so = append(so, reconcilertestingv1alpha1.WithCloudAuditLogsSourceServiceAccount(config.ServiceAccountName))
 	eventsAuditLogs := reconcilertestingv1alpha1.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsV1alpha1OrFail(eventsAuditLogs)
-
+	// AuditLog source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.AuditlogsName, CloudAuditLogsSourceV1alpha1TypeMeta)
 }
 
