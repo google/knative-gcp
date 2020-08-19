@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"cloud.google.com/go/storage"
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
@@ -35,8 +36,9 @@ import (
 )
 
 const (
-	BrokerE2EDeliveryProbeEventType = "broker-e2e-delivery-probe"
-	CloudPubSubSourceProbeEventType = "cloudpubsubsource-probe"
+	BrokerE2EDeliveryProbeEventType  = "broker-e2e-delivery-probe"
+	CloudPubSubSourceProbeEventType  = "cloudpubsubsource-probe"
+	CloudStorageSourceProbeEventType = "cloudstoragesource-probe"
 )
 
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
@@ -55,6 +57,9 @@ type envConfig struct {
 
 	// Environment variable containing the CloudPubSubSource Topic ID that the event will be forwarded to by the probeHelper for the CloudPubSubSource probe
 	CloudPubSubSourceTopicID string `envconfig:"CLOUDPUBSUBSOURCE_TOPIC_ID" default:"cloudpubsubsource-topic"`
+
+	// Environment variable containing the CloudStorageSource Bucket ID that objects will be written to by the probeHelper for the CloudStorageSource probe
+	CloudStorageSourceBucketID string `envconfig:"CLOUDSTORAGESOURCE_BUCKET_ID" default:"cloudstoragesource-bucket"`
 
 	// Environment variable containing the port which listens to the probe to deliver the event
 	ProbePort int `envconfig:"PROBE_PORT" default:"8070"`
@@ -77,7 +82,7 @@ func (r *receivedEventsMap) createReceiverChannel(event cloudevents.Event) (chan
 	return receiverChannel, nil
 }
 
-func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, receivedEvents *receivedEventsMap, timeout int) cloudEventsFunc {
+func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap, timeout int) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var err error
 		var receiverChannel chan bool
@@ -105,6 +110,20 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 			if res := pubsubClient.Send(ctx, event); !cloudevents.IsACK(res) {
 				log.Printf("Error when publishing event %v to pubsub topic: %+v \n", event.ID(), res)
 				return res
+			}
+		case CloudStorageSourceProbeEventType:
+			receiverChannel, err = receivedEvents.createReceiverChannel(event)
+			if err != nil {
+				return cloudevents.NewReceipt(false, "Probe forwarding failed, could not create receiver channel: %v", err)
+			}
+			// The storage client writes an object named as the event ID.
+			obj := bucket.Object(event.ID())
+			w := obj.NewWriter(ctx)
+			if _, err := fmt.Fprintf(w, event.String()); err != nil {
+				log.Printf("Error when writing object %v to bucket: %+v \n", event.ID(), err)
+			}
+			if err := w.Close(); err != nil {
+				log.Printf("Error when closing storage writer for object %v: %+v \n", event.ID(), err)
 			}
 		default:
 			return cloudevents.NewReceipt(false, "Probe forwarding failed, unrecognized event type, %v", event.Type())
@@ -143,6 +162,12 @@ func receiveEvent(receivedEvents *receivedEventsMap) cloudEventsFunc {
 			var ok bool
 			if eventID, ok = msgData.Message.Attributes["ce-id"]; !ok {
 				log.Print("Failed to read CloudEvent ID from pubsub message")
+				return cloudevents.ResultACK
+			}
+		case schemasv1.CloudStorageObjectFinalizedEventType:
+			// The original event is written as an identifiable object to a bucket.
+			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &eventID); err != nil {
+				log.Printf("Failed to extract event ID from object name: %v", err)
 				return cloudevents.ResultACK
 			}
 		default:
@@ -192,6 +217,13 @@ func runProbeHelper() {
 		log.Fatal("Failed to create CloudEvents pubsub client, ", err)
 	}
 
+	// create cloud storage client
+	csc, err := storage.NewClient(ctx)
+	if err != nil {
+		log.Fatal("Failed to create cloud storage client, ", err)
+	}
+	bkt := csc.Bucket(env.CloudStorageSourceBucketID)
+
 	// create sender client
 	sp, err := cloudevents.NewHTTP(
 		cloudevents.WithPort(probePort),
@@ -223,7 +255,7 @@ func runProbeHelper() {
 	}
 	// start a goroutine to receive the event from probe and forward it appropriately
 	log.Println("Starting Probe Helper server...")
-	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, receivedEvents, timeout))
+	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, bkt, receivedEvents, timeout))
 	// Receive the event and return the result back to the probe
 	log.Println("Starting event receiver...")
 	rc.StartReceiver(ctx, receiveEvent(receivedEvents))

@@ -39,6 +39,8 @@ spec:
               value: "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"
             - name: CLOUDPUBSUBSOURCE_TOPIC_ID
               value: "cloudpubsubsource-topic"
+            - name: CLOUDSTORAGESOURCE_BUCKET_ID
+              value: "cloudstoragesource-bucket"
             - name: PROBE_PORT
               value: "8070"
             - name: RECEIVER_PORT
