@@ -27,7 +27,36 @@ import (
 
 // MakeHorizontalPodAutoscaler makes an HPA for the given arguments.
 func MakeHorizontalPodAutoscaler(deployment *appsv1.Deployment, args AutoscalingArgs) *hpav2beta2.HorizontalPodAutoscaler {
-	memQuantity := resource.MustParse(args.AvgMemoryUsage)
+	autoscalingMetrics := []hpav2beta2.MetricSpec{}
+	if args.AvgCPUUtilization != nil {
+		cpuMetric := hpav2beta2.MetricSpec{
+			Type: hpav2beta2.ResourceMetricSourceType,
+			Resource: &hpav2beta2.ResourceMetricSource{
+				Name: corev1.ResourceCPU,
+				Target: hpav2beta2.MetricTarget{
+					Type:               hpav2beta2.UtilizationMetricType,
+					AverageUtilization: args.AvgCPUUtilization,
+				},
+			},
+		}
+		autoscalingMetrics = append(autoscalingMetrics, cpuMetric)
+	}
+	if args.AvgMemoryUsage != nil {
+		if memQuantity, err := resource.ParseQuantity(*args.AvgMemoryUsage); err == nil {
+			memoryMetric := hpav2beta2.MetricSpec{
+				Type: hpav2beta2.ResourceMetricSourceType,
+				Resource: &hpav2beta2.ResourceMetricSource{
+					Name: corev1.ResourceMemory,
+					Target: hpav2beta2.MetricTarget{
+						Type:         hpav2beta2.AverageValueMetricType,
+						AverageValue: &memQuantity,
+					},
+				},
+			}
+			autoscalingMetrics = append(autoscalingMetrics, memoryMetric)
+		}
+	}
+
 	return &hpav2beta2.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            deployment.Name + "-hpa",
@@ -43,28 +72,7 @@ func MakeHorizontalPodAutoscaler(deployment *appsv1.Deployment, args Autoscaling
 			},
 			MaxReplicas: args.MaxReplicas,
 			MinReplicas: &args.MinReplicas,
-			Metrics: []hpav2beta2.MetricSpec{
-				{
-					Type: hpav2beta2.ResourceMetricSourceType,
-					Resource: &hpav2beta2.ResourceMetricSource{
-						Name: corev1.ResourceCPU,
-						Target: hpav2beta2.MetricTarget{
-							Type:               hpav2beta2.UtilizationMetricType,
-							AverageUtilization: &args.AvgCPUUtilization,
-						},
-					},
-				},
-				{
-					Type: hpav2beta2.ResourceMetricSourceType,
-					Resource: &hpav2beta2.ResourceMetricSource{
-						Name: corev1.ResourceMemory,
-						Target: hpav2beta2.MetricTarget{
-							Type:         hpav2beta2.AverageValueMetricType,
-							AverageValue: &memQuantity,
-						},
-					},
-				},
-			},
+			Metrics:     autoscalingMetrics,
 		},
 	}
 }

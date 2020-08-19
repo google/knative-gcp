@@ -19,8 +19,6 @@ package v1alpha1
 import (
 	"context"
 
-	resourceutil "github.com/google/knative-gcp/pkg/utils/resource"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"knative.dev/pkg/ptr"
 )
 
@@ -33,26 +31,23 @@ const (
 	// Here we only set half of the limit so that in case of surging memory
 	// usage, HPA could have enough time to kick in.
 	// See: https://github.com/google/knative-gcp/issues/1265
-	avgMemoryUsageFanout                   string  = "1500Mi"
-	avgMemoryUsageIngress                  string  = "700Mi"
-	avgMemoryUsageRetry                    string  = "1500Mi"
-	cpuRequestFanout                       string  = "1500m"
-	cpuRequestIngress                      string  = "1000m"
-	cpuRequestRetry                        string  = "1000m"
-	cpuLimitFanout                         string  = ""
-	cpuLimitIngress                        string  = ""
-	cpuLimitRetry                          string  = ""
-	memoryRequestFanout                    string  = "500Mi"
-	memoryRequestIngress                   string  = "500Mi"
-	memoryRequestRetry                     string  = "500Mi"
-	memoryLimitToRequestCoefficientFanout  float64 = 6.0
-	memoryLimitToRequestCoefficientIngress float64 = 2.0
-	memoryLimitToRequestCoefficientRetry   float64 = 6.0
-	targetMemoryUsageCoefficientFanout     float64 = 0.5
-	targetMemoryUsageCoefficientIngress    float64 = 0.7
-	targetMemoryUsageCoefficientRetry      float64 = 0.5
-	minReplicas                            int32   = 1
-	maxReplicas                            int32   = 10
+	avgMemoryUsageFanout  string = "1500Mi"
+	avgMemoryUsageIngress string = "700Mi"
+	avgMemoryUsageRetry   string = "1500Mi"
+	cpuRequestFanout      string = "1500m"
+	cpuRequestIngress     string = "1000m"
+	cpuRequestRetry       string = "1000m"
+	cpuLimitFanout        string = ""
+	cpuLimitIngress       string = ""
+	cpuLimitRetry         string = ""
+	memoryRequestFanout   string = "500Mi"
+	memoryRequestIngress  string = "500Mi"
+	memoryRequestRetry    string = "500Mi"
+	memoryLimitFanout     string = "3000Mi"
+	memoryLimitIngress    string = "1000Mi"
+	memoryLimitRetry      string = "3000Mi"
+	minReplicas           int32  = 1
+	maxReplicas           int32  = 10
 )
 
 // SetDefaults sets the default field values for a BrokerCell.
@@ -64,80 +59,44 @@ func (bc *BrokerCell) SetDefaults(ctx context.Context) {
 // SetDefaults sets the default field values for a BrokerCellSpec.
 func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 	// Fanout defaults
-	bcs.Components.Fanout.SetResourceDefaults(cpuRequestFanout, cpuLimitFanout, memoryRequestFanout, memoryLimitToRequestCoefficientFanout)
-	bcs.Components.Fanout.SetAutoScalingDefaults(targetMemoryUsageCoefficientFanout, avgCPUUtilizationFanout)
-	// Retry defaults
-	bcs.Components.Retry.SetResourceDefaults(cpuRequestRetry, cpuLimitRetry, memoryRequestRetry, memoryLimitToRequestCoefficientRetry)
-	bcs.Components.Retry.SetAutoScalingDefaults(targetMemoryUsageCoefficientRetry, avgCPUUtilizationRetry)
+	if bcs.Components.Fanout == nil {
+		bcs.Components.Fanout = makeComponent(cpuRequestFanout, cpuLimitFanout, memoryRequestFanout, memoryLimitFanout, avgCPUUtilizationFanout, avgMemoryUsageFanout)
+	}
+	bcs.Components.Fanout.setAutoScalingDefaults()
 	// Ingress defaults
-	bcs.Components.Ingress.SetResourceDefaults(cpuRequestIngress, cpuLimitIngress, memoryRequestIngress, memoryLimitToRequestCoefficientIngress)
-	bcs.Components.Ingress.SetAutoScalingDefaults(targetMemoryUsageCoefficientIngress, avgCPUUtilizationIngress)
+	if bcs.Components.Ingress == nil {
+		bcs.Components.Ingress = makeComponent(cpuRequestIngress, cpuLimitIngress, memoryRequestIngress, memoryLimitIngress, avgCPUUtilizationIngress, avgMemoryUsageIngress)
+	}
+	bcs.Components.Ingress.setAutoScalingDefaults()
+	// Retry defaults
+	if bcs.Components.Retry == nil {
+		bcs.Components.Retry = makeComponent(cpuRequestRetry, cpuLimitRetry, memoryRequestRetry, memoryLimitRetry, avgCPUUtilizationRetry, avgMemoryUsageRetry)
+	}
+	bcs.Components.Retry.setAutoScalingDefaults()
 }
 
-func (componentParams *ComponentParameters) SetResourceDefaults(defaultCPURequest, defaultCPULimit, defaultMemoryRequest string, memoryLimitToRequestCoefficient float64) {
-	componentParams.SetCPUDefaults(defaultCPURequest, defaultCPULimit)
-	componentParams.SetMemoryDefaults(memoryLimitToRequestCoefficient, defaultMemoryRequest)
-}
-
-// SetCPUDefaults sets the CPU consumption related default field values for ComponentParameters.
-func (componentParams *ComponentParameters) SetCPUDefaults(defaultCPURequest, defaultCPULimit string) {
-	isRequestSpecified := componentParams.Resources.Requests.CPU != nil
-	isLimitSpecified := componentParams.Resources.Limits.CPU != nil
-	if !isRequestSpecified && !isLimitSpecified {
-		componentParams.Resources.Requests.CPU = ptr.String(defaultCPURequest)
-		componentParams.Resources.Limits.CPU = ptr.String(defaultCPULimit)
-	} else if !isRequestSpecified {
-		componentParams.Resources.Requests.CPU = ptr.String(*componentParams.Resources.Limits.CPU)
+func makeComponent(cpuRequest, cpuLimit, memoryRequest, memoryLimit string, avgCPUUtilization int32, targetMemoryUsage string) *ComponentParameters {
+	return &ComponentParameters{
+		Resources: ResourceSpecification{
+			Requests: SystemResource{
+				CPU:    cpuRequest,
+				Memory: memoryRequest,
+			},
+			Limits: SystemResource{
+				CPU:    cpuLimit,
+				Memory: memoryLimit,
+			},
+		},
+		AvgCPUUtilization: ptr.Int32(avgCPUUtilization),
+		AvgMemoryUsage:    ptr.String(targetMemoryUsage),
 	}
 }
 
-// SetMemoryDefaults sets the memory consumption related default field values for ComponentParameters.
-func (componentParams *ComponentParameters) SetMemoryDefaults(memoryLimitToRequestCoefficient float64, defaultMemoryRequest string) {
-	isRequestSpecified := componentParams.Resources.Requests.Memory != nil
-	isLimitSpecified := componentParams.Resources.Limits.Memory != nil
-	autoSelectLimit := false
-	if !isRequestSpecified && !isLimitSpecified {
-		componentParams.Resources.Requests.Memory = ptr.String(defaultMemoryRequest)
-		autoSelectLimit = true
-	} else if !isRequestSpecified {
-		componentParams.Resources.Requests.Memory = ptr.String(*componentParams.Resources.Limits.Memory)
-	} else if !isLimitSpecified {
-		autoSelectLimit = true
-	}
-	if autoSelectLimit {
-		requestedMemoryQuantity, err := resource.ParseQuantity(*componentParams.Resources.Requests.Memory)
-		if err == nil {
-			autoSelectedLimit := resourceutil.MultiplyQuantity(requestedMemoryQuantity, memoryLimitToRequestCoefficient)
-			componentParams.Resources.Limits.Memory = ptr.String(autoSelectedLimit.String())
-		}
-	}
-}
-
-// SetAutoScalingDefaults sets the autoscaling-related default field values for ComponentParameters.
-func (componentParams *ComponentParameters) SetAutoScalingDefaults(targetMemoryUsageCoefficient float64, avgCPUUtilization int32) {
+func (componentParams *ComponentParameters) setAutoScalingDefaults() {
 	if componentParams.MinReplicas == nil {
 		componentParams.MinReplicas = ptr.Int32(minReplicas)
 	}
 	if componentParams.MaxReplicas == nil {
 		componentParams.MaxReplicas = ptr.Int32(maxReplicas)
-	}
-	if componentParams.AvgCPUUtilization == nil {
-		componentParams.AvgCPUUtilization = ptr.Int32(avgCPUUtilization)
-	}
-	// If target average consumption for the auto-scaler is not explicitly specified, default it
-	if componentParams.AvgMemoryUsage == nil {
-		anchorValue := ""
-		if componentParams.Resources.Limits.Memory != nil {
-			anchorValue = *componentParams.Resources.Limits.Memory
-		} else if componentParams.Resources.Requests.Memory != nil {
-			anchorValue = *componentParams.Resources.Requests.Memory
-		}
-		if anchorValue != "" {
-			memoryAnchorQuantity, err := resource.ParseQuantity(anchorValue)
-			if err == nil {
-				autoSelectedAvgMemoryUsage := resourceutil.MultiplyQuantity(memoryAnchorQuantity, targetMemoryUsageCoefficient)
-				componentParams.AvgMemoryUsage = ptr.String(autoSelectedAvgMemoryUsage.String())
-			}
-		}
 	}
 }

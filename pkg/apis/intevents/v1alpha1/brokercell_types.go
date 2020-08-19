@@ -70,8 +70,8 @@ var (
 
 // SystemResource specifies quantities for resources such as CPU and memory
 type SystemResource struct {
-	CPU    *string `json:"cpu,omitempty"`
-	Memory *string `json:"memory,omitempty"`
+	CPU    string `json:"cpu,omitempty"`
+	Memory string `json:"memory,omitempty"`
 }
 
 // ResourceSpecification defines requests and limits for the system resources
@@ -105,9 +105,9 @@ type ComponentParameters struct {
 // ComponentsParametersSpec specifies separate parameters for each component
 // of a BrokerCell.
 type ComponentsParametersSpec struct {
-	Fanout  ComponentParameters `json:"fanout,omitempty"`
-	Ingress ComponentParameters `json:"ingress,omitempty"`
-	Retry   ComponentParameters `json:"retry,omitempty"`
+	Fanout  *ComponentParameters `json:"fanout,omitempty"`
+	Ingress *ComponentParameters `json:"ingress,omitempty"`
+	Retry   *ComponentParameters `json:"retry,omitempty"`
 }
 
 // BrokerCellSpec defines the desired state of a Brokercell.
