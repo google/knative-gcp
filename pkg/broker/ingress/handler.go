@@ -134,8 +134,8 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 
 	event.SetExtension(EventArrivalTime, cev2.Timestamp{Time: time.Now()})
 
-	ctx, span := trace.StartSpan(ctx, kntracing.BrokerMessagingDestination(broker))
-	defer span.End()
+	span := trace.FromContext(ctx)
+	span.SetName(kntracing.BrokerMessagingDestination(broker))
 	if span.IsRecordingEvents() {
 		span.AddAttributes(
 			append(
