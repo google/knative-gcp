@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -43,7 +42,7 @@ func SmokeCloudStorageSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, 
 	defer lib.TearDown(client)
 
 	ctx := context.Background()
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
 	defer lib.DeleteBucket(ctx, t, bucketName)
@@ -76,7 +75,7 @@ func SmokeCloudStorageSourceWithDeletionTestImpl(t *testing.T, authConfig lib.Au
 	defer lib.TearDown(client)
 
 	ctx := context.Background()
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
 	defer lib.DeleteBucket(ctx, t, bucketName)
@@ -135,7 +134,7 @@ func SmokeCloudStorageSourceWithDeletionTestImpl(t *testing.T, authConfig lib.Au
 func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
 	t.Helper()
 	ctx := context.Background()
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
 	defer lib.DeleteBucket(ctx, t, bucketName)
@@ -201,8 +200,6 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 		t.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
 		time.Sleep(sleepTime)
 
-		// If we reach this point, the projectID should have been set.
-		projectID := os.Getenv(lib.ProwProjectKey)
 		f := map[string]interface{}{
 			"metric.type":                 lib.EventCountMetricType,
 			"resource.type":               lib.GlobalMetricResourceType,
@@ -219,7 +216,7 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 		filter := metrics.StringifyStackDriverFilter(f)
 		t.Logf("Filter expression: %s", filter)
 
-		actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
+		actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, project, filter)
 		if err != nil {
 			t.Fatalf("failed to get stackdriver event count metric: %v", err)
 		}

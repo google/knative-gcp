@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -109,7 +108,7 @@ func SmokeCloudPubSubSourceWithDeletionTestImpl(t *testing.T, authConfig lib.Aut
 // If assertMetrics is set to true, we also assert for StackDriver metrics.
 func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
 	t.Helper()
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 

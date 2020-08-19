@@ -19,7 +19,6 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -111,7 +110,7 @@ func CloudBuildSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 	defer lib.TearDown(client)
 
 	imageName := helpers.AppendRandomString("image")
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 	images := fmt.Sprintf("[%s]", lib.CloudBuildImage(project, imageName))
 
 	// Create a target Job to receive the events.

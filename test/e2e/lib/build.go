@@ -19,7 +19,6 @@ package lib
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 
 	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
@@ -84,7 +83,7 @@ func MakeBuildTargetJobOrDie(client *Client, images, targetName, eventType strin
 
 func BuildWithConfigFile(t *testing.T, imageName string) string {
 	ctx := context.Background()
-	project := os.Getenv(ProwProjectKey)
+	project := GetEnvOrFail(t, ProwProjectKey)
 	opt := option.WithQuotaProject(project)
 	client, err := cloudbuild.NewClient(ctx, opt)
 	if err != nil {

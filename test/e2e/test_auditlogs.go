@@ -19,7 +19,6 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -39,7 +38,7 @@ func SmokeCloudAuditLogsSourceTestHelper(t *testing.T, authConfig lib.AuthConfig
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
 	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
 	svcName := helpers.AppendRandomString(auditlogsName + "-event-display")
@@ -75,7 +74,7 @@ func SmokeCloudAuditLogsSourceWithDeletionTestImpl(t *testing.T, authConfig lib.
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
 	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
 	svcName := helpers.AppendRandomString(auditlogsName + "-event-display")
@@ -134,7 +133,7 @@ func SmokeCloudAuditLogsSourceWithDeletionTestImpl(t *testing.T, authConfig lib.
 }
 
 func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
 	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
 	targetName := helpers.AppendRandomString(auditlogsName + "-target")
