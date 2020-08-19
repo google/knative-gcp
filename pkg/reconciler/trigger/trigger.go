@@ -56,6 +56,14 @@ const (
 	defaultMaximumBackoff = 600 * time.Second
 )
 
+var (
+	// Default backoff policy settings. Should normally be configured through the
+	// br-delivery ConfigMap, but these values serve in case the intended
+	// defaulting fails.
+	defaultBackoffDelay  = "PT1S"
+	defaultBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
+)
+
 // Reconciler implements controller.Reconciler for Trigger resources.
 type Reconciler struct {
 	*reconciler.Base
@@ -113,6 +121,9 @@ func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1beta1.Trigger, b 
 		return err
 	}
 
+	if b.Spec.Delivery == nil {
+		b.SetDefaults(ctx)
+	}
 	if err := r.reconcileRetryTopicAndSubscription(ctx, t, b.Spec.Delivery); err != nil {
 		return err
 	}
@@ -221,15 +232,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	//trig.Status.TopicID = topic.ID()
 
 	retryPolicy := getPubsubRetryPolicy(deliverySpec)
-	if err != nil {
-		logger.Error("Error getting broker retry policy", zap.Error(err))
-		return err
-	}
 	deadLetterPolicy := getPubsubDeadLetterPolicy(projectID, deliverySpec)
-	if err != nil {
-		logger.Error("Error getting broker dead letter policy", zap.Error(err))
-		return err
-	}
 
 	// Check if PullSub exists, and if not, create it.
 	subID := resources.GenerateRetrySubscriptionName(trig)
@@ -255,22 +258,13 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 // getPubsubRetryPolicy gets the eventing retry policy from the Broker delivery
 // spec and translates it to a pubsub retry policy.
 func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryPolicy {
-	var backoffDelay *string
-	var backoffPolicy *eventingduckv1beta1.BackoffPolicyType
-	if spec == nil {
-		backoffDelay = &brokerv1beta1.DefaultBackoffDelay
-		backoffPolicy = &brokerv1beta1.DefaultBackoffPolicy
-	} else {
-		backoffDelay = spec.BackoffDelay
-		backoffPolicy = spec.BackoffPolicy
-	}
 	// The Broker delivery spec is translated to a pubsub retry policy in the
 	// manner defined in the following post:
 	// https://github.com/google/knative-gcp/issues/1392#issuecomment-655617873
-	p, _ := period.Parse(*backoffDelay)
+	p, _ := period.Parse(*spec.BackoffDelay)
 	minimumBackoff, _ := p.Duration()
 	var maximumBackoff time.Duration
-	switch *backoffPolicy {
+	switch *spec.BackoffPolicy {
 	case eventingduckv1beta1.BackoffPolicyLinear:
 		maximumBackoff = minimumBackoff
 	case eventingduckv1beta1.BackoffPolicyExponential:
@@ -285,18 +279,12 @@ func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryP
 // getPubsubDeadLetterPolicy gets the eventing dead letter policy from the
 // Broker delivery spec and translates it to a pubsub dead letter policy.
 func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) *pubsub.DeadLetterPolicy {
-	if spec == nil || spec.DeadLetterSink == nil {
+	if spec.DeadLetterSink == nil {
 		return nil
-	}
-	var retry *int32
-	if spec.Retry == nil {
-		retry = &brokerv1beta1.DefaultRetry
-	} else {
-		retry = spec.Retry
 	}
 	// Translate to the pubsub dead letter policy format.
 	return &pubsub.DeadLetterPolicy{
-		MaxDeliveryAttempts: int(*retry),
+		MaxDeliveryAttempts: int(*spec.Retry),
 		DeadLetterTopic:     fmt.Sprintf("projects/%s/topics/%s", projectID, spec.DeadLetterSink.URI.Host),
 	}
 }

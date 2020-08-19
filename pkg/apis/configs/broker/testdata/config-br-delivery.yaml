@@ -1,0 +1,83 @@
+# Copyright 2020 The Knative Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-br-delivery
+  namespace: cloud-run-events
+  annotations:
+    knative.dev/example-checksum: "8a0f7eaf"
+data:
+  default-br-delivery-config: |
+    clusterDefaults:
+      backoffDelay: PT1S
+      backoffPolicy: exponential
+  _example: |
+    ################################
+    #                              #
+    #    EXAMPLE CONFIGURATION     #
+    #                              #
+    ################################
+
+    # This block is not actually functional configuration,
+    # but serves to illustrate the available configuration
+    # options and document them in a way that is accessible
+    # to users that `kubectl edit` this config map.
+    #
+    # These sample configuration options may be copied out of
+    # this example block and unindented to be in the data block
+    # to actually change the configuration.
+
+    # default-br-delivery-config is the configuration for determining the default
+    # Broker delivery settings to apply on all GCP Brokers created within a scope.
+    #
+    # When determing the defaults to use for a custom object in a specific
+    # namespace, the precedence rules are:
+    # If the Broker's spec specifies the delivery settings to use, use that.
+    # If not and that namespace is in the `namespaceDefaults` key, then use the
+    # defaults specified there. If not, then use the defaults specified in
+    # `clusterDefaults`.
+    default-br-delivery-config: |
+      # clusterDefaults are the defaults to apply to every namespace in the
+      # cluster, except those in the `namespaceDefaults` sibling key.
+      clusterDefaults:
+        # backoffDelay is the delay before retrying.
+        # More information on Duration format:
+        #  - https://www.iso.org/iso-8601-date-and-time-format.html
+        #  - https://en.wikipedia.org/wiki/ISO_8601
+        #
+        # For linear policy, backoff delay is the time interval between retries.
+        # For exponential policy, backoff delay is backoffDelay*2^<numberOfRetries>.
+        backoffDelay: PT1S
+        # backoffPolicy is the retry backoff policy (linear, exponential).
+        backoffPolicy: exponential
+        # deadLetterSink is the sink receiving event that could not be sent to
+        # a destination.
+        deadLetterSink:
+          # uri is a URI with scheme pubsub indicating the dead letter pubsub topic ID.
+          uri: pubsub://cluster-default-dead-letter-topic-id
+        # retry is the minimum number of retries the sender should attempt when
+        # sending an event before moving it to the dead letter sink.
+        retry: 10
+      # namespaceDefaults is a map from namespace name to default configuration.
+      # The default configuration is exactly the same as the one defined in
+      # the `clusterDefaults` sibling key.
+      namespaceDefaults:
+        customized-ns:
+          backoffDelay: PT5S
+          backoffPolicy: linear
+          deadLetterSink:
+            uri: pubsub://ns-default-dead-letter-topic-id
+          retry: 20

@@ -28,8 +28,10 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -57,6 +59,11 @@ const (
 )
 
 var (
+	backoffPolicy           = eventingduckv1beta1.BackoffPolicyLinear
+	backoffDelay            = "PT5S"
+	deadLetterTopicID       = "test-dead-letter-topic-id"
+	retry             int32 = 3
+
 	testKey = fmt.Sprintf("%s/%s", testNS, brokerName)
 
 	brokerFinalizerUpdatedEvent = Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`)
@@ -68,6 +75,17 @@ var (
 		Scheme: "http",
 		Host:   fmt.Sprintf("%s.%s.svc.%s", ingressServiceName, systemNS, utils.GetClusterDomainName()),
 		Path:   ingress.BrokerPath(testNS, brokerName),
+	}
+	brokerDeliverySpec = &eventingduckv1beta1.DeliverySpec{
+		BackoffDelay:  &backoffDelay,
+		BackoffPolicy: &backoffPolicy,
+		Retry:         &retry,
+		DeadLetterSink: &duckv1.Destination{
+			URI: &apis.URL{
+				Scheme: "pubsub",
+				Host:   deadLetterTopicID,
+			},
+		},
 	}
 )
 
@@ -137,6 +155,7 @@ func TestAllCases(t *testing.T) {
 			NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerSetDefaults),
 			NewBrokerCell(resources.DefaultBrokerCellName, systemNS,
 				WithBrokerCellReady,
@@ -146,6 +165,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerReadyURI(brokerAddress),
 				WithBrokerSetDefaults,
 			),
@@ -173,6 +193,7 @@ func TestAllCases(t *testing.T) {
 			NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerSetDefaults,
 			),
 			NewBrokerCell(resources.DefaultBrokerCellName, systemNS,
@@ -184,6 +205,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerReadyURI(brokerAddress),
 				WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
 				WithBrokerSetDefaults,
@@ -212,6 +234,7 @@ func TestAllCases(t *testing.T) {
 			NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerSetDefaults,
 			),
 		},
@@ -223,6 +246,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerv1beta1.BrokerClass),
 					WithBrokerUID(testUID),
+					WithBrokerDeliverySpec(brokerDeliverySpec),
 					WithInitBrokerConditions,
 					WithBrokerBrokerCellFailed("BrokerCellCreationFailed", "Failed to create knative-testing/default"),
 					WithBrokerSetDefaults,
@@ -246,6 +270,7 @@ func TestAllCases(t *testing.T) {
 			NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerSetDefaults,
 			),
 		},
@@ -254,6 +279,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerv1beta1.BrokerClass),
 					WithBrokerUID(testUID),
+					WithBrokerDeliverySpec(brokerDeliverySpec),
 					WithBrokerReadyURI(brokerAddress),
 					WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
 					WithBrokerSetDefaults,

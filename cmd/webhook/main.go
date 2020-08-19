@@ -21,6 +21,7 @@ import (
 	"log"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/configs/broker"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/events"
 	eventsv1 "github.com/google/knative-gcp/pkg/apis/events/v1"
@@ -88,16 +89,16 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 
 type defaultingAdmissionController func(context.Context, configmap.Watcher) *controller.Impl
 
-func newDefaultingAdmissionConstructor(gcpas *gcpauth.StoreSingleton) defaultingAdmissionController {
+func newDefaultingAdmissionConstructor(brokers *broker.StoreSingleton, gcpas *gcpauth.StoreSingleton) defaultingAdmissionController {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-		return newDefaultingAdmissionController(ctx, cmw, gcpas.Store(ctx, cmw))
+		return newDefaultingAdmissionController(ctx, cmw, brokers.Store(ctx, cmw), gcpas.Store(ctx, cmw))
 	}
 }
 
-func newDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher, gcpas *gcpauth.Store) *controller.Impl {
+func newDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher, brokers *broker.Store, gcpas *gcpauth.Store) *controller.Impl {
 	// Decorate contexts with the current state of the config.
 	ctxFunc := func(ctx context.Context) context.Context {
-		return gcpas.ToContext(ctx)
+		return brokers.ToContext(gcpas.ToContext(ctx))
 	}
 
 	return defaulting.NewAdmissionController(ctx,
@@ -121,16 +122,16 @@ func newDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher
 
 type validationController func(context.Context, configmap.Watcher) *controller.Impl
 
-func newValidationConstructor(gcpas *gcpauth.StoreSingleton) validationController {
+func newValidationConstructor(brokers *broker.StoreSingleton, gcpas *gcpauth.StoreSingleton) validationController {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-		return newValidationAdmissionController(ctx, cmw, gcpas.Store(ctx, cmw))
+		return newValidationAdmissionController(ctx, cmw, brokers.Store(ctx, cmw), gcpas.Store(ctx, cmw))
 	}
 }
 
-func newValidationAdmissionController(ctx context.Context, cmw configmap.Watcher, gcpas *gcpauth.Store) *controller.Impl {
+func newValidationAdmissionController(ctx context.Context, cmw configmap.Watcher, brokers *broker.Store, gcpas *gcpauth.Store) *controller.Impl {
 	// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
 	ctxFunc := func(ctx context.Context) context.Context {
-		return gcpas.ToContext(ctx)
+		return brokers.ToContext(gcpas.ToContext(ctx))
 	}
 
 	return validation.NewAdmissionController(ctx,
@@ -167,19 +168,20 @@ func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *co
 			logging.ConfigMapName():        logging.NewConfigFromConfigMap,
 			leaderelection.ConfigMapName(): leaderelection.NewConfigFromConfigMap,
 			gcpauth.ConfigMapName():        gcpauth.NewDefaultsConfigFromConfigMap,
+			broker.ConfigMapName():         broker.NewDefaultsConfigFromConfigMap,
 		},
 	)
 }
 
 type conversionController func(context.Context, configmap.Watcher) *controller.Impl
 
-func newConversionConstructor(gcpas *gcpauth.StoreSingleton) conversionController {
+func newConversionConstructor(brokers *broker.StoreSingleton, gcpas *gcpauth.StoreSingleton) conversionController {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-		return newConversionController(ctx, cmw, gcpas.Store(ctx, cmw))
+		return newConversionController(ctx, cmw, brokers.Store(ctx, cmw), gcpas.Store(ctx, cmw))
 	}
 }
 
-func newConversionController(ctx context.Context, _ configmap.Watcher, gcpas *gcpauth.Store) *controller.Impl {
+func newConversionController(ctx context.Context, cmw configmap.Watcher, brokers *broker.Store, gcpas *gcpauth.Store) *controller.Impl {
 	var (
 		eventsv1alpha1_    = eventsv1alpha1.SchemeGroupVersion.Version
 		eventsv1beta1_     = eventsv1beta1.SchemeGroupVersion.Version
@@ -193,7 +195,7 @@ func newConversionController(ctx context.Context, _ configmap.Watcher, gcpas *gc
 
 	// Decorate contexts with the current state of the config.
 	ctxFunc := func(ctx context.Context) context.Context {
-		return gcpas.ToContext(ctx)
+		return brokers.ToContext(gcpas.ToContext(ctx))
 	}
 
 	return conversion.NewConversionController(ctx,
