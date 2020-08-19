@@ -42,9 +42,9 @@ func TestBrokerCell_Validate(t *testing.T) {
 			brokerCell: BrokerCell{
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidMemoryRequest := MakeDefaultBrokerCellSpec()
-					testComponent := &brokerCellWithInvalidMemoryRequest.Components.Ingress
-					testComponent.Resources.Limits.Memory = ptr.String("2000Mi")
-					testComponent.Resources.Requests.Memory = ptr.String("2001Mi")
+					testComponent := brokerCellWithInvalidMemoryRequest.Components.Ingress
+					testComponent.Resources.Limits.Memory = "2000Mi"
+					testComponent.Resources.Requests.Memory = "2001Mi"
 					return brokerCellWithInvalidMemoryRequest
 				}()),
 			},
@@ -61,9 +61,8 @@ func TestBrokerCell_Validate(t *testing.T) {
 			brokerCell: BrokerCell{
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidMemoryRequest := MakeDefaultBrokerCellSpec()
-					testComponent := &brokerCellWithInvalidMemoryRequest.Components.Ingress
-					testComponent.Resources.Requests.Memory = ptr.String("1000Mi")
-					testComponent.Resources.Limits.Memory = ptr.String("1000Mi")
+					testComponent := brokerCellWithInvalidMemoryRequest.Components.Ingress
+					testComponent.Resources.Limits.Memory = "1000Mi"
 					testComponent.AvgMemoryUsage = ptr.String("1001Mi")
 					return brokerCellWithInvalidMemoryRequest
 				}()),
@@ -80,9 +79,9 @@ func TestBrokerCell_Validate(t *testing.T) {
 			brokerCell: BrokerCell{
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidCPURequest := MakeDefaultBrokerCellSpec()
-					testComponent := &brokerCellWithInvalidCPURequest.Components.Ingress
-					testComponent.Resources.Limits.CPU = ptr.String("1000m")
-					testComponent.Resources.Requests.CPU = ptr.String("1001m")
+					testComponent := brokerCellWithInvalidCPURequest.Components.Ingress
+					testComponent.Resources.Limits.CPU = "1000m"
+					testComponent.Resources.Requests.CPU = "1001m"
 					return brokerCellWithInvalidCPURequest
 				}()),
 			},
@@ -95,15 +94,34 @@ func TestBrokerCell_Validate(t *testing.T) {
 
 			}(),
 		}, {
+			name: "At least one of the autoscaling metrics should be specified",
+			brokerCell: BrokerCell{
+				Spec: (func() BrokerCellSpec {
+					brokerCellWithInvalidCPURequest := MakeDefaultBrokerCellSpec()
+					testComponent := brokerCellWithInvalidCPURequest.Components.Ingress
+					testComponent.AvgCPUUtilization = nil
+					testComponent.AvgMemoryUsage = nil
+					return brokerCellWithInvalidCPURequest
+				}()),
+			},
+			want: func() *apis.FieldError {
+				var fieldErrors *apis.FieldError
+				fe := apis.ErrInvalidValue(nil, "spec.components.ingress")
+				fe.Details = "At least one of the autoscaling metrics (AvgCPUUtilization, AvgMemoryUsage) should be specified"
+				fieldErrors = fieldErrors.Also(fe)
+				return fieldErrors
+
+			}(),
+		}, {
 			name: "Invalid quantities are catched",
 			brokerCell: BrokerCell{
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidMemoryLimit := MakeDefaultBrokerCellSpec()
-					testComponent := &brokerCellWithInvalidMemoryLimit.Components.Ingress
-					testComponent.Resources.Requests.CPU = ptr.String("invalid_requests_cpu")
-					testComponent.Resources.Limits.CPU = ptr.String("invalid_limits_cpu")
-					testComponent.Resources.Requests.Memory = ptr.String("invalid_requests_memory")
-					testComponent.Resources.Limits.Memory = ptr.String("invalid_limits_memory")
+					testComponent := brokerCellWithInvalidMemoryLimit.Components.Ingress
+					testComponent.Resources.Requests.CPU = "invalid_requests_cpu"
+					testComponent.Resources.Limits.CPU = "invalid_limits_cpu"
+					testComponent.Resources.Requests.Memory = "invalid_requests_memory"
+					testComponent.Resources.Limits.Memory = "invalid_limits_memory"
 					testComponent.AvgMemoryUsage = ptr.String("invalid_value_AvgMemoryUsage")
 					return brokerCellWithInvalidMemoryLimit
 				}()),
@@ -134,7 +152,7 @@ func TestBrokerCell_Validate(t *testing.T) {
 			brokerCell: BrokerCell{
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidMinReplicas := MakeDefaultBrokerCellSpec()
-					testComponent := &brokerCellWithInvalidMinReplicas.Components.Ingress
+					testComponent := brokerCellWithInvalidMinReplicas.Components.Ingress
 					testComponent.MinReplicas = ptr.Int32(11)
 					testComponent.MaxReplicas = ptr.Int32(10)
 					return brokerCellWithInvalidMinReplicas
@@ -154,8 +172,8 @@ func TestBrokerCell_Validate(t *testing.T) {
 			brokerCell: BrokerCell{
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidMemoryLimit := MakeDefaultBrokerCellSpec()
-					testComponent := &brokerCellWithInvalidMemoryLimit.Components.Ingress
-					testComponent.Resources.Limits.CPU = ptr.String("")
+					testComponent := brokerCellWithInvalidMemoryLimit.Components.Ingress
+					testComponent.Resources.Limits.CPU = ""
 					return brokerCellWithInvalidMemoryLimit
 				}()),
 			},
