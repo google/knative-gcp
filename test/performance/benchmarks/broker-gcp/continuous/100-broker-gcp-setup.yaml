@@ -34,13 +34,13 @@ spec:
   components:
     fanout:
       minReplicas: 1
-      maxReplicas: 2
+      maxReplicas: 1
     ingress:
       minReplicas: 1
-      maxReplicas: 2
+      maxReplicas: 1
     retry:
       minReplicas: 1
-      maxReplicas: 2
+      maxReplicas: 1
 
 ---
 
