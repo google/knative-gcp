@@ -13,10 +13,7 @@ event to the broker and attaching a trigger to it and viewing those metrics with
 
 ## Setup
 
-1. Follow the instructions here to [Access Event Traces in Cloud Trace](../../how-to/cloud-trace.md).
-
-2. In cloud console, navigate to Monitoring -> Metrics explorer. Enable the montoring metrics API andd add your project
-to a workspace (or create a new workspace).
+1. Follow the instructions here to [Access Metrics in Stackdriver](../../how-to/metrics.md).
 
 ## Generating metrics
 
