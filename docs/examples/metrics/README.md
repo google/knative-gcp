@@ -2,8 +2,8 @@
 
 ## Overview
 
-This sample shows how to configure and view `metrics`. This includes setting up metrics, generating them by sending an
-event to the broker and attaching a trigger to it and viewing those metrics with common filters in stackdriver.
+This sample shows how to configure and view `metrics`. This includes setting up metrics, generating them by sending
+events to a broker with an attached trigger and viewing those metrics with common filters in Stackdriver.
 
 ## Prerequisites
 
@@ -17,20 +17,22 @@ event to the broker and attaching a trigger to it and viewing those metrics with
 
 ## Generating metrics
 
-1. Create a namespace
+This example will run everything in the cloud-run-events-example namespace.
+
+1. Create the namespace
 
    ```shell
    kubectl apply -f namespace.yaml
    ```
 
-2. Deploy a broker and event publisher
+2. Deploy a Broker and event publisher
 
    ```shell
    kubectl apply -f broker.yaml
    kubectl apply -f event-publisher.yaml
    ```
 
-3. Verify that the broker is ready
+3. Verify that the Broker is ready
 
     ```shell
     kubectl -n cloud-run-events-example get broker test-broker
@@ -41,14 +43,14 @@ event to the broker and attaching a trigger to it and viewing those metrics with
    test-broker   True             http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   9s
    ```
 
-4. Deploy a trigger and event consumer
+4. Deploy a Trigger and event consumer
 
    ```shell
    kubectl apply -f trigger.yaml
    kubectl apply -f event-consumer.yaml
    ```
 
-5. Verify that the trigger is ready
+5. Verify that the Trigger is ready
 
     ```shell
     kubectl -n cloud-run-events-example get trigger hello-display
@@ -59,7 +61,7 @@ event to the broker and attaching a trigger to it and viewing those metrics with
     hello-display     True             test-broker   http://hello-display.cloud-run-events-example.svc.cluster.local/     4s
     ```
 
-6. ##### Send events to broker:
+6. ##### Send events to the Broker:
     SSH into the event publisher Pod by running the following command:
 
     ```shell

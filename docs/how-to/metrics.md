@@ -2,8 +2,9 @@
 
 ## Enable the Metrics API
 
-In cloud console, navigate to Monitoring -> Metrics explorer. Enable the montoring metrics API and add your project
-to a workspace (or create a new workspace).
+In cloud console, navigate to
+[`Monitoring > Metrics explorer`](https://console.cloud.google.com/monitoring/metrics-explorer). Enable the monitoring
+metrics API and add your project to a workspace (or create a new workspace).
 
 ## Add the Monitoring Metric Writer Role to the Dataplane Service Account
 
@@ -43,4 +44,3 @@ see metrics. An example query would look like:
 
 A graphical view should be displayed on canvas as the query result. The graph can be viewed in different formats like
 Line, Stacked Bar, Stacked Area, Heatmap, depending on the aggregator.
-q
