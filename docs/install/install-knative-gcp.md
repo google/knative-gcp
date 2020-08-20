@@ -57,8 +57,8 @@ export KO_DOCKER_REPO='gcr.io/my-gcloud-project-id'
 
 1. Install [Knative](https://knative.dev/docs/install/). Set up
    [Serving](https://knative.dev/docs/serving/) and
-   [Eventing](https://knative.dev/docs/eventing/). Both are required for now 
-   to make knative-gcp work.
+   [Eventing](https://knative.dev/docs/eventing/). Both are required for now to
+   make knative-gcp work.
 
 ## Install the Knative-GCP Constructs
 
