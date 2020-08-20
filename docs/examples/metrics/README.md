@@ -47,14 +47,14 @@ to a workspace (or create a new workspace).
 4. Deploy a trigger and event consumer
 
    ```shell
-   kubectl apply -f triggers.yaml
-   kubectl apply -f event-consumers.yaml
+   kubectl apply -f trigger.yaml
+   kubectl apply -f event-consumer.yaml
    ```
 
 5. Verify that the trigger is ready
 
     ```shell
-    kubectl -n cloud-run-events-example get triggers
+    kubectl -n cloud-run-events-example get trigger hello-display
     ```
 
     ```shell
@@ -63,7 +63,7 @@ to a workspace (or create a new workspace).
     ```
 
 6. ##### Send events to broker:
-    SSH into the event publisher pod by running the following command:
+    SSH into the event publisher Pod by running the following command:
 
     ```shell
     kubectl -n cloud-run-events-example attach curl -it
@@ -92,8 +92,8 @@ to a workspace (or create a new workspace).
     ```
 
 ## Viewing metrics
-In the metrics explorer in stackdriver, build the query to see metrics. There are multiple options to view the results
-of queries - Line, Stacked Bar, Stacked Area, Heatmap.
+In the [metrics explorer](https://console.cloud.google.com/monitoring/metrics-explorer) in Stackdriver, build the query
+to see metrics. There are multiple options to view the results of queries - Line, Stacked Bar, Stacked Area, Heatmap.
 
 #### Sample queries:
 
@@ -118,8 +118,8 @@ of queries - Line, Stacked Bar, Stacked Area, Heatmap.
 ## Cleaning up
 ```shell
 kubectl delete -f event-publisher.yaml
-kubectl delete -f event-consumers.yaml
-kubectl delete -f triggers.yaml
+kubectl delete -f event-consumer.yaml
+kubectl delete -f trigger.yaml
 kubectl delete -f broker.yaml
 kubectl delete -f namespace.yaml
 ```
