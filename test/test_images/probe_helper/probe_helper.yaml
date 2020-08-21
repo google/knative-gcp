@@ -46,10 +46,10 @@ spec:
             - name: TIMEOUT_MINS
               value: "30"
           volumeMounts:
-          - name: google-cloud-key
+          - name: probe-helper-key
             mountPath: /var/secrets/google
       volumes:
-      - name: google-cloud-key
+      - name: probe-helper-key
         secret:
-          secretName: google-cloud-key
+          secretName: probe-helper-key
           optional: true

@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"sync"
 	"time"
 
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
@@ -32,7 +33,17 @@ import (
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
+const (
+	BrokerE2EDeliveryProbeEventType = "broker-e2e-delivery-probe"
+	CloudPubSubSourceProbeEventType = "cloudpubsubsource-probe"
+)
+
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
+
+type receivedEventsMap struct {
+	sync.RWMutex
+	channels map[string]chan bool
+}
 
 type envConfig struct {
 	// Environment variable containing the project ID
@@ -54,46 +65,60 @@ type envConfig struct {
 	Timeout int `envconfig:"TIMEOUT_MINS" default:"30"`
 }
 
-func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, receivedEvents map[string]chan bool, timeout int) cloudEventsFunc {
+func (r *receivedEventsMap) createReceiverChannel(event cloudevents.Event) chan bool {
+	receiverChannel := make(chan bool, 1)
+	r.Lock()
+	r.channels[event.ID()] = receiverChannel
+	r.Unlock()
+	return receiverChannel
+}
+
+func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, receivedEvents *receivedEventsMap, timeout int) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
+		var receiverChannel chan bool
 		log.Printf("Received probe request: %+v \n", event)
-		eventID := event.ID()
-		receivedEvents[eventID] = make(chan bool, 1)
+
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
 		defer cancel()
 		switch event.Type() {
-		case "broker-e2e-delivery-probe":
+		case BrokerE2EDeliveryProbeEventType:
+			receiverChannel = receivedEvents.createReceiverChannel(event)
 			// The broker client forwards the event to the broker.
 			if res := brokerClient.Send(ctx, event); !cloudevents.IsACK(res) {
-				log.Printf("Error when sending event %v to broker: %+v \n", eventID, res)
+				log.Printf("Error when sending event %v to broker: %+v \n", event.ID(), res)
 				return res
 			}
-		case "cloudpubsubsource-probe":
+		case CloudPubSubSourceProbeEventType:
+			receiverChannel = receivedEvents.createReceiverChannel(event)
 			// The pubsub client forwards the event as a message to a pubsub topic.
 			if res := pubsubClient.Send(ctx, event); !cloudevents.IsACK(res) {
-				log.Printf("Error when publishing event %v to pubsub topic: %+v \n", eventID, res)
+				log.Printf("Error when publishing event %v to pubsub topic: %+v \n", event.ID(), res)
 				return res
 			}
 		default:
-			return cloudevents.NewReceipt(false, "probe forwarding failed, unrecognized event type, %v", event.Type())
+			return cloudevents.NewReceipt(false, "Probe forwarding failed, unrecognized event type, %v", event.Type())
 		}
+
 		select {
-		case <-receivedEvents[eventID]:
-			delete(receivedEvents, eventID)
+		case <-receiverChannel:
+			receivedEvents.Lock()
+			delete(receivedEvents.channels, event.ID())
+			receivedEvents.Unlock()
 			return cloudevents.ResultACK
 		case <-ctx.Done():
-			log.Printf("Timed out waiting for the event to be sent back: %v \n", eventID)
-			return cloudevents.NewReceipt(false, "timed out waiting for event to be sent back")
+			log.Printf("Timed out waiting for the event to be sent back: %v \n", event.ID())
+			return cloudevents.NewReceipt(false, "Timed out waiting for event to be sent back")
 		}
 	}
 }
 
-func receiveEvent(receivedEvents map[string]chan bool) cloudEventsFunc {
+func receiveEvent(receivedEvents *receivedEventsMap) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
-		log.Printf("Received event: %+v \n", event)
 		var eventID string
+
+		log.Printf("Received event: %+v \n", event)
 		switch event.Type() {
-		case "broker-e2e-delivery-probe":
+		case BrokerE2EDeliveryProbeEventType:
 			// The event is received as sent.
 			eventID = event.ID()
 		case schemasv1.CloudPubSubMessagePublishedEventType:
@@ -113,12 +138,15 @@ func receiveEvent(receivedEvents map[string]chan bool) cloudEventsFunc {
 			log.Printf("Unrecognized event type: %v", event.Type())
 			return cloudevents.ResultACK
 		}
-		ch, ok := receivedEvents[eventID]
+
+		receivedEvents.RLock()
+		defer receivedEvents.RUnlock()
+		receiver, ok := receivedEvents.channels[eventID]
 		if !ok {
 			log.Printf("This event is not received by the probe receiver client: %v \n", eventID)
 			return cloudevents.ResultACK
 		}
-		ch <- true
+		receiver <- true
 		return cloudevents.ResultACK
 	}
 }
@@ -140,6 +168,7 @@ func runProbeHelper() {
 	timeout := env.Timeout
 	ctx := signals.NewContext()
 	log.Printf("Running Probe Helper with env config: %+v \n", env)
+
 	// create pubsub client
 	pst, err := cepubsub.New(ctx,
 		cepubsub.WithProjectID(projectID),
@@ -151,8 +180,12 @@ func runProbeHelper() {
 	if err != nil {
 		log.Fatal("Failed to create CloudEvents pubsub client, ", err)
 	}
+
 	// create sender client
-	sp, err := cloudevents.NewHTTP(cloudevents.WithPort(probePort), cloudevents.WithTarget(brokerURL))
+	sp, err := cloudevents.NewHTTP(
+		cloudevents.WithPort(probePort),
+		cloudevents.WithTarget(brokerURL),
+	)
 	if err != nil {
 		log.Fatalf("Failed to create sender transport, %v", err)
 	}
@@ -160,8 +193,11 @@ func runProbeHelper() {
 	if err != nil {
 		log.Fatal("Failed to create sender client, ", err)
 	}
+
 	// create receiver client
-	rp, err := cloudevents.NewHTTP(cloudevents.WithPort(receiverPort))
+	rp, err := cloudevents.NewHTTP(
+		cloudevents.WithPort(receiverPort),
+	)
 	if err != nil {
 		log.Fatalf("Failed to create receiver transport, %v", err)
 	}
@@ -169,8 +205,11 @@ func runProbeHelper() {
 	if err != nil {
 		log.Fatal("Failed to create receiver client, ", err)
 	}
+
 	// make a map to store the channel for each event
-	receivedEvents := make(map[string]chan bool)
+	receivedEvents := &receivedEventsMap{
+		channels: make(map[string]chan bool),
+	}
 	// start a goroutine to receive the event from probe and forward it appropriately
 	log.Println("Starting Probe Helper server...")
 	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, receivedEvents, timeout))
