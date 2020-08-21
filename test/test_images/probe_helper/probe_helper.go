@@ -16,6 +16,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -65,16 +66,20 @@ type envConfig struct {
 	Timeout int `envconfig:"TIMEOUT_MINS" default:"30"`
 }
 
-func (r *receivedEventsMap) createReceiverChannel(event cloudevents.Event) chan bool {
+func (r *receivedEventsMap) createReceiverChannel(event cloudevents.Event) (chan bool, error) {
 	receiverChannel := make(chan bool, 1)
 	r.Lock()
+	defer r.Unlock()
+	if _, ok := r.channels[event.ID()]; ok {
+		return nil, fmt.Errorf("Receiver channel already exists for event %v", event.ID())
+	}
 	r.channels[event.ID()] = receiverChannel
-	r.Unlock()
-	return receiverChannel
+	return receiverChannel, nil
 }
 
 func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, receivedEvents *receivedEventsMap, timeout int) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
+		var err error
 		var receiverChannel chan bool
 		log.Printf("Received probe request: %+v \n", event)
 
@@ -82,14 +87,20 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 		defer cancel()
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
-			receiverChannel = receivedEvents.createReceiverChannel(event)
+			receiverChannel, err = receivedEvents.createReceiverChannel(event)
+			if err != nil {
+				return cloudevents.NewReceipt(false, "Probe forwarding failed, could not create receiver channel: %v", err)
+			}
 			// The broker client forwards the event to the broker.
 			if res := brokerClient.Send(ctx, event); !cloudevents.IsACK(res) {
 				log.Printf("Error when sending event %v to broker: %+v \n", event.ID(), res)
 				return res
 			}
 		case CloudPubSubSourceProbeEventType:
-			receiverChannel = receivedEvents.createReceiverChannel(event)
+			receiverChannel, err = receivedEvents.createReceiverChannel(event)
+			if err != nil {
+				return cloudevents.NewReceipt(false, "Probe forwarding failed, could not create receiver channel: %v", err)
+			}
 			// The pubsub client forwards the event as a message to a pubsub topic.
 			if res := pubsubClient.Send(ctx, event); !cloudevents.IsACK(res) {
 				log.Printf("Error when publishing event %v to pubsub topic: %+v \n", event.ID(), res)
