@@ -8,12 +8,12 @@ As existing components use more resources and as we add more new components, mor
 are required to run Kubernetes. This [summary](https://github.com/google/knative-gcp/issues/1502#issuecomment-664793074)  
 illustrates the broker components may at risk to be OOMKilled/evicted/preempted when node is over-committed. 
 
-To protest broker components from eviction or preemption, we would like to give them higher scheduling/eviction priority.
+To protect broker components from eviction or preemption, we would like to give them higher scheduling/eviction priority.
 However, this would put other applications at risk in the case of insufficient resource. To balance the needs, 
 we have a scaling mechanism for broker components, and an on-going work to provide configurable resource request and limit.
 
 Beside scaling and config, users are always able to set up pod priority for the broker components 
-if they regard the broker components a high priority components and would like to further reduce its possibility
+if they regard the broker components as high priority components and would like to further reduce its possibility
 to be the victim of preemption. Follow this doc to set up a Pod Priority for your broker components.
 
 ## Add PriorityClass for broker
@@ -80,4 +80,9 @@ Pods running critically for the cluster or for the node are generally with a pri
     kubectl get pod -n cloud-run-events -l 'role in (ingress,fanout,retry)' -o yaml
     ```
    You will find a new field `Priority` under `spec.template.spec` with the value you defined in the `PriorityClass`
-
+   
+   ***Note:*** 
+   1) This broker update will cause new broker `Pod`s to be created, and the existing broker `Pod`s to be deleted after the new broker
+   `Pod`s are available.
+   2) After this broker update, `Pod Priority` will stay the same if you re-start any of the broker `Pod`s. However, if you re-start
+   (delete and let the controller re-create) the `Deployment`, you'll need to update corresponding `Deployment` with `PriorityClass` again.
