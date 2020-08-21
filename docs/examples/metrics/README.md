@@ -3,7 +3,7 @@
 ## Overview
 
 This sample shows how to configure and view `metrics`. This includes setting up metrics, generating them by sending
-events to a broker with an attached trigger and viewing those metrics with common filters in Stackdriver.
+events to a Broker with an attached Trigger and viewing those metrics with common filters in Stackdriver.
 
 ## Prerequisites
 
@@ -101,7 +101,7 @@ to see metrics. There are multiple options to view the results of queries - Line
     Filter: `project_id="<your_project_id">`  
     Aggregator: `sum`
 
-    A line graph for the above query with 5 events sent to the broker will look like this over a few minutes:
+    A line graph for the above query with 5 events sent to the Broker will look like this over a few minutes:
 
     ![Alt text](broker_event_count.png)
 
@@ -110,7 +110,7 @@ to see metrics. There are multiple options to view the results of queries - Line
     Filter: `project_id="<your_project_id>"`  
     Aggregator: `50th percentile`
 
-    A stacked bar graph for the above query with 5 events received by the trigger will look this over a few minutes:
+    A stacked bar graph for the above query with 5 events received by the Trigger will look this over a few minutes:
 
     ![Alt text](trigger_latencies.png)
 

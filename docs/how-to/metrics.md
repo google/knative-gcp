@@ -8,6 +8,12 @@ metrics API and add your project to a workspace (or create a new workspace).
 
 ## Add the Monitoring Metric Writer Role to the Dataplane Service Account
 
+Determine the Google Service Account your data plane is running as. If you followed
+[Install Knative-GCP](../../install/install-knative-gcp.md) or
+[Create a Service Account for the Data Plane](../../install/dataplane-service-account.md), then the Google Service
+Account will be named `cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com`. The following command uses that name. If the
+Google Service Account you are using is different, then replace it before running the command.
+
 ```shell
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
