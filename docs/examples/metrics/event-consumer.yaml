@@ -1,0 +1,49 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-display
+  namespace: cloud-run-events-example
+spec:
+  replicas: 1
+  selector:
+    matchLabels: &labels
+      app: hello-display
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      containers:
+        - name: event-display
+          # Source code: https://github.com/knative/eventing-contrib/tree/master/cmd/event_display
+          image: gcr.io/knative-releases/knative.dev/eventing-contrib/cmd/event_display:latest
+
+---
+
+# Service pointing at the previous Deployment. This will be the target for event
+# consumption.
+  kind: Service
+  apiVersion: v1
+  metadata:
+    name: hello-display
+    namespace: cloud-run-events-example
+  spec:
+    selector:
+      app: hello-display
+    ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
