@@ -28,11 +28,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const (
-	targetsCMName = "broker-targets"
-	targetsCMKey  = "targets"
-)
-
 func EmptyConfig(t *testing.T, bc *intv1alpha1.BrokerCell) *corev1.ConfigMap {
 	cm, _ := resources.MakeTargetsConfig(bc, memory.NewEmptyTargets())
 	return cm
@@ -72,6 +67,10 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 	if broker.Status.IsReady() {
 		state = config.State_READY
 	}
+	brokerQueueState := config.State_UNKNOWN
+	if broker.Status.GetCondition(brokerv1beta1.BrokerConditionTopic).IsTrue() && broker.Status.GetCondition(brokerv1beta1.BrokerConditionSubscription).IsTrue() {
+		brokerQueueState = config.State_READY
+	}
 	brokerConfig := &config.Broker{
 		Id:        string(broker.UID),
 		Name:      broker.Name,
@@ -80,6 +79,7 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 		DecoupleQueue: &config.Queue{
 			Topic:        brokerresources.GenerateDecouplingTopicName(broker),
 			Subscription: brokerresources.GenerateDecouplingSubscriptionName(broker),
+			State:        brokerQueueState,
 		},
 		Targets: targets,
 		State:   state,

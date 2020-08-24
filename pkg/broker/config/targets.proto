@@ -29,6 +29,7 @@ enum State {
 message Queue {
   string topic = 1;
   string subscription = 2;
+  State state = 3;
 }
 
 // Represents a broker.
