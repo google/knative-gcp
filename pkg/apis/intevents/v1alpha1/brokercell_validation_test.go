@@ -43,14 +43,14 @@ func TestBrokerCell_Validate(t *testing.T) {
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidMemoryRequest := MakeDefaultBrokerCellSpec()
 					testComponent := brokerCellWithInvalidMemoryRequest.Components.Ingress
-					testComponent.Resources.Limits.Memory = "2000Mi"
-					testComponent.Resources.Requests.Memory = "2001Mi"
+					testComponent.MemoryLimit = "2000Mi"
+					testComponent.MemoryRequest = "2001Mi"
 					return brokerCellWithInvalidMemoryRequest
 				}()),
 			},
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
-				fe := apis.ErrInvalidValue("2001Mi", "spec.components.ingress.resources.requests.memory")
+				fe := apis.ErrInvalidValue("2001Mi", "spec.components.ingress.memoryRequest")
 				fe.Details = "Resource request should not exceed the resource limit"
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
@@ -62,15 +62,15 @@ func TestBrokerCell_Validate(t *testing.T) {
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidMemoryRequest := MakeDefaultBrokerCellSpec()
 					testComponent := brokerCellWithInvalidMemoryRequest.Components.Ingress
-					testComponent.Resources.Limits.Memory = "1000Mi"
+					testComponent.MemoryLimit = "1000Mi"
 					testComponent.AvgMemoryUsage = ptr.String("1001Mi")
 					return brokerCellWithInvalidMemoryRequest
 				}()),
 			},
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
-				fe := apis.ErrInvalidValue("1001Mi", "spec.components.ingress.AvgMemoryUsage")
-				fe.Details = "AvgMemoryUsage should not exceed the memory limit"
+				fe := apis.ErrInvalidValue("1001Mi", "spec.components.ingress.avgMemoryUsage")
+				fe.Details = "avgMemoryUsage should not exceed the memory limit"
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
 			}(),
@@ -80,14 +80,14 @@ func TestBrokerCell_Validate(t *testing.T) {
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidCPURequest := MakeDefaultBrokerCellSpec()
 					testComponent := brokerCellWithInvalidCPURequest.Components.Ingress
-					testComponent.Resources.Limits.CPU = "1000m"
-					testComponent.Resources.Requests.CPU = "1001m"
+					testComponent.CPULimit = "1000m"
+					testComponent.CPURequest = "1001m"
 					return brokerCellWithInvalidCPURequest
 				}()),
 			},
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
-				fe := apis.ErrInvalidValue("1001m", "spec.components.ingress.resources.requests.cpu")
+				fe := apis.ErrInvalidValue("1001m", "spec.components.ingress.cpuRequest")
 				fe.Details = "Resource request should not exceed the resource limit"
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
@@ -107,7 +107,7 @@ func TestBrokerCell_Validate(t *testing.T) {
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
 				fe := apis.ErrInvalidValue(nil, "spec.components.ingress")
-				fe.Details = "At least one of the autoscaling metrics (AvgCPUUtilization, AvgMemoryUsage) should be specified"
+				fe.Details = "At least one of the autoscaling metrics (avgCPUUtilization, avgMemoryUsage) should be specified"
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
 
@@ -118,37 +118,37 @@ func TestBrokerCell_Validate(t *testing.T) {
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidMemoryLimit := MakeDefaultBrokerCellSpec()
 					testComponent := brokerCellWithInvalidMemoryLimit.Components.Ingress
-					testComponent.Resources.Requests.CPU = "invalid_requests_cpu"
-					testComponent.Resources.Limits.CPU = "invalid_limits_cpu"
-					testComponent.Resources.Requests.Memory = "invalid_requests_memory"
-					testComponent.Resources.Limits.Memory = "invalid_limits_memory"
-					testComponent.AvgMemoryUsage = ptr.String("invalid_value_AvgMemoryUsage")
+					testComponent.CPURequest = "invalid_requests_cpu"
+					testComponent.CPULimit = "invalid_limits_cpu"
+					testComponent.MemoryRequest = "invalid_requests_memory"
+					testComponent.MemoryLimit = "invalid_limits_memory"
+					testComponent.AvgMemoryUsage = ptr.String("invalid_value_avgMemoryUsage")
 					return brokerCellWithInvalidMemoryLimit
 				}()),
 			},
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
 				unexpectedQuantityFormatErrorDetail := "The quantity is specified in an unexpected format"
-				cpuRequestFE := apis.ErrInvalidValue("invalid_requests_cpu", "spec.components.ingress.resources.requests.cpu")
+				cpuRequestFE := apis.ErrInvalidValue("invalid_requests_cpu", "spec.components.ingress.cpuRequest")
 				cpuRequestFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(cpuRequestFE)
-				cpuLimitFE := apis.ErrInvalidValue("invalid_limits_cpu", "spec.components.ingress.resources.limits.cpu")
+				cpuLimitFE := apis.ErrInvalidValue("invalid_limits_cpu", "spec.components.ingress.cpuLimit")
 				cpuLimitFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(cpuLimitFE)
-				memoryRequestFE := apis.ErrInvalidValue("invalid_requests_memory", "spec.components.ingress.resources.requests.memory")
+				memoryRequestFE := apis.ErrInvalidValue("invalid_requests_memory", "spec.components.ingress.memoryRequest")
 				memoryRequestFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(memoryRequestFE)
-				memoryLimitsFE := apis.ErrInvalidValue("invalid_limits_memory", "spec.components.ingress.resources.limits.memory")
+				memoryLimitsFE := apis.ErrInvalidValue("invalid_limits_memory", "spec.components.ingress.memoryLimit")
 				memoryLimitsFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(memoryLimitsFE)
-				avgMemoryUsageFE := apis.ErrInvalidValue("invalid_value_AvgMemoryUsage", "spec.components.ingress.AvgMemoryUsage")
+				avgMemoryUsageFE := apis.ErrInvalidValue("invalid_value_avgMemoryUsage", "spec.components.ingress.avgMemoryUsage")
 				avgMemoryUsageFE.Details = unexpectedQuantityFormatErrorDetail
 				fieldErrors = fieldErrors.Also(avgMemoryUsageFE)
 				return fieldErrors
 			}(),
 		},
 		{
-			name: "MinRelicas can not be larger than MaxReplicas",
+			name: "minRelicas can not be larger than maxReplicas",
 			brokerCell: BrokerCell{
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidMinReplicas := MakeDefaultBrokerCellSpec()
@@ -160,8 +160,8 @@ func TestBrokerCell_Validate(t *testing.T) {
 			},
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
-				fe := apis.ErrInvalidValue(11, "spec.components.ingress.MinReplicas")
-				fe.Details = "MinReplicas value can not exceed the value of MaxReplicas"
+				fe := apis.ErrInvalidValue(11, "spec.components.ingress.minReplicas")
+				fe.Details = "minReplicas value can not exceed the value of maxReplicas"
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
 
@@ -173,7 +173,7 @@ func TestBrokerCell_Validate(t *testing.T) {
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidMemoryLimit := MakeDefaultBrokerCellSpec()
 					testComponent := brokerCellWithInvalidMemoryLimit.Components.Ingress
-					testComponent.Resources.Limits.CPU = ""
+					testComponent.CPULimit = ""
 					return brokerCellWithInvalidMemoryLimit
 				}()),
 			},

@@ -135,7 +135,6 @@ func (in *ComponentParameters) DeepCopyInto(out *ComponentParameters) {
 		*out = new(string)
 		**out = **in
 	}
-	out.Resources = in.Resources
 	if in.MinReplicas != nil {
 		in, out := &in.MinReplicas, &out.MinReplicas
 		*out = new(int32)

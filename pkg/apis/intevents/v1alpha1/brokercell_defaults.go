@@ -77,16 +77,10 @@ func (bcs *BrokerCellSpec) SetDefaults(ctx context.Context) {
 
 func makeComponent(cpuRequest, cpuLimit, memoryRequest, memoryLimit string, avgCPUUtilization int32, targetMemoryUsage string) *ComponentParameters {
 	return &ComponentParameters{
-		Resources: ResourceSpecification{
-			Requests: SystemResource{
-				CPU:    cpuRequest,
-				Memory: memoryRequest,
-			},
-			Limits: SystemResource{
-				CPU:    cpuLimit,
-				Memory: memoryLimit,
-			},
-		},
+		CPURequest:        cpuRequest,
+		CPULimit:          cpuLimit,
+		MemoryRequest:     memoryRequest,
+		MemoryLimit:       memoryLimit,
 		AvgCPUUtilization: ptr.Int32(avgCPUUtilization),
 		AvgMemoryUsage:    ptr.String(targetMemoryUsage),
 	}
