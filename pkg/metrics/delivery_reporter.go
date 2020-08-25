@@ -123,8 +123,26 @@ func NewDeliveryReporter(podName PodName, containerName ContainerName) (*Deliver
 
 // ReportEventDispatchTime captures dispatch times.
 func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration) {
+	/*opts := []stats.Options{
+		stats.WithTags(
+			tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
+			tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
+		),
+	}
+	if span := trace.FromContext(ctx); span.IsRecordingEvents() {
+		opts = append(opts, stats.WithAttachments(metricdata.Attachments{
+			metricdata.AttachmentKeySpanContext: span.SpanContext(),
+		}))
+	}*/
+	attachments := getSpanCtxAttachment(ctx)
+	opts := []stats.Options{stats.WithAttachments(attachments)}
+	fmt.Println("ReporEventDispatchTime record with option", opts)
+	tag, err := tag.New(ctx)
+	if err != nil {
+		fmt.Printf("failed to create metrics tag: %v", err)
+	}
 	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
+	metrics.Record(tag, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)), opts...)
 }
 
 // StartEventProcessing records the start of event processing for delivery within the given context.
@@ -145,6 +163,15 @@ func (r *DeliveryReporter) reportEventProcessingTime(ctx context.Context, end ti
 	if err != nil {
 		return err
 	}
+	/*var opts []stats.Options
+	if span := trace.FromContext(ctx); span.IsRecordingEvents() {
+		opts = append(opts, stats.WithAttachments(metricdata.Attachments{
+			metricdata.AttachmentKeySpanContext: span.SpanContext(),
+		}))
+	}*/
+	/*attachments := getSpanCtxAttachment(ctx)
+	opts := []stats.Options{stats.WithAttachments(attachments)}
+	fmt.Println("reportEventProcessingTime record with option")*/
 	// convert time.Duration in nanoseconds to milliseconds.
 	metrics.Record(ctx, r.processingTimeInMsecM.M(float64(end.Sub(start)/time.Millisecond)))
 	return nil
@@ -188,3 +215,17 @@ func getStartDeliveryProcessingTime(ctx context.Context) (time.Time, error) {
 	}
 	return time.Time{}, fmt.Errorf("missing or invalid start time: %v", v)
 }
+
+/*
+func getSpanCtxAttachment(ctx context.Context) metricdata.Attachments {
+	attachments := map[string]interface{}{}
+	span := trace.FromContext(ctx)
+	if span == nil {
+		return attachments
+	}
+	spanCtx := span.SpanContext()
+	if spanCtx.IsSampled() {
+		attachments[metricdata.AttachmentKeySpanContext] = spanCtx
+	}
+	return attachments
+}*/

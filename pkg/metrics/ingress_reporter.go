@@ -21,9 +21,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	"go.opencensus.io/trace"
+
 	"knative.dev/pkg/metrics"
 )
 
@@ -100,6 +103,21 @@ func (r *IngressReporter) ReportEventCount(ctx context.Context, args IngressRepo
 	if err != nil {
 		return fmt.Errorf("failed to create metrics tag: %v", err)
 	}
-	metrics.Record(tag, r.eventCountM.M(1))
+	attachments := getSpanCtxAttachment(ctx)
+	opts := []stats.Options{stats.WithAttachments(attachments)}
+	metrics.Record(tag, r.eventCountM.M(1), opts...)
 	return nil
+}
+
+func getSpanCtxAttachment(ctx context.Context) metricdata.Attachments {
+	attachments := map[string]interface{}{}
+	span := trace.FromContext(ctx)
+	if span == nil {
+		return attachments
+	}
+	spanCtx := span.SpanContext()
+	if spanCtx.IsSampled() {
+		attachments[metricdata.AttachmentKeySpanContext] = spanCtx
+	}
+	return attachments
 }
