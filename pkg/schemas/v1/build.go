@@ -22,7 +22,7 @@ import (
 
 const (
 	// CloudBuildSource CloudEvent type
-	CloudBuildSourceEventType = "com.google.cloud.build.event"
+	CloudBuildSourceEventType = "google.cloud.cloudbuild.build.v1.statusChanged"
 	// CloudBuildSourceBuildId is the Pub/Sub message attribute key with the CloudBuildSource's buildId.
 	CloudBuildSourceBuildId = "buildId"
 	// CloudBuildSourceBuildStatus is the Pub/Sub message attribute key with the CloudBuildSource's build status.

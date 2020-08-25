@@ -68,7 +68,7 @@ type CloudBuildSourceSpec struct {
 
 const (
 	// CloudBuildSource CloudEvent type
-	CloudBuildSourceEvent = "com.google.cloud.build.event"
+	CloudBuildSourceEvent = "google.cloud.cloudbuild.build.v1.statusChanged"
 	// CloudBuildSourceBuildId is the Pub/Sub message attribute key with the CloudBuildSource's buildId.
 	CloudBuildSourceBuildId = "buildId"
 	// CloudBuildSourceBuildStatus is the Pub/Sub message attribute key with the CloudBuildSource's build status.

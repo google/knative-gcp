@@ -90,7 +90,7 @@ by looking at the logs of the service that this CloudBuildSource sinks to.
 Validation: valid
 Context Attributes,
   specversion: 1.0
-  type: com.google.cloud.build.event
+  type: google.cloud.cloudbuild.build.v1.statusChanged
   source: //cloudbuild.googleapis.com/projects/PROJECT_ID/builds/BUILD_ID
   subject: SUCCESS
   id: 1085069104560583
