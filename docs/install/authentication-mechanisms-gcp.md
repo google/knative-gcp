@@ -393,7 +393,6 @@ kubectl get secret -n namespace
         "test1" not found'
       ```
 
-
     - If this `Deployment` doesn't have minimum availability due to a missing
       Kubernetes Service Account annotation (for Workload Identity
       authentication configuration), the `Pod` which belongs to this
@@ -408,8 +407,6 @@ kubectl get secret -n namespace
       "error":"unable to create subscription \"cre-src_default_cloudauditlogssource-test_663a7f95-8b82-46aa-85b8-8fee4e65b26f\",
       rpc error: code = PermissionDenied desc = User not authorized to perform this action.
       ```
-
-
 
     - If this `Deployment` doesn't have minimum availability due to the
       `iam-policy-binding` being setup incorrectly (for Workload Identity
@@ -428,8 +425,8 @@ kubectl get secret -n namespace
       ***
       **_To solve this issue_**, you can:
 
-    * Check the Google Cloud Service Account `cre-dataplane` for the Data Plane has
-      all required permissions.
+    * Check the Google Cloud Service Account `cre-dataplane` for the Data Plane
+      has all required permissions.
     * Check authentication configuration is correct for this resource instance.
 
       - If you are using Workload Identity for this resource instance, refer
