@@ -90,6 +90,7 @@ func (componentParams *ComponentParameters) ValidateAutoscalingSpecification(fie
 		}
 	}
 	// At least one of the autoscaling metrics should be specified
+	// TODO: consider adjusting this rule (https://github.com/google/knative-gcp/issues/1632)
 	isAvgMemoryUsageSpecified := componentParams.AvgMemoryUsage != nil && *componentParams.AvgMemoryUsage != ""
 	if componentParams.AvgCPUUtilization == nil && !isAvgMemoryUsageSpecified {
 		invalidValueError := apis.ErrInvalidValue(nil, componentPath)
