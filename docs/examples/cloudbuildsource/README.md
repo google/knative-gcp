@@ -95,7 +95,7 @@ Context Attributes,
   subject: SUCCESS
   id: 1085069104560583
   time: 2020-04-03T23:51:29.811Z
-  dataschema: https://github.com/googleapis/google-cloudevents/blob/master/proto/google/events/cloud/scheduler/v1/data.proto
+  dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/cloudbuild/v1/data.proto
   datacontenttype: application/json
 Extensions,
   buildid: BUILD_ID
