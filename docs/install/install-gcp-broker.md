@@ -18,7 +18,7 @@ message consumption.
 
 1. [Install Knative-GCP](./install-knative-gcp.md).
 
-2. [Create a Service Account for the Data Plane](./dataplane-service-account.md).
+2. [Create a Service Account for the Data Plane](./dataplane-service-account.md#create-a-google-cloud-service-account-to-interact-with-pubsub).
 
 ## Authentication Setup for GCP Broker
 
