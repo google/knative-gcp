@@ -43,6 +43,9 @@ const (
 	CloudStorageSourceProbeUpdateMetadataSubject = "update-metadata"
 	CloudStorageSourceProbeArchiveSubject        = "archive"
 	CloudStorageSourceProbeDeleteSubject         = "delete"
+	CloudSchedulerSourceProbeEventType           = "cloudschedulersource-probe"
+
+	cloudSchedulerSourceProbeChannelID = "cloudschedulersource-probe-channel-id"
 )
 
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
@@ -217,6 +220,14 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 				log.Printf("Probe forwarding failed, unrecognized cloud storage probe subject: %v", event.Subject())
 				return cloudevents.ResultNACK
 			}
+		case CloudSchedulerSourceProbeEventType:
+			channelID = cloudSchedulerSourceProbeChannelID
+			receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
+			if err != nil {
+				log.Printf("Probe forwarding failed, could not create receiver channel: %v", err)
+				return cloudevents.ResultNACK
+			}
+			defer receivedEvents.deleteReceiverChannel(channelID)
 		default:
 			log.Printf("Probe forwarding failed, unrecognized event type, %v", event.Type())
 			return cloudevents.ResultNACK
@@ -282,6 +293,8 @@ func receiveEvent(receivedEvents *receivedEventsMap) cloudEventsFunc {
 				return cloudevents.ResultACK
 			}
 			channelID = channelID + "-" + CloudStorageSourceProbeDeleteSubject
+		case schemasv1.CloudSchedulerJobExecutedEventType:
+			channelID = cloudSchedulerSourceProbeChannelID
 		default:
 			log.Printf("Unrecognized event type: %v", event.Type())
 			return cloudevents.ResultACK
