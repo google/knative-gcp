@@ -196,8 +196,7 @@ func getStartDeliveryProcessingTime(ctx context.Context) (time.Time, error) {
 // getSpanContextAttachments gets the attachment for exemplar trace.
 func getSpanContextAttachments(ctx context.Context) metricdata.Attachments {
 	attachments := map[string]interface{}{}
-	span := trace.FromContext(ctx)
-	if span != nil {
+	if span := trace.FromContext(ctx); span != nil {
 		if spanCtx := span.SpanContext(); spanCtx.IsSampled() {
 			attachments[metricdata.AttachmentKeySpanContext] = spanCtx
 		}
