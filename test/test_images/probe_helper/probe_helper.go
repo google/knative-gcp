@@ -120,6 +120,7 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 				return res
 			}
 		case CloudPubSubSourceProbeEventType:
+			channelID = event.ID()
 			receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
 			if err != nil {
 				log.Printf("Probe forwarding failed, could not create receiver channel: %v", err)
