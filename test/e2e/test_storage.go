@@ -112,7 +112,7 @@ func SmokeCloudStorageSourceWithDeletionTestImpl(t *testing.T, authConfig lib.Au
 		t.Errorf("Expected subscription %q to exist", subID)
 	}
 	client.DeleteStorageOrFail(storageName)
-	//Wait for 60 seconds for topic, subscription and notification to get deleted in gcp
+	//Wait for 120 seconds for topic, subscription and notification to get deleted in gcp
 	time.Sleep(resources.WaitDeletionTime)
 
 	deletedNotificationExists := lib.NotificationExists(t, bucketName, notificationID)

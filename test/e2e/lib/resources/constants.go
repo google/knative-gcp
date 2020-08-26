@@ -63,16 +63,16 @@ const (
 
 const (
 	// Tried with 20 seconds but the test has been quite flaky.
-	// Increase from 40 seconds to 60 seconds, for issue: https://github.com/google/knative-gcp/issues/1568.
+	// Increase from 40 seconds to 120 seconds, for issue: https://github.com/google/knative-gcp/issues/1568.
 	// WaitDeletionTime for deleting resources
-	WaitDeletionTime = 60 * time.Second
+	WaitDeletionTime = 120 * time.Second
 	// WaitCALTime for time needed to wait to fire an event after CAL Source is ready
 	// Tried with 45 seconds but the test has been quite flaky.
 	// Tried with 90 seconds but the test has been quite flaky.
 	// Tried with 120 seconds but the test still has some flakiness.
 	WaitCALTime = 150 * time.Second
 	// WaitExtraSourceReadyTime for additional time needed to wait for a source becomes ready.
-	WaitExtraSourceReadyTime = 60 * time.Second
+	WaitExtraSourceReadyTime = 90 * time.Second
 	// As initially suspected in https://github.com/google/knative-gcp/issues/1437,
 	// sometimes brokercell seems to take much longer than expected to reconcile
 	// the broker config. Plus, the configmap propagation probably also takes a
