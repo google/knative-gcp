@@ -146,7 +146,7 @@ func SmokeGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	}
 
 	client.DeleteGCPBrokerOrFail(brokerName)
-	//Wait for 60 seconds for subscription to get deleted in gcp
+	//Wait for 120 seconds for subscription to get deleted in gcp
 	time.Sleep(knativegcptestresources.WaitDeletionTime)
 
 	deletedTopicExists := lib.TopicExists(t, topicID)
