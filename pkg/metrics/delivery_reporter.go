@@ -193,8 +193,8 @@ func getStartDeliveryProcessingTime(ctx context.Context) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("missing or invalid start time: %v", v)
 }
 
-// Get attachment for exemplar trace.
-func getSpanCtxAttachment(ctx context.Context) metricdata.Attachments {
+// getSpanCTXAttachment gets the attachment for exemplar trace.
+func getSpanCTXAttachment(ctx context.Context) metricdata.Attachments {
 	attachments := map[string]interface{}{}
 	span := trace.FromContext(ctx)
 	if span == nil {
