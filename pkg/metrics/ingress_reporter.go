@@ -24,7 +24,6 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-
 	"knative.dev/pkg/metrics"
 )
 
@@ -101,6 +100,7 @@ func (r *IngressReporter) ReportEventCount(ctx context.Context, args IngressRepo
 	if err != nil {
 		return fmt.Errorf("failed to create metrics tag: %v", err)
 	}
+	// Count does not support exemplar currently, but keeping this anyway for future support.
 	attachments := getSpanCtxAttachment(ctx)
 	metrics.Record(tag, r.eventCountM.M(1), stats.WithAttachments(attachments))
 	return nil
