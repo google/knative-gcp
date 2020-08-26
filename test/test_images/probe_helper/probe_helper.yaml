@@ -40,7 +40,7 @@ spec:
             - name: CLOUDPUBSUBSOURCE_TOPIC_ID
               value: "cloudpubsubsource-topic"
             - name: CLOUDSTORAGESOURCE_BUCKET_ID
-              value: "cloudstoragesource-bucket"
+              value: "project-id-cloudstoragesource-bucket"
             - name: PROBE_PORT
               value: "8070"
             - name: RECEIVER_PORT
