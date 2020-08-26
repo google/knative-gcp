@@ -9,7 +9,7 @@ events to a Broker with an attached Trigger and viewing those metrics with commo
 
 1. [Install Knative-GCP](../../install/install-knative-gcp.md)
 
-2. [Create a Service Account for the Data Plane](../../install/dataplane-service-account.md)
+2. [Installing GCP Broker](../../install/install-gcp-broker.md)
 
 ## Setup
 
