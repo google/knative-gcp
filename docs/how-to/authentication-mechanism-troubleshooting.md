@@ -136,11 +136,11 @@ kubectl describe cloudauditlogssource test -n default
 * Check authentication configuration is correct for the Control Plane.
 
   - If you are using Workload Identity for the Control Plane, refer
-    [here](./authentication-mechanisms-gcp.md/#workload-identity) to check
+    [here](../install/authentication-mechanisms-gcp.md/#workload-identity) to check
     the Google Cloud Service Account `cloud-run-events`, and the Kubernetes
     Service Account `controller` in namespace `cloud-run-events`.
   - If you are using Kubernetes Secret for the Control Plane, refer
-    [here](./authentication-mechanisms-gcp.md/#kubernetes-secrets) to check
+    [here](../install/authentication-mechanisms-gcp.md/#kubernetes-secrets) to check
     the Kubernetes Secret `google-cloud-key` in namespace
     `cloud-run-events`.
 
@@ -151,7 +151,7 @@ permissions, and the corresponding Kubernetes Secret `google-cloud-key` is
 in namespace `cloud-run-events`, you still get permission related error. To
 such case, you have to re-download the JSON private key and re-create the
 Kubernetes Secret, refer
-[here](./authentication-mechanisms-gcp.md/#option-2-kubernetes-secrets) for
+[here](../install/authentication-mechanisms-gcp.md/#option-2-kubernetes-secrets) for
 instructions.
 
 ### Resources are READY, but can't receive Events
@@ -285,11 +285,11 @@ kubectl get deployment -n default
 * Check authentication configuration is correct for this resource instance.
 
   - If you are using Workload Identity for this resource instance, refer
-    [here](./authentication-mechanisms-gcp.md/#workload-identity) to check
+    [here](../install/authentication-mechanisms-gcp.md/#workload-identity) to check
     the Google Cloud Service Account `cre-dataplane`, and the Kubernetes
     Service Account in the namespace where this resource instance resides.
   - If you are using Kubernetes Secrets for this resource instance, refer
-    [here](./authentication-mechanisms-gcp.md/#kubernetes-secrets) to check
+    [here](../install/authentication-mechanisms-gcp.md/#kubernetes-secrets) to check
     the Kubernetes Secret in namespace where this resource instance resides.
 
 **_Note:_** For Workload Identity, there is a known issue

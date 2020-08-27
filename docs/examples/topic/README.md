@@ -124,7 +124,7 @@ You should see log lines similar to:
 
 ## Troubleshooting
 You may have issues receiving desired CloudEvent. Please use
-[Authentication Mechanism Troubleshooting](../how-to/authentication-mechanism-troubleshooting.md) to
+[Authentication Mechanism Troubleshooting](../../how-to/authentication-mechanism-troubleshooting.md) to
 check if it is due to an auth problem. 
 
 ## What's next
