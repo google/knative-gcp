@@ -141,4 +141,3 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 Please check
 [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md).
-
