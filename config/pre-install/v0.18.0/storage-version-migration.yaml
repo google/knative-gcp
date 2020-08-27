@@ -15,10 +15,10 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: storage-version-migration-eventing
+  name: storage-version-migration-knative-gcp
   namespace: cloud-run-events
   labels:
-    app: "storage-version-migration-eventing"
+    app: "storage-version-migration-knative-gcp"
     events.cloud.google.com/release: devel
 spec:
   ttlSecondsAfterFinished: 600
@@ -26,7 +26,7 @@ spec:
   template:
     metadata:
       labels:
-        app: "storage-version-migration-eventing"
+        app: "storage-version-migration-knative-gcp"
       annotations:
         sidecar.istio.io/inject: "false"
     spec:
