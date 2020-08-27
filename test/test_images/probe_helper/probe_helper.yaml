@@ -48,6 +48,12 @@ spec:
           volumeMounts:
           - name: probe-helper-key
             mountPath: /var/secrets/google
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8060
+            initialDelaySeconds: 3
+            periodSeconds: 3
       volumes:
       - name: probe-helper-key
         secret:

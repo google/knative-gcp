@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	nethttp "net/http"
 	"sync"
 	"time"
 
@@ -37,6 +38,13 @@ import (
 const (
 	BrokerE2EDeliveryProbeEventType = "broker-e2e-delivery-probe"
 	CloudPubSubSourceProbeEventType = "cloudpubsubsource-probe"
+
+	maxStaleTime = 60 * time.Second
+)
+
+var (
+	lastSenderEventTimestamp   time.Time
+	lastReceiverEventTimestamp time.Time
 )
 
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
@@ -82,6 +90,7 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 		var err error
 		var receiverChannel chan bool
 		log.Printf("Received probe request: %+v \n", event)
+		lastSenderEventTimestamp = event.Time()
 
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
 		defer cancel()
@@ -126,8 +135,9 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 func receiveEvent(receivedEvents *receivedEventsMap) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var eventID string
-
 		log.Printf("Received event: %+v \n", event)
+		lastReceiverEventTimestamp = event.Time()
+
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
 			// The event is received as sent.
@@ -160,6 +170,16 @@ func receiveEvent(receivedEvents *receivedEventsMap) cloudEventsFunc {
 		receiver <- true
 		return cloudevents.ResultACK
 	}
+}
+
+func healthChecker(w nethttp.ResponseWriter, r *nethttp.Request) {
+	now := time.Now()
+	if (!lastSenderEventTimestamp.IsZero() && now.Sub(lastSenderEventTimestamp) > maxStaleTime) ||
+		(!lastReceiverEventTimestamp.IsZero() && now.Sub(lastReceiverEventTimestamp) > maxStaleTime) {
+		w.WriteHeader(nethttp.StatusServiceUnavailable)
+		return
+	}
+	w.WriteHeader(nethttp.StatusOK)
 }
 
 func runProbeHelper() {
@@ -216,6 +236,15 @@ func runProbeHelper() {
 	if err != nil {
 		log.Fatal("Failed to create receiver client, ", err)
 	}
+
+	// start the health checker
+	nethttp.HandleFunc("/healthz", healthChecker)
+	go func() {
+		log.Printf("Starting the health checker...")
+		if err := nethttp.ListenAndServe(":8060", nil); err != nil && err != nethttp.ErrServerClosed {
+			log.Printf("The health checker has stopped unexpectedly: %v", err)
+		}
+	}()
 
 	// make a map to store the channel for each event
 	receivedEvents := &receivedEventsMap{
