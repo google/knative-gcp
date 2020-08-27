@@ -137,9 +137,10 @@ For more information about the format of the `Data` see the `data` field of
 [PubsubMessage documentation](https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage).
 
 ## Troubleshooting
+
 You may have issues receiving desired CloudEvent. Please use
-[Authentication Mechanism Troubleshooting](../../how-to/authentication-mechanism-troubleshooting.md) to
-check if it is due to an auth problem. 
+[Authentication Mechanism Troubleshooting](../../how-to/authentication-mechanism-troubleshooting.md)
+to check if it is due to an auth problem.
 
 ## What's next
 

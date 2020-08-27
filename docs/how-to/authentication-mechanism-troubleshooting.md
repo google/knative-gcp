@@ -60,8 +60,8 @@ kubectl get secret -n namespace
 
 If a resource instance is not READY due to an authentication configuration
 problem, you are likely to get permission related error for
-`User not authorized to perform this action` (for Workload Identity, the
-error might look like
+`User not authorized to perform this action` (for Workload Identity, the error
+might look like
 `IAM returned 403 Forbidden: The caller does not have permission`).
 
 This error indicates that the Control Plane may not configure authentication
@@ -70,9 +70,11 @@ properly. You can find it in a resource instance by:
 ```shell
 kubectl describe resource-kind resource-instance-name -n resource-instance-namespace
 ```
-***
-Here is a detailed example checking a CloudAuditlogsSource `test` in
-namespace `default`:
+
+---
+
+Here is a detailed example checking a CloudAuditlogsSource `test` in namespace
+`default`:
 
 After running the following command, you will find a couple of `Condition`s
 under this CloudAuditLogsSource's `Status`.
@@ -81,10 +83,10 @@ under this CloudAuditLogsSource's `Status`.
 kubectl describe cloudauditlogssource test -n default
 ```
 
-- If this CloudAuditLogsSource failed due to a missing Kubernetes Secret
-  (for Kubernetes Secret authentication configuration), or a missing
-  Kubernetes Service Account annotation (for Workload Identity
-  authentication configuration), the `Condition` `Ready` would look like:
+- If this CloudAuditLogsSource failed due to a missing Kubernetes Secret (for
+  Kubernetes Secret authentication configuration), or a missing Kubernetes
+  Service Account annotation (for Workload Identity authentication
+  configuration), the `Condition` `Ready` would look like:
 
   ```shell
   Type:     Ready
@@ -93,9 +95,9 @@ kubectl describe cloudauditlogssource test -n default
   Reason:   TopicReconcileFailed
   ```
 
-- If this CloudAuditLogsSource failed due to the JSON private key stored in
-  the Kubernetes Secret having been revoked (for Kubernetes Secret
-  authentication configuration), the `Condition` `Ready` would look like:
+- If this CloudAuditLogsSource failed due to the JSON private key stored in the
+  Kubernetes Secret having been revoked (for Kubernetes Secret authentication
+  configuration), the `Condition` `Ready` would look like:
 
   ```shell
   Type:     Ready
@@ -107,8 +109,8 @@ kubectl describe cloudauditlogssource test -n default
 
 - If this CloudAuditLogsSource failed due to the GSA having insufficient
   permissions (for either Kubernetes Secret authentication configuration or
-  Workload Identity authentication configuration), the `Condition` `Ready`
-  would look like:
+  Workload Identity authentication configuration), the `Condition` `Ready` would
+  look like:
 
   ```shell
   Type:     Ready
@@ -131,37 +133,37 @@ kubectl describe cloudauditlogssource test -n default
 
 **_To solve this issue_**, you can:
 
-* Check the Google Cloud Service Account `cloud-run-events` for the Control
+- Check the Google Cloud Service Account `cloud-run-events` for the Control
   Plane has all required permissions.
-* Check authentication configuration is correct for the Control Plane.
+- Check authentication configuration is correct for the Control Plane.
 
   - If you are using Workload Identity for the Control Plane, refer
-    [here](../install/authentication-mechanisms-gcp.md/#workload-identity) to check
-    the Google Cloud Service Account `cloud-run-events`, and the Kubernetes
-    Service Account `controller` in namespace `cloud-run-events`.
+    [here](../install/authentication-mechanisms-gcp.md/#workload-identity) to
+    check the Google Cloud Service Account `cloud-run-events`, and the
+    Kubernetes Service Account `controller` in namespace `cloud-run-events`.
   - If you are using Kubernetes Secret for the Control Plane, refer
-    [here](../install/authentication-mechanisms-gcp.md/#kubernetes-secrets) to check
-    the Kubernetes Secret `google-cloud-key` in namespace
+    [here](../install/authentication-mechanisms-gcp.md/#kubernetes-secrets) to
+    check the Kubernetes Secret `google-cloud-key` in namespace
     `cloud-run-events`.
 
 **_Note:_** For Kubernetes Secret, if the JSON private key no longer exists
 under your Google Cloud Service Account `cloud-run-events`. Then, even the
-Google Cloud Service Account `cloud-run-events` has all required
-permissions, and the corresponding Kubernetes Secret `google-cloud-key` is
-in namespace `cloud-run-events`, you still get permission related error. To
-such case, you have to re-download the JSON private key and re-create the
-Kubernetes Secret, refer
-[here](../install/authentication-mechanisms-gcp.md/#option-2-kubernetes-secrets) for
-instructions.
+Google Cloud Service Account `cloud-run-events` has all required permissions,
+and the corresponding Kubernetes Secret `google-cloud-key` is in namespace
+`cloud-run-events`, you still get permission related error. To such case, you
+have to re-download the JSON private key and re-create the Kubernetes Secret,
+refer
+[here](../install/authentication-mechanisms-gcp.md/#option-2-kubernetes-secrets)
+for instructions.
 
 ### Resources are READY, but can't receive Events
 
-Sometimes, a resource instance is READY, but it can't receive Events. It
-might be an authentication configuration problem, if the underlying
-`Deployment` doesn't have minimum availability.
+Sometimes, a resource instance is READY, but it can't receive Events. It might
+be an authentication configuration problem, if the underlying `Deployment`
+doesn't have minimum availability.
 
-Typically, the name of an underlying `Deployment` for a resource instance
-could be a truncated version of `(prefix)-(resource-instance-name)-(uid)`.
+Typically, the name of an underlying `Deployment` for a resource instance could
+be a truncated version of `(prefix)-(resource-instance-name)-(uid)`.
 
 1. If the resource instance is a `Source`, the prefix is `cre-src`.
 1. If the resource instance is a `Channel`, the prefix is `cre-chan`.
@@ -174,10 +176,10 @@ available pod is zero.
 kubectl get deployment -n resource-instance-namespace
 ```
 
-***
+---
 
-Here is a detailed example checking a CloudAuditlogsSource `test`'s
-underlying `Deployment` in namespace `default`:
+Here is a detailed example checking a CloudAuditlogsSource `test`'s underlying
+`Deployment` in namespace `default`:
 
 After running the following command, you will find a `Deployment` named as
 `cre-src-cloudauditlogssource-te(UID)`.
@@ -187,10 +189,10 @@ kubectl get deployment -n default
 ```
 
 - If this `Deployment` doesn't have minimum availability due to a missing
-  Kubernetes Secret (for Kubernetes Secret authentication configuration),
-  the `Pod` which belongs to this `Deployment` (`Pod`'s name will have the
-  same prefix `cre-src-cloudauditlogssource-` as the `Deployment`'s name)
-  will block at `ContainerCreating` status. Using
+  Kubernetes Secret (for Kubernetes Secret authentication configuration), the
+  `Pod` which belongs to this `Deployment` (`Pod`'s name will have the same
+  prefix `cre-src-cloudauditlogssource-` as the `Deployment`'s name) will block
+  at `ContainerCreating` status. Using
   `kubectl describe pod pod-name -n namespace`, you can find a Warning Event
   like this:
 
@@ -201,13 +203,13 @@ kubectl get deployment -n default
   list of unmounted volumes=[google-cloud-key]. list of unattached volumes=[google-cloud-key default-token-dd9cd]
   ```
 
-- If this `Deployment` doesn't have minimum availability due to the JSON
-  private key stored in the Kubernetes Secret having been revoked (for
-  Kubernetes Secret authentication configuration), the `Pod` which belongs
-  to this `Deployment` (`Pod`'s name will have the same prefix
-  `cre-src-cloudauditlogssource-` as the `Deployment`'s name) will block at
-  `Error` status. Using `kubectl log pod-name -n namespace`, you can find a
-  Log containing information like this:
+- If this `Deployment` doesn't have minimum availability due to the JSON private
+  key stored in the Kubernetes Secret having been revoked (for Kubernetes Secret
+  authentication configuration), the `Pod` which belongs to this `Deployment`
+  (`Pod`'s name will have the same prefix `cre-src-cloudauditlogssource-` as the
+  `Deployment`'s name) will block at `Error` status. Using
+  `kubectl log pod-name -n namespace`, you can find a Log containing information
+  like this:
 
   ```shell
   "msg":"failed to start adapter: ",
@@ -216,14 +218,13 @@ kubectl get deployment -n default
   rpc error: code = Unauthenticated desc = transport: oauth2: cannot fetch token: 400 Bad Request\nResponse: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid JWT Signature.\"}"
   ```
 
-- If this `Deployment` doesn't have minimum availability due to the GSA
-  having insufficient permissions (for either Kubernetes Secret
-  authentication configuration or Workload Identity authentication
-  configuration), the `Pod` which belongs to this `Deployment` (`Pod`'s name
-  will have the same prefix `cre-src-cloudauditlogssource-` as the
-  `Deployment`'s name) will block at `Error` status. Using
-  `kubectl log pod-name -n namespace`, you can find a Log containing
-  information like this:
+- If this `Deployment` doesn't have minimum availability due to the GSA having
+  insufficient permissions (for either Kubernetes Secret authentication
+  configuration or Workload Identity authentication configuration), the `Pod`
+  which belongs to this `Deployment` (`Pod`'s name will have the same prefix
+  `cre-src-cloudauditlogssource-` as the `Deployment`'s name) will block at
+  `Error` status. Using `kubectl log pod-name -n namespace`, you can find a Log
+  containing information like this:
 
   ```shell
   "msg":"failed to start adapter: ",
@@ -235,8 +236,8 @@ kubectl get deployment -n default
 - If this `Deployment` doesn't have minimum availability due to a missing
   Kubernetes Service Account (for Workload Identity authentication
   configuration), the `Deployment` can't create any `Pod`. Using
-  `kubectl describe deployment-name -n namespace`, you can find a
-  `Condition` `ReplicaFailure` under `Status` like this:
+  `kubectl describe deployment-name -n namespace`, you can find a `Condition`
+  `ReplicaFailure` under `Status` like this:
 
   ```shell
   type: ReplicaFailure
@@ -247,14 +248,13 @@ kubectl get deployment -n default
     "test1" not found'
   ```
 
-
 - If this `Deployment` doesn't have minimum availability due to a missing
-  Kubernetes Service Account annotation (for Workload Identity
-  authentication configuration), the `Pod` which belongs to this
-  `Deployment` (`Pod`'s name will have the same prefix
-  `cre-src-cloudauditlogssource-` as the `Deployment`'s name) will block at
-  `Error` status. Using `kubectl log pod-name -n namespace`, you can find a
-  Log containing information like this:
+  Kubernetes Service Account annotation (for Workload Identity authentication
+  configuration), the `Pod` which belongs to this `Deployment` (`Pod`'s name
+  will have the same prefix `cre-src-cloudauditlogssource-` as the
+  `Deployment`'s name) will block at `Error` status. Using
+  `kubectl log pod-name -n namespace`, you can find a Log containing information
+  like this:
 
   ```shell
   "msg":"failed to start adapter: ",
@@ -265,11 +265,11 @@ kubectl get deployment -n default
 
 - If this `Deployment` doesn't have minimum availability due to the
   `iam-policy-binding` being setup incorrectly (for Workload Identity
-  authentication configuration), the `Pod` which belongs to this
-  `Deployment` (`Pod`'s name will have the same prefix
-  `cre-src-cloudauditlogssource-` as the `Deployment`'s name) will block at
-  `Error` status. Using `kubectl log pod-name -n namespace`, you can find a
-  Log containing information like this:
+  authentication configuration), the `Pod` which belongs to this `Deployment`
+  (`Pod`'s name will have the same prefix `cre-src-cloudauditlogssource-` as the
+  `Deployment`'s name) will block at `Error` status. Using
+  `kubectl log pod-name -n namespace`, you can find a Log containing information
+  like this:
   ```shell
   "msg":"failed to start adapter: ",
   "commit":"9e8388f",
@@ -285,23 +285,24 @@ kubectl get deployment -n default
 * Check authentication configuration is correct for this resource instance.
 
   - If you are using Workload Identity for this resource instance, refer
-    [here](../install/authentication-mechanisms-gcp.md/#workload-identity) to check
-    the Google Cloud Service Account `cre-dataplane`, and the Kubernetes
+    [here](../install/authentication-mechanisms-gcp.md/#workload-identity) to
+    check the Google Cloud Service Account `cre-dataplane`, and the Kubernetes
     Service Account in the namespace where this resource instance resides.
   - If you are using Kubernetes Secrets for this resource instance, refer
-    [here](../install/authentication-mechanisms-gcp.md/#kubernetes-secrets) to check
-    the Kubernetes Secret in namespace where this resource instance resides.
+    [here](../install/authentication-mechanisms-gcp.md/#kubernetes-secrets) to
+    check the Kubernetes Secret in namespace where this resource instance
+    resides.
 
 **_Note:_** For Workload Identity, there is a known issue
 [#759](https://github.com/google/knative-gcp/issues/759) for credential sync
-delay (~1 min) in resources' underlying components. You'll probably
-encounter this issue, if you immediately send Events after you finish
-Workload Identity setup for a resource instance.
+delay (~1 min) in resources' underlying components. You'll probably encounter
+this issue, if you immediately send Events after you finish Workload Identity
+setup for a resource instance.
 
 ### Resources are not READY, due to WorkloadIdentityReconcileFailed
 
-This error only exists when you use default scenario for Workload Identity.
-You can find detailed failure message by:
+This error only exists when you use default scenario for Workload Identity. You
+can find detailed failure message by:
 
 ```shell
 kubectl describe resource-kind resource-instance-name -n resource-instance-namespace
@@ -310,8 +311,8 @@ kubectl describe resource-kind resource-instance-name -n resource-instance-names
 **_To solve this issue_**, you can:
 
 - Make sure the `workloadIdentityMapping` under `default-auth-config` in
-  `ConfigMap` `config-gcp-auth` is correct (a correct Kubernetes Service
-  Account paired with a correct Google Cloud Service Account).
+  `ConfigMap` `config-gcp-auth` is correct (a correct Kubernetes Service Account
+  paired with a correct Google Cloud Service Account).
 - If the `Condition` `Ready` has permission related error message like this:
   ```shell
   type: Ready
@@ -320,13 +321,12 @@ kubectl describe resource-kind resource-instance-name -n resource-instance-names
     is required to perform this operation on service account projects/-/serviceAccounts/cre-dataplane@PROJECT_ID.iam.gserviceaccount.com.'
   reason: WorkloadIdentityFailed
   ```
-  it is most likely that you didn't grant `iam.serviceAccountAdmin`
-  permission of the Google Cloud Service Account to the Control Plane's
-  Google Cloud Service Account `cloud-run-events`, refer to
+  it is most likely that you didn't grant `iam.serviceAccountAdmin` permission
+  of the Google Cloud Service Account to the Control Plane's Google Cloud
+  Service Account `cloud-run-events`, refer to
   [default scenario](../install/dataplane-service-account.md/#option-1-use-workload-identity)
   to grant permission.
-- If the `Condition` `Ready` has concurrency related error message like
-  this:
+- If the `Condition` `Ready` has concurrency related error message like this:
   ```shell
   type: Ready
   status: "False"

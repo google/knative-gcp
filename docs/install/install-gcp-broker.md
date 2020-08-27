@@ -10,9 +10,8 @@ Knative Eventing allows different Broker implementations via `BrokerClass`
 annotation. If annotated with
 `"eventing.knative.dev/broker.class": "googlecloud"`, the `Knative-GCP`
 controller will create a GCP Broker. Compared to the default
-`MT Channel Based Broker`,
-GCP Broker is more performant and cost-effective by reducing hops and Pub/Sub
-message consumption.
+`MT Channel Based Broker`, GCP Broker is more performant and cost-effective by
+reducing hops and Pub/Sub message consumption.
 
 ## Prerequisites
 
