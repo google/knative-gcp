@@ -30,6 +30,7 @@ import (
 	_ "knative.dev/eventing/test/test_images/performance"
 	_ "knative.dev/pkg/test/mako/stub-sidecar"
 	_ "knative.dev/pkg/testutils/clustermanager/perf-tests"
+	_ "knative.dev/pkg/apiextensions/storageversion/cmd/migrate"
 
 	_ "github.com/google/wire/cmd/wire"
 )
