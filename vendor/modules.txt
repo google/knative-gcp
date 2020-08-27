@@ -1173,6 +1173,8 @@ knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
 # knative.dev/pkg v0.0.0-20200827020906-21dcafbfa751
 ## explicit
+knative.dev/pkg/apiextensions/storageversion
+knative.dev/pkg/apiextensions/storageversion/cmd/migrate
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
 knative.dev/pkg/apis/duck/ducktypes
