@@ -34,6 +34,10 @@ type IdentityStatus struct {
 	duckv1.Status `json:",inline"`
 	// ServiceAccountName is the k8s service account associated with Google service account.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+	// GoogleServiceAccount is the google service account associated with the
+	// k8s service account when using workload identity.
+	// +optional
+	GoogleServiceAccount string `json:"googleServiceAccount,omitempty"`
 }
 
 const (
