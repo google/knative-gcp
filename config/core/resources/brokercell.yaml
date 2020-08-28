@@ -75,23 +75,14 @@ spec:
                         format: int64
                       avgMemoryUsage:
                         type: string
-                      resources:
-                        type: object
-                        properties:
-                          requests:
-                            type: object
-                            properties:
-                              cpu:
-                                type: string
-                              memory:
-                                type: string
-                          limits:
-                            type: object
-                            properties:
-                              cpu:
-                                type: string
-                              memory:
-                                type: string
+                      cpuRequest:
+                        type: string
+                      cpuLimit:
+                        type: string
+                      memoryRequest:
+                        type: string
+                      memoryLimit:
+                        type: string
                       minReplicas:
                         type: integer
                         format: int64
@@ -106,23 +97,14 @@ spec:
                         format: int64
                       avgMemoryUsage:
                         type: string
-                      resources:
-                        type: object
-                        properties:
-                          requests:
-                            type: object
-                            properties:
-                              cpu:
-                                type: string
-                              memory:
-                                type: string
-                          limits:
-                            type: object
-                            properties:
-                              cpu:
-                                type: string
-                              memory:
-                                type: string
+                      cpuRequest:
+                        type: string
+                      cpuLimit:
+                        type: string
+                      memoryRequest:
+                        type: string
+                      memoryLimit:
+                        type: string
                       minReplicas:
                         type: integer
                         format: int64
@@ -137,23 +119,14 @@ spec:
                         format: int64
                       avgMemoryUsage:
                         type: string
-                      resources:
-                        type: object
-                        properties:
-                          requests:
-                            type: object
-                            properties:
-                              cpu:
-                                type: string
-                              memory:
-                                type: string
-                          limits:
-                            type: object
-                            properties:
-                              cpu:
-                                type: string
-                              memory:
-                                type: string
+                      cpuRequest:
+                        type: string
+                      cpuLimit:
+                        type: string
+                      memoryRequest:
+                        type: string
+                      memoryLimit:
+                        type: string
                       minReplicas:
                         type: integer
                         format: int64

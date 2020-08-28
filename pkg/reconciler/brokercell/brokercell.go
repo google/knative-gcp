@@ -235,10 +235,10 @@ func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.Ingre
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
 			AllowIstioSidecar:  true,
-			CPURequest:         *bc.Spec.Components.Ingress.Resources.Requests.CPU,
-			CPULimit:           *bc.Spec.Components.Ingress.Resources.Limits.CPU,
-			MemoryRequest:      *bc.Spec.Components.Ingress.Resources.Requests.Memory,
-			MemoryLimit:        *bc.Spec.Components.Ingress.Resources.Limits.Memory,
+			CPURequest:         bc.Spec.Components.Ingress.CPURequest,
+			CPULimit:           bc.Spec.Components.Ingress.CPULimit,
+			MemoryRequest:      bc.Spec.Components.Ingress.MemoryRequest,
+			MemoryLimit:        bc.Spec.Components.Ingress.MemoryLimit,
 		},
 		Port: r.env.IngressPort,
 	}
@@ -248,8 +248,8 @@ func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.Au
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.IngressName,
 		BrokerCell:        bc,
-		AvgCPUUtilization: *bc.Spec.Components.Ingress.AvgCPUUtilization,
-		AvgMemoryUsage:    *bc.Spec.Components.Ingress.AvgMemoryUsage,
+		AvgCPUUtilization: bc.Spec.Components.Ingress.AvgCPUUtilization,
+		AvgMemoryUsage:    bc.Spec.Components.Ingress.AvgMemoryUsage,
 		MaxReplicas:       *bc.Spec.Components.Ingress.MaxReplicas,
 		MinReplicas:       *bc.Spec.Components.Ingress.MinReplicas,
 	}
@@ -263,10 +263,10 @@ func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell) resources.Fanout
 			Image:              r.env.FanoutImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
-			CPURequest:         *bc.Spec.Components.Fanout.Resources.Requests.CPU,
-			CPULimit:           *bc.Spec.Components.Fanout.Resources.Limits.CPU,
-			MemoryRequest:      *bc.Spec.Components.Fanout.Resources.Requests.Memory,
-			MemoryLimit:        *bc.Spec.Components.Fanout.Resources.Limits.Memory,
+			CPURequest:         bc.Spec.Components.Fanout.CPURequest,
+			CPULimit:           bc.Spec.Components.Fanout.CPULimit,
+			MemoryRequest:      bc.Spec.Components.Fanout.MemoryRequest,
+			MemoryLimit:        bc.Spec.Components.Fanout.MemoryLimit,
 		},
 	}
 }
@@ -275,8 +275,8 @@ func (r *Reconciler) makeFanoutHPAArgs(bc *intv1alpha1.BrokerCell) resources.Aut
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.FanoutName,
 		BrokerCell:        bc,
-		AvgCPUUtilization: *bc.Spec.Components.Fanout.AvgCPUUtilization,
-		AvgMemoryUsage:    *bc.Spec.Components.Fanout.AvgMemoryUsage,
+		AvgCPUUtilization: bc.Spec.Components.Fanout.AvgCPUUtilization,
+		AvgMemoryUsage:    bc.Spec.Components.Fanout.AvgMemoryUsage,
 		MaxReplicas:       *bc.Spec.Components.Fanout.MaxReplicas,
 		MinReplicas:       *bc.Spec.Components.Fanout.MinReplicas,
 	}
@@ -290,10 +290,10 @@ func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell) resources.RetryAr
 			Image:              r.env.RetryImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
-			CPURequest:         *bc.Spec.Components.Retry.Resources.Requests.CPU,
-			CPULimit:           *bc.Spec.Components.Retry.Resources.Limits.CPU,
-			MemoryRequest:      *bc.Spec.Components.Retry.Resources.Requests.Memory,
-			MemoryLimit:        *bc.Spec.Components.Retry.Resources.Limits.Memory,
+			CPURequest:         bc.Spec.Components.Retry.CPURequest,
+			CPULimit:           bc.Spec.Components.Retry.CPULimit,
+			MemoryRequest:      bc.Spec.Components.Retry.MemoryRequest,
+			MemoryLimit:        bc.Spec.Components.Retry.MemoryLimit,
 		},
 	}
 }
@@ -302,8 +302,8 @@ func (r *Reconciler) makeRetryHPAArgs(bc *intv1alpha1.BrokerCell) resources.Auto
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.RetryName,
 		BrokerCell:        bc,
-		AvgCPUUtilization: *bc.Spec.Components.Retry.AvgCPUUtilization,
-		AvgMemoryUsage:    *bc.Spec.Components.Retry.AvgMemoryUsage,
+		AvgCPUUtilization: bc.Spec.Components.Retry.AvgCPUUtilization,
+		AvgMemoryUsage:    bc.Spec.Components.Retry.AvgMemoryUsage,
 		MaxReplicas:       *bc.Spec.Components.Retry.MaxReplicas,
 		MinReplicas:       *bc.Spec.Components.Retry.MinReplicas,
 	}
