@@ -7,8 +7,8 @@ require (
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
 	cloud.google.com/go/pubsub v1.6.1
 	cloud.google.com/go/storage v1.10.0
-	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200806165906-9ae0708e27fa
-	github.com/cloudevents/sdk-go/v2 v2.2.1-0.20200729225950-2d83dc10864e
+	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
+	github.com/cloudevents/sdk-go/v2 v2.2.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.1
@@ -29,10 +29,10 @@ require (
 	k8s.io/api v0.18.7-rc.0
 	k8s.io/apimachinery v0.18.7-rc.0
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.17.1-0.20200827105306-b36e8ad4222e
-	knative.dev/pkg v0.0.0-20200827020906-21dcafbfa751
-	knative.dev/serving v0.17.1-0.20200827064806-5634539a7e81
-	knative.dev/test-infra v0.0.0-20200826192206-b4adbd18e3fe // indirect
+	knative.dev/eventing v0.17.1-0.20200828141207-daaf5619ec30
+	knative.dev/pkg v0.0.0-20200827231407-8d478d55c0e6
+	knative.dev/serving v0.17.1-0.20200828171108-6826f9a6f80b
+	knative.dev/test-infra v0.0.0-20200828152807-808074748557 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 

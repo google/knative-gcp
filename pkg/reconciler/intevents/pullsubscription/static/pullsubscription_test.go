@@ -43,7 +43,6 @@ import (
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
 
@@ -913,7 +912,6 @@ func TestAllCases(t *testing.T) {
 		WantEvents: nil,
 	}}
 
-	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		ctx = addressable.WithDuck(ctx)
 		pubsubBase := &intevents.PubSubBase{

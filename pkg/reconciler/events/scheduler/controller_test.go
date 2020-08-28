@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"knative.dev/pkg/configmap"
-	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 
 	iamtesting "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -38,7 +37,6 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
 	cmw := configmap.NewStaticWatcher()
 	c := newController(ctx, cmw, iamtesting.NoopIAMPolicyManager, iamtesting.NewGCPAuthTestStore(t, nil))
