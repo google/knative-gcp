@@ -225,7 +225,6 @@ func newTestServer(handler func(w http.ResponseWriter, r *http.Request)) (*http.
 }
 
 func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pubsub.Client, func()) {
-	t.Helper()
 	srv := pstest.NewServer()
 	conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
 	if err != nil {
@@ -254,7 +253,7 @@ type requestData struct {
 }
 
 func TestProbeHelper(t *testing.T) {
-	//t.Skip("Skip this test from running on Prow as it is only for local development.")
+	t.Skip("Skip this test from running on Prow as it is only for local development.")
 
 	os.Setenv("K_SINK", dummyBrokerURL)
 	os.Setenv("PROJECT_ID", testProjectID)
