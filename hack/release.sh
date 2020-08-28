@@ -20,6 +20,7 @@ source $(dirname "$0")/../vendor/knative.dev/test-infra/scripts/release.sh
 declare -A COMPONENTS
 COMPONENTS=(
   ["cloud-run-events-core.yaml"]="config"
+  ["cloud-run-events-pre-install-jobs.yaml"]="config/pre-install/v0.18.0"
 )
 readonly COMPONENTS
 
@@ -61,4 +62,4 @@ function build_release() {
   ARTIFACTS_TO_PUBLISH="${all_yamls[@]}"
 }
 
-main $@
+main "$@"
