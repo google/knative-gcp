@@ -913,7 +913,6 @@ func TestAllCases(t *testing.T) {
 		WantEvents: nil,
 	}}
 
-	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		ctx = addressable.WithDuck(ctx)
 		pubsubBase := &intevents.PubSubBase{

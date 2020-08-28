@@ -25,7 +25,7 @@ import (
 
 	v12 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 
-	v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -42,7 +42,6 @@ import (
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
 
@@ -814,7 +813,6 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: nil,
 	}}
 
-	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
