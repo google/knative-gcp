@@ -29,21 +29,19 @@ readonly CONFIG_GCP_AUTH="test/test_configs/config-gcp-auth-wi.yaml"
 readonly K8S_SERVICE_ACCOUNT_NAME="ksa-name"
 
 function export_variable() {
-if (( ! IS_PROW )); then
-  readonly CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
   readonly MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
   readonly BROKER_MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${BROKER_SERVICE_ACCOUNT}]"
-  readonly PUBSUB_SERVICE_ACCOUNT_EMAIL="${PUBSUB_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
-  readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
-else
-  readonly CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
-  readonly MEMBER="serviceAccount:${PROJECT}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
-  readonly BROKER_MEMBER="serviceAccount:${PROJECT}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${BROKER_SERVICE_ACCOUNT}]"
-  # Get the PROW service account.
-  readonly PROW_PROJECT_NAME=$(cut -d'.' -f1 <<< "$(cut -d'@' -f2 <<< "${PROW_SERVICE_ACCOUNT_EMAIL}")")
-  readonly PUBSUB_SERVICE_ACCOUNT_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
-  readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
-fi
+  if (( ! IS_PROW )); then
+    readonly CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
+    readonly PUBSUB_SERVICE_ACCOUNT_EMAIL="${PUBSUB_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
+    readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
+  else
+    readonly CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
+    # Get the PROW service account.
+    readonly PROW_PROJECT_NAME=$(cut -d'.' -f1 <<< "$(cut -d'@' -f2 <<< "${PROW_SERVICE_ACCOUNT_EMAIL}")")
+    readonly PUBSUB_SERVICE_ACCOUNT_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
+    readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
+  fi
 }
 
 # Setup resources common to all eventing tests.
@@ -82,7 +80,7 @@ function control_plane_setup() {
     while read -r member_name
     do
       # Only delete the iam bindings that is related to the current boskos project.
-      if [ "$(cut -d'.' -f1 <<< "${member_name}")" == "serviceAccount:${PROJECT}" ]; then
+      if [ "$(cut -d'.' -f1 <<< "${member_name}")" == "serviceAccount:${E2E_PROJECT_ID}" ]; then
         gcloud iam service-accounts remove-iam-policy-binding \
           --role roles/iam.workloadIdentityUser \
           --member "${member_name}" \
@@ -157,7 +155,14 @@ function gcp_auth_setup() {
 
 # Create a cluster with Workload Identity enabled.
 # We could specify --cluster-version to force the cluster using a particular GKE version.
-initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
+initialize $@ --kubetest2-flag "--enable-workload-identity=true"
+
+if [ "${SKIP_TESTS:-}" == "true" ]; then
+  echo "**************************************"
+  echo "***         TESTS SKIPPED          ***"
+  echo "**************************************"
+  exit 0
+fi
 
 # Channel related e2e tests we have in Eventing is not running here.
 go_test_e2e -timeout=30m -parallel=6 ./test/e2e -workloadIndentity=true -serviceAccountName="${K8S_SERVICE_ACCOUNT_NAME}" || fail_test

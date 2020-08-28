@@ -18,9 +18,9 @@ package broker
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	"github.com/google/knative-gcp/pkg/broker/ingress"
+
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -32,6 +32,7 @@ import (
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 )
 
@@ -44,7 +45,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Error reconciling brokercell", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
-		b.Status.MarkBrokerCelllUnknown("BrokerCellUnknown", "Failed to get brokercell %s/%s", bc.Namespace, bc.Name)
+		b.Status.MarkBrokerCellUnknown("BrokerCellUnknown", "Failed to get brokercell %s/%s", bc.Namespace, bc.Name)
 		return err
 	}
 
@@ -53,7 +54,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 		bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Create(want)
 		if err != nil && !apierrs.IsAlreadyExists(err) {
 			logging.FromContext(ctx).Error("Error creating brokercell", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
-			b.Status.MarkBrokerCelllFailed("BrokerCellCreationFailed", "Failed to create %s/%s", want.Namespace, want.Name)
+			b.Status.MarkBrokerCellFailed("BrokerCellCreationFailed", "Failed to create %s/%s", want.Namespace, want.Name)
 			return err
 		}
 		if apierrs.IsAlreadyExists(err) {
@@ -63,7 +64,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 			bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Get(want.Name, metav1.GetOptions{})
 			if err != nil {
 				logging.FromContext(ctx).Error("Failed to get the brokercell from the API server", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
-				b.Status.MarkBrokerCelllUnknown("BrokerCellUnknown", "Failed to get the brokercell from the API server %s/%s", want.Namespace, want.Name)
+				b.Status.MarkBrokerCellUnknown("BrokerCellUnknown", "Failed to get the brokercell from the API server %s/%s", want.Namespace, want.Name)
 				return err
 			}
 		}
@@ -75,7 +76,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 	if bc.Status.IsReady() {
 		b.Status.MarkBrokerCellReady()
 	} else {
-		b.Status.MarkBrokerCelllUnknown("BrokerCellNotReady", "Brokercell %s/%s is not ready", bc.Namespace, bc.Name)
+		b.Status.MarkBrokerCellUnknown("BrokerCellNotReady", "Brokercell %s/%s is not ready", bc.Namespace, bc.Name)
 	}
 
 	//TODO(#1019) Use the IngressTemplate of brokercell.
@@ -83,7 +84,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 	b.Status.SetAddress(&apis.URL{
 		Scheme: "http",
 		Host:   names.ServiceHostName(ingressServiceName, bc.Namespace),
-		Path:   fmt.Sprintf("/%s/%s", b.Namespace, b.Name),
+		Path:   ingress.BrokerPath(b.Namespace, b.Name),
 	})
 
 	return nil

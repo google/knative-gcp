@@ -36,6 +36,8 @@ func (source *CloudPubSubSource) ConvertTo(ctx context.Context, to apis.Converti
 		sink.Spec.RetainAckedMessages = source.Spec.RetainAckedMessages
 		sink.Spec.RetentionDuration = source.Spec.RetentionDuration
 		sink.Status.PubSubStatus = convert.ToV1beta1PubSubStatus(source.Status.PubSubStatus)
+		// Remove v1alpha1 as deprecated from the Status Condition when converting to a higher version.
+		convert.RemoveV1alpha1Deprecated(sink.ConditionSet(), &sink.Status.Status)
 		return nil
 	default:
 		return apis.ConvertToViaProxy(ctx, source, &v1beta1.CloudPubSubSource{}, sink)
@@ -54,6 +56,8 @@ func (sink *CloudPubSubSource) ConvertFrom(ctx context.Context, from apis.Conver
 		sink.Spec.RetainAckedMessages = source.Spec.RetainAckedMessages
 		sink.Spec.RetentionDuration = source.Spec.RetentionDuration
 		sink.Status.PubSubStatus = convert.FromV1beta1PubSubStatus(source.Status.PubSubStatus)
+		// Mark v1alpha1 as deprecated as a Status Condition when converting to v1alpha1.
+		convert.MarkV1alpha1Deprecated(sink.ConditionSet(), &sink.Status.Status)
 		return nil
 	default:
 		return apis.ConvertFromViaProxy(ctx, source, &v1beta1.CloudPubSubSource{}, sink)

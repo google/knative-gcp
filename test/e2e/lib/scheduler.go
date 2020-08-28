@@ -19,19 +19,23 @@ package lib
 import (
 	"context"
 	"encoding/json"
-	"os"
 	"testing"
+	"time"
 
-	"github.com/google/knative-gcp/pkg/gclient/scheduler"
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
-	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
+	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
+
 	"google.golang.org/api/option"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/google/knative-gcp/pkg/gclient/scheduler"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 type SchedulerConfig struct {
@@ -40,21 +44,54 @@ type SchedulerConfig struct {
 	Data               string
 	SinkName           string
 	ServiceAccountName string
-	Options            []kngcptesting.CloudSchedulerSourceOption
 }
 
 func MakeSchedulerOrDie(client *Client, config SchedulerConfig) {
 	client.T.Helper()
-	so := config.Options
-	so = append(so, kngcptesting.WithCloudSchedulerSourceLocation("us-central1"))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceData(config.Data))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceServiceAccount(config.ServiceAccountName))
-	scheduler := kngcptesting.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
+	so := make([]reconcilertestingv1.CloudSchedulerSourceOption, 0)
+	so = append(so, reconcilertestingv1.WithCloudSchedulerSourceLocation("us-central1"))
+	so = append(so, reconcilertestingv1.WithCloudSchedulerSourceData(config.Data))
+	so = append(so, reconcilertestingv1.WithCloudSchedulerSourceSchedule("* * * * *"))
+	so = append(so, reconcilertestingv1.WithCloudSchedulerSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1.WithCloudSchedulerSourceServiceAccount(config.ServiceAccountName))
+	scheduler := reconcilertestingv1.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
 
 	client.CreateSchedulerOrFail(scheduler)
-	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceTypeMeta)
+	// Scheduler source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
+	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceV1TypeMeta)
+}
+
+func MakeSchedulerV1beta1OrDie(client *Client, config SchedulerConfig) {
+	client.T.Helper()
+	so := make([]reconcilertestingv1beta1.CloudSchedulerSourceOption, 0)
+	so = append(so, reconcilertestingv1beta1.WithCloudSchedulerSourceLocation("us-central1"))
+	so = append(so, reconcilertestingv1beta1.WithCloudSchedulerSourceData(config.Data))
+	so = append(so, reconcilertestingv1beta1.WithCloudSchedulerSourceSchedule("* * * * *"))
+	so = append(so, reconcilertestingv1beta1.WithCloudSchedulerSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1beta1.WithCloudSchedulerSourceServiceAccount(config.ServiceAccountName))
+	scheduler := reconcilertestingv1beta1.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
+
+	client.CreateSchedulerV1beta1OrFail(scheduler)
+	// Scheduler source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
+	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceV1beta1TypeMeta)
+}
+
+func MakeSchedulerV1alpha1OrDie(client *Client, config SchedulerConfig) {
+	client.T.Helper()
+	so := make([]reconcilertestingv1alpha1.CloudSchedulerSourceOption, 0)
+	so = append(so, reconcilertestingv1alpha1.WithCloudSchedulerSourceLocation("us-central1"))
+	so = append(so, reconcilertestingv1alpha1.WithCloudSchedulerSourceData(config.Data))
+	so = append(so, reconcilertestingv1alpha1.WithCloudSchedulerSourceSchedule("* * * * *"))
+	so = append(so, reconcilertestingv1alpha1.WithCloudSchedulerSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1alpha1.WithCloudSchedulerSourceServiceAccount(config.ServiceAccountName))
+	scheduler := reconcilertestingv1alpha1.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
+
+	client.CreateSchedulerV1alpha1OrFail(scheduler)
+	// Scheduler source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
+	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceV1alpha1TypeMeta)
 }
 
 func MakeSchedulerJobOrDie(client *Client, data, targetName, eventType string) {
@@ -85,7 +122,7 @@ func schedulerEventPayload(customData string) string {
 func SchedulerJobExists(t *testing.T, jobName string) bool {
 	t.Helper()
 	ctx := context.Background()
-	project := os.Getenv(ProwProjectKey)
+	project := GetEnvOrFail(t, ProwProjectKey)
 	opt := option.WithQuotaProject(project)
 	client, err := scheduler.NewClient(ctx, opt)
 	if err != nil {

@@ -68,9 +68,33 @@ var (
 	_ duckv1.KRShaped = (*BrokerCell)(nil)
 )
 
+// SystemResource specifies quantities for resources such as CPU and memory
+type SystemResource struct {
+	CPU    *string `json:"cpu,omitempty"`
+	Memory *string `json:"memory,omitempty"`
+}
+
+// ResourceSpecification defines requests and limits for the system resources
+type ResourceSpecification struct {
+	// Request specifies the minimal amount of the resource for the deployment to be schedulable
+	Requests SystemResource `json:"requests,omitempty"`
+
+	// Limit specifies the maximal amount of the resource that the deployment is allowed to consume
+	Limits SystemResource `json:"limits,omitempty"`
+}
+
 // ComponentParameters specifies scaling and resource parameters to be used
 // by a single component of a BrokerCell.
 type ComponentParameters struct {
+	// AvgCPUUtilization specifies the average CPU consumption targeted by the component's Horizontal Pod Autoscaler
+	AvgCPUUtilization *int32 `json:"avgCPUUtilization,omitempty"`
+
+	// AvgMemoryUsage specifies the average memory consumption targeted by the component's Horizontal Pod Autoscaler
+	AvgMemoryUsage *string `json:"avgMemoryUsage,omitempty"`
+
+	// Requests and limits for system resources (CPU, memory)
+	Resources ResourceSpecification `json:"resources,omitempty"`
+
 	// MinReplicas specifies the minimum replica count for the component.
 	MinReplicas *int32 `json:"minReplicas,omitempty"`
 

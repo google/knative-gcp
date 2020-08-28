@@ -29,9 +29,9 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	cloudauditlogssourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudauditlogssource"
-	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
+	cloudauditlogssourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudauditlogssource"
+	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs/resources"
@@ -66,7 +66,7 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface.
 var _ cloudauditlogssourcereconciler.Interface = (*Reconciler)(nil)
 
-func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1beta1.CloudAuditLogsSource) reconciler.Event {
+func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1.CloudAuditLogsSource) reconciler.Event {
 	ctx = logging.WithLogger(ctx, c.Logger.With(zap.Any("auditlogsource", s)))
 
 	s.Status.InitializeConditions()
@@ -97,7 +97,7 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1beta1.CloudAuditLog
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudAuditLogsSource reconciled: "%s/%s"`, s.Namespace, s.Name)
 }
 
-func (c *Reconciler) reconcileSink(ctx context.Context, s *v1beta1.CloudAuditLogsSource) (string, error) {
+func (c *Reconciler) reconcileSink(ctx context.Context, s *v1.CloudAuditLogsSource) (string, error) {
 	sink, err := c.ensureSinkCreated(ctx, s)
 	if err != nil {
 		s.Status.MarkSinkNotReady("SinkCreateFailed", "failed to ensure creation of logging sink: %s", err.Error())
@@ -111,7 +111,7 @@ func (c *Reconciler) reconcileSink(ctx context.Context, s *v1beta1.CloudAuditLog
 	return sink.ID, nil
 }
 
-func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1beta1.CloudAuditLogsSource) (*logadmin.Sink, error) {
+func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1.CloudAuditLogsSource) (*logadmin.Sink, error) {
 	sinkID := s.Status.StackdriverSink
 	if sinkID == "" {
 		sinkID = resources.GenerateSinkName(s)
@@ -143,7 +143,7 @@ func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1beta1.CloudAudi
 }
 
 // Ensures that the sink has been granted the pubsub.publisher role on the source topic.
-func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, s *v1beta1.CloudAuditLogsSource, sink *logadmin.Sink) error {
+func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, s *v1.CloudAuditLogsSource, sink *logadmin.Sink) error {
 	pubsubClient, err := c.pubsubClientProvider(ctx, s.Status.ProjectID)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create PubSub client", zap.Error(err))
@@ -169,22 +169,24 @@ func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, s *v1beta1.Cloud
 
 // deleteSink looks at status.SinkID and if non-empty will delete the
 // previously created stackdriver sink.
-func (c *Reconciler) deleteSink(ctx context.Context, s *v1beta1.CloudAuditLogsSource) error {
+func (c *Reconciler) deleteSink(ctx context.Context, s *v1.CloudAuditLogsSource) error {
 	if s.Status.StackdriverSink == "" {
 		return nil
 	}
 	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create LogAdmin client", zap.Error(err))
+		s.Status.MarkSinkUnknown(deleteSinkFailed, "Failed to create LogAdmin Client: %s", err.Error())
 		return err
 	}
-	if err = logadminClient.DeleteSink(ctx, s.Status.StackdriverSink); status.Code(err) != codes.NotFound {
+	if err = logadminClient.DeleteSink(ctx, s.Status.StackdriverSink); err != nil && status.Code(err) != codes.NotFound {
+		s.Status.MarkSinkUnknown(deleteSinkFailed, "Failed to delete Stackdriver sink: %s", err.Error())
 		return err
 	}
 	return nil
 }
 
-func (c *Reconciler) FinalizeKind(ctx context.Context, s *v1beta1.CloudAuditLogsSource) reconciler.Event {
+func (c *Reconciler) FinalizeKind(ctx context.Context, s *v1.CloudAuditLogsSource) reconciler.Event {
 	// If k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
 	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.

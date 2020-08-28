@@ -70,11 +70,11 @@ func (bs *BrokerStatus) SetAddress(url *apis.URL) {
 	}
 }
 
-func (bs *BrokerStatus) MarkBrokerCelllUnknown(reason, format string, args ...interface{}) {
+func (bs *BrokerStatus) MarkBrokerCellUnknown(reason, format string, args ...interface{}) {
 	brokerCondSet.Manage(bs).MarkUnknown(BrokerConditionBrokerCell, reason, format, args...)
 }
 
-func (bs *BrokerStatus) MarkBrokerCelllFailed(reason, format string, args ...interface{}) {
+func (bs *BrokerStatus) MarkBrokerCellFailed(reason, format string, args ...interface{}) {
 	brokerCondSet.Manage(bs).MarkFalse(BrokerConditionBrokerCell, reason, format, args...)
 }
 

@@ -37,7 +37,7 @@ import (
 	iamtesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 
 	// Fake injection informers
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/pullsubscription/fake"
 )
 
 func TestNew(t *testing.T) {

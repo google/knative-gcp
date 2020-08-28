@@ -19,21 +19,47 @@ package convert
 import (
 	"context"
 
-	pkgduckv1 "knative.dev/pkg/apis/duck/v1"
-
 	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/apis"
+	pkgduckv1 "knative.dev/pkg/apis/duck/v1"
 	pkgduckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	pkgduckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+)
+
+const (
+	DeprecatedType           = "Deprecated"
+	deprecatedV1Alpha1Reason = "v1alpha1Deprecated"
+	deprecatedV1Alpha1Msg    = "V1alpha1 has been deprecated and will be removed in 0.18."
+)
+
+var (
+	DeprecatedV1Alpha1Condition = apis.Condition{
+		Type:     DeprecatedType,
+		Reason:   deprecatedV1Alpha1Reason,
+		Status:   corev1.ConditionTrue,
+		Severity: apis.ConditionSeverityWarning,
+		Message:  deprecatedV1Alpha1Msg,
+	}
 )
 
 func ToV1beta1PubSubSpec(from duckv1alpha1.PubSubSpec) duckv1beta1.PubSubSpec {
 	to := duckv1beta1.PubSubSpec{}
 	to.SourceSpec = from.SourceSpec
 	to.IdentitySpec = ToV1beta1IdentitySpec(from.IdentitySpec)
+	to.Secret = from.Secret
+	to.Project = from.Project
+	return to
+}
+
+func FromV1alpha1ToV1PubSubSpec(from duckv1alpha1.PubSubSpec) duckv1.PubSubSpec {
+	to := duckv1.PubSubSpec{}
+	to.SourceSpec = from.SourceSpec
+	to.IdentitySpec = FromV1alpha1ToV1IdentitySpec(from.IdentitySpec)
 	to.Secret = from.Secret
 	to.Project = from.Project
 	return to
@@ -57,6 +83,15 @@ func FromV1beta1PubSubSpec(from duckv1beta1.PubSubSpec) duckv1alpha1.PubSubSpec 
 	return to
 }
 
+func FromV1ToV1alpha1PubSubSpec(from duckv1.PubSubSpec) duckv1alpha1.PubSubSpec {
+	to := duckv1alpha1.PubSubSpec{}
+	to.SourceSpec = from.SourceSpec
+	to.IdentitySpec = FromV1ToV1alpha1IdentitySpec(from.IdentitySpec)
+	to.Secret = from.Secret
+	to.Project = from.Project
+	return to
+}
+
 func FromV1PubSubSpec(from duckv1.PubSubSpec) duckv1beta1.PubSubSpec {
 	to := duckv1beta1.PubSubSpec{}
 	to.SourceSpec = from.SourceSpec
@@ -68,6 +103,12 @@ func FromV1PubSubSpec(from duckv1.PubSubSpec) duckv1beta1.PubSubSpec {
 
 func ToV1beta1IdentitySpec(from duckv1alpha1.IdentitySpec) duckv1beta1.IdentitySpec {
 	to := duckv1beta1.IdentitySpec{}
+	to.ServiceAccountName = from.ServiceAccountName
+	return to
+}
+
+func FromV1alpha1ToV1IdentitySpec(from duckv1alpha1.IdentitySpec) duckv1.IdentitySpec {
+	to := duckv1.IdentitySpec{}
 	to.ServiceAccountName = from.ServiceAccountName
 	return to
 }
@@ -84,6 +125,12 @@ func FromV1beta1IdentitySpec(from duckv1beta1.IdentitySpec) duckv1alpha1.Identit
 	return to
 }
 
+func FromV1ToV1alpha1IdentitySpec(from duckv1.IdentitySpec) duckv1alpha1.IdentitySpec {
+	to := duckv1alpha1.IdentitySpec{}
+	to.ServiceAccountName = from.ServiceAccountName
+	return to
+}
+
 func FromV1IdentitySpec(from duckv1.IdentitySpec) duckv1beta1.IdentitySpec {
 	to := duckv1beta1.IdentitySpec{}
 	to.ServiceAccountName = from.ServiceAccountName
@@ -93,6 +140,17 @@ func FromV1IdentitySpec(from duckv1.IdentitySpec) duckv1beta1.IdentitySpec {
 func ToV1beta1PubSubStatus(from duckv1alpha1.PubSubStatus) duckv1beta1.PubSubStatus {
 	to := duckv1beta1.PubSubStatus{}
 	to.IdentityStatus = ToV1beta1IdentityStatus(from.IdentityStatus)
+	to.SinkURI = from.SinkURI
+	to.CloudEventAttributes = from.CloudEventAttributes
+	to.ProjectID = from.ProjectID
+	to.TopicID = from.TopicID
+	to.SubscriptionID = from.SubscriptionID
+	return to
+}
+
+func FromV1alpha1ToV1PubSubStatus(from duckv1alpha1.PubSubStatus) duckv1.PubSubStatus {
+	to := duckv1.PubSubStatus{}
+	to.IdentityStatus = FromV1alpha1ToV1IdentityStatus(from.IdentityStatus)
 	to.SinkURI = from.SinkURI
 	to.CloudEventAttributes = from.CloudEventAttributes
 	to.ProjectID = from.ProjectID
@@ -123,6 +181,17 @@ func FromV1beta1PubSubStatus(from duckv1beta1.PubSubStatus) duckv1alpha1.PubSubS
 	return to
 }
 
+func FromV1ToV1alpha1PubSubStatus(from duckv1.PubSubStatus) duckv1alpha1.PubSubStatus {
+	to := duckv1alpha1.PubSubStatus{}
+	to.IdentityStatus = FromV1ToV1alpha1IdentityStatus(from.IdentityStatus)
+	to.SinkURI = from.SinkURI
+	to.CloudEventAttributes = from.CloudEventAttributes
+	to.ProjectID = from.ProjectID
+	to.TopicID = from.TopicID
+	to.SubscriptionID = from.SubscriptionID
+	return to
+}
+
 func FromV1PubSubStatus(from duckv1.PubSubStatus) duckv1beta1.PubSubStatus {
 	to := duckv1beta1.PubSubStatus{}
 	to.IdentityStatus = FromV1IdentityStatus(from.IdentityStatus)
@@ -141,6 +210,12 @@ func ToV1beta1IdentityStatus(from duckv1alpha1.IdentityStatus) duckv1beta1.Ident
 	return to
 }
 
+func FromV1alpha1ToV1IdentityStatus(from duckv1alpha1.IdentityStatus) duckv1.IdentityStatus {
+	to := duckv1.IdentityStatus{}
+	to.Status = from.Status
+	return to
+}
+
 func ToV1IdentityStatus(from duckv1beta1.IdentityStatus) duckv1.IdentityStatus {
 	to := duckv1.IdentityStatus{}
 	to.Status = from.Status
@@ -151,6 +226,12 @@ func FromV1beta1IdentityStatus(from duckv1beta1.IdentityStatus) duckv1alpha1.Ide
 	to := duckv1alpha1.IdentityStatus{}
 	to.Status = from.Status
 	to.ServiceAccountName = from.ServiceAccountName
+	return to
+}
+
+func FromV1ToV1alpha1IdentityStatus(from duckv1.IdentityStatus) duckv1alpha1.IdentityStatus {
+	to := duckv1alpha1.IdentityStatus{}
+	to.Status = from.Status
 	return to
 }
 
@@ -244,4 +325,18 @@ func FromV1beta1SubscribableSpec(from *eventingduckv1beta1.SubscribableSpec) *ev
 		}
 	}
 	return &to
+}
+
+// A helper function to mark v1alpha1 Deprecated Condition in the Status.
+// We mark the Condition in status during conversion from a higher version to v1alpha1.
+// TODO: remove after the 0.17 cut.
+func MarkV1alpha1Deprecated(cs *apis.ConditionSet, s *pkgduckv1.Status) {
+	cs.Manage(s).SetCondition(DeprecatedV1Alpha1Condition)
+}
+
+// A helper function to remove Deprecated Condition from the Status during conversion
+// from v1alpha1 to a higher version.
+// TODO: remove after the 0.17 cut.
+func RemoveV1alpha1Deprecated(cs *apis.ConditionSet, s *pkgduckv1.Status) {
+	cs.Manage(s).ClearCondition(DeprecatedType)
 }

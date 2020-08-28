@@ -92,8 +92,7 @@ func TestCloudAuditLogsSourceStatusIsReady(t *testing.T) {
 			}(),
 			wantConditionStatus: corev1.ConditionUnknown,
 			want:                false,
-		},
-		{
+		}, {
 			name: "sink is not ready",
 			s: func() *CloudAuditLogsSourceStatus {
 				s := &CloudAuditLogsSource{}
@@ -104,6 +103,18 @@ func TestCloudAuditLogsSourceStatusIsReady(t *testing.T) {
 				return &s.Status
 			}(),
 			wantConditionStatus: corev1.ConditionFalse,
+			want:                false,
+		}, {
+			name: "the status of sink is unknown",
+			s: func() *CloudAuditLogsSourceStatus {
+				s := &CloudAuditLogsSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+				s.Status.MarkSinkUnknown("test", "the status of sink is unknown")
+				return &s.Status
+			}(),
+			wantConditionStatus: corev1.ConditionUnknown,
 			want:                false,
 		}, {
 			name: "ready",
@@ -169,6 +180,21 @@ func TestCloudAuditLogsSourceGetCondition(t *testing.T) {
 			Type:    SinkReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  "NotReady",
+			Message: "test message",
+		},
+	}, {
+		name: "unknown",
+		s: func() *CloudAuditLogsSourceStatus {
+			s := &CloudAuditLogsSourceStatus{}
+			s.InitializeConditions()
+			s.MarkSinkUnknown("Unknown", "test message")
+			return s
+		}(),
+		condQuery: SinkReady,
+		want: &apis.Condition{
+			Type:    SinkReady,
+			Status:  corev1.ConditionUnknown,
+			Reason:  "Unknown",
 			Message: "test message",
 		},
 	}, {

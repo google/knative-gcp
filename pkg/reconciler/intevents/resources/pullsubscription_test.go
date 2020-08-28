@@ -20,24 +20,24 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
+	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestMakePullSubscription(t *testing.T) {
-	source := &v1beta1.CloudStorageSource{
+	source := &v1.CloudStorageSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "bucket-name",
 			Namespace: "bucket-namespace",
 			UID:       "bucket-uid",
 		},
-		Spec: v1beta1.CloudStorageSourceSpec{
+		Spec: v1.CloudStorageSourceSpec{
 			Bucket: "this-bucket",
-			PubSubSpec: duckv1beta1.PubSubSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				Project: "project-123",
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
@@ -78,7 +78,7 @@ func TestMakePullSubscription(t *testing.T) {
 	got := MakePullSubscription(args)
 
 	yes := true
-	want := &inteventsv1beta1.PullSubscription{
+	want := &inteventsv1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "bucket-namespace",
 			Name:      "bucket-name",
@@ -90,7 +90,7 @@ func TestMakePullSubscription(t *testing.T) {
 				"metrics-resource-group": "storages.events.cloud.google.com",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "events.cloud.google.com/v1beta1",
+				APIVersion:         "events.cloud.google.com/v1",
 				Kind:               "CloudStorageSource",
 				Name:               "bucket-name",
 				UID:                "bucket-uid",
@@ -98,8 +98,8 @@ func TestMakePullSubscription(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: inteventsv1beta1.PullSubscriptionSpec{
-			PubSubSpec: duckv1beta1.PubSubSpec{
+		Spec: inteventsv1.PullSubscriptionSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",

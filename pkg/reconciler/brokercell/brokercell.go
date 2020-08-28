@@ -43,12 +43,13 @@ import (
 )
 
 type envConfig struct {
-	IngressImage       string `envconfig:"INGRESS_IMAGE" required:"true"`
-	FanoutImage        string `envconfig:"FANOUT_IMAGE" required:"true"`
-	RetryImage         string `envconfig:"RETRY_IMAGE" required:"true"`
-	ServiceAccountName string `envconfig:"SERVICE_ACCOUNT" default:"broker"`
-	IngressPort        int    `envconfig:"INGRESS_PORT" default:"8080"`
-	MetricsPort        int    `envconfig:"METRICS_PORT" default:"9090"`
+	IngressImage           string `envconfig:"INGRESS_IMAGE" required:"true"`
+	FanoutImage            string `envconfig:"FANOUT_IMAGE" required:"true"`
+	RetryImage             string `envconfig:"RETRY_IMAGE" required:"true"`
+	ServiceAccountName     string `envconfig:"SERVICE_ACCOUNT" default:"broker"`
+	IngressPort            int    `envconfig:"INGRESS_PORT" default:"8080"`
+	MetricsPort            int    `envconfig:"METRICS_PORT" default:"9090"`
+	InternalMetricsEnabled bool   `envconfig:"INTERNAL_METRICS_ENABLED" default:"false"`
 }
 
 type listers struct {
@@ -234,6 +235,10 @@ func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.Ingre
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
 			AllowIstioSidecar:  true,
+			CPURequest:         *bc.Spec.Components.Ingress.Resources.Requests.CPU,
+			CPULimit:           *bc.Spec.Components.Ingress.Resources.Limits.CPU,
+			MemoryRequest:      *bc.Spec.Components.Ingress.Resources.Requests.Memory,
+			MemoryLimit:        *bc.Spec.Components.Ingress.Resources.Limits.Memory,
 		},
 		Port: r.env.IngressPort,
 	}
@@ -243,8 +248,8 @@ func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.Au
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.IngressName,
 		BrokerCell:        bc,
-		AvgCPUUtilization: 95,
-		AvgMemoryUsage:    "700Mi",
+		AvgCPUUtilization: *bc.Spec.Components.Ingress.AvgCPUUtilization,
+		AvgMemoryUsage:    *bc.Spec.Components.Ingress.AvgMemoryUsage,
 		MaxReplicas:       *bc.Spec.Components.Ingress.MaxReplicas,
 		MinReplicas:       *bc.Spec.Components.Ingress.MinReplicas,
 	}
@@ -258,6 +263,10 @@ func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell) resources.Fanout
 			Image:              r.env.FanoutImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
+			CPURequest:         *bc.Spec.Components.Fanout.Resources.Requests.CPU,
+			CPULimit:           *bc.Spec.Components.Fanout.Resources.Limits.CPU,
+			MemoryRequest:      *bc.Spec.Components.Fanout.Resources.Requests.Memory,
+			MemoryLimit:        *bc.Spec.Components.Fanout.Resources.Limits.Memory,
 		},
 	}
 }
@@ -266,15 +275,10 @@ func (r *Reconciler) makeFanoutHPAArgs(bc *intv1alpha1.BrokerCell) resources.Aut
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.FanoutName,
 		BrokerCell:        bc,
-		AvgCPUUtilization: 95,
-		// The limit we set is 3000Mi which is mostly used to prevent surging
-		// memory usage causing OOM.
-		// Here we only set half of the limit so that in case of surging memory
-		// usage, HPA could have enough time to kick in.
-		// See: https://github.com/google/knative-gcp/issues/1265
-		AvgMemoryUsage: "1500Mi",
-		MaxReplicas:    *bc.Spec.Components.Fanout.MaxReplicas,
-		MinReplicas:    *bc.Spec.Components.Fanout.MinReplicas,
+		AvgCPUUtilization: *bc.Spec.Components.Fanout.AvgCPUUtilization,
+		AvgMemoryUsage:    *bc.Spec.Components.Fanout.AvgMemoryUsage,
+		MaxReplicas:       *bc.Spec.Components.Fanout.MaxReplicas,
+		MinReplicas:       *bc.Spec.Components.Fanout.MinReplicas,
 	}
 }
 
@@ -286,6 +290,10 @@ func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell) resources.RetryAr
 			Image:              r.env.RetryImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
+			CPURequest:         *bc.Spec.Components.Retry.Resources.Requests.CPU,
+			CPULimit:           *bc.Spec.Components.Retry.Resources.Limits.CPU,
+			MemoryRequest:      *bc.Spec.Components.Retry.Resources.Requests.Memory,
+			MemoryLimit:        *bc.Spec.Components.Retry.Resources.Limits.Memory,
 		},
 	}
 }
@@ -294,15 +302,10 @@ func (r *Reconciler) makeRetryHPAArgs(bc *intv1alpha1.BrokerCell) resources.Auto
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.RetryName,
 		BrokerCell:        bc,
-		AvgCPUUtilization: 95,
-		// The limit we set is 3000Mi which is mostly used to prevent surging
-		// memory usage causing OOM.
-		// Here we only set half of the limit so that in case of surging memory
-		// usage, HPA could have enough time to kick in.
-		// See: https://github.com/google/knative-gcp/issues/1265
-		AvgMemoryUsage: "1500Mi",
-		MaxReplicas:    *bc.Spec.Components.Retry.MaxReplicas,
-		MinReplicas:    *bc.Spec.Components.Retry.MinReplicas,
+		AvgCPUUtilization: *bc.Spec.Components.Retry.AvgCPUUtilization,
+		AvgMemoryUsage:    *bc.Spec.Components.Retry.AvgMemoryUsage,
+		MaxReplicas:       *bc.Spec.Components.Retry.MaxReplicas,
+		MinReplicas:       *bc.Spec.Components.Retry.MinReplicas,
 	}
 }
 

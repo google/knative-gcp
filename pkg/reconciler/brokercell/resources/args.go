@@ -46,6 +46,10 @@ type Args struct {
 	ServiceAccountName string
 	MetricsPort        int
 	AllowIstioSidecar  bool
+	CPURequest         string
+	CPULimit           string
+	MemoryRequest      string
+	MemoryLimit        string
 }
 
 // IngressArgs are the arguments to create a Broker's ingress Deployment.

@@ -18,7 +18,6 @@ package lib
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"cloud.google.com/go/pubsub"
@@ -33,10 +32,7 @@ func MakeTopicOrDie(t *testing.T) (string, func()) {
 	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key
-	project := os.Getenv(ProwProjectKey)
-	if project == "" {
-		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
-	}
+	project := GetEnvOrFail(t, ProwProjectKey)
 	opt := option.WithQuotaProject(project)
 	client, err := pubsub.NewClient(ctx, project, opt)
 	if err != nil {
@@ -63,10 +59,7 @@ func MakeTopicWithNameOrDie(t *testing.T, topicName string) (string, func()) {
 	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key
-	project := os.Getenv(ProwProjectKey)
-	if project == "" {
-		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
-	}
+	project := GetEnvOrFail(t, ProwProjectKey)
 	client, err := pubsub.NewClient(ctx, project)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
@@ -91,10 +84,7 @@ func MakeTopicWithNameIfItDoesNotExist(t *testing.T, topicName string) {
 	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key
-	project := os.Getenv(ProwProjectKey)
-	if project == "" {
-		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
-	}
+	project := GetEnvOrFail(t, ProwProjectKey)
 	client, err := pubsub.NewClient(ctx, project)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
@@ -116,10 +106,7 @@ func GetTopic(t *testing.T, topicName string) *pubsub.Topic {
 	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key
-	project := os.Getenv(ProwProjectKey)
-	if project == "" {
-		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
-	}
+	project := GetEnvOrFail(t, ProwProjectKey)
 	client, err := pubsub.NewClient(ctx, project)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
@@ -131,10 +118,7 @@ func DeleteTopicOrDie(t *testing.T, topicName string) {
 	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key.
-	project := os.Getenv(ProwProjectKey)
-	if project == "" {
-		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
-	}
+	project := GetEnvOrFail(t, ProwProjectKey)
 	client, err := pubsub.NewClient(ctx, project)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
@@ -153,10 +137,7 @@ func TopicExists(t *testing.T, topicID string) bool {
 	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key
-	project := os.Getenv(ProwProjectKey)
-	if project == "" {
-		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
-	}
+	project := GetEnvOrFail(t, ProwProjectKey)
 	client, err := pubsub.NewClient(ctx, project)
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())

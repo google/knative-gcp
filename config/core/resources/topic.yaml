@@ -46,7 +46,7 @@ spec:
   - &version
     name: v1
     served: true
-    storage: false
+    storage: true
     subresources:
       status: {}
     additionalPrinterColumns:
@@ -137,6 +137,7 @@ spec:
                     type: string
   - << : *version
     name: v1alpha1
+    # TODO: Flip served bit of v1alpha1 in https://github.com/google/knative-gcp/issues/1544.
     served: true
     storage: false
     # v1alpha1 and v1beta1 have serviceAccountName in status.properties in the schema
@@ -154,6 +155,6 @@ spec:
   - << : *version
     name: v1beta1
     served: true
-    storage: true
+    storage: false
     # the schema of v1beta1 is exactly the same as v1alpha1 schema
     schema: *v1alpha1Schema

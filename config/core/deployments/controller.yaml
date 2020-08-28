@@ -66,6 +66,8 @@ spec:
           value: ko://github.com/google/knative-gcp/cmd/broker/fanout
         - name: BROKER_CELL_RETRY_IMAGE
           value: ko://github.com/google/knative-gcp/cmd/broker/retry
+        - name: INTERNAL_METRICS_ENABLED
+          value: "false"
         volumeMounts:
         - name: google-cloud-key
           mountPath: /var/secrets/google

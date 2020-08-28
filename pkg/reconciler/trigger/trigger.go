@@ -19,12 +19,15 @@ package trigger
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/rickb777/date/period"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/eventing/pkg/logging"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -47,6 +50,18 @@ const (
 	// Name of the corev1.Events emitted from the Trigger reconciliation process.
 	triggerReconciled = "TriggerReconciled"
 	triggerFinalized  = "TriggerFinalized"
+
+	// Default maximum backoff duration used in the backoff retry policy for
+	// pubsub subscriptions. 600 seconds is the longest supported time.
+	defaultMaximumBackoff = 600 * time.Second
+)
+
+var (
+	// Default backoff policy settings. Should normally be configured through the
+	// br-delivery ConfigMap, but these values serve in case the intended
+	// defaulting fails.
+	defaultBackoffDelay  = "PT1S"
+	defaultBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
 )
 
 // Reconciler implements controller.Reconciler for Trigger resources.
@@ -66,9 +81,6 @@ type Reconciler struct {
 
 	// pubsubClient is used as the Pubsub client when present.
 	pubsubClient *pubsub.Client
-
-	// retryPolicy defines the retry policy for pubsub messages.
-	retryPolicy *pubsub.RetryPolicy
 }
 
 // Check that TriggerReconciler implements Interface
@@ -109,7 +121,10 @@ func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1beta1.Trigger, b 
 		return err
 	}
 
-	if err := r.reconcileRetryTopicAndSubscription(ctx, t); err != nil {
+	if b.Spec.Delivery == nil {
+		b.SetDefaults(ctx)
+	}
+	if err := r.reconcileRetryTopicAndSubscription(ctx, t, b.Spec.Delivery); err != nil {
 		return err
 	}
 
@@ -168,7 +183,7 @@ func hasGCPBrokerFinalizer(t *brokerv1beta1.Trigger) bool {
 	return false
 }
 
-func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
+func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger, deliverySpec *eventingduckv1beta1.DeliverySpec) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling retry topic")
 	// get ProjectID from metadata
@@ -216,12 +231,16 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	//TODO uncomment when eventing webhook allows this
 	//trig.Status.TopicID = topic.ID()
 
+	retryPolicy := getPubsubRetryPolicy(deliverySpec)
+	deadLetterPolicy := getPubsubDeadLetterPolicy(projectID, deliverySpec)
+
 	// Check if PullSub exists, and if not, create it.
 	subID := resources.GenerateRetrySubscriptionName(trig)
 	subConfig := pubsub.SubscriptionConfig{
-		Topic:       topic,
-		Labels:      labels,
-		RetryPolicy: r.retryPolicy,
+		Topic:            topic,
+		Labels:           labels,
+		RetryPolicy:      retryPolicy,
+		DeadLetterPolicy: deadLetterPolicy,
 		//TODO(grantr): configure these settings?
 		// AckDeadline
 		// RetentionDuration
@@ -234,6 +253,40 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	//trig.Status.SubscriptionID = sub.ID()
 
 	return nil
+}
+
+// getPubsubRetryPolicy gets the eventing retry policy from the Broker delivery
+// spec and translates it to a pubsub retry policy.
+func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryPolicy {
+	// The Broker delivery spec is translated to a pubsub retry policy in the
+	// manner defined in the following post:
+	// https://github.com/google/knative-gcp/issues/1392#issuecomment-655617873
+	p, _ := period.Parse(*spec.BackoffDelay)
+	minimumBackoff, _ := p.Duration()
+	var maximumBackoff time.Duration
+	switch *spec.BackoffPolicy {
+	case eventingduckv1beta1.BackoffPolicyLinear:
+		maximumBackoff = minimumBackoff
+	case eventingduckv1beta1.BackoffPolicyExponential:
+		maximumBackoff = defaultMaximumBackoff
+	}
+	return &pubsub.RetryPolicy{
+		MinimumBackoff: minimumBackoff,
+		MaximumBackoff: maximumBackoff,
+	}
+}
+
+// getPubsubDeadLetterPolicy gets the eventing dead letter policy from the
+// Broker delivery spec and translates it to a pubsub dead letter policy.
+func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) *pubsub.DeadLetterPolicy {
+	if spec.DeadLetterSink == nil {
+		return nil
+	}
+	// Translate to the pubsub dead letter policy format.
+	return &pubsub.DeadLetterPolicy{
+		MaxDeliveryAttempts: int(*spec.Retry),
+		DeadLetterTopic:     fmt.Sprintf("projects/%s/topics/%s", projectID, spec.DeadLetterSink.URI.Host),
+	}
 }
 
 func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
@@ -269,7 +322,7 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 	err = multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, trig, &trig.Status))
 	// Delete pull subscription if it exists.
 	subID := resources.GenerateRetrySubscriptionName(trig)
-	err = multierr.Append(nil, pubsubReconciler.DeleteSubscription(ctx, subID, trig, &trig.Status))
+	err = multierr.Append(err, pubsubReconciler.DeleteSubscription(ctx, subID, trig, &trig.Status))
 	return err
 }
 

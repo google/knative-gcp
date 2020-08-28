@@ -24,6 +24,23 @@ We leverage the
 as much as possible for implementing the e2e tests. Logic specific to
 knative-gcp should be added under [knative-gcp e2e test lib](lib).
 
+## Setup a test cluster
+
+Run the following command:
+
+```shell
+SKIP_TESTS=true ./test/e2e-tests.sh --skip-teardowns
+```
+
+`SKIP_TESTS` will skip the actual tests so only the cluster initialization is
+run. `--skip-teardowns` tells the script to not tear down the cluster. This
+command runs the cluster initialization logic and leaves the cluster in a state
+that's ready to run tests.
+
+If you run into
+`Something went wrong: error creating deployer: --gcp-zone and --gcp-region cannot both be set`,
+you may have set the `ZONE` environment variable. Try `unset ZONE`.
+
 ## Running E2E Tests on an existing cluster
 
 ### Prerequisites
@@ -78,12 +95,12 @@ There are two ways to set up authentication mechanism.
     If you also plan on running tracing-related E2E tests using the StackDriver
     backend, your
     [Service Account](../../docs/install/dataplane-service-account.md) needs
-    additional `cloudtrace.agent` role:
+    additional `cloudtrace.admin` role:
 
     ```shell
-    gcloud projects add-iam-policy-binding $$PROJECT_ID \
+    gcloud projects add-iam-policy-binding $PROJECT_ID \
       --member=serviceAccount:"${your_service_account}"@$PROJECT_ID.iam.gserviceaccount.com \
-      --role roles/cloudtrace.agent
+      --role roles/cloudtrace.admin
     ```
 
 1.  (Optional) Note that if plan on running tracing-related E2E tests using the

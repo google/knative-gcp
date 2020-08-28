@@ -20,166 +20,36 @@ import (
 	"context"
 	"net/url"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/knative-gcp/pkg/apis/convert"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
-	v1 "k8s.io/api/core/v1"
+	gcptesting "github.com/google/knative-gcp/pkg/testing"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/eventing/pkg/apis/messaging"
 	"knative.dev/pkg/apis"
-	pkgduckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // These variables are used to create a 'complete' version of Channel where every field is filled
 // in.
 var (
-	trueVal       = true
-	seconds       = int64(314)
-	three         = int32(3)
-	backoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
-	backoffDelay  = "backoffDelay"
-
-	completeObjectMeta = metav1.ObjectMeta{
-		Name:            "name",
-		GenerateName:    "generateName",
-		Namespace:       "namespace",
-		SelfLink:        "selfLink",
-		UID:             "uid",
-		ResourceVersion: "resourceVersion",
-		Generation:      2012,
-		CreationTimestamp: metav1.Time{
-			Time: time.Unix(1, 1),
-		},
-		DeletionTimestamp: &metav1.Time{
-			Time: time.Unix(2, 3),
-		},
-		DeletionGracePeriodSeconds: &seconds,
-		Labels:                     map[string]string{"steel": "heart"},
-		Annotations:                map[string]string{"New": "Cago"},
-		OwnerReferences: []metav1.OwnerReference{
-			{
-				APIVersion:         "apiVersion",
-				Kind:               "kind",
-				Name:               "n",
-				UID:                "uid",
-				Controller:         &trueVal,
-				BlockOwnerDeletion: &trueVal,
-			},
-		},
-		Finalizers:  []string{"finalizer-1", "finalizer-2"},
-		ClusterName: "clusterName",
-	}
-
-	completeURL = apis.URL{
-		Scheme:     "scheme",
-		Opaque:     "opaque",
-		User:       url.User("user"),
-		Host:       "host",
-		Path:       "path",
-		RawPath:    "rawPath",
-		ForceQuery: false,
-		RawQuery:   "rawQuery",
-		Fragment:   "fragment",
-	}
-
-	completeDestination = pkgduckv1.Destination{
-		Ref: &pkgduckv1.KReference{
-			APIVersion: "apiVersion",
-			Kind:       "kind",
-			Namespace:  "namespace",
-			Name:       "name",
-		},
-		URI: &completeURL,
-	}
-
-	completeIdentitySpec = duckv1alpha1.IdentitySpec{
-		ServiceAccountName: "k8sServiceAccount",
-	}
-
-	completeSecret = &v1.SecretKeySelector{
-		LocalObjectReference: v1.LocalObjectReference{
-			Name: "name",
-		},
-		Key:      "key",
-		Optional: &trueVal,
-	}
-
-	completeSubscribable = &eventingduckv1alpha1.Subscribable{
-		Subscribers: []eventingduckv1alpha1.SubscriberSpec{
-			{
-				UID:               "uid-1",
-				Generation:        1,
-				SubscriberURI:     &completeURL,
-				ReplyURI:          &completeURL,
-				DeadLetterSinkURI: &completeURL,
-				Delivery: &eventingduckv1beta1.DeliverySpec{
-					DeadLetterSink: &completeDestination,
-					Retry:          &three,
-					BackoffPolicy:  &backoffPolicy,
-					BackoffDelay:   &backoffDelay,
-				},
-			},
-		},
-	}
-
-	completeIdentityStatus = duckv1alpha1.IdentityStatus{
-		Status: pkgduckv1.Status{
-			ObservedGeneration: 7,
-			Conditions: pkgduckv1.Conditions{
-				{
-					Type:   "Ready",
-					Status: "True",
-				},
-			},
-		},
-		ServiceAccountName: "serviceAccountName",
-	}
-
-	completeAddressStatus = pkgduckv1.AddressStatus{
-		Address: &pkgduckv1.Addressable{
-			URL: &completeURL,
-		},
-	}
-
-	completeSubscribableTypeStatus = eventingduckv1alpha1.SubscribableTypeStatus{
-		SubscribableStatus: &eventingduckv1alpha1.SubscribableStatus{
-			Subscribers: []eventingduckv1beta1.SubscriberStatus{
-				{
-					UID:                "uid-1",
-					ObservedGeneration: 1,
-					Ready:              "ready-1",
-					Message:            "message-1",
-				},
-				{
-					UID:                "uid-2",
-					ObservedGeneration: 2,
-					Ready:              "ready-2",
-					Message:            "message-2",
-				},
-			},
-		},
-	}
-
 	// completePullSubscription is a Channel with every field filled in, except TypeMeta. TypeMeta
 	// is excluded because conversions do not convert it and this variable was created to test
 	// conversions.
 	completeChannel = &Channel{
-		ObjectMeta: completeObjectMeta,
+		ObjectMeta: gcptesting.CompleteObjectMeta,
 		Spec: ChannelSpec{
-			IdentitySpec: completeIdentitySpec,
-			Secret:       completeSecret,
+			IdentitySpec: gcptesting.CompleteV1alpha1IdentitySpec,
+			Secret:       gcptesting.CompleteSecret,
 			Project:      "project",
-			Subscribable: completeSubscribable,
+			Subscribable: gcptesting.CompleteV1alpha1Subscribable,
 		},
 		Status: ChannelStatus{
-			IdentityStatus:         completeIdentityStatus,
-			AddressStatus:          completeAddressStatus,
-			SubscribableTypeStatus: completeSubscribableTypeStatus,
+			IdentityStatus:         gcptesting.CompleteV1alpha1IdentityStatus,
+			AddressStatus:          gcptesting.CompleteV1AddressStatus,
+			SubscribableTypeStatus: gcptesting.CompleteV1alpha1SubscribableTypeStatus,
 			ProjectID:              "projectId",
 			TopicID:                "topicID",
 		},
@@ -231,6 +101,8 @@ func TestChannelConversion(t *testing.T) {
 		for _, version := range versions {
 			t.Run(test.name, func(t *testing.T) {
 				ver := version.version
+				// DeepCopy because we will edit it below.
+				in := test.in.DeepCopy()
 				if err := test.in.ConvertTo(context.Background(), ver); err != nil {
 					t.Errorf("ConvertTo() = %v", err)
 				}
@@ -249,21 +121,37 @@ func TestChannelConversion(t *testing.T) {
 
 				// The duck subscribable version of a v1alpha1 Channel will always be set to
 				// v1alpha1, even if it was not set in the original.
-				if test.in.Annotations == nil {
-					test.in.Annotations = make(map[string]string, 1)
+				if in.Annotations == nil {
+					in.Annotations = make(map[string]string, 1)
 				}
-				test.in.Annotations[messaging.SubscribableDuckVersionAnnotation] = "v1alpha1"
+				in.Annotations[messaging.SubscribableDuckVersionAnnotation] = "v1alpha1"
 
 				// DeadLetterSinkURI exists exclusively in v1alpha1, it has not yet been promoted to
 				// v1beta1. So it won't round trip, it will be silently removed.
-				if test.in.Spec.Subscribable != nil {
-					for i := range test.in.Spec.Subscribable.Subscribers {
-						test.in.Spec.Subscribable.Subscribers[i].DeadLetterSinkURI = nil
+				if in.Spec.Subscribable != nil {
+					for i := range in.Spec.Subscribable.Subscribers {
+						in.Spec.Subscribable.Subscribers[i].DeadLetterSinkURI = nil
 					}
 				}
 
+				// V1beta1 Channel implements duck v1 identifiable, where ServiceAccountName is removed.
+				// So this is not a round trip, the field will be silently removed.
+				in.Status.ServiceAccountName = ""
+				// Make sure the Deprecated Condition is added to the Status after converted back to v1alpha1,
+				// We need to ignore the LastTransitionTime as it is set in real time when doing the comparison.
+				dc := got.Status.GetCondition(convert.DeprecatedType)
+				if dc == nil {
+					t.Errorf("ConvertFrom() should add a deprecated warning condition but it does not.")
+				} else if diff := cmp.Diff(*dc, convert.DeprecatedV1Alpha1Condition,
+					cmpopts.IgnoreFields(apis.Condition{}, "LastTransitionTime")); diff != "" {
+					t.Errorf("Failed to verify deprecated condition (-want, + got) = %v", diff)
+				}
+				// Remove the Deprecated Condition from Status to compare the remaining of fields.
+				cs := apis.NewLivingConditionSet()
+				cs.Manage(&got.Status).ClearCondition(convert.DeprecatedType)
+
 				ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
-				if diff := cmp.Diff(test.in, got, ignoreUsername); diff != "" {
+				if diff := cmp.Diff(in, got, ignoreUsername); diff != "" {
 					t.Errorf("roundtrip (-want, +got) = %v", diff)
 				}
 			})

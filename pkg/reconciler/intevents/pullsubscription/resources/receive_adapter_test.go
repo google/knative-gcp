@@ -22,9 +22,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	"github.com/google/knative-gcp/pkg/apis/intevents"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	intereventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 
@@ -37,7 +37,7 @@ import (
 )
 
 func TestMakeMinimumReceiveAdapter(t *testing.T) {
-	ps := &v1beta1.PullSubscription{
+	ps := &intereventsv1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testname",
 			Namespace: "testnamespace",
@@ -45,8 +45,8 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 				intevents.SourceLabelKey: "my-source-name",
 			},
 		},
-		Spec: v1beta1.PullSubscriptionSpec{
-			PubSubSpec: duckv1beta1.PubSubSpec{
+		Spec: intereventsv1.PullSubscriptionSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -86,7 +86,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "internal.events.cloud.google.com/v1beta1",
+				APIVersion:         "internal.events.cloud.google.com/v1",
 				Kind:               "PullSubscription",
 				Name:               "testname",
 				Controller:         &yes,
@@ -139,9 +139,6 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 						}, {
 							Name:  "ADAPTER_TYPE",
 							Value: "source-adapter-type",
-						}, {
-							Name:  "SEND_MODE",
-							Value: "binary",
 						}, {
 							Name: "K_CE_EXTENSIONS",
 						}, {
@@ -197,7 +194,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 }
 
 func TestMakeFullReceiveAdapter(t *testing.T) {
-	ps := &v1beta1.PullSubscription{
+	ps := &intereventsv1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testname",
 			Namespace: "testnamespace",
@@ -205,8 +202,8 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 				"metrics-resource-group": "test-resource-group",
 			},
 		},
-		Spec: v1beta1.PullSubscriptionSpec{
-			PubSubSpec: duckv1beta1.PubSubSpec{
+		Spec: intereventsv1.PullSubscriptionSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -254,7 +251,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "internal.events.cloud.google.com/v1beta1",
+				APIVersion:         "internal.events.cloud.google.com/v1",
 				Kind:               "PullSubscription",
 				Name:               "testname",
 				Controller:         &yes,
@@ -308,9 +305,6 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						}, {
 							Name:  "ADAPTER_TYPE",
 							Value: string(converters.PubSubPull),
-						}, {
-							Name:  "SEND_MODE",
-							Value: "binary",
 						}, {
 							Name:  "K_CE_EXTENSIONS",
 							Value: "eyJmb28iOiJiYXIifQ==",
@@ -371,7 +365,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 
 func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 	serviceAccountName := "test"
-	ps := &v1beta1.PullSubscription{
+	ps := &intereventsv1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testname",
 			Namespace: "testnamespace",
@@ -380,9 +374,9 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 				duck.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			},
 		},
-		Spec: v1beta1.PullSubscriptionSpec{
-			PubSubSpec: duckv1beta1.PubSubSpec{
-				IdentitySpec: duckv1beta1.IdentitySpec{
+		Spec: intereventsv1.PullSubscriptionSpec{
+			PubSubSpec: gcpduckv1.PubSubSpec{
+				IdentitySpec: gcpduckv1.IdentitySpec{
 					ServiceAccountName: serviceAccountName,
 				},
 				Project: "eventing-name",
@@ -426,7 +420,7 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "internal.events.cloud.google.com/v1beta1",
+				APIVersion:         "internal.events.cloud.google.com/v1",
 				Kind:               "PullSubscription",
 				Name:               "testname",
 				Controller:         &yes,
@@ -481,9 +475,6 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 						}, {
 							Name:  "ADAPTER_TYPE",
 							Value: string(converters.PubSubPull),
-						}, {
-							Name:  "SEND_MODE",
-							Value: "binary",
 						}, {
 							Name:  "K_CE_EXTENSIONS",
 							Value: "eyJmb28iOiJiYXIifQ==",

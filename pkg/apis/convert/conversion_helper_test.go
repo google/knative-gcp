@@ -21,41 +21,27 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/convert"
 	gcptesting "github.com/google/knative-gcp/pkg/testing"
-	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-)
-
-var (
-	trueVal       = true
-	three         = int32(3)
-	backoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
-	backoffDelay  = "backoffDelay"
-
-	completeSubscribable = &eventingduckv1alpha1.Subscribable{
-		Subscribers: []eventingduckv1alpha1.SubscriberSpec{
-			{
-				UID:               "uid-1",
-				Generation:        1,
-				SubscriberURI:     &gcptesting.CompleteURL,
-				ReplyURI:          &gcptesting.CompleteURL,
-				DeadLetterSinkURI: &gcptesting.CompleteURL,
-				Delivery: &eventingduckv1beta1.DeliverySpec{
-					DeadLetterSink: &gcptesting.CompleteDestination,
-					Retry:          &three,
-					BackoffPolicy:  &backoffPolicy,
-					BackoffDelay:   &backoffDelay,
-				},
-			},
-		},
-	}
 )
 
 func TestV1beta1PubSubSpec(t *testing.T) {
 	want := gcptesting.CompleteV1alpha1PubSubSpec
 	got := convert.FromV1beta1PubSubSpec(convert.ToV1beta1PubSubSpec(want))
+	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
+	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
+		t.Errorf("Unexpected difference (-want +got): %v", diff)
+	}
+}
+
+func TestV1alpha1ToV1PubSubSpec(t *testing.T) {
+	want := gcptesting.CompleteV1alpha1PubSubSpec
+	got := convert.FromV1ToV1alpha1PubSubSpec(convert.FromV1alpha1ToV1PubSubSpec(want))
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
 		t.Errorf("Unexpected difference (-want +got): %v", diff)
@@ -90,6 +76,15 @@ func TestV1IdentitySpec(t *testing.T) {
 func TestV1beta1PubSubStatus(t *testing.T) {
 	want := gcptesting.CompleteV1alpha1PubSubStatus
 	got := convert.FromV1beta1PubSubStatus(convert.ToV1beta1PubSubStatus(want))
+	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
+	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
+		t.Errorf("Unexpected difference (-want +got): %v", diff)
+	}
+}
+
+func TestV1alpha1toV1PubSubStatus(t *testing.T) {
+	want := gcptesting.CompleteV1alpha1PubSubStatusWithoutServiceAccountName
+	got := convert.FromV1ToV1alpha1PubSubStatus(convert.FromV1alpha1ToV1PubSubStatus(want))
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
 		t.Errorf("Unexpected difference (-want +got): %v", diff)
@@ -178,7 +173,7 @@ func TestV1AddressStatus(t *testing.T) {
 
 func TestV1beta1SubscribableSpec(t *testing.T) {
 	// DeepCopy because we will edit it below.
-	want := completeSubscribable.DeepCopy()
+	want := gcptesting.CompleteV1alpha1Subscribable.DeepCopy()
 	v1b1 := convert.ToV1beta1SubscribableSpec(want)
 	got := convert.FromV1beta1SubscribableSpec(v1b1)
 
@@ -191,5 +186,22 @@ func TestV1beta1SubscribableSpec(t *testing.T) {
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
 		t.Errorf("Unexpected difference (-want +got): %v", diff)
+	}
+}
+
+func TestV1alpha1Deprecated(t *testing.T) {
+	cs := apis.NewLivingConditionSet()
+	status := duckv1.Status{}
+	convert.MarkV1alpha1Deprecated(&cs, &status)
+	dc := status.GetCondition("Deprecated")
+	if dc == nil {
+		t.Errorf("MarkV1alpha1Deprecated should add a deprecated warning condition but it does not.")
+	} else if diff := cmp.Diff(*dc, convert.DeprecatedV1Alpha1Condition, cmpopts.IgnoreFields(apis.Condition{}, "LastTransitionTime")); diff != "" {
+		t.Errorf("Failed to verify deprecated condition (-want, + got) = %v", diff)
+	}
+	convert.RemoveV1alpha1Deprecated(&cs, &status)
+	dc = status.GetCondition("Deprecated")
+	if dc != nil {
+		t.Errorf("RemoveV1alpha1Deprecated should remove the deprecated warning condition but it does not.")
 	}
 }

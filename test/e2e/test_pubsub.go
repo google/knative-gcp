@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -36,8 +35,39 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokeCloudPubSubSourceTestImpl tests we can create a CloudPubSubSource to ready state and we can delete a CloudPubSubSource and its underlying resources.
-func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+// SmokeCloudPubSubSourceTestHelper tests we can create a CloudPubSubSource to ready state.
+func SmokeCloudPubSubSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudPubSubSourceVersion string) {
+	t.Helper()
+	topic, deleteTopic := lib.MakeTopicOrDie(t)
+	defer deleteTopic()
+
+	psName := topic + "-pubsub"
+	svcName := "event-display"
+
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	pubSubConfig := lib.PubSubConfig{
+		SinkGVK:            lib.ServiceGVK,
+		PubSubName:         psName,
+		SinkName:           svcName,
+		TopicName:          topic,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	}
+
+	if cloudPubSubSourceVersion == "v1alpha1" {
+		lib.MakePubSubV1alpha1OrDie(client, pubSubConfig)
+	} else if cloudPubSubSourceVersion == "v1beta1" {
+		lib.MakePubSubV1beta1OrDie(client, pubSubConfig)
+	} else if cloudPubSubSourceVersion == "v1" {
+		lib.MakePubSubOrDie(client, pubSubConfig)
+	} else {
+		t.Fatalf("SmokeCloudPubSubSourceTestHelper does not support CloudPubSubSource version: %v", cloudPubSubSourceVersion)
+	}
+}
+
+// SmokeCloudPubSubSourceWithDeletionTestImpl tests we can create a CloudPubSubSource to ready state and we can delete a CloudPubSubSource and its underlying resources.
+func SmokeCloudPubSubSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
@@ -66,7 +96,7 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	}
 
 	client.DeletePubSubOrFail(psName)
-	//Wait for 40 seconds for subscription to get deleted in gcp
+	//Wait for 120 seconds for subscription to get deleted in gcp
 	time.Sleep(resources.WaitDeletionTime)
 	deletedSubExists := lib.SubscriptionExists(t, subID)
 	if deletedSubExists {
@@ -78,7 +108,7 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 // If assertMetrics is set to true, we also assert for StackDriver metrics.
 func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
 	t.Helper()
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
@@ -128,7 +158,7 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 		}
 		if !out.Success {
 			// Log the output pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, lib.CloudPubSubSourceTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, psName, lib.CloudPubSubSourceV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("pubsub: %+v", logs)

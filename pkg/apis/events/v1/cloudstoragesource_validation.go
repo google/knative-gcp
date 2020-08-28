@@ -30,6 +30,11 @@ import (
 
 func (current *CloudStorageSource) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
+
+	if apis.IsInUpdate(ctx) {
+		original := apis.GetBaseline(ctx).(*CloudStorageSource)
+		errs = errs.Also(current.CheckImmutableFields(ctx, original))
+	}
 	return duck.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 
@@ -59,15 +64,22 @@ func (current *CloudStorageSource) CheckImmutableFields(ctx context.Context, ori
 	if original == nil {
 		return nil
 	}
-	// Modification of EventType, Secret, ServiceAccountName, Project, Bucket, ObjectNamePrefix and PayloadFormat are not allowed. Everything else is mutable.
+
+	var errs *apis.FieldError
+	// Modification of EventType, Secret, ServiceAccountName, Project, Bucket, PayloadFormat, EventType, ObjectNamePrefix are not allowed.
+	// Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudStorageSourceSpec{},
 			"Sink", "CloudEventOverrides")); diff != "" {
-		return &apis.FieldError{
+		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
 			Details: diff,
-		}
+		})
 	}
-	return nil
+	// Modification of AutoscalingClassAnnotations is not allowed.
+	errs = duck.CheckImmutableAutoscalingClassAnnotations(&current.ObjectMeta, &original.ObjectMeta, errs)
+
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duck.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

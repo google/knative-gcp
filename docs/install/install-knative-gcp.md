@@ -55,11 +55,10 @@ export KO_DOCKER_REPO='gcr.io/my-gcloud-project-id'
    > if you are using Google Container Registry or `docker login` if you are
    > using Docker Hub.
 
-1. Install [Knative](https://knative.dev/docs/install/). Preferably, set up both
+1. Install [Knative](https://knative.dev/docs/install/). Set up
    [Serving](https://knative.dev/docs/serving/) and
-   [Eventing](https://knative.dev/docs/eventing/). The latter is only required
-   if you want to use the Pub/Sub `Channel` or a `Broker` backed by a Pub/Sub
-   `Channel`.
+   [Eventing](https://knative.dev/docs/eventing/). Both are required for now to
+   make knative-gcp work.
 
 ## Install the Knative-GCP Constructs
 

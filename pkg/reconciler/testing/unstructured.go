@@ -29,7 +29,7 @@ type UnstructuredOption func(*unstructured.Unstructured)
 func NewUnstructured(gvk metav1.GroupVersionKind, name, namespace string, uo ...UnstructuredOption) *unstructured.Unstructured {
 	u := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": apiVersion(gvk),
+			"ApiVersion": ApiVersion(gvk),
 			"kind":       gvk.Kind,
 			"metadata": map[string]interface{}{
 				"namespace": namespace,
@@ -70,7 +70,7 @@ func WithUnstructuredLabels(labels map[string]interface{}) UnstructuredOption {
 	}
 }
 
-func apiVersion(gvk metav1.GroupVersionKind) string {
+func ApiVersion(gvk metav1.GroupVersionKind) string {
 	groupVersion := gvk.Version
 	if gvk.Group != "" {
 		groupVersion = gvk.Group + "/" + gvk.Version

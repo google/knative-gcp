@@ -21,8 +21,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
-	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/pullsubscription"
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -38,11 +38,11 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface.
 var _ pullsubscriptionreconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, ps *v1beta1.PullSubscription) reconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, ps *v1.PullSubscription) reconciler.Event {
 	return r.Base.ReconcileKind(ctx, ps)
 }
 
-func (r *Reconciler) ReconcileDeployment(ctx context.Context, ra *appsv1.Deployment, src *v1beta1.PullSubscription) error {
+func (r *Reconciler) ReconcileDeployment(ctx context.Context, ra *appsv1.Deployment, src *v1.PullSubscription) error {
 	existing, err := r.Base.GetOrCreateReceiveAdapter(ctx, ra, src)
 	if err != nil {
 		return err
@@ -60,6 +60,6 @@ func (r *Reconciler) ReconcileDeployment(ctx context.Context, ra *appsv1.Deploym
 	return nil
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, ps *v1beta1.PullSubscription) reconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, ps *v1.PullSubscription) reconciler.Event {
 	return r.Base.FinalizeKind(ctx, ps)
 }

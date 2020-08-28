@@ -19,7 +19,6 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -35,8 +34,35 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokeCloudBuildSourceTestImpl tests we can create a CloudBuildSource to ready state and we can delete a CloudBuildSource and its underlying resources.
-func SmokeCloudBuildSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+// SmokeCloudBuildSourceWithDeletionTestHelper tests we can create a CloudBuildSource to ready state.
+func SmokeCloudBuildSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudBuildSourceVersion string) {
+	t.Helper()
+	lib.MakeTopicWithNameIfItDoesNotExist(t, events.CloudBuildTopic)
+
+	buildName := helpers.AppendRandomString("build")
+	svcName := "event-display"
+
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	buildConfig := lib.BuildConfig{
+		SinkGVK:            lib.ServiceGVK,
+		BuildName:          buildName,
+		SinkName:           svcName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	}
+
+	if cloudBuildSourceVersion == "v1alpha1" {
+		lib.MakeBuildV1alpha1OrDie(client, buildConfig)
+	} else if cloudBuildSourceVersion == "v1beta1" {
+		lib.MakeBuildOrDie(client, buildConfig)
+	} else {
+		t.Fatalf("SmokeCloudBuildSourceWithDeletionTestHelper does not support CloudBuildSource version: %v", cloudBuildSourceVersion)
+	}
+}
+
+// SmokeCloudBuildSourceWithDeletionTestImpl tests we can create a CloudBuildSource to ready state and we can delete a CloudBuildSource and its underlying resources.
+func SmokeCloudBuildSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
 	lib.MakeTopicWithNameIfItDoesNotExist(t, events.CloudBuildTopic)
 
@@ -63,7 +89,7 @@ func SmokeCloudBuildSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	}
 
 	client.DeleteBuildOrFail(buildName)
-	//Wait for 40 seconds for subscription to get deleted in gcp
+	//Wait for 120 seconds for subscription to get deleted in gcp
 	time.Sleep(resources.WaitDeletionTime)
 	deletedSubExists := lib.SubscriptionExists(t, subID)
 	if deletedSubExists {
@@ -84,7 +110,7 @@ func CloudBuildSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 	defer lib.TearDown(client)
 
 	imageName := helpers.AppendRandomString("image")
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 	images := fmt.Sprintf("[%s]", lib.CloudBuildImage(project, imageName))
 
 	// Create a target Job to receive the events.
@@ -112,7 +138,7 @@ func CloudBuildSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 		}
 		if !out.Success {
 			// Log the output pods.
-			if logs, err := client.LogsFor(client.Namespace, buildName, lib.CloudBuildSourceTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, buildName, lib.CloudBuildSourceV1beta1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("build: %+v", logs)

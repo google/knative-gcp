@@ -22,11 +22,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/broker/config"
+	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	"go.opencensus.io/trace"
 	"knative.dev/pkg/metrics"
+
+	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
 type DeliveryMetricsKey int
@@ -121,14 +124,10 @@ func NewDeliveryReporter(podName PodName, containerName ContainerName) (*Deliver
 }
 
 // ReportEventDispatchTime captures dispatch times.
-func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration, responseCode int) {
+func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration) {
+	attachments := getSpanContextAttachments(ctx)
 	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)),
-		stats.WithTags(
-			tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
-			tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
-		),
-	)
+	metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)), stats.WithAttachments(attachments))
 }
 
 // StartEventProcessing records the start of event processing for delivery within the given context.
@@ -149,8 +148,9 @@ func (r *DeliveryReporter) reportEventProcessingTime(ctx context.Context, end ti
 	if err != nil {
 		return err
 	}
+	attachments := getSpanContextAttachments(ctx)
 	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(ctx, r.processingTimeInMsecM.M(float64(end.Sub(start)/time.Millisecond)))
+	metrics.Record(ctx, r.processingTimeInMsecM.M(float64(end.Sub(start)/time.Millisecond)), stats.WithAttachments(attachments))
 	return nil
 }
 
@@ -169,6 +169,13 @@ func (r *DeliveryReporter) AddTags(ctx context.Context) (context.Context, error)
 	)
 }
 
+func AddRespStatusCodeTags(ctx context.Context, responseCode int) (context.Context, error) {
+	return tag.New(ctx,
+		tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
+		tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
+	)
+}
+
 func AddTargetTags(ctx context.Context, target *config.Target) (context.Context, error) {
 	return tag.New(ctx,
 		tag.Insert(NamespaceNameKey, target.Namespace),
@@ -184,4 +191,15 @@ func getStartDeliveryProcessingTime(ctx context.Context) (time.Time, error) {
 		return time, nil
 	}
 	return time.Time{}, fmt.Errorf("missing or invalid start time: %v", v)
+}
+
+// getSpanContextAttachments gets the attachment for exemplar trace.
+func getSpanContextAttachments(ctx context.Context) metricdata.Attachments {
+	attachments := map[string]interface{}{}
+	if span := trace.FromContext(ctx); span != nil {
+		if spanCtx := span.SpanContext(); spanCtx.IsSampled() {
+			attachments[metricdata.AttachmentKeySpanContext] = spanCtx
+		}
+	}
+	return attachments
 }

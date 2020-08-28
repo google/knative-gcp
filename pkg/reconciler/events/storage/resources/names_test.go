@@ -20,13 +20,13 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGenerateTopicName(t *testing.T) {
 	want := "cre-src_mynamespace_myname_uid"
-	got := GenerateTopicName(&v1beta1.CloudStorageSource{
+	got := GenerateTopicName(&v1.CloudStorageSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
 			Namespace: "mynamespace",

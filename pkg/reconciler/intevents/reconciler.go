@@ -20,10 +20,10 @@ import (
 	"context"
 	"fmt"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
-	duck "github.com/google/knative-gcp/pkg/duck/v1beta1"
+	duck "github.com/google/knative-gcp/pkg/duck/v1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/resources"
 	"go.uber.org/zap"
@@ -63,7 +63,7 @@ type PubSubBase struct {
 // "TopicReady", and "PullSubscriptionReady"
 // Also sets the following fields in the pubsubable.Status upon success
 // TopicID, ProjectID, and SinkURI
-func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*inteventsv1beta1.Topic, *inteventsv1beta1.PullSubscription, error) {
+func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*inteventsv1.Topic, *inteventsv1.PullSubscription, error) {
 	t, err := psb.reconcileTopic(ctx, pubsubable, topic)
 	if err != nil {
 		return t, nil, err
@@ -76,7 +76,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	return t, ps, nil
 }
 
-func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSubable, topic string) (*inteventsv1beta1.Topic, pkgreconciler.Event) {
+func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSubable, topic string) (*inteventsv1.Topic, pkgreconciler.Event) {
 	if pubsubable == nil {
 		return nil, fmt.Errorf("nil pubsubable passed in")
 	}
@@ -94,7 +94,7 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 	}
 	newTopic := resources.MakeTopic(args)
 
-	topics := psb.pubsubClient.InternalV1beta1().Topics(newTopic.Namespace)
+	topics := psb.pubsubClient.InternalV1().Topics(newTopic.Namespace)
 	t, err := topics.Get(newTopic.Name, v1.GetOptions{})
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Debug("Creating Topic", zap.Any("topic", newTopic))
@@ -128,7 +128,7 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 	return t, nil
 }
 
-func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*inteventsv1beta1.PullSubscription, pkgreconciler.Event) {
+func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*inteventsv1.PullSubscription, pkgreconciler.Event) {
 	if pubsubable == nil {
 		logging.FromContext(ctx).Desugar().Error("Nil pubsubable passed in")
 		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, nilPubsubableReason, "nil pubsubable passed in")
@@ -154,7 +154,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 
 	newPS := resources.MakePullSubscription(args)
 
-	pullSubscriptions := psb.pubsubClient.InternalV1beta1().PullSubscriptions(namespace)
+	pullSubscriptions := psb.pubsubClient.InternalV1().PullSubscriptions(namespace)
 	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
@@ -190,7 +190,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 	return ps, nil
 }
 
-func propagatePullSubscriptionStatus(ps *inteventsv1beta1.PullSubscription, status *duckv1beta1.PubSubStatus, cs *apis.ConditionSet) error {
+func propagatePullSubscriptionStatus(ps *inteventsv1.PullSubscription, status *duckv1.PubSubStatus, cs *apis.ConditionSet) error {
 	pc := ps.Status.GetTopLevelCondition()
 	if pc == nil {
 		status.MarkPullSubscriptionNotConfigured(cs)
@@ -212,7 +212,7 @@ func propagatePullSubscriptionStatus(ps *inteventsv1beta1.PullSubscription, stat
 	return nil
 }
 
-func propagateTopicStatus(t *inteventsv1beta1.Topic, status *duckv1beta1.PubSubStatus, cs *apis.ConditionSet, topic string) error {
+func propagateTopicStatus(t *inteventsv1.Topic, status *duckv1.PubSubStatus, cs *apis.ConditionSet, topic string) error {
 	tc := t.Status.GetTopLevelCondition()
 	if tc == nil {
 		status.MarkTopicNotConfigured(cs)
@@ -261,24 +261,22 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	cs := pubsubable.ConditionSet()
 
 	// Delete the topic
-	err := psb.pubsubClient.InternalV1beta1().Topics(namespace).Delete(name, nil)
+	err := psb.pubsubClient.InternalV1().Topics(namespace).Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete Topic", zap.String("name", name), zap.Error(err))
-		status.MarkTopicFailed(cs, "TopicDeleteFailed", "Failed to delete Topic: %s", err.Error())
+		status.MarkTopicUnknown(cs, "TopicDeleteFailed", "Failed to delete Topic: %s", err.Error())
 		return fmt.Errorf("failed to delete topic: %w", err)
 	}
-	status.MarkTopicFailed(cs, "TopicDeleted", "Successfully deleted Topic: %s", name)
 	status.TopicID = ""
 	status.ProjectID = ""
 
 	// Delete the pullsubscription
-	err = psb.pubsubClient.InternalV1beta1().PullSubscriptions(namespace).Delete(name, nil)
+	err = psb.pubsubClient.InternalV1().PullSubscriptions(namespace).Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete PullSubscription", zap.String("name", name), zap.Error(err))
-		status.MarkPullSubscriptionFailed(cs, "PullSubscriptionDeleteFailed", "Failed to delete PullSubscription: %s", err.Error())
+		status.MarkPullSubscriptionUnknown(cs, "PullSubscriptionDeleteFailed", "Failed to delete PullSubscription: %s", err.Error())
 		return fmt.Errorf("failed to delete PullSubscription: %w", err)
 	}
-	status.MarkPullSubscriptionFailed(cs, "PullSubscriptionDeleted", "Successfully deleted PullSubscription: %s", name)
 	status.SinkURI = nil
 	return nil
 }

@@ -242,8 +242,9 @@ func BrokerTestTree(namespace string, brokerName string, trigger string, respTri
 
 func ingressSpan(namespace string, broker string) *SpanMatcher {
 	brokerName := fmt.Sprintf("broker:%s.%s", broker, namespace)
+	spanName := fmt.Sprintf("Recv.%s", brokerName)
 	return &SpanMatcher{
-		Name: brokerName,
+		Name: spanName,
 		Labels: map[string]string{
 			"messaging.system":      "knative",
 			"messaging.destination": brokerName,

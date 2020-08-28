@@ -18,10 +18,39 @@ package v1beta1
 
 import (
 	"context"
+
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/logging"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/broker"
 )
 
 // SetDefaults sets the default field values for a Broker.
 func (b *Broker) SetDefaults(ctx context.Context) {
-	// The Google Cloud Broker doesn't have any custom defaults. The
-	// eventing webhook will add the usual defaults.
+	// Apply the default Broker delivery settings from the context.
+	withNS := apis.WithinParent(ctx, b.ObjectMeta)
+	deliverySpecDefaults := broker.FromContextOrDefaults(withNS).BrokerDeliverySpecDefaults
+	if deliverySpecDefaults == nil {
+		logging.FromContext(ctx).Error("Failed to get the BrokerDeliverySpecDefaults")
+		return
+	}
+	// Set the default delivery spec.
+	if b.Spec.Delivery == nil {
+		b.Spec.Delivery = &eventingduckv1beta1.DeliverySpec{}
+	}
+	ns := apis.ParentMeta(withNS).Namespace
+	if b.Spec.Delivery.BackoffPolicy == nil || b.Spec.Delivery.BackoffDelay == nil {
+		// Set both defaults if one of the backoff delay or backoff policy are not specified.
+		b.Spec.Delivery.BackoffPolicy = deliverySpecDefaults.BackoffPolicy(ns)
+		b.Spec.Delivery.BackoffDelay = deliverySpecDefaults.BackoffDelay(ns)
+	}
+	if b.Spec.Delivery.DeadLetterSink == nil {
+		b.Spec.Delivery.DeadLetterSink = deliverySpecDefaults.DeadLetterSink(ns)
+	}
+	if b.Spec.Delivery.Retry == nil && b.Spec.Delivery.DeadLetterSink != nil {
+		// Only set the retry count if a dead letter sink is specified.
+		b.Spec.Delivery.Retry = deliverySpecDefaults.Retry(ns)
+	}
+	// Besides this, the eventing webhook will add the usual defaults.
 }

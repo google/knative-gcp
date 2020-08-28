@@ -23,7 +23,7 @@ import (
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -34,7 +34,7 @@ import (
 
 var (
 	buildSourceSpec = CloudBuildSourceSpec{
-		PubSubSpec: duckv1beta1.PubSubSpec{
+		PubSubSpec: gcpduckv1.PubSubSpec{
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "secret-name",
@@ -56,7 +56,7 @@ var (
 	}
 
 	buildSourceSpecWithKSA = CloudBuildSourceSpec{
-		PubSubSpec: duckv1beta1.PubSubSpec{
+		PubSubSpec: gcpduckv1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
 					Ref: &duckv1.KReference{
@@ -67,7 +67,7 @@ var (
 					},
 				},
 			},
-			IdentitySpec: duckv1beta1.IdentitySpec{
+			IdentitySpec: gcpduckv1.IdentitySpec{
 				ServiceAccountName: "old-service-account",
 			},
 			Project: "my-eventing-project",
@@ -250,7 +250,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		"Secret.Name changed": {
 			orig: &buildSourceSpec,
 			updated: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: "some-other-name",
@@ -268,7 +268,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		"Secret.Key changed": {
 			orig: &buildSourceSpec,
 			updated: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: buildSourceSpec.Secret.Name,
@@ -286,7 +286,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		"Project changed": {
 			orig: &buildSourceSpec,
 			updated: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: buildSourceSpec.Secret.Name,
@@ -304,8 +304,8 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		"ServiceAccountName changed": {
 			orig: &buildSourceSpecWithKSA,
 			updated: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
-					IdentitySpec: duckv1beta1.IdentitySpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
+					IdentitySpec: gcpduckv1.IdentitySpec{
 						ServiceAccountName: "new-service-account",
 					},
 					SourceSpec: duckv1.SourceSpec{
@@ -319,7 +319,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		"ServiceAccountName added": {
 			orig: &buildSourceSpec,
 			updated: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: buildSourceSpec.Secret.Name,
@@ -330,7 +330,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 					SourceSpec: duckv1.SourceSpec{
 						Sink: buildSourceSpec.Sink,
 					},
-					IdentitySpec: duckv1beta1.IdentitySpec{
+					IdentitySpec: gcpduckv1.IdentitySpec{
 						ServiceAccountName: "old-service-account",
 					},
 				},
@@ -347,7 +347,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		"Sink.APIVersion changed": {
 			orig: &buildSourceSpec,
 			updated: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: buildSourceSpec.Secret.Name,
@@ -372,7 +372,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		"Sink.Kind changed": {
 			orig: &buildSourceSpec,
 			updated: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: buildSourceSpec.Secret.Name,
@@ -397,7 +397,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		"Sink.Namespace changed": {
 			orig: &buildSourceSpec,
 			updated: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: buildSourceSpec.Secret.Name,
@@ -422,7 +422,7 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		"Sink.Name changed": {
 			orig: &buildSourceSpec,
 			updated: CloudBuildSourceSpec{
-				PubSubSpec: duckv1beta1.PubSubSpec{
+				PubSubSpec: gcpduckv1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: buildSourceSpec.Secret.Name,

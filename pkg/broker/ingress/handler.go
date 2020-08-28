@@ -19,9 +19,7 @@ package ingress
 import (
 	"context"
 	"errors"
-	"fmt"
 	nethttp "net/http"
-	"strings"
 	"time"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
@@ -121,17 +119,11 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 
-	// Path should be in the form of "/<ns>/<broker>".
-	pieces := strings.Split(request.URL.Path, "/")
-	if len(pieces) != 3 {
-		msg := fmt.Sprintf("Malformed request path. want: '/<ns>/<broker>'; got: %v..", request.URL.Path)
-		h.logger.Info(msg)
-		nethttp.Error(response, msg, nethttp.StatusNotFound)
+	broker, err := ConvertPathToNamespacedName(request.URL.Path)
+	if err != nil {
+		h.logger.Debug("Malformed request path", zap.String("path", request.URL.Path))
+		nethttp.Error(response, err.Error(), nethttp.StatusNotFound)
 		return
-	}
-	broker := types.NamespacedName{
-		Namespace: pieces[1],
-		Name:      pieces[2],
 	}
 
 	event, err := h.toEvent(request)
@@ -142,8 +134,8 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 
 	event.SetExtension(EventArrivalTime, cev2.Timestamp{Time: time.Now()})
 
-	ctx, span := trace.StartSpan(ctx, kntracing.BrokerMessagingDestination(broker))
-	defer span.End()
+	span := trace.FromContext(ctx)
+	span.SetName(kntracing.BrokerMessagingDestination(broker))
 	if span.IsRecordingEvents() {
 		span.AddAttributes(
 			append(
@@ -164,15 +156,14 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	defer cancel()
 	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode) }()
 	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
-		msg := fmt.Sprintf("Error publishing to PubSub for broker %s. event: %+v, err: %v.", broker, event, res)
-		h.logger.Error(msg)
+		h.logger.Error("Error publishing to PubSub", zap.String("broker", broker.String()), zap.Error(res))
 		statusCode = nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {
 			statusCode = nethttp.StatusNotFound
 		} else if errors.Is(res, ErrNotReady) {
 			statusCode = nethttp.StatusServiceUnavailable
 		}
-		nethttp.Error(response, msg, statusCode)
+		nethttp.Error(response, "Failed to publish to PubSub", statusCode)
 		return
 	}
 
@@ -189,15 +180,13 @@ func (h *Handler) toEvent(request *nethttp.Request) (*cev2.Event, error) {
 	}()
 	// If encoding is unknown, the message is not an event.
 	if message.ReadEncoding() == binding.EncodingUnknown {
-		msg := fmt.Sprintf("Encoding is unknown. Not a cloud event? request: %+v", request)
-		h.logger.Debug(msg)
-		return nil, errors.New(msg)
+		h.logger.Debug("Unknown encoding", zap.Any("request", request))
+		return nil, errors.New("Unknown encoding. Not a cloud event?")
 	}
 	event, err := binding.ToEvent(request.Context(), message, transformer.AddTimeNow)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to convert request to event: %v", err)
-		h.logger.Error(msg)
-		return nil, errors.New(msg)
+		h.logger.Error("Failed to convert request to event", zap.Error(err))
+		return nil, err
 	}
 	return event, nil
 }

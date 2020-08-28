@@ -19,18 +19,21 @@ package lib
 import (
 	"context"
 	"fmt"
-	"os"
-
 	"testing"
+	"time"
+
+	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
+	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
 
 	"cloud.google.com/go/storage"
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/test/helpers"
+
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 type StorageConfig struct {
@@ -39,19 +42,46 @@ type StorageConfig struct {
 	StorageName        string
 	SinkName           string
 	ServiceAccountName string
-	Options            []kngcptesting.CloudStorageSourceOption
+	Options            []reconcilertestingv1.CloudStorageSourceOption
 }
 
 func MakeStorageOrDie(client *Client, config StorageConfig) {
 	client.T.Helper()
-	so := config.Options
-	so = append(so, kngcptesting.WithCloudStorageSourceBucket(config.BucketName))
-	so = append(so, kngcptesting.WithCloudStorageSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, kngcptesting.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
-	eventsStorage := kngcptesting.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
+	so := make([]reconcilertestingv1.CloudStorageSourceOption, 0)
+	so = append(so, reconcilertestingv1.WithCloudStorageSourceBucket(config.BucketName))
+	so = append(so, reconcilertestingv1.WithCloudStorageSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
+	eventsStorage := reconcilertestingv1.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
 	client.CreateStorageOrFail(eventsStorage)
+	// Storage source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
+	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceV1TypeMeta)
+}
 
-	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceTypeMeta)
+func MakeStorageV1beta1OrDie(client *Client, config StorageConfig) {
+	client.T.Helper()
+	so := make([]reconcilertestingv1beta1.CloudStorageSourceOption, 0)
+	so = append(so, reconcilertestingv1beta1.WithCloudStorageSourceBucket(config.BucketName))
+	so = append(so, reconcilertestingv1beta1.WithCloudStorageSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1beta1.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
+	eventsStorage := reconcilertestingv1beta1.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
+	client.CreateStorageV1beta1OrFail(eventsStorage)
+	// Storage source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
+	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceV1beta1TypeMeta)
+}
+
+func MakeStorageV1alpha1OrDie(client *Client, config StorageConfig) {
+	client.T.Helper()
+	so := make([]reconcilertestingv1alpha1.CloudStorageSourceOption, 0)
+	so = append(so, reconcilertestingv1alpha1.WithCloudStorageSourceBucket(config.BucketName))
+	so = append(so, reconcilertestingv1alpha1.WithCloudStorageSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1alpha1.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
+	eventsStorage := reconcilertestingv1alpha1.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
+	client.CreateStorageV1alpha1OrFail(eventsStorage)
+	// Storage source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
+	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceV1alpha1TypeMeta)
 }
 
 func MakeStorageJobOrDie(client *Client, source, subject, targetName, eventType string) {
@@ -135,7 +165,7 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 
 func DeleteBucket(ctx context.Context, t *testing.T, bucketName string) {
 	t.Helper()
-	project := os.Getenv(ProwProjectKey)
+	project := GetEnvOrFail(t, ProwProjectKey)
 	opt := option.WithQuotaProject(project)
 	client, err := storage.NewClient(ctx, opt)
 	if err != nil {
@@ -179,7 +209,7 @@ func getBucketHandle(ctx context.Context, t *testing.T, bucketName, project stri
 func NotificationExists(t *testing.T, bucketName, notificationID string) bool {
 	t.Helper()
 	ctx := context.Background()
-	project := os.Getenv(ProwProjectKey)
+	project := GetEnvOrFail(t, ProwProjectKey)
 	opt := option.WithQuotaProject(project)
 	client, err := storage.NewClient(ctx, opt)
 	if err != nil {

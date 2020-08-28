@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -36,14 +35,47 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokeCloudStorageSourceTestImpl tests if a CloudStorageSource object can be created to ready state and delete a CloudStorageSource resource and its underlying resources..
-func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+// SmokeCloudStorageSourceTestHelper tests we can create a CloudStorageSource to ready state.
+func SmokeCloudStorageSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudStorageSourceVersion string) {
 	t.Helper()
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	ctx := context.Background()
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
+
+	bucketName := lib.MakeBucket(ctx, t, project)
+	defer lib.DeleteBucket(ctx, t, bucketName)
+	storageName := helpers.AppendRandomString(bucketName + "-storage")
+	svcName := helpers.AppendRandomString(bucketName + "-event-display")
+
+	storageConfig := lib.StorageConfig{
+		SinkGVK:            lib.ServiceGVK,
+		BucketName:         bucketName,
+		StorageName:        storageName,
+		SinkName:           svcName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	}
+
+	if cloudStorageSourceVersion == "v1alpha1" {
+		lib.MakeStorageV1alpha1OrDie(client, storageConfig)
+	} else if cloudStorageSourceVersion == "v1beta1" {
+		lib.MakeStorageV1beta1OrDie(client, storageConfig)
+	} else if cloudStorageSourceVersion == "v1" {
+		lib.MakeStorageOrDie(client, storageConfig)
+	} else {
+		t.Fatalf("SmokeCloudStorageSourceTestHelper does not support CloudStorageSource version: %v", cloudStorageSourceVersion)
+	}
+}
+
+// SmokeCloudStorageSourceWithDeletionTestImpl tests if a CloudStorageSource object can be created to ready state and delete a CloudStorageSource resource and its underlying resources..
+func SmokeCloudStorageSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	ctx := context.Background()
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
 	defer lib.DeleteBucket(ctx, t, bucketName)
@@ -80,7 +112,7 @@ func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 		t.Errorf("Expected subscription %q to exist", subID)
 	}
 	client.DeleteStorageOrFail(storageName)
-	//Wait for 40 seconds for topic, subscription and notification to get deleted in gcp
+	//Wait for 120 seconds for topic, subscription and notification to get deleted in gcp
 	time.Sleep(resources.WaitDeletionTime)
 
 	deletedNotificationExists := lib.NotificationExists(t, bucketName, notificationID)
@@ -102,7 +134,7 @@ func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
 	t.Helper()
 	ctx := context.Background()
-	project := os.Getenv(lib.ProwProjectKey)
+	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
 	defer lib.DeleteBucket(ctx, t, bucketName)
@@ -148,7 +180,7 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 		}
 		if !out.Success {
 			// Log the output storage pods.
-			if logs, err := client.LogsFor(client.Namespace, storageName, lib.CloudStorageSourceTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, storageName, lib.CloudStorageSourceV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("storage: %+v", logs)
@@ -168,8 +200,6 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 		t.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
 		time.Sleep(sleepTime)
 
-		// If we reach this point, the projectID should have been set.
-		projectID := os.Getenv(lib.ProwProjectKey)
 		f := map[string]interface{}{
 			"metric.type":                 lib.EventCountMetricType,
 			"resource.type":               lib.GlobalMetricResourceType,
@@ -186,7 +216,7 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 		filter := metrics.StringifyStackDriverFilter(f)
 		t.Logf("Filter expression: %s", filter)
 
-		actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
+		actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, project, filter)
 		if err != nil {
 			t.Fatalf("failed to get stackdriver event count metric: %v", err)
 		}

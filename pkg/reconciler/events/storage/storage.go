@@ -29,9 +29,9 @@ import (
 
 	. "cloud.google.com/go/storage"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudstoragesource"
-	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
+	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudstoragesource"
+	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage/resources"
@@ -80,7 +80,7 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface.
 var _ cloudstoragesourcereconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1beta1.CloudStorageSource) reconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1.CloudStorageSource) reconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("storage", storage)))
 
 	storage.Status.InitializeConditions()
@@ -109,7 +109,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1beta1.CloudSt
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudStorageSource reconciled: "%s/%s"`, storage.Namespace, storage.Name)
 }
 
-func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1beta1.CloudStorageSource) (string, error) {
+func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1.CloudStorageSource) (string, error) {
 	if storage.Status.ProjectID == "" {
 		projectID, err := utils.ProjectID(storage.Spec.Project, metadataClient.NewDefaultMetadataClient())
 		if err != nil {
@@ -179,7 +179,7 @@ func (r *Reconciler) toCloudStorageSourceEventTypes(eventTypes []string) []strin
 // deleteNotification looks at the status.NotificationID and if non-empty,
 // hence indicating that we have created a notification successfully
 // in the CloudStorageSource, remove it.
-func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1beta1.CloudStorageSource) error {
+func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1.CloudStorageSource) error {
 	if storage.Status.NotificationID == "" {
 		return nil
 	}
@@ -189,6 +189,7 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1beta1.Cl
 	client, err := r.createClientFn(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create CloudStorageSource client", zap.Error(err))
+		storage.Status.MarkNotificationUnknown(deleteNotificationFailed, "Failed to create CloudStorageSource client: %s", err.Error())
 		return err
 	}
 	defer client.Close()
@@ -198,18 +199,20 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1beta1.Cl
 
 	// Check whether bucket exists or not
 	if _, err := bucket.Attrs(ctx); err != nil {
-		// If the bucket was already deleted, then we should proceed
+		// If the bucket was already deleted, then we should  proceed.
 		if err == ErrBucketNotExist {
-			logging.FromContext(ctx).Desugar().Info("Bucket doesn't exist", zap.String("bucketName", storage.Spec.Bucket), zap.Error(err))
+			logging.FromContext(ctx).Desugar().Info("Bucket does not exist.", zap.String("bucketName", storage.Spec.Bucket), zap.Error(err))
 			return nil
 		}
 		logging.FromContext(ctx).Desugar().Error("Failed to fetch attrs of bucket", zap.String("bucketName", storage.Spec.Bucket), zap.Error(err))
+		storage.Status.MarkNotificationUnknown(deleteNotificationFailed, "Failed to fetch attrs of bucket: %s", err.Error())
 		return err
 	}
 
 	notifications, err := bucket.Notifications(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to fetch existing notifications", zap.Error(err))
+		storage.Status.MarkNotificationUnknown(deleteNotificationFailed, "Failed to fetch existing notifications: %s", err.Error())
 		return err
 	}
 
@@ -225,16 +228,18 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1beta1.Cl
 		}
 		if st, ok := gstatus.FromError(err); !ok {
 			logging.FromContext(ctx).Desugar().Error("Failed from CloudStorageSource client while deleting CloudStorageSource notification", zap.String("notificationId", storage.Status.NotificationID), zap.Error(err))
+			storage.Status.MarkNotificationUnknown(deleteNotificationFailed, "Failed from CloudStorageSource client while deleting CloudStorageSource notification: %s", err.Error())
 			return err
 		} else if st.Code() != codes.NotFound {
 			logging.FromContext(ctx).Desugar().Error("Failed to delete CloudStorageSource notification", zap.String("notificationId", storage.Status.NotificationID), zap.Error(err))
+			storage.Status.MarkNotificationUnknown(deleteNotificationFailed, "Failed to delete CloudStorageSource notification: %s", err.Error())
 			return err
 		}
 	}
 	return nil
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1beta1.CloudStorageSource) reconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1.CloudStorageSource) reconciler.Event {
 	// If k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
 	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.

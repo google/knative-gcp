@@ -23,6 +23,8 @@ import (
 	"strings"
 	"testing"
 
+	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -38,8 +40,8 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
-	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
-	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1beta1/topic"
+	pubsubv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
@@ -73,7 +75,7 @@ var (
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
-		Version: "v1beta1",
+		Version: "v1",
 		Kind:    "Sink",
 	}
 
@@ -87,13 +89,13 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = pubsubv1beta1.AddToScheme(scheme.Scheme)
+	_ = pubsubv1.AddToScheme(scheme.Scheme)
 }
 
 func newSink() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.google.com/v1beta1",
+			"apiVersion": "testing.cloud.google.com/v1",
 			"kind":       "Sink",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -132,15 +134,15 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "create client fails",
 		Objects: []runtime.Object{
-			NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
 				}),
-				WithTopicPropagationPolicy("NoCreateNoDelete"),
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithTopicPropagationPolicy("NoCreateNoDelete"),
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -159,33 +161,33 @@ func TestAllCases(t *testing.T) {
 			patchFinalizers(testNS, topicName, resourceGroup),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			Object: reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicProjectID(testProject),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
 				}),
-				WithTopicPropagationPolicy("NoCreateNoDelete"),
+				reconcilertestingv1.WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
-				WithInitTopicConditions,
-				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-client-induced-error")),
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithInitTopicConditions,
+				reconcilertestingv1.WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-client-induced-error")),
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 		}},
 	}, {
 		Name: "verify topic exists fails",
 		Objects: []runtime.Object{
-			NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
 				}),
-				WithTopicPropagationPolicy("NoCreateNoDelete"),
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithTopicPropagationPolicy("NoCreateNoDelete"),
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -206,33 +208,33 @@ func TestAllCases(t *testing.T) {
 			patchFinalizers(testNS, topicName, resourceGroup),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			Object: reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicProjectID(testProject),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
 				}),
-				WithTopicPropagationPolicy("NoCreateNoDelete"),
+				reconcilertestingv1.WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
-				WithInitTopicConditions,
-				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "topic-exists-induced-error")),
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithInitTopicConditions,
+				reconcilertestingv1.WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "topic-exists-induced-error")),
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 		}},
 	}, {
 		Name: "topic does not exist and propagation policy is NoCreateNoDelete",
 		Objects: []runtime.Object{
-			NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
 				}),
-				WithTopicPropagationPolicy("NoCreateNoDelete"),
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithTopicPropagationPolicy("NoCreateNoDelete"),
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -246,33 +248,33 @@ func TestAllCases(t *testing.T) {
 			patchFinalizers(testNS, topicName, resourceGroup),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			Object: reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicProjectID(testProject),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
 				}),
-				WithTopicPropagationPolicy("NoCreateNoDelete"),
+				reconcilertestingv1.WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
-				WithInitTopicConditions,
-				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist and the topic policy doesn't allow creation", failedToReconcileTopicMsg, testTopicID)),
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithInitTopicConditions,
+				reconcilertestingv1.WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist and the topic policy doesn't allow creation", failedToReconcileTopicMsg, testTopicID)),
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 		}},
 	}, {
 		Name: "create topic fails",
 		Objects: []runtime.Object{
-			NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
 				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -291,34 +293,34 @@ func TestAllCases(t *testing.T) {
 			patchFinalizers(testNS, topicName, resourceGroup),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			Object: reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicProjectID(testProject),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
 				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
+				reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
 				// Updates
-				WithInitTopicConditions,
-				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-topic-induced-error")),
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithInitTopicConditions,
+				reconcilertestingv1.WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-topic-induced-error")),
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 		}},
 	}, {
 		Name: "topic created with EnablePublisher = false",
 		Objects: []runtime.Object{
-			NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project:         testProject,
 					Topic:           testTopicID,
 					Secret:          &secret,
 					EnablePublisher: &falseVal,
 				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -332,34 +334,34 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, testNS, topicName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			Object: reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicProjectID(testProject),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project:         testProject,
 					Topic:           testTopicID,
 					Secret:          &secret,
 					EnablePublisher: &falseVal,
 				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
+				reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
 				// Updates
-				WithInitTopicConditions,
-				WithTopicReady(testTopicID),
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithInitTopicConditions,
+				reconcilertestingv1.WithTopicReady(testTopicID),
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 		}},
 	}, {
 		Name: "publisher has not yet been reconciled",
 		Objects: []runtime.Object{
-			NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
 				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 			newSink(),
 			newSecret(),
@@ -376,35 +378,35 @@ func TestAllCases(t *testing.T) {
 			newPublisher(),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicProjectID(testProject),
-				WithTopicSpec(pubsubv1beta1.TopicSpec{
+			Object: reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicProjectID(testProject),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
 				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
+				reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
 				// Updates
-				WithInitTopicConditions,
-				WithTopicReadyAndPublisherDeployed(testTopicID),
-				WithTopicPublisherNotConfigured,
-				WithTopicSetDefaults,
+				reconcilertestingv1.WithInitTopicConditions,
+				reconcilertestingv1.WithTopicReadyAndPublisherDeployed(testTopicID),
+				reconcilertestingv1.WithTopicPublisherNotConfigured,
+				reconcilertestingv1.WithTopicSetDefaults,
 			),
 		}},
 	},
 		{
 			Name: "the status of publisher is false",
 			Objects: []runtime.Object{
-				NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1beta1.TopicSpec{
+				reconcilertestingv1.NewTopic(topicName, testNS,
+					reconcilertestingv1.WithTopicUID(topicUID),
+					reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
-					WithTopicPropagationPolicy("CreateNoDelete"),
-					WithTopicSetDefaults,
+					reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
+					reconcilertestingv1.WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -424,34 +426,34 @@ func TestAllCases(t *testing.T) {
 				newPublisher(),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicProjectID(testProject),
-					WithTopicSpec(pubsubv1beta1.TopicSpec{
+				Object: reconcilertestingv1.NewTopic(topicName, testNS,
+					reconcilertestingv1.WithTopicUID(topicUID),
+					reconcilertestingv1.WithTopicProjectID(testProject),
+					reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
-					WithTopicPropagationPolicy("CreateNoDelete"),
+					reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
-					WithInitTopicConditions,
-					WithTopicReadyAndPublisherDeployed(testTopicID),
-					WithTopicPublisherNotDeployed("PublisherNotDeployed", "PublisherNotDeployed"),
-					WithTopicSetDefaults,
+					reconcilertestingv1.WithInitTopicConditions,
+					reconcilertestingv1.WithTopicReadyAndPublisherDeployed(testTopicID),
+					reconcilertestingv1.WithTopicPublisherNotDeployed("PublisherNotDeployed", "PublisherNotDeployed"),
+					reconcilertestingv1.WithTopicSetDefaults,
 				),
 			}},
 		}, {
 			Name: "the status of publisher is unknown",
 			Objects: []runtime.Object{
-				NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1beta1.TopicSpec{
+				reconcilertestingv1.NewTopic(topicName, testNS,
+					reconcilertestingv1.WithTopicUID(topicUID),
+					reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
-					WithTopicPropagationPolicy("CreateNoDelete"),
-					WithTopicSetDefaults,
+					reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
+					reconcilertestingv1.WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -471,34 +473,34 @@ func TestAllCases(t *testing.T) {
 				newPublisher(),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicProjectID(testProject),
-					WithTopicSpec(pubsubv1beta1.TopicSpec{
+				Object: reconcilertestingv1.NewTopic(topicName, testNS,
+					reconcilertestingv1.WithTopicUID(topicUID),
+					reconcilertestingv1.WithTopicProjectID(testProject),
+					reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
-					WithTopicPropagationPolicy("CreateNoDelete"),
+					reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
-					WithInitTopicConditions,
-					WithTopicReadyAndPublisherDeployed(testTopicID),
-					WithTopicPublisherUnknown("PublisherUnknown", "PublisherUnknown"),
-					WithTopicSetDefaults,
+					reconcilertestingv1.WithInitTopicConditions,
+					reconcilertestingv1.WithTopicReadyAndPublisherDeployed(testTopicID),
+					reconcilertestingv1.WithTopicPublisherUnknown("PublisherUnknown", "PublisherUnknown"),
+					reconcilertestingv1.WithTopicSetDefaults,
 				),
 			}},
 		}, {
 			Name: "topic successfully reconciles and is ready",
 			Objects: []runtime.Object{
-				NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1beta1.TopicSpec{
+				reconcilertestingv1.NewTopic(topicName, testNS,
+					reconcilertestingv1.WithTopicUID(topicUID),
+					reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
-					WithTopicPropagationPolicy("CreateNoDelete"),
-					WithTopicSetDefaults,
+					reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
+					reconcilertestingv1.WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -518,35 +520,35 @@ func TestAllCases(t *testing.T) {
 				newPublisher(),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicProjectID(testProject),
-					WithTopicSpec(pubsubv1beta1.TopicSpec{
+				Object: reconcilertestingv1.NewTopic(topicName, testNS,
+					reconcilertestingv1.WithTopicUID(topicUID),
+					reconcilertestingv1.WithTopicProjectID(testProject),
+					reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
-					WithTopicPropagationPolicy("CreateNoDelete"),
+					reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
-					WithInitTopicConditions,
-					WithTopicReadyAndPublisherDeployed(testTopicID),
-					WithTopicPublisherDeployed,
-					WithTopicAddress(testTopicURI),
-					WithTopicSetDefaults,
+					reconcilertestingv1.WithInitTopicConditions,
+					reconcilertestingv1.WithTopicReadyAndPublisherDeployed(testTopicID),
+					reconcilertestingv1.WithTopicPublisherDeployed,
+					reconcilertestingv1.WithTopicAddress(testTopicURI),
+					reconcilertestingv1.WithTopicSetDefaults,
 				),
 			}},
 		}, {
 			Name: "topic successfully reconciles and reuses existing publisher",
 			Objects: []runtime.Object{
-				NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1beta1.TopicSpec{
+				reconcilertestingv1.NewTopic(topicName, testNS,
+					reconcilertestingv1.WithTopicUID(topicUID),
+					reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
-					WithTopicPropagationPolicy("CreateNoDelete"),
-					WithTopicSetDefaults,
+					reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
+					reconcilertestingv1.WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -566,36 +568,36 @@ func TestAllCases(t *testing.T) {
 			},
 			WithReactors: []clientgotesting.ReactionFunc{},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicProjectID(testProject),
-					WithTopicSpec(pubsubv1beta1.TopicSpec{
+				Object: reconcilertestingv1.NewTopic(topicName, testNS,
+					reconcilertestingv1.WithTopicUID(topicUID),
+					reconcilertestingv1.WithTopicProjectID(testProject),
+					reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
-					WithTopicPropagationPolicy("CreateNoDelete"),
+					reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
-					WithInitTopicConditions,
-					WithTopicReadyAndPublisherDeployed(testTopicID),
-					WithTopicPublisherDeployed,
-					WithTopicAddress(testTopicURI),
-					WithTopicSetDefaults,
+					reconcilertestingv1.WithInitTopicConditions,
+					reconcilertestingv1.WithTopicReadyAndPublisherDeployed(testTopicID),
+					reconcilertestingv1.WithTopicPublisherDeployed,
+					reconcilertestingv1.WithTopicAddress(testTopicURI),
+					reconcilertestingv1.WithTopicSetDefaults,
 				),
 			}},
 		}, {
 			Name: "delete topic - policy CreateNoDelete",
 			Objects: []runtime.Object{
-				NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1beta1.TopicSpec{
+				reconcilertestingv1.NewTopic(topicName, testNS,
+					reconcilertestingv1.WithTopicUID(topicUID),
+					reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
-					WithTopicPropagationPolicy("CreateNoDelete"),
-					WithTopicDeleted,
-					WithTopicSetDefaults,
+					reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
+					reconcilertestingv1.WithTopicDeleted,
+					reconcilertestingv1.WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -606,17 +608,17 @@ func TestAllCases(t *testing.T) {
 		}, {
 			Name: "delete topic - policy CreateDelete",
 			Objects: []runtime.Object{
-				NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1beta1.TopicSpec{
+				reconcilertestingv1.NewTopic(topicName, testNS,
+					reconcilertestingv1.WithTopicUID(topicUID),
+					reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
-					WithTopicPropagationPolicy("CreateDelete"),
-					WithTopicTopicID(topicName),
-					WithTopicDeleted,
-					WithTopicSetDefaults,
+					reconcilertestingv1.WithTopicPropagationPolicy("CreateDelete"),
+					reconcilertestingv1.WithTopicTopicID(topicName),
+					reconcilertestingv1.WithTopicDeleted,
+					reconcilertestingv1.WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -627,17 +629,17 @@ func TestAllCases(t *testing.T) {
 		}, {
 			Name: "fail to delete - policy CreateDelete",
 			Objects: []runtime.Object{
-				NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1beta1.TopicSpec{
+				reconcilertestingv1.NewTopic(topicName, testNS,
+					reconcilertestingv1.WithTopicUID(topicUID),
+					reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
-					WithTopicPropagationPolicy("CreateDelete"),
-					WithTopicTopicID(topicName),
-					WithTopicDeleted,
-					WithTopicSetDefaults,
+					reconcilertestingv1.WithTopicPropagationPolicy("CreateDelete"),
+					reconcilertestingv1.WithTopicTopicID(topicName),
+					reconcilertestingv1.WithTopicDeleted,
+					reconcilertestingv1.WithTopicSetDefaults,
 				),
 				newSink(),
 				newSecret(),
@@ -701,7 +703,7 @@ func patchFinalizers(namespace, name, finalizer string, existingFinalizers ...st
 
 func ownerReferences() []metav1.OwnerReference {
 	return []metav1.OwnerReference{{
-		APIVersion:         "internal.events.cloud.google.com/v1beta1",
+		APIVersion:         "internal.events.cloud.google.com/reconcilertestingv1",
 		Kind:               "Topic",
 		Name:               topicName,
 		UID:                topicUID,
@@ -760,14 +762,14 @@ func makeFalseStatusPublisher(reason, message string) *servingv1.Service {
 }
 
 func newPublisher() *servingv1.Service {
-	t := NewTopic(topicName, testNS,
-		WithTopicUID(topicUID),
-		WithTopicSpec(pubsubv1beta1.TopicSpec{
+	t := reconcilertestingv1.NewTopic(topicName, testNS,
+		reconcilertestingv1.WithTopicUID(topicUID),
+		reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
 			Project: testProject,
 			Topic:   testTopicID,
 			Secret:  &secret,
 		}),
-		WithTopicSetDefaults,
+		reconcilertestingv1.WithTopicSetDefaults,
 	)
 	args := &resources.PublisherArgs{
 		Image:  testImage,

@@ -19,19 +19,23 @@ package lib
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
+	"time"
+
+	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
+	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
 
 	"google.golang.org/api/option"
 	"google.golang.org/grpc/status"
 
 	"cloud.google.com/go/logging/logadmin"
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
-	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/grpc/codes"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 const (
@@ -48,22 +52,54 @@ type AuditLogsConfig struct {
 	ResourceName       string
 	ServiceName        string
 	ServiceAccountName string
-	Options            []kngcptesting.CloudAuditLogsSourceOption
 }
 
 func MakeAuditLogsOrDie(client *Client, config AuditLogsConfig) {
 	client.T.Helper()
-	so := config.Options
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceName(config.ServiceName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceMethodName(config.MethodName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceProject(config.Project))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceResourceName(config.ResourceName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceAccount(config.ServiceAccountName))
-	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
+	so := make([]reconcilertestingv1.CloudAuditLogsSourceOption, 0)
+	so = append(so, reconcilertestingv1.WithCloudAuditLogsSourceServiceName(config.ServiceName))
+	so = append(so, reconcilertestingv1.WithCloudAuditLogsSourceMethodName(config.MethodName))
+	so = append(so, reconcilertestingv1.WithCloudAuditLogsSourceProject(config.Project))
+	so = append(so, reconcilertestingv1.WithCloudAuditLogsSourceResourceName(config.ResourceName))
+	so = append(so, reconcilertestingv1.WithCloudAuditLogsSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1.WithCloudAuditLogsSourceServiceAccount(config.ServiceAccountName))
+	eventsAuditLogs := reconcilertestingv1.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
+	// AuditLog source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
+	client.Core.WaitForResourceReadyOrFail(config.AuditlogsName, CloudAuditLogsSourceV1TypeMeta)
+}
 
-	client.Core.WaitForResourceReadyOrFail(config.AuditlogsName, CloudAuditLogsSourceTypeMeta)
+func MakeAuditLogsV1beta1OrDie(client *Client, config AuditLogsConfig) {
+	client.T.Helper()
+	so := make([]reconcilertestingv1beta1.CloudAuditLogsSourceOption, 0)
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceServiceName(config.ServiceName))
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceMethodName(config.MethodName))
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceProject(config.Project))
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceResourceName(config.ResourceName))
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1beta1.WithCloudAuditLogsSourceServiceAccount(config.ServiceAccountName))
+	eventsAuditLogs := reconcilertestingv1beta1.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
+	client.CreateAuditLogsV1beta1OrFail(eventsAuditLogs)
+	// AuditLog source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
+	client.Core.WaitForResourceReadyOrFail(config.AuditlogsName, CloudAuditLogsSourceV1beta1TypeMeta)
+}
+
+func MakeAuditLogsV1alpha1OrDie(client *Client, config AuditLogsConfig) {
+	client.T.Helper()
+	so := make([]reconcilertestingv1alpha1.CloudAuditLogsSourceOption, 0)
+	so = append(so, reconcilertestingv1alpha1.WithCloudAuditLogsSourceServiceName(config.ServiceName))
+	so = append(so, reconcilertestingv1alpha1.WithCloudAuditLogsSourceMethodName(config.MethodName))
+	so = append(so, reconcilertestingv1alpha1.WithCloudAuditLogsSourceProject(config.Project))
+	so = append(so, reconcilertestingv1alpha1.WithCloudAuditLogsSourceResourceName(config.ResourceName))
+	so = append(so, reconcilertestingv1alpha1.WithCloudAuditLogsSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1alpha1.WithCloudAuditLogsSourceServiceAccount(config.ServiceAccountName))
+	eventsAuditLogs := reconcilertestingv1alpha1.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
+	client.CreateAuditLogsV1alpha1OrFail(eventsAuditLogs)
+	// AuditLog source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
+	client.Core.WaitForResourceReadyOrFail(config.AuditlogsName, CloudAuditLogsSourceV1alpha1TypeMeta)
 }
 
 func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, serviceName, targetName, eventType string) {
@@ -96,7 +132,7 @@ func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, se
 func StackdriverSinkExists(t *testing.T, sinkID string) bool {
 	t.Helper()
 	ctx := context.Background()
-	project := os.Getenv(ProwProjectKey)
+	project := GetEnvOrFail(t, ProwProjectKey)
 	opt := option.WithQuotaProject(project)
 	client, err := logadmin.NewClient(ctx, project, opt)
 	if err != nil {

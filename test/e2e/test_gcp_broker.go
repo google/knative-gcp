@@ -18,7 +18,6 @@ package e2e
 
 import (
 	"net/url"
-	"os"
 	"testing"
 	"time"
 
@@ -60,7 +59,7 @@ func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 }
 
 func GCPBrokerMetricsTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	projectID := os.Getenv(lib.ProwProjectKey)
+	projectID := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 	client.SetupStackDriverMetrics(t)
@@ -69,7 +68,7 @@ func GCPBrokerMetricsTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 }
 
 func GCPBrokerTracingTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	projectID := os.Getenv(lib.ProwProjectKey)
+	projectID := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
@@ -147,7 +146,7 @@ func SmokeGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	}
 
 	client.DeleteGCPBrokerOrFail(brokerName)
-	//Wait for 40 seconds for subscription to get deleted in gcp
+	//Wait for 120 seconds for subscription to get deleted in gcp
 	time.Sleep(knativegcptestresources.WaitDeletionTime)
 
 	deletedTopicExists := lib.TopicExists(t, topicID)

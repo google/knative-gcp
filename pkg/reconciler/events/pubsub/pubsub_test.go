@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"testing"
 
+	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,10 +39,10 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
-	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudpubsubsource"
+	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
+	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudpubsubsource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -68,7 +70,7 @@ var (
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
-		Version: "v1beta1",
+		Version: "v1",
 		Kind:    "Sink",
 	}
 
@@ -84,13 +86,13 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = v1beta1.AddToScheme(scheme.Scheme)
+	_ = v1.AddToScheme(scheme.Scheme)
 }
 
 // Returns an ownerref for the test CloudPubSubSource object
 func ownerRef() metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "events.cloud.google.com/v1beta1",
+		APIVersion:         "events.cloud.google.com/v1",
 		Kind:               "CloudPubSubSource",
 		Name:               pubsubName,
 		UID:                pubsubUID,
@@ -115,7 +117,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 func newSink() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.google.com/v1beta1",
+			"apiVersion": "testing.cloud.google.com/v1",
 			"kind":       "Sink",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -133,7 +135,7 @@ func newSink() *unstructured.Unstructured {
 func newSinkDestination() duckv1.Destination {
 	return duckv1.Destination{
 		Ref: &duckv1.KReference{
-			APIVersion: "testing.cloud.google.com/v1beta1",
+			APIVersion: "testing.cloud.google.com/v1",
 			Kind:       "Sink",
 			Namespace:  testNS,
 			Name:       sinkName,
@@ -157,53 +159,53 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "pullsubscription created",
 		Objects: []runtime.Object{
-			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithCloudPubSubSourceAnnotations(map[string]string{
+			reconcilertestingv1.NewCloudPubSubSource(pubsubName, testNS,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceTopic(testTopicID),
+				reconcilertestingv1.WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithCloudPubSubSourceAnnotations(map[string]string{
 					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudPubSubSourceSetDefaults,
+				reconcilertestingv1.WithCloudPubSubSourceSetDefaults,
 			),
 			newSink(),
 		},
 		Key: testNS + "/" + pubsubName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceAnnotations(map[string]string{
+			Object: reconcilertestingv1.NewCloudPubSubSource(pubsubName, testNS,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceStatusObservedGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceTopic(testTopicID),
+				reconcilertestingv1.WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithInitCloudPubSubSourceConditions,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceAnnotations(map[string]string{
 					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudPubSubSourceSetDefaults,
-				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
+				reconcilertestingv1.WithCloudPubSubSourceSetDefaults,
+				reconcilertestingv1.WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			NewPullSubscription(pubsubName, testNS,
-				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
+			reconcilertestingv1.NewPullSubscription(pubsubName, testNS,
+				reconcilertestingv1.WithPullSubscriptionSpec(inteventsv1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1beta1.PubSubSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret: &secret,
 					},
 					AdapterType: string(converters.CloudPubSub),
 				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionLabels(map[string]string{
+				reconcilertestingv1.WithPullSubscriptionSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": pubsubName,
 				}),
-				WithPullSubscriptionAnnotations(map[string]string{
+				reconcilertestingv1.WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group":   resourceGroup,
 					duck.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
-				WithPullSubscriptionDefaultGCPAuth,
+				reconcilertestingv1.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				reconcilertestingv1.WithPullSubscriptionDefaultGCPAuth,
 			),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -216,16 +218,16 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "pullsubscription exists and the status is false",
 		Objects: []runtime.Object{
-			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithCloudPubSubSourceSetDefaults,
+			reconcilertestingv1.NewCloudPubSubSource(pubsubName, testNS,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceTopic(testTopicID),
+				reconcilertestingv1.WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithCloudPubSubSourceSetDefaults,
 			),
-			NewPullSubscription(pubsubName, testNS,
-				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
+			reconcilertestingv1.NewPullSubscription(pubsubName, testNS,
+				reconcilertestingv1.WithPullSubscriptionSpec(inteventsv1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1beta1.PubSubSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -233,20 +235,20 @@ func TestAllCases(t *testing.T) {
 					},
 					AdapterType: string(converters.CloudPubSub),
 				}),
-				WithPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
+				reconcilertestingv1.WithPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
 			newSink(),
 		},
 		Key: testNS + "/" + pubsubName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourcePullSubscriptionFailed("PullSubscriptionFalse", "status false test message"),
-				WithCloudPubSubSourceSetDefaults,
+			Object: reconcilertestingv1.NewCloudPubSubSource(pubsubName, testNS,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceStatusObservedGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceTopic(testTopicID),
+				reconcilertestingv1.WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithInitCloudPubSubSourceConditions,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourcePullSubscriptionFailed("PullSubscriptionFalse", "status false test message"),
+				reconcilertestingv1.WithCloudPubSubSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -259,16 +261,16 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "pullsubscription exists and the status is unknown",
 		Objects: []runtime.Object{
-			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithCloudPubSubSourceSetDefaults,
+			reconcilertestingv1.NewCloudPubSubSource(pubsubName, testNS,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceTopic(testTopicID),
+				reconcilertestingv1.WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithCloudPubSubSourceSetDefaults,
 			),
-			NewPullSubscription(pubsubName, testNS,
-				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
+			reconcilertestingv1.NewPullSubscription(pubsubName, testNS,
+				reconcilertestingv1.WithPullSubscriptionSpec(inteventsv1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1beta1.PubSubSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -276,20 +278,20 @@ func TestAllCases(t *testing.T) {
 					},
 					AdapterType: string(converters.CloudPubSub),
 				}),
-				WithPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
+				reconcilertestingv1.WithPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
 			newSink(),
 		},
 		Key: testNS + "/" + pubsubName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionUnknown", "status unknown test message"),
-				WithCloudPubSubSourceSetDefaults,
+			Object: reconcilertestingv1.NewCloudPubSubSource(pubsubName, testNS,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceStatusObservedGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceTopic(testTopicID),
+				reconcilertestingv1.WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithInitCloudPubSubSourceConditions,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionUnknown", "status unknown test message"),
+				reconcilertestingv1.WithCloudPubSubSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -302,16 +304,16 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "pullsubscription exists and ready, with retry",
 		Objects: []runtime.Object{
-			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithCloudPubSubSourceSetDefaults,
+			reconcilertestingv1.NewCloudPubSubSource(pubsubName, testNS,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceTopic(testTopicID),
+				reconcilertestingv1.WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithCloudPubSubSourceSetDefaults,
 			),
-			NewPullSubscription(pubsubName, testNS,
-				WithPullSubscriptionSpec(inteventsv1beta1.PullSubscriptionSpec{
+			reconcilertestingv1.NewPullSubscription(pubsubName, testNS,
+				reconcilertestingv1.WithPullSubscriptionSpec(inteventsv1.PullSubscriptionSpec{
 					Topic: testTopicID,
-					PubSubSpec: duckv1beta1.PubSubSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
 						Secret: &secret,
 						SourceSpec: duckv1.SourceSpec{
 							Sink: newSinkDestination(),
@@ -319,8 +321,8 @@ func TestAllCases(t *testing.T) {
 					},
 					AdapterType: string(converters.CloudPubSub),
 				}),
-				WithPullSubscriptionReady(sinkURI),
-				WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
+				reconcilertestingv1.WithPullSubscriptionReady(sinkURI),
+				reconcilertestingv1.WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
 			),
 			newSink(),
 		},
@@ -331,33 +333,33 @@ func TestAllCases(t *testing.T) {
 					return false, nil, nil
 				}
 				attempts++
-				return true, nil, apierrs.NewConflict(v1beta1.Resource("foo"), "bar", errors.New("foo"))
+				return true, nil, apierrs.NewConflict(v1.Resource("foo"), "bar", errors.New("foo"))
 			},
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourcePullSubscriptionReady,
-				WithCloudPubSubSourceSinkURI(pubsubSinkURL),
-				WithCloudPubSubSourceSubscriptionID(SubscriptionID),
-				WithCloudPubSubSourceSetDefaults,
+			Object: reconcilertestingv1.NewCloudPubSubSource(pubsubName, testNS,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceStatusObservedGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceTopic(testTopicID),
+				reconcilertestingv1.WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithInitCloudPubSubSourceConditions,
+				reconcilertestingv1.WithCloudPubSubSourcePullSubscriptionReady,
+				reconcilertestingv1.WithCloudPubSubSourceSinkURI(pubsubSinkURL),
+				reconcilertestingv1.WithCloudPubSubSourceSubscriptionID(reconcilertestingv1.SubscriptionID),
+				reconcilertestingv1.WithCloudPubSubSourceSetDefaults,
 			),
 		}, {
-			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourcePullSubscriptionReady,
-				WithCloudPubSubSourceSinkURI(pubsubSinkURL),
-				WithCloudPubSubSourceSubscriptionID(SubscriptionID),
-				WithCloudPubSubSourceFinalizers("cloudpubsubsources.events.cloud.google.com"),
-				WithCloudPubSubSourceSetDefaults,
+			Object: reconcilertestingv1.NewCloudPubSubSource(pubsubName, testNS,
+				reconcilertestingv1.WithCloudPubSubSourceObjectMetaGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceStatusObservedGeneration(generation),
+				reconcilertestingv1.WithCloudPubSubSourceTopic(testTopicID),
+				reconcilertestingv1.WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithInitCloudPubSubSourceConditions,
+				reconcilertestingv1.WithCloudPubSubSourcePullSubscriptionReady,
+				reconcilertestingv1.WithCloudPubSubSourceSinkURI(pubsubSinkURL),
+				reconcilertestingv1.WithCloudPubSubSourceSubscriptionID(reconcilertestingv1.SubscriptionID),
+				reconcilertestingv1.WithCloudPubSubSourceFinalizers("cloudpubsubsources.events.cloud.google.com"),
+				reconcilertestingv1.WithCloudPubSubSourceSetDefaults,
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{

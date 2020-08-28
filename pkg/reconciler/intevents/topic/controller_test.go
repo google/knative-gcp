@@ -35,7 +35,7 @@ import (
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake"
 	_ "knative.dev/serving/pkg/client/injection/informers/serving/v1/service/fake"
 
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/topic/fake"
 )
 
 func TestNew(t *testing.T) {

@@ -28,8 +28,39 @@ import (
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
-// SmokeCloudSchedulerSourceTestImpl tests if a CloudSchedulerSource object can be created to ready state and delete a CloudSchedulerSource resource and its underlying resources..
-func SmokeCloudSchedulerSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+// SmokeCloudSchedulerSourceTestHelper tests if a CloudSchedulerSource object can be created to ready state.
+func SmokeCloudSchedulerSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudSchedulerSourceVersion string) {
+	t.Helper()
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	// Create an Addressable to receive scheduler events
+	data := helpers.AppendRandomString("smoke-scheduler-source")
+	// Create the target and scheduler
+	schedulerName := helpers.AppendRandomString("scheduler")
+	svcName := "event-display"
+
+	schedulerConfig := lib.SchedulerConfig{
+		SinkGVK:            lib.ServiceGVK,
+		SchedulerName:      schedulerName,
+		Data:               data,
+		SinkName:           svcName,
+		ServiceAccountName: authConfig.ServiceAccountName,
+	}
+
+	if cloudSchedulerSourceVersion == "v1alpha1" {
+		lib.MakeSchedulerOrDie(client, schedulerConfig)
+	} else if cloudSchedulerSourceVersion == "v1beta1" {
+		lib.MakeSchedulerOrDie(client, schedulerConfig)
+	} else if cloudSchedulerSourceVersion == "v1" {
+		lib.MakeSchedulerOrDie(client, schedulerConfig)
+	} else {
+		t.Fatalf("SmokeCloudSchedulerSourceTestHelper does not support CloudSchedulerSource version: %v", cloudSchedulerSourceVersion)
+	}
+}
+
+// SmokeCloudSchedulerSourceWithDeletionTestImpl tests if a CloudSchedulerSource object can be created to ready state and delete a CloudSchedulerSource resource and its underlying resources..
+func SmokeCloudSchedulerSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
@@ -68,7 +99,7 @@ func SmokeCloudSchedulerSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 		t.Errorf("Expected subscription %q to exist", subID)
 	}
 	client.DeleteSchedulerOrFail(schedulerName)
-	//Wait for 40 seconds for topic, subscription and job to get deleted in gcp
+	//Wait for 120 seconds for topic, subscription and job to get deleted in gcp
 	time.Sleep(resources.WaitDeletionTime)
 
 	deletedJobExists := lib.SchedulerJobExists(t, jobName)
@@ -121,7 +152,7 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 		}
 		if !out.Success {
 			// Log the output of scheduler pods
-			if logs, err := client.LogsFor(client.Namespace, schedulerName, lib.CloudSchedulerSourceTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, schedulerName, lib.CloudSchedulerSourceV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("scheduler log: %+v", logs)
