@@ -20,12 +20,10 @@ import (
 	"testing"
 
 	"knative.dev/pkg/configmap"
-	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 )
 
 func TestNew(t *testing.T) {
-	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
 
 	args := &PubSubBaseArgs{

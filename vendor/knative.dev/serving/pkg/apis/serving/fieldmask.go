@@ -17,7 +17,10 @@ limitations under the License.
 package serving
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
+	"knative.dev/serving/pkg/apis/config"
 )
 
 // VolumeMask performs a _shallow_ copy of the Kubernetes Volume object to a new
@@ -136,11 +139,12 @@ func KeyToPathMask(in *corev1.KeyToPath) *corev1.KeyToPath {
 // PodSpecMask performs a _shallow_ copy of the Kubernetes PodSpec object to a new
 // Kubernetes PodSpec object bringing over only the fields allowed in the Knative API. This
 // does not validate the contents or the bounds of the provided fields.
-func PodSpecMask(in *corev1.PodSpec) *corev1.PodSpec {
+func PodSpecMask(ctx context.Context, in *corev1.PodSpec) *corev1.PodSpec {
 	if in == nil {
 		return nil
 	}
 
+	cfg := config.FromContextOrDefaults(ctx)
 	out := new(corev1.PodSpec)
 
 	// Allowed fields
@@ -150,6 +154,23 @@ func PodSpecMask(in *corev1.PodSpec) *corev1.PodSpec {
 	out.ImagePullSecrets = in.ImagePullSecrets
 	out.EnableServiceLinks = in.EnableServiceLinks
 
+	// Feature fields
+	if cfg.Features.PodSpecAffinity != config.Disabled {
+		out.Affinity = in.Affinity
+	}
+	if cfg.Features.PodSpecNodeSelector != config.Disabled {
+		out.NodeSelector = in.NodeSelector
+	}
+	if cfg.Features.PodSpecRuntimeClassName != config.Disabled {
+		out.RuntimeClassName = in.RuntimeClassName
+	}
+	if cfg.Features.PodSpecTolerations != config.Disabled {
+		out.Tolerations = in.Tolerations
+	}
+	if cfg.Features.PodSpecSecurityContext != config.Disabled {
+		out.SecurityContext = in.SecurityContext
+	}
+
 	// Disallowed fields
 	// This list is unnecessary, but added here for clarity
 	out.InitContainers = nil
@@ -157,25 +178,20 @@ func PodSpecMask(in *corev1.PodSpec) *corev1.PodSpec {
 	out.TerminationGracePeriodSeconds = nil
 	out.ActiveDeadlineSeconds = nil
 	out.DNSPolicy = ""
-	out.NodeSelector = nil
 	out.AutomountServiceAccountToken = nil
 	out.NodeName = ""
 	out.HostNetwork = false
 	out.HostPID = false
 	out.HostIPC = false
 	out.ShareProcessNamespace = nil
-	out.SecurityContext = nil
 	out.Hostname = ""
 	out.Subdomain = ""
-	out.Affinity = nil
 	out.SchedulerName = ""
-	out.Tolerations = nil
 	out.HostAliases = nil
 	out.PriorityClassName = ""
 	out.Priority = nil
 	out.DNSConfig = nil
 	out.ReadinessGates = nil
-	out.RuntimeClassName = nil
 
 	return out
 }
@@ -516,10 +532,39 @@ func ResourceRequirementsMask(in *corev1.ResourceRequirements) *corev1.ResourceR
 
 }
 
+// PodSecurityContextMask performs a _shallow_ copy of the Kubernetes PodSecurityContext object into a new
+// Kubernetes PodSecurityContext object bringing over only the fields allowed in the Knative API. This
+// does not validate the contents or bounds of the provided fields.
+func PodSecurityContextMask(ctx context.Context, in *corev1.PodSecurityContext) *corev1.PodSecurityContext {
+	if in == nil {
+		return nil
+	}
+
+	out := new(corev1.PodSecurityContext)
+
+	if config.FromContextOrDefaults(ctx).Features.PodSpecSecurityContext == config.Disabled {
+		return out
+	}
+
+	out.RunAsUser = in.RunAsUser
+	out.RunAsGroup = in.RunAsGroup
+	out.RunAsNonRoot = in.RunAsNonRoot
+	out.FSGroup = in.FSGroup
+	out.SupplementalGroups = in.SupplementalGroups
+
+	// Disallowed
+	// This list is unnecessary, but added here for clarity
+	out.SELinuxOptions = nil
+	out.WindowsOptions = nil
+	out.Sysctls = nil
+
+	return out
+}
+
 // SecurityContextMask performs a _shallow_ copy of the Kubernetes SecurityContext object to a new
 // Kubernetes SecurityContext object bringing over only the fields allowed in the Knative API. This
 // does not validate the contents or the bounds of the provided fields.
-func SecurityContextMask(in *corev1.SecurityContext) *corev1.SecurityContext {
+func SecurityContextMask(ctx context.Context, in *corev1.SecurityContext) *corev1.SecurityContext {
 	if in == nil {
 		return nil
 	}
@@ -529,13 +574,15 @@ func SecurityContextMask(in *corev1.SecurityContext) *corev1.SecurityContext {
 	// Allowed fields
 	out.RunAsUser = in.RunAsUser
 
+	if config.FromContextOrDefaults(ctx).Features.PodSpecSecurityContext != config.Disabled {
+		out.RunAsGroup = in.RunAsGroup
+		out.RunAsNonRoot = in.RunAsNonRoot
+	}
 	// Disallowed
 	// This list is unnecessary, but added here for clarity
 	out.Capabilities = nil
 	out.Privileged = nil
 	out.SELinuxOptions = nil
-	out.RunAsGroup = nil
-	out.RunAsNonRoot = nil
 	out.ReadOnlyRootFilesystem = nil
 	out.AllowPrivilegeEscalation = nil
 	out.ProcMount = nil

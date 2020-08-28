@@ -47,8 +47,8 @@ readonly SUGAR_CONTROLLER_CONFIG="config/sugar/500-controller.yaml"
 # Config tracing config.
 readonly CONFIG_TRACING_CONFIG="test/config/config-tracing.yaml"
 
-# PreInstall script for v0.16
-readonly PRE_INSTALL_V016="config/pre-install/v0.16.0"
+# PreInstall script for v0.18
+readonly PRE_INSTALL_V018="config/pre-install/v0.18.0"
 
 # The number of controlplane replicas to run.
 readonly REPLICAS=3
@@ -82,6 +82,12 @@ UNINSTALL_LIST=()
 # Setup the Knative environment for running tests.
 function knative_setup() {
   install_knative_eventing
+
+  install_mt_broker || fail_test "Could not install MT Channel Based Broker"
+
+  install_sugar || fail_test "Could not install Sugar Controller"
+
+  unleash_duck || fail_test "Could not unleash the chaos duck"
 }
 
 function scale_controlplane() {
@@ -170,12 +176,12 @@ function install_latest_release() {
     fail_test "Knative latest release installation failed"
 }
 
-function run_preinstall_V016() {
-  local TMP_PRE_INSTALL_V016=${TMP_DIR}/pre_install
-  mkdir -p ${TMP_PRE_INSTALL_V016}
-  cp -r ${PRE_INSTALL_V016}/* ${TMP_PRE_INSTALL_V016}
-  find ${TMP_PRE_INSTALL_V016} -type f -name "*.yaml" -exec sed -i "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${TEST_EVENTING_NAMESPACE}/g" {} +
-  ko apply --strict -f "${TMP_PRE_INSTALL_V016}" || return 1
+function run_preinstall_V018() {
+  local TMP_PRE_INSTALL_V018=${TMP_DIR}/pre_install
+  mkdir -p ${TMP_PRE_INSTALL_V018}
+  cp -r ${PRE_INSTALL_V018}/* ${TMP_PRE_INSTALL_V018}
+  find ${TMP_PRE_INSTALL_V018} -type f -name "*.yaml" -exec sed -i "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${TEST_EVENTING_NAMESPACE}/g" {} +
+  ko apply --strict -f "${TMP_PRE_INSTALL_V018}" || return 1
   wait_until_batch_job_complete ${TEST_EVENTING_NAMESPACE} || return 1
 }
 
@@ -190,8 +196,7 @@ function install_mt_broker() {
   find ${TMP_MT_CHANNEL_BASED_BROKER_CONFIG_DIR} -type f -name "*.yaml" -exec sed -i "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${TEST_EVENTING_NAMESPACE}/g" {} +
   ko apply --strict -f ${TMP_MT_CHANNEL_BASED_BROKER_CONFIG_DIR} || return 1
 
-  # TODO(https://github.com/knative/eventing/issues/3591): Enable once MT Broker chaos issues are fixed.
-  # scale_controlplane mt-broker-controller
+  scale_controlplane mt-broker-controller
 
   wait_until_pods_running ${TEST_EVENTING_NAMESPACE} || fail_test "Knative Eventing with MT Broker did not come up"
 }
@@ -210,6 +215,11 @@ function install_sugar() {
 }
 
 function unleash_duck() {
+  echo "enable debug logging"
+  cat test/config/config-logging.yaml | \
+    sed "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${TEST_EVENTING_NAMESPACE}/g" | \
+    ko apply --strict -f - || return $?
+
   echo "unleash the duck"
   cat test/config/chaosduck.yaml | \
     sed "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${TEST_EVENTING_NAMESPACE}/g" | \

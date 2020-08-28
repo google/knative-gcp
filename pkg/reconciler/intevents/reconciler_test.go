@@ -879,8 +879,6 @@ func TestCreates(t *testing.T) {
 		}},
 	}}
 
-	defer logtesting.ClearAll()
-
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			cs := fakePubsubClient.NewSimpleClientset(tc.objects...)
@@ -1065,8 +1063,6 @@ func TestDeletes(t *testing.T) {
 			},
 		},
 	}}
-
-	defer logtesting.ClearAll()
 
 	for _, tc := range testCases {
 		cs := fakePubsubClient.NewSimpleClientset()

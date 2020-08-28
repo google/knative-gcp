@@ -23,7 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,7 +41,6 @@ import (
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
 
@@ -911,7 +910,6 @@ func TestAllCases(t *testing.T) {
 		WantEvents: nil,
 	}}
 
-	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		ctx = addressable.WithDuck(ctx)
 		pubsubBase := &intevents.PubSubBase{

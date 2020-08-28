@@ -25,7 +25,7 @@ import (
 )
 
 // +genclient
-// +genreconciler:krshapedlogic=true
+// +genreconciler:class=networking.knative.dev/ingress.class,krshapedlogic=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Ingress is a collection of rules that allow inbound connections to reach the endpoints defined
@@ -212,13 +212,10 @@ type HTTPIngressPath struct {
 	// +optional
 	Path string `json:"path,omitempty"`
 
-	// RewriteHost rewrites the incoming request's host header. The request will
-	// then be re-evaluated based on the new host header.
+	// RewriteHost rewrites the incoming request's host header.
 	//
 	// This field is currently experimental and not supported by all Ingress
 	// implementations.
-	//
-	// If RewriteHost is specified, Splits must not be.
 	RewriteHost string `json:"rewriteHost,omitempty"`
 
 	// Headers defines header matching rules which is a map from a header name

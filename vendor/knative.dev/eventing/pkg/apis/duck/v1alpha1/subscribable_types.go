@@ -25,7 +25,6 @@ import (
 	"knative.dev/pkg/apis/duck"
 
 	duckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 )
 
 // +genduck
@@ -132,7 +131,7 @@ func (s *SubscribableTypeStatus) SetSubscribableTypeStatus(subscriberStatus Subs
 // AddSubscriberToSubscribableStatus method is a Helper method for type SubscribableTypeStatus, if Subscribable Status needs to be appended
 // with Subscribers, use this function, so that the value is reflected in both the duplicate fields residing
 // in SubscribableTypeStatus
-func (s *SubscribableTypeStatus) AddSubscriberToSubscribableStatus(subscriberStatus eventingduckv1beta1.SubscriberStatus) {
+func (s *SubscribableTypeStatus) AddSubscriberToSubscribableStatus(subscriberStatus duckv1beta1.SubscriberStatus) {
 	subscribers := append(s.GetSubscribableTypeStatus().Subscribers, subscriberStatus)
 	s.SubscribableStatus.Subscribers = subscribers
 }
@@ -160,7 +159,7 @@ func (c *SubscribableType) Populate() {
 	}
 	c.Status.SetSubscribableTypeStatus(SubscribableStatus{
 		// Populate ALL fields
-		Subscribers: []eventingduckv1beta1.SubscriberStatus{{
+		Subscribers: []duckv1beta1.SubscriberStatus{{
 			UID:                "2f9b5e8e-deb6-11e8-9f32-f2801f1b9fd1",
 			ObservedGeneration: 1,
 			Ready:              corev1.ConditionTrue,

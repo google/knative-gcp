@@ -31,7 +31,7 @@ import (
 // +genduck
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ChannelableCombined is a skeleton type wrapping Subscribable and Addressable of both
+// ChannelableCombined is a skeleton type wrapping Subscribable and Addressable of
 // v1alpha1 and v1beta1 duck types. This is not to be used by resource writers and is
 // only used by Subscription Controller to synthesize patches and read the Status
 // of the Channelable Resources.
@@ -116,20 +116,32 @@ func (c *ChannelableCombined) Populate() {
 	retry := int32(5)
 	linear := eventingduckv1beta1.BackoffPolicyLinear
 	delay := "5s"
-	c.Spec.Delivery = &eventingduckv1beta1.DeliverySpec{
-		DeadLetterSink: &duckv1.Destination{
-			Ref: &duckv1.KReference{
-				Name: "aname",
-			},
-			URI: &apis.URL{
-				Scheme: "http",
-				Host:   "test-error-domain",
-			},
+	deadLetterSink := duckv1.Destination{
+		Ref: &duckv1.KReference{
+			Name: "aname",
 		},
-		Retry:         &retry,
-		BackoffPolicy: &linear,
-		BackoffDelay:  &delay,
+		URI: &apis.URL{
+			Scheme: "http",
+			Host:   "test-error-domain",
+		},
 	}
+	c.Spec.Delivery = &eventingduckv1beta1.DeliverySpec{
+		DeadLetterSink: &deadLetterSink,
+		Retry:          &retry,
+		BackoffPolicy:  &linear,
+		BackoffDelay:   &delay,
+	}
+	subscribers := []eventingduckv1beta1.SubscriberStatus{{
+		UID:                "2f9b5e8e-deb6-11e8-9f32-f2801f1b9fd1",
+		ObservedGeneration: 1,
+		Ready:              corev1.ConditionTrue,
+		Message:            "Some message",
+	}, {
+		UID:                "34c5aec8-deb6-11e8-9f32-f2801f1b9fd1",
+		ObservedGeneration: 2,
+		Ready:              corev1.ConditionFalse,
+		Message:            "Some message",
+	}}
 	c.Status = ChannelableCombinedStatus{
 		AddressStatus: v1alpha1.AddressStatus{
 			Address: &v1alpha1.Addressable{
@@ -144,31 +156,11 @@ func (c *ChannelableCombined) Populate() {
 			},
 		},
 		SubscribableStatus: eventingduckv1beta1.SubscribableStatus{
-			Subscribers: []eventingduckv1beta1.SubscriberStatus{{
-				UID:                "2f9b5e8e-deb6-11e8-9f32-f2801f1b9fd1",
-				ObservedGeneration: 1,
-				Ready:              corev1.ConditionTrue,
-				Message:            "Some message",
-			}, {
-				UID:                "34c5aec8-deb6-11e8-9f32-f2801f1b9fd1",
-				ObservedGeneration: 2,
-				Ready:              corev1.ConditionFalse,
-				Message:            "Some message",
-			}},
+			Subscribers: subscribers,
 		},
 		SubscribableTypeStatus: SubscribableTypeStatus{
 			SubscribableStatus: &SubscribableStatus{
-				Subscribers: []eventingduckv1beta1.SubscriberStatus{{
-					UID:                "2f9b5e8e-deb6-11e8-9f32-f2801f1b9fd1",
-					ObservedGeneration: 1,
-					Ready:              corev1.ConditionTrue,
-					Message:            "Some message",
-				}, {
-					UID:                "34c5aec8-deb6-11e8-9f32-f2801f1b9fd1",
-					ObservedGeneration: 2,
-					Ready:              corev1.ConditionFalse,
-					Message:            "Some message",
-				}},
+				Subscribers: subscribers,
 			},
 		},
 	}

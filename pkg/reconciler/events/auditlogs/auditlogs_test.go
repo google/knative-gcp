@@ -35,7 +35,6 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -1398,7 +1397,6 @@ func TestAllCases(t *testing.T) {
 		},
 	}}
 
-	defer logtesting.ClearAll()
 	for _, tt := range table {
 		t.Run(tt.Name, func(t *testing.T) {
 			logadminClientProvider := glogadmintesting.TestClientCreator(tt.OtherTestData["logadmin"])

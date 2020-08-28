@@ -24,7 +24,6 @@ import (
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/logging"
-	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics"
 	_ "knative.dev/pkg/metrics/testing"
 	. "knative.dev/pkg/reconciler/testing"
@@ -45,7 +44,6 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
 
 	_ = os.Setenv("PUBSUB_RA_IMAGE", "PUBSUB_RA_IMAGE")

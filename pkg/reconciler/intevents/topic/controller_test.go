@@ -27,7 +27,6 @@ import (
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"knative.dev/pkg/configmap"
-	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 
 	// Fake injection informers
@@ -40,7 +39,6 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
 
 	_ = os.Setenv("PUBSUB_PUBLISHER_IMAGE", "PUBSUB_PUBLISHER_IMAGE")

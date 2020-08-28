@@ -32,8 +32,6 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	logtesting "knative.dev/pkg/logging/testing"
-
 	. "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
@@ -495,7 +493,6 @@ func TestAllCases(t *testing.T) {
 			},
 		}}
 
-	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),

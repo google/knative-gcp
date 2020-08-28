@@ -22,13 +22,12 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
-	logtesting "knative.dev/pkg/logging/testing"
 )
 
 func TestValidateAutoscalingAnnotations(t *testing.T) {
@@ -337,8 +336,6 @@ func TestValidateCredential(t *testing.T) {
 		serviceAccount: "test",
 		wantErr:        true,
 	}}
-
-	defer logtesting.ClearAll()
 
 	for _, tc := range testCases {
 		errs := ValidateCredential(tc.secret, tc.serviceAccount)
