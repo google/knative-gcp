@@ -228,7 +228,7 @@ func testStorageClient(ctx context.Context, t *testing.T) (*storage.Client, chan
 		gotRequest <- r
 		w.Write([]byte("{}"))
 	}))
-	c, err := storage.NewClient(ctx, option.WithHTTPClient(srv.Client()), option.WithEndpoint(srv.URL))
+	c, err := storage.NewClient(ctx, option.WithEndpoint(srv.URL))
 	if err != nil {
 		t.Fatalf("Failed to create test storage client: %v", err)
 	}
