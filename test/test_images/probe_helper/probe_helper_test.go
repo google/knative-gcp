@@ -49,14 +49,14 @@ const (
 	probeHelperPort = 8070
 	// the port that the probe receiver component listens to
 	probeReceiverPort = 8080
-	//
+	// the fake project ID used by the test resources
 	testProjectID = "test-project-id"
-	//
+	// the fake pubsub topic ID used in the dummy CloudPubSubSource
 	testTopicID = "cloudpubsubsource-topic"
-	//
-	testStorageBucket = "cloudstoragesource-bucket"
-	//
+	// the fake pubsub subscription ID used in the dummy CloudPubSubSource
 	testSubscriptionID = "cre-src-test-subscription-id"
+	// the fake Cloud Storage bucket ID used in the dummy CloudStorageSource
+	testStorageBucket = "cloudstoragesource-bucket"
 )
 
 var (
@@ -72,9 +72,9 @@ var (
 	testStorageArchiveBody        = fmt.Sprintf(`{"bucket":"%s","name":"cloudstoragesource-probe-1234567890","storageClass":"ARCHIVE"}`, testStorageBucket)
 )
 
-// A helper function that starts a dummy broker which receives events forwarded by the probe helper and delivers the events
-// back to the probe helper's receive port
-func runDummyBroker(ctx context.Context, t *testing.T) {
+// A helper function that starts a dummy Broker which receives events forwarded by
+// the probe helper and delivers the events back to the probe helper's receive port.
+func runDummyBroker(ctx context.Context) {
 	logger := logging.FromContext(ctx)
 	bp, err := cloudevents.NewHTTP(cloudevents.WithPort(dummyBrokerPort), cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
@@ -91,8 +91,12 @@ func runDummyBroker(ctx context.Context, t *testing.T) {
 	})
 }
 
-func runDummyCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription, converter converters.Converter, t *testing.T) {
+// A helper function that starts a dummy CloudPubSubSource which watches a
+// pubsub Subscription for messages and delivers them as CloudEvents to the
+// probe helper's receive port.
+func runDummyCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription) {
 	logger := logging.FromContext(ctx)
+	converter := converters.NewPubSubConverter()
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
 		logger.Fatalf("Failed to create http protocol of the dummy CloudPubSubSource, %v", err)
@@ -110,12 +114,17 @@ func runDummyCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription, co
 			logger.Fatalf("Failed to send CloudEvent from the dummy CloudPubSubSource: %v", err)
 		}
 	}
-	if err := sub.Receive(ctx, msgHandler); err != nil {
-		logger.Fatalf("Could not receive from subscription: %v", err)
+	for {
+		if err := sub.Receive(ctx, msgHandler); err != nil {
+			logger.Fatalf("Could not receive from subscription: %v", err)
+		}
 	}
 }
 
-func runDummyCloudStorageSource(ctx context.Context, gotRequest chan requestData, converter converters.Converter, t *testing.T) {
+// A helper function that starts a dummy CloudStorageSource which intercepts
+// Cloud Storage HTTP requests and forwards the appropriate notifications as
+// CloudEvents to the probe helper's receive port.
+func runDummyCloudStorageSource(ctx context.Context, gotRequest chan requestData) {
 	logger := logging.FromContext(ctx)
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
@@ -129,6 +138,7 @@ func runDummyCloudStorageSource(ctx context.Context, gotRequest chan requestData
 		select {
 		case req := <-gotRequest:
 			if req.method == "POST" && req.url == testStorageUploadRequest && strings.Contains(req.body, testStorageCreateBody) {
+				// This request indicates the client's intent to create a new object.
 				finalizeEvent := newCloudEvent(
 					cloudEvent{
 						CeID:      "1234567890",
@@ -141,6 +151,7 @@ func runDummyCloudStorageSource(ctx context.Context, gotRequest chan requestData
 					logger.Fatalf("Failed to send object finalized CloudEvent from the dummy CloudStorageSource: %v", res)
 				}
 			} else if req.method == "PATCH" && req.url == testStorageRequest && strings.Contains(req.body, testStorageUpdateMetadataBody) {
+				// This request indicates the client's intent to update the object's metadata.
 				updateMetadataEvent := newCloudEvent(
 					cloudEvent{
 						CeID:      "1234567890",
@@ -153,6 +164,7 @@ func runDummyCloudStorageSource(ctx context.Context, gotRequest chan requestData
 					logger.Fatalf("Failed to send object metadata updated CloudEvent from the dummy CloudStorageSource: %v", res)
 				}
 			} else if req.method == "POST" && req.url == testStorageUploadRequest && strings.Contains(req.body, testStorageArchiveBody) {
+				// This request indicates the client's intent to archive the object.
 				archivedEvent := newCloudEvent(
 					cloudEvent{
 						CeID:      "1234567890",
@@ -165,6 +177,7 @@ func runDummyCloudStorageSource(ctx context.Context, gotRequest chan requestData
 					logger.Fatalf("Failed to send object archived CloudEvent from the dummy CloudStorageSource: %v", res)
 				}
 			} else if req.method == "DELETE" && req.url == testStorageGenerationRequest {
+				// This request indicates the client's intent to delete the object.
 				deletedEvent := newCloudEvent(
 					cloudEvent{
 						CeID:      "1234567890",
@@ -181,6 +194,7 @@ func runDummyCloudStorageSource(ctx context.Context, gotRequest chan requestData
 	}
 }
 
+//
 type cloudEvent struct {
 	CeID      string
 	CeSubject string
@@ -188,6 +202,7 @@ type cloudEvent struct {
 	CeType    string
 }
 
+// Creates a new CloudEvent from raw data.
 func newCloudEvent(e cloudEvent) *cloudevents.Event {
 	event := cloudevents.NewEvent()
 	event.SetID(e.CeID)
@@ -198,6 +213,7 @@ func newCloudEvent(e cloudEvent) *cloudevents.Event {
 	return &event
 }
 
+// Creates a new CloudEvent in the shape of probe events sent to the probe helper.
 func probeEvent(name, subject string) *cloudevents.Event {
 	return newCloudEvent(
 		cloudEvent{
@@ -317,9 +333,7 @@ func TestProbeHelper(t *testing.T) {
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 
-			converter := converters.NewPubSubConverter()
-
-			// set up the resources for testing the CloudPubSubSource
+			// Set up the resources for testing the CloudPubSubSource.
 			pubsubClient, cancel := testPubsubClient(ctx, t, testProjectID)
 			defer cancel()
 			topic, err := pubsubClient.CreateTopic(ctx, testTopicID)
@@ -333,9 +347,10 @@ func TestProbeHelper(t *testing.T) {
 				t.Fatalf("Failed to create test subscription: %v", err)
 			}
 
-			// set up resources for testing the CloudStorageSource
+			// Set up resources for testing the CloudStorageSource.
 			gotRequest := make(chan requestData, 1)
 			hc, close := newTestServer(func(w http.ResponseWriter, r *http.Request) {
+				// The dummy Cloud Storage server forwards the client's generated HTTP requests.
 				body, _ := ioutil.ReadAll(r.Body)
 				gotRequest <- requestData{
 					method: r.Method,
@@ -347,18 +362,19 @@ func TestProbeHelper(t *testing.T) {
 			defer close()
 			storageClient, err := storage.NewClient(ctx, option.WithHTTPClient(hc))
 
-			// start a goroutine to run the dummy probe helper
+			// Start a goroutine to run the dummy probe helper.
 			go runProbeHelper(ctx, pubsubClient, storageClient)
 
-			// start a goroutine to run the dummy CloudPubSubSource
-			go runDummyCloudPubSubSource(ctx, sub, converter, t)
+			// Start a goroutine to run the dummy CloudPubSubSource.
+			go runDummyCloudPubSubSource(ctx, sub)
 
-			// start a goroutine to run the dummy CloudStorageSource
-			go runDummyCloudStorageSource(ctx, gotRequest, converter, t)
+			// Start a goroutine to run the dummy CloudStorageSource.
+			go runDummyCloudStorageSource(ctx, gotRequest)
 
-			// start a goroutine to run the dummy Broker for testing Broker E2E delivery
-			go runDummyBroker(ctx, t)
+			// Start a goroutine to run the dummy Broker for testing Broker E2E delivery.
+			go runDummyBroker(ctx)
 
+			// Create a testing client from which to send probe events to the probe helper.
 			p, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeHelperURL))
 			if err != nil {
 				t.Fatalf("Failed to create HTTP protocol of the testing client: %s", err.Error())
