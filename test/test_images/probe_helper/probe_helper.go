@@ -39,7 +39,7 @@ const (
 	BrokerE2EDeliveryProbeEventType = "broker-e2e-delivery-probe"
 	CloudPubSubSourceProbeEventType = "cloudpubsubsource-probe"
 
-	maxStaleTime = 60 * time.Second
+	maxStaleTime = 3 * time.Minute
 )
 
 var (
@@ -90,7 +90,7 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 		var err error
 		var receiverChannel chan bool
 		log.Printf("Received probe request: %+v \n", event)
-		lastSenderEventTimestamp = event.Time()
+		lastSenderEventTimestamp = time.Now()
 
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
 		defer cancel()
@@ -136,7 +136,7 @@ func receiveEvent(receivedEvents *receivedEventsMap) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var eventID string
 		log.Printf("Received event: %+v \n", event)
-		lastReceiverEventTimestamp = event.Time()
+		lastReceiverEventTimestamp = time.Now()
 
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
