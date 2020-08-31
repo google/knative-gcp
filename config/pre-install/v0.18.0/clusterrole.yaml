@@ -39,6 +39,7 @@ rules:
       - "cloudpubsubsources"
       - "cloudauditlogssources"
       - "cloudschedulersources"
+      - "cloudbuildsources"
     verbs: &everything
       - "get"
       - "list"
@@ -52,4 +53,9 @@ rules:
     resources:
       - "pullsubscriptions"
       - "topics"
+    verbs: *everything
+  - apiGroups:
+      - "messaging.cloud.google.com"
+    resources:
+      - "channels"
     verbs: *everything

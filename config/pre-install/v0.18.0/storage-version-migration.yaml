@@ -38,6 +38,8 @@ spec:
           # and substituted here.
           image: ko://github.com/google/knative-gcp/vendor/knative.dev/pkg/apiextensions/storageversion/cmd/migrate
           args:
+            - "channels.messaging.cloud.google.com"
+            - "cloudbuildsources.events.cloud.google.com"
             - "cloudauditlogssources.events.cloud.google.com"
             - "cloudpubsubsources.events.cloud.google.com"
             - "cloudstoragesources.events.cloud.google.com"
