@@ -90,7 +90,7 @@ func startSpan(ctx context.Context, trigger types.NamespacedName, event *event.E
 			kntracing.MessagingMessageIDAttribute(event.ID()),
 		)
 	}
-	return ctx, span
+	return tracing.WithLogging(ctx, span), span
 }
 
 func (p *Processor) passFilter(ctx context.Context, attrs map[string]string, event *event.Event) bool {
