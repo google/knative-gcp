@@ -38,11 +38,17 @@ import (
 const projectEnvKey = "PROJECT_ID"
 
 // NewMultiTopicDecoupleSink creates a new multiTopicDecoupleSink.
-func NewMultiTopicDecoupleSink(ctx context.Context, brokerConfig config.ReadonlyTargets, client *pubsub.Client) *multiTopicDecoupleSink {
+func NewMultiTopicDecoupleSink(
+	ctx context.Context,
+	brokerConfig config.ReadonlyTargets,
+	client *pubsub.Client,
+	publishSettings pubsub.PublishSettings) *multiTopicDecoupleSink {
+
 	return &multiTopicDecoupleSink{
-		logger:       logging.FromContext(ctx),
-		pubsub:       client,
-		brokerConfig: brokerConfig,
+		logger:          logging.FromContext(ctx),
+		pubsub:          client,
+		publishSettings: publishSettings,
+		brokerConfig:    brokerConfig,
 		// TODO(#1118): remove Topic when broker config is removed
 		topics: make(map[types.NamespacedName]*pubsub.Topic),
 	}
@@ -52,7 +58,8 @@ func NewMultiTopicDecoupleSink(ctx context.Context, brokerConfig config.Readonly
 // to the broker to which the events are sent.
 type multiTopicDecoupleSink struct {
 	// pubsub talks to pubsub.
-	pubsub *pubsub.Client
+	pubsub          *pubsub.Client
+	publishSettings pubsub.PublishSettings
 	// map from brokers to topics
 	topics    map[types.NamespacedName]*pubsub.Topic
 	topicsMut sync.RWMutex
