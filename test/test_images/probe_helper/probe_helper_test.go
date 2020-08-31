@@ -14,12 +14,11 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -43,67 +42,67 @@ import (
 )
 
 const (
-	// the port that the dummy broker listens to
-	dummyBrokerPort = 9999
+	// the port that the test broker listens to
+	testBrokerPort = 9999
 	// the port that the probe helper listens to
 	probeHelperPort = 8070
 	// the port that the probe receiver component listens to
 	probeReceiverPort = 8080
 	// the fake project ID used by the test resources
 	testProjectID = "test-project-id"
-	// the fake pubsub topic ID used in the dummy CloudPubSubSource
+	// the fake pubsub topic ID used in the test CloudPubSubSource
 	testTopicID = "cloudpubsubsource-topic"
-	// the fake pubsub subscription ID used in the dummy CloudPubSubSource
+	// the fake pubsub subscription ID used in the test CloudPubSubSource
 	testSubscriptionID = "cre-src-test-subscription-id"
-	// the fake Cloud Storage bucket ID used in the dummy CloudStorageSource
+	// the fake Cloud Storage bucket ID used in the test CloudStorageSource
 	testStorageBucket = "cloudstoragesource-bucket"
 )
 
 var (
 	probeReceiverURL = fmt.Sprintf("http://localhost:%d", probeReceiverPort)
 	probeHelperURL   = fmt.Sprintf("http://localhost:%d", probeHelperPort)
-	dummyBrokerURL   = fmt.Sprintf("http://localhost:%d", dummyBrokerPort)
+	testBrokerURL    = fmt.Sprintf("http://localhost:%d", testBrokerPort)
 
 	testStorageUploadRequest      = fmt.Sprintf("/upload/storage/v1/b/%s/o?alt=json&name=cloudstoragesource-probe-1234567890&prettyPrint=false&projection=full&uploadType=multipart", testStorageBucket)
-	testStorageRequest            = fmt.Sprintf("/storage/v1/b/%s/o/cloudstoragesource-probe-1234567890?alt=json&prettyPrint=false&projection=full", testStorageBucket)
-	testStorageGenerationRequest  = fmt.Sprintf("/storage/v1/b/%s/o/cloudstoragesource-probe-1234567890?alt=json&generation=0&prettyPrint=false", testStorageBucket)
+	testStorageRequest            = fmt.Sprintf("/b/%s/o/cloudstoragesource-probe-1234567890?alt=json&prettyPrint=false&projection=full", testStorageBucket)
+	testStorageGenerationRequest  = fmt.Sprintf("/b/%s/o/cloudstoragesource-probe-1234567890?alt=json&generation=0&prettyPrint=false", testStorageBucket)
 	testStorageCreateBody         = fmt.Sprintf(`{"bucket":"%s","name":"cloudstoragesource-probe-1234567890"}`, testStorageBucket)
 	testStorageUpdateMetadataBody = fmt.Sprintf(`{"bucket":"%s","metadata":{"some-key":"Metadata updated!"}}`, testStorageBucket)
 	testStorageArchiveBody        = fmt.Sprintf(`{"bucket":"%s","name":"cloudstoragesource-probe-1234567890","storageClass":"ARCHIVE"}`, testStorageBucket)
 )
 
-// A helper function that starts a dummy Broker which receives events forwarded by
+// A helper function that starts a test Broker which receives events forwarded by
 // the probe helper and delivers the events back to the probe helper's receive port.
-func runDummyBroker(ctx context.Context) {
+func runTestBroker(ctx context.Context) {
 	logger := logging.FromContext(ctx)
-	bp, err := cloudevents.NewHTTP(cloudevents.WithPort(dummyBrokerPort), cloudevents.WithTarget(probeReceiverURL))
+	bp, err := cloudevents.NewHTTP(cloudevents.WithPort(testBrokerPort), cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
-		logger.Fatalf("Failed to create http protocol of the dummy Broker, %v", err)
+		logger.Fatalf("Failed to create http protocol of the test Broker, %v", err)
 	}
 	bc, err := cloudevents.NewClient(bp)
 	if err != nil {
-		logger.Fatalf("Failed to create the dummy Broker client, ", err)
+		logger.Fatalf("Failed to create the test Broker client, ", err)
 	}
 	bc.StartReceiver(ctx, func(event cloudevents.Event) {
 		if res := bc.Send(ctx, event); !cloudevents.IsACK(res) {
-			logger.Fatalf("Failed to send CloudEvent from the dummy Broker: %v", res)
+			logger.Fatalf("Failed to send CloudEvent from the test Broker: %v", res)
 		}
 	})
 }
 
-// A helper function that starts a dummy CloudPubSubSource which watches a
-// pubsub Subscription for messages and delivers them as CloudEvents to the
-// probe helper's receive port.
-func runDummyCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription) {
+// A helper function that starts a test CloudPubSubSource which watches a pubsub
+// Subscription for messages and delivers them as CloudEvents to the probe
+// helper's receive port.
+func runTestCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription) {
 	logger := logging.FromContext(ctx)
 	converter := converters.NewPubSubConverter()
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
-		logger.Fatalf("Failed to create http protocol of the dummy CloudPubSubSource, %v", err)
+		logger.Fatalf("Failed to create http protocol of the test CloudPubSubSource, %v", err)
 	}
 	c, err := cloudevents.NewClient(cp)
 	if err != nil {
-		logger.Fatalf("Failed to create the dummy CloudPubSubSource client, ", err)
+		logger.Fatalf("Failed to create the test CloudPubSubSource client, ", err)
 	}
 	msgHandler := func(ctx context.Context, msg *pubsub.Message) {
 		event, err := converter.Convert(ctx, msg, converters.CloudPubSub)
@@ -111,7 +110,7 @@ func runDummyCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription) {
 			logger.Fatalf("Could not convert message to CloudEvent: %v", err)
 		}
 		if res := c.Send(ctx, *event); !cloudevents.IsACK(res) {
-			logger.Fatalf("Failed to send CloudEvent from the dummy CloudPubSubSource: %v", err)
+			logger.Fatalf("Failed to send CloudEvent from the test CloudPubSubSource: %v", err)
 		}
 	}
 	for {
@@ -121,123 +120,83 @@ func runDummyCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription) {
 	}
 }
 
-// A helper function that starts a dummy CloudStorageSource which intercepts
+// A helper function that starts a test CloudStorageSource which intercepts
 // Cloud Storage HTTP requests and forwards the appropriate notifications as
 // CloudEvents to the probe helper's receive port.
-func runDummyCloudStorageSource(ctx context.Context, gotRequest chan requestData) {
+func runTestCloudStorageSource(ctx context.Context, gotRequest chan *http.Request) {
 	logger := logging.FromContext(ctx)
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
-		logger.Fatalf("Failed to create http protocol of the dummy CloudPubSubSource, %v", err)
+		logger.Fatalf("Failed to create http protocol of the test CloudStorageSource, %v", err)
 	}
 	c, err := cloudevents.NewClient(cp)
 	if err != nil {
-		logger.Fatalf("Failed to create the dummy CloudPubSubSource client, ", err)
+		logger.Fatalf("Failed to create the test CloudStorageSource client, ", err)
 	}
 	for {
 		select {
 		case req := <-gotRequest:
-			if req.method == "POST" && req.url == testStorageUploadRequest && strings.Contains(req.body, testStorageCreateBody) {
+			bodyBytes, err := ioutil.ReadAll(req.Body)
+			if err != nil {
+				logger.Fatalf("Failed to read request body in test CloudStorageSource, ", err)
+			}
+			body := string(bodyBytes)
+			method := req.Method
+			url := req.URL.String()
+			if method == "POST" && url == testStorageUploadRequest && strings.Contains(body, testStorageCreateBody) {
 				// This request indicates the client's intent to create a new object.
-				finalizeEvent := newCloudEvent(
-					cloudEvent{
-						CeID:      "1234567890",
-						CeSubject: schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"),
-						CeType:    schemasv1.CloudStorageObjectFinalizedEventType,
-						CeSource:  schemasv1.CloudStorageEventSource(testStorageBucket),
-					},
-				)
-				if res := c.Send(ctx, *finalizeEvent); !cloudevents.IsACK(res) {
-					logger.Fatalf("Failed to send object finalized CloudEvent from the dummy CloudStorageSource: %v", res)
+				finalizeEvent := cloudevents.NewEvent()
+				finalizeEvent.SetID("1234567890")
+				finalizeEvent.SetSubject(schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"))
+				finalizeEvent.SetType(schemasv1.CloudStorageObjectFinalizedEventType)
+				finalizeEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
+				if res := c.Send(ctx, finalizeEvent); !cloudevents.IsACK(res) {
+					logger.Fatalf("Failed to send object finalized CloudEvent from the test CloudStorageSource: %v", res)
 				}
-			} else if req.method == "PATCH" && req.url == testStorageRequest && strings.Contains(req.body, testStorageUpdateMetadataBody) {
+			} else if method == "PATCH" && url == testStorageRequest && strings.Contains(body, testStorageUpdateMetadataBody) {
 				// This request indicates the client's intent to update the object's metadata.
-				updateMetadataEvent := newCloudEvent(
-					cloudEvent{
-						CeID:      "1234567890",
-						CeSubject: schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"),
-						CeType:    schemasv1.CloudStorageObjectMetadataUpdatedEventType,
-						CeSource:  schemasv1.CloudStorageEventSource(testStorageBucket),
-					},
-				)
-				if res := c.Send(ctx, *updateMetadataEvent); !cloudevents.IsACK(res) {
-					logger.Fatalf("Failed to send object metadata updated CloudEvent from the dummy CloudStorageSource: %v", res)
+				updateMetadataEvent := cloudevents.NewEvent()
+				updateMetadataEvent.SetID("1234567890")
+				updateMetadataEvent.SetSubject(schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"))
+				updateMetadataEvent.SetType(schemasv1.CloudStorageObjectMetadataUpdatedEventType)
+				updateMetadataEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
+				if res := c.Send(ctx, updateMetadataEvent); !cloudevents.IsACK(res) {
+					logger.Fatalf("Failed to send object metadata updated CloudEvent from the test CloudStorageSource: %v", res)
 				}
-			} else if req.method == "POST" && req.url == testStorageUploadRequest && strings.Contains(req.body, testStorageArchiveBody) {
+			} else if method == "POST" && url == testStorageUploadRequest && strings.Contains(body, testStorageArchiveBody) {
 				// This request indicates the client's intent to archive the object.
-				archivedEvent := newCloudEvent(
-					cloudEvent{
-						CeID:      "1234567890",
-						CeSubject: schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"),
-						CeType:    schemasv1.CloudStorageObjectArchivedEventType,
-						CeSource:  schemasv1.CloudStorageEventSource(testStorageBucket),
-					},
-				)
-				if res := c.Send(ctx, *archivedEvent); !cloudevents.IsACK(res) {
-					logger.Fatalf("Failed to send object archived CloudEvent from the dummy CloudStorageSource: %v", res)
+				archivedEvent := cloudevents.NewEvent()
+				archivedEvent.SetID("1234567890")
+				archivedEvent.SetSubject(schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"))
+				archivedEvent.SetType(schemasv1.CloudStorageObjectArchivedEventType)
+				archivedEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
+				if res := c.Send(ctx, archivedEvent); !cloudevents.IsACK(res) {
+					logger.Fatalf("Failed to send object archived CloudEvent from the test CloudStorageSource: %v", res)
 				}
-			} else if req.method == "DELETE" && req.url == testStorageGenerationRequest {
+			} else if method == "DELETE" && url == testStorageGenerationRequest {
 				// This request indicates the client's intent to delete the object.
-				deletedEvent := newCloudEvent(
-					cloudEvent{
-						CeID:      "1234567890",
-						CeSubject: schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"),
-						CeType:    schemasv1.CloudStorageObjectDeletedEventType,
-						CeSource:  schemasv1.CloudStorageEventSource(testStorageBucket),
-					},
-				)
-				if res := c.Send(ctx, *deletedEvent); !cloudevents.IsACK(res) {
-					logger.Fatalf("Failed to send object deleted CloudEvent from the dummy CloudStorageSource: %v", res)
+				deletedEvent := cloudevents.NewEvent()
+				deletedEvent.SetID("1234567890")
+				deletedEvent.SetSubject(schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"))
+				deletedEvent.SetType(schemasv1.CloudStorageObjectDeletedEventType)
+				deletedEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
+				if res := c.Send(ctx, deletedEvent); !cloudevents.IsACK(res) {
+					logger.Fatalf("Failed to send object deleted CloudEvent from the test CloudStorageSource: %v", res)
 				}
 			}
 		}
 	}
 }
 
-//
-type cloudEvent struct {
-	CeID      string
-	CeSubject string
-	CeSource  string
-	CeType    string
-}
-
-// Creates a new CloudEvent from raw data.
-func newCloudEvent(e cloudEvent) *cloudevents.Event {
-	event := cloudevents.NewEvent()
-	event.SetID(e.CeID)
-	event.SetSubject(e.CeSubject)
-	event.SetType(e.CeType)
-	event.SetSource(e.CeSource)
-	event.SetTime(time.Time{})
-	return &event
-}
-
 // Creates a new CloudEvent in the shape of probe events sent to the probe helper.
 func probeEvent(name, subject string) *cloudevents.Event {
-	return newCloudEvent(
-		cloudEvent{
-			CeID:      name + "-1234567890",
-			CeSubject: subject,
-			CeSource:  "probe-helper-test",
-			CeType:    name,
-		},
-	)
-}
-
-func newTestServer(handler func(w http.ResponseWriter, r *http.Request)) (*http.Client, func()) {
-	ts := httptest.NewTLSServer(http.HandlerFunc(handler))
-	tlsConf := &tls.Config{InsecureSkipVerify: true}
-	tr := &http.Transport{
-		TLSClientConfig: tlsConf,
-		DialTLS: func(netw, addr string) (net.Conn, error) {
-			return tls.Dial("tcp", ts.Listener.Addr().String(), tlsConf)
-		},
-	}
-	return &http.Client{Transport: tr}, func() {
-		tr.CloseIdleConnections()
-		ts.Close()
-	}
+	event := cloudevents.NewEvent()
+	event.SetID(name + "-1234567890")
+	event.SetSubject(subject)
+	event.SetSource("probe-helper-test")
+	event.SetType(name)
+	event.SetTime(time.Now())
+	return &event
 }
 
 func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pubsub.Client, func()) {
@@ -257,21 +216,32 @@ func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pub
 	return c, close
 }
 
+func testStorageClient(ctx context.Context, t *testing.T) (*storage.Client, chan *http.Request, func()) {
+	gotRequest := make(chan *http.Request, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The test Cloud Storage server forwards the client's generated HTTP requests.
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			logging.FromContext(ctx).Fatal("Test Cloud Storage server could not read request body.")
+		}
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		gotRequest <- r
+		w.Write([]byte("{}"))
+	}))
+	c, err := storage.NewClient(ctx, option.WithHTTPClient(srv.Client()), option.WithEndpoint(srv.URL))
+	if err != nil {
+		t.Fatalf("Failed to create test storage client: %v", err)
+	}
+	return c, gotRequest, srv.Close
+}
+
 type eventAndResult struct {
 	event      *cloudevents.Event
 	wantResult protocol.Result
 }
 
-type requestData struct {
-	method string
-	url    string
-	body   string
-}
-
 func TestProbeHelper(t *testing.T) {
-	t.Skip("Skip this test from running on Prow as it is only for local development.")
-
-	os.Setenv("K_SINK", dummyBrokerURL)
+	os.Setenv("K_SINK", testBrokerURL)
 	os.Setenv("PROJECT_ID", testProjectID)
 	os.Setenv("CLOUDPUBSUBSOURCE_TOPIC_ID", testTopicID)
 	os.Setenv("CLOUDSTORAGESOURCE_BUCKET_ID", testStorageBucket)
@@ -348,31 +318,23 @@ func TestProbeHelper(t *testing.T) {
 			}
 
 			// Set up resources for testing the CloudStorageSource.
-			gotRequest := make(chan requestData, 1)
-			hc, close := newTestServer(func(w http.ResponseWriter, r *http.Request) {
-				// The dummy Cloud Storage server forwards the client's generated HTTP requests.
-				body, _ := ioutil.ReadAll(r.Body)
-				gotRequest <- requestData{
-					method: r.Method,
-					url:    r.URL.String(),
-					body:   string(body),
-				}
-				w.Write([]byte("{}"))
-			})
-			defer close()
-			storageClient, err := storage.NewClient(ctx, option.WithHTTPClient(hc))
+			storageClient, gotRequest, cancel := testStorageClient(ctx, t)
+			defer cancel()
 
-			// Start a goroutine to run the dummy probe helper.
-			go runProbeHelper(ctx, pubsubClient, storageClient)
+			// Start a goroutine to run the test probe helper.
+			ready := make(chan bool, 1)
+			go runProbeHelper(ctx, ready, pubsubClient, storageClient)
+			// Wait for the probe helper to be ready before proceeding.
+			_ = <-ready
 
-			// Start a goroutine to run the dummy CloudPubSubSource.
-			go runDummyCloudPubSubSource(ctx, sub)
+			// Start a goroutine to run the test CloudPubSubSource.
+			go runTestCloudPubSubSource(ctx, sub)
 
-			// Start a goroutine to run the dummy CloudStorageSource.
-			go runDummyCloudStorageSource(ctx, gotRequest)
+			// Start a goroutine to run the test CloudStorageSource.
+			go runTestCloudStorageSource(ctx, gotRequest)
 
-			// Start a goroutine to run the dummy Broker for testing Broker E2E delivery.
-			go runDummyBroker(ctx)
+			// Start a goroutine to run the test Broker for testing Broker E2E delivery.
+			go runTestBroker(ctx)
 
 			// Create a testing client from which to send probe events to the probe helper.
 			p, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeHelperURL))

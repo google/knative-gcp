@@ -68,5 +68,5 @@ import (
 )
 
 func main() {
-	runProbeHelper(signals.NewContext(), nil, nil)
+	runProbeHelper(signals.NewContext(), nil, nil, nil)
 }

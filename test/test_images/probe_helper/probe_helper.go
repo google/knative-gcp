@@ -108,6 +108,7 @@ func logReceive(ctx context.Context, ack bool, format string, args ...interface{
 }
 
 func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap, timeout int) cloudEventsFunc {
+
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		var err error
@@ -278,7 +279,7 @@ func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap) cloudE
 	}
 }
 
-func runProbeHelper(ctx context.Context, pubsubClient *pubsub.Client, storageClient *storage.Client) {
+func runProbeHelper(ctx context.Context, ready chan bool, pubsubClient *pubsub.Client, storageClient *storage.Client) {
 	appcredentials.MustExistOrUnsetEnv()
 	logger := logging.FromContext(ctx)
 
@@ -352,5 +353,9 @@ func runProbeHelper(ctx context.Context, pubsubClient *pubsub.Client, storageCli
 	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, bkt, receivedEvents, timeout))
 	// Receive the event and return the result back to the probe
 	logger.Info("Starting event receiver...")
-	rc.StartReceiver(ctx, receiveEvent(ctx, receivedEvents))
+	go rc.StartReceiver(ctx, receiveEvent(ctx, receivedEvents))
+
+	if ready != nil {
+		ready <- true
+	}
 }
