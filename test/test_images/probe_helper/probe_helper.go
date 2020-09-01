@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/kelseyhightower/envconfig"
 	"knative.dev/pkg/logging"
 
@@ -279,7 +281,7 @@ func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap) cloudE
 	}
 }
 
-func runProbeHelper(ctx context.Context, ready chan bool, pubsubClient *pubsub.Client, storageClient *storage.Client) {
+func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeListener net.Listener, pubsubClient *pubsub.Client, storageClient *storage.Client) {
 	appcredentials.MustExistOrUnsetEnv()
 	logger := logging.FromContext(ctx)
 
@@ -320,10 +322,13 @@ func runProbeHelper(ctx context.Context, ready chan bool, pubsubClient *pubsub.C
 	bkt := storageClient.Bucket(env.CloudStorageSourceBucketID)
 
 	// create sender client
-	sp, err := cloudevents.NewHTTP(
-		cloudevents.WithPort(probePort),
-		cloudevents.WithTarget(brokerURL),
-	)
+	opts := []cehttp.Option{cloudevents.WithTarget(brokerURL)}
+	if probeListener != nil {
+		opts = append(opts, cloudevents.WithListener(probeListener))
+	} else {
+		opts = append(opts, cloudevents.WithPort(probePort))
+	}
+	sp, err := cloudevents.NewHTTP(opts...)
 	if err != nil {
 		logger.Fatalf("Failed to create sender transport, %v", err)
 	}
@@ -333,9 +338,13 @@ func runProbeHelper(ctx context.Context, ready chan bool, pubsubClient *pubsub.C
 	}
 
 	// create receiver client
-	rp, err := cloudevents.NewHTTP(
-		cloudevents.WithPort(receiverPort),
-	)
+	opts = []cehttp.Option{}
+	if receiverListener != nil {
+		opts = append(opts, cloudevents.WithListener(receiverListener))
+	} else {
+		opts = append(opts, cloudevents.WithPort(receiverPort))
+	}
+	rp, err := cloudevents.NewHTTP(opts...)
 	if err != nil {
 		logger.Fatalf("Failed to create receiver transport, %v", err)
 	}
@@ -353,9 +362,5 @@ func runProbeHelper(ctx context.Context, ready chan bool, pubsubClient *pubsub.C
 	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, bkt, receivedEvents, timeout))
 	// Receive the event and return the result back to the probe
 	logger.Info("Starting event receiver...")
-	go rc.StartReceiver(ctx, receiveEvent(ctx, receivedEvents))
-
-	if ready != nil {
-		ready <- true
-	}
+	rc.StartReceiver(ctx, receiveEvent(ctx, receivedEvents))
 }

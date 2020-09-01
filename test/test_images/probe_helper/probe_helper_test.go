@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -235,16 +236,92 @@ func testStorageClient(ctx context.Context, t *testing.T) (*storage.Client, chan
 	return c, gotRequest, srv.Close
 }
 
+func testBrokerClient(ctx context.Context, t *testing.T) (*storage.Client, chan *http.Request, func()) {
+	gotRequest := make(chan *http.Request, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The test Cloud Storage server forwards the client's generated HTTP requests.
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			logging.FromContext(ctx).Fatal("Test Cloud Storage server could not read request body.")
+		}
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		gotRequest <- r
+		w.Write([]byte("{}"))
+	}))
+	c, err := storage.NewClient(ctx, option.WithEndpoint(srv.URL))
+	if err != nil {
+		t.Fatalf("Failed to create test storage client: %v", err)
+	}
+	return c, gotRequest, srv.Close
+}
+
 type eventAndResult struct {
 	event      *cloudevents.Event
 	wantResult protocol.Result
 }
 
 func TestProbeHelper(t *testing.T) {
+	t.Skip("Skip this test from running on Prow as it is only for local development.")
+
 	os.Setenv("K_SINK", testBrokerURL)
 	os.Setenv("PROJECT_ID", testProjectID)
 	os.Setenv("CLOUDPUBSUBSOURCE_TOPIC_ID", testTopicID)
 	os.Setenv("CLOUDSTORAGESOURCE_BUCKET_ID", testStorageBucket)
+
+	ctx := logtest.TestContextWithLogger(t)
+	ctx = WithProjectKey(ctx, testProjectID)
+	ctx = WithTopicKey(ctx, testTopicID)
+	ctx = WithSubscriptionKey(ctx, testSubscriptionID)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Set up the resources for testing the CloudPubSubSource.
+	pubsubClient, cancel := testPubsubClient(ctx, t, testProjectID)
+	defer cancel()
+	topic, err := pubsubClient.CreateTopic(ctx, testTopicID)
+	if err != nil {
+		t.Fatalf("Failed to create test topic: %v", err)
+	}
+	sub, err := pubsubClient.CreateSubscription(ctx, testSubscriptionID, pubsub.SubscriptionConfig{
+		Topic: topic,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create test subscription: %v", err)
+	}
+
+	// Set up resources for testing the CloudStorageSource.
+	storageClient, gotRequest, cancel := testStorageClient(ctx, t)
+	defer cancel()
+
+	// Start a goroutine to run the test probe helper. Listen on the desired ports.
+	receiverListener, err := net.Listen("tcp", fmt.Sprintf(":%d", probeReceiverPort))
+	if err != nil {
+		t.Fatalf("Failed to start receiver listener: %v", err)
+	}
+	probeListener, err := net.Listen("tcp", fmt.Sprintf(":%d", probeHelperPort))
+	if err != nil {
+		t.Fatalf("Failed to start probe listener: %v", err)
+	}
+	go runProbeHelper(ctx, receiverListener, probeListener, pubsubClient, storageClient)
+
+	// Start a goroutine to run the test CloudPubSubSource.
+	go runTestCloudPubSubSource(ctx, sub)
+
+	// Start a goroutine to run the test CloudStorageSource.
+	go runTestCloudStorageSource(ctx, gotRequest)
+
+	// Start a goroutine to run the test Broker for testing Broker E2E delivery.
+	go runTestBroker(ctx)
+
+	// Create a testing client from which to send probe events to the probe helper.
+	p, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeHelperURL))
+	if err != nil {
+		t.Fatalf("Failed to create HTTP protocol of the testing client: %s", err.Error())
+	}
+	c, err := cloudevents.NewClient(p)
+	if err != nil {
+		t.Fatalf("Failed to create testing client: %s", err.Error())
+	}
 
 	cases := []struct {
 		name  string
@@ -296,56 +373,6 @@ func TestProbeHelper(t *testing.T) {
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := logtest.TestContextWithLogger(t)
-			ctx = WithProjectKey(ctx, testProjectID)
-			ctx = WithTopicKey(ctx, testTopicID)
-			ctx = WithSubscriptionKey(ctx, testSubscriptionID)
-			ctx, cancel := context.WithCancel(ctx)
-			defer cancel()
-
-			// Set up the resources for testing the CloudPubSubSource.
-			pubsubClient, cancel := testPubsubClient(ctx, t, testProjectID)
-			defer cancel()
-			topic, err := pubsubClient.CreateTopic(ctx, testTopicID)
-			if err != nil {
-				t.Fatalf("Failed to create test topic: %v", err)
-			}
-			sub, err := pubsubClient.CreateSubscription(ctx, testSubscriptionID, pubsub.SubscriptionConfig{
-				Topic: topic,
-			})
-			if err != nil {
-				t.Fatalf("Failed to create test subscription: %v", err)
-			}
-
-			// Set up resources for testing the CloudStorageSource.
-			storageClient, gotRequest, cancel := testStorageClient(ctx, t)
-			defer cancel()
-
-			// Start a goroutine to run the test probe helper.
-			ready := make(chan bool, 1)
-			go runProbeHelper(ctx, ready, pubsubClient, storageClient)
-			// Wait for the probe helper to be ready before proceeding.
-			_ = <-ready
-
-			// Start a goroutine to run the test CloudPubSubSource.
-			go runTestCloudPubSubSource(ctx, sub)
-
-			// Start a goroutine to run the test CloudStorageSource.
-			go runTestCloudStorageSource(ctx, gotRequest)
-
-			// Start a goroutine to run the test Broker for testing Broker E2E delivery.
-			go runTestBroker(ctx)
-
-			// Create a testing client from which to send probe events to the probe helper.
-			p, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeHelperURL))
-			if err != nil {
-				t.Fatalf("Failed to create HTTP protocol of the testing client: %s", err.Error())
-			}
-			c, err := cloudevents.NewClient(p)
-			if err != nil {
-				t.Fatalf("Failed to create testing client: %s", err.Error())
-			}
-
 			for _, step := range tc.steps {
 				if result := c.Send(ctx, *step.event); !errors.Is(result, step.wantResult) {
 					t.Fatalf("wanted result %+v, got %+v", step.wantResult, result)
