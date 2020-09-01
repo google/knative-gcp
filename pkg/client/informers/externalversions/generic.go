@@ -69,6 +69,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=events.cloud.google.com, Version=v1
 	case v1.SchemeGroupVersion.WithResource("cloudauditlogssources"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1().CloudAuditLogsSources().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("cloudbuildsources"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1().CloudBuildSources().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("cloudpubsubsources"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1().CloudPubSubSources().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("cloudschedulersources"):

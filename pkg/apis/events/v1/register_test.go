@@ -60,6 +60,7 @@ func TestKnownTypes(t *testing.T) {
 
 	for _, name := range []string{
 		"CloudAuditLogsSource",
+		"CloudBuildSource",
 		"CloudPubSubSource",
 		"CloudSchedulerSource",
 		"CloudStorageSource",
