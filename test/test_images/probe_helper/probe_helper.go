@@ -39,15 +39,20 @@ const (
 	BrokerE2EDeliveryProbeEventType = "broker-e2e-delivery-probe"
 	CloudPubSubSourceProbeEventType = "cloudpubsubsource-probe"
 
-	maxStaleTime = 3 * time.Minute
+	maxStaleTime = 5 * time.Minute
 )
 
 var (
-	lastSenderEventTimestamp   time.Time
-	lastReceiverEventTimestamp time.Time
+	lastProbeEventTimestamp    eventTimestamp
+	lastReceiverEventTimestamp eventTimestamp
 )
 
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
+
+type eventTimestamp struct {
+	sync.RWMutex
+	time time.Time
+}
 
 type receivedEventsMap struct {
 	sync.RWMutex
@@ -90,7 +95,9 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 		var err error
 		var receiverChannel chan bool
 		log.Printf("Received probe request: %+v \n", event)
-		lastSenderEventTimestamp = time.Now()
+		lastProbeEventTimestamp.Lock()
+		lastProbeEventTimestamp.time = time.Now()
+		lastProbeEventTimestamp.Unlock()
 
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
 		defer cancel()
@@ -136,7 +143,9 @@ func receiveEvent(receivedEvents *receivedEventsMap) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var eventID string
 		log.Printf("Received event: %+v \n", event)
-		lastReceiverEventTimestamp = time.Now()
+		lastReceiverEventTimestamp.Lock()
+		lastReceiverEventTimestamp.time = time.Now()
+		lastReceiverEventTimestamp.Unlock()
 
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
@@ -173,9 +182,13 @@ func receiveEvent(receivedEvents *receivedEventsMap) cloudEventsFunc {
 }
 
 func healthChecker(w nethttp.ResponseWriter, r *nethttp.Request) {
+	lastProbeEventTimestamp.RLock()
+	defer lastProbeEventTimestamp.RUnlock()
+	lastReceiverEventTimestamp.RLock()
+	defer lastReceiverEventTimestamp.RUnlock()
 	now := time.Now()
-	if (!lastSenderEventTimestamp.IsZero() && now.Sub(lastSenderEventTimestamp) > maxStaleTime) ||
-		(!lastReceiverEventTimestamp.IsZero() && now.Sub(lastReceiverEventTimestamp) > maxStaleTime) {
+	if (now.Sub(lastProbeEventTimestamp.time) > maxStaleTime) ||
+		(now.Sub(lastReceiverEventTimestamp.time) > maxStaleTime) {
 		w.WriteHeader(nethttp.StatusServiceUnavailable)
 		return
 	}
@@ -238,6 +251,9 @@ func runProbeHelper() {
 	}
 
 	// start the health checker
+	now := time.Now()
+	lastProbeEventTimestamp.time = now
+	lastReceiverEventTimestamp.time = now
 	nethttp.HandleFunc("/healthz", healthChecker)
 	go func() {
 		log.Printf("Starting the health checker...")
