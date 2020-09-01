@@ -17,8 +17,9 @@ limitations under the License.
 package v1
 
 import (
-	v1 "knative.dev/pkg/apis/duck/v1"
 	"testing"
+
+	v1 "knative.dev/pkg/apis/duck/v1"
 
 	"knative.dev/pkg/apis/duck"
 )

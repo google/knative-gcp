@@ -17,8 +17,9 @@ limitations under the License.
 package v1
 
 import (
-	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	"testing"
+
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
