@@ -32,6 +32,10 @@ func (c *FakeEventsV1) CloudAuditLogsSources(namespace string) v1.CloudAuditLogs
 	return &FakeCloudAuditLogsSources{c, namespace}
 }
 
+func (c *FakeEventsV1) CloudBuildSources(namespace string) v1.CloudBuildSourceInterface {
+	return &FakeCloudBuildSources{c, namespace}
+}
+
 func (c *FakeEventsV1) CloudPubSubSources(namespace string) v1.CloudPubSubSourceInterface {
 	return &FakeCloudPubSubSources{c, namespace}
 }
