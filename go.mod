@@ -7,6 +7,7 @@ require (
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
 	cloud.google.com/go/pubsub v1.6.1
 	cloud.google.com/go/storage v1.10.0
+	github.com/blendle/zapdriver v1.3.1
 	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
 	github.com/cloudevents/sdk-go/v2 v2.2.0
 	github.com/fsnotify/fsnotify v1.4.9

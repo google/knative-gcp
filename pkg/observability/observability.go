@@ -3,8 +3,10 @@ package observability
 
 import (
 	"context"
+	"log"
 	"os"
 
+	"github.com/blendle/zapdriver"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/configmap"
@@ -22,11 +24,11 @@ import (
 func SetupDynamicConfigOrDie(ctx context.Context, componentName string, metricNamespace string) (context.Context, *configmap.InformedWatcher, *profiling.Handler, func()) {
 	sharedmain.MemStatsOrDie(ctx)
 	// Set up our logger.
-	logger, atomicLevel := sharedmain.SetupLoggerOrDie(ctx, componentName)
+	logger, level := newZapdriverLogger()
 	// Watch the logging config map and dynamically update logging levels.
 	configMapWatcher := sharedmain.SetupConfigMapWatchOrDie(ctx, logger)
 	// Watch the logging config map and dynamically update logging levels.
-	sharedmain.WatchLoggingConfigOrDie(ctx, configMapWatcher, logger, atomicLevel, componentName)
+	sharedmain.WatchLoggingConfigOrDie(ctx, configMapWatcher, logger, level, componentName)
 	// Watch the observability config map
 	ph := profiling.NewHandler(logger, false)
 	sharedmain.WatchObservabilityConfigOrDie(ctx, configMapWatcher, ph, logger, metricNamespace)
@@ -40,6 +42,15 @@ func SetupDynamicConfigOrDie(ctx context.Context, componentName string, metricNa
 		logger.Fatal("Failed to start ConfigMap watcher", zap.Error(err))
 	}
 	return logging.WithLogger(ctx, logger), configMapWatcher, ph, func() { cancel(); flushExporters(logger) }
+}
+
+func newZapdriverLogger() (*zap.SugaredLogger, zap.AtomicLevel) {
+	config := zapdriver.NewProductionConfig()
+	logger, err := config.Build()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return logger.Sugar(), config.Level
 }
 
 func setupTracingOrDie(configMapWatcher *configmap.InformedWatcher, logger *zap.SugaredLogger, componentName string) {
