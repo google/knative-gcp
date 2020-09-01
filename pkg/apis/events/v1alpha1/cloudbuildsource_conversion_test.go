@@ -18,9 +18,10 @@ package v1alpha1
 
 import (
 	"context"
-	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	"net/url"
 	"testing"
+
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/knative-gcp/pkg/apis/convert"

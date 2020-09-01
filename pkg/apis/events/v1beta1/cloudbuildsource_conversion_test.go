@@ -37,10 +37,10 @@ var (
 	completeCloudBuildSource = &CloudBuildSource{
 		ObjectMeta: gcptesting.CompleteObjectMeta,
 		Spec: CloudBuildSourceSpec{
-			PubSubSpec:   gcptesting.CompleteV1PubSubSpec,
+			PubSubSpec: gcptesting.CompleteV1PubSubSpec,
 		},
-		Status: CloudBuildSourceStatus {
-			PubSubStatus:    gcptesting.CompleteV1PubSubStatus,
+		Status: CloudBuildSourceStatus{
+			PubSubStatus: gcptesting.CompleteV1PubSubStatus,
 		},
 	}
 )

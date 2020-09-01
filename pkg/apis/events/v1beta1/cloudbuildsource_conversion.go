@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	"context"
+
 	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 
 	"knative.dev/pkg/apis"

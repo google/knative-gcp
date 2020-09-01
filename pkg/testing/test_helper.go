@@ -1,9 +1,10 @@
 package testing
 
 import (
-	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	"net/url"
 	"time"
+
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
@@ -294,5 +295,4 @@ var (
 		TopicID:        "topicID",
 		SubscriptionID: "subscriptionID",
 	}
-
 )
