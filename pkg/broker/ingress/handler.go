@@ -114,9 +114,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 
 	ctx := request.Context()
 	ctx = logging.WithLogger(ctx, h.logger)
-	if span := trace.FromContext(ctx); span != nil {
-		ctx = tracing.WithLogging(ctx, span)
-	}
+	ctx = tracing.WithLogging(ctx, trace.FromContext(ctx))
 	logging.FromContext(ctx).Debug("Serving http", zap.Any("headers", request.Header))
 	if request.Method != nethttp.MethodPost {
 		response.WriteHeader(nethttp.StatusMethodNotAllowed)
