@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	"net/url"
 	"testing"
 
@@ -63,7 +64,7 @@ func TestCloudBuildSourceConversionBadType(t *testing.T) {
 
 func TestClouBuildSourceConversion(t *testing.T) {
 	// Just one for now, just adding the for loop for ease of future changes.
-	versions := []apis.Convertible{&v1beta1.CloudBuildSource{}}
+	versions := []apis.Convertible{&v1beta1.CloudBuildSource{}, &v1.CloudBuildSource{}}
 
 	tests := []struct {
 		name string

@@ -76,6 +76,7 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	eventsv1.SchemeGroupVersion.WithKind("CloudSchedulerSource"):       &eventsv1.CloudSchedulerSource{},
 	eventsv1.SchemeGroupVersion.WithKind("CloudPubSubSource"):          &eventsv1.CloudPubSubSource{},
 	eventsv1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"):       &eventsv1.CloudAuditLogsSource{},
+	eventsv1.SchemeGroupVersion.WithKind("CloudBuildSource"):           &eventsv1.CloudBuildSource{},
 
 	// For group internal.events.cloud.google.com.
 	inteventsv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &inteventsv1alpha1.PullSubscription{},
@@ -241,12 +242,13 @@ func newConversionController(ctx context.Context, cmw configmap.Watcher, brokers
 					eventsv1_:       &eventsv1.CloudStorageSource{},
 				},
 			},
-			eventsv1alpha1.Kind("CloudBuildSource"): {
+			eventsv1.Kind("CloudBuildSource"): {
 				DefinitionName: events.CloudBuildSourcesResource.String(),
 				HubVersion:     eventsv1alpha1_,
 				Zygotes: map[string]conversion.ConvertibleObject{
 					eventsv1alpha1_: &eventsv1alpha1.CloudBuildSource{},
 					eventsv1beta1_:  &eventsv1beta1.CloudBuildSource{},
+					eventsv1_:       &eventsv1.CloudBuildSource{},
 				},
 			},
 			// intevents
