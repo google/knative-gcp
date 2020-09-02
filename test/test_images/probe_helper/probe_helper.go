@@ -20,6 +20,7 @@ import (
 	"log"
 	"net"
 	nethttp "net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
@@ -54,6 +56,50 @@ var (
 	lastProbeEventTimestamp    eventTimestamp
 	lastReceiverEventTimestamp eventTimestamp
 )
+
+type healthChecker struct {
+	lastProbeEventTimestamp    eventTimestamp
+	lastReceiverEventTimestamp eventTimestamp
+	maxStaleTime               time.Duration
+	port                       int
+}
+
+func (c *healthChecker) ServeHTTP(w nethttp.ResponseWriter, req *nethttp.Request) {
+	if req.URL.Path != "/healthz" {
+		w.WriteHeader(nethttp.StatusNotFound)
+		return
+	}
+	c.lastProbeEventTimestamp.RLock()
+	defer c.lastProbeEventTimestamp.RUnlock()
+	c.lastReceiverEventTimestamp.RLock()
+	defer c.lastReceiverEventTimestamp.RUnlock()
+	now := time.Now()
+	if (now.Sub(c.lastProbeEventTimestamp.time) > c.maxStaleTime) ||
+		(now.Sub(c.lastReceiverEventTimestamp.time) > c.maxStaleTime) {
+		w.WriteHeader(nethttp.StatusServiceUnavailable)
+		return
+	}
+	w.WriteHeader(nethttp.StatusOK)
+}
+
+func (c *healthChecker) start(ctx context.Context) {
+	srv := &nethttp.Server{
+		Addr:    ":" + strconv.Itoa(c.port),
+		Handler: c,
+	}
+
+	go func() {
+		logging.FromContext(ctx).Info("Starting the probe helper health checker...")
+		if err := srv.ListenAndServe(); err != nil && err != nethttp.ErrServerClosed {
+			logging.FromContext(ctx).Error("The probe helper health checker has stopped unexpectedly", zap.Error(err))
+		}
+	}()
+
+	<-ctx.Done()
+	if err := srv.Shutdown(ctx); err != nil {
+		logging.FromContext(ctx).Error("Failed to shutdown the probe helper health checker", zap.Error(err))
+	}
+}
 
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
 
@@ -123,15 +169,15 @@ func logReceive(ctx context.Context, ack bool, format string, args ...interface{
 	return cloudevents.NewReceipt(ack, format, args...)
 }
 
-func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap, timeout int) cloudEventsFunc {
+func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap, timeout int, c *healthChecker) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		var err error
 		var receiverChannel chan bool
 		logging.FromContext(ctx).Infof("Received probe request: %+v \n", event)
-		lastProbeEventTimestamp.Lock()
-		lastProbeEventTimestamp.time = time.Now()
-		lastProbeEventTimestamp.Unlock()
+		c.lastProbeEventTimestamp.Lock()
+		c.lastProbeEventTimestamp.time = time.Now()
+		c.lastProbeEventTimestamp.Unlock()
 
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
 		defer cancel()
@@ -238,13 +284,13 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 	}
 }
 
-func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap) cloudEventsFunc {
+func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap, c *healthChecker) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		logging.FromContext(ctx).Infof("Received event: %+v \n", event)
-		lastReceiverEventTimestamp.Lock()
-		lastReceiverEventTimestamp.time = time.Now()
-		lastReceiverEventTimestamp.Unlock()
+		c.lastReceiverEventTimestamp.Lock()
+		c.lastReceiverEventTimestamp.time = time.Now()
+		c.lastReceiverEventTimestamp.Unlock()
 
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
@@ -300,21 +346,7 @@ func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap) cloudE
 	}
 }
 
-func healthChecker(w nethttp.ResponseWriter, r *nethttp.Request) {
-	lastProbeEventTimestamp.RLock()
-	defer lastProbeEventTimestamp.RUnlock()
-	lastReceiverEventTimestamp.RLock()
-	defer lastReceiverEventTimestamp.RUnlock()
-	now := time.Now()
-	if (now.Sub(lastProbeEventTimestamp.time) > maxStaleTime) ||
-		(now.Sub(lastReceiverEventTimestamp.time) > maxStaleTime) {
-		w.WriteHeader(nethttp.StatusServiceUnavailable)
-		return
-	}
-	w.WriteHeader(nethttp.StatusOK)
-}
-
-func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeListener net.Listener, pubsubClient *pubsub.Client, storageClient *storage.Client) {
+func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeListener net.Listener, pubsubClient *pubsub.Client, storageClient *storage.Client, maxStaleTime time.Duration) {
 	appcredentials.MustExistOrUnsetEnv()
 	logger := logging.FromContext(ctx)
 
