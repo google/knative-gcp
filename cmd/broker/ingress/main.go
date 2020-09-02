@@ -67,7 +67,7 @@ func main() {
 		clients.ProjectID(projectID),
 		metrics.PodName(env.PodName),
 		metrics.ContainerName(component),
-		publishSetting(env),
+		publishSetting(logger.Desugar(), env),
 	)
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))
@@ -79,9 +79,10 @@ func main() {
 	}
 }
 
-func publishSetting(env envConfig) pubsub.PublishSettings {
+func publishSetting(logger *zap.Logger, env envConfig) pubsub.PublishSettings {
 	s := pubsub.DefaultPublishSettings
 	if env.PublishBufferedByteLimit > 0 {
+		logger.Warn("PUBLISH_BUFFERED_BYTES_LIMIT is less or equal than 0; ignoring it", zap.Int("PublishBufferedByteLimit", env.PublishBufferedByteLimit))
 		s.BufferedByteLimit = env.PublishBufferedByteLimit
 	}
 	return s
