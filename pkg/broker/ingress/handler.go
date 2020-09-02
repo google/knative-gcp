@@ -113,7 +113,9 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	}
 
 	ctx := request.Context()
-	h.logger.Debug("Serving http", zap.Any("headers", request.Header))
+	ctx = logging.WithLogger(ctx, h.logger)
+	ctx = tracing.WithLogging(ctx, trace.FromContext(ctx))
+	logging.FromContext(ctx).Debug("Serving http", zap.Any("headers", request.Header))
 	if request.Method != nethttp.MethodPost {
 		response.WriteHeader(nethttp.StatusMethodNotAllowed)
 		return
@@ -121,12 +123,12 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 
 	broker, err := ConvertPathToNamespacedName(request.URL.Path)
 	if err != nil {
-		h.logger.Debug("Malformed request path", zap.String("path", request.URL.Path))
+		logging.FromContext(ctx).Debug("Malformed request path", zap.String("path", request.URL.Path))
 		nethttp.Error(response, err.Error(), nethttp.StatusNotFound)
 		return
 	}
 
-	event, err := h.toEvent(request)
+	event, err := h.toEvent(ctx, request)
 	if err != nil {
 		nethttp.Error(response, err.Error(), nethttp.StatusBadRequest)
 		return
@@ -156,7 +158,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	defer cancel()
 	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode) }()
 	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
-		h.logger.Error("Error publishing to PubSub", zap.String("broker", broker.String()), zap.Error(res))
+		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.String("broker", broker.String()), zap.Error(res))
 		statusCode = nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {
 			statusCode = nethttp.StatusNotFound
@@ -171,21 +173,21 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 }
 
 // toEvent converts an http request to an event.
-func (h *Handler) toEvent(request *nethttp.Request) (*cev2.Event, error) {
+func (h *Handler) toEvent(ctx context.Context, request *nethttp.Request) (*cev2.Event, error) {
 	message := http.NewMessageFromHttpRequest(request)
 	defer func() {
 		if err := message.Finish(nil); err != nil {
-			h.logger.Error("Failed to close message", zap.Any("message", message), zap.Error(err))
+			logging.FromContext(ctx).Error("Failed to close message", zap.Any("message", message), zap.Error(err))
 		}
 	}()
 	// If encoding is unknown, the message is not an event.
 	if message.ReadEncoding() == binding.EncodingUnknown {
-		h.logger.Debug("Unknown encoding", zap.Any("request", request))
+		logging.FromContext(ctx).Debug("Unknown encoding", zap.Any("request", request))
 		return nil, errors.New("Unknown encoding. Not a cloud event?")
 	}
 	event, err := binding.ToEvent(request.Context(), message, transformer.AddTimeNow)
 	if err != nil {
-		h.logger.Error("Failed to convert request to event", zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to convert request to event", zap.Error(err))
 		return nil, err
 	}
 	return event, nil
@@ -199,6 +201,6 @@ func (h *Handler) reportMetrics(ctx context.Context, broker types.NamespacedName
 		ResponseCode: statusCode,
 	}
 	if err := h.reporter.ReportEventCount(ctx, args); err != nil {
-		h.logger.Warn("Failed to record metrics.", zap.Any("namespace", broker.Namespace), zap.Any("broker", broker.Name), zap.Error(err))
+		logging.FromContext(ctx).Warn("Failed to record metrics.", zap.Any("namespace", broker.Namespace), zap.Any("broker", broker.Name), zap.Error(err))
 	}
 }

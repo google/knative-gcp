@@ -17,7 +17,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
+	nethttp "net/http"
 	"sync"
 	"time"
 
@@ -44,9 +46,21 @@ const (
 	CloudStorageSourceProbeUpdateMetadataSubject = "update-metadata"
 	CloudStorageSourceProbeArchiveSubject        = "archive"
 	CloudStorageSourceProbeDeleteSubject         = "delete"
+
+	maxStaleTime = 5 * time.Minute
+)
+
+var (
+	lastProbeEventTimestamp    eventTimestamp
+	lastReceiverEventTimestamp eventTimestamp
 )
 
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
+
+type eventTimestamp struct {
+	sync.RWMutex
+	time time.Time
+}
 
 type receivedEventsMap struct {
 	sync.RWMutex
@@ -110,12 +124,14 @@ func logReceive(ctx context.Context, ack bool, format string, args ...interface{
 }
 
 func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap, timeout int) cloudEventsFunc {
-
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		var err error
 		var receiverChannel chan bool
 		logging.FromContext(ctx).Infof("Received probe request: %+v \n", event)
+		lastProbeEventTimestamp.Lock()
+		lastProbeEventTimestamp.time = time.Now()
+		lastProbeEventTimestamp.Unlock()
 
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
 		defer cancel()
@@ -225,8 +241,11 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
-
 		logging.FromContext(ctx).Infof("Received event: %+v \n", event)
+		lastReceiverEventTimestamp.Lock()
+		lastReceiverEventTimestamp.time = time.Now()
+		lastReceiverEventTimestamp.Unlock()
+
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
 			// The event is received as sent.
@@ -279,6 +298,20 @@ func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap) cloudE
 		receiver <- true
 		return cloudevents.ResultACK
 	}
+}
+
+func healthChecker(w nethttp.ResponseWriter, r *nethttp.Request) {
+	lastProbeEventTimestamp.RLock()
+	defer lastProbeEventTimestamp.RUnlock()
+	lastReceiverEventTimestamp.RLock()
+	defer lastReceiverEventTimestamp.RUnlock()
+	now := time.Now()
+	if (now.Sub(lastProbeEventTimestamp.time) > maxStaleTime) ||
+		(now.Sub(lastReceiverEventTimestamp.time) > maxStaleTime) {
+		w.WriteHeader(nethttp.StatusServiceUnavailable)
+		return
+	}
+	w.WriteHeader(nethttp.StatusOK)
 }
 
 func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeListener net.Listener, pubsubClient *pubsub.Client, storageClient *storage.Client) {
@@ -352,6 +385,18 @@ func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeLis
 	if err != nil {
 		logger.Fatal("Failed to create receiver client, ", err)
 	}
+
+	// start the health checker
+	now := time.Now()
+	lastProbeEventTimestamp.time = now
+	lastReceiverEventTimestamp.time = now
+	nethttp.HandleFunc("/healthz", healthChecker)
+	go func() {
+		log.Printf("Starting the health checker...")
+		if err := nethttp.ListenAndServe(":8060", nil); err != nil && err != nethttp.ErrServerClosed {
+			log.Printf("The health checker has stopped unexpectedly: %v", err)
+		}
+	}()
 
 	// make a map to store the channel for each event
 	receivedEvents := &receivedEventsMap{

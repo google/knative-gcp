@@ -100,6 +100,8 @@ func (r *IngressReporter) ReportEventCount(ctx context.Context, args IngressRepo
 	if err != nil {
 		return fmt.Errorf("failed to create metrics tag: %v", err)
 	}
-	metrics.Record(tag, r.eventCountM.M(1))
+	// Count does not support exemplar currently, but keeping this anyway for future support.
+	attachments := getSpanContextAttachments(ctx)
+	metrics.Record(tag, r.eventCountM.M(1), stats.WithAttachments(attachments))
 	return nil
 }

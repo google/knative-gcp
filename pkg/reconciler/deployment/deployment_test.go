@@ -26,12 +26,10 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
-	"knative.dev/pkg/configmap"
-	"knative.dev/pkg/controller"
-	logtesting "knative.dev/pkg/logging/testing"
-
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
 
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
@@ -90,7 +88,6 @@ func TestAllCases(t *testing.T) {
 		},
 	}
 
-	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		return &Reconciler{
 			Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),

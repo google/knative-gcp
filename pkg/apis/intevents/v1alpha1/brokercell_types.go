@@ -70,8 +70,8 @@ var (
 
 // SystemResource specifies quantities for resources such as CPU and memory
 type SystemResource struct {
-	CPU    *string `json:"cpu,omitempty"`
-	Memory *string `json:"memory,omitempty"`
+	CPU    string `json:"cpu,omitempty"`
+	Memory string `json:"memory,omitempty"`
 }
 
 // ResourceSpecification defines requests and limits for the system resources
@@ -92,8 +92,17 @@ type ComponentParameters struct {
 	// AvgMemoryUsage specifies the average memory consumption targeted by the component's Horizontal Pod Autoscaler
 	AvgMemoryUsage *string `json:"avgMemoryUsage,omitempty"`
 
-	// Requests and limits for system resources (CPU, memory)
-	Resources ResourceSpecification `json:"resources,omitempty"`
+	// CPURequest specifies the minimal amount of the CPU for the deployment to be schedulable
+	CPURequest string `json:"cpuRequest,omitempty"`
+
+	// CPULimit specifies the maximal amount of the CPU to be consumable by the deployment
+	CPULimit string `json:"cpuLimit,omitempty"`
+
+	// MemoryRequest specifies the minimal amount of the CPU for the deployment to be schedulable
+	MemoryRequest string `json:"memoryRequest,omitempty"`
+
+	// MemoryLimit specifies the maximal amount of memory to be consumable by the deployment
+	MemoryLimit string `json:"memoryLimit,omitempty"`
 
 	// MinReplicas specifies the minimum replica count for the component.
 	MinReplicas *int32 `json:"minReplicas,omitempty"`
@@ -105,9 +114,9 @@ type ComponentParameters struct {
 // ComponentsParametersSpec specifies separate parameters for each component
 // of a BrokerCell.
 type ComponentsParametersSpec struct {
-	Fanout  ComponentParameters `json:"fanout,omitempty"`
-	Ingress ComponentParameters `json:"ingress,omitempty"`
-	Retry   ComponentParameters `json:"retry,omitempty"`
+	Fanout  *ComponentParameters `json:"fanout,omitempty"`
+	Ingress *ComponentParameters `json:"ingress,omitempty"`
+	Retry   *ComponentParameters `json:"retry,omitempty"`
 }
 
 // BrokerCellSpec defines the desired state of a Brokercell.

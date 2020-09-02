@@ -50,13 +50,10 @@ func (b *pubsubMessagePublisher) End(ctx context.Context) error {
 }
 
 func (b *pubsubMessagePublisher) SetData(reader io.Reader) error {
-	buf, ok := reader.(*bytes.Buffer)
-	if !ok {
-		buf = new(bytes.Buffer)
-		_, err := io.Copy(buf, reader)
-		if err != nil {
-			return err
-		}
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, reader)
+	if err != nil {
+		return err
 	}
 	b.Data = buf.Bytes()
 	return nil

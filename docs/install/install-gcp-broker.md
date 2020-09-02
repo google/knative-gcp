@@ -10,15 +10,14 @@ Knative Eventing allows different Broker implementations via `BrokerClass`
 annotation. If annotated with
 `"eventing.knative.dev/broker.class": "googlecloud"`, the `Knative-GCP`
 controller will create a GCP Broker. Compared to the default
-[MT Channel Based Broker](https://knative.dev/docs/eventing/broker/mt-channel-based-broker/),
-GCP Broker is more performant and cost-effective by reducing hops and Pub/Sub
-message consumption.
+`MT Channel Based Broker`, GCP Broker is more performant and cost-effective by
+reducing hops and Pub/Sub message consumption.
 
 ## Prerequisites
 
 1. [Install Knative-GCP](./install-knative-gcp.md).
 
-2. [Create a Service Account for the Data Plane](./dataplane-service-account.md).
+2. [Create a Service Account for the Data Plane](./dataplane-service-account.md#create-a-google-cloud-service-account-to-interact-with-pubsub).
 
 ## Authentication Setup for GCP Broker
 
