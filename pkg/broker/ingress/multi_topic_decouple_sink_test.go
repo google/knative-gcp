@@ -183,7 +183,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				sink := NewMultiTopicDecoupleSink(ctx, brokerConfig, psClient)
+				sink := NewMultiTopicDecoupleSink(ctx, brokerConfig, psClient, pubsub.DefaultPublishSettings)
 				// Send events
 				event := createTestEvent(uuid.New().String())
 				err = sink.Send(context.Background(), testCase.broker, *event)

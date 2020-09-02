@@ -43,7 +43,7 @@ spec:
       - name: ingress
         image: ingress
         livenessProbe:
-          failureThreshold: 3
+          failureThreshold: 5
           httpGet:
             path: /healthz
             port: 8080
@@ -53,7 +53,7 @@ spec:
           successThreshold: 1
           timeoutSeconds: 5
         readinessProbe:
-          failureThreshold: 3
+          failureThreshold: 5
           httpGet:
             path: /healthz
             port: 8080
@@ -85,10 +85,10 @@ spec:
           mountPath: /var/secrets/google          
         resources:
           limits:
-            memory: 1000Mi
+            memory: 2000Mi
           requests:
-            cpu: 1000m
-            memory: 500Mi
+            cpu: 2000m
+            memory: 2000Mi
         ports:
         - name: metrics
           containerPort: 9090

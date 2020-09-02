@@ -62,14 +62,15 @@ func TestBrokerCell_Validate(t *testing.T) {
 				Spec: (func() BrokerCellSpec {
 					brokerCellWithInvalidMemoryRequest := MakeDefaultBrokerCellSpec()
 					testComponent := brokerCellWithInvalidMemoryRequest.Components.Ingress
-					testComponent.MemoryLimit = "1000Mi"
-					testComponent.AvgMemoryUsage = ptr.String("1001Mi")
+					testComponent.MemoryLimit = "2000Mi"
+					testComponent.MemoryRequest = "2000Mi"
+					testComponent.AvgMemoryUsage = ptr.String("2001Mi")
 					return brokerCellWithInvalidMemoryRequest
 				}()),
 			},
 			want: func() *apis.FieldError {
 				var fieldErrors *apis.FieldError
-				fe := apis.ErrInvalidValue("1001Mi", "spec.components.ingress.avgMemoryUsage")
+				fe := apis.ErrInvalidValue("2001Mi", "spec.components.ingress.avgMemoryUsage")
 				fe.Details = "avgMemoryUsage should not exceed the memory limit"
 				fieldErrors = fieldErrors.Also(fe)
 				return fieldErrors
