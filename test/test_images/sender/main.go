@@ -24,15 +24,18 @@ import (
 	"log"
 	"time"
 
+	"contrib.go.opencensus.io/exporter/stackdriver"
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
-	"github.com/google/knative-gcp/pkg/kncloudevents"
-	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/kelseyhightower/envconfig"
 	"go.opencensus.io/trace"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
+
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/kncloudevents"
+	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
 type envConfig struct {
@@ -66,6 +69,26 @@ func main() {
 	if err != nil {
 		fmt.Printf("Unable to create ceClient: %s ", err)
 	}
+
+	// Get GCP ProjectID.
+	projectID, err := metadataClient.NewDefaultMetadataClient().ProjectID()
+	if err != nil {
+		fmt.Printf("Unable to get projectID: %s ", err)
+	}
+
+	// Create the exporter for tracing.
+	sd, err := stackdriver.NewExporter(stackdriver.Options{
+		ProjectID:         projectID,
+		ReportingInterval: 60 * time.Second,
+	})
+	if err != nil {
+		fmt.Printf("Failed to create the Stackdriver exporter: %v", err)
+	}
+	// It is imperative to invoke flush before your main function exits
+	defer sd.Flush()
+
+	// Register it as a trace exporter
+	trace.RegisterExporter(sd)
 
 	ctx, span := trace.StartSpan(ctx, "sender", trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()

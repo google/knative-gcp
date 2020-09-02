@@ -19,6 +19,7 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"log"
 	"testing"
 	"time"
 
@@ -132,6 +133,7 @@ func GetTraceTree(trace *cloudtrace.Trace) (*SpanTree, error) {
 	if root == nil {
 		return nil, fmt.Errorf("no root span found in %v", trace)
 	}
+	log.Printf("%v", root)
 	tree := mkTree(children, root)
 	if len(children) != 0 {
 		return nil, fmt.Errorf("left over spans after generating the SpanTree: %v. Original: %v", children, trace)
