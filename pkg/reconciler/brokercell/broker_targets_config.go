@@ -136,7 +136,7 @@ func (r *Reconciler) addToConfig(ctx context.Context, b *brokerv1beta1.Broker, t
 	})
 }
 
-func targetsConfigMapsEqual(cm1, cm2 *corev1.ConfigMap) bool {
+func targetsConfigMapEqual(cm1, cm2 *corev1.ConfigMap) bool {
 	if !equality.Semantic.DeepEqual(cm1.Data, cm2.Data) {
 		return false
 	}
@@ -180,7 +180,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context, bc *intv1alpha1.Br
 		UpdateFunc: func(oldObj, newObj interface{}) { r.refreshPodVolume(ctx, bc) },
 		DeleteFunc: nil,
 	}
-	_, err = r.cmRec.ReconcileConfigMap(bc, desired, targetsConfigMapsEqual, handlerFuncs)
+	_, err = r.cmRec.ReconcileConfigMap(bc, desired, targetsConfigMapEqual, handlerFuncs)
 	return err
 }
 
