@@ -71,8 +71,9 @@ func (a BrokerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 			return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
 		}
 
-		// Workarounds to reduce test flakiness caused by sender pod retry sending events (which will cause unexpected response code).
-		// We should remove it after https://github.com/google/knative-gcp/issues/1058 lands
+		// Workarounds to reduce test flakiness caused by sender pod retry sending events (which will cause unexpected response code 404, 503 and 500).
+		// StatusCode 500 is currently for reducing flakiness caused by Workload Identity credential sync up.
+		// We would remove it after https://github.com/google/knative-gcp/issues/1058 lands, as 500 error may indicate bugs in our code.
 		if code == http.StatusNotFound || code == http.StatusServiceUnavailable || code == http.StatusInternalServerError {
 			continue
 		}
