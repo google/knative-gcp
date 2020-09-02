@@ -21,11 +21,8 @@ import (
 
 	"github.com/google/knative-gcp/pkg/reconciler/testing"
 
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
@@ -76,80 +73,4 @@ func WithCloudBuildSourceServiceAccount(kServiceAccount string) CloudBuildSource
 	return func(bs *v1beta1.CloudBuildSource) {
 		bs.Spec.ServiceAccountName = kServiceAccount
 	}
-}
-
-// WithInitCloudBuildSourceConditions initializes the CloudBuildSource's conditions.
-func WithInitCloudBuildSourceConditions(bs *v1beta1.CloudBuildSource) {
-	bs.Status.InitializeConditions()
-}
-
-func WithCloudBuildSourceWorkloadIdentityFailed(reason, message string) CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.Status.MarkWorkloadIdentityFailed(bs.ConditionSet(), reason, message)
-	}
-}
-
-// WithCloudBuildSourcePullSubscriptionFailed marks the condition that the
-// status of PullSubscription is False
-func WithCloudBuildSourcePullSubscriptionFailed(reason, message string) CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.Status.MarkPullSubscriptionFailed(bs.ConditionSet(), reason, message)
-	}
-}
-
-// WithCloudBuildSourcePullSubscriptionUnknown marks the condition that the
-// topic is Unknown
-func WithCloudBuildSourcePullSubscriptionUnknown(reason, message string) CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.Status.MarkPullSubscriptionUnknown(bs.ConditionSet(), reason, message)
-	}
-}
-
-// WithCloudBuildSourcePullSubscriptionReady marks the condition that the
-// topic is not ready
-func WithCloudBuildSourcePullSubscriptionReady() CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.Status.MarkPullSubscriptionReady(bs.ConditionSet())
-	}
-}
-
-// WithCloudBuildSourceSinkURI sets the status for sink URI
-func WithCloudBuildSourceSinkURI(url *apis.URL) CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.Status.SinkURI = url
-	}
-}
-
-func WithCloudBuildSourceSubscriptionID(subscriptionID string) CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.Status.SubscriptionID = subscriptionID
-	}
-}
-
-func WithCloudBuildSourceFinalizers(finalizers ...string) CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.Finalizers = finalizers
-	}
-}
-
-func WithCloudBuildSourceStatusObservedGeneration(generation int64) CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.Status.Status.ObservedGeneration = generation
-	}
-}
-
-func WithCloudBuildSourceObjectMetaGeneration(generation int64) CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.ObjectMeta.Generation = generation
-	}
-}
-
-func WithCloudBuildSourceAnnotations(Annotations map[string]string) CloudBuildSourceOption {
-	return func(bs *v1beta1.CloudBuildSource) {
-		bs.ObjectMeta.Annotations = Annotations
-	}
-}
-
-func WithCloudBuildSourceSetDefault(bs *v1beta1.CloudBuildSource) {
-	bs.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }

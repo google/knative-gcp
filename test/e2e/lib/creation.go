@@ -122,7 +122,18 @@ func (c *Client) CreatePubSubV1alpha1OrFail(pubsub *eventsv1alpha1.CloudPubSubSo
 	c.Tracker.AddObj(pubsub)
 }
 
-func (c *Client) CreateBuildOrFail(build *eventsv1beta1.CloudBuildSource) {
+func (c *Client) CreateBuildOrFail(build *eventsv1.CloudBuildSource) {
+	c.T.Helper()
+	builds := c.KnativeGCP.EventsV1().CloudBuildSources(c.Namespace)
+	_, err := builds.Create(build)
+	if err != nil {
+		c.T.Fatalf("Failed to create build %s/%s: %v", c.Namespace, build.Name, err)
+	}
+	c.T.Logf("Created build: %s/%s", c.Namespace, build.Name)
+	c.Tracker.AddObj(build)
+}
+
+func (c *Client) CreateBuildV1beta1OrFail(build *eventsv1beta1.CloudBuildSource) {
 	c.T.Helper()
 	builds := c.KnativeGCP.EventsV1beta1().CloudBuildSources(c.Namespace)
 	_, err := builds.Create(build)

@@ -334,7 +334,7 @@ func runIngressHandlerBenchmark(b *testing.B, eventSize int) {
 	defer psSrv.Close()
 
 	psClient := createPubsubClient(ctx, b, psSrv)
-	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), psClient)
+	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), psClient, pubsub.DefaultPublishSettings)
 	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
 	if err != nil {
 		b.Fatal(err)
@@ -405,7 +405,7 @@ func setupTestReceiver(ctx context.Context, t testing.TB, psSrv *pstest.Server) 
 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
 func createAndStartIngress(ctx context.Context, t testing.TB, psSrv *pstest.Server) string {
-	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), createPubsubClient(ctx, t, psSrv))
+	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), createPubsubClient(ctx, t, psSrv), pubsub.DefaultPublishSettings)
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
 	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
