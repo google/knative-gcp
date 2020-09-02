@@ -17,7 +17,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	nethttp "net/http"
 	"strconv"
@@ -49,18 +48,13 @@ const (
 	CloudStorageSourceProbeArchiveSubject        = "archive"
 	CloudStorageSourceProbeDeleteSubject         = "delete"
 
-	maxStaleTime = 5 * time.Minute
-)
-
-var (
-	lastProbeEventTimestamp    eventTimestamp
-	lastReceiverEventTimestamp eventTimestamp
+	maxStaleDuration = 5 * time.Minute
 )
 
 type healthChecker struct {
 	lastProbeEventTimestamp    eventTimestamp
 	lastReceiverEventTimestamp eventTimestamp
-	maxStaleTime               time.Duration
+	maxStaleDuration           time.Duration
 	port                       int
 }
 
@@ -74,8 +68,8 @@ func (c *healthChecker) ServeHTTP(w nethttp.ResponseWriter, req *nethttp.Request
 	c.lastReceiverEventTimestamp.RLock()
 	defer c.lastReceiverEventTimestamp.RUnlock()
 	now := time.Now()
-	if (now.Sub(c.lastProbeEventTimestamp.time) > c.maxStaleTime) ||
-		(now.Sub(c.lastReceiverEventTimestamp.time) > c.maxStaleTime) {
+	if (now.Sub(c.lastProbeEventTimestamp.time) > c.maxStaleDuration) ||
+		(now.Sub(c.lastReceiverEventTimestamp.time) > c.maxStaleDuration) {
 		w.WriteHeader(nethttp.StatusServiceUnavailable)
 		return
 	}
@@ -83,6 +77,10 @@ func (c *healthChecker) ServeHTTP(w nethttp.ResponseWriter, req *nethttp.Request
 }
 
 func (c *healthChecker) start(ctx context.Context) {
+	now := time.Now()
+	c.lastProbeEventTimestamp.time = now
+	c.lastReceiverEventTimestamp.time = now
+
 	srv := &nethttp.Server{
 		Addr:    ":" + strconv.Itoa(c.port),
 		Handler: c,
@@ -346,7 +344,7 @@ func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap, c *hea
 	}
 }
 
-func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeListener net.Listener, pubsubClient *pubsub.Client, storageClient *storage.Client, maxStaleTime time.Duration) {
+func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeListener net.Listener, pubsubClient *pubsub.Client, storageClient *storage.Client, maxStaleDuration time.Duration) {
 	appcredentials.MustExistOrUnsetEnv()
 	logger := logging.FromContext(ctx)
 
@@ -419,16 +417,11 @@ func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeLis
 	}
 
 	// start the health checker
-	now := time.Now()
-	lastProbeEventTimestamp.time = now
-	lastReceiverEventTimestamp.time = now
-	nethttp.HandleFunc("/healthz", healthChecker)
-	go func() {
-		log.Printf("Starting the health checker...")
-		if err := nethttp.ListenAndServe(":8060", nil); err != nil && err != nethttp.ErrServerClosed {
-			log.Printf("The health checker has stopped unexpectedly: %v", err)
-		}
-	}()
+	c := &healthChecker{
+		maxStaleDuration: maxStaleDuration,
+		port:             8060,
+	}
+	go c.start(ctx)
 
 	// make a map to store the channel for each event
 	receivedEvents := &receivedEventsMap{
@@ -436,8 +429,8 @@ func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeLis
 	}
 	// start a goroutine to receive the event from probe and forward it appropriately
 	logger.Info("Starting Probe Helper server...")
-	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, bkt, receivedEvents, timeout))
+	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, bkt, receivedEvents, timeout, c))
 	// Receive the event and return the result back to the probe
 	logger.Info("Starting event receiver...")
-	rc.StartReceiver(ctx, receiveEvent(ctx, receivedEvents))
+	rc.StartReceiver(ctx, receiveEvent(ctx, receivedEvents, c))
 }
