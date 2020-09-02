@@ -73,8 +73,9 @@ type commonCase struct {
 func TestConfigMapReconciler(t *testing.T) {
 	var tests = []struct {
 		commonCase
-		in   *corev1.ConfigMap
-		want *corev1.ConfigMap
+		in     *corev1.ConfigMap
+		want   *corev1.ConfigMap
+		eqFunc func(*corev1.ConfigMap, *corev1.ConfigMap) bool
 	}{
 		{
 			commonCase: commonCase{
@@ -86,7 +87,7 @@ func TestConfigMapReconciler(t *testing.T) {
 		},
 		{
 			commonCase: commonCase{
-				name:       "cofigmap created",
+				name:       "configmap created",
 				wantEvents: []string{configmapCreatedEvent},
 			},
 			in:   cm,
@@ -102,7 +103,7 @@ func TestConfigMapReconciler(t *testing.T) {
 		},
 		{
 			commonCase: commonCase{
-				name:       "cofigmap updated - different data",
+				name:       "configmap updated - different data",
 				existing:   []runtime.Object{cmDifferentData},
 				wantEvents: []string{configmapUpdatedEvent},
 			},
@@ -111,7 +112,7 @@ func TestConfigMapReconciler(t *testing.T) {
 		},
 		{
 			commonCase: commonCase{
-				name:       "cofigmap updated - different binary data",
+				name:       "configmap updated - different binary data",
 				existing:   []runtime.Object{cmDifferentBinaryData},
 				wantEvents: []string{configmapUpdatedEvent},
 			},
@@ -127,6 +128,29 @@ func TestConfigMapReconciler(t *testing.T) {
 			},
 			in: cm,
 		},
+		{
+			commonCase: commonCase{
+				name:       "configmap custom eqFunc, force update",
+				existing:   []runtime.Object{cm},
+				wantEvents: []string{configmapUpdatedEvent},
+			},
+			in:   cm,
+			want: cm,
+			eqFunc: func(cm1, cm2 *corev1.ConfigMap) bool {
+				return false
+			},
+		},
+		{
+			commonCase: commonCase{
+				name:     "configmap custom eqFunc, nothing to do",
+				existing: []runtime.Object{cmDifferentData},
+			},
+			in:   cm,
+			want: cmDifferentData,
+			eqFunc: func(cm1, cm2 *corev1.ConfigMap) bool {
+				return true
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -138,7 +162,7 @@ func TestConfigMapReconciler(t *testing.T) {
 				Lister:     tr.listers.GetConfigMapLister(),
 				Recorder:   tr.recorder,
 			}
-			out, err := rec.ReconcileConfigMap(obj, test.in)
+			out, err := rec.ReconcileConfigMap(obj, test.in, test.eqFunc)
 
 			tr.verify(t, test.commonCase, err)
 

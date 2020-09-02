@@ -21,6 +21,9 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/apis/eventing"
@@ -133,6 +136,36 @@ func (r *Reconciler) addToConfig(ctx context.Context, b *brokerv1beta1.Broker, t
 	})
 }
 
+func targetsConfigMapsEqual(cm1, cm2 *corev1.ConfigMap) bool {
+	if !equality.Semantic.DeepEqual(cm1.Data, cm2.Data) {
+		return false
+	}
+	// The broker targets ConfigMap BinaryData holds the serialized TargetsConfig
+	// proto, and therefore cannot be safely compared with equality.Semantic.DeepEqual.
+	// Instead, use proto.Equal to compare protos.
+	if len(cm1.BinaryData) != len(cm2.BinaryData) {
+		return false
+	}
+	v1Proto := &config.TargetsConfig{}
+	v2Proto := &config.TargetsConfig{}
+	for k, v1 := range cm1.BinaryData {
+		v2, ok := cm2.BinaryData[k]
+		if !ok {
+			return false
+		}
+		if err := proto.Unmarshal(v1, v1Proto); err != nil {
+			return false
+		}
+		if err := proto.Unmarshal(v2, v2Proto); err != nil {
+			return false
+		}
+		if !proto.Equal(v1Proto, v2Proto) {
+			return false
+		}
+	}
+	return true
+}
+
 //TODO all this stuff should be in a configmap variant of the config object
 func (r *Reconciler) updateTargetsConfig(ctx context.Context, bc *intv1alpha1.BrokerCell, brokerTargets config.Targets) error {
 	desired, err := resources.MakeTargetsConfig(bc, brokerTargets)
@@ -147,8 +180,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context, bc *intv1alpha1.Br
 		UpdateFunc: func(oldObj, newObj interface{}) { r.refreshPodVolume(ctx, bc) },
 		DeleteFunc: nil,
 	}
-
-	_, err = r.cmRec.ReconcileConfigMap(bc, desired, handlerFuncs)
+	_, err = r.cmRec.ReconcileConfigMap(bc, desired, targetsConfigMapsEqual, handlerFuncs)
 	return err
 }
 

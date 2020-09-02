@@ -39,7 +39,7 @@ type ConfigMapReconciler struct {
 }
 
 // ReconcileConfigMap reconciles the K8s ConfigMap 'cm'.
-func (r *ConfigMapReconciler) ReconcileConfigMap(obj runtime.Object, cm *corev1.ConfigMap, handlers ...cache.ResourceEventHandlerFuncs) (*corev1.ConfigMap, error) {
+func (r *ConfigMapReconciler) ReconcileConfigMap(obj runtime.Object, cm *corev1.ConfigMap, eqFunc func(*corev1.ConfigMap, *corev1.ConfigMap) bool, handlers ...cache.ResourceEventHandlerFuncs) (*corev1.ConfigMap, error) {
 	current, err := r.Lister.ConfigMaps(cm.Namespace).Get(cm.Name)
 	if apierrs.IsNotFound(err) {
 		current, err = r.KubeClient.CoreV1().ConfigMaps(cm.Namespace).Create(cm)
@@ -57,8 +57,12 @@ func (r *ConfigMapReconciler) ReconcileConfigMap(obj runtime.Object, cm *corev1.
 	if err != nil {
 		return nil, err
 	}
-
-	if !equality.Semantic.DeepEqual(cm.BinaryData, current.BinaryData) || !equality.Semantic.DeepEqual(cm.Data, current.Data) {
+	if eqFunc == nil {
+		eqFunc = func(cm1, cm2 *corev1.ConfigMap) bool {
+			return equality.Semantic.DeepEqual(cm1.BinaryData, cm2.BinaryData) && equality.Semantic.DeepEqual(cm1.Data, cm2.Data)
+		}
+	}
+	if !eqFunc(cm, current) {
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Data = cm.Data
