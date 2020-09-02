@@ -111,6 +111,8 @@ func main() {
 
 func sendEvent(ctx context.Context, ceClient cev2.Client, needRetry bool) error {
 	send := func() error {
+		span := trace.FromContext(ctx)
+		log.Printf("here is the span: %v", span)
 		result := ceClient.Send(ctx, dummyCloudEvent())
 		return result
 	}
