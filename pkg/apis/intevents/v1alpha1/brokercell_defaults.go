@@ -32,19 +32,19 @@ const (
 	// usage, HPA could have enough time to kick in.
 	// See: https://github.com/google/knative-gcp/issues/1265
 	avgMemoryUsageFanout  string = "1500Mi"
-	avgMemoryUsageIngress string = "700Mi"
+	avgMemoryUsageIngress string = "1500Mi"
 	avgMemoryUsageRetry   string = "1500Mi"
 	cpuRequestFanout      string = "1500m"
-	cpuRequestIngress     string = "1000m"
+	cpuRequestIngress     string = "2000m"
 	cpuRequestRetry       string = "1000m"
 	cpuLimitFanout        string = ""
 	cpuLimitIngress       string = ""
 	cpuLimitRetry         string = ""
 	memoryRequestFanout   string = "500Mi"
-	memoryRequestIngress  string = "500Mi"
+	memoryRequestIngress  string = "2000Mi"
 	memoryRequestRetry    string = "500Mi"
 	memoryLimitFanout     string = "3000Mi"
-	memoryLimitIngress    string = "1000Mi"
+	memoryLimitIngress    string = "2000Mi"
 	memoryLimitRetry      string = "3000Mi"
 	minReplicas           int32  = 1
 	maxReplicas           int32  = 10

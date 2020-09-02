@@ -31,7 +31,7 @@ func (c *Client) DeletePubSubOrFail(name string) {
 
 func (c *Client) DeleteBuildOrFail(name string) {
 	c.T.Helper()
-	builds := c.KnativeGCP.EventsV1beta1().CloudBuildSources(c.Namespace)
+	builds := c.KnativeGCP.EventsV1().CloudBuildSources(c.Namespace)
 	err := builds.Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete build %s/%s: %v", c.Namespace, name, err)

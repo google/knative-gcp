@@ -28,9 +28,9 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	"github.com/google/knative-gcp/pkg/apis/events"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	cloudbuildsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudbuildsource"
-	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1beta1"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
+	cloudbuildsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudbuildsource"
+	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 )
@@ -61,7 +61,7 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface.
 var _ cloudbuildsourcereconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, build *v1beta1.CloudBuildSource) pkgreconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, build *v1.CloudBuildSource) pkgreconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("build", build)))
 
 	build.Status.InitializeConditions()
@@ -80,7 +80,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, build *v1beta1.CloudBuil
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudBuildSource reconciled: "%s/%s"`, build.Namespace, build.Name)
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, build *v1beta1.CloudBuildSource) pkgreconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, build *v1.CloudBuildSource) pkgreconciler.Event {
 	// If k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
 	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.

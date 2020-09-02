@@ -21,6 +21,7 @@ package main
 import (
 	"context"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
 	"github.com/google/knative-gcp/pkg/metrics"
@@ -34,6 +35,7 @@ func InitializeHandler(
 	projectID clients.ProjectID,
 	podName metrics.PodName,
 	containerName metrics.ContainerName,
+	publishSettings pubsub.PublishSettings,
 ) (*ingress.Handler, error) {
 	panic(wire.Build(
 		ingress.HandlerSet,

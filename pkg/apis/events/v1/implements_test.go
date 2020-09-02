@@ -19,8 +19,9 @@ package v1
 import (
 	"testing"
 
-	"knative.dev/pkg/apis/duck"
 	v1 "knative.dev/pkg/apis/duck/v1"
+
+	"knative.dev/pkg/apis/duck"
 )
 
 func TestTypesImplements(t *testing.T) {
@@ -28,8 +29,16 @@ func TestTypesImplements(t *testing.T) {
 		instance interface{}
 		iface    duck.Implementable
 	}{
+		{instance: &CloudAuditLogsSource{}, iface: &v1.Source{}},
+		{instance: &CloudAuditLogsSource{}, iface: &v1.Conditions{}},
 		{instance: &CloudStorageSource{}, iface: &v1.Source{}},
 		{instance: &CloudStorageSource{}, iface: &v1.Conditions{}},
+		{instance: &CloudSchedulerSource{}, iface: &v1.Source{}},
+		{instance: &CloudSchedulerSource{}, iface: &v1.Conditions{}},
+		{instance: &CloudPubSubSource{}, iface: &v1.Source{}},
+		{instance: &CloudPubSubSource{}, iface: &v1.Conditions{}},
+		{instance: &CloudBuildSource{}, iface: &v1.Source{}},
+		{instance: &CloudBuildSource{}, iface: &v1.Conditions{}},
 	}
 	for _, tc := range testCases {
 		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {
