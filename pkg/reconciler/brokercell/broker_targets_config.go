@@ -146,20 +146,20 @@ func targetsConfigMapsEqual(cm1, cm2 *corev1.ConfigMap) bool {
 	if len(cm1.BinaryData) != len(cm2.BinaryData) {
 		return false
 	}
-	v1Proto := &config.TargetsConfig{}
-	v2Proto := &config.TargetsConfig{}
+	proto1 := &config.TargetsConfig{}
+	proto2 := &config.TargetsConfig{}
 	for k, v1 := range cm1.BinaryData {
 		v2, ok := cm2.BinaryData[k]
 		if !ok {
 			return false
 		}
-		if err := proto.Unmarshal(v1, v1Proto); err != nil {
+		if err := proto.Unmarshal(v1, proto1); err != nil {
 			return false
 		}
-		if err := proto.Unmarshal(v2, v2Proto); err != nil {
+		if err := proto.Unmarshal(v2, proto2); err != nil {
 			return false
 		}
-		if !proto.Equal(v1Proto, v2Proto) {
+		if !proto.Equal(proto1, proto2) {
 			return false
 		}
 	}

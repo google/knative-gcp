@@ -17,6 +17,8 @@ limitations under the License.
 package utils
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -36,6 +38,12 @@ type ConfigMapReconciler struct {
 	KubeClient kubernetes.Interface
 	Lister     corev1listers.ConfigMapLister
 	Recorder   record.EventRecorder
+}
+
+// DefaultConfigMapEqFunc is a basic equality testing function for K8s
+// ConfigMaps based on string Data.
+func DefaultConfigMapEqFunc(cm1, cm2 *corev1.ConfigMap) bool {
+	return equality.Semantic.DeepEqual(cm1.Data, cm2.Data)
 }
 
 // ReconcileConfigMap reconciles the K8s ConfigMap 'cm'.
@@ -58,9 +66,7 @@ func (r *ConfigMapReconciler) ReconcileConfigMap(obj runtime.Object, cm *corev1.
 		return nil, err
 	}
 	if eqFunc == nil {
-		eqFunc = func(cm1, cm2 *corev1.ConfigMap) bool {
-			return equality.Semantic.DeepEqual(cm1.BinaryData, cm2.BinaryData) && equality.Semantic.DeepEqual(cm1.Data, cm2.Data)
-		}
+		return nil, fmt.Errorf("unspecified ConfigMap equality testing function")
 	}
 	if !eqFunc(cm, current) {
 		// Don't modify the informers copy.

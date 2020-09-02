@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -51,7 +52,7 @@ var (
 	}
 	cmDifferentBinaryData = &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
-		Data:       map[string]string{"data": "different value"},
+		Data:       map[string]string{"data": "value"},
 		BinaryData: map[string][]byte{"binary": {'d'}},
 	}
 
@@ -70,6 +71,10 @@ type commonCase struct {
 	wantErr    bool
 }
 
+func testBinaryDataEqFunc(cm1, cm2 *corev1.ConfigMap) bool {
+	return equality.Semantic.DeepEqual(cm1.BinaryData, cm2.BinaryData)
+}
+
 func TestConfigMapReconciler(t *testing.T) {
 	var tests = []struct {
 		commonCase
@@ -82,8 +87,9 @@ func TestConfigMapReconciler(t *testing.T) {
 				name:     "configmap exists, nothing to do",
 				existing: []runtime.Object{cm},
 			},
-			in:   cm,
-			want: cm,
+			in:     cm,
+			want:   cm,
+			eqFunc: DefaultConfigMapEqFunc,
 		},
 		{
 			commonCase: commonCase{
@@ -99,7 +105,8 @@ func TestConfigMapReconciler(t *testing.T) {
 				reactions: []clientgotesting.ReactionFunc{configmapCreateFailure},
 				wantErr:   true,
 			},
-			in: cm,
+			in:     cm,
+			eqFunc: DefaultConfigMapEqFunc,
 		},
 		{
 			commonCase: commonCase{
@@ -107,17 +114,9 @@ func TestConfigMapReconciler(t *testing.T) {
 				existing:   []runtime.Object{cmDifferentData},
 				wantEvents: []string{configmapUpdatedEvent},
 			},
-			in:   cm,
-			want: cm,
-		},
-		{
-			commonCase: commonCase{
-				name:       "configmap updated - different binary data",
-				existing:   []runtime.Object{cmDifferentBinaryData},
-				wantEvents: []string{configmapUpdatedEvent},
-			},
-			in:   cm,
-			want: cm,
+			in:     cm,
+			want:   cm,
+			eqFunc: DefaultConfigMapEqFunc,
 		},
 		{
 			commonCase: commonCase{
@@ -126,30 +125,35 @@ func TestConfigMapReconciler(t *testing.T) {
 				existing:  []runtime.Object{cmDifferentData},
 				wantErr:   true,
 			},
-			in: cm,
+			in:     cm,
+			eqFunc: DefaultConfigMapEqFunc,
 		},
 		{
 			commonCase: commonCase{
-				name:       "configmap custom eqFunc, force update",
-				existing:   []runtime.Object{cm},
+				name:       "configmap custom eqFunc, different binary data",
+				existing:   []runtime.Object{cmDifferentBinaryData},
 				wantEvents: []string{configmapUpdatedEvent},
 			},
-			in:   cm,
-			want: cm,
-			eqFunc: func(cm1, cm2 *corev1.ConfigMap) bool {
-				return false
-			},
+			in:     cm,
+			want:   cm,
+			eqFunc: testBinaryDataEqFunc,
 		},
 		{
 			commonCase: commonCase{
 				name:     "configmap custom eqFunc, nothing to do",
 				existing: []runtime.Object{cmDifferentData},
 			},
-			in:   cm,
-			want: cmDifferentData,
-			eqFunc: func(cm1, cm2 *corev1.ConfigMap) bool {
-				return true
+			in:     cm,
+			want:   cmDifferentData,
+			eqFunc: testBinaryDataEqFunc,
+		},
+		{
+			commonCase: commonCase{
+				name:     "eqFunc missing error",
+				existing: []runtime.Object{cm},
+				wantErr:  true,
 			},
+			in: cm,
 		},
 	}
 
