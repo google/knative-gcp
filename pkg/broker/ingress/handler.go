@@ -19,6 +19,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"math/rand"
 	nethttp "net/http"
 	"time"
 
@@ -28,9 +29,6 @@ import (
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
-	"github.com/google/knative-gcp/pkg/metrics"
-	"github.com/google/knative-gcp/pkg/tracing"
-	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/wire"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
@@ -38,6 +36,10 @@ import (
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
 	kntracing "knative.dev/eventing/pkg/tracing"
+
+	"github.com/google/knative-gcp/pkg/metrics"
+	"github.com/google/knative-gcp/pkg/tracing"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 )
 
 const (
@@ -157,7 +159,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	ctx, cancel := context.WithTimeout(ctx, decoupleSinkTimeout)
 	defer cancel()
 	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode) }()
-	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
+	if res := h.decouple.Send(ctx, broker, *event); rand.Intn(2) == 1 || !cev2.IsACK(res) {
 		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.String("broker", broker.String()), zap.Error(res))
 		statusCode = nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {
