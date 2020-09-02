@@ -54,9 +54,9 @@ spec:
           namespace: cloud-run-events
   versions:
     - &version
-      name: v1beta1
+      name: v1
       served: true
-      storage: true
+      storage: false
       subresources:
         status: {}
       additionalPrinterColumns:
@@ -70,7 +70,7 @@ spec:
           type: date
           jsonPath: .metadata.creationTimestamp
       # We remove status.ServiceAccountName from the schema in v1.
-      schema:
+      schema: &v1Schema
         openAPIV3Schema: &openAPIV3Schema
           type: object
           properties: &properties
@@ -185,6 +185,11 @@ spec:
                   type: string
                 subscriptionId:
                   type: string
+    - <<: *version
+      name: v1beta1
+      served: true
+      storage: true
+      schema: *v1Schema
     - <<: *version
       name: v1alpha1
       # TODO: Flip served bit of v1alpha1 in https://github.com/google/knative-gcp/issues/1544.

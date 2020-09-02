@@ -17,6 +17,7 @@ import (
 	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	kngcpduckv1 "github.com/google/knative-gcp/pkg/duck/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/pkg/apis/duck"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
@@ -39,6 +40,10 @@ type CloudBuildSource struct {
 }
 
 var (
+	_ apis.Convertible             = (*CloudBuildSource)(nil)
+	_ apis.Defaultable             = (*CloudBuildSource)(nil)
+	_ apis.Validatable             = (*CloudBuildSource)(nil)
+	_ runtime.Object               = (*CloudBuildSource)(nil)
 	_ kmeta.OwnerRefable           = (*CloudBuildSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudBuildSource)(nil)
 	_ kngcpduckv1.PubSubable       = (*CloudBuildSource)(nil)
