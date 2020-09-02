@@ -71,7 +71,7 @@ type commonCase struct {
 	wantErr    bool
 }
 
-func testBinaryDataEqFunc(cm1, cm2 *corev1.ConfigMap) bool {
+func testConfigMapBinaryDataEqual(cm1, cm2 *corev1.ConfigMap) bool {
 	return equality.Semantic.DeepEqual(cm1.BinaryData, cm2.BinaryData)
 }
 
@@ -89,7 +89,7 @@ func TestConfigMapReconciler(t *testing.T) {
 			},
 			in:     cm,
 			want:   cm,
-			eqFunc: DefaultConfigMapEqFunc,
+			eqFunc: DefaultConfigMapEqual,
 		},
 		{
 			commonCase: commonCase{
@@ -106,7 +106,7 @@ func TestConfigMapReconciler(t *testing.T) {
 				wantErr:   true,
 			},
 			in:     cm,
-			eqFunc: DefaultConfigMapEqFunc,
+			eqFunc: DefaultConfigMapEqual,
 		},
 		{
 			commonCase: commonCase{
@@ -116,7 +116,7 @@ func TestConfigMapReconciler(t *testing.T) {
 			},
 			in:     cm,
 			want:   cm,
-			eqFunc: DefaultConfigMapEqFunc,
+			eqFunc: DefaultConfigMapEqual,
 		},
 		{
 			commonCase: commonCase{
@@ -126,7 +126,7 @@ func TestConfigMapReconciler(t *testing.T) {
 				wantErr:   true,
 			},
 			in:     cm,
-			eqFunc: DefaultConfigMapEqFunc,
+			eqFunc: DefaultConfigMapEqual,
 		},
 		{
 			commonCase: commonCase{
@@ -136,7 +136,7 @@ func TestConfigMapReconciler(t *testing.T) {
 			},
 			in:     cm,
 			want:   cm,
-			eqFunc: testBinaryDataEqFunc,
+			eqFunc: testConfigMapBinaryDataEqual,
 		},
 		{
 			commonCase: commonCase{
@@ -145,7 +145,7 @@ func TestConfigMapReconciler(t *testing.T) {
 			},
 			in:     cm,
 			want:   cmDifferentData,
-			eqFunc: testBinaryDataEqFunc,
+			eqFunc: testConfigMapBinaryDataEqual,
 		},
 		{
 			commonCase: commonCase{

@@ -40,9 +40,9 @@ type ConfigMapReconciler struct {
 	Recorder   record.EventRecorder
 }
 
-// DefaultConfigMapEqFunc is a basic equality testing function for K8s
-// ConfigMaps based on string Data.
-func DefaultConfigMapEqFunc(cm1, cm2 *corev1.ConfigMap) bool {
+// DefaultConfigMapEqual is a basic equality testing function for K8s ConfigMaps
+// based on string Data.
+func DefaultConfigMapEqual(cm1, cm2 *corev1.ConfigMap) bool {
 	return equality.Semantic.DeepEqual(cm1.Data, cm2.Data)
 }
 
