@@ -45,7 +45,6 @@ import (
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	EventsV1 "github.com/google/knative-gcp/pkg/apis/events/v1"
-	EventsV1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
@@ -53,7 +52,6 @@ import (
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1"
-	eventsv1beta1listers "github.com/google/knative-gcp/pkg/client/listers/events/v1beta1"
 	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
 	intlisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	inteventsv1beta1listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1beta1"
@@ -156,8 +154,8 @@ func (l *Listers) GetCloudPubSubSourceLister() eventslisters.CloudPubSubSourceLi
 	return eventslisters.NewCloudPubSubSourceLister(l.indexerFor(&EventsV1.CloudPubSubSource{}))
 }
 
-func (l *Listers) GetCloudBuildSourceLister() eventsv1beta1listers.CloudBuildSourceLister {
-	return eventsv1beta1listers.NewCloudBuildSourceLister(l.indexerFor(&EventsV1beta1.CloudBuildSource{}))
+func (l *Listers) GetCloudBuildSourceLister() eventslisters.CloudBuildSourceLister {
+	return eventslisters.NewCloudBuildSourceLister(l.indexerFor(&EventsV1.CloudBuildSource{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {

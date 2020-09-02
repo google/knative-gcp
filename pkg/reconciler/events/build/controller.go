@@ -24,10 +24,10 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	cloudbuildsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1beta1/cloudbuildsource"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
-	cloudbuildsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1beta1/cloudbuildsource"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
+	cloudbuildsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1/cloudbuildsource"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/pullsubscription"
+	cloudbuildsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudbuildsource"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -85,7 +85,7 @@ func newController(
 		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(v1beta1.Kind("CloudBuildSource")),
+		FilterFunc: controller.FilterControllerGK(v1.Kind("CloudBuildSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
