@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/stackdriver"
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
@@ -33,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
@@ -70,28 +69,28 @@ func main() {
 		fmt.Printf("Unable to create ceClient: %s ", err)
 	}
 
-	// Get GCP ProjectID.
-	projectID, err := metadataClient.NewDefaultMetadataClient().ProjectID()
-	if err != nil {
-		fmt.Printf("Unable to get projectID: %s ", err)
-	}
-
-	// Create the exporter for tracing.
-	sd, err := stackdriver.NewExporter(stackdriver.Options{
-		ProjectID:         projectID,
-		ReportingInterval: 60 * time.Second,
-	})
-	if err != nil {
-		fmt.Printf("Failed to create the Stackdriver exporter: %v", err)
-	}
-	// It is imperative to invoke flush before your main function exits
-	defer sd.Flush()
-
-	// Register it as a trace exporter
-	trace.RegisterExporter(sd)
-
-	ctx, span := trace.StartSpan(ctx, "sender", trace.WithSampler(trace.AlwaysSample()))
-	defer span.End()
+	//// Get GCP ProjectID.
+	//projectID, err := metadataClient.NewDefaultMetadataClient().ProjectID()
+	//if err != nil {
+	//	fmt.Printf("Unable to get projectID: %s ", err)
+	//}
+	//
+	//// Create the exporter for tracing.
+	//sd, err := stackdriver.NewExporter(stackdriver.Options{
+	//	ProjectID:         projectID,
+	//	ReportingInterval: 60 * time.Second,
+	//})
+	//if err != nil {
+	//	fmt.Printf("Failed to create the Stackdriver exporter: %v", err)
+	//}
+	//// It is imperative to invoke flush before your main function exits
+	//defer sd.Flush()
+	//
+	//// Register it as a trace exporter
+	//trace.RegisterExporter(sd)
+	//
+	//ctx, span := trace.StartSpan(ctx, "sender", trace.WithSampler(trace.AlwaysSample()))
+	//defer span.End()
 
 	// If needRetry is true, repeat sending Event with exponential backoff when there are some specific errors.
 	// In e2e test, sync problems could cause 404 and 5XX error, retrying those would help reduce flakiness.
@@ -103,7 +102,7 @@ func main() {
 
 	if err := writeTerminationMessage(map[string]interface{}{
 		"success": success,
-		"traceid": span.SpanContext().TraceID.String(),
+		"traceid": os.Getenv("TraceID"),
 	}); err != nil {
 		fmt.Printf("failed to write termination message, %s.\n", err)
 	}
@@ -111,8 +110,10 @@ func main() {
 
 func sendEvent(ctx context.Context, ceClient cev2.Client, needRetry bool) error {
 	send := func() error {
-		span := trace.FromContext(ctx)
-		log.Printf("here is the span: %v", span)
+		ctx, span := trace.StartSpan(ctx, "sender", trace.WithSampler(trace.AlwaysSample()))
+		defer span.End()
+		log.Printf(span.SpanContext().TraceID.String())
+		os.Setenv("TraceID", span.SpanContext().TraceID.String())
 		result := ceClient.Send(ctx, dummyCloudEvent())
 		return result
 	}
@@ -153,6 +154,7 @@ func isRetryable(err error) bool {
 		sc := result.StatusCode
 		if sc == 404 || sc == 500 || sc == 503 {
 			log.Printf("got error: %s, retry sending event. \n", result.Error())
+			os.Unsetenv("TraceID")
 			return true
 		}
 	}
