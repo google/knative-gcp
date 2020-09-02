@@ -73,7 +73,7 @@ func (a BrokerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 
 		// Workarounds to reduce test flakiness caused by sender pod retry sending events (which will cause unexpected response code).
 		// We should remove it after https://github.com/google/knative-gcp/issues/1058 lands
-		if code == http.StatusForbidden || code == http.StatusServiceUnavailable || code == http.StatusInternalServerError {
+		if code == http.StatusNotFound || code == http.StatusServiceUnavailable || code == http.StatusInternalServerError {
 			continue
 		}
 
