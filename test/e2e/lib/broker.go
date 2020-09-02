@@ -70,6 +70,13 @@ func (a BrokerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 		if err != nil {
 			return fmt.Errorf("metric has invalid response code label: %v", ts.GetMetric())
 		}
+
+		// Workarounds to reduce test flakiness caused by sender pod retry sending events (which will cause unexpected response code).
+		// We should remove it after https://github.com/google/knative-gcp/issues/1058 lands
+		if code == http.StatusForbidden || code == http.StatusServiceUnavailable || code == http.StatusInternalServerError {
+			continue
+		}
+
 		if code != http.StatusAccepted {
 			return fmt.Errorf("metric has unexpected response code: %v", ts.GetMetric())
 		}
