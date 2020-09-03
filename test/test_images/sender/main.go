@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"time"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
@@ -131,8 +130,6 @@ func isRetryable(err error) bool {
 		sc := result.StatusCode
 		if sc == 404 || sc == 500 || sc == 503 {
 			log.Printf("got error: %s, retry sending event. \n", result.Error())
-			// Unset TraceID if we need to retry.
-			os.Unsetenv("TraceID")
 			return true
 		}
 	}
