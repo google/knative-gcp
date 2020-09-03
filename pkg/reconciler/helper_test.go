@@ -247,20 +247,22 @@ func TestServiceReconciler(t *testing.T) {
 func TestConfigMapReconciler(t *testing.T) {
 	var tests = []struct {
 		commonCase
-		in   *corev1.ConfigMap
-		want *corev1.ConfigMap
+		in     *corev1.ConfigMap
+		want   *corev1.ConfigMap
+		eqFunc func(*corev1.ConfigMap, *corev1.ConfigMap) bool
 	}{
 		{
 			commonCase: commonCase{
 				name:     "configmap exists, nothing to do",
 				existing: []runtime.Object{cm},
 			},
-			in:   cm,
-			want: cm,
+			in:     cm,
+			want:   cm,
+			eqFunc: DefaultConfigMapEqual,
 		},
 		{
 			commonCase: commonCase{
-				name:       "cofigmap created",
+				name:       "configmap created",
 				wantEvents: []string{configmapCreatedEvent},
 			},
 			in:   cm,
@@ -272,25 +274,18 @@ func TestConfigMapReconciler(t *testing.T) {
 				reactions: []clientgotesting.ReactionFunc{configmapCreateFailure},
 				wantErr:   true,
 			},
-			in: cm,
+			in:     cm,
+			eqFunc: DefaultConfigMapEqual,
 		},
 		{
 			commonCase: commonCase{
-				name:       "cofigmap updated - different data",
+				name:       "configmap updated - different data",
 				existing:   []runtime.Object{cmDifferentData},
 				wantEvents: []string{configmapUpdatedEvent},
 			},
-			in:   cm,
-			want: cm,
-		},
-		{
-			commonCase: commonCase{
-				name:       "cofigmap updated - different binary data",
-				existing:   []runtime.Object{cmDifferentBinaryData},
-				wantEvents: []string{configmapUpdatedEvent},
-			},
-			in:   cm,
-			want: cm,
+			in:     cm,
+			want:   cm,
+			eqFunc: DefaultConfigMapEqual,
 		},
 		{
 			commonCase: commonCase{
@@ -298,6 +293,38 @@ func TestConfigMapReconciler(t *testing.T) {
 				reactions: []clientgotesting.ReactionFunc{configmapUpdateFailure},
 				existing:  []runtime.Object{cmDifferentData},
 				wantErr:   true,
+			},
+			in:     cm,
+			eqFunc: DefaultConfigMapEqual,
+		},
+		{
+			commonCase: commonCase{
+				name:       "configmap custom eqFunc, force update",
+				existing:   []runtime.Object{cm},
+				wantEvents: []string{configmapUpdatedEvent},
+			},
+			in:   cm,
+			want: cm,
+			eqFunc: func(cm1, cm2 *corev1.ConfigMap) bool {
+				return false
+			},
+		},
+		{
+			commonCase: commonCase{
+				name:     "configmap custom eqFunc, nothing to do",
+				existing: []runtime.Object{cmDifferentData},
+			},
+			in:   cm,
+			want: cmDifferentData,
+			eqFunc: func(cm1, cm2 *corev1.ConfigMap) bool {
+				return true
+			},
+		},
+		{
+			commonCase: commonCase{
+				name:     "eqFunc missing error",
+				existing: []runtime.Object{cm},
+				wantErr:  true,
 			},
 			in: cm,
 		},
@@ -312,7 +339,7 @@ func TestConfigMapReconciler(t *testing.T) {
 				Lister:     tr.listers.GetConfigMapLister(),
 				Recorder:   tr.recorder,
 			}
-			out, err := rec.ReconcileConfigMap(obj, test.in)
+			out, err := rec.ReconcileConfigMap(obj, test.in, test.eqFunc)
 
 			tr.verify(t, test.commonCase, err)
 
