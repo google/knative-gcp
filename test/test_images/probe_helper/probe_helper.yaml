@@ -45,8 +45,12 @@ spec:
               value: "8070"
             - name: RECEIVER_PORT
               value: "8080"
-            - name: TIMEOUT_MINS
-              value: "30"
+            - name: TIMEOUT_DURATION
+              value: "30m"
+            - name: HEALTH_CHECKER_PORT
+              value: "8060"
+            - name: MAX_STALE_DURATION
+              value: "5m"
           volumeMounts:
           - name: probe-helper-key
             mountPath: /var/secrets/google

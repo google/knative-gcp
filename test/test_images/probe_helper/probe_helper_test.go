@@ -381,3 +381,59 @@ func TestProbeHelper(t *testing.T) {
 		})
 	}
 }
+
+func assertHealthCheckResult(t *testing.T, port int, ok bool) {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/healthz", port), nil)
+	if err != nil {
+		t.Fatalf("Failed to create health check request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Logf("Failed to execute health check: %v", err)
+		if ok {
+			t.Errorf("health check result ok got=%v, want=%v", !ok, ok)
+		}
+		return
+	}
+	if ok != (resp.StatusCode == http.StatusOK) {
+		t.Logf("Got health check status code: %v", resp.StatusCode)
+		t.Errorf("health check result ok got=%v, want=%v", !ok, ok)
+	}
+}
+
+// GetFreePort asks a free open port.
+func GetFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+func TestProbeHelperHealth(t *testing.T) {
+	//t.Skip("Skip this test from running on Prow as it is only for local development.")
+
+	ctx := logtest.TestContextWithLogger(t)
+	ctx = WithProjectKey(ctx, testProjectID)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	os.Setenv("HEALTH_CHECKER_PORT", "8060")
+	os.Setenv("MAX_STALE_DURATION", "1s")
+	go runProbeHelper(ctx, nil, nil, nil, nil)
+
+	// Make sure the health checker is up.
+	time.Sleep(500 * time.Millisecond)
+	assertHealthCheckResult(t, 8060, true)
+
+	// Intentionally causing a unhealth check.
+	time.Sleep(time.Second)
+	assertHealthCheckResult(t, 8060, false)
+}

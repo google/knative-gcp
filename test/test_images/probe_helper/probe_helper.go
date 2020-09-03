@@ -130,8 +130,14 @@ type envConfig struct {
 	// Environment variable containing the port to receive the event from the trigger
 	ReceiverPort int `envconfig:"RECEIVER_PORT" default:"8080"`
 
-	// Environment variable containing the timeout period to wait for an event to be delivered back (in minutes)
-	Timeout int `envconfig:"TIMEOUT_MINS" default:"30"`
+	// Environment variable containing the port to send health checks to
+	HealthCheckerPort int `envconfig:"HEALTH_CHECKER_PORT" default:"8060"`
+
+	// Environment variable containing the maximum tolerated staleness duration
+	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"5m"`
+
+	// Environment variable containing the timeout duration to wait for an event to be delivered back
+	TimeoutDuration time.Duration `envconfig:"TIMEOUT_DURATION" default:"30m"`
 }
 
 func (r *receivedEventsMap) createReceiverChannel(channelID string) (chan bool, error) {
@@ -167,7 +173,7 @@ func logReceive(ctx context.Context, ack bool, format string, args ...interface{
 	return cloudevents.NewReceipt(ack, format, args...)
 }
 
-func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap, timeout int, c *healthChecker) cloudEventsFunc {
+func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap, timeout time.Duration, c *healthChecker) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		var err error
@@ -177,7 +183,7 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 		c.lastProbeEventTimestamp.time = time.Now()
 		c.lastProbeEventTimestamp.Unlock()
 
-		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
+		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
@@ -344,7 +350,7 @@ func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap, c *hea
 	}
 }
 
-func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeListener net.Listener, pubsubClient *pubsub.Client, storageClient *storage.Client, maxStaleDuration time.Duration) {
+func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeListener net.Listener, pubsubClient *pubsub.Client, storageClient *storage.Client) {
 	appcredentials.MustExistOrUnsetEnv()
 	logger := logging.FromContext(ctx)
 
@@ -359,7 +365,9 @@ func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeLis
 	brokerURL := env.BrokerURL
 	probePort := env.ProbePort
 	receiverPort := env.ReceiverPort
-	timeout := env.Timeout
+	healthCheckerPort := env.HealthCheckerPort
+	maxStaleDuration := env.MaxStaleDuration
+	timeoutDuration := env.TimeoutDuration
 	logger.Infof("Running Probe Helper with env config: %+v \n", env)
 
 	// create pubsub client
@@ -419,7 +427,7 @@ func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeLis
 	// start the health checker
 	c := &healthChecker{
 		maxStaleDuration: maxStaleDuration,
-		port:             8060,
+		port:             healthCheckerPort,
 	}
 	go c.start(ctx)
 
@@ -429,7 +437,7 @@ func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeLis
 	}
 	// start a goroutine to receive the event from probe and forward it appropriately
 	logger.Info("Starting Probe Helper server...")
-	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, bkt, receivedEvents, timeout, c))
+	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, bkt, receivedEvents, timeoutDuration, c))
 	// Receive the event and return the result back to the probe
 	logger.Info("Starting event receiver...")
 	rc.StartReceiver(ctx, receiveEvent(ctx, receivedEvents, c))
