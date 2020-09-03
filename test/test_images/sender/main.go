@@ -69,6 +69,8 @@ func main() {
 		fmt.Printf("Unable to create ceClient: %s ", err)
 	}
 
+	// If needRetry is true, repeat sending Event with exponential backoff when there are some specific errors.
+	// In e2e test, sync problems could cause 404 and 5XX error, retrying those would help reduce flakiness.
 	success := true
 	if res := sendEvent(ctx, ceClient, needRetry); !cev2.IsACK(res) {
 		success = false

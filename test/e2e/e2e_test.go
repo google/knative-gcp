@@ -21,7 +21,15 @@ package e2e
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/cloudevents/sdk-go/v2/binding"
+	conformancehelpers "knative.dev/eventing/test/conformance/helpers"
+	e2ehelpers "knative.dev/eventing/test/e2e/helpers"
+	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/logstream"
+
+	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
 // All e2e tests go below:
@@ -255,6 +263,14 @@ func TestSmokeCloudBuildSourceV1alpha1(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	SmokeCloudBuildSourceTestHelper(t, authConfig, "v1alpha1")
+}
+
+// TestSmokeCloudBuildSourceV1beta1 we can create a v1alpha1 CloudBuildSource to ready state.
+// We keep a set of smoke tests for each supported version of CloudBuildSource to make sure the webhook works.
+func TestSmokeCloudBuildSourceV1beta1(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeCloudBuildSourceTestHelper(t, authConfig, "v1beta1")
 }
 
 // TestSmokeCloudBuildSourceWithDeletion we can create a CloudBuildSource to ready state and we can delete a CloudBuildSource and its underlying resources.
