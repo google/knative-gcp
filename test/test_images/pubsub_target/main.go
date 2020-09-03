@@ -21,6 +21,7 @@ import (
 	"os"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
 	"github.com/kelseyhightower/envconfig"
@@ -61,6 +62,11 @@ func (r *pubsubReceiver) Knockdown(event cloudevents.Event) bool {
 	// Check source
 	if event.Source() != r.Source {
 		incorrectAttributes[lib.EventSource] = lib.PropPair{Expected: r.Source, Received: event.Source()}
+	}
+
+	// Check schema
+	if event.DataSchema() != schemasv1.CloudPubSubEventDataSchema {
+		incorrectAttributes[lib.EventDataSchema] = lib.PropPair{Expected: schemasv1.CloudPubSubEventDataSchema, Received: event.DataSchema()}
 	}
 
 	if len(incorrectAttributes) == 0 {
