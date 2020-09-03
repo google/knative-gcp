@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -312,7 +313,7 @@ func TestConfigMapReconciler(t *testing.T) {
 				Lister:     tr.listers.GetConfigMapLister(),
 				Recorder:   tr.recorder,
 			}
-			out, err := rec.ReconcileConfigMap(obj, test.in)
+			out, err := rec.ReconcileConfigMap(obj, test.in, resources.TargetsConfigMapEqual)
 
 			tr.verify(t, test.commonCase, err)
 

@@ -17,6 +17,8 @@ limitations under the License.
 package reconciler
 
 import (
+	"fmt"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -122,8 +124,14 @@ func (r *ServiceReconciler) ReconcileService(obj runtime.Object, svc *corev1.Ser
 	return r.EndpointsLister.Endpoints(svc.Namespace).Get(svc.Name)
 }
 
-// ReconcileConfigMap reconciles the K8s ConfigMao 'cm'.
-func (r *ConfigMapReconciler) ReconcileConfigMap(obj runtime.Object, cm *corev1.ConfigMap, handlers ...cache.ResourceEventHandlerFuncs) (*corev1.ConfigMap, error) {
+// DefaultConfigMapEqual is a basic equality testing function for K8s ConfigMaps
+// based on string Data.
+func DefaultConfigMapEqual(cm1, cm2 *corev1.ConfigMap) bool {
+	return equality.Semantic.DeepEqual(cm1.Data, cm2.Data)
+}
+
+// ReconcileConfigMap reconciles the K8s ConfigMap 'cm'.
+func (r *ConfigMapReconciler) ReconcileConfigMap(obj runtime.Object, cm *corev1.ConfigMap, eqFunc func(*corev1.ConfigMap, *corev1.ConfigMap) bool, handlers ...cache.ResourceEventHandlerFuncs) (*corev1.ConfigMap, error) {
 	current, err := r.Lister.ConfigMaps(cm.Namespace).Get(cm.Name)
 	if apierrs.IsNotFound(err) {
 		current, err = r.KubeClient.CoreV1().ConfigMaps(cm.Namespace).Create(cm)
@@ -141,8 +149,10 @@ func (r *ConfigMapReconciler) ReconcileConfigMap(obj runtime.Object, cm *corev1.
 	if err != nil {
 		return nil, err
 	}
-
-	if !equality.Semantic.DeepEqual(cm.BinaryData, current.BinaryData) || !equality.Semantic.DeepEqual(cm.Data, current.Data) {
+	if eqFunc == nil {
+		return nil, fmt.Errorf("unspecified ConfigMap equality testing function")
+	}
+	if !eqFunc(cm, current) {
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Data = cm.Data
