@@ -392,6 +392,15 @@ func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeLis
 	}
 	bkt := storageClient.Bucket(env.CloudStorageSourceBucketID)
 
+	// create cloud storage client
+	if storageClient == nil {
+		storageClient, err = storage.NewClient(ctx)
+		if err != nil {
+			logger.Fatal("Failed to create cloud storage client, ", err)
+		}
+	}
+	bkt := storageClient.Bucket(env.CloudStorageSourceBucketID)
+
 	// create sender client
 	opts := []cehttp.Option{cloudevents.WithTarget(brokerURL)}
 	if probeListener != nil {
