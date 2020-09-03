@@ -19,7 +19,6 @@ package ingress
 import (
 	"context"
 	"errors"
-	"math/rand"
 	nethttp "net/http"
 	"time"
 
@@ -159,7 +158,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	ctx, cancel := context.WithTimeout(ctx, decoupleSinkTimeout)
 	defer cancel()
 	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode) }()
-	if res := h.decouple.Send(ctx, broker, *event); rand.Intn(2) == 1 || !cev2.IsACK(res) {
+	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
 		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.String("broker", broker.String()), zap.Error(res))
 		statusCode = nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {
