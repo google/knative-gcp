@@ -147,8 +147,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context, bc *intv1alpha1.Br
 		UpdateFunc: func(oldObj, newObj interface{}) { r.refreshPodVolume(ctx, bc) },
 		DeleteFunc: nil,
 	}
-
-	_, err = r.cmRec.ReconcileConfigMap(bc, desired, handlerFuncs)
+	_, err = r.cmRec.ReconcileConfigMap(bc, desired, resources.TargetsConfigMapEqual, handlerFuncs)
 	return err
 }
 
