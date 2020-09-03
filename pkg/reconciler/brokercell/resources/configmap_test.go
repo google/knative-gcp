@@ -17,6 +17,7 @@ limitations under the License.
 package resources
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,43 +30,38 @@ import (
 	_ "knative.dev/pkg/system/testing"
 )
 
+func testConfigMap(names []string, namespace string) *corev1.ConfigMap {
+	brokerMap := make(map[string]*config.Broker)
+	for _, name := range names {
+		brokerMap[fmt.Sprintf("%s/%s", namespace, name)] = &config.Broker{
+			Name:      name,
+			Namespace: namespace,
+		}
+	}
+	targets := &config.TargetsConfig{
+		Brokers: brokerMap,
+	}
+	targetsBytes, _ := proto.Marshal(targets)
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: targetsCMName},
+		BinaryData: map[string][]byte{targetsCMKey: targetsBytes},
+	}
+}
+
 func TestTargetsConfigMapEqual(t *testing.T) {
 	var (
-		targets1 = &config.TargetsConfig{
-			Brokers: map[string]*config.Broker{
-				"ns/broker1": {
-					Name:      "broker1",
-					Namespace: "ns",
-				},
-			},
-		}
-		targets1Bytes, _ = proto.Marshal(targets1)
-		targets2         = &config.TargetsConfig{
-			Brokers: map[string]*config.Broker{
-				"ns/broker2": {
-					Name:      "broker2",
-					Namespace: "ns",
-				},
-			},
-		}
-		targets2Bytes, _ = proto.Marshal(targets2)
-
-		targets1Cm = &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: targetsCMName},
-			BinaryData: map[string][]byte{targetsCMKey: targets1Bytes},
-		}
-		targets2Cm = &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: targetsCMName},
-			BinaryData: map[string][]byte{targetsCMKey: targets2Bytes},
-		}
-		invalidProtoCm = &corev1.ConfigMap{
+		targetsCm1            = testConfigMap([]string{"broker1"}, "ns")
+		targetsCm2            = testConfigMap([]string{"broker2"}, "ns")
+		invalidProtoTargetsCm = &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: targetsCMName},
 			BinaryData: map[string][]byte{targetsCMKey: {'b'}},
 		}
 		notTargetsCm = &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: targetsCMName},
-			BinaryData: map[string][]byte{"some-key": targets1Bytes},
+			BinaryData: map[string][]byte{"some-key": nil},
 		}
+		orderTargetsCm1 = testConfigMap([]string{"broker1", "broker2"}, "ns")
+		orderTargetsCm2 = testConfigMap([]string{"broker2", "broker1"}, "ns")
 	)
 	var tests = []struct {
 		name   string
@@ -75,20 +71,20 @@ func TestTargetsConfigMapEqual(t *testing.T) {
 	}{
 		{
 			name:   "same targets config",
-			cm1:    targets1Cm,
-			cm2:    targets1Cm,
+			cm1:    targetsCm1,
+			cm2:    targetsCm1,
 			wantEq: true,
 		},
 		{
 			name:   "different targets config",
-			cm1:    targets1Cm,
-			cm2:    targets2Cm,
+			cm1:    targetsCm1,
+			cm2:    targetsCm2,
 			wantEq: false,
 		},
 		{
 			name:   "invalid proto bytes",
-			cm1:    invalidProtoCm,
-			cm2:    invalidProtoCm,
+			cm1:    invalidProtoTargetsCm,
+			cm2:    invalidProtoTargetsCm,
 			wantEq: false,
 		},
 		{
@@ -96,6 +92,12 @@ func TestTargetsConfigMapEqual(t *testing.T) {
 			cm1:    notTargetsCm,
 			cm2:    notTargetsCm,
 			wantEq: false,
+		},
+		{
+			name:   "unequal bytes, same proto",
+			cm1:    orderTargetsCm1,
+			cm2:    orderTargetsCm2,
+			wantEq: true,
 		},
 	}
 	for _, test := range tests {
