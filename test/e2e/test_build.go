@@ -55,6 +55,8 @@ func SmokeCloudBuildSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cl
 	if cloudBuildSourceVersion == "v1alpha1" {
 		lib.MakeBuildV1alpha1OrDie(client, buildConfig)
 	} else if cloudBuildSourceVersion == "v1beta1" {
+		lib.MakeBuildV1beta1OrDie(client, buildConfig)
+	} else if cloudBuildSourceVersion == "v1" {
 		lib.MakeBuildOrDie(client, buildConfig)
 	} else {
 		t.Fatalf("SmokeCloudBuildSourceWithDeletionTestHelper does not support CloudBuildSource version: %v", cloudBuildSourceVersion)

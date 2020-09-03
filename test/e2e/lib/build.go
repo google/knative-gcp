@@ -20,10 +20,12 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
+
+	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
 
 	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
-
-	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -44,12 +46,25 @@ type BuildConfig struct {
 
 func MakeBuildOrDie(client *Client, config BuildConfig) {
 	client.T.Helper()
+	so := make([]reconcilertestingv1.CloudBuildSourceOption, 0)
+	so = append(so, reconcilertestingv1.WithCloudBuildSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, reconcilertestingv1.WithCloudBuildSourceServiceAccount(config.ServiceAccountName))
+	build := reconcilertestingv1.NewCloudBuildSource(config.BuildName, client.Namespace, so...)
+	client.CreateBuildOrFail(build)
+	// CloudBuildSource may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
+	client.Core.WaitForResourceReadyOrFail(config.BuildName, CloudBuildSourceV1TypeMeta)
+}
+
+func MakeBuildV1beta1OrDie(client *Client, config BuildConfig) {
+	client.T.Helper()
 	so := make([]reconcilertestingv1beta1.CloudBuildSourceOption, 0)
 	so = append(so, reconcilertestingv1beta1.WithCloudBuildSourceSink(config.SinkGVK, config.SinkName))
 	so = append(so, reconcilertestingv1beta1.WithCloudBuildSourceServiceAccount(config.ServiceAccountName))
 	build := reconcilertestingv1beta1.NewCloudBuildSource(config.BuildName, client.Namespace, so...)
-	client.CreateBuildOrFail(build)
-
+	client.CreateBuildV1beta1OrFail(build)
+	// CloudBuildSource source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.BuildName, CloudBuildSourceV1beta1TypeMeta)
 }
 
@@ -60,7 +75,8 @@ func MakeBuildV1alpha1OrDie(client *Client, config BuildConfig) {
 	so = append(so, reconcilertestingv1alpha1.WithCloudBuildSourceServiceAccount(config.ServiceAccountName))
 	build := reconcilertestingv1alpha1.NewCloudBuildSource(config.BuildName, client.Namespace, so...)
 	client.CreateBuildV1alpha1OrFail(build)
-
+	// CloudBuildSource source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
+	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.BuildName, CloudBuildSourceV1alpha1TypeMeta)
 }
 

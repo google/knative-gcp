@@ -24,6 +24,7 @@ import (
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
 
+	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 )
 
@@ -31,6 +32,9 @@ type envConfig struct {
 	PodName   string `envconfig:"POD_NAME" required:"true"`
 	Port      int    `envconfig:"PORT" default:"8080"`
 	ProjectID string `envconfig:"PROJECT_ID"`
+
+	// Default 300Mi.
+	PublishBufferedByteLimit int `envconfig:"PUBLISH_BUFFERED_BYTES_LIMIT" default:"314572800"`
 }
 
 const (
@@ -63,6 +67,7 @@ func main() {
 		clients.ProjectID(projectID),
 		metrics.PodName(env.PodName),
 		metrics.ContainerName(component),
+		publishSetting(logger.Desugar(), env),
 	)
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))
@@ -72,4 +77,13 @@ func main() {
 	if err := ingress.Start(ctx); err != nil {
 		logger.Desugar().Fatal("failed to start ingress: ", zap.Error(err))
 	}
+}
+
+func publishSetting(logger *zap.Logger, env envConfig) pubsub.PublishSettings {
+	s := pubsub.DefaultPublishSettings
+	if env.PublishBufferedByteLimit > 0 {
+		logger.Warn("PUBLISH_BUFFERED_BYTES_LIMIT is less or equal than 0; ignoring it", zap.Int("PublishBufferedByteLimit", env.PublishBufferedByteLimit))
+		s.BufferedByteLimit = env.PublishBufferedByteLimit
+	}
+	return s
 }
