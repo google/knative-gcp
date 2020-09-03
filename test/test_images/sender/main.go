@@ -45,7 +45,7 @@ type envConfig struct {
 // defaultRetry represents that there will be 3 iterations.
 // The duration starts from 30s and is multiplied by factor 1.0 for each iteration.
 var defaultRetry = wait.Backoff{
-	Steps:    3,
+	Steps:    4,
 	Duration: 30 * time.Second,
 	Factor:   2.0,
 	// The sleep at each iteration is the duration plus an additional
