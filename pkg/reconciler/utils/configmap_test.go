@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -50,11 +49,6 @@ var (
 		Data:       map[string]string{"data": "different value"},
 		BinaryData: map[string][]byte{"binary": {'b'}},
 	}
-	cmDifferentBinaryData = &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
-		Data:       map[string]string{"data": "value"},
-		BinaryData: map[string][]byte{"binary": {'d'}},
-	}
 
 	configmapCreateFailure = pkgreconcilertesting.InduceFailure("create", "configmaps")
 	configmapUpdateFailure = pkgreconcilertesting.InduceFailure("update", "configmaps")
@@ -69,10 +63,6 @@ type commonCase struct {
 	reactions  []clientgotesting.ReactionFunc
 	wantEvents []string
 	wantErr    bool
-}
-
-func testConfigMapBinaryDataEqual(cm1, cm2 *corev1.ConfigMap) bool {
-	return equality.Semantic.DeepEqual(cm1.BinaryData, cm2.BinaryData)
 }
 
 func TestConfigMapReconciler(t *testing.T) {
@@ -130,22 +120,26 @@ func TestConfigMapReconciler(t *testing.T) {
 		},
 		{
 			commonCase: commonCase{
-				name:       "configmap custom eqFunc, different binary data",
-				existing:   []runtime.Object{cmDifferentBinaryData},
+				name:       "configmap custom eqFunc, force update",
+				existing:   []runtime.Object{cm},
 				wantEvents: []string{configmapUpdatedEvent},
 			},
-			in:     cm,
-			want:   cm,
-			eqFunc: testConfigMapBinaryDataEqual,
+			in:   cm,
+			want: cm,
+			eqFunc: func(cm1, cm2 *corev1.ConfigMap) bool {
+				return false
+			},
 		},
 		{
 			commonCase: commonCase{
 				name:     "configmap custom eqFunc, nothing to do",
 				existing: []runtime.Object{cmDifferentData},
 			},
-			in:     cm,
-			want:   cmDifferentData,
-			eqFunc: testConfigMapBinaryDataEqual,
+			in:   cm,
+			want: cmDifferentData,
+			eqFunc: func(cm1, cm2 *corev1.ConfigMap) bool {
+				return true
+			},
 		},
 		{
 			commonCase: commonCase{
