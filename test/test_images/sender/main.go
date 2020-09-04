@@ -41,8 +41,8 @@ type envConfig struct {
 	RetryEnvVar     string `envconfig:"RETRY"`
 }
 
-// defaultRetry represents that there will be 3 iterations.
-// The duration starts from 30s and is multiplied by factor 1.0 for each iteration.
+// defaultRetry represents that there will be 4 iterations.
+// The duration starts from 30s and is multiplied by factor 2.0 for each iteration.
 var defaultRetry = wait.Backoff{
 	Steps:    4,
 	Duration: 30 * time.Second,
