@@ -33,7 +33,7 @@ func VerifyTrace(t *testing.T, testTree TestSpanTree, projectID string, traceID 
 		t.Error(err)
 		return
 	}
-	timeout := time.After(time.Minute)
+	timeout := time.After(2 * time.Minute)
 	for {
 		err = tryVerifyBrokerTrace(ctx, nil, testTree, client, projectID, traceID)
 		if err == nil {
