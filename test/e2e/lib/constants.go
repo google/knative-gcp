@@ -34,6 +34,7 @@ const (
 
 	EventType          = "type"
 	EventSource        = "source"
+	EventDataSchema    = "dataschema"
 	EventSubject       = "subject"
 	EventSubjectPrefix = "subject-prefix"
 	EventID            = "id"

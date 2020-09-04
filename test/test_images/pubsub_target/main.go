@@ -44,6 +44,7 @@ type pubsubReceiver struct {
 	knockdown.Config
 	Type   string `envconfig:"TYPE" required:"true"`
 	Source string `envconfig:"SOURCE" required:"true"`
+	Schema string `envconfig:"SCHEMA" required:"false"`
 }
 
 func (r *pubsubReceiver) Knockdown(event cloudevents.Event) bool {
@@ -61,6 +62,11 @@ func (r *pubsubReceiver) Knockdown(event cloudevents.Event) bool {
 	// Check source
 	if event.Source() != r.Source {
 		incorrectAttributes[lib.EventSource] = lib.PropPair{Expected: r.Source, Received: event.Source()}
+	}
+
+	// Check schema
+	if event.DataSchema() != r.Schema {
+		incorrectAttributes[lib.EventDataSchema] = lib.PropPair{Expected: r.Schema, Received: event.DataSchema()}
 	}
 
 	if len(incorrectAttributes) == 0 {

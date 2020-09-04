@@ -85,6 +85,7 @@ Context Attributes,
   source: //pubsub.googleapis.com/projects/test-project/topics/testing
   id: 1314133748793931
   time: 2020-06-30T16:32:57.012Z
+  dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/pubsub/v1/data.proto
   datacontenttype: application/json
 Extensions,
   knativearrivaltime: 2020-06-30T16:32:58.016175839Z
