@@ -350,10 +350,66 @@ func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap, c *hea
 	}
 }
 
-func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeListener net.Listener, pubsubClient *pubsub.Client, storageClient *storage.Client) {
+// Options is the struct type containing the optional parameters to be passed to
+// the probe helper.
+type Options struct {
+	receiverListener net.Listener
+	probeListener    net.Listener
+	storageClient    *storage.Client
+	pubsubClient     *pubsub.Client
+}
+
+// Option is an option for the probe helper.
+type Option func(*Options)
+
+// WithStorageClient forces the probe helper to use the specified storage client
+// instead of creating its own.
+func WithStorageClient(c *storage.Client) Option {
+	return func(o *Options) {
+		o.storageClient = c
+	}
+}
+
+// WithPubSubClient forces the probe helper to use the specified pubsub client
+// instead of creating its own.
+func WithPubSubClient(c *pubsub.Client) Option {
+	return func(o *Options) {
+		o.pubsubClient = c
+	}
+}
+
+// WithReceiverListener forces the probe helper receiver to use the specified
+// listener instead of relying on the CloudEvents client to create its own.
+func WithReceiverListener(l net.Listener) Option {
+	return func(o *Options) {
+		o.receiverListener = l
+	}
+}
+
+// WithProbeListener forces the probe helper to use the specified listener
+// instead of relying on the CloudEvents client to create its own.
+func WithProbeListener(l net.Listener) Option {
+	return func(o *Options) {
+		o.probeListener = l
+	}
+}
+
+func runProbeHelper(ctx context.Context, opts ...Option) {
 	appcredentials.MustExistOrUnsetEnv()
 	logger := logging.FromContext(ctx)
 
+	// apply the probe helper options
+	options := &Options{
+		receiverListener: nil,
+		probeListener:    nil,
+		storageClient:    nil,
+		pubsubClient:     nil,
+	}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	// read the environment variables
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		logger.Fatalf("Failed to process env var, %v", err)
@@ -372,7 +428,7 @@ func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeLis
 
 	// create pubsub client
 	pst, err := cepubsub.New(ctx,
-		cepubsub.WithClient(pubsubClient),
+		cepubsub.WithClient(options.pubsubClient),
 		cepubsub.WithProjectID(projectID),
 		cepubsub.WithTopicID(env.CloudPubSubSourceTopicID))
 	if err != nil {
@@ -384,22 +440,22 @@ func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeLis
 	}
 
 	// create cloud storage client
-	if storageClient == nil {
-		storageClient, err = storage.NewClient(ctx)
+	if options.storageClient == nil {
+		options.storageClient, err = storage.NewClient(ctx)
 		if err != nil {
 			logger.Fatal("Failed to create cloud storage client, ", err)
 		}
 	}
-	bkt := storageClient.Bucket(env.CloudStorageSourceBucketID)
+	bkt := options.storageClient.Bucket(env.CloudStorageSourceBucketID)
 
 	// create sender client
-	opts := []cehttp.Option{cloudevents.WithTarget(brokerURL)}
-	if probeListener != nil {
-		opts = append(opts, cloudevents.WithListener(probeListener))
+	ceOpts := []cehttp.Option{cloudevents.WithTarget(brokerURL)}
+	if options.probeListener != nil {
+		ceOpts = append(ceOpts, cloudevents.WithListener(options.probeListener))
 	} else {
-		opts = append(opts, cloudevents.WithPort(probePort))
+		ceOpts = append(ceOpts, cloudevents.WithPort(probePort))
 	}
-	sp, err := cloudevents.NewHTTP(opts...)
+	sp, err := cloudevents.NewHTTP(ceOpts...)
 	if err != nil {
 		logger.Fatalf("Failed to create sender transport, %v", err)
 	}
@@ -409,13 +465,13 @@ func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeLis
 	}
 
 	// create receiver client
-	opts = []cehttp.Option{}
-	if receiverListener != nil {
-		opts = append(opts, cloudevents.WithListener(receiverListener))
+	ceOpts = []cehttp.Option{}
+	if options.receiverListener != nil {
+		ceOpts = append(ceOpts, cloudevents.WithListener(options.receiverListener))
 	} else {
-		opts = append(opts, cloudevents.WithPort(receiverPort))
+		ceOpts = append(ceOpts, cloudevents.WithPort(receiverPort))
 	}
-	rp, err := cloudevents.NewHTTP(opts...)
+	rp, err := cloudevents.NewHTTP(ceOpts...)
 	if err != nil {
 		logger.Fatalf("Failed to create receiver transport, %v", err)
 	}
