@@ -78,7 +78,7 @@ func MakePubSubV1alpha1OrDie(client *Client, config PubSubConfig) {
 	client.Core.WaitForResourceReadyOrFail(config.PubSubName, CloudPubSubSourceV1alpha1TypeMeta)
 }
 
-func MakePubSubTargetJobOrDie(client *Client, source, targetName, eventType string) {
+func MakePubSubTargetJobOrDie(client *Client, source, targetName, eventType string, schema string) {
 	client.T.Helper()
 	job := resources.PubSubTargetJob(targetName, []v1.EnvVar{
 		{
@@ -91,7 +91,11 @@ func MakePubSubTargetJobOrDie(client *Client, source, targetName, eventType stri
 		}, {
 			Name:  "TIME",
 			Value: "6m",
-		}})
+		}, {
+			Name:  "SCHEMA",
+			Value: schema,
+		},
+	})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
 }
 

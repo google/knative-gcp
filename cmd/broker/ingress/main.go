@@ -82,8 +82,9 @@ func main() {
 func publishSetting(logger *zap.Logger, env envConfig) pubsub.PublishSettings {
 	s := pubsub.DefaultPublishSettings
 	if env.PublishBufferedByteLimit > 0 {
-		logger.Warn("PUBLISH_BUFFERED_BYTES_LIMIT is less or equal than 0; ignoring it", zap.Int("PublishBufferedByteLimit", env.PublishBufferedByteLimit))
 		s.BufferedByteLimit = env.PublishBufferedByteLimit
+	} else {
+		logger.Warn("PUBLISH_BUFFERED_BYTES_LIMIT is less or equal than 0; ignoring it", zap.Int("PublishBufferedByteLimit", env.PublishBufferedByteLimit))
 	}
 	return s
 }

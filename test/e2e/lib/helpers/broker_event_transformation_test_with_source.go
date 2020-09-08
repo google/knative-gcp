@@ -263,7 +263,7 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 	source := schemasv1.CloudPubSubEventSource(project, topicName)
 
 	// Create a target PubSub Job to receive the events.
-	lib.MakePubSubTargetJobOrDie(client, source, targetName, lib.E2EPubSubRespEventType)
+	lib.MakePubSubTargetJobOrDie(client, source, targetName, lib.E2EPubSubRespEventType /*empty schema*/, "")
 	// Create the Knative Service.
 	kserviceName := CreateKService(client, "pubsub_receiver")
 
