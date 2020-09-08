@@ -66,7 +66,7 @@ func channelSpecAllowsSubscribersArray(st *testing.T, client *testlib.Client, ch
 		client.CreateChannelOrFail(channelName, &channel)
 		client.WaitForResourceReadyOrFail(channelName, &channel)
 
-		sampleUrl := apis.HTTP("example.com")
+		sampleUrl, _ := apis.ParseURL("http://example.com")
 		gvr, _ := meta.UnsafeGuessKindToResource(channel.GroupVersionKind())
 
 		var ch interface{}
