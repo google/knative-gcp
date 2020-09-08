@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -34,6 +35,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	grpcstatus "google.golang.org/grpc/status"
 	"knative.dev/pkg/logging"
 	logtest "knative.dev/pkg/logging/testing"
 
@@ -43,12 +45,6 @@ import (
 )
 
 const (
-	// the port that the test broker listens to
-	testBrokerPort = 9999
-	// the port that the probe helper listens to
-	probeHelperPort = 8070
-	// the port that the probe receiver component listens to
-	probeReceiverPort = 8080
 	// the fake project ID used by the test resources
 	testProjectID = "test-project-id"
 	// the fake pubsub topic ID used in the test CloudPubSubSource
@@ -60,10 +56,6 @@ const (
 )
 
 var (
-	probeReceiverURL = fmt.Sprintf("http://localhost:%d", probeReceiverPort)
-	probeHelperURL   = fmt.Sprintf("http://localhost:%d", probeHelperPort)
-	testBrokerURL    = fmt.Sprintf("http://localhost:%d", testBrokerPort)
-
 	testStorageUploadRequest      = fmt.Sprintf("/upload/storage/v1/b/%s/o?alt=json&name=cloudstoragesource-probe-1234567890&prettyPrint=false&projection=full&uploadType=multipart", testStorageBucket)
 	testStorageRequest            = fmt.Sprintf("/b/%s/o/cloudstoragesource-probe-1234567890?alt=json&prettyPrint=false&projection=full", testStorageBucket)
 	testStorageGenerationRequest  = fmt.Sprintf("/b/%s/o/cloudstoragesource-probe-1234567890?alt=json&generation=0&prettyPrint=false", testStorageBucket)
@@ -73,10 +65,10 @@ var (
 )
 
 // A helper function that starts a test Broker which receives events forwarded by
-// the probe helper and delivers the events back to the probe helper's receive port.
-func runTestBroker(ctx context.Context) {
+// the probe helper and delivers the events back to the probe helper receiver.
+func runTestBroker(ctx context.Context, brokerPort int, probeReceiverURL string) {
 	logger := logging.FromContext(ctx)
-	bp, err := cloudevents.NewHTTP(cloudevents.WithPort(testBrokerPort), cloudevents.WithTarget(probeReceiverURL))
+	bp, err := cloudevents.NewHTTP(cloudevents.WithPort(brokerPort), cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
 		logger.Fatalf("Failed to create http protocol of the test Broker, %v", err)
 	}
@@ -93,8 +85,8 @@ func runTestBroker(ctx context.Context) {
 
 // A helper function that starts a test CloudPubSubSource which watches a pubsub
 // Subscription for messages and delivers them as CloudEvents to the probe
-// helper's receive port.
-func runTestCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription) {
+// helper receiver.
+func runTestCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription, probeReceiverURL string) {
 	logger := logging.FromContext(ctx)
 	converter := converters.NewPubSubConverter()
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
@@ -114,8 +106,8 @@ func runTestCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription) {
 			logger.Fatalf("Failed to send CloudEvent from the test CloudPubSubSource: %v", err)
 		}
 	}
-	for {
-		if err := sub.Receive(ctx, msgHandler); err != nil {
+	if err := sub.Receive(ctx, msgHandler); err != nil {
+		if _, ok := grpcstatus.FromError(err); !ok {
 			logger.Fatalf("Could not receive from subscription: %v", err)
 		}
 	}
@@ -123,8 +115,8 @@ func runTestCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription) {
 
 // A helper function that starts a test CloudStorageSource which intercepts
 // Cloud Storage HTTP requests and forwards the appropriate notifications as
-// CloudEvents to the probe helper's receive port.
-func runTestCloudStorageSource(ctx context.Context, gotRequest chan *http.Request) {
+// CloudEvents to the probe helper receiver.
+func runTestCloudStorageSource(ctx context.Context, gotRequest chan *http.Request, probeReceiverURL string) {
 	logger := logging.FromContext(ctx)
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
@@ -236,34 +228,12 @@ func testStorageClient(ctx context.Context, t *testing.T) (*storage.Client, chan
 	return c, gotRequest, srv.Close
 }
 
-func testBrokerClient(ctx context.Context, t *testing.T) (*storage.Client, chan *http.Request, func()) {
-	gotRequest := make(chan *http.Request, 1)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// The test Cloud Storage server forwards the client's generated HTTP requests.
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			logging.FromContext(ctx).Fatal("Test Cloud Storage server could not read request body.")
-		}
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-		gotRequest <- r
-		w.Write([]byte("{}"))
-	}))
-	c, err := storage.NewClient(ctx, option.WithEndpoint(srv.URL))
-	if err != nil {
-		t.Fatalf("Failed to create test storage client: %v", err)
-	}
-	return c, gotRequest, srv.Close
-}
-
 type eventAndResult struct {
 	event      *cloudevents.Event
 	wantResult protocol.Result
 }
 
 func TestProbeHelper(t *testing.T) {
-	t.Skip("Skip this test from running on Prow as it is only for local development.")
-
-	os.Setenv("K_SINK", testBrokerURL)
 	os.Setenv("PROJECT_ID", testProjectID)
 	os.Setenv("CLOUDPUBSUBSOURCE_TOPIC_ID", testTopicID)
 	os.Setenv("CLOUDSTORAGESOURCE_BUCKET_ID", testStorageBucket)
@@ -275,9 +245,14 @@ func TestProbeHelper(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// Set up the resources for testing Broker E2E delivery.
+	brokerPort, _ := GetFreePort()
+	brokerURL := fmt.Sprintf("http://localhost:%d", brokerPort)
+	os.Setenv("K_SINK", brokerURL)
+
 	// Set up the resources for testing the CloudPubSubSource.
-	pubsubClient, cancel := testPubsubClient(ctx, t, testProjectID)
-	defer cancel()
+	pubsubClient, closePubsub := testPubsubClient(ctx, t, testProjectID)
+	defer closePubsub()
 	topic, err := pubsubClient.CreateTopic(ctx, testTopicID)
 	if err != nil {
 		t.Fatalf("Failed to create test topic: %v", err)
@@ -290,28 +265,36 @@ func TestProbeHelper(t *testing.T) {
 	}
 
 	// Set up resources for testing the CloudStorageSource.
-	storageClient, gotRequest, cancel := testStorageClient(ctx, t)
-	defer cancel()
+	storageClient, gotCloudStorageRequest, closeStorage := testStorageClient(ctx, t)
+	defer closeStorage()
 
 	// Start a goroutine to run the test probe helper. Listen on the desired ports.
+	probeReceiverPort, _ := GetFreePort()
+	os.Setenv("RECEIVER_PORT", strconv.Itoa(probeReceiverPort))
+	probeReceiverURL := fmt.Sprintf("http://localhost:%d", probeReceiverPort)
 	receiverListener, err := net.Listen("tcp", fmt.Sprintf(":%d", probeReceiverPort))
 	if err != nil {
 		t.Fatalf("Failed to start receiver listener: %v", err)
 	}
+	probeHelperPort, _ := GetFreePort()
+	os.Setenv("PROBE_PORT", strconv.Itoa(probeHelperPort))
+	probeHelperURL := fmt.Sprintf("http://localhost:%d", probeHelperPort)
 	probeListener, err := net.Listen("tcp", fmt.Sprintf(":%d", probeHelperPort))
 	if err != nil {
 		t.Fatalf("Failed to start probe listener: %v", err)
 	}
+	healthCheckerPort, _ := GetFreePort()
+	os.Setenv("HEALTH_CHECKER_PORT", strconv.Itoa(healthCheckerPort))
 	go runProbeHelper(ctx, receiverListener, probeListener, pubsubClient, storageClient)
 
 	// Start a goroutine to run the test CloudPubSubSource.
-	go runTestCloudPubSubSource(ctx, sub)
+	go runTestCloudPubSubSource(ctx, sub, probeReceiverURL)
 
 	// Start a goroutine to run the test CloudStorageSource.
-	go runTestCloudStorageSource(ctx, gotRequest)
+	go runTestCloudStorageSource(ctx, gotCloudStorageRequest, probeReceiverURL)
 
 	// Start a goroutine to run the test Broker for testing Broker E2E delivery.
-	go runTestBroker(ctx)
+	go runTestBroker(ctx, brokerPort, probeReceiverURL)
 
 	// Create a testing client from which to send probe events to the probe helper.
 	p, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeHelperURL))
@@ -383,7 +366,6 @@ func TestProbeHelper(t *testing.T) {
 }
 
 func assertHealthCheckResult(t *testing.T, port int, ok bool) {
-	t.Helper()
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/healthz", port), nil)
 	if err != nil {
 		t.Fatalf("Failed to create health check request: %v", err)
@@ -418,22 +400,22 @@ func GetFreePort() (int, error) {
 }
 
 func TestProbeHelperHealth(t *testing.T) {
-	//t.Skip("Skip this test from running on Prow as it is only for local development.")
+	os.Setenv("PROJECT_ID", testProjectID)
+	os.Setenv("MAX_STALE_DURATION", "1s")
 
 	ctx := logtest.TestContextWithLogger(t)
-	ctx = WithProjectKey(ctx, testProjectID)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	os.Setenv("HEALTH_CHECKER_PORT", "8060")
-	os.Setenv("MAX_STALE_DURATION", "1s")
+	healthCheckerPort, _ := GetFreePort()
+	os.Setenv("HEALTH_CHECKER_PORT", strconv.Itoa(healthCheckerPort))
 	go runProbeHelper(ctx, nil, nil, nil, nil)
 
 	// Make sure the health checker is up.
 	time.Sleep(500 * time.Millisecond)
-	assertHealthCheckResult(t, 8060, true)
+	assertHealthCheckResult(t, healthCheckerPort, true)
 
 	// Intentionally causing a unhealth check.
 	time.Sleep(time.Second)
-	assertHealthCheckResult(t, 8060, false)
+	assertHealthCheckResult(t, healthCheckerPort, false)
 }

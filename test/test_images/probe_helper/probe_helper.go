@@ -94,7 +94,7 @@ func (c *healthChecker) start(ctx context.Context) {
 	}()
 
 	<-ctx.Done()
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(ctx); err != nil && err != context.Canceled {
 		logging.FromContext(ctx).Error("Failed to shutdown the probe helper health checker", zap.Error(err))
 	}
 }
@@ -382,15 +382,6 @@ func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeLis
 	if err != nil {
 		logger.Fatal("Failed to create CloudEvents pubsub client, ", err)
 	}
-
-	// create cloud storage client
-	if storageClient == nil {
-		storageClient, err = storage.NewClient(ctx)
-		if err != nil {
-			logger.Fatal("Failed to create cloud storage client, ", err)
-		}
-	}
-	bkt := storageClient.Bucket(env.CloudStorageSourceBucketID)
 
 	// create cloud storage client
 	if storageClient == nil {
