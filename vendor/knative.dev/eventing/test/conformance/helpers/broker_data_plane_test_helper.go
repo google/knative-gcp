@@ -53,15 +53,6 @@ func BrokerDataPlaneSetupHelper(client *testlib.Client, brokerName, brokerNamesp
 	return broker
 }
 
-func BrokerDataPlaneNamespaceSetupOption(namespace string) testlib.SetupClientOption {
-	return func(client *testlib.Client) {
-		if namespace != "" {
-			client.Kube.Kube.CoreV1().Namespaces().Delete(client.Namespace, nil)
-			client.Namespace = namespace
-		}
-	}
-}
-
 //At ingress
 //Supports CE 0.3 or CE 1.0 via HTTP
 //Supports structured or Binary mode
@@ -100,7 +91,7 @@ func BrokerV1Beta1IngressDataPlaneTestHelper(
 		}
 		event.Context.AsV03()
 		event.SetSpecVersion("0.3")
-		client.SendEventToAddressable("v03-test-sender", broker.Name, testlib.BrokerTypeMeta, event, sender.WithEncoding(ce.EncodingStructured))
+		client.SendEventToAddressable("v03-test-sender", broker.Name, testlib.BrokerTypeMeta, event)
 		originalEventMatcher := recordevents.MatchEvent(cetest.AllOf(
 			cetest.HasId(eventID),
 			cetest.HasSpecVersion("0.3"),
@@ -119,7 +110,7 @@ func BrokerV1Beta1IngressDataPlaneTestHelper(
 			t.Fatalf("Cannot set the payload of the event: %s", err.Error())
 		}
 
-		client.SendEventToAddressable("v10-test-sender", broker.Name, testlib.BrokerTypeMeta, event, sender.WithEncoding(ce.EncodingStructured))
+		client.SendEventToAddressable("v10-test-sender", broker.Name, testlib.BrokerTypeMeta, event)
 		originalEventMatcher := recordevents.MatchEvent(cetest.AllOf(
 			cetest.HasId(eventID),
 			cetest.HasSpecVersion("1.0"),
@@ -219,31 +210,8 @@ func BrokerV1Beta1ConsumerDataPlaneTestHelper(
 	secondTriggerName := "second-trigger"
 	loggerName := "logger-pod"
 	secondLoggerName := "second-logger-pod"
-	transformerName := "transformer-pod"
-	replySource := "origin-for-reply"
-	eventID := "consumer-broker-tests"
-	baseSource := "consumer-test-sender"
 	eventTracker, _ := recordevents.StartEventRecordOrFail(client, loggerName)
 	secondTracker, _ := recordevents.StartEventRecordOrFail(client, secondLoggerName)
-
-	baseEvent := ce.NewEvent()
-	baseEvent.SetID(eventID)
-	baseEvent.SetType(testlib.DefaultEventType)
-	baseEvent.SetSource(baseSource)
-	baseEvent.SetSpecVersion("1.0")
-	body := fmt.Sprintf(`{"msg":%q}`, eventID)
-	if err := baseEvent.SetData(ce.ApplicationJSON, []byte(body)); err != nil {
-		t.Fatalf("Cannot set the payload of the baseEvent: %s", err.Error())
-	}
-
-	transformMsg := []byte(`{"msg":"Transformed!"}`)
-	transformPod := resources.EventTransformationPod(
-		transformerName,
-		"reply-check-type",
-		"reply-check-source",
-		transformMsg,
-	)
-	client.CreatePodOrFail(transformPod, testlib.WithService(transformerName))
 	client.WaitForAllTestResourcesReadyOrFail()
 
 	trigger := client.CreateTriggerOrFailV1Beta1(
@@ -261,19 +229,17 @@ func BrokerV1Beta1ConsumerDataPlaneTestHelper(
 		resources.WithSubscriberServiceRefForTriggerV1Beta1(secondLoggerName),
 	)
 	client.WaitForResourceReadyOrFail(secondTrigger.Name, testlib.TriggerTypeMeta)
-
-	transformTrigger := client.CreateTriggerOrFailV1Beta1(
-		"transform-trigger",
-		resources.WithBrokerV1Beta1(broker.Name),
-		resources.WithAttributesTriggerFilterV1Beta1(replySource, baseEvent.Type(), nil),
-		resources.WithSubscriberServiceRefForTriggerV1Beta1(transformerName),
-	)
-	replyTrigger := client.CreateTriggerOrFailV1Beta1(
-		"reply-trigger",
-		resources.WithBrokerV1Beta1(broker.Name),
-		resources.WithAttributesTriggerFilterV1Beta1("reply-check-source", "reply-check-type", nil),
-		resources.WithSubscriberServiceRefForTriggerV1Beta1(loggerName),
-	)
+	eventID := "consumer-broker-tests"
+	baseSource := "consumer-test-sender"
+	baseEvent := ce.NewEvent()
+	baseEvent.SetID(eventID)
+	baseEvent.SetType(testlib.DefaultEventType)
+	baseEvent.SetSource(baseSource)
+	baseEvent.SetSpecVersion("1.0")
+	body := fmt.Sprintf(`{"msg":%q}`, eventID)
+	if err := baseEvent.SetData(ce.ApplicationJSON, []byte(body)); err != nil {
+		t.Fatalf("Cannot set the payload of the baseEvent: %s", err.Error())
+	}
 
 	t.Run("No upgrade of version", func(t *testing.T) {
 		event := baseEvent
@@ -294,7 +260,7 @@ func BrokerV1Beta1ConsumerDataPlaneTestHelper(
 		event := baseEvent
 		id := "identical-attibutes"
 		event.SetID(id)
-		client.SendEventToAddressable(id+"-sender", broker.Name, testlib.BrokerTypeMeta, event, sender.WithEncoding(ce.EncodingStructured))
+		client.SendEventToAddressable(id+"-sender", broker.Name, testlib.BrokerTypeMeta, event)
 		originalEventMatcher := recordevents.MatchEvent(
 			cetest.HasId(id),
 			cetest.HasType(testlib.DefaultEventType),
@@ -310,8 +276,8 @@ func BrokerV1Beta1ConsumerDataPlaneTestHelper(
 		event.SetSource(source)
 		secondEvent := baseEvent
 
-		client.SendEventToAddressable("first-"+source+"-sender", broker.Name, testlib.BrokerTypeMeta, event, sender.WithEncoding(ce.EncodingStructured))
-		client.SendEventToAddressable("second-"+source+"-sender", broker.Name, testlib.BrokerTypeMeta, secondEvent, sender.WithEncoding(ce.EncodingStructured))
+		client.SendEventToAddressable("first-"+source+"-sender", broker.Name, testlib.BrokerTypeMeta, event)
+		client.SendEventToAddressable("second-"+source+"-sender", broker.Name, testlib.BrokerTypeMeta, secondEvent)
 		filteredEventMatcher := recordevents.MatchEvent(
 			cetest.HasSource(source),
 		)
@@ -326,7 +292,7 @@ func BrokerV1Beta1ConsumerDataPlaneTestHelper(
 		event := baseEvent
 		source := "filtered-event"
 		event.SetSource(source)
-		client.SendEventToAddressable(source+"-sender", broker.Name, testlib.BrokerTypeMeta, event, sender.WithEncoding(ce.EncodingStructured))
+		client.SendEventToAddressable(source+"-sender", broker.Name, testlib.BrokerTypeMeta, event)
 		filteredEventMatcher := recordevents.MatchEvent(
 			cetest.HasSource(source),
 		)
@@ -338,7 +304,7 @@ func BrokerV1Beta1ConsumerDataPlaneTestHelper(
 		event := baseEvent
 		source := "delivery-check"
 		event.SetSource(source)
-		client.SendEventToAddressable(source+"-sender", broker.Name, testlib.BrokerTypeMeta, event, sender.WithEncoding(ce.EncodingStructured))
+		client.SendEventToAddressable(source+"-sender", broker.Name, testlib.BrokerTypeMeta, event)
 		originalEventMatcher := recordevents.MatchEvent(
 			cetest.HasSource(source),
 		)
@@ -347,18 +313,37 @@ func BrokerV1Beta1ConsumerDataPlaneTestHelper(
 
 	t.Run("Replies are accepted and delivered", func(t *testing.T) {
 		event := baseEvent
-
-		event.SetSource(replySource)
-		client.WaitForServiceEndpointsOrFail(transformerName, 1)
-
+		source := "origin-for-reply"
+		event.SetSource(source)
+		msg := []byte(`{"msg":"Transformed!"}`)
+		transformPod := resources.EventTransformationPod(
+			"transformer-pod",
+			"reply-check-type",
+			"reply-check-source",
+			msg,
+		)
+		client.CreatePodOrFail(transformPod, testlib.WithService("transformer-pod"))
+		client.WaitForServiceEndpointsOrFail("transformer-pod", 1)
+		transformTrigger := client.CreateTriggerOrFailV1Beta1(
+			"transform-trigger",
+			resources.WithBrokerV1Beta1(broker.Name),
+			resources.WithAttributesTriggerFilterV1Beta1(source, baseEvent.Type(), nil),
+			resources.WithSubscriberServiceRefForTriggerV1Beta1("transformer-pod"),
+		)
 		client.WaitForResourceReadyOrFail(transformTrigger.Name, testlib.TriggerTypeMeta)
 
+		replyTrigger := client.CreateTriggerOrFailV1Beta1(
+			"reply-trigger",
+			resources.WithBrokerV1Beta1(broker.Name),
+			resources.WithAttributesTriggerFilterV1Beta1("reply-check-source", "reply-check-type", nil),
+			resources.WithSubscriberServiceRefForTriggerV1Beta1(loggerName),
+		)
 		client.WaitForResourceReadyOrFail(replyTrigger.Name, testlib.TriggerTypeMeta)
-		client.SendEventToAddressable(replySource+"-sender", broker.Name, testlib.BrokerTypeMeta, event, sender.WithEncoding(ce.EncodingStructured))
+		client.SendEventToAddressable(source+"-sender", broker.Name, testlib.BrokerTypeMeta, event)
 		transformedEventMatcher := recordevents.MatchEvent(
 			cetest.HasSource("reply-check-source"),
 			cetest.HasType("reply-check-type"),
-			cetest.HasData(transformMsg),
+			cetest.HasData(msg),
 		)
 		eventTracker.AssertAtLeast(2, transformedEventMatcher)
 	})
