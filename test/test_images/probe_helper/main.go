@@ -59,6 +59,19 @@ The Probe Helper can handle multiple different types of probes.
 		 the object, and waits to tbe notified that the object has been deleted by a
 		 CloudStorageSource.
 
+4. CloudSchedulerSource Probe
+
+		This probe is unlike the others in that it does not measure e2e delivery
+		by sending and receiving uniquely identifiable events. Instead, it depends
+		on an existing CloudSchedulerSource which sinks an event to the Probe Helper
+		receiver every minute. We expect the Probe Helper to receive a CloudSchedulerSource
+		probe every 2 minutes, and once received, the Probe Helper anticipates the
+		next tick in the Cloud Scheduler job, timing out after 2 minutes.
+
+	1. The Probe Helper receives an event of type `cloudschedulersource-probe`,
+		 and waits to be notified of the next scheduled tick by the CloudSchedulerSource.
+	2. The Probe Helper receives an event of type
+		 `schemasv1.CloudSchedulerJobExecutedEventType`, indicating the scheduled tick.
 */
 
 package main
