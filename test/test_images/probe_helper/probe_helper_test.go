@@ -438,22 +438,27 @@ func GetFreePort() (int, error) {
 }
 
 func TestProbeHelperHealth(t *testing.T) {
-	os.Setenv("PROJECT_ID", testProjectID)
-	os.Setenv("MAX_STALE_DURATION", "1s")
+	t.Run("Force unhealth check", func(t *testing.T) {
+		os.Setenv("PROJECT_ID", testProjectID)
+		os.Setenv("MAX_STALE_DURATION", "1s")
 
-	ctx := logtest.TestContextWithLogger(t)
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+		ctx := logtest.TestContextWithLogger(t)
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
 
-	healthCheckerPort, _ := GetFreePort()
-	os.Setenv("HEALTH_CHECKER_PORT", strconv.Itoa(healthCheckerPort))
-	go runProbeHelper(ctx)
+		healthCheckerPort, err := GetFreePort()
+		if err != nil {
+			t.Errorf("Failed to get free port: %v", err)
+		}
+		os.Setenv("HEALTH_CHECKER_PORT", strconv.Itoa(healthCheckerPort))
+		go runProbeHelper(ctx)
 
-	// Make sure the health checker is up.
-	time.Sleep(500 * time.Millisecond)
-	assertHealthCheckResult(t, healthCheckerPort, true)
+		// Make sure the health checker is up.
+		time.Sleep(500 * time.Millisecond)
+		assertHealthCheckResult(t, healthCheckerPort, true)
 
-	// Intentionally causing a unhealth check.
-	time.Sleep(time.Second)
-	assertHealthCheckResult(t, healthCheckerPort, false)
+		// Intentionally causing an unhealth check.
+		time.Sleep(time.Second)
+		assertHealthCheckResult(t, healthCheckerPort, false)
+	})
 }
