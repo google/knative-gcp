@@ -122,6 +122,12 @@ You should see log lines similar to:
 ]
 ```
 
+## Troubleshooting
+
+You may have issues receiving desired CloudEvent. Please use
+[Authentication Mechanism Troubleshooting](../../how-to/authentication-mechanism-troubleshooting.md)
+to check if it is due to an auth problem.
+
 ## What's next
 
 1. For a higher-level construct to interact with Cloud Pub/Sub that sends

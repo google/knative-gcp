@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -67,25 +68,31 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 			},
 			Spec: BrokerCellSpec{
 				ComponentsParametersSpec{
-					Fanout: ComponentParameters{
-						Resources: makeResourcesSpec(customCPURequest, customCPULimit, customMemoryRequest,
-							customMemoryLimit, fanoutSpecPrefix),
+					Fanout: &ComponentParameters{
+						CPURequest:        fanoutSpecPrefix + customCPURequest,
+						CPULimit:          fanoutSpecPrefix + customCPULimit,
+						MemoryRequest:     fanoutSpecPrefix + customMemoryRequest,
+						MemoryLimit:       fanoutSpecPrefix + customMemoryLimit,
 						AvgCPUUtilization: ptr.Int32(int32(fanoutSpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage:    ptr.String(fanoutSpecPrefix + customAvgMemoryUsage),
 						MaxReplicas:       ptr.Int32(int32(fanoutSpecShift * customMaxReplicas)),
 						MinReplicas:       ptr.Int32(int32(fanoutSpecShift * customMinReplicas)),
 					},
-					Ingress: ComponentParameters{
-						Resources: makeResourcesSpec(customCPURequest, customCPULimit, customMemoryRequest,
-							customMemoryLimit, ingressSpecPrefix),
+					Ingress: &ComponentParameters{
+						CPURequest:        ingressSpecPrefix + customCPURequest,
+						CPULimit:          ingressSpecPrefix + customCPULimit,
+						MemoryRequest:     ingressSpecPrefix + customMemoryRequest,
+						MemoryLimit:       ingressSpecPrefix + customMemoryLimit,
 						AvgCPUUtilization: ptr.Int32(int32(ingressSpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage:    ptr.String(ingressSpecPrefix + customAvgMemoryUsage),
 						MaxReplicas:       ptr.Int32(int32(ingressSpecShift * customMaxReplicas)),
 						MinReplicas:       ptr.Int32(int32(ingressSpecShift * customMinReplicas)),
 					},
-					Retry: ComponentParameters{
-						Resources: makeResourcesSpec(customCPURequest, customCPULimit, customMemoryRequest,
-							customMemoryLimit, retrySpecPrefix),
+					Retry: &ComponentParameters{
+						CPURequest:        retrySpecPrefix + customCPURequest,
+						CPULimit:          retrySpecPrefix + customCPULimit,
+						MemoryRequest:     retrySpecPrefix + customMemoryRequest,
+						MemoryLimit:       retrySpecPrefix + customMemoryLimit,
 						AvgCPUUtilization: ptr.Int32(int32(retrySpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage:    ptr.String(retrySpecPrefix + customAvgMemoryUsage),
 						MaxReplicas:       ptr.Int32(int32(retrySpecShift * customMaxReplicas)),
@@ -102,25 +109,31 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 			},
 			Spec: BrokerCellSpec{
 				ComponentsParametersSpec{
-					Fanout: ComponentParameters{
-						Resources: makeResourcesSpec(customCPURequest, customCPULimit, customMemoryRequest,
-							customMemoryLimit, fanoutSpecPrefix),
+					Fanout: &ComponentParameters{
+						CPURequest:        fanoutSpecPrefix + customCPURequest,
+						CPULimit:          fanoutSpecPrefix + customCPULimit,
+						MemoryRequest:     fanoutSpecPrefix + customMemoryRequest,
+						MemoryLimit:       fanoutSpecPrefix + customMemoryLimit,
 						AvgCPUUtilization: ptr.Int32(int32(fanoutSpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage:    ptr.String(fanoutSpecPrefix + customAvgMemoryUsage),
 						MaxReplicas:       ptr.Int32(int32(fanoutSpecShift * customMaxReplicas)),
 						MinReplicas:       ptr.Int32(int32(fanoutSpecShift * customMinReplicas)),
 					},
-					Ingress: ComponentParameters{
-						Resources: makeResourcesSpec(customCPURequest, customCPULimit, customMemoryRequest,
-							customMemoryLimit, ingressSpecPrefix),
+					Ingress: &ComponentParameters{
+						CPURequest:        ingressSpecPrefix + customCPURequest,
+						CPULimit:          ingressSpecPrefix + customCPULimit,
+						MemoryRequest:     ingressSpecPrefix + customMemoryRequest,
+						MemoryLimit:       ingressSpecPrefix + customMemoryLimit,
 						AvgCPUUtilization: ptr.Int32(int32(ingressSpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage:    ptr.String(ingressSpecPrefix + customAvgMemoryUsage),
 						MaxReplicas:       ptr.Int32(int32(ingressSpecShift * customMaxReplicas)),
 						MinReplicas:       ptr.Int32(int32(ingressSpecShift * customMinReplicas)),
 					},
-					Retry: ComponentParameters{
-						Resources: makeResourcesSpec(customCPURequest, customCPULimit, customMemoryRequest,
-							customMemoryLimit, retrySpecPrefix),
+					Retry: &ComponentParameters{
+						CPURequest:        retrySpecPrefix + customCPURequest,
+						CPULimit:          retrySpecPrefix + customCPULimit,
+						MemoryRequest:     retrySpecPrefix + customMemoryRequest,
+						MemoryLimit:       retrySpecPrefix + customMemoryLimit,
 						AvgCPUUtilization: ptr.Int32(int32(retrySpecShift * customAvgCPUUtilization)),
 						AvgMemoryUsage:    ptr.String(retrySpecPrefix + customAvgMemoryUsage),
 						MaxReplicas:       ptr.Int32(int32(retrySpecShift * customMaxReplicas)),
@@ -130,24 +143,58 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 			},
 		},
 	}, {
-		name: "Unspecified target memory consumption is auto-selected with respect to the memory limit",
+		name: "Defaulting for resource specification is not applied when some of the parameters are specified",
 		start: &BrokerCell{
-			Spec: (func() BrokerCellSpec {
-				brokerCellWithInvalidTargetAvgMemory := MakeDefaultBrokerCellSpec()
-				testComponent := &brokerCellWithInvalidTargetAvgMemory.Components.Fanout
-				testComponent.Resources.Limits.Memory = ptr.String("10000Mi")
-				testComponent.AvgMemoryUsage = nil
-				return brokerCellWithInvalidTargetAvgMemory
-			}()),
+			Spec: BrokerCellSpec{
+				ComponentsParametersSpec{
+					Fanout: &ComponentParameters{
+						CPURequest: "10000",
+					},
+				},
+			},
 		},
 		want: &BrokerCell{
-			Spec: (func() BrokerCellSpec {
-				brokerCellWithCorrectedTargetAvgMemory := MakeDefaultBrokerCellSpec()
-				testComponent := &brokerCellWithCorrectedTargetAvgMemory.Components.Fanout
-				testComponent.Resources.Limits.Memory = ptr.String("10000Mi")
-				testComponent.AvgMemoryUsage = ptr.String("5000Mi") // Auto-selected
-				return brokerCellWithCorrectedTargetAvgMemory
-			}()),
+			Spec: BrokerCellSpec{
+				ComponentsParametersSpec{
+					Fanout: (&ComponentParameters{
+						CPURequest:        "10000",
+						CPULimit:          "",
+						MemoryRequest:     "",
+						MemoryLimit:       "",
+						AvgCPUUtilization: nil,
+						AvgMemoryUsage:    nil,
+					}).WithDefaultReplicas(),
+					Ingress: makeComponent(cpuRequestIngress, cpuLimitIngress, memoryRequestIngress, memoryLimitIngress, avgCPUUtilizationIngress, avgMemoryUsageIngress).WithDefaultReplicas(),
+					Retry:   makeComponent(cpuRequestRetry, cpuLimitRetry, memoryRequestRetry, memoryLimitRetry, avgCPUUtilizationRetry, avgMemoryUsageRetry).WithDefaultReplicas(),
+				},
+			},
+		},
+	}, {
+		name: "Defaulting for resource specification is not applied when a target CPU or memory parameter is specified",
+		start: &BrokerCell{
+			Spec: BrokerCellSpec{
+				ComponentsParametersSpec{
+					Fanout: &ComponentParameters{
+						AvgCPUUtilization: ptr.Int32(95),
+					},
+				},
+			},
+		},
+		want: &BrokerCell{
+			Spec: BrokerCellSpec{
+				ComponentsParametersSpec{
+					Fanout: (&ComponentParameters{
+						AvgCPUUtilization: ptr.Int32(95),
+						AvgMemoryUsage:    nil,
+						CPURequest:        "",
+						CPULimit:          "",
+						MemoryRequest:     "",
+						MemoryLimit:       "",
+					}).WithDefaultReplicas(),
+					Ingress: makeComponent(cpuRequestIngress, cpuLimitIngress, memoryRequestIngress, memoryLimitIngress, avgCPUUtilizationIngress, avgMemoryUsageIngress).WithDefaultReplicas(),
+					Retry:   makeComponent(cpuRequestRetry, cpuLimitRetry, memoryRequestRetry, memoryLimitRetry, avgCPUUtilizationRetry, avgMemoryUsageRetry).WithDefaultReplicas(),
+				},
+			},
 		},
 	}}
 
@@ -163,48 +210,14 @@ func TestBrokerCell_SetDefaults(t *testing.T) {
 	}
 }
 
-func makeResourcesSpec(cpuRequest, cpuLimit, memoryRequest, memoryLimit, prefix string) ResourceSpecification {
-	resourceSpec := ResourceSpecification{
-		Requests: SystemResource{
-			CPU:    ptr.String(prefix + cpuRequest),
-			Memory: ptr.String(prefix + memoryRequest),
-		},
-		Limits: SystemResource{
-			CPU:    ptr.String(prefix + cpuLimit),
-			Memory: ptr.String(prefix + memoryLimit),
-		},
-	}
-
-	return resourceSpec
+func MakeDefaultBrokerCellSpec() BrokerCellSpec {
+	brokerCellSpec := BrokerCellSpec{}
+	brokerCellSpec.SetDefaults(context.TODO())
+	return brokerCellSpec
 }
 
-func MakeDefaultBrokerCellSpec() BrokerCellSpec {
-	memoryLimitFanout, memoryLimitIngress, memoryLimitRetry := "3000Mi", "1000Mi", "3000Mi"
-
-	defaultBrokerCell := BrokerCellSpec{
-		ComponentsParametersSpec{
-			Fanout: ComponentParameters{
-				Resources:         makeResourcesSpec(cpuRequestFanout, cpuLimitFanout, memoryRequestFanout, memoryLimitFanout, ""),
-				AvgCPUUtilization: ptr.Int32(avgCPUUtilizationFanout),
-				AvgMemoryUsage:    ptr.String(avgMemoryUsageFanout),
-				MaxReplicas:       ptr.Int32(maxReplicas),
-				MinReplicas:       ptr.Int32(minReplicas),
-			},
-			Ingress: ComponentParameters{
-				Resources:         makeResourcesSpec(cpuRequestIngress, cpuLimitIngress, memoryRequestIngress, memoryLimitIngress, ""),
-				AvgCPUUtilization: ptr.Int32(avgCPUUtilizationIngress),
-				AvgMemoryUsage:    ptr.String(avgMemoryUsageIngress),
-				MaxReplicas:       ptr.Int32(maxReplicas),
-				MinReplicas:       ptr.Int32(minReplicas),
-			},
-			Retry: ComponentParameters{
-				Resources:         makeResourcesSpec(cpuRequestRetry, cpuLimitRetry, memoryRequestRetry, memoryLimitRetry, ""),
-				AvgCPUUtilization: ptr.Int32(avgCPUUtilizationRetry),
-				AvgMemoryUsage:    ptr.String(avgMemoryUsageRetry),
-				MaxReplicas:       ptr.Int32(maxReplicas),
-				MinReplicas:       ptr.Int32(minReplicas),
-			},
-		},
-	}
-	return defaultBrokerCell
+func (componentParams *ComponentParameters) WithDefaultReplicas() *ComponentParameters {
+	componentParams.MinReplicas = ptr.Int32(minReplicas)
+	componentParams.MaxReplicas = ptr.Int32(maxReplicas)
+	return componentParams
 }

@@ -17,22 +17,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"net"
+	nethttp "net/http"
+	"strconv"
 	"sync"
 	"time"
 
+	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/kelseyhightower/envconfig"
-
-	"knative.dev/pkg/signals"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/pkg/utils"
-	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
 const (
@@ -46,9 +49,64 @@ const (
 	CloudSchedulerSourceProbeEventType           = "cloudschedulersource-probe"
 
 	cloudSchedulerSourceProbeChannelID = "cloudschedulersource-probe-channel-id"
+
+	maxStaleDuration = 5 * time.Minute
 )
 
+type healthChecker struct {
+	lastProbeEventTimestamp    eventTimestamp
+	lastReceiverEventTimestamp eventTimestamp
+	maxStaleDuration           time.Duration
+	port                       int
+}
+
+func (c *healthChecker) ServeHTTP(w nethttp.ResponseWriter, req *nethttp.Request) {
+	if req.URL.Path != "/healthz" {
+		w.WriteHeader(nethttp.StatusNotFound)
+		return
+	}
+	c.lastProbeEventTimestamp.RLock()
+	defer c.lastProbeEventTimestamp.RUnlock()
+	c.lastReceiverEventTimestamp.RLock()
+	defer c.lastReceiverEventTimestamp.RUnlock()
+	now := time.Now()
+	if (now.Sub(c.lastProbeEventTimestamp.time) > c.maxStaleDuration) ||
+		(now.Sub(c.lastReceiverEventTimestamp.time) > c.maxStaleDuration) {
+		w.WriteHeader(nethttp.StatusServiceUnavailable)
+		return
+	}
+	w.WriteHeader(nethttp.StatusOK)
+}
+
+func (c *healthChecker) start(ctx context.Context) {
+	now := time.Now()
+	c.lastProbeEventTimestamp.time = now
+	c.lastReceiverEventTimestamp.time = now
+
+	srv := &nethttp.Server{
+		Addr:    ":" + strconv.Itoa(c.port),
+		Handler: c,
+	}
+
+	go func() {
+		logging.FromContext(ctx).Info("Starting the probe helper health checker...")
+		if err := srv.ListenAndServe(); err != nil && err != nethttp.ErrServerClosed {
+			logging.FromContext(ctx).Error("The probe helper health checker has stopped unexpectedly", zap.Error(err))
+		}
+	}()
+
+	<-ctx.Done()
+	if err := srv.Shutdown(ctx); err != nil && err != context.Canceled {
+		logging.FromContext(ctx).Error("Failed to shutdown the probe helper health checker", zap.Error(err))
+	}
+}
+
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
+
+type eventTimestamp struct {
+	sync.RWMutex
+	time time.Time
+}
 
 type receivedEventsMap struct {
 	sync.RWMutex
@@ -66,7 +124,7 @@ type envConfig struct {
 	CloudPubSubSourceTopicID string `envconfig:"CLOUDPUBSUBSOURCE_TOPIC_ID" default:"cloudpubsubsource-topic"`
 
 	// Environment variable containing the CloudStorageSource Bucket ID that objects will be written to by the probeHelper for the CloudStorageSource probe
-	CloudStorageSourceBucketID string `envconfig:"CLOUDSTORAGESOURCE_BUCKET_ID" default:"project-id-cloudstoragesource-bucket"`
+	CloudStorageSourceBucketID string `envconfig:"CLOUDSTORAGESOURCE_BUCKET_ID" default:"cloudstoragesource-bucket"`
 
 	// Environment variable containing the port which listens to the probe to deliver the event
 	ProbePort int `envconfig:"PROBE_PORT" default:"8070"`
@@ -74,8 +132,14 @@ type envConfig struct {
 	// Environment variable containing the port to receive the event from the trigger
 	ReceiverPort int `envconfig:"RECEIVER_PORT" default:"8080"`
 
-	// Environment variable containing the timeout period to wait for an event to be delivered back (in minutes)
-	Timeout int `envconfig:"TIMEOUT_MINS" default:"30"`
+	// Environment variable containing the port to send health checks to
+	HealthCheckerPort int `envconfig:"HEALTH_CHECKER_PORT" default:"8060"`
+
+	// Environment variable containing the maximum tolerated staleness duration
+	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"5m"`
+
+	// Environment variable containing the timeout duration to wait for an event to be delivered back
+	TimeoutDuration time.Duration `envconfig:"TIMEOUT_DURATION" default:"30m"`
 }
 
 func (r *receivedEventsMap) createReceiverChannel(channelID string) (chan bool, error) {
@@ -98,43 +162,55 @@ func (r *receivedEventsMap) deleteReceiverChannel(channelID string) {
 	r.Unlock()
 }
 
-func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap, timeout int) cloudEventsFunc {
+func logNACK(ctx context.Context, format string, args ...interface{}) protocol.Result {
+	return logReceive(ctx, false, format, args...)
+}
+
+func logACK(ctx context.Context, format string, args ...interface{}) protocol.Result {
+	return logReceive(ctx, true, format, args...)
+}
+
+func logReceive(ctx context.Context, ack bool, format string, args ...interface{}) protocol.Result {
+	logging.FromContext(ctx).Infof(format, args...)
+	return cloudevents.NewReceipt(ack, format, args...)
+}
+
+func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap, timeout time.Duration, c *healthChecker) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		var err error
 		var receiverChannel chan bool
-		log.Printf("Received probe request: %+v \n", event)
+		logging.FromContext(ctx).Infof("Received probe request: %+v \n", event)
+		c.lastProbeEventTimestamp.Lock()
+		c.lastProbeEventTimestamp.time = time.Now()
+		c.lastProbeEventTimestamp.Unlock()
 
-		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
+		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
 			channelID = event.ID()
 			receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
 			if err != nil {
-				log.Printf("Probe forwarding failed, could not create receiver channel: %v", err)
-				return cloudevents.ResultNACK
+				return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
 			}
 			defer receivedEvents.deleteReceiverChannel(channelID)
 
 			// The broker client forwards the event to the broker.
 			if res := brokerClient.Send(ctx, event); !cloudevents.IsACK(res) {
-				log.Printf("Error when sending event %v to broker: %+v \n", event.ID(), res)
-				return res
+				return logNACK(ctx, "Error when sending event %v to broker: %+v \n", event.ID(), res)
 			}
 		case CloudPubSubSourceProbeEventType:
 			channelID = event.ID()
 			receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
 			if err != nil {
-				log.Printf("Probe forwarding failed, could not create receiver channel: %v", err)
-				return cloudevents.ResultNACK
+				return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
 			}
 			defer receivedEvents.deleteReceiverChannel(channelID)
 
 			// The pubsub client forwards the event as a message to a pubsub topic.
 			if res := pubsubClient.Send(ctx, event); !cloudevents.IsACK(res) {
-				log.Printf("Error when publishing event %v to pubsub topic: %+v \n", event.ID(), res)
-				return res
+				return logNACK(ctx, "Error when publishing event %v to pubsub topic: %+v \n", event.ID(), res)
 			}
 		case CloudStorageSourceProbeEventType:
 			obj := bucket.Object(event.ID())
@@ -143,27 +219,19 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 				channelID = event.ID() + "-" + event.Subject()
 				receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
 				if err != nil {
-					log.Printf("Probe forwarding failed, could not create receiver channel: %v", err)
-					return cloudevents.ResultNACK
+					return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
 				}
 				defer receivedEvents.deleteReceiverChannel(channelID)
 
 				// The storage client writes an object named as the event ID.
-				w := obj.NewWriter(ctx)
-				if _, err := fmt.Fprintf(w, event.String()); err != nil {
-					log.Printf("Probe forwarding failed, error writing object %v to bucket: %v", event.ID(), err)
-					return cloudevents.ResultNACK
-				}
-				if err := w.Close(); err != nil {
-					log.Printf("Probe forwarding failed, error closing storage writer for object %v: %v", event.ID(), err)
-					return cloudevents.ResultNACK
+				if err := obj.NewWriter(ctx).Close(); err != nil {
+					return logNACK(ctx, "Probe forwarding failed, error closing storage writer for object %v: %v", event.ID(), err)
 				}
 			case CloudStorageSourceProbeUpdateMetadataSubject:
 				channelID = event.ID() + "-" + event.Subject()
 				receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
 				if err != nil {
-					log.Printf("Probe forwarding failed, could not create receiver channel: %v", err)
-					return cloudevents.ResultNACK
+					return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
 				}
 				defer receivedEvents.deleteReceiverChannel(channelID)
 
@@ -174,80 +242,69 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 					},
 				}
 				if _, err := obj.Update(ctx, objectAttrs); err != nil {
-					log.Printf("Probe forwarding failed, could not update metadata for object %v: %v", event.ID(), err)
-					return cloudevents.ResultNACK
+					return logNACK(ctx, "Probe forwarding failed, could not update metadata for object %v: %v", event.ID(), err)
 				}
 			case CloudStorageSourceProbeArchiveSubject:
 				channelID = event.ID() + "-" + event.Subject()
 				receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
 				if err != nil {
-					log.Printf("Probe forwarding failed, could not create receiver channel: %v", err)
-					return cloudevents.ResultNACK
+					return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
 				}
 				defer receivedEvents.deleteReceiverChannel(channelID)
 
 				// The storage client updates the object's storage class to ARCHIVE.
 				w := obj.NewWriter(ctx)
 				w.ObjectAttrs.StorageClass = "ARCHIVE"
-				if _, err := fmt.Fprintf(w, event.String()); err != nil {
-					log.Printf("Probe forwarding failed, error writing object %v to bucket: %v", event.ID(), err)
-					return cloudevents.ResultNACK
-				}
 				if err := w.Close(); err != nil {
-					log.Printf("Probe forwarding failed, error closing storage writer for object %v: %v", event.ID(), err)
-					return cloudevents.ResultNACK
+					return logNACK(ctx, "Probe forwarding failed, error closing storage writer for object %v: %v", event.ID(), err)
 				}
 			case CloudStorageSourceProbeDeleteSubject:
 				channelID = event.ID() + "-" + event.Subject()
 				receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
 				if err != nil {
-					log.Printf("Probe forwarding failed, could not create receiver channel: %v", err)
-					return cloudevents.ResultNACK
+					return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
 				}
 				defer receivedEvents.deleteReceiverChannel(channelID)
 
 				// Deleting a specific version of an object deletes it forever.
 				objectAttrs, err := obj.Attrs(ctx)
 				if err != nil {
-					log.Printf("Probe forwarding failed, error getting attributes for object %v: %v", event.ID(), err)
-					return cloudevents.ResultNACK
+					return logNACK(ctx, "Probe forwarding failed, error getting attributes for object %v: %v", event.ID(), err)
 				}
 				if err := obj.Generation(objectAttrs.Generation).Delete(ctx); err != nil {
-					log.Printf("Probe forwarding failed, error deleting object %v: %v", event.ID(), err)
-					return cloudevents.ResultNACK
+					return logNACK(ctx, "Probe forwarding failed, error deleting object %v: %v", event.ID(), err)
 				}
 			default:
-				log.Printf("Probe forwarding failed, unrecognized cloud storage probe subject: %v", event.Subject())
-				return cloudevents.ResultNACK
+				return logNACK(ctx, "Probe forwarding failed, unrecognized cloud storage probe subject: %v", event.Subject())
 			}
 		case CloudSchedulerSourceProbeEventType:
 			channelID = cloudSchedulerSourceProbeChannelID
 			receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
 			if err != nil {
-				log.Printf("Probe forwarding failed, could not create receiver channel: %v", err)
-				return cloudevents.ResultNACK
+				return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
 			}
 			defer receivedEvents.deleteReceiverChannel(channelID)
 		default:
-			log.Printf("Probe forwarding failed, unrecognized event type, %v", event.Type())
-			return cloudevents.ResultNACK
+			return logNACK(ctx, "Probe forwarding failed, unrecognized event type, %v", event.Type())
 		}
 
 		select {
 		case <-receiverChannel:
 			return cloudevents.ResultACK
 		case <-ctx.Done():
-			log.Printf("Timed out waiting for the receiver channel: %v \n", channelID)
-			return cloudevents.ResultNACK
+			return logNACK(ctx, "Timed out waiting for the receiver channel: %v \n", channelID)
 		}
 	}
 }
 
-func receiveEvent(receivedEvents *receivedEventsMap) cloudEventsFunc {
+func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap, c *healthChecker) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
+		logging.FromContext(ctx).Infof("Received event: %+v \n", event)
+		c.lastReceiverEventTimestamp.Lock()
+		c.lastReceiverEventTimestamp.time = time.Now()
+		c.lastReceiverEventTimestamp.Unlock()
 
-		log.Printf("Received event: %+v \n", event)
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
 			// The event is received as sent.
@@ -257,131 +314,197 @@ func receiveEvent(receivedEvents *receivedEventsMap) cloudEventsFunc {
 			// pubsub sender client, and encoded as data in a CloudEvent by the CloudPubSubSource.
 			msgData := schemasv1.PushMessage{}
 			if err := json.Unmarshal(event.Data(), &msgData); err != nil {
-				log.Printf("Failed to unmarshal pubsub message data: %v", err)
-				return cloudevents.ResultACK
+				return logACK(ctx, "Failed to unmarshal pubsub message data: %v", err)
 			}
 			var ok bool
 			if channelID, ok = msgData.Message.Attributes["ce-id"]; !ok {
-				log.Print("Failed to read CloudEvent ID from pubsub message")
-				return cloudevents.ResultACK
+				return logACK(ctx, "Failed to read CloudEvent ID from pubsub message")
 			}
 		case schemasv1.CloudStorageObjectFinalizedEventType:
 			// The original event is written as an identifiable object to a bucket.
 			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
-				log.Printf("Failed to extract event ID from object name: %v", err)
-				return cloudevents.ResultACK
+				return logACK(ctx, "Failed to extract event ID from object name: %v", err)
 			}
 			channelID = channelID + "-" + CloudStorageSourceProbeCreateSubject
 		case schemasv1.CloudStorageObjectMetadataUpdatedEventType:
 			// The original event is written as an identifiable object to a bucket.
 			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
-				log.Printf("Failed to extract event ID from object name: %v", err)
-				return cloudevents.ResultACK
+				return logACK(ctx, "Failed to extract event ID from object name: %v", err)
 			}
 			channelID = channelID + "-" + CloudStorageSourceProbeUpdateMetadataSubject
 		case schemasv1.CloudStorageObjectArchivedEventType:
 			// The original event is written as an identifiable object to a bucket.
 			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
-				log.Printf("Failed to extract event ID from object name: %v", err)
-				return cloudevents.ResultACK
+				return logACK(ctx, "Failed to extract event ID from object name: %v", err)
 			}
 			channelID = channelID + "-" + CloudStorageSourceProbeArchiveSubject
 		case schemasv1.CloudStorageObjectDeletedEventType:
 			// The original event is written as an identifiable object to a bucket.
 			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
-				log.Printf("Failed to extract event ID from object name: %v", err)
-				return cloudevents.ResultACK
+				return logACK(ctx, "Failed to extract event ID from object name: %v", err)
 			}
 			channelID = channelID + "-" + CloudStorageSourceProbeDeleteSubject
 		case schemasv1.CloudSchedulerJobExecutedEventType:
 			channelID = cloudSchedulerSourceProbeChannelID
 		default:
-			log.Printf("Unrecognized event type: %v", event.Type())
-			return cloudevents.ResultACK
+			return logACK(ctx, "Unrecognized event type: %v", event.Type())
 		}
 
 		receivedEvents.RLock()
 		defer receivedEvents.RUnlock()
 		receiver, ok := receivedEvents.channels[channelID]
 		if !ok {
-			log.Printf("This event is not received by the probe receiver client: %v \n", channelID)
-			return cloudevents.ResultACK
+			return logACK(ctx, "This event is not received by the probe receiver client: %v \n", channelID)
 		}
 		receiver <- true
 		return cloudevents.ResultACK
 	}
 }
 
-func runProbeHelper() {
-	appcredentials.MustExistOrUnsetEnv()
+// Options is the struct type containing the optional parameters to be passed to
+// the probe helper.
+type Options struct {
+	receiverListener net.Listener
+	probeListener    net.Listener
+	storageClient    *storage.Client
+	pubsubClient     *pubsub.Client
+}
 
+// Option is an option for the probe helper.
+type Option func(*Options)
+
+// WithStorageClient forces the probe helper to use the specified storage client
+// instead of creating its own.
+func WithStorageClient(c *storage.Client) Option {
+	return func(o *Options) {
+		o.storageClient = c
+	}
+}
+
+// WithPubSubClient forces the probe helper to use the specified pubsub client
+// instead of creating its own.
+func WithPubSubClient(c *pubsub.Client) Option {
+	return func(o *Options) {
+		o.pubsubClient = c
+	}
+}
+
+// WithReceiverListener forces the probe helper receiver to use the specified
+// listener instead of relying on the CloudEvents client to create its own.
+func WithReceiverListener(l net.Listener) Option {
+	return func(o *Options) {
+		o.receiverListener = l
+	}
+}
+
+// WithProbeListener forces the probe helper to use the specified listener
+// instead of relying on the CloudEvents client to create its own.
+func WithProbeListener(l net.Listener) Option {
+	return func(o *Options) {
+		o.probeListener = l
+	}
+}
+
+func runProbeHelper(ctx context.Context, opts ...Option) {
+	logger := logging.FromContext(ctx)
+
+	// apply the probe helper options
+	options := &Options{
+		receiverListener: nil,
+		probeListener:    nil,
+		storageClient:    nil,
+		pubsubClient:     nil,
+	}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	// read the environment variables
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
-		log.Fatalf("Failed to process env var, %v", err)
+		logger.Fatalf("Failed to process env var, %v", err)
 	}
 	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
-		log.Fatalf("Failed to get the default project ID, %v", err)
+		logger.Fatalf("Failed to get the default project ID, %v", err)
 	}
 	brokerURL := env.BrokerURL
 	probePort := env.ProbePort
 	receiverPort := env.ReceiverPort
-	timeout := env.Timeout
-	ctx := signals.NewContext()
-	log.Printf("Running Probe Helper with env config: %+v \n", env)
+	healthCheckerPort := env.HealthCheckerPort
+	maxStaleDuration := env.MaxStaleDuration
+	timeoutDuration := env.TimeoutDuration
+	logger.Infof("Running Probe Helper with env config: %+v \n", env)
 
 	// create pubsub client
 	pst, err := cepubsub.New(ctx,
+		cepubsub.WithClient(options.pubsubClient),
 		cepubsub.WithProjectID(projectID),
 		cepubsub.WithTopicID(env.CloudPubSubSourceTopicID))
 	if err != nil {
-		log.Fatalf("Failed to create pubsub transport, %v", err)
+		logger.Fatalf("Failed to create pubsub transport, %v", err)
 	}
 	psc, err := cloudevents.NewClient(pst)
 	if err != nil {
-		log.Fatal("Failed to create CloudEvents pubsub client, ", err)
+		logger.Fatal("Failed to create CloudEvents pubsub client, ", err)
 	}
 
 	// create cloud storage client
-	csc, err := storage.NewClient(ctx)
-	if err != nil {
-		log.Fatal("Failed to create cloud storage client, ", err)
+	if options.storageClient == nil {
+		options.storageClient, err = storage.NewClient(ctx)
+		if err != nil {
+			logger.Fatal("Failed to create cloud storage client, ", err)
+		}
 	}
-	bkt := csc.Bucket(env.CloudStorageSourceBucketID)
+	bkt := options.storageClient.Bucket(env.CloudStorageSourceBucketID)
 
 	// create sender client
-	sp, err := cloudevents.NewHTTP(
-		cloudevents.WithPort(probePort),
-		cloudevents.WithTarget(brokerURL),
-	)
+	ceOpts := []cehttp.Option{cloudevents.WithTarget(brokerURL)}
+	if options.probeListener != nil {
+		ceOpts = append(ceOpts, cloudevents.WithListener(options.probeListener))
+	} else {
+		ceOpts = append(ceOpts, cloudevents.WithPort(probePort))
+	}
+	sp, err := cloudevents.NewHTTP(ceOpts...)
 	if err != nil {
-		log.Fatalf("Failed to create sender transport, %v", err)
+		logger.Fatalf("Failed to create sender transport, %v", err)
 	}
 	sc, err := cloudevents.NewClient(sp)
 	if err != nil {
-		log.Fatal("Failed to create sender client, ", err)
+		logger.Fatal("Failed to create sender client, ", err)
 	}
 
 	// create receiver client
-	rp, err := cloudevents.NewHTTP(
-		cloudevents.WithPort(receiverPort),
-	)
+	ceOpts = []cehttp.Option{}
+	if options.receiverListener != nil {
+		ceOpts = append(ceOpts, cloudevents.WithListener(options.receiverListener))
+	} else {
+		ceOpts = append(ceOpts, cloudevents.WithPort(receiverPort))
+	}
+	rp, err := cloudevents.NewHTTP(ceOpts...)
 	if err != nil {
-		log.Fatalf("Failed to create receiver transport, %v", err)
+		logger.Fatalf("Failed to create receiver transport, %v", err)
 	}
 	rc, err := cloudevents.NewClient(rp)
 	if err != nil {
-		log.Fatal("Failed to create receiver client, ", err)
+		logger.Fatal("Failed to create receiver client, ", err)
 	}
+
+	// start the health checker
+	c := &healthChecker{
+		maxStaleDuration: maxStaleDuration,
+		port:             healthCheckerPort,
+	}
+	go c.start(ctx)
 
 	// make a map to store the channel for each event
 	receivedEvents := &receivedEventsMap{
 		channels: make(map[string]chan bool),
 	}
 	// start a goroutine to receive the event from probe and forward it appropriately
-	log.Println("Starting Probe Helper server...")
-	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, bkt, receivedEvents, timeout))
+	logger.Info("Starting Probe Helper server...")
+	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, bkt, receivedEvents, timeoutDuration, c))
 	// Receive the event and return the result back to the probe
-	log.Println("Starting event receiver...")
-	rc.StartReceiver(ctx, receiveEvent(receivedEvents))
+	logger.Info("Starting event receiver...")
+	rc.StartReceiver(ctx, receiveEvent(ctx, receivedEvents, c))
 }

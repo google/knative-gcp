@@ -32,7 +32,6 @@ import (
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -882,7 +881,6 @@ func TestAllCases(t *testing.T) {
 		},
 	}
 
-	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, testingListers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		setReconcilerEnv()
 		base := reconciler.NewBase(ctx, controllerAgentName, cmw)

@@ -72,8 +72,8 @@ type RetryArgs struct {
 type AutoscalingArgs struct {
 	ComponentName     string
 	BrokerCell        *intv1alpha1.BrokerCell
-	AvgCPUUtilization int32
-	AvgMemoryUsage    string
+	AvgCPUUtilization *int32
+	AvgMemoryUsage    *string
 	MaxReplicas       int32
 	MinReplicas       int32
 }

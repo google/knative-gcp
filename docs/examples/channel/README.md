@@ -101,6 +101,12 @@ These events are generated from the `hello-world` `PingSource`, sent through the
 `demo` `Channel` and delivered to the `event-display` via the `demo`
 `Subscription`.
 
+## Troubleshooting
+
+You may have issues receiving desired CloudEvent. Please use
+[Authentication Mechanism Troubleshooting](../../how-to/authentication-mechanism-troubleshooting.md)
+to check if it is due to an auth problem.
+
 ## What's Next
 
 The `Channel` implements what Knative Eventing considers to be a `Channelable`.

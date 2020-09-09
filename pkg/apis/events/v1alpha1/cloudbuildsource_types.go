@@ -66,15 +66,6 @@ type CloudBuildSourceSpec struct {
 	Topic *string `json:"topic,omitempty"`
 }
 
-const (
-	// CloudBuildSource CloudEvent type
-	CloudBuildSourceEvent = "com.google.cloud.build.event"
-	// CloudBuildSourceBuildId is the Pub/Sub message attribute key with the CloudBuildSource's buildId.
-	CloudBuildSourceBuildId = "buildId"
-	// CloudBuildSourceBuildStatus is the Pub/Sub message attribute key with the CloudBuildSource's build status.
-	CloudBuildSourceBuildStatus = "status"
-)
-
 // CloudBuildSourceEventSource returns the Cloud Build CloudEvent source value.
 func CloudBuildSourceEventSource(googleCloudProject, buildId string) string {
 	return fmt.Sprintf("//cloudbuild.googleapis.com/projects/%s/builds/%s", googleCloudProject, buildId)

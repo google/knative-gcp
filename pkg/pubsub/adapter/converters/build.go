@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	buildSchemaUrl = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/build/schema.json"
+	buildSchemaUrl = "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/cloudbuild/v1/data.proto"
 )
 
 func convertCloudBuild(ctx context.Context, msg *pubsub.Message) (*cev2.Event, error) {

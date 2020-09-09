@@ -18,11 +18,35 @@ package v1beta1
 
 import (
 	"context"
+	"net/url"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
+	gcptesting "github.com/google/knative-gcp/pkg/testing"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+)
+
+// These variables are used to create a 'complete' version of CloudAuditLogsSource where every field is
+// filled in.
+var (
+	// completeCloudAuditLogsSource is a CloudAuditLogsSource with every field filled in, except TypeMeta.
+	// TypeMeta is excluded because conversions do not convert it and this variable was created to
+	// test conversions.
+	completeCloudBuildSource = &CloudBuildSource{
+		ObjectMeta: gcptesting.CompleteObjectMeta,
+		Spec: CloudBuildSourceSpec{
+			PubSubSpec: gcptesting.CompleteV1PubSubSpec,
+		},
+		Status: CloudBuildSourceStatus{
+			PubSubStatus: gcptesting.CompleteV1PubSubStatus,
+		},
+	}
 )
 
 func TestCloudBuildSourceConversionBadType(t *testing.T) {
-	good, bad := &CloudBuildSource{}, &CloudBuildSource{}
+	good, bad := &CloudBuildSource{}, &CloudStorageSource{}
 
 	if err := good.ConvertTo(context.Background(), bad); err == nil {
 		t.Errorf("ConvertTo() = %#v, wanted error", bad)
@@ -30,5 +54,46 @@ func TestCloudBuildSourceConversionBadType(t *testing.T) {
 
 	if err := good.ConvertFrom(context.Background(), bad); err == nil {
 		t.Errorf("ConvertFrom() = %#v, wanted error", good)
+	}
+}
+
+func TestCloudBuildSourceConversion(t *testing.T) {
+	// Just one for now, just adding the for loop for ease of future changes.
+	versions := []apis.Convertible{&v1.CloudBuildSource{}}
+
+	tests := []struct {
+		name string
+		in   *CloudBuildSource
+	}{{
+		name: "min configuration",
+		in: &CloudBuildSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "ps-name",
+				Namespace:  "ps-ns",
+				Generation: 17,
+			},
+			Spec: CloudBuildSourceSpec{},
+		},
+	}, {
+		name: "full configuration",
+		in:   completeCloudBuildSource,
+	}}
+	for _, test := range tests {
+		for _, version := range versions {
+			t.Run(test.name, func(t *testing.T) {
+				ver := version
+				if err := test.in.ConvertTo(context.Background(), ver); err != nil {
+					t.Errorf("ConvertTo() = %v", err)
+				}
+				got := &CloudBuildSource{}
+				if err := got.ConvertFrom(context.Background(), ver); err != nil {
+					t.Errorf("ConvertFrom() = %v", err)
+				}
+				ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
+				if diff := cmp.Diff(test.in, got, ignoreUsername); diff != "" {
+					t.Errorf("roundtrip (-want, +got) = %v", diff)
+				}
+			})
+		}
 	}
 }

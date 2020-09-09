@@ -265,6 +265,14 @@ func TestSmokeCloudBuildSourceV1alpha1(t *testing.T) {
 	SmokeCloudBuildSourceTestHelper(t, authConfig, "v1alpha1")
 }
 
+// TestSmokeCloudBuildSourceV1beta1 we can create a v1alpha1 CloudBuildSource to ready state.
+// We keep a set of smoke tests for each supported version of CloudBuildSource to make sure the webhook works.
+func TestSmokeCloudBuildSourceV1beta1(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeCloudBuildSourceTestHelper(t, authConfig, "v1beta1")
+}
+
 // TestSmokeCloudBuildSourceWithDeletion we can create a CloudBuildSource to ready state and we can delete a CloudBuildSource and its underlying resources.
 func TestSmokeCloudBuildSourceWithDeletion(t *testing.T) {
 	cancel := logstream.Start(t)

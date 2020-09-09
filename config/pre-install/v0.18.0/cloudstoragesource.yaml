@@ -1,0 +1,237 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    duck.knative.dev/source: "true"
+    events.cloud.google.com/release: devel
+    events.cloud.google.com/crd-install: "true"
+  annotations:
+    registry.knative.dev/eventTypes: |
+      [
+        { "type": "google.cloud.storage.object.v1.finalized", "schema": "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto", "description": "Sent when a new object (or a new generation of an existing object) is successfully created in the bucket. This includes copying or rewriting an existing object. A failed upload does not trigger this event." },
+        { "type": "google.cloud.storage.object.v1.deleted", "schema": "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto", "description": "Sent when an object has been permanently deleted. This includes objects that are overwritten or are deleted as part of the bucket's lifecycle configuration. For buckets with object versioning enabled, this is not sent when an object is archived."},
+        { "type": "google.cloud.storage.object.v1.archived", "schema": "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto", "description": "Only sent when a bucket has enabled object versioning. This event indicates that the live version of an object has become an archived version, either because it was archived or because it was overwritten by the upload of an object of the same name."},
+        { "type": "google.cloud.storage.object.v1.metadataUpdated", "schema": "https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto", "description": "Sent when the metadata of an existing object changes." }
+      ]
+  name: cloudstoragesources.events.cloud.google.com
+spec:
+  group: events.cloud.google.com
+  names:
+    categories:
+    - all
+    - knative
+    - cloudstoragesource
+    - sources
+    kind: CloudStorageSource
+    plural: cloudstoragesources
+  scope: Namespaced
+  preserveUnknownFields: false
+  conversion:
+    strategy: Webhook
+    webhook:
+      # conversionReviewVersions indicates what ConversionReview versions are understood/preferred by the webhook.
+      # The first version in the list understood by the API server is sent to the webhook.
+      # The webhook must respond with a ConversionReview object in the same version it received.
+      conversionReviewVersions: ["v1", "v1beta1"]
+      clientConfig:
+        service:
+          name: webhook
+          namespace: cloud-run-events
+  versions:
+  - &version
+    name: v1
+    served: true
+    storage: true
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Ready
+      type: string
+      jsonPath: ".status.conditions[?(@.type==\"Ready\")].status"
+    - name: Reason
+      type: string
+      jsonPath: ".status.conditions[?(@.type==\"Ready\")].reason"
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+    # We remove spec.PayloadFormat status.ServiceAccountName from the schema in v1.
+    schema:
+      openAPIV3Schema: &openAPIV3Schema
+        type: object
+        properties: &properties
+          spec: &spec
+            type: object
+            required:
+              - bucket
+              - sink
+            properties: &specProperties
+              sink:
+                type: object
+                description: >
+                  Sink which receives the notifications.
+                properties:
+                  uri:
+                    type: string
+                    minLength: 1
+                  ref:
+                    type: object
+                    required:
+                      - apiVersion
+                      - kind
+                      - name
+                    properties:
+                      apiVersion:
+                        type: string
+                        minLength: 1
+                      kind:
+                        type: string
+                        minLength: 1
+                      namespace:
+                        type: string
+                      name:
+                        type: string
+                        minLength: 1
+              ceOverrides:
+                type: object
+                description: >
+                  Defines overrides to control modifications of the event sent to the sink.
+                properties:
+                  extensions:
+                    type: object
+                    description: >
+                      Extensions specify what attribute are added or overridden on the outbound event. Each
+                      `Extensions` key-value pair are set on the event as an attribute extension independently.
+                    x-kubernetes-preserve-unknown-fields: true
+              serviceAccountName:
+                type: string
+                description: >
+                  Kubernetes service account used to bind to a google service account to poll the Cloud Pub/Sub Subscription.
+                  The value of the Kubernetes service account must be a valid DNS subdomain name.
+                  (see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names)
+              secret:
+                type: object
+                description: >
+                  Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the
+                  Subscription, only to poll it. The value of the secret entry must be a service account key in
+                  the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+                  Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'.
+                properties:
+                  name:
+                    type: string
+                  key:
+                    type: string
+                  optional:
+                    type: boolean
+              project:
+                type: string
+                description: >
+                  Google Cloud Project ID of the project into which the topic should be created. If omitted uses
+                  the Project ID from the GKE cluster metadata service.
+              bucket:
+                type: string
+                description: >
+                  GCS bucket to subscribe to. For example 'my-test-bucket'.
+              objectNamePrefix:
+                type: string
+                description: >
+                  Optional prefix to only notify when objects match this prefix.
+              eventTypes:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - google.cloud.storage.object.v1.finalized
+                    - google.cloud.storage.object.v1.deleted
+                    - google.cloud.storage.object.v1.archived
+                    - google.cloud.storage.object.v1.metadataUpdated
+          status: &status
+            type: object
+            properties: &statusProperties
+              observedGeneration:
+                type: integer
+                format: int64
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    lastTransitionTime:
+                      # We use a string in the stored object but a wrapper object at runtime.
+                      type: string
+                    message:
+                      type: string
+                    reason:
+                      type: string
+                    severity:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                    - type
+                    - status
+              sinkUri:
+                type: string
+              ceAttributes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    source:
+                      type: string
+              projectId:
+                type: string
+              topicId:
+                type: string
+              subscriptionId:
+                type: string
+              notificationId:
+                type: string
+  - << : *version
+    name: v1alpha1
+    # TODO: Flip served bit of v1alpha1 in https://github.com/google/knative-gcp/issues/1544.
+    served: true
+    storage: false
+    # v1alpha1 and v1beta have spec.properties.payloadFormat and status.properties.serviceAccountName in the schema
+    schema: &v1alpha1Schema
+      openAPIV3Schema:
+        <<: *openAPIV3Schema
+        properties:
+          <<: *properties
+          spec:
+            <<: *spec
+            properties:
+              <<: *specProperties
+              payloadFormat:
+                type: string
+                description: >
+                  Optional payload format. Either NONE or JSON_API_V1. If omitted, uses JSON_API_V1.
+          status:
+            <<: *status
+            properties:
+              <<: *statusProperties
+              serviceAccountName:
+                type: string
+  - <<: *version
+    name: v1beta1
+    served: true
+    storage: false
+    # the schema of v1beta1 is exactly the same as v1alpha1 schema
+    schema: *v1alpha1Schema

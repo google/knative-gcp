@@ -61,6 +61,8 @@ var CloudPubSubSourceV1beta1TypeMeta = eventsV1beta1TypeMeta(resources.CloudPubS
 
 var CloudPubSubSourceV1alpha1TypeMeta = eventsV1alpha1TypeMeta(resources.CloudPubSubSourceKind)
 
+var CloudBuildSourceV1TypeMeta = eventsV1TypeMeta(resources.CloudBuildSourceKind)
+
 var CloudBuildSourceV1beta1TypeMeta = eventsV1beta1TypeMeta(resources.CloudBuildSourceKind)
 
 var CloudBuildSourceV1alpha1TypeMeta = eventsV1alpha1TypeMeta(resources.CloudBuildSourceKind)

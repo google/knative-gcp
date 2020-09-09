@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// CloudAuditLogsSources returns a CloudAuditLogsSourceInformer.
 	CloudAuditLogsSources() CloudAuditLogsSourceInformer
+	// CloudBuildSources returns a CloudBuildSourceInformer.
+	CloudBuildSources() CloudBuildSourceInformer
 	// CloudPubSubSources returns a CloudPubSubSourceInformer.
 	CloudPubSubSources() CloudPubSubSourceInformer
 	// CloudSchedulerSources returns a CloudSchedulerSourceInformer.
@@ -48,6 +50,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // CloudAuditLogsSources returns a CloudAuditLogsSourceInformer.
 func (v *version) CloudAuditLogsSources() CloudAuditLogsSourceInformer {
 	return &cloudAuditLogsSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CloudBuildSources returns a CloudBuildSourceInformer.
+func (v *version) CloudBuildSources() CloudBuildSourceInformer {
+	return &cloudBuildSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // CloudPubSubSources returns a CloudPubSubSourceInformer.

@@ -6,6 +6,7 @@
 package main
 
 import (
+	"cloud.google.com/go/pubsub"
 	"context"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
@@ -15,7 +16,7 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeHandler(ctx context.Context, port clients.Port, projectID clients.ProjectID, podName metrics.PodName, containerName metrics.ContainerName) (*ingress.Handler, error) {
+func InitializeHandler(ctx context.Context, port clients.Port, projectID clients.ProjectID, podName metrics.PodName, containerName metrics.ContainerName, publishSettings pubsub.PublishSettings) (*ingress.Handler, error) {
 	httpMessageReceiver := clients.NewHTTPMessageReceiver(port)
 	v := _wireValue
 	readonlyTargets, err := volume.NewTargetsFromFile(v...)
@@ -26,7 +27,7 @@ func InitializeHandler(ctx context.Context, port clients.Port, projectID clients
 	if err != nil {
 		return nil, err
 	}
-	multiTopicDecoupleSink := ingress.NewMultiTopicDecoupleSink(ctx, readonlyTargets, client)
+	multiTopicDecoupleSink := ingress.NewMultiTopicDecoupleSink(ctx, readonlyTargets, client, publishSettings)
 	ingressReporter, err := metrics.NewIngressReporter(podName, containerName)
 	if err != nil {
 		return nil, err

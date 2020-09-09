@@ -18,7 +18,6 @@ package lib
 
 import (
 	eventsv1 "github.com/google/knative-gcp/pkg/apis/events/v1"
-	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,9 +31,9 @@ func (c *Client) GetPubSubOrFail(name string) *eventsv1.CloudPubSubSource {
 	return existing
 }
 
-func (c *Client) GetBuildOrFail(name string) *eventsv1beta1.CloudBuildSource {
+func (c *Client) GetBuildOrFail(name string) *eventsv1.CloudBuildSource {
 	c.T.Helper()
-	builds := c.KnativeGCP.EventsV1beta1().CloudBuildSources(c.Namespace)
+	builds := c.KnativeGCP.EventsV1().CloudBuildSources(c.Namespace)
 	existing, err := builds.Get(name, metav1.GetOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to get build %s/%s: %v", c.Namespace, name, err)

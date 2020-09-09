@@ -77,7 +77,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakePubSubTargetJobOrDie(client, source, targetName, schemasv1.CloudPubSubMessagePublishedEventType)
+	lib.MakePubSubTargetJobOrDie(client, source, targetName, schemasv1.CloudPubSubMessagePublishedEventType /*empty schema*/, "")
 
 	// Create PullSubscription.
 	lib.MakePullSubscriptionOrDie(client, lib.PullSubscriptionConfig{

@@ -19,6 +19,7 @@ package resources
 import (
 	"fmt"
 
+	"google.golang.org/protobuf/proto"
 	"knative.dev/pkg/kmeta"
 
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -31,6 +32,32 @@ const (
 	targetsCMName = "broker-targets"
 	targetsCMKey  = "targets"
 )
+
+// TargetsConfigMapEqual compares the binary data contained in two TargetsConfig
+// ConfigMaps and returns true if and only if the inputs are valid and the
+// unmarshaled binary data are equal.
+func TargetsConfigMapEqual(cm1, cm2 *corev1.ConfigMap) bool {
+	// The broker targets ConfigMap BinaryData holds the serialized TargetsConfig
+	// proto, and therefore cannot be safely compared with equality.Semantic.DeepEqual.
+	// Instead, use proto.Equal to compare protos.
+	v1, ok := cm1.BinaryData[targetsCMKey]
+	if !ok {
+		return false
+	}
+	v2, ok := cm2.BinaryData[targetsCMKey]
+	if !ok {
+		return false
+	}
+	proto1 := &config.TargetsConfig{}
+	proto2 := &config.TargetsConfig{}
+	if err := proto.Unmarshal(v1, proto1); err != nil {
+		return false
+	}
+	if err := proto.Unmarshal(v2, proto2); err != nil {
+		return false
+	}
+	return proto.Equal(proto1, proto2)
+}
 
 func MakeTargetsConfig(bc *intv1alpha1.BrokerCell, brokerTargets config.Targets) (*corev1.ConfigMap, error) {
 	data, err := brokerTargets.Bytes()

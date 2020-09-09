@@ -22,9 +22,11 @@ import (
 	"strconv"
 	"time"
 
+	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	"go.opencensus.io/trace"
 	"knative.dev/pkg/metrics"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -123,8 +125,9 @@ func NewDeliveryReporter(podName PodName, containerName ContainerName) (*Deliver
 
 // ReportEventDispatchTime captures dispatch times.
 func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration) {
+	attachments := getSpanContextAttachments(ctx)
 	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
+	metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)), stats.WithAttachments(attachments))
 }
 
 // StartEventProcessing records the start of event processing for delivery within the given context.
@@ -145,8 +148,9 @@ func (r *DeliveryReporter) reportEventProcessingTime(ctx context.Context, end ti
 	if err != nil {
 		return err
 	}
+	attachments := getSpanContextAttachments(ctx)
 	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(ctx, r.processingTimeInMsecM.M(float64(end.Sub(start)/time.Millisecond)))
+	metrics.Record(ctx, r.processingTimeInMsecM.M(float64(end.Sub(start)/time.Millisecond)), stats.WithAttachments(attachments))
 	return nil
 }
 
@@ -187,4 +191,15 @@ func getStartDeliveryProcessingTime(ctx context.Context) (time.Time, error) {
 		return time, nil
 	}
 	return time.Time{}, fmt.Errorf("missing or invalid start time: %v", v)
+}
+
+// getSpanContextAttachments gets the attachment for exemplar trace.
+func getSpanContextAttachments(ctx context.Context) metricdata.Attachments {
+	attachments := map[string]interface{}{}
+	if span := trace.FromContext(ctx); span != nil {
+		if spanCtx := span.SpanContext(); spanCtx.IsSampled() {
+			attachments[metricdata.AttachmentKeySpanContext] = spanCtx
+		}
+	}
+	return attachments
 }

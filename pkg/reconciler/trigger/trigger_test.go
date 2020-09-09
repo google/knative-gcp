@@ -38,7 +38,6 @@ import (
 	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
 
@@ -382,7 +381,6 @@ func TestAllCasesTrigger(t *testing.T) {
 		},
 	}
 
-	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		// Insert pubsub client for PostConditions and create fixtures
 		psclient, close := TestPubsubClient(ctx, testProject)
