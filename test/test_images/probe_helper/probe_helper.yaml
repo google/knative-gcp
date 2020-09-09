@@ -29,12 +29,11 @@ spec:
       labels:
         app: probe-helper
     spec:
+      serviceAccountName: probe-helper
       containers:
         - name: probe-helper
           image: ko://github.com/google/knative-gcp/test/test_images/probe_helper
           env:
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /var/secrets/google/key.json
             - name: K_SINK
               value: "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"
             - name: CLOUDPUBSUBSOURCE_TOPIC_ID
@@ -51,9 +50,6 @@ spec:
               value: "8060"
             - name: MAX_STALE_DURATION
               value: "5m"
-          volumeMounts:
-          - name: probe-helper-key
-            mountPath: /var/secrets/google
           livenessProbe:
             failureThreshold: 3
             httpGet:
@@ -63,8 +59,3 @@ spec:
             periodSeconds: 125
             successThreshold: 1
             timeoutSeconds: 10
-      volumes:
-      - name: probe-helper-key
-        secret:
-          secretName: probe-helper-key
-          optional: true

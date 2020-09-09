@@ -36,7 +36,6 @@ import (
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/pkg/utils"
-	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
 const (
@@ -395,7 +394,6 @@ func WithProbeListener(l net.Listener) Option {
 }
 
 func runProbeHelper(ctx context.Context, opts ...Option) {
-	appcredentials.MustExistOrUnsetEnv()
 	logger := logging.FromContext(ctx)
 
 	// apply the probe helper options
