@@ -112,8 +112,8 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
-		b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
-		b.Status.MarkSubscriptionUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
+		b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %v", err)
+		b.Status.MarkSubscriptionUnknown("ProjectIdNotFound", "Failed to find project id: %v", err)
 		return err
 	}
 	// Set the projectID in the status.
@@ -126,8 +126,8 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 		client, err = pubsub.NewClient(ctx, projectID)
 		if err != nil {
 			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-			b.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
-			b.Status.MarkSubscriptionUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
+			b.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
+			b.Status.MarkSubscriptionUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
 			return err
 		}
 		defer client.Close()
@@ -181,8 +181,8 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
-		b.Status.MarkTopicUnknown("FinalizeTopicProjectIdNotFound", "Failed to find project id: %w", err)
-		b.Status.MarkSubscriptionUnknown("FinalizeSubscriptionProjectIdNotFound", "Failed to find project id: %w", err)
+		b.Status.MarkTopicUnknown("FinalizeTopicProjectIdNotFound", "Failed to find project id: %v", err)
+		b.Status.MarkSubscriptionUnknown("FinalizeSubscriptionProjectIdNotFound", "Failed to find project id: %v", err)
 		return err
 	}
 
@@ -191,8 +191,8 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 		client, err := pubsub.NewClient(ctx, projectID)
 		if err != nil {
 			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-			b.Status.MarkTopicUnknown("FinalizeTopicPubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
-			b.Status.MarkSubscriptionUnknown("FinalizeSubscriptionPubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
+			b.Status.MarkTopicUnknown("FinalizeTopicPubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
+			b.Status.MarkSubscriptionUnknown("FinalizeSubscriptionPubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
 			return err
 		}
 		defer client.Close()
