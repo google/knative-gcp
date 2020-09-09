@@ -154,8 +154,8 @@ function gcp_auth_setup() {
 }
 
 # Create a cluster with Workload Identity enabled.
-# We could specify --cluster-version to force the cluster using a particular GKE version.
-initialize $@ --kubetest2-flag "--enable-workload-identity=true"
+# We could specify --version to force the cluster using a particular GKE version.
+initialize "$@" --enable-workload-identity=true
 
 if [ "${SKIP_TESTS:-}" == "true" ]; then
   echo "**************************************"
