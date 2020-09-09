@@ -441,6 +441,8 @@ func TestProbeHelperHealth(t *testing.T) {
 	t.Run("Force unhealth check", func(t *testing.T) {
 		os.Setenv("PROJECT_ID", testProjectID)
 		os.Setenv("MAX_STALE_DURATION", "1s")
+		os.Setenv("RECEIVER_PORT", "0")
+		os.Setenv("PROBE_PORT", "0")
 
 		ctx := logtest.TestContextWithLogger(t)
 		ctx, cancel := context.WithCancel(ctx)
