@@ -120,8 +120,8 @@ Plane:
   ```shell
   gcloud iam service-accounts add-iam-policy-binding \
    cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com  \
-   --member='serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com' \
-   --role='roles/iam.serviceAccountAdmin'
+   --member=serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
+   --role roles/iam.serviceAccountAdmin
   ```
 
   Then, modify `clusterDefaults` in ConfigMap `config-gcp-auth`.
