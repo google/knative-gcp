@@ -17,9 +17,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
-	"net"
 	nethttp "net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -28,14 +27,10 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
-	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
-	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/pkg/utils"
-	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
 const (
@@ -46,14 +41,62 @@ const (
 	CloudStorageSourceProbeUpdateMetadataSubject = "update-metadata"
 	CloudStorageSourceProbeArchiveSubject        = "archive"
 	CloudStorageSourceProbeDeleteSubject         = "delete"
-
-	maxStaleTime = 5 * time.Minute
 )
 
-var (
+type healthChecker struct {
 	lastProbeEventTimestamp    eventTimestamp
 	lastReceiverEventTimestamp eventTimestamp
-)
+	maxStaleDuration           time.Duration
+	port                       int
+}
+
+func (t *eventTimestamp) reportHealth() {
+	t.Lock()
+	defer t.Unlock()
+	t.time = time.Now()
+}
+
+func (t *eventTimestamp) lastTime() time.Time {
+	t.RLock()
+	defer t.RUnlock()
+	return t.time
+}
+
+func (c *healthChecker) ServeHTTP(w nethttp.ResponseWriter, req *nethttp.Request) {
+	if req.URL.Path != "/healthz" {
+		w.WriteHeader(nethttp.StatusNotFound)
+		return
+	}
+	now := time.Now()
+	if (now.Sub(c.lastProbeEventTimestamp.lastTime()) > c.maxStaleDuration) ||
+		(now.Sub(c.lastReceiverEventTimestamp.lastTime()) > c.maxStaleDuration) {
+		w.WriteHeader(nethttp.StatusServiceUnavailable)
+		return
+	}
+	w.WriteHeader(nethttp.StatusOK)
+}
+
+func (c *healthChecker) start(ctx context.Context) {
+	c.lastProbeEventTimestamp.reportHealth()
+	c.lastReceiverEventTimestamp.reportHealth()
+
+	srv := &nethttp.Server{
+		Addr:    ":" + strconv.Itoa(c.port),
+		Handler: c,
+	}
+
+	go func() {
+		logging.FromContext(ctx).Info("Starting the probe helper health checker...")
+		if err := srv.ListenAndServe(); err != nil && err != nethttp.ErrServerClosed {
+			logging.FromContext(ctx).Error("The probe helper health checker has stopped unexpectedly", zap.Error(err))
+		}
+	}()
+
+	<-ctx.Done()
+	if err := srv.Shutdown(ctx); err != nil && err != context.Canceled {
+		logging.FromContext(ctx).Error("Failed to shutdown the probe helper health checker", zap.Error(err))
+	}
+}
 
 type cloudEventsFunc func(cloudevents.Event) protocol.Result
 
@@ -65,29 +108,6 @@ type eventTimestamp struct {
 type receivedEventsMap struct {
 	sync.RWMutex
 	channels map[string]chan bool
-}
-
-type envConfig struct {
-	// Environment variable containing the project ID
-	ProjectID string `envconfig:"PROJECT_ID"`
-
-	// Environment variable containing the sink URL (broker URL) that the event will be forwarded to by the probeHelper for the e2e delivery probe
-	BrokerURL string `envconfig:"K_SINK" default:"http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"`
-
-	// Environment variable containing the CloudPubSubSource Topic ID that the event will be forwarded to by the probeHelper for the CloudPubSubSource probe
-	CloudPubSubSourceTopicID string `envconfig:"CLOUDPUBSUBSOURCE_TOPIC_ID" default:"cloudpubsubsource-topic"`
-
-	// Environment variable containing the CloudStorageSource Bucket ID that objects will be written to by the probeHelper for the CloudStorageSource probe
-	CloudStorageSourceBucketID string `envconfig:"CLOUDSTORAGESOURCE_BUCKET_ID" default:"cloudstoragesource-bucket"`
-
-	// Environment variable containing the port which listens to the probe to deliver the event
-	ProbePort int `envconfig:"PROBE_PORT" default:"8070"`
-
-	// Environment variable containing the port to receive the event from the trigger
-	ReceiverPort int `envconfig:"RECEIVER_PORT" default:"8080"`
-
-	// Environment variable containing the timeout period to wait for an event to be delivered back (in minutes)
-	Timeout int `envconfig:"TIMEOUT_MINS" default:"30"`
 }
 
 func (r *receivedEventsMap) createReceiverChannel(channelID string) (chan bool, error) {
@@ -123,17 +143,15 @@ func logReceive(ctx context.Context, ack bool, format string, args ...interface{
 	return cloudevents.NewReceipt(ack, format, args...)
 }
 
-func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap, timeout int) cloudEventsFunc {
+func (ph *ProbeHelper) forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		var err error
 		var receiverChannel chan bool
 		logging.FromContext(ctx).Infof("Received probe request: %+v \n", event)
-		lastProbeEventTimestamp.Lock()
-		lastProbeEventTimestamp.time = time.Now()
-		lastProbeEventTimestamp.Unlock()
+		ph.healthChecker.lastProbeEventTimestamp.reportHealth()
 
-		ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
+		ctx, cancel := context.WithTimeout(ctx, ph.timeoutDuration)
 		defer cancel()
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
@@ -238,13 +256,11 @@ func forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubs
 	}
 }
 
-func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap) cloudEventsFunc {
+func (ph *ProbeHelper) receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		logging.FromContext(ctx).Infof("Received event: %+v \n", event)
-		lastReceiverEventTimestamp.Lock()
-		lastReceiverEventTimestamp.time = time.Now()
-		lastReceiverEventTimestamp.Unlock()
+		ph.healthChecker.lastReceiverEventTimestamp.reportHealth()
 
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
@@ -300,112 +316,86 @@ func receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap) cloudE
 	}
 }
 
-func healthChecker(w nethttp.ResponseWriter, r *nethttp.Request) {
-	lastProbeEventTimestamp.RLock()
-	defer lastProbeEventTimestamp.RUnlock()
-	lastReceiverEventTimestamp.RLock()
-	defer lastReceiverEventTimestamp.RUnlock()
-	now := time.Now()
-	if (now.Sub(lastProbeEventTimestamp.time) > maxStaleTime) ||
-		(now.Sub(lastReceiverEventTimestamp.time) > maxStaleTime) {
-		w.WriteHeader(nethttp.StatusServiceUnavailable)
-		return
-	}
-	w.WriteHeader(nethttp.StatusOK)
+type ProbeHelper struct {
+	projectID string
+
+	brokerURL string
+
+	cloudPubSubSourceTopicID string
+	pubsubClient             *pubsub.Client
+
+	cloudStorageSourceBucketID string
+	storageClient              *storage.Client
+
+	probePort    int
+	receiverPort int
+
+	timeoutDuration time.Duration
+
+	healthChecker *healthChecker
 }
 
-func runProbeHelper(ctx context.Context, receiverListener net.Listener, probeListener net.Listener, pubsubClient *pubsub.Client, storageClient *storage.Client) {
-	appcredentials.MustExistOrUnsetEnv()
+func (ph *ProbeHelper) run(ctx context.Context) {
 	logger := logging.FromContext(ctx)
-
-	var env envConfig
-	if err := envconfig.Process("", &env); err != nil {
-		logger.Fatalf("Failed to process env var, %v", err)
-	}
-	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
-	if err != nil {
-		logger.Fatalf("Failed to get the default project ID, %v", err)
-	}
-	brokerURL := env.BrokerURL
-	probePort := env.ProbePort
-	receiverPort := env.ReceiverPort
-	timeout := env.Timeout
-	logger.Infof("Running Probe Helper with env config: %+v \n", env)
 
 	// create pubsub client
 	pst, err := cepubsub.New(ctx,
-		cepubsub.WithClient(pubsubClient),
-		cepubsub.WithProjectID(projectID),
-		cepubsub.WithTopicID(env.CloudPubSubSourceTopicID))
+		cepubsub.WithClient(ph.pubsubClient),
+		cepubsub.WithProjectID(ph.projectID),
+		cepubsub.WithTopicID(ph.cloudPubSubSourceTopicID))
 	if err != nil {
-		logger.Fatalf("Failed to create pubsub transport, %v", err)
+		logger.Fatal("Failed to create pubsub transport", zap.Error(err))
 	}
 	psc, err := cloudevents.NewClient(pst)
 	if err != nil {
-		logger.Fatal("Failed to create CloudEvents pubsub client, ", err)
+		logger.Fatal("Failed to create CloudEvents pubsub client", zap.Error(err))
 	}
 
 	// create cloud storage client
-	if storageClient == nil {
-		storageClient, err = storage.NewClient(ctx)
+	if ph.storageClient == nil {
+		ph.storageClient, err = storage.NewClient(ctx)
 		if err != nil {
-			logger.Fatal("Failed to create cloud storage client, ", err)
+			logger.Fatal("Failed to create cloud storage client", zap.Error(err))
 		}
 	}
-	bkt := storageClient.Bucket(env.CloudStorageSourceBucketID)
+	bkt := ph.storageClient.Bucket(ph.cloudStorageSourceBucketID)
 
 	// create sender client
-	opts := []cehttp.Option{cloudevents.WithTarget(brokerURL)}
-	if probeListener != nil {
-		opts = append(opts, cloudevents.WithListener(probeListener))
-	} else {
-		opts = append(opts, cloudevents.WithPort(probePort))
-	}
-	sp, err := cloudevents.NewHTTP(opts...)
+	sp, err := cloudevents.NewHTTP(cloudevents.WithTarget(ph.brokerURL), cloudevents.WithPort(ph.probePort))
 	if err != nil {
-		logger.Fatalf("Failed to create sender transport, %v", err)
+		logger.Fatal("Failed to create sender transport", zap.Error(err))
 	}
 	sc, err := cloudevents.NewClient(sp)
 	if err != nil {
-		logger.Fatal("Failed to create sender client, ", err)
+		logger.Fatal("Failed to create sender client", zap.Error(err))
 	}
 
 	// create receiver client
-	opts = []cehttp.Option{}
-	if receiverListener != nil {
-		opts = append(opts, cloudevents.WithListener(receiverListener))
-	} else {
-		opts = append(opts, cloudevents.WithPort(receiverPort))
-	}
-	rp, err := cloudevents.NewHTTP(opts...)
+	rp, err := cloudevents.NewHTTP(cloudevents.WithPort(ph.receiverPort))
 	if err != nil {
-		logger.Fatalf("Failed to create receiver transport, %v", err)
+		logger.Fatal("Failed to create receiver transport", zap.Error(err))
 	}
 	rc, err := cloudevents.NewClient(rp)
 	if err != nil {
-		logger.Fatal("Failed to create receiver client, ", err)
+		logger.Fatal("Failed to create receiver client", zap.Error(err))
 	}
 
 	// start the health checker
-	now := time.Now()
-	lastProbeEventTimestamp.time = now
-	lastReceiverEventTimestamp.time = now
-	nethttp.HandleFunc("/healthz", healthChecker)
-	go func() {
-		log.Printf("Starting the health checker...")
-		if err := nethttp.ListenAndServe(":8060", nil); err != nil && err != nethttp.ErrServerClosed {
-			log.Printf("The health checker has stopped unexpectedly: %v", err)
-		}
-	}()
+	if ph.healthChecker == nil {
+		logger.Fatal("Unspecified health checker")
+	}
+	go ph.healthChecker.start(ctx)
 
 	// make a map to store the channel for each event
 	receivedEvents := &receivedEventsMap{
 		channels: make(map[string]chan bool),
 	}
+
 	// start a goroutine to receive the event from probe and forward it appropriately
 	logger.Info("Starting Probe Helper server...")
-	go sc.StartReceiver(ctx, forwardFromProbe(ctx, sc, psc, bkt, receivedEvents, timeout))
+	go sc.StartReceiver(ctx, ph.forwardFromProbe(ctx, sc, psc, bkt, receivedEvents))
+
 	// Receive the event and return the result back to the probe
 	logger.Info("Starting event receiver...")
-	rc.StartReceiver(ctx, receiveEvent(ctx, receivedEvents))
+	rc.StartReceiver(ctx, ph.receiveEvent(ctx, receivedEvents))
 }
