@@ -64,7 +64,7 @@ var (
 
 // A helper function that starts a test Broker which receives events forwarded by
 // the probe helper and delivers the events back to the probe helper receiver.
-func runTestBroker(ctx context.Context, probeReceiverURL string) int {
+func runTestBroker(ctx context.Context, probeReceiverURL string) string {
 	bl, err := GetFreePortListener()
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("Failed to get free broker port listener: %v", err)
@@ -84,7 +84,7 @@ func runTestBroker(ctx context.Context, probeReceiverURL string) int {
 			}
 		})
 	}()
-	return bp.GetListeningPort()
+	return fmt.Sprintf("http://localhost:%d", bp.GetListeningPort())
 }
 
 // A helper function that starts a test CloudPubSubSource which watches a pubsub
@@ -284,8 +284,7 @@ func TestProbeHelper(t *testing.T) {
 	runTestCloudStorageSource(ctx, gotCloudStorageRequest, receiverURL)
 
 	// Run the test Broker for testing Broker E2E delivery.
-	brokerPort := runTestBroker(ctx, receiverURL)
-	brokerURL := fmt.Sprintf("http://localhost:%d", brokerPort)
+	brokerURL := runTestBroker(ctx, receiverURL)
 
 	// Create the probe helper and start a goroutine to run it.
 	ph := &ProbeHelper{
