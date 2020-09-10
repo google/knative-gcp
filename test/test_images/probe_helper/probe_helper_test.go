@@ -192,30 +192,32 @@ func runTestCloudStorageSource(ctx context.Context, gotRequest chan *http.Reques
 // A helper function that starts a test CloudStorageSource which intercepts
 // Cloud Storage HTTP requests and forwards the appropriate notifications as
 // CloudEvents to the probe helper receiver.
-func runTestCloudSchedulerSource(ctx context.Context, period time.Duration, probeReceiverURL string) error {
+func runTestCloudSchedulerSource(ctx context.Context, period time.Duration, probeReceiverURL string) {
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
-		return fmt.Errorf("Failed to create http protocol of the test CloudSchedulerSource, %v", err)
+		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test CloudSchedulerSource, %v", err)
 	}
 	c, err := cloudevents.NewClient(cp)
 	if err != nil {
-		return fmt.Errorf("Failed to create the test CloudSchedulerSource client, %v", err)
+		logging.FromContext(ctx).Fatalf("Failed to create the test CloudSchedulerSource client, %v", err)
 	}
 	ticker := time.NewTicker(period)
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			executedEvent := cloudevents.NewEvent()
-			executedEvent.SetID("1234567890")
-			executedEvent.SetType(schemasv1.CloudSchedulerJobExecutedEventType)
-			executedEvent.SetSource(schemasv1.CloudSchedulerEventSource("test-cloud-scheduler-source"))
-			if res := c.Send(ctx, executedEvent); !cloudevents.IsACK(res) {
-				return fmt.Errorf("Failed to send job executed CloudEvent from the test CloudSchedulerSource: %v", res)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				executedEvent := cloudevents.NewEvent()
+				executedEvent.SetID("1234567890")
+				executedEvent.SetType(schemasv1.CloudSchedulerJobExecutedEventType)
+				executedEvent.SetSource(schemasv1.CloudSchedulerEventSource("test-cloud-scheduler-source"))
+				if res := c.Send(ctx, executedEvent); !cloudevents.IsACK(res) {
+					logging.FromContext(ctx).Warnf("Failed to send job executed CloudEvent from the test CloudSchedulerSource: %v", res)
+				}
 			}
 		}
-	}
+	}()
 }
 
 // Creates a new CloudEvent in the shape of probe events sent to the probe helper.
