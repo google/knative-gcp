@@ -32,7 +32,7 @@ require (
 	knative.dev/eventing v0.17.3
 	knative.dev/pkg v0.0.0-20200908235250-56fba14ba7df
 	knative.dev/serving v0.17.1-0.20200909134250-89faac4884b9
-	knative.dev/test-infra v0.0.0-20200908182932-5a8105609141 // indirect
+	knative.dev/test-infra v0.0.0-20200909211651-72eb6ae3c773 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
