@@ -65,10 +65,6 @@ var (
 // A helper function that starts a test Broker which receives events forwarded by
 // the probe helper and delivers the events back to the probe helper receiver.
 func runTestBroker(ctx context.Context, probeReceiverURL string) string {
-	//bl, err := GetFreePortListener()
-	//if err != nil {
-	//	logging.FromContext(ctx).Fatalf("Failed to get free broker port listener: %v", err)
-	//}
 	brokerPort, err := GetFreePort()
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("Failed to get free broker port: %v", err)
@@ -397,18 +393,13 @@ func assertHealthCheckResult(t *testing.T, port int, ok bool) {
 	}
 }
 
-// GetFreePortListener asks for a free open port and returns its listener.
-func GetFreePortListener() (*net.TCPListener, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return nil, err
-	}
-	return net.ListenTCP("tcp", addr)
-}
-
 // GetFreePort asks for a free open port
 func GetFreePort() (int, error) {
-	l, err := GetFreePortListener()
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+	l, err := net.ListenTCP("tcp", addr)
 	if err != nil {
 		return 0, err
 	}
