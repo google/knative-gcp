@@ -65,11 +65,15 @@ var (
 // A helper function that starts a test Broker which receives events forwarded by
 // the probe helper and delivers the events back to the probe helper receiver.
 func runTestBroker(ctx context.Context, probeReceiverURL string) string {
-	bl, err := GetFreePortListener()
+	//bl, err := GetFreePortListener()
+	//if err != nil {
+	//	logging.FromContext(ctx).Fatalf("Failed to get free broker port listener: %v", err)
+	//}
+	brokerPort, err := GetFreePort()
 	if err != nil {
-		logging.FromContext(ctx).Fatalf("Failed to get free broker port listener: %v", err)
+		logging.FromContext(ctx).Fatalf("Failed to get free broker port: %v", err)
 	}
-	bp, err := cloudevents.NewHTTP(cloudevents.WithListener(bl), cloudevents.WithTarget(probeReceiverURL))
+	bp, err := cloudevents.NewHTTP(cloudevents.WithPort(brokerPort), cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test Broker: %v", err)
 	}
@@ -84,7 +88,7 @@ func runTestBroker(ctx context.Context, probeReceiverURL string) string {
 			}
 		})
 	}()
-	return fmt.Sprintf("http://localhost:%d", bp.GetListeningPort())
+	return fmt.Sprintf("http://localhost:%d", brokerPort)
 }
 
 // A helper function that starts a test CloudPubSubSource which watches a pubsub
