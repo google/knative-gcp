@@ -246,17 +246,13 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 			return fmt.Errorf("failed to set finalizers: %w", err)
 		}
 
-		if !r.skipStatusUpdates {
-			reconciler.PreProcessReconcile(ctx, resource)
-		}
+		reconciler.PreProcessReconcile(ctx, resource)
 
 		// Reconcile this copy of the resource and then write back any status
 		// updates regardless of whether the reconciliation errored out.
 		reconcileEvent = do(ctx, resource)
 
-		if !r.skipStatusUpdates {
-			reconciler.PostProcessReconcile(ctx, resource, original)
-		}
+		reconciler.PostProcessReconcile(ctx, resource, original)
 
 	case reconciler.DoFinalizeKind:
 		// For finalizing reconcilers, if this resource being marked for deletion
