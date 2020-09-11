@@ -189,9 +189,9 @@ func runTestCloudStorageSource(ctx context.Context, gotRequest chan *http.Reques
 	}()
 }
 
-// A helper function that starts a test CloudStorageSource which intercepts
-// Cloud Storage HTTP requests and forwards the appropriate notifications as
-// CloudEvents to the probe helper receiver.
+// A helper function that starts a test CloudSchedulerSource which ticks
+// periodically and sends the appropriate event notifications to the probe
+// helper receiver.
 func runTestCloudSchedulerSource(ctx context.Context, period time.Duration, probeReceiverURL string) {
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
