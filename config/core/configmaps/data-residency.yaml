@@ -18,7 +18,7 @@ metadata:
   name: config-data-residency
   namespace: cloud-run-events
 data:
-    _example: |
+  _example: |
     ################################
     #                              #
     #    EXAMPLE CONFIGURATION     #
@@ -37,4 +37,6 @@ data:
     # messagestoragepolicy.allowedpersistenceregions field specifies
     # all the allowed regions for data residency. The default or an empty value will 
     # mean no data residency requirement.
-    messagestoragepolicy.allowedpersistenceregions: "us-east1,us-west1"
+    messagestoragepolicy.allowedpersistenceregions:
+      - us-east1
+      - us-west1
