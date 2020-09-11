@@ -27,7 +27,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/ptr"
@@ -52,12 +51,6 @@ func NewIdentity(ctx context.Context, policyManager iam.IAMPolicyManager, gcpAut
 		policyManager: policyManager,
 		gcpAuthStore:  gcpAuthStore,
 	}
-}
-
-func NewGCPAuthStore(ctx context.Context, cmw configmap.Watcher) *gcpauth.Store {
-	gcpAuthStore := gcpauth.NewStore(logging.FromContext(ctx).Named("config-gcp-auth-store"))
-	gcpAuthStore.WatchConfigs(cmw)
-	return gcpAuthStore
 }
 
 type Identity struct {
