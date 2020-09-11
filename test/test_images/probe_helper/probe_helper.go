@@ -19,6 +19,7 @@ import (
 	"fmt"
 	nethttp "net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -41,6 +42,9 @@ const (
 	CloudStorageSourceProbeUpdateMetadataSubject = "update-metadata"
 	CloudStorageSourceProbeArchiveSubject        = "archive"
 	CloudStorageSourceProbeDeleteSubject         = "delete"
+	CloudAuditLogsSourceProbeEventType           = "cloudauditlogssource-probe"
+	CloudAuditLogsSourceProbeCreateSubject       = "create-topic"
+	CloudAuditLogsSourceProbeDeleteSubject       = "delete-topic"
 )
 
 type healthChecker struct {
@@ -143,7 +147,7 @@ func logReceive(ctx context.Context, ack bool, format string, args ...interface{
 	return cloudevents.NewReceipt(ack, format, args...)
 }
 
-func (ph *ProbeHelper) forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, pubsubClient cloudevents.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap) cloudEventsFunc {
+func (ph *ProbeHelper) forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, cePubsubClient cloudevents.Client, pubsubClient *pubsub.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		var err error
@@ -175,7 +179,7 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context, brokerClient cloude
 			defer receivedEvents.deleteReceiverChannel(channelID)
 
 			// The pubsub client forwards the event as a message to a pubsub topic.
-			if res := pubsubClient.Send(ctx, event); !cloudevents.IsACK(res) {
+			if res := cePubsubClient.Send(ctx, event); !cloudevents.IsACK(res) {
 				return logNACK(ctx, "Error when publishing event %v to pubsub topic: %+v \n", event.ID(), res)
 			}
 		case CloudStorageSourceProbeEventType:
@@ -243,6 +247,35 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context, brokerClient cloude
 			default:
 				return logNACK(ctx, "Probe forwarding failed, unrecognized cloud storage probe subject: %v", event.Subject())
 			}
+		case CloudAuditLogsSourceProbeEventType:
+			switch event.Subject() {
+			case CloudAuditLogsSourceProbeCreateSubject:
+				channelID = event.ID() + "-" + event.Subject()
+				receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
+				if err != nil {
+					return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
+				}
+				defer receivedEvents.deleteReceiverChannel(channelID)
+
+				// Create a pubsub topic with the given ID.
+				if _, err := pubsubClient.CreateTopic(ctx, event.ID()); err != nil {
+					return logNACK(ctx, "Probe forwarding failed, error creating pubsub topic %v: %v", event.ID(), err)
+				}
+			case CloudAuditLogsSourceProbeDeleteSubject:
+				channelID = event.ID() + "-" + event.Subject()
+				receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
+				if err != nil {
+					return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
+				}
+				defer receivedEvents.deleteReceiverChannel(channelID)
+
+				// Delete the pubsub topic with the given ID.
+				if err := pubsubClient.Topic(event.ID()).Delete(ctx); err != nil {
+					return logNACK(ctx, "Probe forwarding failed, error deleting pubsub topic %v: %v", event.ID(), err)
+				}
+			default:
+				return logNACK(ctx, "Probe forwarding failed, unrecognized cloud auditlogs probe subject: %v", event.Subject())
+			}
 		default:
 			return logNACK(ctx, "Probe forwarding failed, unrecognized event type, %v", event.Type())
 		}
@@ -301,6 +334,25 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context, receivedEvents *receive
 				return logACK(ctx, "Failed to extract event ID from object name: %v", err)
 			}
 			channelID = channelID + "-" + CloudStorageSourceProbeDeleteSubject
+		case schemasv1.CloudAuditLogsLogWrittenEventType:
+			// The logged event type is held in the methodname extension.
+			if _, ok := event.Extensions()["methodname"]; !ok {
+				return logACK(ctx, "CloudEvent does not have extension methodname: %v", event)
+			}
+			// For creation and deletion of pubsub topics, the topic ID can be extracted
+			// from the event subject.
+			sepSub := strings.Split(event.Subject(), "/")
+			if len(sepSub) != 5 || sepSub[0] != "pubsub.googleapis.com" || sepSub[1] != "projects" || sepSub[3] != "topics" {
+				return logACK(ctx, "Unexpected Cloud AuditLogs event subject: %v", event.Subject())
+			}
+			switch event.Extensions()["methodname"] {
+			case "google.pubsub.v1.Publisher.CreateTopic":
+				channelID = sepSub[4] + "-" + CloudAuditLogsSourceProbeCreateSubject
+			case "google.pubsub.v1.Publisher.DeleteTopic":
+				channelID = sepSub[4] + "-" + CloudAuditLogsSourceProbeDeleteSubject
+			default:
+				return logACK(ctx, "Unrecognized CloudEvent methodname extension: %v", event.Extensions()["methodname"])
+			}
 		default:
 			return logACK(ctx, "Unrecognized event type: %v", event.Type())
 		}
@@ -393,7 +445,7 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 
 	// start a goroutine to receive the event from probe and forward it appropriately
 	logger.Info("Starting Probe Helper server...")
-	go sc.StartReceiver(ctx, ph.forwardFromProbe(ctx, sc, psc, bkt, receivedEvents))
+	go sc.StartReceiver(ctx, ph.forwardFromProbe(ctx, sc, psc, ph.pubsubClient, bkt, receivedEvents))
 
 	// Receive the event and return the result back to the probe
 	logger.Info("Starting event receiver...")

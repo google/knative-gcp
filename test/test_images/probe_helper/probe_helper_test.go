@@ -118,6 +118,58 @@ func runTestCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription, pro
 	}()
 }
 
+// A helper function that starts a test CloudAuditLogsSource which watches
+// periodically for a change of state in the existence of pubsub topics and
+// forwards the appropriate events to the probe helper receiver.
+func runTestCloudAuditLogsSource(ctx context.Context, pubsubClient *pubsub.Client, probeReceiverURL string) {
+	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test CloudStorageSource, %v", err)
+	}
+	c, err := cloudevents.NewClient(cp)
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("Failed to create the test CloudStorageSource client, %v", err)
+	}
+	topicCreated := false
+	ticker := time.NewTicker(100 * time.Millisecond)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				exists, err := pubsubClient.Topic("cloudauditlogssource-probe-1234567890").Exists(ctx)
+				if err != nil {
+					logging.FromContext(ctx).Warnf("Failed to determine existence of test pubsub topic: %v", err)
+				}
+				if exists && !topicCreated {
+					createTopicEvent := cloudevents.NewEvent()
+					createTopicEvent.SetID("1234567890")
+					createTopicEvent.SetSubject(schemasv1.CloudAuditLogsEventSubject("pubsub.googleapis.com", "projects/test-project-id/topics/cloudauditlogssource-probe-1234567890"))
+					createTopicEvent.SetType(schemasv1.CloudAuditLogsLogWrittenEventType)
+					createTopicEvent.SetSource(schemasv1.CloudAuditLogsEventSource("projects/test-project-id", "activity"))
+					createTopicEvent.SetExtension("methodname", "google.pubsub.v1.Publisher.CreateTopic")
+					if res := c.Send(ctx, createTopicEvent); !cloudevents.IsACK(res) {
+						logging.FromContext(ctx).Warnf("Failed to send topic created CloudEvent from the test CloudAuditLogsSource: %v", res)
+					}
+					topicCreated = true
+				} else if !exists && topicCreated {
+					deleteTopicEvent := cloudevents.NewEvent()
+					deleteTopicEvent.SetID("1234567890")
+					deleteTopicEvent.SetSubject(schemasv1.CloudAuditLogsEventSubject("pubsub.googleapis.com", "projects/test-project-id/topics/cloudauditlogssource-probe-1234567890"))
+					deleteTopicEvent.SetType(schemasv1.CloudAuditLogsLogWrittenEventType)
+					deleteTopicEvent.SetSource(schemasv1.CloudAuditLogsEventSource("projects/test-project-id", "activity"))
+					deleteTopicEvent.SetExtension("methodname", "google.pubsub.v1.Publisher.DeleteTopic")
+					topicCreated = false
+					if res := c.Send(ctx, deleteTopicEvent); !cloudevents.IsACK(res) {
+						logging.FromContext(ctx).Warnf("Failed to send topic deleted CloudEvent from the test CloudAuditLogsSource: %v", res)
+					}
+				}
+			}
+		}
+	}()
+}
+
 // A helper function that starts a test CloudStorageSource which intercepts
 // Cloud Storage HTTP requests and forwards the appropriate notifications as
 // CloudEvents to the probe helper receiver.
@@ -284,6 +336,9 @@ func TestProbeHelper(t *testing.T) {
 	// Run the test CloudStorageSource.
 	runTestCloudStorageSource(ctx, gotCloudStorageRequest, receiverURL)
 
+	// Run the test CloudAuditLogsSource.
+	runTestCloudAuditLogsSource(ctx, pubsubClient, receiverURL)
+
 	// Run the test Broker for testing Broker E2E delivery.
 	brokerURL := runTestBroker(ctx, receiverURL)
 
@@ -351,6 +406,18 @@ func TestProbeHelper(t *testing.T) {
 			},
 			{
 				event:      probeEvent("cloudstoragesource-probe", "delete"),
+				wantResult: cloudevents.ResultACK,
+			},
+		},
+	}, {
+		name: "CloudAuditLogsSource probe",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("cloudauditlogssource-probe", "create-topic"),
+				wantResult: cloudevents.ResultACK,
+			},
+			{
+				event:      probeEvent("cloudauditlogssource-probe", "delete-topic"),
 				wantResult: cloudevents.ResultACK,
 			},
 		},
