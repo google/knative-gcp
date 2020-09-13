@@ -27,7 +27,7 @@ type ScopedDefaults struct {
 	// AllowedPersistenceRegions specifies the regions allowed for data
 	// storage. Eg "us-east1". An empty configuration means no data residency
 	// constraints.
-	AllowedPersistenceRegions []string `json:"allowedpersistenceregions,omitempty"`
+	AllowedPersistenceRegions []string `json:"messagestoragepolicy.allowedpersistenceregions,omitempty"`
 }
 
 // scoped gets the scoped data residency defaults, for now we only have

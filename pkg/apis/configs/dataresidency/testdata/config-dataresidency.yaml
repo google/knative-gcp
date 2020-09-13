@@ -20,7 +20,7 @@ metadata:
 data:
   default-dataresidency-config: |
     clusterDefaults:
-      allowedpersistenceregions: []
+      messagestoragepolicy.allowedpersistenceregions: []
   _example: |
     ################################
     #                              #

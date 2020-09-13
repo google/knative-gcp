@@ -19,6 +19,7 @@ package dataresidency
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -26,18 +27,38 @@ import (
 	_ "knative.dev/pkg/system/testing"
 )
 
-const (
-//clusterDefaultedNS = "cluster"
-// customizedNS is the namespace that has special customizations in the testdata.
-//customizedNS = "customized-ns"
-// emptyNS is the namespace that is customized in the testdata to have no defaults.
-//emptyNS = "empty-ns"
-)
-
 func TestDefaultsConfigurationFromFile(t *testing.T) {
 	_, example := ConfigMapsFromTestFile(t, configName, defaulterKey)
 	if _, err := NewDefaultsConfigFromConfigMap(example); err != nil {
 		t.Errorf("NewDefaultsConfigFromConfigMap(example) = %v", err)
+	}
+}
+
+func TestNewDefaultsConfigFromConfigMap(t *testing.T) {
+	_, example := ConfigMapsFromTestFile(t, configName, defaulterKey)
+	defaults, err := NewDefaultsConfigFromConfigMap(example)
+	if err != nil {
+		t.Fatalf("NewDefaultsConfigFromConfigMap(example) = %v", err)
+	}
+
+	// Only cluster wide configuration is supported now, but we use the namespace
+	// as the test name and for future extension.
+	testCases := []struct {
+		ns      string
+		regions []string
+	}{
+		{
+			ns:      "cluster-wide",
+			regions: []string{"us-east1", "us-west1"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.ns, func(t *testing.T) {
+			if diff := cmp.Diff(tc.regions, defaults.AllowedPersistenceRegions()); diff != "" {
+				t.Errorf("Unexpected value (-want +got): %s", diff)
+			}
+		})
 	}
 }
 
