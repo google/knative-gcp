@@ -160,7 +160,7 @@ func isValidProbeEvent(event cloudevents.Event) bool {
 			eventSubject == CloudAuditLogsSourceProbeDeleteSubject)))
 }
 
-func (ph *ProbeHelper) forwardFromProbe(ctx context.Context, brokerClient cloudevents.Client, cePubsubClient cloudevents.Client, pubsubClient *pubsub.Client, bucket *storage.BucketHandle, receivedEvents *receivedEventsMap) cloudEventsFunc {
+func (ph *ProbeHelper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var err error
 		var receiverChannel chan bool
@@ -171,32 +171,33 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context, brokerClient cloude
 			return logNACK(ctx, "Probe forwarding failed, unrecognized probe event type and subject: type=%v, subject=%v", event.Type(), event.Subject())
 		}
 
+		// Create channel on which to wait for event to be received once forwarded.
 		channelID := event.ID()
 		if event.Subject() != "" {
 			channelID = channelID + "-" + event.Subject()
 		}
-		receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
+		receiverChannel, err = ph.receivedEvents.createReceiverChannel(channelID)
 		if err != nil {
 			return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
 		}
-		defer receivedEvents.deleteReceiverChannel(channelID)
+		defer ph.receivedEvents.deleteReceiverChannel(channelID)
 
 		ctx, cancel := context.WithTimeout(ctx, ph.timeoutDuration)
 		defer cancel()
 
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
-			// The broker client forwards the event to the broker.
-			if res := brokerClient.Send(ctx, event); !cloudevents.IsACK(res) {
+			// The probe client forwards the event to the broker.
+			if res := ph.probeClient.Send(ctx, event); !cloudevents.IsACK(res) {
 				return logNACK(ctx, "Error when sending event %v to broker: %+v \n", event.ID(), res)
 			}
 		case CloudPubSubSourceProbeEventType:
 			// The pubsub client forwards the event as a message to a pubsub topic.
-			if res := cePubsubClient.Send(ctx, event); !cloudevents.IsACK(res) {
+			if res := ph.cePubsubClient.Send(ctx, event); !cloudevents.IsACK(res) {
 				return logNACK(ctx, "Error when publishing event %v to pubsub topic: %+v \n", event.ID(), res)
 			}
 		case CloudStorageSourceProbeEventType:
-			obj := bucket.Object(event.ID())
+			obj := ph.bucket.Object(event.ID())
 			switch event.Subject() {
 			case CloudStorageSourceProbeCreateSubject:
 				// The storage client writes an object named as the event ID.
@@ -234,12 +235,12 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context, brokerClient cloude
 			switch event.Subject() {
 			case CloudAuditLogsSourceProbeCreateSubject:
 				// Create a pubsub topic with the given ID.
-				if _, err := pubsubClient.CreateTopic(ctx, event.ID()); err != nil {
+				if _, err := ph.pubsubClient.CreateTopic(ctx, event.ID()); err != nil {
 					return logNACK(ctx, "Probe forwarding failed, error creating pubsub topic %v: %v", event.ID(), err)
 				}
 			case CloudAuditLogsSourceProbeDeleteSubject:
 				// Delete the pubsub topic with the given ID.
-				if err := pubsubClient.Topic(event.ID()).Delete(ctx); err != nil {
+				if err := ph.pubsubClient.Topic(event.ID()).Delete(ctx); err != nil {
 					return logNACK(ctx, "Probe forwarding failed, error deleting pubsub topic %v: %v", event.ID(), err)
 				}
 			}
@@ -254,7 +255,7 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context, brokerClient cloude
 	}
 }
 
-func (ph *ProbeHelper) receiveEvent(ctx context.Context, receivedEvents *receivedEventsMap) cloudEventsFunc {
+func (ph *ProbeHelper) receiveEvent(ctx context.Context) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		logging.FromContext(ctx).Info("Received event", zap.Any("event", event))
@@ -263,10 +264,49 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context, receivedEvents *receive
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
 			// The event is received as sent.
+			//
+			// Example:
+			//   Context Attributes,
+			//     specversion: 1.0
+			//     type: broker-e2e-delivery-probe
+			//     source: probe
+			//     id: broker-e2e-delivery-probe-5950a1f1-f128-4c8e-bcdd-a2c96b4e5b78
+			//     time: 2020-09-14T18:49:01.455945852Z
+			//     datacontenttype: application/json
+			//   Extensions,
+			//     knativearrivaltime: 2020-09-14T18:49:01.455947424Z
+			//     traceparent: 00-82b13494f5bcddc7b3007a7cd7668267-64e23f1193ceb1b7-00
+			//   Data,
+			//     { ... }
 			channelID = event.ID()
 		case schemasv1.CloudPubSubMessagePublishedEventType:
 			// The original event is wrapped into a pubsub Message by the CloudEvents
 			// pubsub sender client, and encoded as data in a CloudEvent by the CloudPubSubSource.
+			//
+			// Example:
+			//   Context Attributes,
+			//     specversion: 1.0
+			//     type: google.cloud.pubsub.topic.v1.messagePublished
+			//     source: //pubsub.googleapis.com/projects/project-id/topics/cloudpubsubsource-topic
+			//     id: 1529309436535525
+			//     time: 2020-09-14T17:06:46.363Z
+			//     datacontenttype: application/json
+			//   Data,
+			//     {
+			//       "subscription": "cre-src_cloud-run-events-probe_cloudpubsubsource_02f88763-1df6-4944-883f-010ebac27dd2",
+			//       "message": {
+			//         "messageId": "1529309436535525",
+			//         "data": "eydtc2cnOidQcm9iZSBDbG91ZCBSdW4gRXZlbnRzISd9",
+			//         "attributes": {
+			//           "Content-Type": "application/json",
+			//           "ce-id": "cloudpubsubsource-probe-294119a9-98e2-44ec-a2b2-28a98cf40eee",
+			//           "ce-source": "probe",
+			//           "ce-specversion": "1.0",
+			//           "ce-type": "cloudpubsubsource-probe"
+			//         },
+			//         "publishTime": "2020-09-14T17:06:46.363Z"
+			//       }
+			//     }
 			msgData := schemasv1.PushMessage{}
 			if err := json.Unmarshal(event.Data(), &msgData); err != nil {
 				return logACK(ctx, "Failed to unmarshal pubsub message data: %v", err)
@@ -277,43 +317,125 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context, receivedEvents *receive
 			}
 		case schemasv1.CloudStorageObjectFinalizedEventType:
 			// The original event is written as an identifiable object to a bucket.
+			//
+			// Example:
+			//   Context Attributes,
+			//     specversion: 1.0
+			//     type: google.cloud.storage.object.v1.finalized
+			//     source: //storage.googleapis.com/projects/_/buckets/cloudstoragesource-bucket
+			//     subject: objects/cloudstoragesource-probe-fc2638d1-fcae-4889-9fa1-14a08cb05fc4
+			//     id: 1529343217463053
+			//     time: 2020-09-14T17:18:40.984Z
+			//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto
+			//     datacontenttype: application/json
+			//   Data,
+			//     { ... }
 			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
 				return logACK(ctx, "Failed to extract event ID from object name: %v", err)
 			}
 			channelID = channelID + "-" + CloudStorageSourceProbeCreateSubject
 		case schemasv1.CloudStorageObjectMetadataUpdatedEventType:
 			// The original event is written as an identifiable object to a bucket.
+			//
+			// Example:
+			//   Context Attributes,
+			//     specversion: 1.0
+			//     type: google.cloud.storage.object.v1.metadataUpdated
+			//     source: //storage.googleapis.com/projects/_/buckets/cloudstoragesource-bucket
+			//     subject: objects/cloudstoragesource-probe-fc2638d1-fcae-4889-9fa1-14a08cb05fc4
+			//     id: 1529343267626759
+			//     time: 2020-09-14T17:18:42.296Z
+			//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto
+			//     datacontenttype: application/json
+			//   Data,
+			//     { ... }
 			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
 				return logACK(ctx, "Failed to extract event ID from object name: %v", err)
 			}
 			channelID = channelID + "-" + CloudStorageSourceProbeUpdateMetadataSubject
 		case schemasv1.CloudStorageObjectArchivedEventType:
 			// The original event is written as an identifiable object to a bucket.
+			//
+			// Example:
+			//   Context Attributes,
+			//     specversion: 1.0
+			//     type: google.cloud.storage.object.v1.archived
+			//     source: //storage.googleapis.com/projects/_/buckets/cloudstoragesource-bucket
+			//     subject: objects/cloudstoragesource-probe-fc2638d1-fcae-4889-9fa1-14a08cb05fc4
+			//     id: 1529346856916356
+			//     time: 2020-09-14T17:18:43.872Z
+			//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto
+			//     datacontenttype: application/json
+			//   Data,
+			//     { ... }
 			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
 				return logACK(ctx, "Failed to extract event ID from object name: %v", err)
 			}
 			channelID = channelID + "-" + CloudStorageSourceProbeArchiveSubject
 		case schemasv1.CloudStorageObjectDeletedEventType:
 			// The original event is written as an identifiable object to a bucket.
+			//
+			// Example:
+			//   Context Attributes,
+			//     specversion: 1.0
+			//     type: google.cloud.storage.object.v1.deleted
+			//     source: //storage.googleapis.com/projects/_/buckets/cloudstoragesource-bucket
+			//     subject: objects/cloudstoragesource-probe-fc2638d1-fcae-4889-9fa1-14a08cb05fc4
+			//     id: 1529347481207133
+			//     time: 2020-09-14T17:18:45.146Z
+			//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto
+			//     datacontenttype: application/json
+			//   Data,
+			//     { ... }
 			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
 				return logACK(ctx, "Failed to extract event ID from object name: %v", err)
 			}
 			channelID = channelID + "-" + CloudStorageSourceProbeDeleteSubject
 		case schemasv1.CloudAuditLogsLogWrittenEventType:
-			// The logged event type is held in the methodname extension.
+			// The logged event type is held in the methodname extension. For creation
+			// and deletion of pubsub topics, the topic ID can be extracted from the
+			// event subject.
 			if _, ok := event.Extensions()["methodname"]; !ok {
 				return logACK(ctx, "CloudEvent does not have extension methodname: %v", event)
 			}
-			// For creation and deletion of pubsub topics, the topic ID can be extracted
-			// from the event subject.
 			sepSub := strings.Split(event.Subject(), "/")
-			if len(sepSub) != 5 || sepSub[0] != "pubsub.googleapis.com" || sepSub[1] != "projects" || sepSub[3] != "topics" {
+			if len(sepSub) != 5 || sepSub[0] != "pubsub.googleapis.com" || sepSub[1] != "projects" || sepSub[2] != ph.projectID || sepSub[3] != "topics" {
 				return logACK(ctx, "Unexpected Cloud AuditLogs event subject: %v", event.Subject())
 			}
 			switch event.Extensions()["methodname"] {
 			case "google.pubsub.v1.Publisher.CreateTopic":
+				// Example:
+				//   Context Attributes,
+				//     specversion: 1.0
+				//     type: google.cloud.audit.log.v1.written
+				//     source: //cloudaudit.googleapis.com/projects/project-id/logs/activity
+				//     subject: pubsub.googleapis.com/projects/project-id/topics/cloudauditlogssource-probe-914e5946-5e27-4bde-a455-7cfbae1c8539
+				//     id: d2ad1359483fc13c8056c430545fd217
+				//     time: 2020-09-14T18:44:18.636961725Z
+				//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/audit/v1/data.proto
+				//     datacontenttype: application/json
+				//   Extensions,
+				//     methodname: google.pubsub.v1.Publisher.CreateTopic
+				//     resourcename: projects/project-id/topics/cloudauditlogssource-probe-914e5946-5e27-4bde-a455-7cfbae1c8539
+				//     servicename: pubsub.googleapis.com
+				//   Data,
+				//     { ... }
 				channelID = sepSub[4] + "-" + CloudAuditLogsSourceProbeCreateSubject
 			case "google.pubsub.v1.Publisher.DeleteTopic":
+				// Example:
+				//   Context Attributes,
+				//     specversion: 1.0
+				//     type: google.cloud.audit.log.v1.written
+				//     source: //cloudaudit.googleapis.com/projects/project-id/logs/activity
+				//     subject: pubsub.googleapis.com/projects/project-id/topics/cloudauditlogssource-probe-914e5946-5e27-4bde-a455-7cfbae1c8539
+				//     id: 5e3ecfb9fa807b4f0beb8844a0c31b65
+				//     time: 2020-09-14T18:44:21.941097939Z
+				//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/audit/v1/data.proto
+				//     datacontenttype: application/json
+				//   Extensions,
+				//     methodname: google.pubsub.v1.Publisher.DeleteTopic
+				//     resourcename: projects/project-id/topics/cloudauditlogssource-probe-914e5946-5e27-4bde-a455-7cfbae1c8539
+				//     servicename: pubsub.googleapis.com
 				channelID = sepSub[4] + "-" + CloudAuditLogsSourceProbeDeleteSubject
 			default:
 				return logACK(ctx, "Unrecognized CloudEvent methodname extension: %v", event.Extensions()["methodname"])
@@ -322,9 +444,9 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context, receivedEvents *receive
 			return logACK(ctx, "Unrecognized event type: %v", event.Type())
 		}
 
-		receivedEvents.RLock()
-		defer receivedEvents.RUnlock()
-		receiver, ok := receivedEvents.channels[channelID]
+		ph.receivedEvents.RLock()
+		defer ph.receivedEvents.RUnlock()
+		receiver, ok := ph.receivedEvents.channels[channelID]
 		if !ok {
 			return logACK(ctx, "This event is not received by the probe receiver client: %v \n", channelID)
 		}
@@ -334,38 +456,77 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context, receivedEvents *receive
 }
 
 type ProbeHelper struct {
+	// The project ID
 	projectID string
 
+	// The URL endpoint for the Broker ingress
 	brokerURL string
 
+	// The client responsible for handling probe requests and forwarding events to the Broker
+	probeClient cloudevents.Client
+
+	// The client responsible for receiving events from sources
+	receiverClient cloudevents.Client
+
+	// The topic ID used in the CloudPubSubSource
 	cloudPubSubSourceTopicID string
-	pubsubClient             *pubsub.Client
 
+	// The pubsub client wrapped by a CloudEvents client for the CloudPubSubSource
+	// probe and used natively for the CloudAuditLogsSource probe
+	pubsubClient *pubsub.Client
+
+	// The CloudEvents client responsible for forwarding events as messages to a
+	// topic for the CloudPubSubSource probe.
+	cePubsubClient cloudevents.Client
+
+	// The bucket ID used in the CloudStorageSource
 	cloudStorageSourceBucketID string
-	storageClient              *storage.Client
 
-	probePort    int
+	// The storage client used in the CloudStorageSource
+	storageClient *storage.Client
+
+	// Handle for the bucket used in the CloudStorageSource probe
+	bucket *storage.BucketHandle
+
+	// The port through which the probe helper receives probe requests
+	probePort int
+
+	// The port through which the probe helper receives source events
 	receiverPort int
 
+	// The duration after which the probe helper times out after forwarding an event
 	timeoutDuration time.Duration
 
+	// The map of received events to be tracked by the probe and receiver clients
+	receivedEvents *receivedEventsMap
+
+	// The health checker invoked in the liveness probe
 	healthChecker *healthChecker
 }
 
 func (ph *ProbeHelper) run(ctx context.Context) {
+	var err error
 	logger := logging.FromContext(ctx)
 
 	// create pubsub client
-	pst, err := cepubsub.New(ctx,
-		cepubsub.WithClient(ph.pubsubClient),
-		cepubsub.WithProjectID(ph.projectID),
-		cepubsub.WithTopicID(ph.cloudPubSubSourceTopicID))
-	if err != nil {
-		logger.Fatal("Failed to create pubsub transport", zap.Error(err))
+	if ph.pubsubClient == nil {
+		ph.pubsubClient, err = pubsub.NewClient(ctx, ph.projectID)
+		if err != nil {
+			logger.Fatal("Failed to create cloud pubsub client", zap.Error(err))
+		}
 	}
-	psc, err := cloudevents.NewClient(pst)
-	if err != nil {
-		logger.Fatal("Failed to create CloudEvents pubsub client", zap.Error(err))
+	if ph.cePubsubClient == nil {
+		pst, err := cepubsub.New(ctx,
+			cepubsub.WithClient(ph.pubsubClient),
+			cepubsub.WithProjectID(ph.projectID),
+			cepubsub.WithTopicID(ph.cloudPubSubSourceTopicID))
+		if err != nil {
+			logger.Fatal("Failed to create pubsub transport", zap.Error(err))
+		}
+		ph.cePubsubClient, err = cloudevents.NewClient(pst)
+		if err != nil {
+			logger.Fatal("Failed to create CloudEvents pubsub client", zap.Error(err))
+		}
 	}
 
 	// create cloud storage client
@@ -375,26 +536,32 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 			logger.Fatal("Failed to create cloud storage client", zap.Error(err))
 		}
 	}
-	bkt := ph.storageClient.Bucket(ph.cloudStorageSourceBucketID)
+	if ph.bucket == nil {
+		ph.bucket = ph.storageClient.Bucket(ph.cloudStorageSourceBucketID)
+	}
 
 	// create sender client
-	sp, err := cloudevents.NewHTTP(cloudevents.WithTarget(ph.brokerURL), cloudevents.WithPort(ph.probePort))
-	if err != nil {
-		logger.Fatal("Failed to create sender transport", zap.Error(err))
-	}
-	sc, err := cloudevents.NewClient(sp)
-	if err != nil {
-		logger.Fatal("Failed to create sender client", zap.Error(err))
+	if ph.probeClient == nil {
+		sp, err := cloudevents.NewHTTP(cloudevents.WithTarget(ph.brokerURL), cloudevents.WithPort(ph.probePort))
+		if err != nil {
+			logger.Fatal("Failed to create sender transport", zap.Error(err))
+		}
+		ph.probeClient, err = cloudevents.NewClient(sp)
+		if err != nil {
+			logger.Fatal("Failed to create sender client", zap.Error(err))
+		}
 	}
 
 	// create receiver client
-	rp, err := cloudevents.NewHTTP(cloudevents.WithPort(ph.receiverPort))
-	if err != nil {
-		logger.Fatal("Failed to create receiver transport", zap.Error(err))
-	}
-	rc, err := cloudevents.NewClient(rp)
-	if err != nil {
-		logger.Fatal("Failed to create receiver client", zap.Error(err))
+	if ph.receiverClient == nil {
+		rp, err := cloudevents.NewHTTP(cloudevents.WithPort(ph.receiverPort))
+		if err != nil {
+			logger.Fatal("Failed to create receiver transport", zap.Error(err))
+		}
+		ph.receiverClient, err = cloudevents.NewClient(rp)
+		if err != nil {
+			logger.Fatal("Failed to create receiver client", zap.Error(err))
+		}
 	}
 
 	// start the health checker
@@ -404,15 +571,17 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 	go ph.healthChecker.start(ctx)
 
 	// make a map to store the channel for each event
-	receivedEvents := &receivedEventsMap{
-		channels: make(map[string]chan bool),
+	if ph.receivedEvents == nil {
+		ph.receivedEvents = &receivedEventsMap{
+			channels: make(map[string]chan bool),
+		}
 	}
 
 	// start a goroutine to receive the event from probe and forward it appropriately
 	logger.Info("Starting Probe Helper server...")
-	go sc.StartReceiver(ctx, ph.forwardFromProbe(ctx, sc, psc, ph.pubsubClient, bkt, receivedEvents))
+	go ph.probeClient.StartReceiver(ctx, ph.forwardFromProbe(ctx))
 
 	// Receive the event and return the result back to the probe
 	logger.Info("Starting event receiver...")
-	rc.StartReceiver(ctx, ph.receiveEvent(ctx, receivedEvents))
+	ph.receiverClient.StartReceiver(ctx, ph.receiveEvent(ctx))
 }
