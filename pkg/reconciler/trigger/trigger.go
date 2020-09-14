@@ -160,7 +160,7 @@ func (r *Reconciler) resolveSubscriber(ctx context.Context, t *brokerv1beta1.Tri
 		t.Spec.Subscriber.Ref.Namespace = t.GetNamespace()
 	}
 
-	subscriberURI, err := r.uriResolver.URIFromDestinationV1(t.Spec.Subscriber, b)
+	subscriberURI, err := r.uriResolver.URIFromDestinationV1(ctx, t.Spec.Subscriber, b)
 	if err != nil {
 		logging.FromContext(ctx).Error("Unable to get the Subscriber's URI", zap.Error(err))
 		t.Status.MarkSubscriberResolvedFailed("Unable to get the Subscriber's URI", "%v", err)
@@ -333,7 +333,7 @@ func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *brokerv1b
 			t.Status.MarkDependencyFailed("ReferenceError", "Unable to unmarshal objectReference from dependency annotation of trigger: %v", err)
 			return fmt.Errorf("getting object ref from dependency annotation %q: %v", dependencyAnnotation, err)
 		}
-		trackKResource := r.kresourceTracker.TrackInNamespace(t)
+		trackKResource := r.kresourceTracker.TrackInNamespace(ctx, t)
 		// Trigger and its dependent source are in the same namespace, we already did the validation in the webhook.
 		if err := trackKResource(dependencyObjRef); err != nil {
 			t.Status.MarkDependencyUnknown("TrackingError", "Unable to track dependency: %v", err)

@@ -139,7 +139,7 @@ func main() {
 	}
 
 	if metricsConfig != nil {
-		if err := metrics.UpdateExporter(*metricsConfig, logger.Sugar()); err != nil {
+		if err := metrics.UpdateExporter(ctx, *metricsConfig, logger.Sugar()); err != nil {
 			logger.Fatal("Failed to create the metrics exporter", zap.Error(err))
 		}
 	}

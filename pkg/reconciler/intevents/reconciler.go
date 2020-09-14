@@ -30,6 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
@@ -95,10 +96,10 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 	newTopic := resources.MakeTopic(args)
 
 	topics := psb.pubsubClient.InternalV1().Topics(newTopic.Namespace)
-	t, err := topics.Get(newTopic.Name, v1.GetOptions{})
+	t, err := topics.Get(ctx, newTopic.Name, v1.GetOptions{})
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Debug("Creating Topic", zap.Any("topic", newTopic))
-		t, err = topics.Create(newTopic)
+		t, err = topics.Create(ctx, newTopic, metav1.CreateOptions{})
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", newTopic), zap.Error(err))
 			return nil, fmt.Errorf("failed to create Topic: %w", err)
@@ -112,7 +113,7 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 		desired := t.DeepCopy()
 		desired.Spec = newTopic.Spec
 		logging.FromContext(ctx).Desugar().Debug("Updating Topic", zap.Any("topic", desired))
-		t, err = topics.Update(desired)
+		t, err = topics.Update(ctx, desired, v1.UpdateOptions{})
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update Topic", zap.Any("topic", t), zap.Error(err))
 			return nil, fmt.Errorf("failed to update Topic: %w", err)
@@ -155,14 +156,14 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 	newPS := resources.MakePullSubscription(args)
 
 	pullSubscriptions := psb.pubsubClient.InternalV1().PullSubscriptions(namespace)
-	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})
+	ps, err := pullSubscriptions.Get(ctx, name, v1.GetOptions{})
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
 			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, pullSubscriptionGetFailedReason, "Getting PullSubscription failed with: %s", err.Error())
 		}
 		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))
-		ps, err = pullSubscriptions.Create(newPS)
+		ps, err = pullSubscriptions.Create(ctx, newPS, v1.CreateOptions{})
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
 			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, pullSubscriptionCreateFailedReason, "Creating PullSubscription failed with: %s", err.Error())
@@ -173,7 +174,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 		desired := ps.DeepCopy()
 		desired.Spec = newPS.Spec
 		logging.FromContext(ctx).Desugar().Debug("Updating PullSubscription", zap.Any("ps", desired))
-		ps, err = pullSubscriptions.Update(desired)
+		ps, err = pullSubscriptions.Update(ctx, desired, v1.UpdateOptions{})
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update PullSubscription", zap.Any("ps", ps), zap.Error(err))
 			return nil, err
@@ -261,7 +262,7 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	cs := pubsubable.ConditionSet()
 
 	// Delete the topic
-	err := psb.pubsubClient.InternalV1().Topics(namespace).Delete(name, nil)
+	err := psb.pubsubClient.InternalV1().Topics(namespace).Delete(ctx, name, v1.DeleteOptions{})
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete Topic", zap.String("name", name), zap.Error(err))
 		status.MarkTopicUnknown(cs, "TopicDeleteFailed", "Failed to delete Topic: %s", err.Error())
@@ -271,7 +272,7 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	status.ProjectID = ""
 
 	// Delete the pullsubscription
-	err = psb.pubsubClient.InternalV1().PullSubscriptions(namespace).Delete(name, nil)
+	err = psb.pubsubClient.InternalV1().PullSubscriptions(namespace).Delete(ctx, name, v1.DeleteOptions{})
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete PullSubscription", zap.String("name", name), zap.Error(err))
 		status.MarkPullSubscriptionUnknown(cs, "PullSubscriptionDeleteFailed", "Failed to delete PullSubscription: %s", err.Error())
