@@ -15,8 +15,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: config-data-residency
+  name: config-dataresidency
   namespace: cloud-run-events
+  annotations:
+    knative.dev/example-checksum: "5e76f9d5"
 data:
   default-dataresidency-config: |
     clusterDefaults:
