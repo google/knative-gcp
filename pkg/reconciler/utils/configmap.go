@@ -17,11 +17,13 @@ limitations under the License.
 package utils
 
 import (
+	"context"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
@@ -47,10 +49,10 @@ func DefaultConfigMapEqual(cm1, cm2 *corev1.ConfigMap) bool {
 }
 
 // ReconcileConfigMap reconciles the K8s ConfigMap 'cm'.
-func (r *ConfigMapReconciler) ReconcileConfigMap(obj runtime.Object, cm *corev1.ConfigMap, eqFunc func(*corev1.ConfigMap, *corev1.ConfigMap) bool, handlers ...cache.ResourceEventHandlerFuncs) (*corev1.ConfigMap, error) {
+func (r *ConfigMapReconciler) ReconcileConfigMap(ctx context.Context, obj runtime.Object, cm *corev1.ConfigMap, eqFunc func(*corev1.ConfigMap, *corev1.ConfigMap) bool, handlers ...cache.ResourceEventHandlerFuncs) (*corev1.ConfigMap, error) {
 	current, err := r.Lister.ConfigMaps(cm.Namespace).Get(cm.Name)
 	if apierrs.IsNotFound(err) {
-		current, err = r.KubeClient.CoreV1().ConfigMaps(cm.Namespace).Create(cm)
+		current, err = r.KubeClient.CoreV1().ConfigMaps(cm.Namespace).Create(ctx, cm, metav1.CreateOptions{})
 		if apierrs.IsAlreadyExists(err) {
 			return current, nil
 		}
@@ -73,7 +75,7 @@ func (r *ConfigMapReconciler) ReconcileConfigMap(obj runtime.Object, cm *corev1.
 		desired := current.DeepCopy()
 		desired.Data = cm.Data
 		desired.BinaryData = cm.BinaryData
-		res, err := r.KubeClient.CoreV1().ConfigMaps(desired.Namespace).Update(desired)
+		res, err := r.KubeClient.CoreV1().ConfigMaps(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		if err == nil {
 			r.Recorder.Eventf(obj, corev1.EventTypeNormal, configMapUpdated, "Updated configmap %s/%s", res.Namespace, res.Name)
 			for _, h := range handlers {

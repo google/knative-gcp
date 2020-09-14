@@ -17,10 +17,13 @@ limitations under the License.
 package utils
 
 import (
+	"context"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
@@ -39,10 +42,10 @@ type DeploymentReconciler struct {
 }
 
 // ReconcileDeployment reconciles the K8s Deployment 'd'.
-func (r *DeploymentReconciler) ReconcileDeployment(obj runtime.Object, d *appsv1.Deployment) (*appsv1.Deployment, error) {
+func (r *DeploymentReconciler) ReconcileDeployment(ctx context.Context, obj runtime.Object, d *appsv1.Deployment) (*appsv1.Deployment, error) {
 	current, err := r.Lister.Deployments(d.Namespace).Get(d.Name)
 	if apierrs.IsNotFound(err) {
-		current, err = r.KubeClient.AppsV1().Deployments(d.Namespace).Create(d)
+		current, err = r.KubeClient.AppsV1().Deployments(d.Namespace).Create(ctx, d, metav1.CreateOptions{})
 		if apierrs.IsAlreadyExists(err) {
 			return current, nil
 		}
@@ -58,7 +61,7 @@ func (r *DeploymentReconciler) ReconcileDeployment(obj runtime.Object, d *appsv1
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = d.Spec
-		d, err := r.KubeClient.AppsV1().Deployments(desired.Namespace).Update(desired)
+		d, err := r.KubeClient.AppsV1().Deployments(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		if err == nil {
 			r.Recorder.Eventf(obj, corev1.EventTypeNormal, deploymentUpdated, "Updated deployment %s/%s", d.Namespace, d.Name)
 		}
