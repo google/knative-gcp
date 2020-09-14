@@ -436,6 +436,8 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context) cloudEventsFunc {
 				//     methodname: google.pubsub.v1.Publisher.DeleteTopic
 				//     resourcename: projects/project-id/topics/cloudauditlogssource-probe-914e5946-5e27-4bde-a455-7cfbae1c8539
 				//     servicename: pubsub.googleapis.com
+				//   Data,
+				//     { ... }
 				channelID = sepSub[4] + "-" + CloudAuditLogsSourceProbeDeleteSubject
 			default:
 				return logACK(ctx, "Unrecognized CloudEvent methodname extension: %v", event.Extensions()["methodname"])
