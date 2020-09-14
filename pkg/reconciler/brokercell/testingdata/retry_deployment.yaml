@@ -32,6 +32,11 @@ spec:
       app: cloud-run-events
       brokerCell: test-brokercell
       role: retry
+  minReadySeconds: 60
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels: *labels
