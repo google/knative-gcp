@@ -42,8 +42,6 @@ const (
 	CloudStorageSourceProbeArchiveSubject        = "archive"
 	CloudStorageSourceProbeDeleteSubject         = "delete"
 	CloudSchedulerSourceProbeEventType           = "cloudschedulersource-probe"
-
-	cloudSchedulerSourceProbeChannelID = "cloudschedulersource-probe-channel-id"
 )
 
 type healthChecker struct {

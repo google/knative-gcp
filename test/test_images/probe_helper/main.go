@@ -100,8 +100,8 @@ type envConfig struct {
 	// Environment variable containing the CloudStorageSource Bucket ID that objects will be written to by the probeHelper for the CloudStorageSource probe
 	CloudStorageSourceBucketID string `envconfig:"CLOUDSTORAGESOURCE_BUCKET_ID" default:"cloudstoragesource-bucket"`
 
-	// Environment variable containing the duration between events emitted by the CloudSchedulerSource
-	CloudSchedulerSourcePeriod time.Duration `envconfig:"CLOUDSCHEDULERSOURCE_PERIOD" default:"1m"`
+	// Environment variable containing an upper bound on the duration between events emitted by the CloudSchedulerSource
+	CloudSchedulerSourcePeriod time.Duration `envconfig:"CLOUDSCHEDULERSOURCE_PERIOD" default:"90s"`
 
 	// Environment variable containing the port which listens to the probe to deliver the event
 	ProbePort int `envconfig:"PROBE_PORT" default:"8070"`
