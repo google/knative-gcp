@@ -34,8 +34,8 @@ import (
 // Handler pulls Pubsub messages as events and processes them
 // with chain of processors.
 type Handler struct {
-	// PubsubEvents is the CloudEvents Pubsub protocol to pull
-	// messages as events.
+	// Subscription is the pubsub subscription that messages will be
+	// received from.
 	Subscription *pubsub.Subscription
 
 	// Processor is the processor to process events.
@@ -46,7 +46,9 @@ type Handler struct {
 
 	// cancel is function to stop pulling messages.
 	cancel context.CancelFunc
-	alive  atomic.Value
+
+	// alive is a bool indicator that the handler is still alive.
+	alive atomic.Value
 }
 
 // NewHandler creates a new Handler.
@@ -85,6 +87,7 @@ func (h *Handler) IsAlive() bool {
 	return h.alive.Load().(bool)
 }
 
+// receive converts message to events and invoke processor chain.
 func (h *Handler) receive(ctx context.Context, msg *pubsub.Message) {
 	ctx = metrics.StartEventProcessing(ctx)
 	event, err := binding.ToEvent(ctx, cepubsub.NewMessage(msg))
