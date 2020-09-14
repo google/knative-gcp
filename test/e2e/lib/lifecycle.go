@@ -43,7 +43,7 @@ import (
 )
 
 // Setup runs the Setup in the common eventing test framework.
-func Setup(t *testing.T, runInParallel, workloadIdentity bool) *Client {
+func Setup(ctx context.Context, t *testing.T, runInParallel, workloadIdentity bool) *Client {
 	t.Helper()
 	client, err := newClient(pkgTest.Flags.Kubeconfig, pkgTest.Flags.Cluster)
 	if err != nil {
@@ -55,7 +55,7 @@ func Setup(t *testing.T, runInParallel, workloadIdentity bool) *Client {
 	client.Namespace = coreClient.Namespace
 	client.Tracker = coreClient.Tracker
 	client.T = t
-	GetCredential(coreClient, workloadIdentity)
+	GetCredential(ctx, coreClient, workloadIdentity)
 	return client
 }
 
@@ -73,10 +73,10 @@ func newClient(configPath string, clusterName string) (*Client, error) {
 }
 
 // TearDown runs the TearDown in the common eventing test framework.
-func TearDown(client *Client) {
+func TearDown(ctx context.Context, client *Client) {
 	client.T.Helper()
 
-	printAllPodMetricsIfTestFailed(client)
+	printAllPodMetricsIfTestFailed(ctx, client)
 	lib.TearDown(client.Core)
 }
 
@@ -92,10 +92,10 @@ type Client struct {
 
 var setStackDriverConfigOnce = sync.Once{}
 
-func (c *Client) SetupStackDriverMetrics(t *testing.T) {
+func (c *Client) SetupStackDriverMetrics(ctx context.Context, t *testing.T) {
 	t.Helper()
 	setStackDriverConfigOnce.Do(func() {
-		err := c.Core.Kube.UpdateConfigMap("cloud-run-events", "config-observability", map[string]string{
+		err := c.Core.Kube.UpdateConfigMap(ctx, "cloud-run-events", "config-observability", map[string]string{
 			"metrics.allow-stackdriver-custom-metrics":     "false",
 			"metrics.backend-destination":                  "stackdriver",
 			"metrics.stackdriver-custom-metrics-subdomain": "cloud.google.com",
@@ -107,9 +107,9 @@ func (c *Client) SetupStackDriverMetrics(t *testing.T) {
 	})
 }
 
-func (c *Client) SetupStackDriverMetricsInNamespace(t *testing.T) {
+func (c *Client) SetupStackDriverMetricsInNamespace(ctx context.Context, t *testing.T) {
 	t.Helper()
-	c.SetupStackDriverMetrics(t)
+	c.SetupStackDriverMetrics(ctx, t)
 	_ = c.Core.CreateConfigMapOrFail("eventing-config-observability", c.Namespace, map[string]string{
 		"metrics.allow-stackdriver-custom-metrics":     "true",
 		"metrics.backend-destination":                  "stackdriver",
@@ -125,10 +125,10 @@ const (
 
 // TODO(chizhg): move this function to knative/pkg/test or knative/eventing/test
 // WaitForResourceReady waits until the specified resource in the given namespace are ready.
-func (c *Client) WaitUntilJobDone(namespace, name string) (string, error) {
+func (c *Client) WaitUntilJobDone(ctx context.Context, namespace, name string) (string, error) {
 	cc := c.Core
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		job, err := cc.Kube.Kube.BatchV1().Jobs(namespace).Get(name, metav1.GetOptions{})
+		job, err := cc.Kube.Kube.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				log.Println(namespace, name, "not found", err)
@@ -175,10 +175,10 @@ func (c *Client) WaitUntilJobDone(namespace, name string) (string, error) {
 }
 
 // TODO(chizhg): move this function to knative/pkg/test or knative/eventing/test
-func (c *Client) LogsFor(namespace, name string, tm *metav1.TypeMeta) (string, error) {
+func (c *Client) LogsFor(ctx context.Context, namespace, name string, tm *metav1.TypeMeta) (string, error) {
 	cc := c.Core
 	// Get all pods in this namespace.
-	pods, err := cc.Kube.Kube.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	pods, err := cc.Kube.Kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -189,7 +189,7 @@ func (c *Client) LogsFor(namespace, name string, tm *metav1.TypeMeta) (string, e
 	for _, pod := range pods.Items {
 		if strings.HasPrefix(pod.Name, name) {
 			// Collect all the logs from all the containers for this pod.
-			if l, err := cc.Kube.Kube.CoreV1().Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{}).DoRaw(); err != nil {
+			if l, err := cc.Kube.Kube.CoreV1().Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{}).DoRaw(ctx); err != nil {
 				logs = append(logs, err.Error())
 			} else {
 				logs = append(logs, string(l))

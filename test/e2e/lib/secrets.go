@@ -17,6 +17,7 @@ limitations under the License.
 package lib
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -33,14 +34,14 @@ const (
 var setTracingConfigOnce = sync.Once{}
 
 // DuplicatePubSubSecret duplicates the PubSub secret to the test namespace.
-func DuplicatePubSubSecret(client *eventingtestlib.Client) {
+func DuplicatePubSubSecret(ctx context.Context, client *eventingtestlib.Client) {
 	client.T.Helper()
-	secret, err := client.Kube.Kube.CoreV1().Secrets(pubSubSecretNamespace).Get(pubSubSecretName, metav1.GetOptions{})
+	secret, err := client.Kube.Kube.CoreV1().Secrets(pubSubSecretNamespace).Get(ctx, pubSubSecretName, metav1.GetOptions{})
 	if err != nil {
 		client.T.Fatalf("could not get secret: %v", err)
 	}
 
-	if _, err = client.Kube.Kube.CoreV1().Secrets(client.Namespace).Create(&corev1.Secret{
+	if _, err = client.Kube.Kube.CoreV1().Secrets(client.Namespace).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        secret.Name,
 			Labels:      secret.Labels,
@@ -49,22 +50,22 @@ func DuplicatePubSubSecret(client *eventingtestlib.Client) {
 		Type:       secret.Type,
 		Data:       secret.Data,
 		StringData: secret.StringData,
-	}); err != nil {
+	}, metav1.CreateOptions{}); err != nil {
 		client.T.Fatalf("could not create secret: %v", err)
 	}
 }
 
-func GetCredential(client *eventingtestlib.Client, workloadIdentity bool) {
+func GetCredential(ctx context.Context, client *eventingtestlib.Client, workloadIdentity bool) {
 	client.T.Helper()
 	if !workloadIdentity {
-		DuplicatePubSubSecret(client)
+		DuplicatePubSubSecret(ctx, client)
 	}
 }
 
-func SetTracingToZipkin(client *eventingtestlib.Client) {
+func SetTracingToZipkin(ctx context.Context, client *eventingtestlib.Client) {
 	client.T.Helper()
 	setTracingConfigOnce.Do(func() {
-		err := client.Kube.UpdateConfigMap("cloud-run-events", "config-tracing", map[string]string{
+		err := client.Kube.UpdateConfigMap(ctx, "cloud-run-events", "config-tracing", map[string]string{
 			"backend":         "zipkin",
 			"zipkin-endpoint": "http://zipkin.istio-system.svc.cluster.local:9411/api/v2/spans",
 		})

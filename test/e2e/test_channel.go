@@ -17,7 +17,9 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"testing"
+
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -27,9 +29,10 @@ import (
 
 // SmokeTestChannelImpl makes sure we can run tests.
 func SmokeTestChannelImpl(t *testing.T, authConfig lib.AuthConfig) {
+	ctx := context.Background()
 	t.Helper()
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	channel := kngcptesting.NewChannel("e2e-smoke-test", client.Namespace, kngcptesting.WithChannelServiceAccount(authConfig.ServiceAccountName))
 	client.CreateChannelOrFail(channel)

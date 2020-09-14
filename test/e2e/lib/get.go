@@ -17,14 +17,17 @@ limitations under the License.
 package lib
 
 import (
+	"context"
+
 	eventsv1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (c *Client) GetPubSubOrFail(name string) *eventsv1.CloudPubSubSource {
+	ctx := context.Background()
 	c.T.Helper()
 	pubsubs := c.KnativeGCP.EventsV1().CloudPubSubSources(c.Namespace)
-	existing, err := pubsubs.Get(name, metav1.GetOptions{})
+	existing, err := pubsubs.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to get pubsub %s/%s: %v", c.Namespace, name, err)
 	}
@@ -32,9 +35,10 @@ func (c *Client) GetPubSubOrFail(name string) *eventsv1.CloudPubSubSource {
 }
 
 func (c *Client) GetBuildOrFail(name string) *eventsv1.CloudBuildSource {
+	ctx := context.Background()
 	c.T.Helper()
 	builds := c.KnativeGCP.EventsV1().CloudBuildSources(c.Namespace)
-	existing, err := builds.Get(name, metav1.GetOptions{})
+	existing, err := builds.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to get build %s/%s: %v", c.Namespace, name, err)
 	}
@@ -42,9 +46,10 @@ func (c *Client) GetBuildOrFail(name string) *eventsv1.CloudBuildSource {
 }
 
 func (c *Client) GetSchedulerOrFail(name string) *eventsv1.CloudSchedulerSource {
+	ctx := context.Background()
 	c.T.Helper()
 	schedulers := c.KnativeGCP.EventsV1().CloudSchedulerSources(c.Namespace)
-	existing, err := schedulers.Get(name, metav1.GetOptions{})
+	existing, err := schedulers.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to get scheduler %s/%s: %v", c.Namespace, name, err)
 	}
@@ -52,9 +57,10 @@ func (c *Client) GetSchedulerOrFail(name string) *eventsv1.CloudSchedulerSource 
 }
 
 func (c *Client) GetStorageOrFail(name string) *eventsv1.CloudStorageSource {
+	ctx := context.Background()
 	c.T.Helper()
 	storages := c.KnativeGCP.EventsV1().CloudStorageSources(c.Namespace)
-	existing, err := storages.Get(name, metav1.GetOptions{})
+	existing, err := storages.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to get storages %s/%s: %v", c.Namespace, name, err)
 	}
@@ -62,9 +68,10 @@ func (c *Client) GetStorageOrFail(name string) *eventsv1.CloudStorageSource {
 }
 
 func (c *Client) GetAuditLogsOrFail(name string) *eventsv1.CloudAuditLogsSource {
+	ctx := context.Background()
 	c.T.Helper()
 	auditLogs := c.KnativeGCP.EventsV1().CloudAuditLogsSources(c.Namespace)
-	existing, err := auditLogs.Get(name, metav1.GetOptions{})
+	existing, err := auditLogs.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to get auditlogs %s/%s: %v", c.Namespace, name, err)
 	}
