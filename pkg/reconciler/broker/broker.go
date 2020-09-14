@@ -23,10 +23,10 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/pubsub"
+	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	"knative.dev/eventing/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"

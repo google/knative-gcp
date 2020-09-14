@@ -32,7 +32,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/extensions"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"knative.dev/eventing/pkg/logging"
+	"github.com/google/knative-gcp/pkg/logging"
 )
 
 const projectEnvKey = "PROJECT_ID"

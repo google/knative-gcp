@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/logging"
 )
 
 const (

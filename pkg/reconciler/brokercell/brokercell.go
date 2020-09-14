@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/logging"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
@@ -31,7 +32,6 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	hpav2beta2listers "k8s.io/client-go/listers/autoscaling/v2beta2"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler/names"
 	pkgreconciler "knative.dev/pkg/reconciler"
 

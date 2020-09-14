@@ -20,11 +20,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/apis/eventing"
-	"knative.dev/eventing/pkg/logging"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"

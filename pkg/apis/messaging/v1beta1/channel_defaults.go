@@ -19,7 +19,7 @@ package v1beta1
 import (
 	"context"
 
-	"knative.dev/eventing/pkg/logging"
+	"github.com/google/knative-gcp/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 

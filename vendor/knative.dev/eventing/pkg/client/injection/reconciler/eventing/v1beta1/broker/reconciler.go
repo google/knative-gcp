@@ -246,13 +246,17 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 			return fmt.Errorf("failed to set finalizers: %w", err)
 		}
 
-		reconciler.PreProcessReconcile(ctx, resource)
+		if !r.skipStatusUpdates {
+			reconciler.PreProcessReconcile(ctx, resource)
+		}
 
 		// Reconcile this copy of the resource and then write back any status
 		// updates regardless of whether the reconciliation errored out.
 		reconcileEvent = do(ctx, resource)
 
-		reconciler.PostProcessReconcile(ctx, resource, original)
+		if !r.skipStatusUpdates {
+			reconciler.PostProcessReconcile(ctx, resource, original)
+		}
 
 	case reconciler.DoFinalizeKind:
 		// For finalizing reconcilers, if this resource being marked for deletion
@@ -322,7 +326,7 @@ func (r *reconcilerImpl) updateStatus(ctx context.Context, existing *v1beta1.Bro
 
 			getter := r.Client.EventingV1beta1().Brokers(desired.Namespace)
 
-			existing, err = getter.Get(desired.Name, metav1.GetOptions{})
+			existing, err = getter.Get(ctx, desired.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -341,7 +345,7 @@ func (r *reconcilerImpl) updateStatus(ctx context.Context, existing *v1beta1.Bro
 
 		updater := r.Client.EventingV1beta1().Brokers(existing.Namespace)
 
-		_, err = updater.UpdateStatus(existing)
+		_, err = updater.UpdateStatus(ctx, existing, metav1.UpdateOptions{})
 		return err
 	})
 }
@@ -399,7 +403,7 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource 
 	patcher := r.Client.EventingV1beta1().Brokers(resource.Namespace)
 
 	resourceName := resource.Name
-	resource, err = patcher.Patch(resourceName, types.MergePatchType, patch)
+	resource, err = patcher.Patch(ctx, resourceName, types.MergePatchType, patch, metav1.PatchOptions{})
 	if err != nil {
 		r.Recorder.Eventf(resource, v1.EventTypeWarning, "FinalizerUpdateFailed",
 			"Failed to update finalizers for %q: %v", resourceName, err)
