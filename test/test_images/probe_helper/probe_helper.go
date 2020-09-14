@@ -53,13 +53,13 @@ type healthChecker struct {
 	port                       int
 }
 
-func (t *eventTimestamp) reportHealth() {
+func (t *eventTimestamp) setNow() {
 	t.Lock()
 	defer t.Unlock()
 	t.time = time.Now()
 }
 
-func (t *eventTimestamp) lastTime() time.Time {
+func (t *eventTimestamp) getTime() time.Time {
 	t.RLock()
 	defer t.RUnlock()
 	return t.time
@@ -71,8 +71,8 @@ func (c *healthChecker) ServeHTTP(w nethttp.ResponseWriter, req *nethttp.Request
 		return
 	}
 	now := time.Now()
-	if (now.Sub(c.lastProbeEventTimestamp.lastTime()) > c.maxStaleDuration) ||
-		(now.Sub(c.lastReceiverEventTimestamp.lastTime()) > c.maxStaleDuration) {
+	if (now.Sub(c.lastProbeEventTimestamp.getTime()) > c.maxStaleDuration) ||
+		(now.Sub(c.lastReceiverEventTimestamp.getTime()) > c.maxStaleDuration) {
 		w.WriteHeader(nethttp.StatusServiceUnavailable)
 		return
 	}
@@ -80,8 +80,8 @@ func (c *healthChecker) ServeHTTP(w nethttp.ResponseWriter, req *nethttp.Request
 }
 
 func (c *healthChecker) start(ctx context.Context) {
-	c.lastProbeEventTimestamp.reportHealth()
-	c.lastReceiverEventTimestamp.reportHealth()
+	c.lastProbeEventTimestamp.setNow()
+	c.lastReceiverEventTimestamp.setNow()
 
 	srv := &nethttp.Server{
 		Addr:    ":" + strconv.Itoa(c.port),
@@ -152,7 +152,7 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context, brokerClient cloude
 		var err error
 		var receiverChannel chan bool
 		logging.FromContext(ctx).Infof("Received probe request: %+v \n", event)
-		ph.healthChecker.lastProbeEventTimestamp.reportHealth()
+		ph.healthChecker.lastProbeEventTimestamp.setNow()
 
 		ctx, cancel := context.WithTimeout(ctx, ph.timeoutDuration)
 		defer cancel()
@@ -247,12 +247,11 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context, brokerClient cloude
 				return logNACK(ctx, "Probe forwarding failed, unrecognized cloud storage probe subject: %v", event.Subject())
 			}
 		case CloudSchedulerSourceProbeEventType:
-			channelID = cloudSchedulerSourceProbeChannelID
-			receiverChannel, err = receivedEvents.createReceiverChannel(channelID)
-			if err != nil {
-				return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
+			// Fail if the delay since the last scheduled tick is greater than the desired period.
+			if delay := time.Now().Sub(ph.lastCloudSchedulerEventTimestamp.getTime()); delay > ph.cloudSchedulerSourcePeriod {
+				return logNACK(ctx, "Probe failed, delay between CloudSchedulerSource ticks exceeds period: %s > %s", delay, ph.cloudSchedulerSourcePeriod)
 			}
-			defer receivedEvents.deleteReceiverChannel(channelID)
+			return cloudevents.ResultACK
 		default:
 			return logNACK(ctx, "Probe forwarding failed, unrecognized event type, %v", event.Type())
 		}
@@ -270,7 +269,7 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context, receivedEvents *receive
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		logging.FromContext(ctx).Infof("Received event: %+v \n", event)
-		ph.healthChecker.lastReceiverEventTimestamp.reportHealth()
+		ph.healthChecker.lastReceiverEventTimestamp.setNow()
 
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
@@ -312,7 +311,8 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context, receivedEvents *receive
 			}
 			channelID = channelID + "-" + CloudStorageSourceProbeDeleteSubject
 		case schemasv1.CloudSchedulerJobExecutedEventType:
-			channelID = cloudSchedulerSourceProbeChannelID
+			// Refresh the last received event timestamp from the CloudSchedulerSource.
+			ph.lastCloudSchedulerEventTimestamp.setNow()
 		default:
 			return logACK(ctx, "Unrecognized event type: %v", event.Type())
 		}
@@ -339,6 +339,9 @@ type ProbeHelper struct {
 	cloudStorageSourceBucketID string
 	storageClient              *storage.Client
 
+	cloudSchedulerSourcePeriod       time.Duration
+	lastCloudSchedulerEventTimestamp eventTimestamp
+
 	probePort    int
 	receiverPort int
 
@@ -349,6 +352,9 @@ type ProbeHelper struct {
 
 func (ph *ProbeHelper) run(ctx context.Context) {
 	logger := logging.FromContext(ctx)
+
+	// initialize the cloud scheduler event timestamp
+	ph.lastCloudSchedulerEventTimestamp.setNow()
 
 	// create pubsub client
 	pst, err := cepubsub.New(ctx,

@@ -64,14 +64,13 @@ The Probe Helper can handle multiple different types of probes.
 		This probe is unlike the others in that it does not measure e2e delivery
 		by sending and receiving uniquely identifiable events. Instead, it depends
 		on an existing CloudSchedulerSource which sinks an event to the Probe Helper
-		receiver every minute. We expect the Probe Helper to receive a CloudSchedulerSource
-		probe every 2 minutes, and once received, the Probe Helper anticipates the
-		next tick in the Cloud Scheduler job, timing out after 2 minutes.
+		receiver every minute.
 
-	1. The Probe Helper receives an event of type `cloudschedulersource-probe`,
-		 and waits to be notified of the next scheduled tick by the CloudSchedulerSource.
-	2. The Probe Helper receives an event of type
-		 `schemasv1.CloudSchedulerJobExecutedEventType`, indicating the scheduled tick.
+		The Probe Helper receives an event of type `cloudschedulersource-probe`,
+		and examines the time since the last tick observed from the CloudSchedulerSource.
+		If this duration is greater than 1 minute, the probe fails, and otherwise,
+		the probe succeeds.
+
 */
 
 package main
@@ -100,6 +99,9 @@ type envConfig struct {
 
 	// Environment variable containing the CloudStorageSource Bucket ID that objects will be written to by the probeHelper for the CloudStorageSource probe
 	CloudStorageSourceBucketID string `envconfig:"CLOUDSTORAGESOURCE_BUCKET_ID" default:"cloudstoragesource-bucket"`
+
+	// Environment variable containing the duration between events emitted by the CloudSchedulerSource
+	CloudSchedulerSourcePeriod time.Duration `envconfig:"CLOUDSCHEDULERSOURCE_PERIOD" default:"1m"`
 
 	// Environment variable containing the port which listens to the probe to deliver the event
 	ProbePort int `envconfig:"PROBE_PORT" default:"8070"`
@@ -135,6 +137,7 @@ func main() {
 		receiverPort:               env.ReceiverPort,
 		cloudPubSubSourceTopicID:   env.CloudPubSubSourceTopicID,
 		cloudStorageSourceBucketID: env.CloudStorageSourceBucketID,
+		cloudSchedulerSourcePeriod: env.CloudSchedulerSourcePeriod,
 		timeoutDuration:            env.TimeoutDuration,
 		healthChecker: &healthChecker{
 			port:             env.HealthCheckerPort,
