@@ -19,6 +19,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"time"
 
 	v1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
@@ -37,15 +38,15 @@ type CloudBuildSourcesGetter interface {
 
 // CloudBuildSourceInterface has methods to work with CloudBuildSource resources.
 type CloudBuildSourceInterface interface {
-	Create(*v1beta1.CloudBuildSource) (*v1beta1.CloudBuildSource, error)
-	Update(*v1beta1.CloudBuildSource) (*v1beta1.CloudBuildSource, error)
-	UpdateStatus(*v1beta1.CloudBuildSource) (*v1beta1.CloudBuildSource, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1beta1.CloudBuildSource, error)
-	List(opts v1.ListOptions) (*v1beta1.CloudBuildSourceList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.CloudBuildSource, err error)
+	Create(ctx context.Context, cloudBuildSource *v1beta1.CloudBuildSource, opts v1.CreateOptions) (*v1beta1.CloudBuildSource, error)
+	Update(ctx context.Context, cloudBuildSource *v1beta1.CloudBuildSource, opts v1.UpdateOptions) (*v1beta1.CloudBuildSource, error)
+	UpdateStatus(ctx context.Context, cloudBuildSource *v1beta1.CloudBuildSource, opts v1.UpdateOptions) (*v1beta1.CloudBuildSource, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1beta1.CloudBuildSource, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1beta1.CloudBuildSourceList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.CloudBuildSource, err error)
 	CloudBuildSourceExpansion
 }
 
@@ -64,20 +65,20 @@ func newCloudBuildSources(c *EventsV1beta1Client, namespace string) *cloudBuildS
 }
 
 // Get takes name of the cloudBuildSource, and returns the corresponding cloudBuildSource object, and an error if there is any.
-func (c *cloudBuildSources) Get(name string, options v1.GetOptions) (result *v1beta1.CloudBuildSource, err error) {
+func (c *cloudBuildSources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.CloudBuildSource, err error) {
 	result = &v1beta1.CloudBuildSource{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("cloudbuildsources").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of CloudBuildSources that match those selectors.
-func (c *cloudBuildSources) List(opts v1.ListOptions) (result *v1beta1.CloudBuildSourceList, err error) {
+func (c *cloudBuildSources) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.CloudBuildSourceList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *cloudBuildSources) List(opts v1.ListOptions) (result *v1beta1.CloudBuil
 		Resource("cloudbuildsources").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested cloudBuildSources.
-func (c *cloudBuildSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *cloudBuildSources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *cloudBuildSources) Watch(opts v1.ListOptions) (watch.Interface, error) 
 		Resource("cloudbuildsources").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a cloudBuildSource and creates it.  Returns the server's representation of the cloudBuildSource, and an error, if there is any.
-func (c *cloudBuildSources) Create(cloudBuildSource *v1beta1.CloudBuildSource) (result *v1beta1.CloudBuildSource, err error) {
+func (c *cloudBuildSources) Create(ctx context.Context, cloudBuildSource *v1beta1.CloudBuildSource, opts v1.CreateOptions) (result *v1beta1.CloudBuildSource, err error) {
 	result = &v1beta1.CloudBuildSource{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("cloudbuildsources").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(cloudBuildSource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a cloudBuildSource and updates it. Returns the server's representation of the cloudBuildSource, and an error, if there is any.
-func (c *cloudBuildSources) Update(cloudBuildSource *v1beta1.CloudBuildSource) (result *v1beta1.CloudBuildSource, err error) {
+func (c *cloudBuildSources) Update(ctx context.Context, cloudBuildSource *v1beta1.CloudBuildSource, opts v1.UpdateOptions) (result *v1beta1.CloudBuildSource, err error) {
 	result = &v1beta1.CloudBuildSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("cloudbuildsources").
 		Name(cloudBuildSource.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(cloudBuildSource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *cloudBuildSources) UpdateStatus(cloudBuildSource *v1beta1.CloudBuildSource) (result *v1beta1.CloudBuildSource, err error) {
+func (c *cloudBuildSources) UpdateStatus(ctx context.Context, cloudBuildSource *v1beta1.CloudBuildSource, opts v1.UpdateOptions) (result *v1beta1.CloudBuildSource, err error) {
 	result = &v1beta1.CloudBuildSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("cloudbuildsources").
 		Name(cloudBuildSource.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(cloudBuildSource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the cloudBuildSource and deletes it. Returns an error if one occurs.
-func (c *cloudBuildSources) Delete(name string, options *v1.DeleteOptions) error {
+func (c *cloudBuildSources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("cloudbuildsources").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *cloudBuildSources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *cloudBuildSources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("cloudbuildsources").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched cloudBuildSource.
-func (c *cloudBuildSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.CloudBuildSource, err error) {
+func (c *cloudBuildSources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.CloudBuildSource, err error) {
 	result = &v1beta1.CloudBuildSource{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("cloudbuildsources").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -37,15 +38,15 @@ type BrokerCellsGetter interface {
 
 // BrokerCellInterface has methods to work with BrokerCell resources.
 type BrokerCellInterface interface {
-	Create(*v1alpha1.BrokerCell) (*v1alpha1.BrokerCell, error)
-	Update(*v1alpha1.BrokerCell) (*v1alpha1.BrokerCell, error)
-	UpdateStatus(*v1alpha1.BrokerCell) (*v1alpha1.BrokerCell, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.BrokerCell, error)
-	List(opts v1.ListOptions) (*v1alpha1.BrokerCellList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.BrokerCell, err error)
+	Create(ctx context.Context, brokerCell *v1alpha1.BrokerCell, opts v1.CreateOptions) (*v1alpha1.BrokerCell, error)
+	Update(ctx context.Context, brokerCell *v1alpha1.BrokerCell, opts v1.UpdateOptions) (*v1alpha1.BrokerCell, error)
+	UpdateStatus(ctx context.Context, brokerCell *v1alpha1.BrokerCell, opts v1.UpdateOptions) (*v1alpha1.BrokerCell, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.BrokerCell, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.BrokerCellList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.BrokerCell, err error)
 	BrokerCellExpansion
 }
 
@@ -64,20 +65,20 @@ func newBrokerCells(c *InternalV1alpha1Client, namespace string) *brokerCells {
 }
 
 // Get takes name of the brokerCell, and returns the corresponding brokerCell object, and an error if there is any.
-func (c *brokerCells) Get(name string, options v1.GetOptions) (result *v1alpha1.BrokerCell, err error) {
+func (c *brokerCells) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.BrokerCell, err error) {
 	result = &v1alpha1.BrokerCell{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("brokercells").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of BrokerCells that match those selectors.
-func (c *brokerCells) List(opts v1.ListOptions) (result *v1alpha1.BrokerCellList, err error) {
+func (c *brokerCells) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.BrokerCellList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *brokerCells) List(opts v1.ListOptions) (result *v1alpha1.BrokerCellList
 		Resource("brokercells").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested brokerCells.
-func (c *brokerCells) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *brokerCells) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *brokerCells) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("brokercells").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a brokerCell and creates it.  Returns the server's representation of the brokerCell, and an error, if there is any.
-func (c *brokerCells) Create(brokerCell *v1alpha1.BrokerCell) (result *v1alpha1.BrokerCell, err error) {
+func (c *brokerCells) Create(ctx context.Context, brokerCell *v1alpha1.BrokerCell, opts v1.CreateOptions) (result *v1alpha1.BrokerCell, err error) {
 	result = &v1alpha1.BrokerCell{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("brokercells").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(brokerCell).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a brokerCell and updates it. Returns the server's representation of the brokerCell, and an error, if there is any.
-func (c *brokerCells) Update(brokerCell *v1alpha1.BrokerCell) (result *v1alpha1.BrokerCell, err error) {
+func (c *brokerCells) Update(ctx context.Context, brokerCell *v1alpha1.BrokerCell, opts v1.UpdateOptions) (result *v1alpha1.BrokerCell, err error) {
 	result = &v1alpha1.BrokerCell{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("brokercells").
 		Name(brokerCell.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(brokerCell).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *brokerCells) UpdateStatus(brokerCell *v1alpha1.BrokerCell) (result *v1alpha1.BrokerCell, err error) {
+func (c *brokerCells) UpdateStatus(ctx context.Context, brokerCell *v1alpha1.BrokerCell, opts v1.UpdateOptions) (result *v1alpha1.BrokerCell, err error) {
 	result = &v1alpha1.BrokerCell{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("brokercells").
 		Name(brokerCell.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(brokerCell).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the brokerCell and deletes it. Returns an error if one occurs.
-func (c *brokerCells) Delete(name string, options *v1.DeleteOptions) error {
+func (c *brokerCells) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("brokercells").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *brokerCells) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *brokerCells) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("brokercells").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched brokerCell.
-func (c *brokerCells) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.BrokerCell, err error) {
+func (c *brokerCells) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.BrokerCell, err error) {
 	result = &v1alpha1.BrokerCell{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("brokercells").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

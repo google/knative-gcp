@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var cloudbuildsourcesResource = schema.GroupVersionResource{Group: "events.cloud
 var cloudbuildsourcesKind = schema.GroupVersionKind{Group: "events.cloud.google.com", Version: "v1alpha1", Kind: "CloudBuildSource"}
 
 // Get takes name of the cloudBuildSource, and returns the corresponding cloudBuildSource object, and an error if there is any.
-func (c *FakeCloudBuildSources) Get(name string, options v1.GetOptions) (result *v1alpha1.CloudBuildSource, err error) {
+func (c *FakeCloudBuildSources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.CloudBuildSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(cloudbuildsourcesResource, c.ns, name), &v1alpha1.CloudBuildSource{})
 
@@ -50,7 +52,7 @@ func (c *FakeCloudBuildSources) Get(name string, options v1.GetOptions) (result 
 }
 
 // List takes label and field selectors, and returns the list of CloudBuildSources that match those selectors.
-func (c *FakeCloudBuildSources) List(opts v1.ListOptions) (result *v1alpha1.CloudBuildSourceList, err error) {
+func (c *FakeCloudBuildSources) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.CloudBuildSourceList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(cloudbuildsourcesResource, cloudbuildsourcesKind, c.ns, opts), &v1alpha1.CloudBuildSourceList{})
 
@@ -72,14 +74,14 @@ func (c *FakeCloudBuildSources) List(opts v1.ListOptions) (result *v1alpha1.Clou
 }
 
 // Watch returns a watch.Interface that watches the requested cloudBuildSources.
-func (c *FakeCloudBuildSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeCloudBuildSources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(cloudbuildsourcesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a cloudBuildSource and creates it.  Returns the server's representation of the cloudBuildSource, and an error, if there is any.
-func (c *FakeCloudBuildSources) Create(cloudBuildSource *v1alpha1.CloudBuildSource) (result *v1alpha1.CloudBuildSource, err error) {
+func (c *FakeCloudBuildSources) Create(ctx context.Context, cloudBuildSource *v1alpha1.CloudBuildSource, opts v1.CreateOptions) (result *v1alpha1.CloudBuildSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(cloudbuildsourcesResource, c.ns, cloudBuildSource), &v1alpha1.CloudBuildSource{})
 
@@ -90,7 +92,7 @@ func (c *FakeCloudBuildSources) Create(cloudBuildSource *v1alpha1.CloudBuildSour
 }
 
 // Update takes the representation of a cloudBuildSource and updates it. Returns the server's representation of the cloudBuildSource, and an error, if there is any.
-func (c *FakeCloudBuildSources) Update(cloudBuildSource *v1alpha1.CloudBuildSource) (result *v1alpha1.CloudBuildSource, err error) {
+func (c *FakeCloudBuildSources) Update(ctx context.Context, cloudBuildSource *v1alpha1.CloudBuildSource, opts v1.UpdateOptions) (result *v1alpha1.CloudBuildSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(cloudbuildsourcesResource, c.ns, cloudBuildSource), &v1alpha1.CloudBuildSource{})
 
@@ -102,7 +104,7 @@ func (c *FakeCloudBuildSources) Update(cloudBuildSource *v1alpha1.CloudBuildSour
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeCloudBuildSources) UpdateStatus(cloudBuildSource *v1alpha1.CloudBuildSource) (*v1alpha1.CloudBuildSource, error) {
+func (c *FakeCloudBuildSources) UpdateStatus(ctx context.Context, cloudBuildSource *v1alpha1.CloudBuildSource, opts v1.UpdateOptions) (*v1alpha1.CloudBuildSource, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(cloudbuildsourcesResource, "status", c.ns, cloudBuildSource), &v1alpha1.CloudBuildSource{})
 
@@ -113,7 +115,7 @@ func (c *FakeCloudBuildSources) UpdateStatus(cloudBuildSource *v1alpha1.CloudBui
 }
 
 // Delete takes name of the cloudBuildSource and deletes it. Returns an error if one occurs.
-func (c *FakeCloudBuildSources) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeCloudBuildSources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(cloudbuildsourcesResource, c.ns, name), &v1alpha1.CloudBuildSource{})
 
@@ -121,15 +123,15 @@ func (c *FakeCloudBuildSources) Delete(name string, options *v1.DeleteOptions) e
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeCloudBuildSources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(cloudbuildsourcesResource, c.ns, listOptions)
+func (c *FakeCloudBuildSources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(cloudbuildsourcesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.CloudBuildSourceList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched cloudBuildSource.
-func (c *FakeCloudBuildSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CloudBuildSource, err error) {
+func (c *FakeCloudBuildSources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.CloudBuildSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(cloudbuildsourcesResource, c.ns, name, pt, data, subresources...), &v1alpha1.CloudBuildSource{})
 

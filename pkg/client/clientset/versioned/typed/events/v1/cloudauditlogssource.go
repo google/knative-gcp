@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	"time"
 
 	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
@@ -37,15 +38,15 @@ type CloudAuditLogsSourcesGetter interface {
 
 // CloudAuditLogsSourceInterface has methods to work with CloudAuditLogsSource resources.
 type CloudAuditLogsSourceInterface interface {
-	Create(*v1.CloudAuditLogsSource) (*v1.CloudAuditLogsSource, error)
-	Update(*v1.CloudAuditLogsSource) (*v1.CloudAuditLogsSource, error)
-	UpdateStatus(*v1.CloudAuditLogsSource) (*v1.CloudAuditLogsSource, error)
-	Delete(name string, options *metav1.DeleteOptions) error
-	DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error
-	Get(name string, options metav1.GetOptions) (*v1.CloudAuditLogsSource, error)
-	List(opts metav1.ListOptions) (*v1.CloudAuditLogsSourceList, error)
-	Watch(opts metav1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.CloudAuditLogsSource, err error)
+	Create(ctx context.Context, cloudAuditLogsSource *v1.CloudAuditLogsSource, opts metav1.CreateOptions) (*v1.CloudAuditLogsSource, error)
+	Update(ctx context.Context, cloudAuditLogsSource *v1.CloudAuditLogsSource, opts metav1.UpdateOptions) (*v1.CloudAuditLogsSource, error)
+	UpdateStatus(ctx context.Context, cloudAuditLogsSource *v1.CloudAuditLogsSource, opts metav1.UpdateOptions) (*v1.CloudAuditLogsSource, error)
+	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.CloudAuditLogsSource, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*v1.CloudAuditLogsSourceList, error)
+	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.CloudAuditLogsSource, err error)
 	CloudAuditLogsSourceExpansion
 }
 
@@ -64,20 +65,20 @@ func newCloudAuditLogsSources(c *EventsV1Client, namespace string) *cloudAuditLo
 }
 
 // Get takes name of the cloudAuditLogsSource, and returns the corresponding cloudAuditLogsSource object, and an error if there is any.
-func (c *cloudAuditLogsSources) Get(name string, options metav1.GetOptions) (result *v1.CloudAuditLogsSource, err error) {
+func (c *cloudAuditLogsSources) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.CloudAuditLogsSource, err error) {
 	result = &v1.CloudAuditLogsSource{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("cloudauditlogssources").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of CloudAuditLogsSources that match those selectors.
-func (c *cloudAuditLogsSources) List(opts metav1.ListOptions) (result *v1.CloudAuditLogsSourceList, err error) {
+func (c *cloudAuditLogsSources) List(ctx context.Context, opts metav1.ListOptions) (result *v1.CloudAuditLogsSourceList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *cloudAuditLogsSources) List(opts metav1.ListOptions) (result *v1.CloudA
 		Resource("cloudauditlogssources").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested cloudAuditLogsSources.
-func (c *cloudAuditLogsSources) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+func (c *cloudAuditLogsSources) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *cloudAuditLogsSources) Watch(opts metav1.ListOptions) (watch.Interface,
 		Resource("cloudauditlogssources").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a cloudAuditLogsSource and creates it.  Returns the server's representation of the cloudAuditLogsSource, and an error, if there is any.
-func (c *cloudAuditLogsSources) Create(cloudAuditLogsSource *v1.CloudAuditLogsSource) (result *v1.CloudAuditLogsSource, err error) {
+func (c *cloudAuditLogsSources) Create(ctx context.Context, cloudAuditLogsSource *v1.CloudAuditLogsSource, opts metav1.CreateOptions) (result *v1.CloudAuditLogsSource, err error) {
 	result = &v1.CloudAuditLogsSource{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("cloudauditlogssources").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(cloudAuditLogsSource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a cloudAuditLogsSource and updates it. Returns the server's representation of the cloudAuditLogsSource, and an error, if there is any.
-func (c *cloudAuditLogsSources) Update(cloudAuditLogsSource *v1.CloudAuditLogsSource) (result *v1.CloudAuditLogsSource, err error) {
+func (c *cloudAuditLogsSources) Update(ctx context.Context, cloudAuditLogsSource *v1.CloudAuditLogsSource, opts metav1.UpdateOptions) (result *v1.CloudAuditLogsSource, err error) {
 	result = &v1.CloudAuditLogsSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("cloudauditlogssources").
 		Name(cloudAuditLogsSource.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(cloudAuditLogsSource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *cloudAuditLogsSources) UpdateStatus(cloudAuditLogsSource *v1.CloudAuditLogsSource) (result *v1.CloudAuditLogsSource, err error) {
+func (c *cloudAuditLogsSources) UpdateStatus(ctx context.Context, cloudAuditLogsSource *v1.CloudAuditLogsSource, opts metav1.UpdateOptions) (result *v1.CloudAuditLogsSource, err error) {
 	result = &v1.CloudAuditLogsSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("cloudauditlogssources").
 		Name(cloudAuditLogsSource.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(cloudAuditLogsSource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the cloudAuditLogsSource and deletes it. Returns an error if one occurs.
-func (c *cloudAuditLogsSources) Delete(name string, options *metav1.DeleteOptions) error {
+func (c *cloudAuditLogsSources) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("cloudauditlogssources").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *cloudAuditLogsSources) DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error {
+func (c *cloudAuditLogsSources) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("cloudauditlogssources").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched cloudAuditLogsSource.
-func (c *cloudAuditLogsSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.CloudAuditLogsSource, err error) {
+func (c *cloudAuditLogsSources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.CloudAuditLogsSource, err error) {
 	result = &v1.CloudAuditLogsSource{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("cloudauditlogssources").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

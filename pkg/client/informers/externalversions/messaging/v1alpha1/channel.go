@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	time "time"
 
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
@@ -61,13 +62,13 @@ func NewFilteredChannelInformer(client versioned.Interface, namespace string, re
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.MessagingV1alpha1().Channels(namespace).List(options)
+				return client.MessagingV1alpha1().Channels(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.MessagingV1alpha1().Channels(namespace).Watch(options)
+				return client.MessagingV1alpha1().Channels(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&messagingv1alpha1.Channel{},
