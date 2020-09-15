@@ -106,7 +106,22 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 		// Call Finalizer anyway in case the Trigger still holds GCP Broker related resources.
 		// If a Trigger used to point to a GCP Broker but now has a Broker with a different brokerclass,
 		// we should clean up resources related to GCP Broker.
-		return r.FinalizeKind(ctx, t)
+		event := r.FinalizeKind(ctx, t)
+
+		// If a trigger has never pointed to a GCP broker, topic readiness shouldn't block this trigger's
+		// readiness. However, without a reliable way to tell if the trigger has previously pointed
+		// to a GCP broker FinalizeKind called above and other code could potentially change the topic
+		// readiness to UNKNOWN even when it has never pointed to a GCP broker. Always mark the topic ready
+		// here to unblock trigger readiness.
+		// This code can potentially cause problems in cases where the trigger did refer to a GCP
+		// broker which got deleted and recreated with a new non GCP broker. It's necessary to do best
+		// effort GC but the topic is going to be marked ready even when GC fails. This can result in
+		// dangling topic without matching status.
+		// This line should be deleted once the following TODO is finished.
+		// TODO(https://github.com/knative/pkg/issues/1149) Add a FilterKind to genreconciler so it will
+		// skip a trigger if it's not pointed to a gcp broker and doesn't have googlecloud finalizer string.
+		t.Status.MarkTopicReady()
+		return event
 	}
 
 	return r.reconcile(ctx, t, b)
