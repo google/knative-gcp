@@ -618,7 +618,7 @@ func TestAllCases(t *testing.T) {
 				v1.WithInitCloudAuditLogsSourceConditions,
 				v1.WithCloudAuditLogsSourceTopicReady(testTopicID),
 				v1.WithCloudAuditLogsSourceSetDefaults,
-				v1.WithCloudAuditLogsSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
+				v1.WithCloudAuditLogsSourcePullSubscriptionFailed("InvalidSink", `sinks.testing.cloud.google.com "sink" not found`),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{

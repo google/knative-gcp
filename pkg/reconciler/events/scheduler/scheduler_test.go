@@ -641,7 +641,7 @@ func TestAllCases(t *testing.T) {
 					reconcilertestingv1.WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					reconcilertestingv1.WithInitCloudSchedulerSourceConditions,
 					reconcilertestingv1.WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
-					reconcilertestingv1.WithCloudSchedulerSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
+					reconcilertestingv1.WithCloudSchedulerSourcePullSubscriptionFailed("InvalidSink", `sinks.testing.cloud.google.com "sink" not found`),
 					reconcilertestingv1.WithCloudSchedulerSourceSetDefaults,
 				),
 			}},
