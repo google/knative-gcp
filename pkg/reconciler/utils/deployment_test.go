@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
+	"knative.dev/pkg/ptr"
 	pkgreconcilertesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -40,6 +41,10 @@ var (
 	deploymentDifferentSpec = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 		Spec:       appsv1.DeploymentSpec{MinReadySeconds: 20},
+	}
+	deploymentWithReplicas = &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Spec:       appsv1.DeploymentSpec{MinReadySeconds: 10, Replicas: ptr.Int32(3)},
 	}
 
 	deploymentCreateFailure = pkgreconcilertesting.InduceFailure("create", "deployments")
@@ -93,6 +98,14 @@ func TestDeploymentReconciler(t *testing.T) {
 				wantErr:   true,
 			},
 			in: deployment,
+		},
+		{
+			commonCase: commonCase{
+				name:     "deployment exists with different replicas",
+				existing: []runtime.Object{deploymentWithReplicas},
+			},
+			in:   deployment,
+			want: deploymentWithReplicas,
 		},
 	}
 
