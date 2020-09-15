@@ -33,16 +33,12 @@ import (
 // - Removed StatsReporter interface and directly use helper methods instead.
 
 type IngressReportArgs struct {
-	Namespace    string
-	Broker       string
 	EventType    string
 	ResponseCode int
 }
 
 func (r *IngressReporter) register() error {
 	tagKeys := []tag.Key{
-		NamespaceNameKey,
-		BrokerNameKey,
 		EventTypeKey,
 		ResponseCodeKey,
 		ResponseCodeClassKey,
@@ -79,7 +75,7 @@ func NewIngressReporter(podName PodName, containerName ContainerName) (*IngressR
 	return r, nil
 }
 
-// StatsReporter reports ingress metrics.
+// IngressReporter reports ingress metrics.
 type IngressReporter struct {
 	podName       PodName
 	containerName ContainerName
@@ -87,21 +83,18 @@ type IngressReporter struct {
 }
 
 func (r *IngressReporter) ReportEventCount(ctx context.Context, args IngressReportArgs) error {
-	tag, err := tag.New(
-		ctx,
-		tag.Insert(PodNameKey, string(r.podName)),
-		tag.Insert(ContainerNameKey, string(r.containerName)),
-		tag.Insert(NamespaceNameKey, args.Namespace),
-		tag.Insert(BrokerNameKey, args.Broker),
-		tag.Insert(EventTypeKey, EventTypeMetricValue(args.EventType)),
-		tag.Insert(ResponseCodeKey, strconv.Itoa(args.ResponseCode)),
-		tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(args.ResponseCode)),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create metrics tag: %v", err)
-	}
 	// Count does not support exemplar currently, but keeping this anyway for future support.
 	attachments := getSpanContextAttachments(ctx)
-	metrics.Record(tag, r.eventCountM.M(1), stats.WithAttachments(attachments))
+	metrics.Record(
+		ctx, r.eventCountM.M(1),
+		stats.WithAttachments(attachments),
+		stats.WithTags(
+			tag.Insert(PodNameKey, string(r.podName)),
+			tag.Insert(ContainerNameKey, string(r.containerName)),
+			tag.Insert(EventTypeKey, EventTypeMetricValue(args.EventType)),
+			tag.Insert(ResponseCodeKey, strconv.Itoa(args.ResponseCode)),
+			tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(args.ResponseCode)),
+		),
+	)
 	return nil
 }
