@@ -45,7 +45,6 @@ func NewMultiTopicDecoupleSink(
 	publishSettings pubsub.PublishSettings) *multiTopicDecoupleSink {
 
 	return &multiTopicDecoupleSink{
-		logger:          logging.FromContext(ctx),
 		pubsub:          client,
 		publishSettings: publishSettings,
 		brokerConfig:    brokerConfig,
@@ -66,12 +65,11 @@ type multiTopicDecoupleSink struct {
 	// brokerConfig holds configurations for all brokers. It's a view of a configmap populated by
 	// the broker controller.
 	brokerConfig config.ReadonlyTargets
-	logger       *zap.Logger
 }
 
 // Send sends incoming event to its corresponding pubsub topic based on which broker it belongs to.
 func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.NamespacedName, event cev2.Event) protocol.Result {
-	topic, err := m.getTopicForBroker(broker)
+	topic, err := m.getTopicForBroker(ctx, broker)
 	if err != nil {
 		trace.FromContext(ctx).Annotate(
 			[]trace.Attribute{
@@ -93,8 +91,8 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.Namespac
 }
 
 // getTopicForBroker finds the corresponding decouple topic for the broker from the mounted broker configmap volume.
-func (m *multiTopicDecoupleSink) getTopicForBroker(broker types.NamespacedName) (*pubsub.Topic, error) {
-	topicID, err := m.getTopicIDForBroker(broker)
+func (m *multiTopicDecoupleSink) getTopicForBroker(ctx context.Context, broker types.NamespacedName) (*pubsub.Topic, error) {
+	topicID, err := m.getTopicIDForBroker(ctx, broker)
 	if err != nil {
 		return nil, err
 	}
@@ -107,14 +105,14 @@ func (m *multiTopicDecoupleSink) getTopicForBroker(broker types.NamespacedName) 
 	}
 
 	// Topic needs to be created or updated.
-	return m.updateTopicForBroker(broker)
+	return m.updateTopicForBroker(ctx, broker)
 }
 
-func (m *multiTopicDecoupleSink) updateTopicForBroker(broker types.NamespacedName) (*pubsub.Topic, error) {
+func (m *multiTopicDecoupleSink) updateTopicForBroker(ctx context.Context, broker types.NamespacedName) (*pubsub.Topic, error) {
 	m.topicsMut.Lock()
 	defer m.topicsMut.Unlock()
 	// Fetch latest decouple topic ID under lock.
-	topicID, err := m.getTopicIDForBroker(broker)
+	topicID, err := m.getTopicIDForBroker(ctx, broker)
 	if err != nil {
 		return nil, err
 	}
@@ -132,21 +130,21 @@ func (m *multiTopicDecoupleSink) updateTopicForBroker(broker types.NamespacedNam
 	return topic, nil
 }
 
-func (m *multiTopicDecoupleSink) getTopicIDForBroker(broker types.NamespacedName) (string, error) {
+func (m *multiTopicDecoupleSink) getTopicIDForBroker(ctx context.Context, broker types.NamespacedName) (string, error) {
 	brokerConfig, ok := m.brokerConfig.GetBroker(broker.Namespace, broker.Name)
 	if !ok {
 		// There is an propagation delay between the controller reconciles the broker config and
 		// the config being pushed to the configmap volume in the ingress pod. So sometimes we return
 		// an error even if the request is valid.
-		m.logger.Warn("config is not found for", zap.String("broker", broker.String()))
+		logging.FromContext(ctx).Warn("config is not found for", zap.String("broker", broker.String()))
 		return "", fmt.Errorf("%q: %w", broker, ErrNotFound)
 	}
 	if brokerConfig.DecoupleQueue == nil || brokerConfig.DecoupleQueue.Topic == "" {
-		m.logger.Error("DecoupleQueue or topic missing for broker, this should NOT happen.", zap.Any("brokerConfig", brokerConfig))
+		logging.FromContext(ctx).Error("DecoupleQueue or topic missing for broker, this should NOT happen.", zap.Any("brokerConfig", brokerConfig))
 		return "", fmt.Errorf("decouple queue of %q: %w", broker, ErrIncomplete)
 	}
 	if brokerConfig.DecoupleQueue.State != config.State_READY {
-		m.logger.Debug("decouple queue is not ready", zap.Any("ns", broker.Namespace), zap.Any("broker", broker))
+		logging.FromContext(ctx).Debug("decouple queue is not ready", zap.Any("ns", broker.Namespace), zap.Any("broker", broker))
 		return "", fmt.Errorf("%q: %w", broker, ErrNotReady)
 	}
 	return brokerConfig.DecoupleQueue.Topic, nil
