@@ -49,7 +49,7 @@ func TestSingleBinaryEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(context.TODO(), t, binding.EncodingBinary, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(context.TODO(), t, binding.EncodingBinary, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner)
 }
 
 func TestSingleStructuredEventForChannel(t *testing.T) {
@@ -59,7 +59,7 @@ func TestSingleStructuredEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(context.TODO(), t, binding.EncodingStructured, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(context.TODO(), t, binding.EncodingStructured, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner)
 }
 
 func TestChannelClusterDefaulter(t *testing.T) {
@@ -69,7 +69,7 @@ func TestChannelClusterDefaulter(t *testing.T) {
 	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelClusterDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelClusterDefaulterTestHelper(context.TODO(), t, channelTestRunner)
 }
 
 func TestChannelNamespaceDefaulter(t *testing.T) {
@@ -79,7 +79,7 @@ func TestChannelNamespaceDefaulter(t *testing.T) {
 	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelNamespaceDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelNamespaceDefaulterTestHelper(context.TODO(), t, channelTestRunner)
 }
 
 func TestEventTransformationForSubscription(t *testing.T) {
@@ -88,7 +88,7 @@ func TestEventTransformationForSubscription(t *testing.T) {
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.EventTransformationForSubscriptionTestHelper(t, e2ehelpers.SubscriptionV1beta1, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.EventTransformationForSubscriptionTestHelper(context.TODO(), t, e2ehelpers.SubscriptionV1beta1, channelTestRunner)
 }
 
 func TestChannelChain(t *testing.T) {
@@ -97,7 +97,7 @@ func TestChannelChain(t *testing.T) {
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelChainTestHelper(t, e2ehelpers.SubscriptionV1beta1, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelChainTestHelper(context.TODO(), t, e2ehelpers.SubscriptionV1beta1, channelTestRunner)
 }
 
 func TestEventTransformationForTrigger(t *testing.T) {
@@ -113,11 +113,11 @@ func TestEventTransformationForTrigger(t *testing.T) {
 	triggerVersion := "v1beta1"
 	channelTestRunner.RunTests(t, eventingtestlib.FeatureBasic, func(t *testing.T, component metav1.TypeMeta) {
 		e2ehelpers.EventTransformationForTriggerTestHelper(
+			context.TODO(),
 			t,
 			brokerVersion,
 			triggerVersion,
-			e2ehelpers.ChannelBasedBrokerCreator(component, brokerClass),
-			lib.DuplicatePubSubSecret,
+			e2ehelpers.ChannelBasedBrokerCreator(context.TODO(), component, brokerClass)
 		)
 	})
 }
@@ -133,7 +133,7 @@ func TestBrokerChannelFlow(t *testing.T) {
 	brokerClass := "MTChannelBasedBroker"
 	brokerVersion := "v1beta1"
 	triggerVersion := "v1beta1"
-	e2ehelpers.BrokerChannelFlowWithTransformation(t, brokerClass, brokerVersion, triggerVersion, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.BrokerChannelFlowWithTransformation(context.TODO(), t, brokerClass, brokerVersion, triggerVersion, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelDeadLetterSink(t *testing.T) {
@@ -143,7 +143,7 @@ func TestChannelDeadLetterSink(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelDeadLetterSinkTestHelper(t, e2ehelpers.SubscriptionV1beta1, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelDeadLetterSinkTestHelper(context.TODO(), t, e2ehelpers.SubscriptionV1beta1, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelTracing(t *testing.T) {
@@ -153,7 +153,7 @@ func TestChannelTracing(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/1455 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	conformancehelpers.ChannelTracingTestHelperWithChannelTestRunner(t,
+	conformancehelpers.ChannelTracingTestHelperWithChannelTestRunner(context.TODO(), t,
 		channelTestRunner,
 		func(client *eventingtestlib.Client) {
 			// This test is running based on code in knative/eventing, so it does not use the same
