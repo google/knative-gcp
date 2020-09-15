@@ -36,6 +36,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
@@ -81,6 +82,8 @@ type Reconciler struct {
 
 	// pubsubClient is used as the Pubsub client when present.
 	pubsubClient *pubsub.Client
+
+	dataresidencyStore *dataresidency.Store
 }
 
 // Check that TriggerReconciler implements Interface
@@ -223,6 +226,12 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	// Check if topic exists, and if not, create it.
 	topicID := resources.GenerateRetryTopicName(trig)
 	topicConfig := &pubsub.TopicConfig{Labels: labels}
+	if dataresidencyConfig := r.dataresidencyStore.Load(); dataresidencyConfig != nil {
+		if allowedRegions := dataresidencyConfig.DataResidencyDefaults.AllowedPersistenceRegions(); len(allowedRegions) != 0 {
+			topicConfig.MessageStoragePolicy.AllowedPersistenceRegions = allowedRegions
+			logging.FromContext(ctx).Info("Updated Topic Config for Trigger", zap.Any("topicConfig", *topicConfig))
+		}
+	}
 	topic, err := pubsubReconciler.ReconcileTopic(ctx, topicID, topicConfig, trig, &trig.Status)
 	if err != nil {
 		return err

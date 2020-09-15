@@ -20,6 +20,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
+
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/labels"
@@ -72,10 +74,13 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 		}()
 	}
 
+	dataresidencySingleton := &dataresidency.StoreSingleton{}
+
 	r := &Reconciler{
-		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
-		brokerCellLister: bcInformer.Lister(),
-		pubsubClient:     client,
+		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+		brokerCellLister:   bcInformer.Lister(),
+		pubsubClient:       client,
+		dataresidencyStore: dataresidencySingleton.Store(ctx, cmw),
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass)
