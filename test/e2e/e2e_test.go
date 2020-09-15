@@ -117,7 +117,7 @@ func TestEventTransformationForTrigger(t *testing.T) {
 			t,
 			brokerVersion,
 			triggerVersion,
-			e2ehelpers.ChannelBasedBrokerCreator(context.TODO(), component, brokerClass)
+			e2ehelpers.ChannelBasedBrokerCreator(component, brokerClass),
 		)
 	})
 }
@@ -133,7 +133,7 @@ func TestBrokerChannelFlow(t *testing.T) {
 	brokerClass := "MTChannelBasedBroker"
 	brokerVersion := "v1beta1"
 	triggerVersion := "v1beta1"
-	e2ehelpers.BrokerChannelFlowWithTransformation(context.TODO(), t, brokerClass, brokerVersion, triggerVersion, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.BrokerChannelFlowWithTransformation(context.TODO(), t, brokerClass, brokerVersion, triggerVersion, channelTestRunner)
 }
 
 func TestChannelDeadLetterSink(t *testing.T) {
@@ -143,7 +143,7 @@ func TestChannelDeadLetterSink(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelDeadLetterSinkTestHelper(context.TODO(), t, e2ehelpers.SubscriptionV1beta1, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelDeadLetterSinkTestHelper(context.TODO(), t, e2ehelpers.SubscriptionV1beta1, channelTestRunner)
 }
 
 func TestChannelTracing(t *testing.T) {
@@ -162,8 +162,8 @@ func TestChannelTracing(t *testing.T) {
 			// repo whose functionality we need to copy here.
 
 			// Copy the secret from the default namespace to the namespace used in the test.
-			lib.GetCredential(client, authConfig.WorkloadIdentity)
-			lib.SetTracingToZipkin(client)
+			lib.GetCredential(context.TODO(), client, authConfig.WorkloadIdentity)
+			lib.SetTracingToZipkin(context.TODO(), client)
 		})
 }
 
