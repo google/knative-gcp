@@ -45,6 +45,7 @@ spec:
         sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: broker
+      terminationGracePeriodSeconds: 60
       containers:
       - name: retry
         image: retry
