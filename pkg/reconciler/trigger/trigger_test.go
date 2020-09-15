@@ -307,13 +307,13 @@ func TestAllCasesTrigger(t *testing.T) {
 					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
 					WithInitTriggerConditions,
 					WithTriggerBrokerReady,
-					WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's URI", `failed to get ref &ObjectReference{Kind:Service,Namespace:testnamespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}: services.serving.knative.dev "subscriber-name" not found`),
+					WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's URI", `services.serving.knative.dev "subscriber-name" not found`),
 					WithTriggerSetDefaults,
 				),
 			}},
 			WantEvents: []string{
 				triggerFinalizerUpdatedEvent,
-				Eventf(corev1.EventTypeWarning, "InternalError", `failed to get ref &ObjectReference{Kind:Service,Namespace:testnamespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}: services.serving.knative.dev "subscriber-name" not found`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `services.serving.knative.dev "subscriber-name" not found`),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, triggerName, finalizerName),

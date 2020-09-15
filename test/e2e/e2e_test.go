@@ -19,6 +19,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,7 +49,7 @@ func TestSingleBinaryEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingBinary, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(context.TODO(), t, binding.EncodingBinary, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestSingleStructuredEventForChannel(t *testing.T) {
@@ -58,7 +59,7 @@ func TestSingleStructuredEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingStructured, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(context.TODO(), t, binding.EncodingStructured, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelClusterDefaulter(t *testing.T) {
