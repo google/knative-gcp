@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	nethttp "net/http"
 	"strconv"
 	"strings"
@@ -28,6 +29,7 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
@@ -51,7 +53,11 @@ type healthChecker struct {
 	lastProbeEventTimestamp    eventTimestamp
 	lastReceiverEventTimestamp eventTimestamp
 	maxStaleDuration           time.Duration
-	port                       int
+
+	// The port through which the health checker accepts liveness probe requests
+	port int
+	// If a listener is specified instead, the port is ignored
+	listener net.Listener
 }
 
 func (t *eventTimestamp) reportHealth() {
@@ -84,14 +90,19 @@ func (c *healthChecker) start(ctx context.Context) {
 	c.lastProbeEventTimestamp.reportHealth()
 	c.lastReceiverEventTimestamp.reportHealth()
 
+	if c.listener == nil {
+		var err error
+		c.listener, err = net.Listen("tcp", ":"+strconv.Itoa(c.port))
+		if err != nil {
+			logging.FromContext(ctx).Error("Failed to get probe helper health checker listener", zap.Error(err))
+		}
+	}
 	srv := &nethttp.Server{
-		Addr:    ":" + strconv.Itoa(c.port),
 		Handler: c,
 	}
-
 	go func() {
 		logging.FromContext(ctx).Info("Starting the probe helper health checker...")
-		if err := srv.ListenAndServe(); err != nil && err != nethttp.ErrServerClosed {
+		if err := srv.Serve(c.listener); err != nil && err != nethttp.ErrServerClosed {
 			logging.FromContext(ctx).Error("The probe helper health checker has stopped unexpectedly", zap.Error(err))
 		}
 	}()
@@ -492,9 +503,13 @@ type ProbeHelper struct {
 
 	// The port through which the probe helper receives probe requests
 	probePort int
+	// If a listener is specified instead, the port is ignored
+	probeListener net.Listener
 
 	// The port through which the probe helper receives source events
 	receiverPort int
+	// If a listener is specified instead, the port is ignored
+	receiverListener net.Listener
 
 	// The duration after which the probe helper times out after forwarding an event
 	timeoutDuration time.Duration
@@ -544,7 +559,13 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 
 	// create sender client
 	if ph.probeClient == nil {
-		sp, err := cloudevents.NewHTTP(cloudevents.WithTarget(ph.brokerURL), cloudevents.WithPort(ph.probePort))
+		spOpts := []cehttp.Option{cloudevents.WithTarget(ph.brokerURL)}
+		if ph.probeListener != nil {
+			spOpts = append(spOpts, cloudevents.WithListener(ph.probeListener))
+		} else {
+			spOpts = append(spOpts, cloudevents.WithPort(ph.probePort))
+		}
+		sp, err := cloudevents.NewHTTP(spOpts...)
 		if err != nil {
 			logger.Fatal("Failed to create sender transport", zap.Error(err))
 		}
@@ -556,7 +577,13 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 
 	// create receiver client
 	if ph.receiverClient == nil {
-		rp, err := cloudevents.NewHTTP(cloudevents.WithPort(ph.receiverPort))
+		rpOpts := []cehttp.Option{}
+		if ph.probeListener != nil {
+			rpOpts = append(rpOpts, cloudevents.WithListener(ph.receiverListener))
+		} else {
+			rpOpts = append(rpOpts, cloudevents.WithPort(ph.receiverPort))
+		}
+		rp, err := cloudevents.NewHTTP(rpOpts...)
 		if err != nil {
 			logger.Fatal("Failed to create receiver transport", zap.Error(err))
 		}

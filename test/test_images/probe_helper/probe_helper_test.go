@@ -65,11 +65,12 @@ var (
 // A helper function that starts a test Broker which receives events forwarded by
 // the probe helper and delivers the events back to the probe helper receiver.
 func runTestBroker(ctx context.Context, probeReceiverURL string) string {
-	brokerPort, err := GetFreePort()
+	brokerListener, err := GetFreePortListener()
 	if err != nil {
-		logging.FromContext(ctx).Fatalf("Failed to get free broker port: %v", err)
+		logging.FromContext(ctx).Fatalf("Failed to get free broker port listener: %v", err)
 	}
-	bp, err := cloudevents.NewHTTP(cloudevents.WithPort(brokerPort), cloudevents.WithTarget(probeReceiverURL))
+	brokerPort := brokerListener.Addr().(*net.TCPAddr).Port
+	bp, err := cloudevents.NewHTTP(cloudevents.WithListener(brokerListener), cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test Broker: %v", err)
 	}
@@ -298,20 +299,22 @@ func TestProbeHelper(t *testing.T) {
 	ctx = WithProjectKey(ctx, testProjectID)
 	ctx = WithTopicKey(ctx, testTopicID)
 	ctx = WithSubscriptionKey(ctx, testSubscriptionID)
-	ctx = cloudevents.ContextWithRetriesConstantBackoff(ctx, 100*time.Millisecond, 20)
+	ctx = cloudevents.ContextWithRetriesConstantBackoff(ctx, 100*time.Millisecond, 30)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// Set up ports for testing the probe helper.
-	receiverPort, err := GetFreePort()
+	receiverListener, err := GetFreePortListener()
 	if err != nil {
-		t.Fatalf("Failed to get free receiver port: %v", err)
+		t.Fatalf("Failed to get free receiver port listener: %v", err)
 	}
+	receiverPort := receiverListener.Addr().(*net.TCPAddr).Port
 	receiverURL := fmt.Sprintf("http://localhost:%d", receiverPort)
-	probePort, err := GetFreePort()
+	probeListener, err := GetFreePortListener()
 	if err != nil {
-		t.Fatalf("Failed to get free probe port: %v", err)
+		t.Fatalf("Failed to get free probe port listener: %v", err)
 	}
+	probePort := probeListener.Addr().(*net.TCPAddr).Port
 	probeURL := fmt.Sprintf("http://localhost:%d", probePort)
 
 	// Set up the resources for testing the CloudPubSubSource.
@@ -350,8 +353,8 @@ func TestProbeHelper(t *testing.T) {
 		pubsubClient:               pubsubClient,
 		cloudStorageSourceBucketID: testStorageBucket,
 		storageClient:              storageClient,
-		probePort:                  probePort,
-		receiverPort:               receiverPort,
+		probeListener:              probeListener,
+		receiverListener:           receiverListener,
 		timeoutDuration:            30 * time.Minute,
 		healthChecker: &healthChecker{
 			port:             0,
@@ -460,18 +463,13 @@ func assertHealthCheckResult(t *testing.T, port int, ok bool) {
 	}
 }
 
-// GetFreePort asks for a free open port
-func GetFreePort() (int, error) {
+// GetFreePortListener opens a listener on a free port.
+func GetFreePortListener() (net.Listener, error) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
+	return net.ListenTCP("tcp", addr)
 }
 
 func TestProbeHelperHealth(t *testing.T) {
@@ -480,16 +478,17 @@ func TestProbeHelperHealth(t *testing.T) {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
-		healthCheckerPort, err := GetFreePort()
+		healthCheckerListener, err := GetFreePortListener()
 		if err != nil {
-			t.Errorf("Failed to get free health checker port: %v", err)
+			t.Errorf("Failed to get free health checker port listener: %v", err)
 		}
+		healthCheckerPort := healthCheckerListener.Addr().(*net.TCPAddr).Port
 		// Create the probe helper and start a goroutine to run it.
 		ph := &ProbeHelper{
 			projectID: testProjectID,
 			brokerURL: "http://localhost:0/",
 			healthChecker: &healthChecker{
-				port:             healthCheckerPort,
+				listener:         healthCheckerListener,
 				maxStaleDuration: time.Second,
 			},
 		}
