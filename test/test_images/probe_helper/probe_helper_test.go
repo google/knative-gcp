@@ -125,7 +125,7 @@ func runTestCloudPubSubSource(ctx context.Context, group *errgroup.Group, sub *p
 // A helper function that starts a test CloudAuditLogsSource which watches
 // periodically for a change of state in the existence of pubsub topics and
 // forwards the appropriate events to the probe helper receiver.
-func runTestCloudAuditLogsSource(ctx context.Context, pubsubClient *pubsub.Client, probeReceiverURL string) {
+func runTestCloudAuditLogsSource(ctx context.Context, group *errgroup.Group, pubsubClient *pubsub.Client, probeReceiverURL string) {
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test CloudStorageSource, %v", err)
@@ -136,11 +136,11 @@ func runTestCloudAuditLogsSource(ctx context.Context, pubsubClient *pubsub.Clien
 	}
 	topicCreated := false
 	ticker := time.NewTicker(100 * time.Millisecond)
-	go func() {
+	group.Go(func() error {
 		for {
 			select {
 			case <-ctx.Done():
-				return
+				return nil
 			case <-ticker.C:
 				exists, err := pubsubClient.Topic("cloudauditlogssource-probe-1234567890").Exists(ctx)
 				if err != nil {
@@ -171,7 +171,7 @@ func runTestCloudAuditLogsSource(ctx context.Context, pubsubClient *pubsub.Clien
 				}
 			}
 		}
-	}()
+	})
 }
 
 // A helper function that starts a test CloudStorageSource which intercepts
@@ -375,7 +375,7 @@ func TestProbeHelper(t *testing.T) {
 	runTestCloudSchedulerSource(ctx, group, 100*time.Millisecond, receiverURL)
 
 	// Run the test CloudAuditLogsSource.
-	runTestCloudAuditLogsSource(ctx, pubsubClient, receiverURL)
+	runTestCloudAuditLogsSource(ctx, group, pubsubClient, receiverURL)
 
 	// Run the test Broker for testing Broker E2E delivery.
 	brokerURL := runTestBroker(ctx, group, receiverURL)
@@ -456,7 +456,8 @@ func TestProbeHelper(t *testing.T) {
 				wantResult: cloudevents.ResultACK,
 			},
 			{
-				event: probeEvent("cloudauditlogssource-probe", "delete-topic"),
+				event:      probeEvent("cloudauditlogssource-probe", "delete-topic"),
+				wantResult: cloudevents.ResultACK,
 			},
 		},
 	}, {

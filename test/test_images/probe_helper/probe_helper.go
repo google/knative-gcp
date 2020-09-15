@@ -185,6 +185,7 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 			return logNACK(ctx, "Probe forwarding failed, unrecognized probe event type and subject: type=%v, subject=%v", event.Type(), event.Subject())
 		}
 
+		// The CloudSchedulerSource probe is not channel-based.
 		if event.Type() != CloudSchedulerSourceProbeEventType {
 			// Create channel on which to wait for event to be received once forwarded.
 			channelID = event.ID()
@@ -468,6 +469,16 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context) cloudEventsFunc {
 			// Refresh the last received event timestamp from the CloudSchedulerSource.
 			//
 			// Example:
+			//   Context Attributes,
+			//     specversion: 1.0
+			//     type: google.cloud.scheduler.job.v1.executed
+			//     source: //cloudscheduler.googleapis.com/projects/project-id/locations/location/jobs/cre-scheduler-9af24c86-8ba9-4688-80d0-e527678a6a63
+			//     id: 1533039115503825
+			//     time: 2020-09-15T20:12:00.14Z
+			//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/scheduler/v1/data.proto
+			//     datacontenttype: application/json
+			//   Data,
+			//     { ... }
 			ph.lastCloudSchedulerEventTimestamp.setNow()
 		default:
 			return logACK(ctx, "Unrecognized event type: %v", event.Type())
