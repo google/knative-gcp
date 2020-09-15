@@ -162,11 +162,11 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1.Topic) error 
 		} else {
 			topicConfig := &pubsub.TopicConfig{}
 			if r.dataresidencyStore != nil {
-
 				if dataresidencyCfg := r.dataresidencyStore.Load(); dataresidencyCfg != nil {
 					// Empty region list is an error in pubsub, we will left it unset in this case which means all regions
 					if allowedRegions := dataresidencyCfg.DataResidencyDefaults.AllowedPersistenceRegions(); len(allowedRegions) != 0 {
 						topicConfig.MessageStoragePolicy.AllowedPersistenceRegions = allowedRegions
+						r.Logger.Infow("Updated Topic Config", zap.Any("topicConfig", *topicConfig))
 					}
 				}
 			}
