@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/system"
 )
 
@@ -161,7 +162,8 @@ func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deploy
 							VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "google-broker-key", Optional: &optionalSecretVolume}},
 						},
 					},
-					Containers: containers,
+					Containers:                    containers,
+					TerminationGracePeriodSeconds: ptr.Int64(60),
 				},
 			},
 		},
