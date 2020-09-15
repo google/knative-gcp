@@ -40,6 +40,8 @@ spec:
               value: "cloudpubsubsource-topic"
             - name: CLOUDSTORAGESOURCE_BUCKET_ID
               value: "cloudstoragesource-bucket"
+            - name: CLOUDSCHEDULERSOURCE_PERIOD
+              value: "90s"
             - name: PROBE_PORT
               value: "8070"
             - name: RECEIVER_PORT

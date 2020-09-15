@@ -47,6 +47,7 @@ const (
 	CloudAuditLogsSourceProbeEventType           = "cloudauditlogssource-probe"
 	CloudAuditLogsSourceProbeCreateSubject       = "create-topic"
 	CloudAuditLogsSourceProbeDeleteSubject       = "delete-topic"
+	CloudSchedulerSourceProbeEventType           = "cloudschedulersource-probe"
 )
 
 type healthChecker struct {
@@ -60,13 +61,13 @@ type healthChecker struct {
 	listener net.Listener
 }
 
-func (t *eventTimestamp) reportHealth() {
+func (t *eventTimestamp) setNow() {
 	t.Lock()
 	defer t.Unlock()
 	t.time = time.Now()
 }
 
-func (t *eventTimestamp) lastTime() time.Time {
+func (t *eventTimestamp) getTime() time.Time {
 	t.RLock()
 	defer t.RUnlock()
 	return t.time
@@ -78,8 +79,8 @@ func (c *healthChecker) ServeHTTP(w nethttp.ResponseWriter, req *nethttp.Request
 		return
 	}
 	now := time.Now()
-	if (now.Sub(c.lastProbeEventTimestamp.lastTime()) > c.maxStaleDuration) ||
-		(now.Sub(c.lastReceiverEventTimestamp.lastTime()) > c.maxStaleDuration) {
+	if (now.Sub(c.lastProbeEventTimestamp.getTime()) > c.maxStaleDuration) ||
+		(now.Sub(c.lastReceiverEventTimestamp.getTime()) > c.maxStaleDuration) {
 		w.WriteHeader(nethttp.StatusServiceUnavailable)
 		return
 	}
@@ -87,8 +88,8 @@ func (c *healthChecker) ServeHTTP(w nethttp.ResponseWriter, req *nethttp.Request
 }
 
 func (c *healthChecker) start(ctx context.Context) {
-	c.lastProbeEventTimestamp.reportHealth()
-	c.lastReceiverEventTimestamp.reportHealth()
+	c.lastProbeEventTimestamp.setNow()
+	c.lastReceiverEventTimestamp.setNow()
 
 	if c.listener == nil {
 		var err error
@@ -168,30 +169,34 @@ func isValidProbeEvent(event cloudevents.Event) bool {
 			eventSubject == CloudStorageSourceProbeArchiveSubject ||
 			eventSubject == CloudStorageSourceProbeDeleteSubject)) ||
 		(eventType == CloudAuditLogsSourceProbeEventType && (eventSubject == CloudAuditLogsSourceProbeCreateSubject ||
-			eventSubject == CloudAuditLogsSourceProbeDeleteSubject)))
+			eventSubject == CloudAuditLogsSourceProbeDeleteSubject)) ||
+		eventType == CloudSchedulerSourceProbeEventType)
 }
 
 func (ph *ProbeHelper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
+		var channelID string
 		var err error
 		var receiverChannel chan bool
 		logging.FromContext(ctx).Info("Received probe request", zap.Any("event", event))
-		ph.healthChecker.lastProbeEventTimestamp.reportHealth()
+		ph.healthChecker.lastProbeEventTimestamp.setNow()
 
 		if !isValidProbeEvent(event) {
 			return logNACK(ctx, "Probe forwarding failed, unrecognized probe event type and subject: type=%v, subject=%v", event.Type(), event.Subject())
 		}
 
-		// Create channel on which to wait for event to be received once forwarded.
-		channelID := event.ID()
-		if event.Subject() != "" {
-			channelID = channelID + "-" + event.Subject()
+		if event.Type() != CloudSchedulerSourceProbeEventType {
+			// Create channel on which to wait for event to be received once forwarded.
+			channelID = event.ID()
+			if event.Subject() != "" {
+				channelID = channelID + "-" + event.Subject()
+			}
+			receiverChannel, err = ph.receivedEvents.createReceiverChannel(channelID)
+			if err != nil {
+				return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
+			}
+			defer ph.receivedEvents.deleteReceiverChannel(channelID)
 		}
-		receiverChannel, err = ph.receivedEvents.createReceiverChannel(channelID)
-		if err != nil {
-			return logNACK(ctx, "Probe forwarding failed, could not create receiver channel: %v", err)
-		}
-		defer ph.receivedEvents.deleteReceiverChannel(channelID)
 
 		ctx, cancel := context.WithTimeout(ctx, ph.timeoutDuration)
 		defer cancel()
@@ -255,6 +260,12 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 					return logNACK(ctx, "Probe forwarding failed, error deleting pubsub topic %v: %v", event.ID(), err)
 				}
 			}
+		case CloudSchedulerSourceProbeEventType:
+			// Fail if the delay since the last scheduled tick is greater than the desired period.
+			if delay := time.Now().Sub(ph.lastCloudSchedulerEventTimestamp.getTime()); delay > ph.cloudSchedulerSourcePeriod {
+				return logNACK(ctx, "Probe failed, delay between CloudSchedulerSource ticks exceeds period: %s > %s", delay, ph.cloudSchedulerSourcePeriod)
+			}
+			return cloudevents.ResultACK
 		}
 
 		select {
@@ -270,7 +281,7 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context) cloudEventsFunc {
 	return func(event cloudevents.Event) protocol.Result {
 		var channelID string
 		logging.FromContext(ctx).Info("Received event", zap.Any("event", event))
-		ph.healthChecker.lastReceiverEventTimestamp.reportHealth()
+		ph.healthChecker.lastReceiverEventTimestamp.setNow()
 
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
@@ -453,6 +464,11 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context) cloudEventsFunc {
 			default:
 				return logACK(ctx, "Unrecognized CloudEvent methodname extension: %v", event.Extensions()["methodname"])
 			}
+		case schemasv1.CloudSchedulerJobExecutedEventType:
+			// Refresh the last received event timestamp from the CloudSchedulerSource.
+			//
+			// Example:
+			ph.lastCloudSchedulerEventTimestamp.setNow()
 		default:
 			return logACK(ctx, "Unrecognized event type: %v", event.Type())
 		}
@@ -501,6 +517,12 @@ type ProbeHelper struct {
 	// Handle for the bucket used in the CloudStorageSource probe
 	bucket *storage.BucketHandle
 
+	// The tolerated period between observed CloudSchedulerSource tickets
+	cloudSchedulerSourcePeriod time.Duration
+
+	// Timestamp of the last observed tick from the CloudSchedulerSource
+	lastCloudSchedulerEventTimestamp eventTimestamp
+
 	// The port through which the probe helper receives probe requests
 	probePort int
 	// If a listener is specified instead, the port is ignored
@@ -524,6 +546,9 @@ type ProbeHelper struct {
 func (ph *ProbeHelper) run(ctx context.Context) {
 	var err error
 	logger := logging.FromContext(ctx)
+
+	// initialize the cloud scheduler event timestamp
+	ph.lastCloudSchedulerEventTimestamp.setNow()
 
 	// create pubsub client
 	if ph.pubsubClient == nil {
