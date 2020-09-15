@@ -120,8 +120,8 @@ Plane:
   ```shell
   gcloud iam service-accounts add-iam-policy-binding \
    cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com  \
-   --member='serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com' \
-   --role='roles/iam.serviceAccountAdmin'
+   --member=serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
+   --role roles/iam.serviceAccountAdmin
   ```
 
   Then, modify `clusterDefaults` in ConfigMap `config-gcp-auth`.
@@ -140,6 +140,9 @@ Plane:
       workloadIdentityMapping:
         default-cre-dataplane: cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
   ```
+
+  When updating the configuration, note that `default-auth-config` is nested under `data`.
+  If you encounter an error, you are likely attempting to modify the example configuration in `_example`.
 
   Here, `default-cre-dataplane` refers to a Kubernetes Service Account bound to
   the Google Cloud Service Account `cre-dataplane`. Remember to put this
