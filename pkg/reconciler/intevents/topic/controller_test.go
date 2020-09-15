@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	iamtesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/system"
@@ -50,7 +50,7 @@ func TestNew(t *testing.T) {
 			},
 			Data: map[string]string{},
 		})
-	c := newController(ctx, cmw, iamtesting.NoopIAMPolicyManager, iamtesting.NewGCPAuthTestStore(t, nil))
+	c := newController(ctx, cmw, reconcilertesting.NoopIAMPolicyManager, reconcilertesting.NewGCPAuthTestStore(t, nil), reconcilertesting.NewDataresidencyTestStore(t, nil))
 
 	if c == nil {
 		t.Fatal("Expected newControllerWithIAMPolicyManager to return a non-nil value")

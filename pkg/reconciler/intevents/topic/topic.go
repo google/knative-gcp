@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	corev1 "k8s.io/api/core/v1"
@@ -42,6 +43,7 @@ import (
 
 	gstatus "google.golang.org/grpc/status"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
@@ -67,6 +69,8 @@ type Reconciler struct {
 	*intevents.PubSubBase
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
+	// data residency store
+	dataresidencyStore *dataresidency.Store
 	// topicLister index properties about topics.
 	topicLister listers.TopicLister
 	// serviceLister index properties about services.
@@ -156,8 +160,18 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1.Topic) error 
 			logging.FromContext(ctx).Desugar().Error("Topic does not exist and the topic policy doesn't allow creation")
 			return fmt.Errorf("Topic %q does not exist and the topic policy doesn't allow creation", topic.Spec.Topic)
 		} else {
+			topicConfig := &pubsub.TopicConfig{}
+			if r.dataresidencyStore != nil {
+
+				if dataresidencyCfg := r.dataresidencyStore.Load(); dataresidencyCfg != nil {
+					// Empty region list is an error in pubsub, we will left it unset in this case which means all regions
+					if allowedRegions := dataresidencyCfg.DataResidencyDefaults.AllowedPersistenceRegions(); len(allowedRegions) != 0 {
+						topicConfig.MessageStoragePolicy.AllowedPersistenceRegions = allowedRegions
+					}
+				}
+			}
 			// Create a new topic with the given name.
-			t, err = client.CreateTopic(ctx, topic.Spec.Topic)
+			t, err = client.CreateTopicWithConfig(ctx, topic.Spec.Topic, topicConfig)
 			if err != nil {
 				// For some reason (maybe some cache invalidation thing), sometimes t.Exists returns that the topic
 				// doesn't exist but it actually does. When we try to create it again, it fails with an AlreadyExists
