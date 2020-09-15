@@ -66,11 +66,12 @@ var (
 // A helper function that starts a test Broker which receives events forwarded by
 // the probe helper and delivers the events back to the probe helper receiver.
 func runTestBroker(ctx context.Context, group *errgroup.Group, probeReceiverURL string) string {
-	brokerPort, err := GetFreePort()
+	brokerListener, err := GetFreePortListener()
 	if err != nil {
-		logging.FromContext(ctx).Fatalf("Failed to get free broker port: %v", err)
+		logging.FromContext(ctx).Fatalf("Failed to get free broker port listener: %v", err)
 	}
-	bp, err := cloudevents.NewHTTP(cloudevents.WithPort(brokerPort), cloudevents.WithTarget(probeReceiverURL))
+	brokerPort := brokerListener.Addr().(*net.TCPAddr).Port
+	bp, err := cloudevents.NewHTTP(cloudevents.WithListener(brokerListener), cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test Broker: %v", err)
 	}
@@ -118,6 +119,58 @@ func runTestCloudPubSubSource(ctx context.Context, group *errgroup.Group, sub *p
 			}
 		}
 		return nil
+	})
+}
+
+// A helper function that starts a test CloudAuditLogsSource which watches
+// periodically for a change of state in the existence of pubsub topics and
+// forwards the appropriate events to the probe helper receiver.
+func runTestCloudAuditLogsSource(ctx context.Context, group *errgroup.Group, pubsubClient *pubsub.Client, probeReceiverURL string) {
+	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test CloudStorageSource, %v", err)
+	}
+	c, err := cloudevents.NewClient(cp)
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("Failed to create the test CloudStorageSource client, %v", err)
+	}
+	topicCreated := false
+	ticker := time.NewTicker(100 * time.Millisecond)
+	group.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-ticker.C:
+				exists, err := pubsubClient.Topic("cloudauditlogssource-probe-1234567890").Exists(ctx)
+				if err != nil {
+					logging.FromContext(ctx).Warnf("Failed to determine existence of test pubsub topic: %v", err)
+				}
+				if exists && !topicCreated {
+					createTopicEvent := cloudevents.NewEvent()
+					createTopicEvent.SetID("1234567890")
+					createTopicEvent.SetSubject(schemasv1.CloudAuditLogsEventSubject("pubsub.googleapis.com", "projects/test-project-id/topics/cloudauditlogssource-probe-1234567890"))
+					createTopicEvent.SetType(schemasv1.CloudAuditLogsLogWrittenEventType)
+					createTopicEvent.SetSource(schemasv1.CloudAuditLogsEventSource("projects/test-project-id", "activity"))
+					createTopicEvent.SetExtension("methodname", "google.pubsub.v1.Publisher.CreateTopic")
+					if res := c.Send(ctx, createTopicEvent); !cloudevents.IsACK(res) {
+						logging.FromContext(ctx).Warnf("Failed to send topic created CloudEvent from the test CloudAuditLogsSource: %v", res)
+					}
+					topicCreated = true
+				} else if !exists && topicCreated {
+					deleteTopicEvent := cloudevents.NewEvent()
+					deleteTopicEvent.SetID("1234567890")
+					deleteTopicEvent.SetSubject(schemasv1.CloudAuditLogsEventSubject("pubsub.googleapis.com", "projects/test-project-id/topics/cloudauditlogssource-probe-1234567890"))
+					deleteTopicEvent.SetType(schemasv1.CloudAuditLogsLogWrittenEventType)
+					deleteTopicEvent.SetSource(schemasv1.CloudAuditLogsEventSource("projects/test-project-id", "activity"))
+					deleteTopicEvent.SetExtension("methodname", "google.pubsub.v1.Publisher.DeleteTopic")
+					topicCreated = false
+					if res := c.Send(ctx, deleteTopicEvent); !cloudevents.IsACK(res) {
+						logging.FromContext(ctx).Warnf("Failed to send topic deleted CloudEvent from the test CloudAuditLogsSource: %v", res)
+					}
+				}
+			}
+		}
 	})
 }
 
@@ -280,20 +333,22 @@ func TestProbeHelper(t *testing.T) {
 	ctx = WithProjectKey(ctx, testProjectID)
 	ctx = WithTopicKey(ctx, testTopicID)
 	ctx = WithSubscriptionKey(ctx, testSubscriptionID)
-	ctx = cloudevents.ContextWithRetriesConstantBackoff(ctx, 100*time.Millisecond, 20)
+	ctx = cloudevents.ContextWithRetriesConstantBackoff(ctx, 100*time.Millisecond, 30)
 	group, ctx := errgroup.WithContext(ctx)
 	ctx, cancel := context.WithCancel(ctx)
 
 	// Set up ports for testing the probe helper.
-	receiverPort, err := GetFreePort()
+	receiverListener, err := GetFreePortListener()
 	if err != nil {
-		t.Fatalf("Failed to get free receiver port: %v", err)
+		t.Fatalf("Failed to get free receiver port listener: %v", err)
 	}
+	receiverPort := receiverListener.Addr().(*net.TCPAddr).Port
 	receiverURL := fmt.Sprintf("http://localhost:%d", receiverPort)
-	probePort, err := GetFreePort()
+	probeListener, err := GetFreePortListener()
 	if err != nil {
-		t.Fatalf("Failed to get free probe port: %v", err)
+		t.Fatalf("Failed to get free probe port listener: %v", err)
 	}
+	probePort := probeListener.Addr().(*net.TCPAddr).Port
 	probeURL := fmt.Sprintf("http://localhost:%d", probePort)
 
 	// Set up the resources for testing the CloudPubSubSource.
@@ -319,6 +374,9 @@ func TestProbeHelper(t *testing.T) {
 	// Run the test CloudSchedulerSource.
 	runTestCloudSchedulerSource(ctx, group, 100*time.Millisecond, receiverURL)
 
+	// Run the test CloudAuditLogsSource.
+	runTestCloudAuditLogsSource(ctx, group, pubsubClient, receiverURL)
+
 	// Run the test Broker for testing Broker E2E delivery.
 	brokerURL := runTestBroker(ctx, group, receiverURL)
 
@@ -330,9 +388,9 @@ func TestProbeHelper(t *testing.T) {
 		pubsubClient:               pubsubClient,
 		cloudStorageSourceBucketID: testStorageBucket,
 		storageClient:              storageClient,
+		probeListener:              probeListener,
+		receiverListener:           receiverListener,
 		cloudSchedulerSourcePeriod: time.Minute,
-		probePort:                  probePort,
-		receiverPort:               receiverPort,
 		timeoutDuration:            30 * time.Minute,
 		healthChecker: &healthChecker{
 			port:             0,
@@ -391,6 +449,18 @@ func TestProbeHelper(t *testing.T) {
 			},
 		},
 	}, {
+		name: "CloudAuditLogsSource probe",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("cloudauditlogssource-probe", "create-topic"),
+				wantResult: cloudevents.ResultACK,
+			},
+			{
+				event:      probeEvent("cloudauditlogssource-probe", "delete-topic"),
+				wantResult: cloudevents.ResultACK,
+			},
+		},
+	}, {
 		name: "CloudSchedulerSource probe",
 		steps: []eventAndResult{
 			{
@@ -444,18 +514,13 @@ func assertHealthCheckResult(t *testing.T, port int, ok bool) {
 	}
 }
 
-// GetFreePort asks for a free open port
-func GetFreePort() (int, error) {
+// GetFreePortListener opens a listener on a free port.
+func GetFreePortListener() (net.Listener, error) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
+	return net.ListenTCP("tcp", addr)
 }
 
 func TestProbeHelperHealth(t *testing.T) {
@@ -464,16 +529,17 @@ func TestProbeHelperHealth(t *testing.T) {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
-		healthCheckerPort, err := GetFreePort()
+		healthCheckerListener, err := GetFreePortListener()
 		if err != nil {
-			t.Errorf("Failed to get free health checker port: %v", err)
+			t.Errorf("Failed to get free health checker port listener: %v", err)
 		}
+		healthCheckerPort := healthCheckerListener.Addr().(*net.TCPAddr).Port
 		// Create the probe helper and start a goroutine to run it.
 		ph := &ProbeHelper{
 			projectID: testProjectID,
 			brokerURL: "http://localhost:0/",
 			healthChecker: &healthChecker{
-				port:             healthCheckerPort,
+				listener:         healthCheckerListener,
 				maxStaleDuration: time.Second,
 			},
 		}
