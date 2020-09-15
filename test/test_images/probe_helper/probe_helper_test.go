@@ -31,6 +31,7 @@ import (
 	"cloud.google.com/go/storage"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	grpcstatus "google.golang.org/grpc/status"
@@ -64,7 +65,7 @@ var (
 
 // A helper function that starts a test Broker which receives events forwarded by
 // the probe helper and delivers the events back to the probe helper receiver.
-func runTestBroker(ctx context.Context, probeReceiverURL string) string {
+func runTestBroker(ctx context.Context, group *errgroup.Group, probeReceiverURL string) string {
 	brokerPort, err := GetFreePort()
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("Failed to get free broker port: %v", err)
@@ -77,20 +78,21 @@ func runTestBroker(ctx context.Context, probeReceiverURL string) string {
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("Failed to create the test Broker client: %v", err)
 	}
-	go func() {
+	group.Go(func() error {
 		bc.StartReceiver(ctx, func(event cloudevents.Event) {
 			if res := bc.Send(ctx, event); !cloudevents.IsACK(res) {
 				logging.FromContext(ctx).Warnf("Failed to send CloudEvent from the test Broker: %v", res)
 			}
 		})
-	}()
+		return nil
+	})
 	return fmt.Sprintf("http://localhost:%d", brokerPort)
 }
 
 // A helper function that starts a test CloudPubSubSource which watches a pubsub
 // Subscription for messages and delivers them as CloudEvents to the probe
 // helper receiver.
-func runTestCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription, probeReceiverURL string) {
+func runTestCloudPubSubSource(ctx context.Context, group *errgroup.Group, sub *pubsub.Subscription, probeReceiverURL string) {
 	converter := converters.NewPubSubConverter()
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
@@ -109,19 +111,20 @@ func runTestCloudPubSubSource(ctx context.Context, sub *pubsub.Subscription, pro
 			logging.FromContext(ctx).Warnf("Failed to send CloudEvent from the test CloudPubSubSource: %v", err)
 		}
 	}
-	go func() {
+	group.Go(func() error {
 		if err := sub.Receive(ctx, msgHandler); err != nil {
 			if _, ok := grpcstatus.FromError(err); !ok {
 				logging.FromContext(ctx).Warnf("Could not receive from subscription: %v", err)
 			}
 		}
-	}()
+		return nil
+	})
 }
 
 // A helper function that starts a test CloudStorageSource which intercepts
 // Cloud Storage HTTP requests and forwards the appropriate notifications as
 // CloudEvents to the probe helper receiver.
-func runTestCloudStorageSource(ctx context.Context, gotRequest chan *http.Request, probeReceiverURL string) {
+func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRequest chan *http.Request, probeReceiverURL string) {
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test CloudStorageSource, %v", err)
@@ -130,11 +133,11 @@ func runTestCloudStorageSource(ctx context.Context, gotRequest chan *http.Reques
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("Failed to create the test CloudStorageSource client, %v", err)
 	}
-	go func() {
+	group.Go(func() error {
 		for {
 			select {
 			case <-ctx.Done():
-				return
+				return nil
 			case req := <-gotRequest:
 				bodyBytes, err := ioutil.ReadAll(req.Body)
 				if err != nil {
@@ -186,7 +189,38 @@ func runTestCloudStorageSource(ctx context.Context, gotRequest chan *http.Reques
 				}
 			}
 		}
-	}()
+	})
+}
+
+// A helper function that starts a test CloudSchedulerSource which ticks
+// periodically and sends the appropriate event notifications to the probe
+// helper receiver.
+func runTestCloudSchedulerSource(ctx context.Context, group *errgroup.Group, period time.Duration, probeReceiverURL string) {
+	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test CloudSchedulerSource, %v", err)
+	}
+	c, err := cloudevents.NewClient(cp)
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("Failed to create the test CloudSchedulerSource client, %v", err)
+	}
+	ticker := time.NewTicker(period)
+	group.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-ticker.C:
+				executedEvent := cloudevents.NewEvent()
+				executedEvent.SetID("1234567890")
+				executedEvent.SetType(schemasv1.CloudSchedulerJobExecutedEventType)
+				executedEvent.SetSource(schemasv1.CloudSchedulerEventSource("test-cloud-scheduler-source"))
+				if res := c.Send(ctx, executedEvent); !cloudevents.IsACK(res) {
+					logging.FromContext(ctx).Warnf("Failed to send job executed CloudEvent from the test CloudSchedulerSource: %v", res)
+				}
+			}
+		}
+	})
 }
 
 // Creates a new CloudEvent in the shape of probe events sent to the probe helper.
@@ -247,8 +281,8 @@ func TestProbeHelper(t *testing.T) {
 	ctx = WithTopicKey(ctx, testTopicID)
 	ctx = WithSubscriptionKey(ctx, testSubscriptionID)
 	ctx = cloudevents.ContextWithRetriesConstantBackoff(ctx, 100*time.Millisecond, 20)
+	group, ctx := errgroup.WithContext(ctx)
 	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	// Set up ports for testing the probe helper.
 	receiverPort, err := GetFreePort()
@@ -264,7 +298,6 @@ func TestProbeHelper(t *testing.T) {
 
 	// Set up the resources for testing the CloudPubSubSource.
 	pubsubClient, closePubsub := testPubsubClient(ctx, t, testProjectID)
-	defer closePubsub()
 	topic, err := pubsubClient.CreateTopic(ctx, testTopicID)
 	if err != nil {
 		t.Fatalf("Failed to create test topic: %v", err)
@@ -276,16 +309,18 @@ func TestProbeHelper(t *testing.T) {
 		t.Fatalf("Failed to create test subscription: %v", err)
 	}
 	// Run the test CloudPubSubSource.
-	runTestCloudPubSubSource(ctx, sub, receiverURL)
+	runTestCloudPubSubSource(ctx, group, sub, receiverURL)
 
 	// Set up resources for testing the CloudStorageSource.
 	storageClient, gotCloudStorageRequest, closeStorage := testStorageClient(ctx, t)
-	defer closeStorage()
 	// Run the test CloudStorageSource.
-	runTestCloudStorageSource(ctx, gotCloudStorageRequest, receiverURL)
+	runTestCloudStorageSource(ctx, group, gotCloudStorageRequest, receiverURL)
+
+	// Run the test CloudSchedulerSource.
+	runTestCloudSchedulerSource(ctx, group, 100*time.Millisecond, receiverURL)
 
 	// Run the test Broker for testing Broker E2E delivery.
-	brokerURL := runTestBroker(ctx, receiverURL)
+	brokerURL := runTestBroker(ctx, group, receiverURL)
 
 	// Create the probe helper and start a goroutine to run it.
 	ph := &ProbeHelper{
@@ -295,6 +330,7 @@ func TestProbeHelper(t *testing.T) {
 		pubsubClient:               pubsubClient,
 		cloudStorageSourceBucketID: testStorageBucket,
 		storageClient:              storageClient,
+		cloudSchedulerSourcePeriod: time.Minute,
 		probePort:                  probePort,
 		receiverPort:               receiverPort,
 		timeoutDuration:            30 * time.Minute,
@@ -355,6 +391,14 @@ func TestProbeHelper(t *testing.T) {
 			},
 		},
 	}, {
+		name: "CloudSchedulerSource probe",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("cloudschedulersource-probe", ""),
+				wantResult: cloudevents.ResultACK,
+			},
+		},
+	}, {
 		name: "Unrecognized probe event type",
 		steps: []eventAndResult{
 			{
@@ -371,6 +415,13 @@ func TestProbeHelper(t *testing.T) {
 				}
 			}
 		})
+	}
+	// Cancel gracefully to avoid logger panic if parent goroutine terminates.
+	closePubsub()
+	closeStorage()
+	cancel()
+	if err := group.Wait(); err != nil {
+		t.Fatalf("Error in probe helper fake sources: %v", err)
 	}
 }
 
