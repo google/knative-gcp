@@ -136,7 +136,7 @@ func (m *multiTopicDecoupleSink) getTopicIDForBroker(ctx context.Context, broker
 		// There is an propagation delay between the controller reconciles the broker config and
 		// the config being pushed to the configmap volume in the ingress pod. So sometimes we return
 		// an error even if the request is valid.
-		logging.FromContext(ctx).Warn("config is not found for", zap.String("broker", broker.String()))
+		logging.FromContext(ctx).Warn("config is not found for")
 		return "", fmt.Errorf("%q: %w", broker, ErrNotFound)
 	}
 	if brokerConfig.DecoupleQueue == nil || brokerConfig.DecoupleQueue.Topic == "" {
@@ -144,7 +144,7 @@ func (m *multiTopicDecoupleSink) getTopicIDForBroker(ctx context.Context, broker
 		return "", fmt.Errorf("decouple queue of %q: %w", broker, ErrIncomplete)
 	}
 	if brokerConfig.DecoupleQueue.State != config.State_READY {
-		logging.FromContext(ctx).Debug("decouple queue is not ready", zap.Any("ns", broker.Namespace), zap.Any("broker", broker))
+		logging.FromContext(ctx).Debug("decouple queue is not ready")
 		return "", fmt.Errorf("%q: %w", broker, ErrNotReady)
 	}
 	return brokerConfig.DecoupleQueue.Topic, nil

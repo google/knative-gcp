@@ -129,6 +129,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	}
 
 	broker, err := ConvertPathToNamespacedName(request.URL.Path)
+	ctx = logging.With(ctx, zap.Stringer("broker", broker))
 	if err != nil {
 		logging.FromContext(ctx).Debug("Malformed request path", zap.String("path", request.URL.Path))
 		nethttp.Error(response, err.Error(), nethttp.StatusNotFound)
@@ -165,7 +166,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	defer cancel()
 	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode) }()
 	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
-		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.String("broker", broker.String()), zap.Error(res))
+		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.Error(res))
 		statusCode = nethttp.StatusInternalServerError
 
 		switch {
@@ -213,6 +214,6 @@ func (h *Handler) reportMetrics(ctx context.Context, broker types.NamespacedName
 		ResponseCode: statusCode,
 	}
 	if err := h.reporter.ReportEventCount(ctx, args); err != nil {
-		logging.FromContext(ctx).Warn("Failed to record metrics.", zap.Any("namespace", broker.Namespace), zap.Any("broker", broker.Name), zap.Error(err))
+		logging.FromContext(ctx).Warn("Failed to record metrics.", zap.Any("broker", broker.Name), zap.Error(err))
 	}
 }
