@@ -49,17 +49,12 @@ func TestPubSubSpec_SetPubSubDefaults(t *testing.T) {
 			expected: &PubSubSpec{},
 			ctx:      context.Background(),
 		},
-		"empty defaults": {
+		"empty secret": {
 			orig: &PubSubSpec{
 				Secret: &corev1.SecretKeySelector{},
 			},
 			expected: &PubSubSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "google-cloud-key",
-					},
-					Key: "key.json",
-				},
+				Secret: &corev1.SecretKeySelector{},
 			},
 			ctx: gcpauthtesthelper.ContextWithDefaults(),
 		},

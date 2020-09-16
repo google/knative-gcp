@@ -119,12 +119,14 @@ func CheckImmutableAutoscalingClassAnnotations(current *metav1.ObjectMeta, origi
 
 // ValidateCredential checks secret and service account.
 func ValidateCredential(secret *corev1.SecretKeySelector, kServiceAccountName string) *apis.FieldError {
-	if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) && kServiceAccountName != "" {
+	fmt.Printf("secret is empty or not %v", equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}))
+	fmt.Printf("secret is %v", secret)
+	if secret != nil && kServiceAccountName != "" {
 		return &apis.FieldError{
 			Message: "Can't have spec.serviceAccountName and spec.secret at the same time",
 			Paths:   []string{""},
 		}
-	} else if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) {
+	} else if secret != nil {
 		return validateSecret(secret)
 	} else if kServiceAccountName != "" {
 		return validateK8sServiceAccount(kServiceAccountName)

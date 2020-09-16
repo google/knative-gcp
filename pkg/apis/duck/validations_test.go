@@ -335,6 +335,11 @@ func TestValidateCredential(t *testing.T) {
 		secret:         &gcpauthtesthelper.Secret,
 		serviceAccount: "test",
 		wantErr:        true,
+	}, {
+		name:           "empty secret and service account exist at the same time",
+		secret:         &corev1.SecretKeySelector{},
+		serviceAccount: "test",
+		wantErr:        true,
 	}}
 
 	for _, tc := range testCases {
