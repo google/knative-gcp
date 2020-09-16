@@ -49,7 +49,7 @@ func TestSingleBinaryEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingBinary, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(context.Background(), t, binding.EncodingBinary, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner)
 }
 
 func TestSingleStructuredEventForChannel(t *testing.T) {
@@ -59,7 +59,7 @@ func TestSingleStructuredEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingStructured, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(context.Background(), t, binding.EncodingStructured, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner)
 }
 
 func TestChannelClusterDefaulter(t *testing.T) {
@@ -69,7 +69,7 @@ func TestChannelClusterDefaulter(t *testing.T) {
 	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelClusterDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelClusterDefaulterTestHelper(context.Background(), t, channelTestRunner)
 }
 
 func TestChannelNamespaceDefaulter(t *testing.T) {
@@ -79,7 +79,7 @@ func TestChannelNamespaceDefaulter(t *testing.T) {
 	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelNamespaceDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelNamespaceDefaulterTestHelper(context.Background(), t, channelTestRunner)
 }
 
 func TestEventTransformationForSubscription(t *testing.T) {
