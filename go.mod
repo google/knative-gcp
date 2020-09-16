@@ -18,7 +18,6 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/rickb777/date v1.13.0
 	go.opencensus.io v0.22.5-0.20200714042313-af30f77c5f65
-	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208

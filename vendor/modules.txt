@@ -341,11 +341,6 @@ go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
-# go.opentelemetry.io/otel v0.3.0
-## explicit
-go.opentelemetry.io/otel/api/core
-go.opentelemetry.io/otel/api/propagation
-go.opentelemetry.io/otel/api/trace
 # go.uber.org/atomic v1.6.0
 go.uber.org/atomic
 # go.uber.org/automaxprocs v1.3.0
@@ -1051,7 +1046,6 @@ knative.dev/eventing/pkg/apis/sources
 knative.dev/eventing/pkg/apis/sources/v1alpha1
 knative.dev/eventing/pkg/apis/sources/v1alpha2
 knative.dev/eventing/pkg/apis/sources/v1beta1
-knative.dev/eventing/pkg/channel
 knative.dev/eventing/pkg/client/clientset/versioned
 knative.dev/eventing/pkg/client/clientset/versioned/fake
 knative.dev/eventing/pkg/client/clientset/versioned/scheme
@@ -1120,8 +1114,6 @@ knative.dev/eventing/pkg/reconciler/testing/v1beta1
 knative.dev/eventing/pkg/tracing
 knative.dev/eventing/pkg/utils
 knative.dev/eventing/test
-knative.dev/eventing/test/conformance/helpers
-knative.dev/eventing/test/conformance/helpers/tracing
 knative.dev/eventing/test/e2e/helpers
 knative.dev/eventing/test/flags
 knative.dev/eventing/test/lib
