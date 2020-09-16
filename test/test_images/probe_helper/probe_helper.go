@@ -45,8 +45,6 @@ const (
 	CloudStorageSourceProbeArchiveSubject        = "archive"
 	CloudStorageSourceProbeDeleteSubject         = "delete"
 	CloudAuditLogsSourceProbeEventType           = "cloudauditlogssource-probe"
-	CloudAuditLogsSourceProbeCreateSubject       = "create-topic"
-	CloudAuditLogsSourceProbeDeleteSubject       = "delete-topic"
 	CloudSchedulerSourceProbeEventType           = "cloudschedulersource-probe"
 )
 
@@ -162,15 +160,26 @@ func logReceive(ctx context.Context, ack bool, format string, args ...interface{
 func isValidProbeEvent(event cloudevents.Event) bool {
 	eventType := event.Type()
 	eventSubject := event.Subject()
-	return (eventType == BrokerE2EDeliveryProbeEventType ||
-		eventType == CloudPubSubSourceProbeEventType ||
-		(eventType == CloudStorageSourceProbeEventType && (eventSubject == CloudStorageSourceProbeCreateSubject ||
+	if eventType == BrokerE2EDeliveryProbeEventType && eventSubject == "" {
+		return true
+	}
+	if eventType == CloudPubSubSourceProbeEventType && eventSubject == "" {
+		return true
+	}
+	if eventType == CloudStorageSourceProbeEventType &&
+		(eventSubject == CloudStorageSourceProbeCreateSubject ||
 			eventSubject == CloudStorageSourceProbeUpdateMetadataSubject ||
 			eventSubject == CloudStorageSourceProbeArchiveSubject ||
-			eventSubject == CloudStorageSourceProbeDeleteSubject)) ||
-		(eventType == CloudAuditLogsSourceProbeEventType && (eventSubject == CloudAuditLogsSourceProbeCreateSubject ||
-			eventSubject == CloudAuditLogsSourceProbeDeleteSubject)) ||
-		eventType == CloudSchedulerSourceProbeEventType)
+			eventSubject == CloudStorageSourceProbeDeleteSubject) {
+		return true
+	}
+	if eventType == CloudAuditLogsSourceProbeEventType && eventSubject == "" {
+		return true
+	}
+	if eventType == CloudSchedulerSourceProbeEventType && eventSubject == "" {
+		return true
+	}
+	return false
 }
 
 func (ph *ProbeHelper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
@@ -249,17 +258,9 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 				}
 			}
 		case CloudAuditLogsSourceProbeEventType:
-			switch event.Subject() {
-			case CloudAuditLogsSourceProbeCreateSubject:
-				// Create a pubsub topic with the given ID.
-				if _, err := ph.pubsubClient.CreateTopic(ctx, event.ID()); err != nil {
-					return logNACK(ctx, "Probe forwarding failed, error creating pubsub topic %v: %v", event.ID(), err)
-				}
-			case CloudAuditLogsSourceProbeDeleteSubject:
-				// Delete the pubsub topic with the given ID.
-				if err := ph.pubsubClient.Topic(event.ID()).Delete(ctx); err != nil {
-					return logNACK(ctx, "Probe forwarding failed, error deleting pubsub topic %v: %v", event.ID(), err)
-				}
+			// Create a pubsub topic with the given ID.
+			if _, err := ph.pubsubClient.CreateTopic(ctx, event.ID()); err != nil {
+				return logNACK(ctx, "Probe forwarding failed, error creating pubsub topic %v: %v", event.ID(), err)
 			}
 		case CloudSchedulerSourceProbeEventType:
 			// Fail if the delay since the last scheduled tick is greater than the desired period.
@@ -416,8 +417,7 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context) cloudEventsFunc {
 			channelID = channelID + "-" + CloudStorageSourceProbeDeleteSubject
 		case schemasv1.CloudAuditLogsLogWrittenEventType:
 			// The logged event type is held in the methodname extension. For creation
-			// and deletion of pubsub topics, the topic ID can be extracted from the
-			// event subject.
+			// of pubsub topics, the topic ID can be extracted from the event subject.
 			if _, ok := event.Extensions()["methodname"]; !ok {
 				return logACK(ctx, "CloudEvent does not have extension methodname: %v", event)
 			}
@@ -425,8 +425,7 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context) cloudEventsFunc {
 			if len(sepSub) != 5 || sepSub[0] != "pubsub.googleapis.com" || sepSub[1] != "projects" || sepSub[2] != ph.projectID || sepSub[3] != "topics" {
 				return logACK(ctx, "Unexpected Cloud AuditLogs event subject: %v", event.Subject())
 			}
-			switch event.Extensions()["methodname"] {
-			case "google.pubsub.v1.Publisher.CreateTopic":
+			if event.Extensions()["methodname"] == "google.pubsub.v1.Publisher.CreateTopic" {
 				// Example:
 				//   Context Attributes,
 				//     specversion: 1.0
@@ -443,26 +442,8 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context) cloudEventsFunc {
 				//     servicename: pubsub.googleapis.com
 				//   Data,
 				//     { ... }
-				channelID = sepSub[4] + "-" + CloudAuditLogsSourceProbeCreateSubject
-			case "google.pubsub.v1.Publisher.DeleteTopic":
-				// Example:
-				//   Context Attributes,
-				//     specversion: 1.0
-				//     type: google.cloud.audit.log.v1.written
-				//     source: //cloudaudit.googleapis.com/projects/project-id/logs/activity
-				//     subject: pubsub.googleapis.com/projects/project-id/topics/cloudauditlogssource-probe-914e5946-5e27-4bde-a455-7cfbae1c8539
-				//     id: 5e3ecfb9fa807b4f0beb8844a0c31b65
-				//     time: 2020-09-14T18:44:21.941097939Z
-				//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/audit/v1/data.proto
-				//     datacontenttype: application/json
-				//   Extensions,
-				//     methodname: google.pubsub.v1.Publisher.DeleteTopic
-				//     resourcename: projects/project-id/topics/cloudauditlogssource-probe-914e5946-5e27-4bde-a455-7cfbae1c8539
-				//     servicename: pubsub.googleapis.com
-				//   Data,
-				//     { ... }
-				channelID = sepSub[4] + "-" + CloudAuditLogsSourceProbeDeleteSubject
-			default:
+				channelID = sepSub[4]
+			} else {
 				return logACK(ctx, "Unrecognized CloudEvent methodname extension: %v", event.Extensions()["methodname"])
 			}
 		case schemasv1.CloudSchedulerJobExecutedEventType:

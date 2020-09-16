@@ -73,16 +73,8 @@ The Probe Helper can handle multiple different types of probes.
 
 5. CloudAuditLogsSource Probe
 
-	This probe has two steps executed in sequence which are intended to test a few
-	of the different events tracked by Cloud AuditLogs. Specifically, this probe
-	tracks the logging of Pub/Sub topic creation and deletion.
-
-	1. The Probe Helper receives an event with a given ID, creates a Pub/Sub topic
-		 named with that ID, and waits to be notified of the topic having been
-		 created by a CloudAuditLogsSource.
-	2. The Probe Helper receives an event with the same ID as in step 1, deletes
-		 the associated Pub/Sub topic, and waits to be notified of the topic having
-		 been deleted by a CloudAuditLogsSource
+	The Probe Helper receives an event, creates a Pub/Sub topic named after it,
+	and waits to observe its creation having been logged by a CloudAuditLogsSource.
 
 */
 
