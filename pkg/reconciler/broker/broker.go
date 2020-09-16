@@ -149,10 +149,11 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	// Check if topic exists, and if not, create it.
 	topicID := resources.GenerateDecouplingTopicName(b)
 	topicConfig := &pubsub.TopicConfig{Labels: labels}
-	if dataresidencyConfig := r.dataresidencyStore.Load(); dataresidencyConfig != nil {
-		if allowedRegions := dataresidencyConfig.DataResidencyDefaults.AllowedPersistenceRegions(); len(allowedRegions) != 0 {
-			topicConfig.MessageStoragePolicy.AllowedPersistenceRegions = allowedRegions
-			logging.FromContext(ctx).Info("Updated Topic Config for Broker", zap.Any("topicConfig", *topicConfig))
+	if r.dataresidencyStore != nil {
+		if dataresidencyConfig := r.dataresidencyStore.Load(); dataresidencyConfig != nil {
+			if dataresidencyConfig.DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig) {
+				logging.FromContext(ctx).Info("Updated Topic Config for Broker", zap.Any("topicConfig", *topicConfig))
+			}
 		}
 	}
 	topic, err := pubsubReconciler.ReconcileTopic(ctx, topicID, topicConfig, b, &b.Status)

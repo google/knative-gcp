@@ -16,6 +16,10 @@ limitations under the License.
 
 package dataresidency
 
+import (
+	"cloud.google.com/go/pubsub"
+)
+
 // Defaults includes the default values to be populated by the Webhook.
 type Defaults struct {
 	// ClusterDefaults are the data residency defaults to use for all namepaces
@@ -39,6 +43,23 @@ func (d *Defaults) scoped() *ScopedDefaults {
 	return scopedDefaults
 }
 
+// AllowedPersistenceRegions gets the AllowedPersistenceRegions setting in the default.
 func (d *Defaults) AllowedPersistenceRegions() []string {
 	return d.scoped().AllowedPersistenceRegions
+}
+
+// ComputeAllowedPersistenceRegions computes the final message storage policy in
+// topicConfig. Return true if the topicConfig is updated.
+func (d *Defaults) ComputeAllowedPersistenceRegions(topicConfig *pubsub.TopicConfig) bool {
+	// We can do subset of both in the future, but for now, we just overwrite the
+	// configuration as the relationship between region and zones are not clear to handle,
+	// eg. us-east1 vs us-east1-a. Important note: setting the AllowedPersistenceRegions
+	// to empty string slice is an error, should set it to nil for all regions.
+	allowedRegions := d.AllowedPersistenceRegions()
+	if allowedRegions == nil || len(allowedRegions) == 0 {
+		return false
+	}
+
+	topicConfig.MessageStoragePolicy.AllowedPersistenceRegions = allowedRegions
+	return true
 }
