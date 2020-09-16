@@ -341,6 +341,10 @@ go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
+# go.opentelemetry.io/otel v0.2.3
+go.opentelemetry.io/otel/api/core
+go.opentelemetry.io/otel/api/propagation
+go.opentelemetry.io/otel/api/trace
 # go.uber.org/atomic v1.6.0
 go.uber.org/atomic
 # go.uber.org/automaxprocs v1.3.0
@@ -1046,6 +1050,7 @@ knative.dev/eventing/pkg/apis/sources
 knative.dev/eventing/pkg/apis/sources/v1alpha1
 knative.dev/eventing/pkg/apis/sources/v1alpha2
 knative.dev/eventing/pkg/apis/sources/v1beta1
+knative.dev/eventing/pkg/channel
 knative.dev/eventing/pkg/client/clientset/versioned
 knative.dev/eventing/pkg/client/clientset/versioned/fake
 knative.dev/eventing/pkg/client/clientset/versioned/scheme
@@ -1114,6 +1119,8 @@ knative.dev/eventing/pkg/reconciler/testing/v1beta1
 knative.dev/eventing/pkg/tracing
 knative.dev/eventing/pkg/utils
 knative.dev/eventing/test
+knative.dev/eventing/test/conformance/helpers
+knative.dev/eventing/test/conformance/helpers/tracing
 knative.dev/eventing/test/e2e/helpers
 knative.dev/eventing/test/flags
 knative.dev/eventing/test/lib
@@ -1297,8 +1304,6 @@ sigs.k8s.io/structured-merge-diff/v3/value
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 ## explicit
 sigs.k8s.io/yaml
-# istio.io/api => istio.io/api v0.0.0-20200227213531-891bf31f3c32
-# istio.io/client-go => istio.io/client-go v0.0.0-20200227214646-23b87b42e49b
 # k8s.io/api => k8s.io/api v0.18.8
 # k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.8
 # k8s.io/apimachinery => k8s.io/apimachinery v0.18.8
