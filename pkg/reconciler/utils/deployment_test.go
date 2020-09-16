@@ -106,7 +106,7 @@ func TestDeploymentReconciler(t *testing.T) {
 				Lister:     tr.listers.GetDeploymentLister(),
 				Recorder:   tr.recorder,
 			}
-			out, err := rec.ReconcileDeployment(context.TODO(), obj, test.in)
+			out, err := rec.ReconcileDeployment(context.Background(), obj, test.in)
 
 			tr.verify(t, test.commonCase, err)
 

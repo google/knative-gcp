@@ -111,7 +111,7 @@ func TestServiceReconciler(t *testing.T) {
 				EndpointsLister: tr.listers.GetEndpointsLister(),
 				Recorder:        tr.recorder,
 			}
-			out, err := rec.ReconcileService(context.TODO(), obj, test.in)
+			out, err := rec.ReconcileService(context.Background(), obj, test.in)
 
 			tr.verify(t, test.commonCase, err)
 

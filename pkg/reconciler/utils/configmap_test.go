@@ -161,7 +161,7 @@ func TestConfigMapReconciler(t *testing.T) {
 				Lister:     tr.listers.GetConfigMapLister(),
 				Recorder:   tr.recorder,
 			}
-			out, err := rec.ReconcileConfigMap(context.TODO(), obj, test.in, test.eqFunc)
+			out, err := rec.ReconcileConfigMap(context.Background(), obj, test.in, test.eqFunc)
 
 			tr.verify(t, test.commonCase, err)
 
