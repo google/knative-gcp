@@ -35,8 +35,6 @@ require (
 )
 
 replace (
-	istio.io/api => istio.io/api v0.0.0-20200227213531-891bf31f3c32
-	istio.io/client-go => istio.io/client-go v0.0.0-20200227214646-23b87b42e49b
 	k8s.io/api => k8s.io/api v0.18.8
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.8
 	k8s.io/apimachinery => k8s.io/apimachinery v0.18.8
