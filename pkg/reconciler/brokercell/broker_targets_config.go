@@ -152,7 +152,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context, bc *intv1alpha1.Br
 }
 
 func (r *Reconciler) refreshPodVolume(ctx context.Context, bc *intv1alpha1.BrokerCell) {
-	if err := volume.UpdateVolumeGeneration(context.TODO(), r.KubeClientSet, r.podLister, bc.Namespace, resources.CommonLabels(bc.Name)); err != nil {
+	if err := volume.UpdateVolumeGeneration(ctx, r.KubeClientSet, r.podLister, bc.Namespace, resources.CommonLabels(bc.Name)); err != nil {
 		// Failing to update the annotation on the data plane pods means there
 		// may be a longer propagation delay for the configmap volume to be
 		// refreshed. But this is not treated as an error.
