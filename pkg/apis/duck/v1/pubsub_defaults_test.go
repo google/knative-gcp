@@ -120,6 +120,16 @@ func TestPubSubSpec_SetPubSubDefaults(t *testing.T) {
 			},
 			ctx: gcpauthtesthelper.ContextWithDefaults(),
 		},
+		"empty secret and non-empty serviceAccountName": {
+			orig: &PubSubSpec{
+				Secret:       &corev1.SecretKeySelector{},
+				IdentitySpec: IdentitySpec{ServiceAccountName: "k8sServiceAccount"},
+			},
+			expected: &PubSubSpec{IdentitySpec: IdentitySpec{
+				ServiceAccountName: "k8sServiceAccount"},
+			},
+			ctx: gcpauthtesthelper.ContextWithDefaults(),
+		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
