@@ -141,8 +141,9 @@ Plane:
         default-cre-dataplane: cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
   ```
 
-  When updating the configuration, note that `default-auth-config` is nested under `data`.
-  If you encounter an error, you are likely attempting to modify the example configuration in `_example`.
+  When updating the configuration, note that `default-auth-config` is nested
+  under `data`. If you encounter an error, you are likely attempting to modify
+  the example configuration in `_example`.
 
   Here, `default-cre-dataplane` refers to a Kubernetes Service Account bound to
   the Google Cloud Service Account `cre-dataplane`. Remember to put this
