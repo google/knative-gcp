@@ -22,13 +22,65 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/knative-gcp/test/e2e/lib"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	conformancehelpers "knative.dev/eventing/test/conformance/helpers"
 	e2ehelpers "knative.dev/eventing/test/e2e/helpers"
+	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/logstream"
+
+	"github.com/cloudevents/sdk-go/v1/binding"
+	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
 // All e2e tests go below:
+
+// TestSmoke makes sure we can run tests.
+func TestSmokeChannel(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeTestChannelImpl(t, authConfig)
+}
+
+func TestSingleBinaryEventForChannel(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
+	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingBinary, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
+}
+
+func TestSingleStructuredEventForChannel(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
+	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingStructured, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
+}
+
+func TestChannelClusterDefaulter(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
+	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.ChannelClusterDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+}
+
+func TestChannelNamespaceDefaulter(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
+	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.ChannelNamespaceDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+}
 
 func TestEventTransformationForSubscription(t *testing.T) {
 	if authConfig.WorkloadIdentity {
