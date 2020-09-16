@@ -128,11 +128,11 @@ func runTestCloudPubSubSource(ctx context.Context, group *errgroup.Group, sub *p
 func runTestCloudAuditLogsSource(ctx context.Context, group *errgroup.Group, pubsubClient *pubsub.Client, probeReceiverURL string) {
 	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
 	if err != nil {
-		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test CloudStorageSource, %v", err)
+		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test CloudAuditLogsSource, %v", err)
 	}
 	c, err := cloudevents.NewClient(cp)
 	if err != nil {
-		logging.FromContext(ctx).Fatalf("Failed to create the test CloudStorageSource client, %v", err)
+		logging.FromContext(ctx).Fatalf("Failed to create the test CloudAuditLogsSource client, %v", err)
 	}
 	topicCreated := false
 	ticker := time.NewTicker(100 * time.Millisecond)
@@ -157,17 +157,6 @@ func runTestCloudAuditLogsSource(ctx context.Context, group *errgroup.Group, pub
 						logging.FromContext(ctx).Warnf("Failed to send topic created CloudEvent from the test CloudAuditLogsSource: %v", res)
 					}
 					topicCreated = true
-				} else if !exists && topicCreated {
-					deleteTopicEvent := cloudevents.NewEvent()
-					deleteTopicEvent.SetID("1234567890")
-					deleteTopicEvent.SetSubject(schemasv1.CloudAuditLogsEventSubject("pubsub.googleapis.com", "projects/test-project-id/topics/cloudauditlogssource-probe-1234567890"))
-					deleteTopicEvent.SetType(schemasv1.CloudAuditLogsLogWrittenEventType)
-					deleteTopicEvent.SetSource(schemasv1.CloudAuditLogsEventSource("projects/test-project-id", "activity"))
-					deleteTopicEvent.SetExtension("methodname", "google.pubsub.v1.Publisher.DeleteTopic")
-					topicCreated = false
-					if res := c.Send(ctx, deleteTopicEvent); !cloudevents.IsACK(res) {
-						logging.FromContext(ctx).Warnf("Failed to send topic deleted CloudEvent from the test CloudAuditLogsSource: %v", res)
-					}
 				}
 			}
 		}
@@ -421,11 +410,27 @@ func TestProbeHelper(t *testing.T) {
 			},
 		},
 	}, {
+		name: "Unrecognized Broker E2E delivery probe subject",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("broker-e2e-delivery-probe", "invalid-subject"),
+				wantResult: cloudevents.ResultNACK,
+			},
+		},
+	}, {
 		name: "CloudPubSubSource probe",
 		steps: []eventAndResult{
 			{
 				event:      probeEvent("cloudpubsubsource-probe", ""),
 				wantResult: cloudevents.ResultACK,
+			},
+		},
+	}, {
+		name: "Unrecognized CloudPubSubSource probe subject",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("cloudpubsubsource-probe", "invalid-subject"),
+				wantResult: cloudevents.ResultNACK,
 			},
 		},
 	}, {
@@ -449,15 +454,27 @@ func TestProbeHelper(t *testing.T) {
 			},
 		},
 	}, {
+		name: "Unrecognized CloudStorageSource probe subject",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("cloudstoragesource-probe", "invalid-subject"),
+				wantResult: cloudevents.ResultNACK,
+			},
+		},
+	}, {
 		name: "CloudAuditLogsSource probe",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("cloudauditlogssource-probe", "create-topic"),
+				event:      probeEvent("cloudauditlogssource-probe", ""),
 				wantResult: cloudevents.ResultACK,
 			},
+		},
+	}, {
+		name: "Unrecognized CloudAuditLogsSource probe subject",
+		steps: []eventAndResult{
 			{
-				event:      probeEvent("cloudauditlogssource-probe", "delete-topic"),
-				wantResult: cloudevents.ResultACK,
+				event:      probeEvent("cloudauditlogssource-probe", "invalid-subject"),
+				wantResult: cloudevents.ResultNACK,
 			},
 		},
 	}, {
@@ -466,6 +483,14 @@ func TestProbeHelper(t *testing.T) {
 			{
 				event:      probeEvent("cloudschedulersource-probe", ""),
 				wantResult: cloudevents.ResultACK,
+			},
+		},
+	}, {
+		name: "Unrecognized CloudSchedulerSource probe subject",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("cloudschedulersource-probe", "invalid-subject"),
+				wantResult: cloudevents.ResultNACK,
 			},
 		},
 	}, {
