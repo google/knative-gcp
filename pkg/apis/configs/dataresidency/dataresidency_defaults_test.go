@@ -153,7 +153,7 @@ func TestNewDefaultsConfigFromConfigMapEmpty(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			_, err := NewDefaultsConfigFromConfigMap(tc.config)
 			if err != nil {
-				t.Fatalf("Empty value or no key should pass")
+				t.Errorf("Empty value or no key should pass")
 			}
 		})
 	}
