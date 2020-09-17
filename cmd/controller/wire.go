@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/reconciler/broker"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs"
 	"github.com/google/knative-gcp/pkg/reconciler/events/build"
 	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
@@ -30,6 +31,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/static"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel"
+	"github.com/google/knative-gcp/pkg/reconciler/trigger"
 	"github.com/google/wire"
 	"knative.dev/pkg/injection"
 )
@@ -50,5 +52,7 @@ func InitializeControllers(ctx context.Context) ([]injection.ControllerConstruct
 		keda.NewConstructor,
 		topic.NewConstructor,
 		channel.NewConstructor,
+		trigger.NewConstructor,
+		broker.NewConstructor,
 	))
 }
