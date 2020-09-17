@@ -83,6 +83,14 @@ func (s *PullSubscriptionStatus) MarkNoSubscription(reason, messageFormat string
 	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionSubscribed, reason, messageFormat, messageA...)
 }
 
+func (s *PullSubscriptionStatus) MarkDeployedFailed(reason, messageFormat string, messageA ...interface{}) {
+	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionDeployed, reason, messageFormat, messageA...)
+}
+
+func (s *PullSubscriptionStatus) MarkDeployedUnknown(reason, messageFormat string, messageA ...interface{}) {
+	pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionDeployed, reason, messageFormat, messageA...)
+}
+
 // PropagateDeploymentAvailability uses the availability of the provided Deployment to determine if
 // PullSubscriptionConditionDeployed should be marked as true or false.
 func (s *PullSubscriptionStatus) PropagateDeploymentAvailability(d *appsv1.Deployment) {
