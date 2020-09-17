@@ -33,8 +33,10 @@ func (s *PubSubSpec) SetPubSubDefaults(ctx context.Context) {
 		logging.FromContext(ctx).Error("Failed to get the GCPAuthDefaults")
 		return
 	}
-	if s.ServiceAccountName == "" &&
-		(s.Secret == nil || equality.Semantic.DeepEqual(s.Secret, &corev1.SecretKeySelector{})) {
+	if equality.Semantic.DeepEqual(s.Secret, &corev1.SecretKeySelector{}) {
+		s.Secret = nil
+	}
+	if s.ServiceAccountName == "" && s.Secret == nil {
 		s.ServiceAccountName = ad.KSA(apis.ParentMeta(ctx).Namespace)
 		s.Secret = ad.Secret(apis.ParentMeta(ctx).Namespace)
 	}
