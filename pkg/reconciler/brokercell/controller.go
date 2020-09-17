@@ -46,6 +46,7 @@ import (
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/system"
 )
 
 const (
@@ -96,7 +97,7 @@ func NewController(
 		func(obj interface{}) {
 			if b, ok := obj.(*brokerv1beta1.Broker); ok {
 				// TODO(#866) Select the brokercell that's associated with the given broker.
-				impl.EnqueueKey(types.NamespacedName{Namespace: b.Namespace, Name: brokerresources.DefaultBrokerCellName})
+				impl.EnqueueKey(types.NamespacedName{Namespace: system.Namespace(), Name: brokerresources.DefaultBrokerCellName})
 				reportLatency(ctx, b, latencyReporter, "Broker", b.Name, b.Namespace)
 			}
 		},
@@ -104,13 +105,8 @@ func NewController(
 	triggerinformer.Get(ctx).Informer().AddEventHandler(controller.HandleAll(
 		func(obj interface{}) {
 			if t, ok := obj.(*brokerv1beta1.Trigger); ok {
-				b, err := brokerinformer.Get(ctx).Lister().Brokers(t.Namespace).Get(t.Spec.Broker)
-				if err != nil {
-					logging.FromContext(ctx).Error("Failed to get broker", zap.Error(err))
-					return
-				}
 				// TODO(#866) Select the brokercell that's associated with the given broker.
-				impl.EnqueueKey(types.NamespacedName{Namespace: b.Namespace, Name: brokerresources.DefaultBrokerCellName})
+				impl.EnqueueKey(types.NamespacedName{Namespace: system.Namespace(), Name: brokerresources.DefaultBrokerCellName})
 				reportLatency(ctx, t, latencyReporter, "Trigger", t.Name, t.Namespace)
 			}
 		},
