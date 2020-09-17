@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	time "time"
 
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -61,13 +62,13 @@ func NewFilteredBrokerCellInformer(client versioned.Interface, namespace string,
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.InternalV1alpha1().BrokerCells(namespace).List(options)
+				return client.InternalV1alpha1().BrokerCells(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.InternalV1alpha1().BrokerCells(namespace).Watch(options)
+				return client.InternalV1alpha1().BrokerCells(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&inteventsv1alpha1.BrokerCell{},

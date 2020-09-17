@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -34,9 +35,10 @@ import (
 
 // SmokeCloudAuditLogsSourceTestHelper tests if a CloudAuditLogsSource object can be created to ready state.
 func SmokeCloudAuditLogsSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudAuditLogsSourceVersion string) {
+	ctx := context.Background()
 	t.Helper()
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
@@ -70,9 +72,10 @@ func SmokeCloudAuditLogsSourceTestHelper(t *testing.T, authConfig lib.AuthConfig
 
 // SmokeCloudAuditLogsSourceWithDeletionTestImpl tests if a CloudAuditLogsSource object can be created to ready state and delete a CloudAuditLogsSource resource and its underlying resources..
 func SmokeCloudAuditLogsSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	ctx := context.Background()
 	t.Helper()
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
@@ -133,6 +136,7 @@ func SmokeCloudAuditLogsSourceWithDeletionTestImpl(t *testing.T, authConfig lib.
 }
 
 func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	ctx := context.Background()
 	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
 	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
@@ -140,8 +144,8 @@ func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	// Create a target Job to receive the events.
 	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName, schemasv1.CloudAuditLogsLogWrittenEventType)
@@ -166,7 +170,7 @@ func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 	topicName, deleteTopic := lib.MakeTopicWithNameOrDie(t, topicName)
 	defer deleteTopic()
 
-	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
+	msg, err := client.WaitUntilJobDone(ctx, client.Namespace, targetName)
 	if err != nil {
 		t.Error(err)
 	}
@@ -180,13 +184,13 @@ func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 		}
 		if !out.Success {
 			// Log the output cloudauditlogssource pods.
-			if logs, err := client.LogsFor(client.Namespace, auditlogsName, lib.CloudAuditLogsSourceV1TypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, auditlogsName, lib.CloudAuditLogsSourceV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("cloudauditlogssource: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, targetName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)

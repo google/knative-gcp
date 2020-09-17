@@ -17,6 +17,7 @@ limitations under the License.
 package utils
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -118,7 +119,7 @@ func TestDeploymentReconciler(t *testing.T) {
 				Lister:     tr.listers.GetDeploymentLister(),
 				Recorder:   tr.recorder,
 			}
-			out, err := rec.ReconcileDeployment(obj, test.in)
+			out, err := rec.ReconcileDeployment(context.Background(), obj, test.in)
 
 			tr.verify(t, test.commonCase, err)
 

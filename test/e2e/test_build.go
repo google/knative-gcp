@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -42,8 +43,9 @@ func SmokeCloudBuildSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cl
 	buildName := helpers.AppendRandomString("build")
 	svcName := "event-display"
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	buildConfig := lib.BuildConfig{
 		SinkGVK:            lib.ServiceGVK,
@@ -71,8 +73,9 @@ func SmokeCloudBuildSourceWithDeletionTestImpl(t *testing.T, authConfig lib.Auth
 	buildName := helpers.AppendRandomString("build")
 	svcName := "event-display"
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	// Create the Build source.
 	lib.MakeBuildOrDie(client, lib.BuildConfig{
@@ -101,15 +104,16 @@ func SmokeCloudBuildSourceWithDeletionTestImpl(t *testing.T, authConfig lib.Auth
 
 // CloudBuildSourceWithTargetTestImpl tests we can receive an event from a CloudBuildSource.
 func CloudBuildSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+
 	t.Helper()
 	lib.MakeTopicWithNameIfItDoesNotExist(t, events.CloudBuildTopic)
 
 	buildName := helpers.AppendRandomString("build")
 	targetName := helpers.AppendRandomString(buildName + "-target")
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	imageName := helpers.AppendRandomString("image")
 	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
@@ -127,7 +131,7 @@ func CloudBuildSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 
 	lib.BuildWithConfigFile(t, imageName)
 
-	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
+	msg, err := client.WaitUntilJobDone(ctx, client.Namespace, targetName)
 	if err != nil {
 		t.Error(err)
 	}
@@ -140,13 +144,13 @@ func CloudBuildSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 		}
 		if !out.Success {
 			// Log the output pods.
-			if logs, err := client.LogsFor(client.Namespace, buildName, lib.CloudBuildSourceV1beta1TypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, buildName, lib.CloudBuildSourceV1beta1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("build: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, targetName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)

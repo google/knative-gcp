@@ -26,6 +26,7 @@ import (
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
 )
@@ -49,7 +50,7 @@ func (r *Reconciler) ReconcileDeployment(ctx context.Context, ra *appsv1.Deploym
 	}
 	if !equality.Semantic.DeepEqual(ra.Spec, existing.Spec) {
 		existing.Spec = ra.Spec
-		existing, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
+		existing, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(ctx, existing, metav1.UpdateOptions{})
 		if err != nil {
 			src.Status.MarkDeployedFailed("ReceiveAdapterUpdateFailed", "Error updating the Receive Adapter: %s", err.Error())
 			logging.FromContext(ctx).Desugar().Error("Error updating Receive Adapter", zap.Error(err))

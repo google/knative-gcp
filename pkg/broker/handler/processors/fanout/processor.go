@@ -23,8 +23,8 @@ import (
 	"sync/atomic"
 
 	"github.com/cloudevents/sdk-go/v2/event"
+	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"

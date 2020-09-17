@@ -19,9 +19,9 @@ package tracing
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/logging"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/logging"
 )
 
 const (

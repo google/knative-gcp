@@ -163,7 +163,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 			Annotations:        resources.GetPullSubscriptionAnnotations(channel.Name, clusterName),
 			Subscriber:         s,
 		})
-		ps, err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Create(ps)
+		ps, err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Create(ctx, ps, metav1.CreateOptions{})
 		if apierrs.IsAlreadyExists(err) {
 			// If the pullsub already exists and is owned by the current channel, mark it for update.
 			if _, found := pullsubs[genName]; found {
@@ -202,7 +202,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 		existingPs, found := pullsubs[genName]
 		if !found {
 			// PullSubscription does not exist, that's ok, create it now.
-			ps, err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Create(ps)
+			ps, err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Create(ctx, ps, metav1.CreateOptions{})
 			if apierrs.IsAlreadyExists(err) {
 				// If the pullsub is not owned by the current channel, this is an error.
 				r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", genName)
@@ -216,7 +216,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 			// Don't modify the informers copy.
 			desired := existingPs.DeepCopy()
 			desired.Spec = ps.Spec
-			ps, err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Update(desired)
+			ps, err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 			if err != nil {
 				r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberUpdateFailed", "Updating Subscriber %q failed", genName)
 				return err
@@ -234,7 +234,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 	for _, s := range subDeletes {
 		genName := resources.GeneratePullSubscriptionName(s.UID)
 		// TODO: we need to handle the case of a already deleted pull subscription. Perhaps move to ensure deleted method.
-		if err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Delete(genName, &metav1.DeleteOptions{}); err != nil {
+		if err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Delete(ctx, genName, metav1.DeleteOptions{}); err != nil {
 			logging.FromContext(ctx).Desugar().Error("unable to delete PullSubscription for Channel", zap.String("ps", genName), zap.String("channel", channel.Name), zap.Error(err))
 			r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberDeleteFailed", "Deleting Subscriber %q failed", genName)
 			return err
@@ -299,7 +299,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1beta1.Channe
 
 	topic, err := r.getTopic(ctx, channel)
 	if apierrs.IsNotFound(err) {
-		topic, err = r.RunClientSet.InternalV1beta1().Topics(channel.Namespace).Create(t)
+		topic, err = r.RunClientSet.InternalV1beta1().Topics(channel.Namespace).Create(ctx, t, metav1.CreateOptions{})
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Error(err))
 			r.Recorder.Eventf(channel, corev1.EventTypeWarning, "TopicCreateFailed", "Failed to created Topic %q: %s", topic.Name, err.Error())
@@ -318,7 +318,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1beta1.Channe
 		desired := topic.DeepCopy()
 		desired.Spec = t.Spec
 		logging.FromContext(ctx).Desugar().Debug("Updating Topic", zap.Any("topic", desired))
-		t, err = r.RunClientSet.InternalV1beta1().Topics(channel.Namespace).Update(desired)
+		t, err = r.RunClientSet.InternalV1beta1().Topics(channel.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update Topic", zap.Any("topic", topic), zap.Error(err))
 			return nil, fmt.Errorf("failed to update Topic: %w", err)
@@ -347,7 +347,7 @@ func (r *Reconciler) getTopic(_ context.Context, channel *v1beta1.Channel) (*int
 }
 
 func (r *Reconciler) getPullSubscriptions(ctx context.Context, channel *v1beta1.Channel) ([]inteventsv1beta1.PullSubscription, error) {
-	sl, err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).List(metav1.ListOptions{
+	sl, err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).List(ctx, metav1.ListOptions{
 		// Use GetLabelSelector to select all PullSubscriptions related to this channel.
 		LabelSelector: resources.GetLabelSelector(controllerAgentName, channel.Name, string(channel.UID)).String(),
 		TypeMeta: metav1.TypeMeta{

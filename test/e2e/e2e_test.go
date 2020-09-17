@@ -19,16 +19,17 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/cloudevents/sdk-go/v2/binding"
 	conformancehelpers "knative.dev/eventing/test/conformance/helpers"
 	e2ehelpers "knative.dev/eventing/test/e2e/helpers"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/logstream"
 
+	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
@@ -48,7 +49,22 @@ func TestSingleBinaryEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingBinary, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(
+		context.Background(),
+		t,
+		binding.EncodingBinary, e2ehelpers.SubscriptionV1beta1,
+		"",
+		channelTestRunner,
+		func(client *eventingtestlib.Client) {
+			// This test is running based on code in knative/eventing, so it does not use the same
+			// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
+			// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
+			// repo whose functionality we need to copy here.
+
+			// Copy the secret from the default namespace to the namespace used in the test.
+			lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
+		},
+	)
 }
 
 func TestSingleStructuredEventForChannel(t *testing.T) {
@@ -58,7 +74,23 @@ func TestSingleStructuredEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, binding.EncodingStructured, e2ehelpers.SubscriptionV1beta1, "", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(
+		context.Background(),
+		t,
+		binding.EncodingStructured,
+		e2ehelpers.SubscriptionV1beta1,
+		"",
+		channelTestRunner,
+		func(client *eventingtestlib.Client) {
+			// This test is running based on code in knative/eventing, so it does not use the same
+			// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
+			// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
+			// repo whose functionality we need to copy here.
+
+			// Copy the secret from the default namespace to the namespace used in the test.
+			lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
+		},
+	)
 }
 
 func TestChannelClusterDefaulter(t *testing.T) {
@@ -68,7 +100,20 @@ func TestChannelClusterDefaulter(t *testing.T) {
 	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelClusterDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelClusterDefaulterTestHelper(
+		context.Background(),
+		t,
+		channelTestRunner,
+		func(client *eventingtestlib.Client) {
+			// This test is running based on code in knative/eventing, so it does not use the same
+			// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
+			// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
+			// repo whose functionality we need to copy here.
+
+			// Copy the secret from the default namespace to the namespace used in the test.
+			lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
+		},
+	)
 }
 
 func TestChannelNamespaceDefaulter(t *testing.T) {
@@ -78,7 +123,20 @@ func TestChannelNamespaceDefaulter(t *testing.T) {
 	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelNamespaceDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelNamespaceDefaulterTestHelper(
+		context.Background(),
+		t,
+		channelTestRunner,
+		func(client *eventingtestlib.Client) {
+			// This test is running based on code in knative/eventing, so it does not use the same
+			// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
+			// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
+			// repo whose functionality we need to copy here.
+
+			// Copy the secret from the default namespace to the namespace used in the test.
+			lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
+		},
+	)
 }
 
 func TestEventTransformationForSubscription(t *testing.T) {
@@ -87,7 +145,21 @@ func TestEventTransformationForSubscription(t *testing.T) {
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.EventTransformationForSubscriptionTestHelper(t, e2ehelpers.SubscriptionV1beta1, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.EventTransformationForSubscriptionTestHelper(
+		context.Background(),
+		t,
+		e2ehelpers.SubscriptionV1beta1,
+		channelTestRunner,
+		func(client *eventingtestlib.Client) {
+			// This test is running based on code in knative/eventing, so it does not use the same
+			// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
+			// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
+			// repo whose functionality we need to copy here.
+
+			// Copy the secret from the default namespace to the namespace used in the test.
+			lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
+		},
+	)
 }
 
 func TestChannelChain(t *testing.T) {
@@ -96,7 +168,21 @@ func TestChannelChain(t *testing.T) {
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelChainTestHelper(t, e2ehelpers.SubscriptionV1beta1, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelChainTestHelper(
+		context.Background(),
+		t,
+		e2ehelpers.SubscriptionV1beta1,
+		channelTestRunner,
+		func(client *eventingtestlib.Client) {
+			// This test is running based on code in knative/eventing, so it does not use the same
+			// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
+			// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
+			// repo whose functionality we need to copy here.
+
+			// Copy the secret from the default namespace to the namespace used in the test.
+			lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
+		},
+	)
 }
 
 func TestEventTransformationForTrigger(t *testing.T) {
@@ -112,11 +198,20 @@ func TestEventTransformationForTrigger(t *testing.T) {
 	triggerVersion := "v1beta1"
 	channelTestRunner.RunTests(t, eventingtestlib.FeatureBasic, func(t *testing.T, component metav1.TypeMeta) {
 		e2ehelpers.EventTransformationForTriggerTestHelper(
+			context.Background(),
 			t,
 			brokerVersion,
 			triggerVersion,
 			e2ehelpers.ChannelBasedBrokerCreator(component, brokerClass),
-			lib.DuplicatePubSubSecret,
+			func(client *eventingtestlib.Client) {
+				// This test is running based on code in knative/eventing, so it does not use the same
+				// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
+				// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
+				// repo whose functionality we need to copy here.
+
+				// Copy the secret from the default namespace to the namespace used in the test.
+				lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
+			},
 		)
 	})
 }
@@ -132,7 +227,23 @@ func TestBrokerChannelFlow(t *testing.T) {
 	brokerClass := "MTChannelBasedBroker"
 	brokerVersion := "v1beta1"
 	triggerVersion := "v1beta1"
-	e2ehelpers.BrokerChannelFlowWithTransformation(t, brokerClass, brokerVersion, triggerVersion, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.BrokerChannelFlowWithTransformation(
+		context.Background(),
+		t,
+		brokerClass,
+		brokerVersion,
+		triggerVersion,
+		channelTestRunner,
+		func(client *eventingtestlib.Client) {
+			// This test is running based on code in knative/eventing, so it does not use the same
+			// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
+			// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
+			// repo whose functionality we need to copy here.
+
+			// Copy the secret from the default namespace to the namespace used in the test.
+			lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
+		},
+	)
 }
 
 func TestChannelDeadLetterSink(t *testing.T) {
@@ -142,7 +253,21 @@ func TestChannelDeadLetterSink(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.ChannelDeadLetterSinkTestHelper(t, e2ehelpers.SubscriptionV1beta1, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.ChannelDeadLetterSinkTestHelper(
+		context.Background(),
+		t,
+		e2ehelpers.SubscriptionV1beta1,
+		channelTestRunner,
+		func(client *eventingtestlib.Client) {
+			// This test is running based on code in knative/eventing, so it does not use the same
+			// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
+			// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
+			// repo whose functionality we need to copy here.
+
+			// Copy the secret from the default namespace to the namespace used in the test.
+			lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
+		},
+	)
 }
 
 func TestChannelTracing(t *testing.T) {
@@ -152,7 +277,7 @@ func TestChannelTracing(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/1455 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	conformancehelpers.ChannelTracingTestHelperWithChannelTestRunner(t,
+	conformancehelpers.ChannelTracingTestHelperWithChannelTestRunner(context.Background(), t,
 		channelTestRunner,
 		func(client *eventingtestlib.Client) {
 			// This test is running based on code in knative/eventing, so it does not use the same
@@ -161,8 +286,8 @@ func TestChannelTracing(t *testing.T) {
 			// repo whose functionality we need to copy here.
 
 			// Copy the secret from the default namespace to the namespace used in the test.
-			lib.GetCredential(client, authConfig.WorkloadIdentity)
-			lib.SetTracingToZipkin(client)
+			lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
+			lib.SetTracingToZipkin(context.Background(), client)
 		})
 }
 

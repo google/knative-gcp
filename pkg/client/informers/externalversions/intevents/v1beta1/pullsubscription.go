@@ -19,6 +19,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	time "time"
 
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
@@ -61,13 +62,13 @@ func NewFilteredPullSubscriptionInformer(client versioned.Interface, namespace s
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.InternalV1beta1().PullSubscriptions(namespace).List(options)
+				return client.InternalV1beta1().PullSubscriptions(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.InternalV1beta1().PullSubscriptions(namespace).Watch(options)
+				return client.InternalV1beta1().PullSubscriptions(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&inteventsv1beta1.PullSubscription{},

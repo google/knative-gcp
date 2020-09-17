@@ -17,11 +17,13 @@ limitations under the License.
 package volume
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
 	"go.uber.org/multierr"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
@@ -38,21 +40,21 @@ const volumeGenerationKey = "volumeGeneration"
 // https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#mounted-configmaps-are-updated-automatically
 // NOTE: update spec.template.metadata.annotations on the deployment resource
 // causes pods to be recreated.
-func UpdateVolumeGeneration(kubeClient kubernetes.Interface, pl corev1listers.PodLister, ns string, ls map[string]string) error {
+func UpdateVolumeGeneration(ctx context.Context, kubeClient kubernetes.Interface, pl corev1listers.PodLister, ns string, ls map[string]string) error {
 	pods, err := pl.Pods(ns).List(labels.SelectorFromSet(ls))
 	if err != nil {
 		return fmt.Errorf("error listing pods in namespace %v with labels %v: %w", ns, ls, err)
 	}
 
 	for _, pod := range pods {
-		err = multierr.Append(err, updateVolumeGeneration(kubeClient, pod))
+		err = multierr.Append(err, updateVolumeGeneration(ctx, kubeClient, pod))
 	}
 	return err
 }
 
 // updateVolumeGeneration updates the volume generation annotation on the pod to
 // trigger volume mount refresh (for configmap).
-func updateVolumeGeneration(kubeClientSet kubernetes.Interface, p *corev1.Pod) error {
+func updateVolumeGeneration(ctx context.Context, kubeClientSet kubernetes.Interface, p *corev1.Pod) error {
 	pod := p.DeepCopy()
 	annotations := pod.GetAnnotations()
 	if annotations == nil {
@@ -65,7 +67,7 @@ func updateVolumeGeneration(kubeClientSet kubernetes.Interface, p *corev1.Pod) e
 	annotations[volumeGenerationKey] = strconv.Itoa(gen + 1)
 	pod.SetAnnotations(annotations)
 
-	if _, err := kubeClientSet.CoreV1().Pods(pod.Namespace).Update(pod); err != nil {
+	if _, err := kubeClientSet.CoreV1().Pods(pod.Namespace).Update(ctx, pod, metav1.UpdateOptions{}); err != nil {
 		return fmt.Errorf("error updating annotations for pod %v/%v: %w", pod.Namespace, pod.Name, err)
 	}
 	return nil

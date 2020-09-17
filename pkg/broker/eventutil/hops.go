@@ -22,8 +22,8 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/event"
 	cetypes "github.com/cloudevents/sdk-go/v2/types"
+	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/logging"
 )
 
 const (

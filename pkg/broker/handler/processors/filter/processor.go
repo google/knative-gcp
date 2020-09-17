@@ -21,10 +21,10 @@ import (
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/extensions"
+	"github.com/google/knative-gcp/pkg/logging"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
-	"knative.dev/eventing/pkg/logging"
 	kntracing "knative.dev/eventing/pkg/tracing"
 
 	"github.com/google/knative-gcp/pkg/broker/config"

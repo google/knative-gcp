@@ -17,6 +17,7 @@ limitations under the License.
 package utils
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -110,7 +111,7 @@ func TestServiceReconciler(t *testing.T) {
 				EndpointsLister: tr.listers.GetEndpointsLister(),
 				Recorder:        tr.recorder,
 			}
-			out, err := rec.ReconcileService(obj, test.in)
+			out, err := rec.ReconcileService(context.Background(), obj, test.in)
 
 			tr.verify(t, test.commonCase, err)
 

@@ -25,8 +25,8 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
+	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"

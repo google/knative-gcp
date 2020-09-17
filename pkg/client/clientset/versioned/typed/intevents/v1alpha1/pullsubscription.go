@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -37,15 +38,15 @@ type PullSubscriptionsGetter interface {
 
 // PullSubscriptionInterface has methods to work with PullSubscription resources.
 type PullSubscriptionInterface interface {
-	Create(*v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error)
-	Update(*v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error)
-	UpdateStatus(*v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.PullSubscription, error)
-	List(opts v1.ListOptions) (*v1alpha1.PullSubscriptionList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.PullSubscription, err error)
+	Create(ctx context.Context, pullSubscription *v1alpha1.PullSubscription, opts v1.CreateOptions) (*v1alpha1.PullSubscription, error)
+	Update(ctx context.Context, pullSubscription *v1alpha1.PullSubscription, opts v1.UpdateOptions) (*v1alpha1.PullSubscription, error)
+	UpdateStatus(ctx context.Context, pullSubscription *v1alpha1.PullSubscription, opts v1.UpdateOptions) (*v1alpha1.PullSubscription, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.PullSubscription, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.PullSubscriptionList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.PullSubscription, err error)
 	PullSubscriptionExpansion
 }
 
@@ -64,20 +65,20 @@ func newPullSubscriptions(c *InternalV1alpha1Client, namespace string) *pullSubs
 }
 
 // Get takes name of the pullSubscription, and returns the corresponding pullSubscription object, and an error if there is any.
-func (c *pullSubscriptions) Get(name string, options v1.GetOptions) (result *v1alpha1.PullSubscription, err error) {
+func (c *pullSubscriptions) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.PullSubscription, err error) {
 	result = &v1alpha1.PullSubscription{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("pullsubscriptions").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of PullSubscriptions that match those selectors.
-func (c *pullSubscriptions) List(opts v1.ListOptions) (result *v1alpha1.PullSubscriptionList, err error) {
+func (c *pullSubscriptions) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.PullSubscriptionList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *pullSubscriptions) List(opts v1.ListOptions) (result *v1alpha1.PullSubs
 		Resource("pullsubscriptions").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested pullSubscriptions.
-func (c *pullSubscriptions) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *pullSubscriptions) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *pullSubscriptions) Watch(opts v1.ListOptions) (watch.Interface, error) 
 		Resource("pullsubscriptions").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a pullSubscription and creates it.  Returns the server's representation of the pullSubscription, and an error, if there is any.
-func (c *pullSubscriptions) Create(pullSubscription *v1alpha1.PullSubscription) (result *v1alpha1.PullSubscription, err error) {
+func (c *pullSubscriptions) Create(ctx context.Context, pullSubscription *v1alpha1.PullSubscription, opts v1.CreateOptions) (result *v1alpha1.PullSubscription, err error) {
 	result = &v1alpha1.PullSubscription{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("pullsubscriptions").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(pullSubscription).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a pullSubscription and updates it. Returns the server's representation of the pullSubscription, and an error, if there is any.
-func (c *pullSubscriptions) Update(pullSubscription *v1alpha1.PullSubscription) (result *v1alpha1.PullSubscription, err error) {
+func (c *pullSubscriptions) Update(ctx context.Context, pullSubscription *v1alpha1.PullSubscription, opts v1.UpdateOptions) (result *v1alpha1.PullSubscription, err error) {
 	result = &v1alpha1.PullSubscription{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("pullsubscriptions").
 		Name(pullSubscription.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(pullSubscription).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *pullSubscriptions) UpdateStatus(pullSubscription *v1alpha1.PullSubscription) (result *v1alpha1.PullSubscription, err error) {
+func (c *pullSubscriptions) UpdateStatus(ctx context.Context, pullSubscription *v1alpha1.PullSubscription, opts v1.UpdateOptions) (result *v1alpha1.PullSubscription, err error) {
 	result = &v1alpha1.PullSubscription{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("pullsubscriptions").
 		Name(pullSubscription.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(pullSubscription).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the pullSubscription and deletes it. Returns an error if one occurs.
-func (c *pullSubscriptions) Delete(name string, options *v1.DeleteOptions) error {
+func (c *pullSubscriptions) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("pullsubscriptions").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *pullSubscriptions) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *pullSubscriptions) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("pullsubscriptions").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched pullSubscription.
-func (c *pullSubscriptions) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.PullSubscription, err error) {
+func (c *pullSubscriptions) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.PullSubscription, err error) {
 	result = &v1alpha1.PullSubscription{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("pullsubscriptions").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var cloudpubsubsourcesResource = schema.GroupVersionResource{Group: "events.clou
 var cloudpubsubsourcesKind = schema.GroupVersionKind{Group: "events.cloud.google.com", Version: "v1alpha1", Kind: "CloudPubSubSource"}
 
 // Get takes name of the cloudPubSubSource, and returns the corresponding cloudPubSubSource object, and an error if there is any.
-func (c *FakeCloudPubSubSources) Get(name string, options v1.GetOptions) (result *v1alpha1.CloudPubSubSource, err error) {
+func (c *FakeCloudPubSubSources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.CloudPubSubSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(cloudpubsubsourcesResource, c.ns, name), &v1alpha1.CloudPubSubSource{})
 
@@ -50,7 +52,7 @@ func (c *FakeCloudPubSubSources) Get(name string, options v1.GetOptions) (result
 }
 
 // List takes label and field selectors, and returns the list of CloudPubSubSources that match those selectors.
-func (c *FakeCloudPubSubSources) List(opts v1.ListOptions) (result *v1alpha1.CloudPubSubSourceList, err error) {
+func (c *FakeCloudPubSubSources) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.CloudPubSubSourceList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(cloudpubsubsourcesResource, cloudpubsubsourcesKind, c.ns, opts), &v1alpha1.CloudPubSubSourceList{})
 
@@ -72,14 +74,14 @@ func (c *FakeCloudPubSubSources) List(opts v1.ListOptions) (result *v1alpha1.Clo
 }
 
 // Watch returns a watch.Interface that watches the requested cloudPubSubSources.
-func (c *FakeCloudPubSubSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeCloudPubSubSources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(cloudpubsubsourcesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a cloudPubSubSource and creates it.  Returns the server's representation of the cloudPubSubSource, and an error, if there is any.
-func (c *FakeCloudPubSubSources) Create(cloudPubSubSource *v1alpha1.CloudPubSubSource) (result *v1alpha1.CloudPubSubSource, err error) {
+func (c *FakeCloudPubSubSources) Create(ctx context.Context, cloudPubSubSource *v1alpha1.CloudPubSubSource, opts v1.CreateOptions) (result *v1alpha1.CloudPubSubSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(cloudpubsubsourcesResource, c.ns, cloudPubSubSource), &v1alpha1.CloudPubSubSource{})
 
@@ -90,7 +92,7 @@ func (c *FakeCloudPubSubSources) Create(cloudPubSubSource *v1alpha1.CloudPubSubS
 }
 
 // Update takes the representation of a cloudPubSubSource and updates it. Returns the server's representation of the cloudPubSubSource, and an error, if there is any.
-func (c *FakeCloudPubSubSources) Update(cloudPubSubSource *v1alpha1.CloudPubSubSource) (result *v1alpha1.CloudPubSubSource, err error) {
+func (c *FakeCloudPubSubSources) Update(ctx context.Context, cloudPubSubSource *v1alpha1.CloudPubSubSource, opts v1.UpdateOptions) (result *v1alpha1.CloudPubSubSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(cloudpubsubsourcesResource, c.ns, cloudPubSubSource), &v1alpha1.CloudPubSubSource{})
 
@@ -102,7 +104,7 @@ func (c *FakeCloudPubSubSources) Update(cloudPubSubSource *v1alpha1.CloudPubSubS
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeCloudPubSubSources) UpdateStatus(cloudPubSubSource *v1alpha1.CloudPubSubSource) (*v1alpha1.CloudPubSubSource, error) {
+func (c *FakeCloudPubSubSources) UpdateStatus(ctx context.Context, cloudPubSubSource *v1alpha1.CloudPubSubSource, opts v1.UpdateOptions) (*v1alpha1.CloudPubSubSource, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(cloudpubsubsourcesResource, "status", c.ns, cloudPubSubSource), &v1alpha1.CloudPubSubSource{})
 
@@ -113,7 +115,7 @@ func (c *FakeCloudPubSubSources) UpdateStatus(cloudPubSubSource *v1alpha1.CloudP
 }
 
 // Delete takes name of the cloudPubSubSource and deletes it. Returns an error if one occurs.
-func (c *FakeCloudPubSubSources) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeCloudPubSubSources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(cloudpubsubsourcesResource, c.ns, name), &v1alpha1.CloudPubSubSource{})
 
@@ -121,15 +123,15 @@ func (c *FakeCloudPubSubSources) Delete(name string, options *v1.DeleteOptions) 
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeCloudPubSubSources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(cloudpubsubsourcesResource, c.ns, listOptions)
+func (c *FakeCloudPubSubSources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(cloudpubsubsourcesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.CloudPubSubSourceList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched cloudPubSubSource.
-func (c *FakeCloudPubSubSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CloudPubSubSource, err error) {
+func (c *FakeCloudPubSubSources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.CloudPubSubSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(cloudpubsubsourcesResource, c.ns, name, pt, data, subresources...), &v1alpha1.CloudPubSubSource{})
 

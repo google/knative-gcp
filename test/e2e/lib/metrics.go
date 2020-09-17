@@ -17,6 +17,7 @@ limitations under the License.
 package lib
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -40,23 +41,23 @@ import (
 //
 // The hope is that this will allow better understanding of where events are lost. E.g. did the
 // source try to send the event to the channel/broker/sink?
-func printAllPodMetricsIfTestFailed(client *Client) {
+func printAllPodMetricsIfTestFailed(ctx context.Context, client *Client) {
 	if !client.T.Failed() {
 		// No failure, so no need for logs!
 		return
 	}
-	pods, err := client.Core.Kube.Kube.CoreV1().Pods(client.Namespace).List(metav1.ListOptions{})
+	pods, err := client.Core.Kube.Kube.CoreV1().Pods(client.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		client.T.Logf("Unable to list pods: %v", err)
 		return
 	}
 	for _, pod := range pods.Items {
-		printPodMetrics(client, pod)
+		printPodMetrics(ctx, client, pod)
 	}
 }
 
 // printPodMetrics attempts to print the metrics from a single Pod to the test logs.
-func printPodMetrics(client *Client, pod corev1.Pod) {
+func printPodMetrics(ctx context.Context, client *Client, pod corev1.Pod) {
 	podName := types.NamespacedName{
 		Namespace: pod.Namespace,
 		Name:      pod.Name,
@@ -76,7 +77,7 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 		return
 	}
 
-	root, err := getRootOwnerOfPod(client, pod)
+	root, err := getRootOwnerOfPod(ctx, client, pod)
 	if err != nil {
 		client.T.Logf("Unable to get root owner of the Pod %q: %v", podName, err)
 		root = "root-unknown"
@@ -161,29 +162,29 @@ func findAvailablePort() (int, error) {
 	return localPort, nil
 }
 
-func getRootOwnerOfPod(client *Client, pod corev1.Pod) (string, error) {
+func getRootOwnerOfPod(ctx context.Context, client *Client, pod corev1.Pod) (string, error) {
 	u := unstructured.Unstructured{}
 	u.SetName(pod.Name)
 	u.SetNamespace(pod.Namespace)
 	u.SetOwnerReferences(pod.OwnerReferences)
 
-	root, err := getRootOwner(client, u)
+	root, err := getRootOwner(ctx, client, u)
 	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("%s/%s", root.GetKind(), root.GetName()), nil
 }
 
-func getRootOwner(client *Client, u unstructured.Unstructured) (unstructured.Unstructured, error) {
+func getRootOwner(ctx context.Context, client *Client, u unstructured.Unstructured) (unstructured.Unstructured, error) {
 	for _, o := range u.GetOwnerReferences() {
 		if *o.Controller {
 			gvr := createGVR(o)
-			g, err := client.Core.Dynamic.Resource(gvr).Namespace(u.GetNamespace()).Get(o.Name, metav1.GetOptions{})
+			g, err := client.Core.Dynamic.Resource(gvr).Namespace(u.GetNamespace()).Get(ctx, o.Name, metav1.GetOptions{})
 			if err != nil {
 				client.T.Logf("Failed to dynamic.Get: %v, %v, %v, %v", gvr, u.GetNamespace(), o.Name, err)
 				return unstructured.Unstructured{}, err
 			}
-			return getRootOwner(client, *g)
+			return getRootOwner(ctx, client, *g)
 		}
 	}
 	// There are no controlling owner references, this is the root.

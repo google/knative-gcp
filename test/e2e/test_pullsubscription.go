@@ -32,6 +32,7 @@ import (
 
 // SmokePullSubscriptionTestHelper tests we can create a pull subscription to ready state.
 func SmokePullSubscriptionTestHelper(t *testing.T, authConfig lib.AuthConfig, pullsubscriptionVersion string) {
+	ctx := context.Background()
 	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
@@ -39,8 +40,8 @@ func SmokePullSubscriptionTestHelper(t *testing.T, authConfig lib.AuthConfig, pu
 	psName := topic + "-sub"
 	svcName := "event-display"
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	pullSubscriptionConfig := lib.PullSubscriptionConfig{
 		SinkGVK:              lib.ServiceGVK,
@@ -63,6 +64,7 @@ func SmokePullSubscriptionTestHelper(t *testing.T, authConfig lib.AuthConfig, pu
 
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
 func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	ctx := context.Background()
 	t.Helper()
 	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
@@ -73,8 +75,8 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 	source := schemasv1.CloudPubSubEventSource(project, topicName)
 	data := fmt.Sprintf(`{"topic":%s}`, topicName)
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	// Create a target Job to receive the events.
 	lib.MakePubSubTargetJobOrDie(client, source, targetName, schemasv1.CloudPubSubMessagePublishedEventType /*empty schema*/, "")
@@ -98,7 +100,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 		t.Logf("%s", err)
 	}
 
-	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
+	msg, err := client.WaitUntilJobDone(ctx, client.Namespace, targetName)
 	if err != nil {
 		t.Error(err)
 	}
@@ -111,13 +113,13 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 		}
 		if !out.Success {
 			// Log the output pull subscription pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, lib.PullSubscriptionV1TypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, psName, lib.PullSubscriptionV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("pullsubscription: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, targetName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)
