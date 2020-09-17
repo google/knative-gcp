@@ -19,7 +19,6 @@ package helpers
 import (
 	"testing"
 
-	duckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	duckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/messaging/v1beta1"
 	testlib "knative.dev/eventing/test/lib"
@@ -86,7 +85,7 @@ func channelHasRequiredSubscriberStatus(st *testing.T, client *testlib.Client, c
 		if channelable.Status.SubscribableStatus == nil || channelable.Status.SubscribableStatus.Subscribers == nil {
 			st.Fatalf("%q does not have status.subscribers", channel)
 		}
-		ss := findSubscriberStatusV1Beta1(channelable.Status.SubscribableStatus.Subscribers, subscription)
+		ss := findSubscriberStatus(channelable.Status.SubscribableStatus.Subscribers, subscription)
 		if ss == nil {
 			st.Fatalf("No subscription status found for channel %q and subscription %v", channel, subscription)
 		}
@@ -95,7 +94,7 @@ func channelHasRequiredSubscriberStatus(st *testing.T, client *testlib.Client, c
 		if ss.Ready != corev1.ConditionTrue {
 			st.Fatalf("Subscription not ready found for channel %q and subscription %v", channel, subscription)
 		}
-	} else if dtsv == "v1beta1" {
+	} else if dtsv == "v1beta1" || dtsv == "v1" {
 		channelable, err := getChannelAsV1Beta1Channelable(channelName, client, channel)
 		if err != nil {
 			st.Fatalf("Unable to get channel %q to v1beta1 duck type: %q", channel, err)
@@ -105,26 +104,7 @@ func channelHasRequiredSubscriberStatus(st *testing.T, client *testlib.Client, c
 		if channelable.Status.Subscribers == nil {
 			st.Fatalf("%q does not have status.subscribers", channel)
 		}
-		ss := findSubscriberStatusV1Beta1(channelable.Status.Subscribers, subscription)
-		if ss == nil {
-			st.Fatalf("No subscription status found for channel %q and subscription %v", channel, subscription)
-		}
-
-		// SPEC: The ready field of the subscriber identified by its uid MUST be set to True when the subscription is ready to be processed.
-		if ss.Ready != corev1.ConditionTrue {
-			st.Fatalf("Subscription not ready found for channel %q and subscription %v", channel, subscription)
-		}
-	} else if dtsv == "v1" {
-		channelable, err := getChannelAsV1Channelable(channelName, client, channel)
-		if err != nil {
-			st.Fatalf("Unable to get channel %q to v1 duck type: %q", channel, err)
-		}
-
-		// SPEC: Each subscription to a channel is added to the channel status.subscribers automatically.
-		if channelable.Status.Subscribers == nil {
-			st.Fatalf("%q does not have status.subscribers", channel)
-		}
-		ss := findSubscriberStatusV1(channelable.Status.Subscribers, subscription)
+		ss := findSubscriberStatus(channelable.Status.Subscribers, subscription)
 		if ss == nil {
 			st.Fatalf("No subscription status found for channel %q and subscription %v", channel, subscription)
 		}
@@ -138,16 +118,7 @@ func channelHasRequiredSubscriberStatus(st *testing.T, client *testlib.Client, c
 	}
 }
 
-func findSubscriberStatusV1Beta1(statusArr []duckv1beta1.SubscriberStatus, subscription *eventingv1beta1.Subscription) *duckv1beta1.SubscriberStatus {
-	for _, v := range statusArr {
-		if v.UID == subscription.UID {
-			return &v
-		}
-	}
-	return nil
-}
-
-func findSubscriberStatusV1(statusArr []duckv1.SubscriberStatus, subscription *eventingv1beta1.Subscription) *duckv1.SubscriberStatus {
+func findSubscriberStatus(statusArr []duckv1beta1.SubscriberStatus, subscription *eventingv1beta1.Subscription) *duckv1beta1.SubscriberStatus {
 	for _, v := range statusArr {
 		if v.UID == subscription.UID {
 			return &v

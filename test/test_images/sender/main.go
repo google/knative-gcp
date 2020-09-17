@@ -27,12 +27,13 @@ import (
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
-	"github.com/google/knative-gcp/pkg/kncloudevents"
-	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/kelseyhightower/envconfig"
 	"go.opencensus.io/trace"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
+
+	"github.com/google/knative-gcp/pkg/kncloudevents"
+	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
 type envConfig struct {
@@ -40,10 +41,10 @@ type envConfig struct {
 	RetryEnvVar     string `envconfig:"RETRY"`
 }
 
-// defaultRetry represents that there will be 3 iterations.
-// The duration starts from 30s and is multiplied by factor 1.0 for each iteration.
+// defaultRetry represents that there will be 4 iterations.
+// The duration starts from 30s and is multiplied by factor 2.0 for each iteration.
 var defaultRetry = wait.Backoff{
-	Steps:    3,
+	Steps:    4,
 	Duration: 30 * time.Second,
 	Factor:   2.0,
 	// The sleep at each iteration is the duration plus an additional
@@ -61,21 +62,18 @@ func main() {
 	brokerURL := env.BrokerURLEnvVar
 	needRetry := (env.RetryEnvVar == "true")
 
-	ctx := cev2.WithEncodingBinary(context.Background())
 	ceClient, err := kncloudevents.NewDefaultClient(brokerURL)
 	if err != nil {
 		fmt.Printf("Unable to create ceClient: %s ", err)
 	}
 
-	ctx, span := trace.StartSpan(ctx, "sender", trace.WithSampler(trace.AlwaysSample()))
-	defer span.End()
-
 	// If needRetry is true, repeat sending Event with exponential backoff when there are some specific errors.
 	// In e2e test, sync problems could cause 404 and 5XX error, retrying those would help reduce flakiness.
 	success := true
-	if res := sendEvent(ctx, ceClient, needRetry); !cev2.IsACK(res) {
+	span, err := sendEvent(ceClient, needRetry)
+	if !cev2.IsACK(err) {
 		success = false
-		fmt.Printf("failed to send event: %s", res.Error())
+		fmt.Printf("failed to send event: %v", err)
 	}
 
 	if err := writeTerminationMessage(map[string]interface{}{
@@ -86,17 +84,21 @@ func main() {
 	}
 }
 
-func sendEvent(ctx context.Context, ceClient cev2.Client, needRetry bool) error {
+func sendEvent(ceClient cev2.Client, needRetry bool) (span *trace.Span, err error) {
 	send := func() error {
+		ctx := cev2.WithEncodingBinary(context.Background())
+		ctx, span = trace.StartSpan(ctx, "sender", trace.WithSampler(trace.AlwaysSample()))
+		defer span.End()
 		result := ceClient.Send(ctx, dummyCloudEvent())
 		return result
 	}
 
 	if needRetry {
-		return retry.OnError(defaultRetry, isRetryable, send)
+		err = retry.OnError(defaultRetry, isRetryable, send)
+	} else {
+		err = send()
 	}
-
-	return send()
+	return
 }
 
 func dummyCloudEvent() cev2.Event {

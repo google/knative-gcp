@@ -136,7 +136,7 @@ func (a *Adapter) Stop() {
 func (a *Adapter) receive(ctx context.Context, msg *pubsub.Message) {
 	event, err := a.converter.Convert(ctx, msg, a.args.ConverterType)
 	if err != nil {
-		a.logger.Debug("Failed to convert received message to an event, check the msg format: %w", zap.Error(err))
+		a.logger.Debug("Failed to convert received message to an event, check the msg format: %v", zap.Error(err))
 		// Ack the message so it won't be retried, we consider all errors to be non-retryable.
 		msg.Ack()
 		return

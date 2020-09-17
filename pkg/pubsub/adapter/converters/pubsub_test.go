@@ -110,6 +110,7 @@ func pubSubCloudEvent(attributes map[string]string, data string) *cev2.Event {
 	s := fmt.Sprintf(`{"subscription":"testsubscription","message":{"messageId":"id","data":%s,%s"publishTime":"0001-01-01T00:00:00Z"}}`, data, at)
 	e.SetData(cev2.ApplicationJSON, []byte(s))
 	e.SetType(schemasv1.CloudPubSubMessagePublishedEventType)
+	e.SetDataSchema(schemasv1.CloudPubSubEventDataSchema)
 	e.DataBase64 = false
 	return &e
 }

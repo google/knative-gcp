@@ -59,14 +59,95 @@ The Probe Helper can handle multiple different types of probes.
 		 the object, and waits to tbe notified that the object has been deleted by a
 		 CloudStorageSource.
 
+4. CloudSchedulerSource Probe
+
+		This probe is unlike the others in that it does not measure e2e delivery
+		by sending and receiving uniquely identifiable events. Instead, it depends
+		on an existing CloudSchedulerSource which sinks an event to the Probe Helper
+		receiver every minute.
+
+		The Probe Helper receives an event of type `cloudschedulersource-probe`,
+		and examines the time since the last tick observed from the CloudSchedulerSource.
+		If this duration is greater than 1 minute, the probe fails, and otherwise,
+		the probe succeeds.
+
+5. CloudAuditLogsSource Probe
+
+	The Probe Helper receives an event, creates a Pub/Sub topic named after it,
+	and waits to observe its creation having been logged by a CloudAuditLogsSource.
+
 */
 
 package main
 
 import (
+	"time"
+
+	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
+
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/utils"
 )
 
+type envConfig struct {
+	// Environment variable containing the project ID
+	ProjectID string `envconfig:"PROJECT_ID"`
+
+	// Environment variable containing the sink URL (broker URL) that the event will be forwarded to by the probeHelper for the e2e delivery probe
+	BrokerURL string `envconfig:"K_SINK" default:"http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"`
+
+	// Environment variable containing the CloudPubSubSource Topic ID that the event will be forwarded to by the probeHelper for the CloudPubSubSource probe
+	CloudPubSubSourceTopicID string `envconfig:"CLOUDPUBSUBSOURCE_TOPIC_ID" default:"cloudpubsubsource-topic"`
+
+	// Environment variable containing the CloudStorageSource Bucket ID that objects will be written to by the probeHelper for the CloudStorageSource probe
+	CloudStorageSourceBucketID string `envconfig:"CLOUDSTORAGESOURCE_BUCKET_ID" default:"cloudstoragesource-bucket"`
+
+	// Environment variable containing an upper bound on the duration between events emitted by the CloudSchedulerSource
+	CloudSchedulerSourcePeriod time.Duration `envconfig:"CLOUDSCHEDULERSOURCE_PERIOD" default:"90s"`
+
+	// Environment variable containing the port which listens to the probe to deliver the event
+	ProbePort int `envconfig:"PROBE_PORT" default:"8070"`
+
+	// Environment variable containing the port to receive the event from the trigger
+	ReceiverPort int `envconfig:"RECEIVER_PORT" default:"8080"`
+
+	// Environment variable containing the port to send health checks to
+	HealthCheckerPort int `envconfig:"HEALTH_CHECKER_PORT" default:"8060"`
+
+	// Environment variable containing the maximum tolerated staleness duration
+	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"5m"`
+
+	// Environment variable containing the timeout duration to wait for an event to be delivered back
+	TimeoutDuration time.Duration `envconfig:"TIMEOUT_DURATION" default:"30m"`
+}
+
 func main() {
-	runProbeHelper(signals.NewContext(), nil, nil, nil, nil)
+	ctx := signals.NewContext()
+
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
+		logging.FromContext(ctx).Fatal("Failed to process env var", zap.Error(err))
+	}
+	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
+	if err != nil {
+		logging.FromContext(ctx).Fatal("Failed to get the default project ID", zap.Error(err))
+	}
+	ph := &ProbeHelper{
+		projectID:                  projectID,
+		brokerURL:                  env.BrokerURL,
+		probePort:                  env.ProbePort,
+		receiverPort:               env.ReceiverPort,
+		cloudPubSubSourceTopicID:   env.CloudPubSubSourceTopicID,
+		cloudStorageSourceBucketID: env.CloudStorageSourceBucketID,
+		cloudSchedulerSourcePeriod: env.CloudSchedulerSourcePeriod,
+		timeoutDuration:            env.TimeoutDuration,
+		healthChecker: &healthChecker{
+			port:             env.HealthCheckerPort,
+			maxStaleDuration: env.MaxStaleDuration,
+		},
+	}
+	ph.run(ctx)
 }

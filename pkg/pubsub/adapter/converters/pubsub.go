@@ -41,7 +41,7 @@ func convertCloudPubSub(ctx context.Context, msg *pubsub.Message) (*cev2.Event, 
 
 	event.SetSource(schemasv1.CloudPubSubEventSource(project, topic))
 	event.SetType(schemasv1.CloudPubSubMessagePublishedEventType)
-
+	event.SetDataSchema(schemasv1.CloudPubSubEventDataSchema)
 	subscription, err := GetSubscriptionKey(ctx)
 	if err != nil {
 		return nil, err

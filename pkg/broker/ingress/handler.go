@@ -34,6 +34,8 @@ import (
 	"github.com/google/wire"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	grpccode "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
@@ -52,6 +54,11 @@ const (
 
 	// For probes.
 	heathCheckPath = "/healthz"
+
+	// for permission denied error msg
+	// TODO(cathyzhyi) point to official doc rather than github doc
+	deniedErrMsg string = `Failed to publish to PubSub because permission denied.
+Please refer to "Configure the Authentication Mechanism for GCP" at https://github.com/google/knative-gcp/blob/master/docs/install/install-gcp-broker.md`
 )
 
 // HandlerSet provides a handler with a real HTTPMessageReceiver and pubsub MultiTopicDecoupleSink.
@@ -122,6 +129,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	}
 
 	broker, err := ConvertPathToNamespacedName(request.URL.Path)
+	ctx = logging.With(ctx, zap.Stringer("broker", broker))
 	if err != nil {
 		logging.FromContext(ctx).Debug("Malformed request path", zap.String("path", request.URL.Path))
 		nethttp.Error(response, err.Error(), nethttp.StatusNotFound)
@@ -158,12 +166,17 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	defer cancel()
 	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode) }()
 	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
-		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.String("broker", broker.String()), zap.Error(res))
+		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.Error(res))
 		statusCode = nethttp.StatusInternalServerError
-		if errors.Is(res, ErrNotFound) {
+
+		switch {
+		case errors.Is(res, ErrNotFound):
 			statusCode = nethttp.StatusNotFound
-		} else if errors.Is(res, ErrNotReady) {
+		case errors.Is(res, ErrNotReady):
 			statusCode = nethttp.StatusServiceUnavailable
+		case grpcstatus.Code(res) == grpccode.PermissionDenied:
+			nethttp.Error(response, deniedErrMsg, statusCode)
+			return
 		}
 		nethttp.Error(response, "Failed to publish to PubSub", statusCode)
 		return
@@ -201,6 +214,6 @@ func (h *Handler) reportMetrics(ctx context.Context, broker types.NamespacedName
 		ResponseCode: statusCode,
 	}
 	if err := h.reporter.ReportEventCount(ctx, args); err != nil {
-		logging.FromContext(ctx).Warn("Failed to record metrics.", zap.Any("namespace", broker.Namespace), zap.Any("broker", broker.Name), zap.Error(err))
+		logging.FromContext(ctx).Warn("Failed to record metrics.", zap.Any("broker", broker.Name), zap.Error(err))
 	}
 }

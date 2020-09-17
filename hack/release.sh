@@ -62,4 +62,4 @@ function build_release() {
   ARTIFACTS_TO_PUBLISH="${all_yamls[@]}"
 }
 
-main "$@"
+main $@

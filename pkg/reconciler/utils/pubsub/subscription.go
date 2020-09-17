@@ -41,7 +41,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 	subExists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
-		updater.MarkSubscriptionUnknown("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %w", err)
+		updater.MarkSubscriptionUnknown("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %v", err)
 		return nil, err
 	}
 
@@ -50,7 +50,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 		config, err := sub.Config(ctx)
 		if err != nil {
 			logger.Error("Failed to get Pub/Sub subscription Config", zap.Error(err))
-			updater.MarkSubscriptionUnknown("SubscriptionConfigUnknown", "Failed to get Pub/Sub subscription Config: %w", err)
+			updater.MarkSubscriptionUnknown("SubscriptionConfigUnknown", "Failed to get Pub/Sub subscription Config: %v", err)
 			return nil, err
 		}
 		if config.Topic != nil && config.Topic.String() == deletedTopic {
@@ -79,12 +79,12 @@ func (r *Reconciler) DeleteSubscription(ctx context.Context, id string, obj runt
 	exists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
-		updater.MarkSubscriptionUnknown("FinalizeSubscriptionVerificationFailed", "failed to verify Pub/Sub subscription exists: %w", err)
+		updater.MarkSubscriptionUnknown("FinalizeSubscriptionVerificationFailed", "failed to verify Pub/Sub subscription exists: %v", err)
 		return err
 	}
 	if exists {
 		if err = r.deleteSubscription(ctx, sub, obj); err != nil {
-			updater.MarkSubscriptionUnknown("FinalizeSubscriptionDeletionFailed", "failed to delete Pub/Sub subscription: %w", err)
+			updater.MarkSubscriptionUnknown("FinalizeSubscriptionDeletionFailed", "failed to delete Pub/Sub subscription: %v", err)
 			return err
 		}
 	}
@@ -108,7 +108,7 @@ func (r *Reconciler) createSubscription(ctx context.Context, id string, subConfi
 	sub, err := r.client.CreateSubscription(ctx, id, subConfig)
 	if err != nil {
 		logger.Error("Failed to create subscription", zap.Error(err))
-		updater.MarkSubscriptionFailed("SubscriptionCreationFailed", "Subscription creation failed: %w", err)
+		updater.MarkSubscriptionFailed("SubscriptionCreationFailed", "Subscription creation failed: %v", err)
 		return nil, err
 	}
 	logger.Info("Created PubSub subscription", zap.String("name", sub.ID()))

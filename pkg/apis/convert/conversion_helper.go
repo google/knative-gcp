@@ -34,7 +34,7 @@ import (
 const (
 	DeprecatedType           = "Deprecated"
 	deprecatedV1Alpha1Reason = "v1alpha1Deprecated"
-	deprecatedV1Alpha1Msg    = "V1alpha1 has been deprecated and will be removed in 0.18."
+	deprecatedV1Alpha1Msg    = "V1alpha1 has been deprecated and will be removed in 0.19."
 )
 
 var (
@@ -329,14 +329,14 @@ func FromV1beta1SubscribableSpec(from *eventingduckv1beta1.SubscribableSpec) *ev
 
 // A helper function to mark v1alpha1 Deprecated Condition in the Status.
 // We mark the Condition in status during conversion from a higher version to v1alpha1.
-// TODO: remove after the 0.17 cut.
+// TODO(https://github.com/google/knative-gcp/issues/1544): remove after the 0.18 cut.
 func MarkV1alpha1Deprecated(cs *apis.ConditionSet, s *pkgduckv1.Status) {
 	cs.Manage(s).SetCondition(DeprecatedV1Alpha1Condition)
 }
 
 // A helper function to remove Deprecated Condition from the Status during conversion
 // from v1alpha1 to a higher version.
-// TODO: remove after the 0.17 cut.
+// TODO(https://github.com/google/knative-gcp/issues/1544): remove after the 0.18 cut.
 func RemoveV1alpha1Deprecated(cs *apis.ConditionSet, s *pkgduckv1.Status) {
 	cs.Manage(s).ClearCondition(DeprecatedType)
 }

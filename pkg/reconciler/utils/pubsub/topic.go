@@ -39,7 +39,7 @@ func (r *Reconciler) ReconcileTopic(ctx context.Context, id string, topicConfig 
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
-		updater.MarkTopicUnknown("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %w", err)
+		updater.MarkTopicUnknown("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %v", err)
 		return nil, err
 	}
 	if exists {
@@ -52,7 +52,7 @@ func (r *Reconciler) ReconcileTopic(ctx context.Context, id string, topicConfig 
 	topic, err = r.client.CreateTopicWithConfig(ctx, id, topicConfig)
 	if err != nil {
 		logger.Error("Failed to create Pub/Sub topic", zap.Error(err))
-		updater.MarkTopicFailed("TopicCreationFailed", "Topic creation failed: %w", err)
+		updater.MarkTopicFailed("TopicCreationFailed", "Topic creation failed: %v", err)
 		return nil, err
 	}
 	logger.Info("Created PubSub topic", zap.String("name", topic.ID()))
@@ -71,13 +71,13 @@ func (r *Reconciler) DeleteTopic(ctx context.Context, id string, obj runtime.Obj
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
-		updater.MarkTopicUnknown("FinalizeTopicVerificationFailed", "failed to verify Pub/Sub topic exists: %w", err)
+		updater.MarkTopicUnknown("FinalizeTopicVerificationFailed", "failed to verify Pub/Sub topic exists: %v", err)
 		return err
 	}
 	if exists {
 		if err := topic.Delete(ctx); err != nil {
 			logger.Error("Failed to delete Pub/Sub topic", zap.Error(err))
-			updater.MarkTopicUnknown("FinalizeTopicDeletionFailed", "failed to delete Pub/Sub topic: %w", err)
+			updater.MarkTopicUnknown("FinalizeTopicDeletionFailed", "failed to delete Pub/Sub topic: %v", err)
 			return err
 		}
 		logger.Info("Deleted PubSub topic", zap.String("name", topic.ID()))
