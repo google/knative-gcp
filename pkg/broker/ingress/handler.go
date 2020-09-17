@@ -174,6 +174,8 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 			statusCode = nethttp.StatusNotFound
 		case errors.Is(res, ErrNotReady):
 			statusCode = nethttp.StatusServiceUnavailable
+		case errors.Is(res, ErrOverflow):
+			statusCode = nethttp.StatusTooManyRequests
 		case grpcstatus.Code(res) == grpccode.PermissionDenied:
 			nethttp.Error(response, deniedErrMsg, statusCode)
 			return
