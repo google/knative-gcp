@@ -168,6 +168,18 @@ func WithPullSubscriptionMarkNoDeployed(name, namespace string) PullSubscription
 	}
 }
 
+func WithPullSubscriptionMarkDeployedFailed(reason, message string) PullSubscriptionOption {
+	return func(s *v1.PullSubscription) {
+		s.Status.MarkDeployedFailed(reason, message)
+	}
+}
+
+func WithPullSubscriptionMarkDeployedUnknown(reason, message string) PullSubscriptionOption {
+	return func(s *v1.PullSubscription) {
+		s.Status.MarkDeployedUnknown(reason, message)
+	}
+}
+
 func WithPullSubscriptionSpec(spec v1.PullSubscriptionSpec) PullSubscriptionOption {
 	return func(s *v1.PullSubscription) {
 		s.Spec = spec
