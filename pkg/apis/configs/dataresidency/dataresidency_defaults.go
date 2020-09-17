@@ -26,7 +26,7 @@ import (
 
 const (
 	// configName is the name of config map for the default data residency that
-	// Sources and brokers should use.
+	// GCP resources should use.
 	configName = "config-dataresidency"
 
 	// defaulterKey is the key in the ConfigMap to get the name of the default

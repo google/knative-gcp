@@ -152,7 +152,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	if r.dataresidencyStore != nil {
 		if dataresidencyConfig := r.dataresidencyStore.Load(); dataresidencyConfig != nil {
 			if dataresidencyConfig.DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig) {
-				logging.FromContext(ctx).Info("Updated Topic Config for Broker", zap.Any("topicConfig", *topicConfig))
+				logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Broker", zap.Any("topicConfig", *topicConfig))
 			}
 		}
 	}

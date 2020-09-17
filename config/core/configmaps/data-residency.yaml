@@ -40,8 +40,8 @@ data:
     # to actually change the configuration.
 
     # default-dataresidency-config is the configuration for determining the default
-    # data residency to apply to all objects that require data residency but,
-    # do not specify it. This is expected to be Channels and Sources.
+    # data residency to apply to all objects that require data residency.
+    # This is expected to be Channels and Sources and Brokers.
     #
     # We only support cluster scoped now
     default-dataresidency-config: |

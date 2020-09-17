@@ -229,7 +229,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	if r.dataresidencyStore != nil {
 		if dataresidencyConfig := r.dataresidencyStore.Load(); dataresidencyConfig != nil {
 			if dataresidencyConfig.DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig) {
-				logging.FromContext(ctx).Info("Updated Topic Config for Trigger", zap.Any("topicConfig", *topicConfig))
+				logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Trigger", zap.Any("topicConfig", *topicConfig))
 			}
 		}
 	}

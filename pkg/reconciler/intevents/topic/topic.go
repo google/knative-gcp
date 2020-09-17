@@ -164,7 +164,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1.Topic) error 
 			if r.dataresidencyStore != nil {
 				if dataresidencyCfg := r.dataresidencyStore.Load(); dataresidencyCfg != nil {
 					if dataresidencyCfg.DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig) {
-						r.Logger.Infow("Updated Topic Config", zap.Any("topicConfig", *topicConfig))
+						r.Logger.Debugw("Updated Topic Config AllowedPersistenceRegions for topic reconciler", zap.Any("topicConfig", *topicConfig))
 					}
 				}
 			}
