@@ -312,7 +312,7 @@ func TestConfigMapReconciler(t *testing.T) {
 				Lister:     tr.listers.GetConfigMapLister(),
 				Recorder:   tr.recorder,
 			}
-			out, err := rec.ReconcileConfigMap(obj, test.in)
+			out, err := rec.ReconcileConfigMap(obj, test.in, DefaultConfigMapEqual)
 
 			tr.verify(t, test.commonCase, err)
 
