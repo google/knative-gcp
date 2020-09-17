@@ -267,6 +267,7 @@ func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell) resources.Fanout
 			CPULimit:           *bc.Spec.Components.Fanout.Resources.Limits.CPU,
 			MemoryRequest:      *bc.Spec.Components.Fanout.Resources.Requests.Memory,
 			MemoryLimit:        *bc.Spec.Components.Fanout.Resources.Limits.Memory,
+			AllowIstioSidecar:  true,
 		},
 	}
 }
@@ -294,6 +295,7 @@ func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell) resources.RetryAr
 			CPULimit:           *bc.Spec.Components.Retry.Resources.Limits.CPU,
 			MemoryRequest:      *bc.Spec.Components.Retry.Resources.Requests.Memory,
 			MemoryLimit:        *bc.Spec.Components.Retry.Resources.Limits.Memory,
+			AllowIstioSidecar:  true,
 		},
 	}
 }
