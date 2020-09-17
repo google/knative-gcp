@@ -51,6 +51,7 @@ func (r *Reconciler) ReconcileDeployment(ctx context.Context, ra *appsv1.Deploym
 		existing.Spec = ra.Spec
 		existing, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
 		if err != nil {
+			src.Status.MarkDeployedFailed("Error updating the Receive Adapter", err.Error())
 			logging.FromContext(ctx).Desugar().Error("Error updating Receive Adapter", zap.Error(err))
 			return err
 		}
