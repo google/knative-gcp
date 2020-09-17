@@ -21,7 +21,6 @@ import (
 	"regexp"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 )
 
@@ -37,12 +36,12 @@ var (
 
 // ValidateCredential checks secret and service account.
 func ValidateCredential(secret *corev1.SecretKeySelector, kServiceAccountName string) *apis.FieldError {
-	if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) && kServiceAccountName != "" {
+	if secret != nil && kServiceAccountName != "" {
 		return &apis.FieldError{
 			Message: "Can't have spec.serviceAccountName and spec.secret at the same time",
 			Paths:   []string{""},
 		}
-	} else if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) {
+	} else if secret != nil {
 		return validateSecret(secret)
 	} else if kServiceAccountName != "" {
 		return validateK8sServiceAccount(kServiceAccountName)
