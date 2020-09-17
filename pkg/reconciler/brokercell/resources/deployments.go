@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/system"
 )
 
@@ -44,7 +45,7 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 			},
 		},
 		FailureThreshold: 5,
-		PeriodSeconds:    2,
+		PeriodSeconds:    15,
 		SuccessThreshold: 1,
 		TimeoutSeconds:   5,
 	}
@@ -57,8 +58,8 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 			},
 		},
 		FailureThreshold:    5,
-		InitialDelaySeconds: 5,
-		PeriodSeconds:       2,
+		InitialDelaySeconds: 15,
+		PeriodSeconds:       15,
 		SuccessThreshold:    1,
 		TimeoutSeconds:      5,
 	}
@@ -135,6 +136,13 @@ func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deploy
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{MatchLabels: Labels(args.BrokerCell.Name, args.ComponentName)},
+			Strategy: appsv1.DeploymentStrategy{
+				RollingUpdate: &appsv1.RollingUpdateDeployment{
+					MaxSurge:       &intstr.IntOrString{IntVal: 1},
+					MaxUnavailable: &intstr.IntOrString{IntVal: 0},
+				},
+			},
+			MinReadySeconds: 60,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: Labels(args.BrokerCell.Name, args.ComponentName),
@@ -154,7 +162,8 @@ func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deploy
 							VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "google-broker-key", Optional: &optionalSecretVolume}},
 						},
 					},
-					Containers: containers,
+					Containers:                    containers,
+					TerminationGracePeriodSeconds: ptr.Int64(60),
 				},
 			},
 		},
