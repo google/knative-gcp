@@ -52,7 +52,7 @@ const (
 
 type Constructor injection.ControllerConstructor
 
-// NewConstructor creates a constructor to make a Topic controller.
+// NewConstructor creates a constructor to make a Broker controller.
 func NewConstructor(dataresidencyss *dataresidency.StoreSingleton) Constructor {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
 		return newController(ctx, cmw, dataresidencyss.Store(ctx, cmw))

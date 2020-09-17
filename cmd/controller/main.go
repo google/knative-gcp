@@ -65,6 +65,8 @@ func Controllers(
 	channelController channel.Constructor,
 	triggerController trigger.Constructor,
 	brokerController broker.Constructor,
+	deploymentController deployment.Constructor,
+	brokercellController brokercell.Constructor,
 ) []injection.ControllerConstructor {
 	return []injection.ControllerConstructor{
 		injection.ControllerConstructor(auditlogsController),
@@ -78,8 +80,8 @@ func Controllers(
 		injection.ControllerConstructor(channelController),
 		injection.ControllerConstructor(triggerController),
 		injection.ControllerConstructor(brokerController),
-		deployment.NewController,
-		brokercell.NewController,
+		injection.ControllerConstructor(deploymentController),
+		injection.ControllerConstructor(brokercellController),
 	}
 }
 

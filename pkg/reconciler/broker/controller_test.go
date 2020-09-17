@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
+	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +39,7 @@ import (
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
 
-	c := NewController(ctx, configmap.NewStaticWatcher(
+	c := newController(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      logging.ConfigMapName(),
@@ -67,7 +68,7 @@ func TestNew(t *testing.T) {
 			},
 			Data: map[string]string{},
 		},
-	))
+	), reconcilertesting.NewDataresidencyTestStore(t, nil))
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

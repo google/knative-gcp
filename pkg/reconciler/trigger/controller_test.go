@@ -32,6 +32,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger/fake"
+	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
@@ -44,7 +45,7 @@ import (
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
 
-	c := NewController(ctx, configmap.NewStaticWatcher(
+	c := newController(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      logging.ConfigMapName(),
@@ -73,7 +74,7 @@ func TestNew(t *testing.T) {
 			},
 			Data: map[string]string{},
 		},
-	))
+	), reconcilertesting.NewDataresidencyTestStore(t, nil))
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
