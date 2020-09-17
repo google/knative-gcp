@@ -81,7 +81,7 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 		existing.Spec = ra.Spec
 		existing, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
 		if err != nil {
-			src.Status.MarkDeployedFailed("Error updating the Receive Adapter", err.Error())
+			src.Status.MarkDeployedFailed("Error updating Receive Adapter", err.Error())
 			logging.FromContext(ctx).Desugar().Error("Error updating Receive Adapter", zap.Error(err))
 			return err
 		}
