@@ -305,7 +305,11 @@ func TestAllCases(t *testing.T) {
 			"pre": []PubsubAction{},
 		},
 		PostConditions: []func(*testing.T, *TableRow){
-			TopicExists("cre-bkr_testnamespace_test-broker_abc123"),
+			TopicExistsWithConfig("cre-bkr_testnamespace_test-broker_abc123", &pubsub.TopicConfig{
+				Labels: map[string]string{
+					"broker_class": "googlecloud", "name": "test-broker", "namespace": "testnamespace", "resource": "brokers",
+				},
+			}),
 			SubscriptionExists("cre-bkr_testnamespace_test-broker_abc123"),
 		},
 	}, {

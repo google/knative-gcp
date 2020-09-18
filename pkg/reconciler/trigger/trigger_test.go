@@ -379,6 +379,11 @@ func TestAllCasesTrigger(t *testing.T) {
 						MaxDeliveryAttempts: 3,
 						DeadLetterTopic:     "projects/test-project-id/topics/test-dead-letter-topic-id",
 					}),
+				TopicExistsWithConfig("cre-tgr_testnamespace_test-trigger_abc123", &pubsub.TopicConfig{
+					Labels: map[string]string{
+						"name": "test-trigger", "namespace": "testnamespace", "resource": "triggers",
+					},
+				}),
 			},
 		},
 		{
