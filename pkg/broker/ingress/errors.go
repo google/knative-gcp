@@ -28,6 +28,3 @@ var ErrIncomplete = errors.New("incomplete config")
 
 // ErrNotReady is the error when a broker is not ready.
 var ErrNotReady = errors.New("not ready")
-
-// ErrOverflow is the error when a broker ingress is sending too many requests to PubSub.
-var ErrOverflow = errors.New("bundler reached buffered byte limit")
