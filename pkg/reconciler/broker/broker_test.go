@@ -347,6 +347,7 @@ func TestAllCases(t *testing.T) {
 					Namespace: system.Namespace(),
 				},
 				Data: map[string]string{
+					// Note that the data is in yaml, so no tab is allowed, use spaces instead.
 					"default-dataresidency-config": `
   clusterDefaults:    
     messagestoragepolicy.allowedpersistenceregions:

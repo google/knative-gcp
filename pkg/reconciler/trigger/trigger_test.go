@@ -40,8 +40,10 @@ import (
 	"knative.dev/pkg/controller"
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
+	"knative.dev/pkg/system"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -379,12 +381,93 @@ func TestAllCasesTrigger(t *testing.T) {
 					}),
 			},
 		},
+		{
+			Name: "Check topic config and labels",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithInitBrokerConditions,
+					WithBrokerReady("url"),
+					WithBrokerDeliverySpec(brokerDeliverySpec),
+					WithBrokerSetDefaults,
+				),
+				makeSubscriberAddressableAsUnstructured(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerSetDefaults),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerBrokerReady,
+					WithTriggerSubscriptionReady,
+					WithTriggerTopicReady,
+					WithTriggerDependencyReady,
+					WithTriggerSubscriberResolvedSucceeded,
+					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerSetDefaults,
+				),
+			}},
+			WantEvents: []string{
+				triggerFinalizerUpdatedEvent,
+				topicCreatedEvent,
+				subscriptionCreatedEvent,
+				triggerReconciledEvent,
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName, finalizerName),
+			},
+			OtherTestData: map[string]interface{}{
+				"pre": []PubsubAction{
+					Topic("test-dead-letter-topic-id"),
+				},
+				"dataResidencyConfigMap": &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      dataresidency.ConfigMapName(),
+						Namespace: system.Namespace(),
+					},
+					Data: map[string]string{
+						// Note that the data is in yaml, so no tab is allowed, use spaces instead.
+						"default-dataresidency-config": `
+  clusterDefaults:    
+    messagestoragepolicy.allowedpersistenceregions:
+      - us-east1`,
+					},
+				},
+			},
+			PostConditions: []func(*testing.T, *TableRow){
+				OnlyTopics("cre-tgr_testnamespace_test-trigger_abc123", "test-dead-letter-topic-id"),
+				OnlySubscriptions("cre-tgr_testnamespace_test-trigger_abc123"),
+				SubscriptionHasRetryPolicy("cre-tgr_testnamespace_test-trigger_abc123",
+					&pubsub.RetryPolicy{
+						MaximumBackoff: 5 * time.Second,
+						MinimumBackoff: 5 * time.Second,
+					}),
+				SubscriptionHasDeadLetterPolicy("cre-tgr_testnamespace_test-trigger_abc123",
+					&pubsub.DeadLetterPolicy{
+						MaxDeliveryAttempts: 3,
+						DeadLetterTopic:     "projects/test-project-id/topics/test-dead-letter-topic-id",
+					}),
+				TopicExistsWithConfig("cre-tgr_testnamespace_test-trigger_abc123", &pubsub.TopicConfig{
+					MessageStoragePolicy: pubsub.MessageStoragePolicy{
+						AllowedPersistenceRegions: []string{"us-east1"},
+					},
+					Labels: map[string]string{
+						"name": "test-trigger", "namespace": "testnamespace", "resource": "triggers",
+					},
+				}),
+			},
+		},
 	}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		// Insert pubsub client for PostConditions and create fixtures
 		psclient, close := TestPubsubClient(ctx, testProject)
 		t.Cleanup(close)
+		var drStore *dataresidency.Store
 		if testData != nil {
 			InjectPubsubClient(testData, psclient)
 			if testData["pre"] != nil {
@@ -392,6 +475,11 @@ func TestAllCasesTrigger(t *testing.T) {
 				for _, f := range fixtures {
 					f(ctx, t, psclient)
 				}
+			}
+
+			// If we found "dataResidencyConfigMap" in OtherData, we create a store with the configmap
+			if cm, ok := testData["dataResidencyConfigMap"]; ok {
+				drStore = NewDataresidencyTestStore(t, cm.(*corev1.ConfigMap))
 			}
 		}
 
@@ -407,6 +495,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			projectID:          testProject,
 			pubsubClient:       psclient,
+			dataresidencyStore: drStore,
 		}
 
 		return triggerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetTriggerLister(), r.Recorder, r, withAgentAndFinalizer(nil))
