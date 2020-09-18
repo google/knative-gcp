@@ -40,7 +40,6 @@ import (
 	"knative.dev/pkg/controller"
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
-	"knative.dev/pkg/system"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
@@ -429,19 +428,7 @@ func TestAllCasesTrigger(t *testing.T) {
 				"pre": []PubsubAction{
 					Topic("test-dead-letter-topic-id"),
 				},
-				"dataResidencyConfigMap": &corev1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      dataresidency.ConfigMapName(),
-						Namespace: system.Namespace(),
-					},
-					Data: map[string]string{
-						// Note that the data is in yaml, so no tab is allowed, use spaces instead.
-						"default-dataresidency-config": `
-  clusterDefaults:    
-    messagestoragepolicy.allowedpersistenceregions:
-      - us-east1`,
-					},
-				},
+				"dataResidencyConfigMap": NewDataresidencyConfigMapFromRegions([]string{"us-east1"}),
 			},
 			PostConditions: []func(*testing.T, *TableRow){
 				OnlyTopics("cre-tgr_testnamespace_test-trigger_abc123", "test-dead-letter-topic-id"),

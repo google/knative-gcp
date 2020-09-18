@@ -25,7 +25,6 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/ingress"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
@@ -38,7 +37,6 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	. "knative.dev/pkg/reconciler/testing"
-	"knative.dev/pkg/system"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
@@ -344,20 +342,8 @@ func TestAllCases(t *testing.T) {
 			patchFinalizers(testNS, brokerName, brokerFinalizerName),
 		},
 		OtherTestData: map[string]interface{}{
-			"pre": []PubsubAction{},
-			"dataResidencyConfigMap": &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      dataresidency.ConfigMapName(),
-					Namespace: system.Namespace(),
-				},
-				Data: map[string]string{
-					// Note that the data is in yaml, so no tab is allowed, use spaces instead.
-					"default-dataresidency-config": `
-  clusterDefaults:    
-    messagestoragepolicy.allowedpersistenceregions:
-      - us-east1`,
-				},
-			},
+			"pre":                    []PubsubAction{},
+			"dataResidencyConfigMap": NewDataresidencyConfigMapFromRegions([]string{"us-east1"}),
 		},
 		PostConditions: []func(*testing.T, *TableRow){
 			TopicExistsWithConfig("cre-bkr_testnamespace_test-broker_abc123", &pubsub.TopicConfig{
