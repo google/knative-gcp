@@ -85,7 +85,7 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 	expectOwnerReference.Controller = ptr.Bool(false)
 	if !ownerReferenceExists(kServiceAccount, expectOwnerReference) {
 		kServiceAccount.OwnerReferences = append(kServiceAccount.OwnerReferences, expectOwnerReference)
-		if _, err := i.kubeClient.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Update(kServiceAccount); err != nil {
+		if _, err := i.kubeClient.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Update(ctx, kServiceAccount, metav1.UpdateOptions{}); err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update OwnerReferences", zap.Error(err))
 			status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 			return nil, fmt.Errorf("failed to update OwnerReferences: %w", err)
@@ -116,7 +116,7 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 		return nil
 	}
 
-	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(identityNames.Namespace).Get(identityNames.KServiceAccountName, metav1.GetOptions{})
+	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(identityNames.Namespace).Get(ctx, identityNames.KServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		status.MarkWorkloadIdentityUnknown(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
 		// k8s ServiceAccount should be there.
@@ -148,12 +148,12 @@ func (i *Identity) getGoogleServiceAccountName(ctx context.Context, identifiable
 }
 
 func (i *Identity) createServiceAccount(ctx context.Context, identityNames resources.IdentityNames) (*corev1.ServiceAccount, error) {
-	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(identityNames.Namespace).Get(identityNames.KServiceAccountName, metav1.GetOptions{})
+	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(identityNames.Namespace).Get(ctx, identityNames.KServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		if apierrs.IsNotFound(err) {
 			expect := resources.MakeServiceAccount(identityNames)
 			logging.FromContext(ctx).Desugar().Debug("Creating k8s service account", zap.Any("ksa", expect))
-			kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(expect.Namespace).Create(expect)
+			kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(expect.Namespace).Create(ctx, expect, metav1.CreateOptions{})
 			if err != nil {
 				logging.FromContext(ctx).Desugar().Error("Failed to create k8s service account", zap.Error(err))
 				return nil, fmt.Errorf("failed to create k8s service account: %w", err)

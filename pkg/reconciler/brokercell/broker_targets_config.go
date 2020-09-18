@@ -20,11 +20,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/apis/eventing"
-	"knative.dev/eventing/pkg/logging"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -147,12 +147,12 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context, bc *intv1alpha1.Br
 		UpdateFunc: func(oldObj, newObj interface{}) { r.refreshPodVolume(ctx, bc) },
 		DeleteFunc: nil,
 	}
-	_, err = r.cmRec.ReconcileConfigMap(bc, desired, resources.TargetsConfigMapEqual, handlerFuncs)
+	_, err = r.cmRec.ReconcileConfigMap(ctx, bc, desired, resources.TargetsConfigMapEqual, handlerFuncs)
 	return err
 }
 
 func (r *Reconciler) refreshPodVolume(ctx context.Context, bc *intv1alpha1.BrokerCell) {
-	if err := volume.UpdateVolumeGeneration(r.KubeClientSet, r.podLister, bc.Namespace, resources.CommonLabels(bc.Name)); err != nil {
+	if err := volume.UpdateVolumeGeneration(ctx, r.KubeClientSet, r.podLister, bc.Namespace, resources.CommonLabels(bc.Name)); err != nil {
 		// Failing to update the annotation on the data plane pods means there
 		// may be a longer propagation delay for the configmap volume to be
 		// refreshed. But this is not treated as an error.

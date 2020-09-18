@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -30,9 +31,10 @@ import (
 
 // SmokeCloudSchedulerSourceTestHelper tests if a CloudSchedulerSource object can be created to ready state.
 func SmokeCloudSchedulerSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudSchedulerSourceVersion string) {
+	ctx := context.Background()
 	t.Helper()
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	// Create an Addressable to receive scheduler events
 	data := helpers.AppendRandomString("smoke-scheduler-source")
@@ -61,9 +63,10 @@ func SmokeCloudSchedulerSourceTestHelper(t *testing.T, authConfig lib.AuthConfig
 
 // SmokeCloudSchedulerSourceWithDeletionTestImpl tests if a CloudSchedulerSource object can be created to ready state and delete a CloudSchedulerSource resource and its underlying resources..
 func SmokeCloudSchedulerSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	ctx := context.Background()
 	t.Helper()
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	// Create an Addressable to receive scheduler events
 	data := helpers.AppendRandomString("smoke-scheduler-source")
@@ -121,9 +124,10 @@ func SmokeCloudSchedulerSourceWithDeletionTestImpl(t *testing.T, authConfig lib.
 // CloudSchedulerSourceWithTargetTestImpl injects a scheduler event and checks if it is in the
 // log of the receiver.
 func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	ctx := context.Background()
 	t.Helper()
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	// Create an Addressable to receive scheduler events
 	data := helpers.AppendRandomString("scheduler-source-with-target")
@@ -139,7 +143,7 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
-	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
+	msg, err := client.WaitUntilJobDone(ctx, client.Namespace, targetName)
 	if err != nil {
 		t.Error(err)
 	}
@@ -152,14 +156,14 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 		}
 		if !out.Success {
 			// Log the output of scheduler pods
-			if logs, err := client.LogsFor(client.Namespace, schedulerName, lib.CloudSchedulerSourceV1TypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, schedulerName, lib.CloudSchedulerSourceV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("scheduler log: %+v", logs)
 			}
 
 			// Log the output of the target job pods
-			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, targetName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("addressable job: %+v", logs)

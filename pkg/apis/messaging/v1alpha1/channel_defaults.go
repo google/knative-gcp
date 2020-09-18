@@ -19,10 +19,10 @@ package v1alpha1
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/logging"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/eventing/pkg/apis/messaging"
-	"knative.dev/eventing/pkg/logging"
 	"knative.dev/pkg/apis"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"

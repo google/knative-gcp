@@ -22,6 +22,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	v1 "k8s.io/api/apps/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/clock"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
@@ -81,7 +82,7 @@ func (r *Reconciler) reconcile(ctx context.Context, d *v1.Deployment) error {
 	}
 	annotations[SecretUpdateAnnotation] = r.clock.Now().String()
 	d.Spec.Template.SetAnnotations(annotations)
-	_, err := r.KubeClientSet.AppsV1().Deployments(d.Namespace).Update(d)
+	_, err := r.KubeClientSet.AppsV1().Deployments(d.Namespace).Update(ctx, d, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to update deployment: %v", err)
 	}

@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	time "time"
 
 	eventsv1 "github.com/google/knative-gcp/pkg/apis/events/v1"
@@ -61,13 +62,13 @@ func NewFilteredCloudStorageSourceInformer(client versioned.Interface, namespace
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1().CloudStorageSources(namespace).List(options)
+				return client.EventsV1().CloudStorageSources(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1().CloudStorageSources(namespace).Watch(options)
+				return client.EventsV1().CloudStorageSources(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&eventsv1.CloudStorageSource{},

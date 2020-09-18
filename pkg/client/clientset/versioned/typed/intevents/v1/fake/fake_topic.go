@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var topicsResource = schema.GroupVersionResource{Group: "internal.events.cloud.g
 var topicsKind = schema.GroupVersionKind{Group: "internal.events.cloud.google.com", Version: "v1", Kind: "Topic"}
 
 // Get takes name of the topic, and returns the corresponding topic object, and an error if there is any.
-func (c *FakeTopics) Get(name string, options v1.GetOptions) (result *inteventsv1.Topic, err error) {
+func (c *FakeTopics) Get(ctx context.Context, name string, options v1.GetOptions) (result *inteventsv1.Topic, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(topicsResource, c.ns, name), &inteventsv1.Topic{})
 
@@ -50,7 +52,7 @@ func (c *FakeTopics) Get(name string, options v1.GetOptions) (result *inteventsv
 }
 
 // List takes label and field selectors, and returns the list of Topics that match those selectors.
-func (c *FakeTopics) List(opts v1.ListOptions) (result *inteventsv1.TopicList, err error) {
+func (c *FakeTopics) List(ctx context.Context, opts v1.ListOptions) (result *inteventsv1.TopicList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(topicsResource, topicsKind, c.ns, opts), &inteventsv1.TopicList{})
 
@@ -72,14 +74,14 @@ func (c *FakeTopics) List(opts v1.ListOptions) (result *inteventsv1.TopicList, e
 }
 
 // Watch returns a watch.Interface that watches the requested topics.
-func (c *FakeTopics) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeTopics) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(topicsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a topic and creates it.  Returns the server's representation of the topic, and an error, if there is any.
-func (c *FakeTopics) Create(topic *inteventsv1.Topic) (result *inteventsv1.Topic, err error) {
+func (c *FakeTopics) Create(ctx context.Context, topic *inteventsv1.Topic, opts v1.CreateOptions) (result *inteventsv1.Topic, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(topicsResource, c.ns, topic), &inteventsv1.Topic{})
 
@@ -90,7 +92,7 @@ func (c *FakeTopics) Create(topic *inteventsv1.Topic) (result *inteventsv1.Topic
 }
 
 // Update takes the representation of a topic and updates it. Returns the server's representation of the topic, and an error, if there is any.
-func (c *FakeTopics) Update(topic *inteventsv1.Topic) (result *inteventsv1.Topic, err error) {
+func (c *FakeTopics) Update(ctx context.Context, topic *inteventsv1.Topic, opts v1.UpdateOptions) (result *inteventsv1.Topic, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(topicsResource, c.ns, topic), &inteventsv1.Topic{})
 
@@ -102,7 +104,7 @@ func (c *FakeTopics) Update(topic *inteventsv1.Topic) (result *inteventsv1.Topic
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeTopics) UpdateStatus(topic *inteventsv1.Topic) (*inteventsv1.Topic, error) {
+func (c *FakeTopics) UpdateStatus(ctx context.Context, topic *inteventsv1.Topic, opts v1.UpdateOptions) (*inteventsv1.Topic, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(topicsResource, "status", c.ns, topic), &inteventsv1.Topic{})
 
@@ -113,7 +115,7 @@ func (c *FakeTopics) UpdateStatus(topic *inteventsv1.Topic) (*inteventsv1.Topic,
 }
 
 // Delete takes name of the topic and deletes it. Returns an error if one occurs.
-func (c *FakeTopics) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeTopics) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(topicsResource, c.ns, name), &inteventsv1.Topic{})
 
@@ -121,15 +123,15 @@ func (c *FakeTopics) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeTopics) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(topicsResource, c.ns, listOptions)
+func (c *FakeTopics) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(topicsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &inteventsv1.TopicList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched topic.
-func (c *FakeTopics) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *inteventsv1.Topic, err error) {
+func (c *FakeTopics) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *inteventsv1.Topic, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(topicsResource, c.ns, name, pt, data, subresources...), &inteventsv1.Topic{})
 

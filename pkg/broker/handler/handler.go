@@ -26,9 +26,9 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
+	"github.com/google/knative-gcp/pkg/logging"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/logging"
 )
 
 // Handler pulls Pubsub messages as events and processes them

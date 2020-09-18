@@ -24,11 +24,8 @@ type Sampler interface {
 		sc core.SpanContext,
 		remote bool,
 		traceID core.TraceID,
-		spanID core.SpanID,
+		spanID uint64,
 		spanName string,
-		spanKind SpanKind,
-		attributes []core.KeyValue,
-		links []Link,
 	) Decision
 
 	// Description returns of the sampler. It contains its name or short description

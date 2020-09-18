@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"net/url"
 	"testing"
 
@@ -49,15 +50,17 @@ Note: the number denotes the sequence of the event that flows in this test case.
 */
 
 func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
 	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName, false)
 }
 
 func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
 	kngcphelpers.BrokerEventTransformationTestWithPubSubSourceHelper(client, authConfig, brokerURL, brokerName)
@@ -65,16 +68,18 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.Au
 }
 
 func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
 	kngcphelpers.BrokerEventTransformationTestWithStorageSourceHelper(client, authConfig, brokerURL, brokerName)
 }
 
 func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
 	kngcphelpers.BrokerEventTransformationTestWithAuditLogsSourceHelper(client, authConfig, brokerURL, brokerName)
@@ -82,8 +87,9 @@ func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib
 }
 
 func SchedulerSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
 	kngcphelpers.BrokerEventTransformationTestWithSchedulerSourceHelper(client, authConfig, brokerURL, brokerName)

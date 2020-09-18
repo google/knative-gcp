@@ -17,9 +17,12 @@ limitations under the License.
 package utils
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
@@ -39,11 +42,11 @@ type ServiceReconciler struct {
 }
 
 // ReconcileService reconciles the K8s Service 'svc'.
-func (r *ServiceReconciler) ReconcileService(obj runtime.Object, svc *corev1.Service) (*corev1.Endpoints, error) {
+func (r *ServiceReconciler) ReconcileService(ctx context.Context, obj runtime.Object, svc *corev1.Service) (*corev1.Endpoints, error) {
 	current, err := r.ServiceLister.Services(svc.Namespace).Get(svc.Name)
 
 	if apierrs.IsNotFound(err) {
-		current, err = r.KubeClient.CoreV1().Services(svc.Namespace).Create(svc)
+		current, err = r.KubeClient.CoreV1().Services(svc.Namespace).Create(ctx, svc, metav1.CreateOptions{})
 		if err == nil {
 			r.Recorder.Eventf(obj, corev1.EventTypeNormal, serviceCreated, "Created service %s/%s", svc.Namespace, svc.Name)
 		}
@@ -62,7 +65,7 @@ func (r *ServiceReconciler) ReconcileService(obj runtime.Object, svc *corev1.Ser
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = svc.Spec
-		current, err = r.KubeClient.CoreV1().Services(current.Namespace).Update(desired)
+		current, err = r.KubeClient.CoreV1().Services(current.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		if err == nil {
 			r.Recorder.Eventf(obj, corev1.EventTypeNormal, serviceUpdated, "Updated service %s/%s", svc.Namespace, svc.Name)
 		}

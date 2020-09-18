@@ -20,17 +20,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/logging"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	hpav2beta2listers "k8s.io/client-go/listers/autoscaling/v2beta2"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler/names"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
@@ -136,7 +137,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 
 	// Reconcile ingress deployment, HPA and service.
 	ingressArgs := r.makeIngressArgs(bc)
-	ind, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeIngressDeployment(ingressArgs))
+	ind, err := r.deploymentRec.ReconcileDeployment(ctx, bc, resources.MakeIngressDeployment(ingressArgs))
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to reconcile ingress deployment", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkIngressFailed("IngressDeploymentFailed", "Failed to reconcile ingress deployment: %v", err)
@@ -150,7 +151,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		return err
 	}
 
-	endpoints, err := r.svcRec.ReconcileService(bc, resources.MakeIngressService(ingressArgs))
+	endpoints, err := r.svcRec.ReconcileService(ctx, bc, resources.MakeIngressService(ingressArgs))
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to reconcile ingress service", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkIngressFailed("IngressServiceFailed", "Failed to reconcile ingress service: %v", err)
@@ -161,7 +162,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	bc.Status.IngressTemplate = fmt.Sprintf("http://%s/{namespace}/{name}", hostName)
 
 	// Reconcile fanout deployment and HPA.
-	fd, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeFanoutDeployment(r.makeFanoutArgs(bc)))
+	fd, err := r.deploymentRec.ReconcileDeployment(ctx, bc, resources.MakeFanoutDeployment(r.makeFanoutArgs(bc)))
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to reconcile fanout deployment", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkFanoutFailed("FanoutDeploymentFailed", "Failed to reconcile fanout deployment: %v", err)
@@ -177,7 +178,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	bc.Status.PropagateFanoutAvailability(fd)
 
 	// Reconcile retry deployment and HPA.
-	rd, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeRetryDeployment(r.makeRetryArgs(bc)))
+	rd, err := r.deploymentRec.ReconcileDeployment(ctx, bc, resources.MakeRetryDeployment(r.makeRetryArgs(bc)))
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to reconcile retry deployment", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkRetryFailed("RetryDeploymentFailed", "Failed to reconcile retry deployment: %v", err)
@@ -220,7 +221,7 @@ func (r *Reconciler) shouldGC(ctx context.Context, bc *intv1alpha1.BrokerCell) b
 }
 
 func (r *Reconciler) delete(ctx context.Context, bc *intv1alpha1.BrokerCell) pkgreconciler.Event {
-	if err := r.RunClientSet.InternalV1alpha1().BrokerCells(bc.Namespace).Delete(bc.Name, nil); err != nil {
+	if err := r.RunClientSet.InternalV1alpha1().BrokerCells(bc.Namespace).Delete(ctx, bc.Name, metav1.DeleteOptions{}); err != nil {
 		return fmt.Errorf("failed to garbage collect brokercell: %w", err)
 	}
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellGarbageCollected", "BrokerCell garbage collected: \"%s/%s\"", bc.Namespace, bc.Name)
@@ -263,6 +264,7 @@ func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell) resources.Fanout
 			Image:              r.env.FanoutImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
+			AllowIstioSidecar:  true,
 			CPURequest:         bc.Spec.Components.Fanout.CPURequest,
 			CPULimit:           bc.Spec.Components.Fanout.CPULimit,
 			MemoryRequest:      bc.Spec.Components.Fanout.MemoryRequest,
@@ -290,6 +292,7 @@ func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell) resources.RetryAr
 			Image:              r.env.RetryImage,
 			ServiceAccountName: r.env.ServiceAccountName,
 			MetricsPort:        r.env.MetricsPort,
+			AllowIstioSidecar:  true,
 			CPURequest:         bc.Spec.Components.Retry.CPURequest,
 			CPULimit:           bc.Spec.Components.Retry.CPULimit,
 			MemoryRequest:      bc.Spec.Components.Retry.MemoryRequest,
@@ -312,7 +315,7 @@ func (r *Reconciler) makeRetryHPAArgs(bc *intv1alpha1.BrokerCell) resources.Auto
 func (r *Reconciler) reconcileAutoscaling(ctx context.Context, bc *intv1alpha1.BrokerCell, desired *hpav2beta2.HorizontalPodAutoscaler) error {
 	existing, err := r.hpaLister.HorizontalPodAutoscalers(desired.Namespace).Get(desired.Name)
 	if apierrs.IsNotFound(err) {
-		existing, err = r.KubeClientSet.AutoscalingV2beta2().HorizontalPodAutoscalers(desired.Namespace).Create(desired)
+		existing, err = r.KubeClientSet.AutoscalingV2beta2().HorizontalPodAutoscalers(desired.Namespace).Create(ctx, desired, metav1.CreateOptions{})
 		if apierrs.IsAlreadyExists(err) {
 			return nil
 		}
@@ -329,7 +332,7 @@ func (r *Reconciler) reconcileAutoscaling(ctx context.Context, bc *intv1alpha1.B
 		// Don't modify the informers copy.
 		copy := existing.DeepCopy()
 		copy.Spec = desired.Spec
-		_, err := r.KubeClientSet.AutoscalingV2beta2().HorizontalPodAutoscalers(copy.Namespace).Update(copy)
+		_, err := r.KubeClientSet.AutoscalingV2beta2().HorizontalPodAutoscalers(copy.Namespace).Update(ctx, copy, metav1.UpdateOptions{})
 		if err == nil {
 			r.Recorder.Eventf(bc, corev1.EventTypeNormal, "HorizontalPodAutoscalerUpdated", "Updated HPA %s/%s", desired.Namespace, desired.Name)
 		}

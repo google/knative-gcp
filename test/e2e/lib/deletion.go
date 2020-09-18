@@ -17,58 +17,66 @@ limitations under the License.
 package lib
 
 import (
+	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (c *Client) DeletePubSubOrFail(name string) {
+	ctx := context.Background()
 	c.T.Helper()
 	pubsubs := c.KnativeGCP.EventsV1().CloudPubSubSources(c.Namespace)
-	err := pubsubs.Delete(name, &metav1.DeleteOptions{})
+	err := pubsubs.Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete pubsub %s/%s: %v", c.Namespace, name, err)
 	}
 }
 
 func (c *Client) DeleteBuildOrFail(name string) {
+	ctx := context.Background()
 	c.T.Helper()
 	builds := c.KnativeGCP.EventsV1().CloudBuildSources(c.Namespace)
-	err := builds.Delete(name, &metav1.DeleteOptions{})
+	err := builds.Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete build %s/%s: %v", c.Namespace, name, err)
 	}
 }
 
 func (c *Client) DeleteSchedulerOrFail(name string) {
+	ctx := context.Background()
 	c.T.Helper()
 	schedulers := c.KnativeGCP.EventsV1().CloudSchedulerSources(c.Namespace)
-	err := schedulers.Delete(name, &metav1.DeleteOptions{})
+	err := schedulers.Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete scheduler %s/%s: %v", c.Namespace, name, err)
 	}
 }
 
 func (c *Client) DeleteStorageOrFail(name string) {
+	ctx := context.Background()
 	c.T.Helper()
 	storages := c.KnativeGCP.EventsV1().CloudStorageSources(c.Namespace)
-	err := storages.Delete(name, &metav1.DeleteOptions{})
+	err := storages.Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete storage %s/%s: %v", c.Namespace, name, err)
 	}
 }
 
 func (c *Client) DeleteAuditLogsOrFail(name string) {
+	ctx := context.Background()
 	c.T.Helper()
 	auditLogs := c.KnativeGCP.EventsV1().CloudAuditLogsSources(c.Namespace)
-	err := auditLogs.Delete(name, &metav1.DeleteOptions{})
+	err := auditLogs.Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete storage %s/%s: %v", c.Namespace, name, err)
 	}
 }
 
 func (c *Client) DeleteGCPBrokerOrFail(name string) {
+	ctx := context.Background()
 	c.T.Helper()
 	brokers := c.KnativeGCP.EventingV1beta1().Brokers(c.Namespace)
-	err := brokers.Delete(name, &metav1.DeleteOptions{})
+	err := brokers.Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete gcp broker %s/%s: %v", c.Namespace, name, err)
 	}

@@ -19,6 +19,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	time "time"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
@@ -61,13 +62,13 @@ func NewFilteredTriggerInformer(client versioned.Interface, namespace string, re
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventingV1beta1().Triggers(namespace).List(options)
+				return client.EventingV1beta1().Triggers(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventingV1beta1().Triggers(namespace).Watch(options)
+				return client.EventingV1beta1().Triggers(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&brokerv1beta1.Trigger{},

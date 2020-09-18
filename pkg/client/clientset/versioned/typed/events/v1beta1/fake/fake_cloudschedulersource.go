@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var cloudschedulersourcesResource = schema.GroupVersionResource{Group: "events.c
 var cloudschedulersourcesKind = schema.GroupVersionKind{Group: "events.cloud.google.com", Version: "v1beta1", Kind: "CloudSchedulerSource"}
 
 // Get takes name of the cloudSchedulerSource, and returns the corresponding cloudSchedulerSource object, and an error if there is any.
-func (c *FakeCloudSchedulerSources) Get(name string, options v1.GetOptions) (result *v1beta1.CloudSchedulerSource, err error) {
+func (c *FakeCloudSchedulerSources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.CloudSchedulerSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(cloudschedulersourcesResource, c.ns, name), &v1beta1.CloudSchedulerSource{})
 
@@ -50,7 +52,7 @@ func (c *FakeCloudSchedulerSources) Get(name string, options v1.GetOptions) (res
 }
 
 // List takes label and field selectors, and returns the list of CloudSchedulerSources that match those selectors.
-func (c *FakeCloudSchedulerSources) List(opts v1.ListOptions) (result *v1beta1.CloudSchedulerSourceList, err error) {
+func (c *FakeCloudSchedulerSources) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.CloudSchedulerSourceList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(cloudschedulersourcesResource, cloudschedulersourcesKind, c.ns, opts), &v1beta1.CloudSchedulerSourceList{})
 
@@ -72,14 +74,14 @@ func (c *FakeCloudSchedulerSources) List(opts v1.ListOptions) (result *v1beta1.C
 }
 
 // Watch returns a watch.Interface that watches the requested cloudSchedulerSources.
-func (c *FakeCloudSchedulerSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeCloudSchedulerSources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(cloudschedulersourcesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a cloudSchedulerSource and creates it.  Returns the server's representation of the cloudSchedulerSource, and an error, if there is any.
-func (c *FakeCloudSchedulerSources) Create(cloudSchedulerSource *v1beta1.CloudSchedulerSource) (result *v1beta1.CloudSchedulerSource, err error) {
+func (c *FakeCloudSchedulerSources) Create(ctx context.Context, cloudSchedulerSource *v1beta1.CloudSchedulerSource, opts v1.CreateOptions) (result *v1beta1.CloudSchedulerSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(cloudschedulersourcesResource, c.ns, cloudSchedulerSource), &v1beta1.CloudSchedulerSource{})
 
@@ -90,7 +92,7 @@ func (c *FakeCloudSchedulerSources) Create(cloudSchedulerSource *v1beta1.CloudSc
 }
 
 // Update takes the representation of a cloudSchedulerSource and updates it. Returns the server's representation of the cloudSchedulerSource, and an error, if there is any.
-func (c *FakeCloudSchedulerSources) Update(cloudSchedulerSource *v1beta1.CloudSchedulerSource) (result *v1beta1.CloudSchedulerSource, err error) {
+func (c *FakeCloudSchedulerSources) Update(ctx context.Context, cloudSchedulerSource *v1beta1.CloudSchedulerSource, opts v1.UpdateOptions) (result *v1beta1.CloudSchedulerSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(cloudschedulersourcesResource, c.ns, cloudSchedulerSource), &v1beta1.CloudSchedulerSource{})
 
@@ -102,7 +104,7 @@ func (c *FakeCloudSchedulerSources) Update(cloudSchedulerSource *v1beta1.CloudSc
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeCloudSchedulerSources) UpdateStatus(cloudSchedulerSource *v1beta1.CloudSchedulerSource) (*v1beta1.CloudSchedulerSource, error) {
+func (c *FakeCloudSchedulerSources) UpdateStatus(ctx context.Context, cloudSchedulerSource *v1beta1.CloudSchedulerSource, opts v1.UpdateOptions) (*v1beta1.CloudSchedulerSource, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(cloudschedulersourcesResource, "status", c.ns, cloudSchedulerSource), &v1beta1.CloudSchedulerSource{})
 
@@ -113,7 +115,7 @@ func (c *FakeCloudSchedulerSources) UpdateStatus(cloudSchedulerSource *v1beta1.C
 }
 
 // Delete takes name of the cloudSchedulerSource and deletes it. Returns an error if one occurs.
-func (c *FakeCloudSchedulerSources) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeCloudSchedulerSources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(cloudschedulersourcesResource, c.ns, name), &v1beta1.CloudSchedulerSource{})
 
@@ -121,15 +123,15 @@ func (c *FakeCloudSchedulerSources) Delete(name string, options *v1.DeleteOption
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeCloudSchedulerSources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(cloudschedulersourcesResource, c.ns, listOptions)
+func (c *FakeCloudSchedulerSources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(cloudschedulersourcesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1beta1.CloudSchedulerSourceList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched cloudSchedulerSource.
-func (c *FakeCloudSchedulerSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.CloudSchedulerSource, err error) {
+func (c *FakeCloudSchedulerSources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.CloudSchedulerSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(cloudschedulersourcesResource, c.ns, name, pt, data, subresources...), &v1beta1.CloudSchedulerSource{})
 

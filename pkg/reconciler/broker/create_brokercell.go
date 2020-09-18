@@ -21,11 +21,11 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/ingress"
 
+	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler/names"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/system"
@@ -51,7 +51,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 
 	if apierrs.IsNotFound(err) {
 		want := resources.CreateBrokerCell(b)
-		bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Create(want)
+		bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Create(ctx, want, metav1.CreateOptions{})
 		if err != nil && !apierrs.IsAlreadyExists(err) {
 			logging.FromContext(ctx).Error("Error creating brokercell", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
 			b.Status.MarkBrokerCellFailed("BrokerCellCreationFailed", "Failed to create %s/%s", want.Namespace, want.Name)
@@ -61,7 +61,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 			logging.FromContext(ctx).Info("Brokercell already exists", zap.String("namespace", b.Namespace), zap.String("broker", b.Name))
 			// There can be a race condition where the informer is not updated. In this case we directly
 			// read from the API server.
-			bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Get(want.Name, metav1.GetOptions{})
+			bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Get(ctx, want.Name, metav1.GetOptions{})
 			if err != nil {
 				logging.FromContext(ctx).Error("Failed to get the brokercell from the API server", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
 				b.Status.MarkBrokerCellUnknown("BrokerCellUnknown", "Failed to get the brokercell from the API server %s/%s", want.Namespace, want.Name)

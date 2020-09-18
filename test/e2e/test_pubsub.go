@@ -37,6 +37,7 @@ import (
 
 // SmokeCloudPubSubSourceTestHelper tests we can create a CloudPubSubSource to ready state.
 func SmokeCloudPubSubSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudPubSubSourceVersion string) {
+	ctx := context.Background()
 	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
@@ -44,8 +45,8 @@ func SmokeCloudPubSubSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, c
 	psName := topic + "-pubsub"
 	svcName := "event-display"
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	pubSubConfig := lib.PubSubConfig{
 		SinkGVK:            lib.ServiceGVK,
@@ -68,6 +69,7 @@ func SmokeCloudPubSubSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, c
 
 // SmokeCloudPubSubSourceWithDeletionTestImpl tests we can create a CloudPubSubSource to ready state and we can delete a CloudPubSubSource and its underlying resources.
 func SmokeCloudPubSubSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	ctx := context.Background()
 	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
@@ -75,8 +77,8 @@ func SmokeCloudPubSubSourceWithDeletionTestImpl(t *testing.T, authConfig lib.Aut
 	psName := topic + "-pubsub"
 	svcName := "event-display"
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	// Create the PubSub source.
 	lib.MakePubSubOrDie(client, lib.PubSubConfig{
@@ -107,6 +109,7 @@ func SmokeCloudPubSubSourceWithDeletionTestImpl(t *testing.T, authConfig lib.Aut
 // CloudPubSubSourceWithTargetTestImpl tests we can receive an event from a CloudPubSubSource.
 // If assertMetrics is set to true, we also assert for StackDriver metrics.
 func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
+	ctx := context.Background()
 	t.Helper()
 	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
@@ -117,11 +120,11 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 	source := schemasv1.CloudPubSubEventSource(project, topicName)
 	data := fmt.Sprintf(`{"topic":%s}`, topicName)
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
 	if assertMetrics {
-		client.SetupStackDriverMetricsInNamespace(t)
+		client.SetupStackDriverMetricsInNamespace(ctx, t)
 	}
-	defer lib.TearDown(client)
+	defer lib.TearDown(ctx, client)
 
 	// Create a target Job to receive the events.
 	lib.MakePubSubTargetJobOrDie(client, source, targetName, schemasv1.CloudPubSubMessagePublishedEventType, schemasv1.CloudPubSubEventDataSchema)
@@ -145,7 +148,7 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 		t.Logf("%s", err)
 	}
 
-	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
+	msg, err := client.WaitUntilJobDone(ctx, client.Namespace, targetName)
 	if err != nil {
 		t.Error(err)
 	}
@@ -158,13 +161,13 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 		}
 		if !out.Success {
 			// Log the output pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, lib.CloudPubSubSourceV1TypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, psName, lib.CloudPubSubSourceV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("pubsub: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, targetName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)

@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"net/url"
 	"testing"
 	"time"
@@ -52,27 +53,30 @@ Note: the number denotes the sequence of the event that flows in this test case.
 */
 
 func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 	brokerURL, brokerName := createGCPBroker(client)
 	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName, true)
 }
 
 func GCPBrokerMetricsTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	projectID := lib.GetEnvOrFail(t, lib.ProwProjectKey)
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
-	client.SetupStackDriverMetrics(t)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
+	client.SetupStackDriverMetrics(ctx, t)
 	brokerURL, brokerName := createGCPBroker(client)
 	kngcphelpers.BrokerEventTransformationMetricsTestHelper(client, projectID, brokerURL, brokerName)
 }
 
 func GCPBrokerTracingTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	projectID := lib.GetEnvOrFail(t, lib.ProwProjectKey)
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
-	err := client.Core.Kube.UpdateConfigMap("cloud-run-events", "config-tracing", map[string]string{
+	err := client.Core.Kube.UpdateConfigMap(ctx, "cloud-run-events", "config-tracing", map[string]string{
 		"backend":                "stackdriver",
 		"stackdriver-project-id": projectID,
 	})
@@ -85,24 +89,27 @@ func GCPBrokerTracingTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 }
 
 func PubSubSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	brokerURL, brokerName := createGCPBroker(client)
 	kngcphelpers.BrokerEventTransformationTestWithPubSubSourceHelper(client, authConfig, brokerURL, brokerName)
 }
 
 func StorageSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	brokerURL, brokerName := createGCPBroker(client)
 	kngcphelpers.BrokerEventTransformationTestWithStorageSourceHelper(client, authConfig, brokerURL, brokerName)
 }
 
 func AuditLogsSourceBrokerWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	brokerURL, brokerName := createGCPBroker(client)
 	kngcphelpers.BrokerEventTransformationTestWithAuditLogsSourceHelper(client, authConfig, brokerURL, brokerName)
@@ -110,8 +117,9 @@ func AuditLogsSourceBrokerWithGCPBrokerTestImpl(t *testing.T, authConfig lib.Aut
 }
 
 func SchedulerSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	brokerURL, brokerName := createGCPBroker(client)
 	kngcphelpers.BrokerEventTransformationTestWithSchedulerSourceHelper(client, authConfig, brokerURL, brokerName)
@@ -120,8 +128,9 @@ func SchedulerSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfi
 
 // SmokeGCPBrokerTestImpl tests we can create a GCPBroker to ready state and we can delete a GCPBroker and its underlying resources.
 func SmokeGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
+	ctx := context.Background()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
 
 	brokerName := helpers.AppendRandomString("gcp")
 	// Create a new GCP Broker.

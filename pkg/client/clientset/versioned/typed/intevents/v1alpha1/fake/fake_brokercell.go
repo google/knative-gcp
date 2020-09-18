@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var brokercellsResource = schema.GroupVersionResource{Group: "internal.events.cl
 var brokercellsKind = schema.GroupVersionKind{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Kind: "BrokerCell"}
 
 // Get takes name of the brokerCell, and returns the corresponding brokerCell object, and an error if there is any.
-func (c *FakeBrokerCells) Get(name string, options v1.GetOptions) (result *v1alpha1.BrokerCell, err error) {
+func (c *FakeBrokerCells) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.BrokerCell, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(brokercellsResource, c.ns, name), &v1alpha1.BrokerCell{})
 
@@ -50,7 +52,7 @@ func (c *FakeBrokerCells) Get(name string, options v1.GetOptions) (result *v1alp
 }
 
 // List takes label and field selectors, and returns the list of BrokerCells that match those selectors.
-func (c *FakeBrokerCells) List(opts v1.ListOptions) (result *v1alpha1.BrokerCellList, err error) {
+func (c *FakeBrokerCells) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.BrokerCellList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(brokercellsResource, brokercellsKind, c.ns, opts), &v1alpha1.BrokerCellList{})
 
@@ -72,14 +74,14 @@ func (c *FakeBrokerCells) List(opts v1.ListOptions) (result *v1alpha1.BrokerCell
 }
 
 // Watch returns a watch.Interface that watches the requested brokerCells.
-func (c *FakeBrokerCells) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeBrokerCells) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(brokercellsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a brokerCell and creates it.  Returns the server's representation of the brokerCell, and an error, if there is any.
-func (c *FakeBrokerCells) Create(brokerCell *v1alpha1.BrokerCell) (result *v1alpha1.BrokerCell, err error) {
+func (c *FakeBrokerCells) Create(ctx context.Context, brokerCell *v1alpha1.BrokerCell, opts v1.CreateOptions) (result *v1alpha1.BrokerCell, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(brokercellsResource, c.ns, brokerCell), &v1alpha1.BrokerCell{})
 
@@ -90,7 +92,7 @@ func (c *FakeBrokerCells) Create(brokerCell *v1alpha1.BrokerCell) (result *v1alp
 }
 
 // Update takes the representation of a brokerCell and updates it. Returns the server's representation of the brokerCell, and an error, if there is any.
-func (c *FakeBrokerCells) Update(brokerCell *v1alpha1.BrokerCell) (result *v1alpha1.BrokerCell, err error) {
+func (c *FakeBrokerCells) Update(ctx context.Context, brokerCell *v1alpha1.BrokerCell, opts v1.UpdateOptions) (result *v1alpha1.BrokerCell, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(brokercellsResource, c.ns, brokerCell), &v1alpha1.BrokerCell{})
 
@@ -102,7 +104,7 @@ func (c *FakeBrokerCells) Update(brokerCell *v1alpha1.BrokerCell) (result *v1alp
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeBrokerCells) UpdateStatus(brokerCell *v1alpha1.BrokerCell) (*v1alpha1.BrokerCell, error) {
+func (c *FakeBrokerCells) UpdateStatus(ctx context.Context, brokerCell *v1alpha1.BrokerCell, opts v1.UpdateOptions) (*v1alpha1.BrokerCell, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(brokercellsResource, "status", c.ns, brokerCell), &v1alpha1.BrokerCell{})
 
@@ -113,7 +115,7 @@ func (c *FakeBrokerCells) UpdateStatus(brokerCell *v1alpha1.BrokerCell) (*v1alph
 }
 
 // Delete takes name of the brokerCell and deletes it. Returns an error if one occurs.
-func (c *FakeBrokerCells) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeBrokerCells) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(brokercellsResource, c.ns, name), &v1alpha1.BrokerCell{})
 
@@ -121,15 +123,15 @@ func (c *FakeBrokerCells) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeBrokerCells) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(brokercellsResource, c.ns, listOptions)
+func (c *FakeBrokerCells) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(brokercellsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.BrokerCellList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched brokerCell.
-func (c *FakeBrokerCells) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.BrokerCell, err error) {
+func (c *FakeBrokerCells) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.BrokerCell, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(brokercellsResource, c.ns, name, pt, data, subresources...), &v1alpha1.BrokerCell{})
 

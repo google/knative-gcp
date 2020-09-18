@@ -945,7 +945,7 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 		NewBroker("broker", testNS, WithBrokerSetDefaults),
 		NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
 		NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults))
-	gotMap, err := client.CoreV1().ConfigMaps(testNS).Get(resources.Name(bc.Name, targetsCMName), metav1.GetOptions{})
+	gotMap, err := client.CoreV1().ConfigMaps(testNS).Get(context.Background(), resources.Name(bc.Name, targetsCMName), metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("Failed to get ConfigMap from client: %v", err)
 	}

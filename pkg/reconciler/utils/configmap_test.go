@@ -17,6 +17,7 @@ limitations under the License.
 package utils
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -160,7 +161,7 @@ func TestConfigMapReconciler(t *testing.T) {
 				Lister:     tr.listers.GetConfigMapLister(),
 				Recorder:   tr.recorder,
 			}
-			out, err := rec.ReconcileConfigMap(obj, test.in, test.eqFunc)
+			out, err := rec.ReconcileConfigMap(context.Background(), obj, test.in, test.eqFunc)
 
 			tr.verify(t, test.commonCase, err)
 

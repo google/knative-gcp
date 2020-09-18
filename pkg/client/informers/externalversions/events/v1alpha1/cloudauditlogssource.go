@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	time "time"
 
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -61,13 +62,13 @@ func NewFilteredCloudAuditLogsSourceInformer(client versioned.Interface, namespa
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1alpha1().CloudAuditLogsSources(namespace).List(options)
+				return client.EventsV1alpha1().CloudAuditLogsSources(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1alpha1().CloudAuditLogsSources(namespace).Watch(options)
+				return client.EventsV1alpha1().CloudAuditLogsSources(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&eventsv1alpha1.CloudAuditLogsSource{},

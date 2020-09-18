@@ -17,6 +17,7 @@ limitations under the License.
 package volume
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -99,7 +100,7 @@ func TestUpdateAnnotation(t *testing.T) {
 			client := fake.NewSimpleClientset(test.pods...)
 			listers := reconcilertesting.NewListers(test.pods)
 
-			err := UpdateVolumeGeneration(client, listers.GetPodLister(), testNS, ls)
+			err := UpdateVolumeGeneration(context.Background(), client, listers.GetPodLister(), testNS, ls)
 			if !test.wantErr && err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -125,7 +126,7 @@ func TestUpdateAnnotation(t *testing.T) {
 func getPods(t *testing.T, client kubernetes.Interface, namespaces ...string) []corev1.Pod {
 	var pods []corev1.Pod
 	for _, namespace := range namespaces {
-		gotPods, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+		gotPods, err := client.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
 		if err != nil {
 			t.Fatalf("Failed to get pods for namespace %v: %v", namespace, err)
 		}

@@ -548,8 +548,9 @@ func jobDone(client *lib.Client, podName string) bool {
 }
 
 func jobOutput(client *lib.Client, podName string, out lib.Output) error {
+	ctx := context.Background()
 	client.T.Helper()
-	msg, err := client.WaitUntilJobDone(client.Namespace, podName)
+	msg, err := client.WaitUntilJobDone(ctx, client.Namespace, podName)
 	if err != nil {
 		return err
 	}
@@ -561,7 +562,7 @@ func jobOutput(client *lib.Client, podName string, out lib.Output) error {
 		return err
 	}
 	if !out.Successful() {
-		if logs, err := client.LogsFor(client.Namespace, podName, lib.JobTypeMeta); err != nil {
+		if logs, err := client.LogsFor(ctx, client.Namespace, podName, lib.JobTypeMeta); err != nil {
 			return err
 		} else {
 			return fmt.Errorf("job: %s\n", logs)

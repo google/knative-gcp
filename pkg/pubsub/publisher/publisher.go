@@ -27,8 +27,8 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/logging"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"

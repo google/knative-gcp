@@ -238,14 +238,14 @@ func (r *Reconciler) reconcilePublisher(ctx context.Context, topic *v1.Topic) (e
 
 	svc := existing
 	if existing == nil {
-		svc, err = r.ServingClientSet.ServingV1().Services(topic.Namespace).Create(desired)
+		svc, err = r.ServingClientSet.ServingV1().Services(topic.Namespace).Create(ctx, desired, metav1.CreateOptions{})
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create publisher", zap.Error(err))
 			return err, nil
 		}
 	} else if !equality.Semantic.DeepEqual(&existing.Spec, &desired.Spec) {
 		existing.Spec = desired.Spec
-		svc, err = r.ServingClientSet.ServingV1().Services(topic.Namespace).Update(existing)
+		svc, err = r.ServingClientSet.ServingV1().Services(topic.Namespace).Update(ctx, existing, metav1.UpdateOptions{})
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update publisher", zap.Any("publisher", existing), zap.Error(err))
 			return err, nil

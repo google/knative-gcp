@@ -332,7 +332,7 @@ func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.De
 		return nil, err
 	}
 	if existing == nil {
-		existing, err = r.KubeClientSet.AppsV1().Deployments(ps.Namespace).Create(desired)
+		existing, err = r.KubeClientSet.AppsV1().Deployments(ps.Namespace).Create(ctx, desired, metav1.CreateOptions{})
 		if err != nil {
 			ps.Status.MarkDeployedFailed("ReceiveAdapterCreateFailed", "Error creating the Receive Adapter: %s", err.Error())
 			logging.FromContext(ctx).Desugar().Error("Error creating Receive Adapter", zap.Error(err))
@@ -343,7 +343,7 @@ func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.De
 }
 
 func (r *Base) getReceiveAdapter(ctx context.Context, ps *v1.PullSubscription) (*appsv1.Deployment, error) {
-	dl, err := r.KubeClientSet.AppsV1().Deployments(ps.Namespace).List(metav1.ListOptions{
+	dl, err := r.KubeClientSet.AppsV1().Deployments(ps.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: resources.GetLabelSelector(r.ControllerAgentName, ps.Name).String(),
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: appsv1.SchemeGroupVersion.String(),
@@ -417,7 +417,7 @@ func (r *Base) resolveDestination(ctx context.Context, destination duckv1.Destin
 	if destination.Ref != nil && destination.Ref.Namespace == "" {
 		destination.Ref.Namespace = ps.Namespace
 	}
-	url, err := r.UriResolver.URIFromDestinationV1(destination, ps)
+	url, err := r.UriResolver.URIFromDestinationV1(ctx, destination, ps)
 	if err != nil {
 		return nil, err
 	}

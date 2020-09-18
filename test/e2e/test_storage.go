@@ -37,11 +37,11 @@ import (
 
 // SmokeCloudStorageSourceTestHelper tests we can create a CloudStorageSource to ready state.
 func SmokeCloudStorageSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, cloudStorageSourceVersion string) {
-	t.Helper()
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
-
 	ctx := context.Background()
+	t.Helper()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
+
 	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
@@ -70,11 +70,11 @@ func SmokeCloudStorageSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, 
 
 // SmokeCloudStorageSourceWithDeletionTestImpl tests if a CloudStorageSource object can be created to ready state and delete a CloudStorageSource resource and its underlying resources..
 func SmokeCloudStorageSourceWithDeletionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	t.Helper()
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(client)
-
 	ctx := context.Background()
+	t.Helper()
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(ctx, client)
+
 	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
 
 	bucketName := lib.MakeBucket(ctx, t, project)
@@ -141,11 +141,11 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
 	if assertMetrics {
-		client.SetupStackDriverMetricsInNamespace(t)
+		client.SetupStackDriverMetricsInNamespace(ctx, t)
 	}
-	defer lib.TearDown(client)
+	defer lib.TearDown(ctx, client)
 
 	fileName := helpers.AppendRandomString("test-file-for-storage")
 	source := schemasv1.CloudStorageEventSource(bucketName)
@@ -166,7 +166,7 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 	// Add a random name file in the bucket
 	lib.AddRandomFile(ctx, t, bucketName, fileName, project)
 
-	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
+	msg, err := client.WaitUntilJobDone(ctx, client.Namespace, targetName)
 	if err != nil {
 		t.Error(err)
 	}
@@ -180,13 +180,13 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 		}
 		if !out.Success {
 			// Log the output storage pods.
-			if logs, err := client.LogsFor(client.Namespace, storageName, lib.CloudStorageSourceV1TypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, storageName, lib.CloudStorageSourceV1TypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("storage: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
+			if logs, err := client.LogsFor(ctx, client.Namespace, targetName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)

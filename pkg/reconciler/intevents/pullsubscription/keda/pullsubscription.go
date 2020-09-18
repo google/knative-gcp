@@ -79,7 +79,7 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 	ra.Spec.Replicas = existing.Spec.Replicas
 	if !equality.Semantic.DeepEqual(ra.Spec, existing.Spec) {
 		existing.Spec = ra.Spec
-		existing, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
+		existing, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(ctx, existing, metav1.UpdateOptions{})
 		if err != nil {
 			src.Status.MarkDeployedFailed("ReceiveAdapterUpdateFailed", "Error updating the Receive Adapter: %s", err.Error())
 			logging.FromContext(ctx).Desugar().Error("Error updating Receive Adapter", zap.Error(err))
@@ -105,7 +105,7 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 		Name:       resources.GenerateScaledObjectName(src),
 		Namespace:  src.Namespace,
 	}
-	track := r.scaledObjectTracker.TrackInNamespace(src)
+	track := r.scaledObjectTracker.TrackInNamespace(ctx, src)
 
 	objRef := ref.ObjectReference()
 	// Track changes in the ScaledObject.
@@ -123,7 +123,7 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 	_, err = lister.ByNamespace(so.GetNamespace()).Get(so.GetName())
 	if err != nil {
 		if apierrs.IsNotFound(err) {
-			_, err = scaledObjectResourceInterface.Create(so, metav1.CreateOptions{})
+			_, err = scaledObjectResourceInterface.Create(ctx, so, metav1.CreateOptions{})
 			if err != nil {
 				logging.FromContext(ctx).Desugar().Error("Failed to create ScaledObject", zap.Any("so", so), zap.Error(err))
 				return err

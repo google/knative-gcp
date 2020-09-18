@@ -25,10 +25,10 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/google/knative-gcp/pkg/logging"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/eventing/pkg/duck"
-	"knative.dev/eventing/pkg/logging"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
 	"knative.dev/pkg/configmap"

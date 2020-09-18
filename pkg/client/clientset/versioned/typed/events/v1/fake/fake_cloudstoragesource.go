@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	eventsv1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var cloudstoragesourcesResource = schema.GroupVersionResource{Group: "events.clo
 var cloudstoragesourcesKind = schema.GroupVersionKind{Group: "events.cloud.google.com", Version: "v1", Kind: "CloudStorageSource"}
 
 // Get takes name of the cloudStorageSource, and returns the corresponding cloudStorageSource object, and an error if there is any.
-func (c *FakeCloudStorageSources) Get(name string, options v1.GetOptions) (result *eventsv1.CloudStorageSource, err error) {
+func (c *FakeCloudStorageSources) Get(ctx context.Context, name string, options v1.GetOptions) (result *eventsv1.CloudStorageSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(cloudstoragesourcesResource, c.ns, name), &eventsv1.CloudStorageSource{})
 
@@ -50,7 +52,7 @@ func (c *FakeCloudStorageSources) Get(name string, options v1.GetOptions) (resul
 }
 
 // List takes label and field selectors, and returns the list of CloudStorageSources that match those selectors.
-func (c *FakeCloudStorageSources) List(opts v1.ListOptions) (result *eventsv1.CloudStorageSourceList, err error) {
+func (c *FakeCloudStorageSources) List(ctx context.Context, opts v1.ListOptions) (result *eventsv1.CloudStorageSourceList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(cloudstoragesourcesResource, cloudstoragesourcesKind, c.ns, opts), &eventsv1.CloudStorageSourceList{})
 
@@ -72,14 +74,14 @@ func (c *FakeCloudStorageSources) List(opts v1.ListOptions) (result *eventsv1.Cl
 }
 
 // Watch returns a watch.Interface that watches the requested cloudStorageSources.
-func (c *FakeCloudStorageSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeCloudStorageSources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(cloudstoragesourcesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a cloudStorageSource and creates it.  Returns the server's representation of the cloudStorageSource, and an error, if there is any.
-func (c *FakeCloudStorageSources) Create(cloudStorageSource *eventsv1.CloudStorageSource) (result *eventsv1.CloudStorageSource, err error) {
+func (c *FakeCloudStorageSources) Create(ctx context.Context, cloudStorageSource *eventsv1.CloudStorageSource, opts v1.CreateOptions) (result *eventsv1.CloudStorageSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(cloudstoragesourcesResource, c.ns, cloudStorageSource), &eventsv1.CloudStorageSource{})
 
@@ -90,7 +92,7 @@ func (c *FakeCloudStorageSources) Create(cloudStorageSource *eventsv1.CloudStora
 }
 
 // Update takes the representation of a cloudStorageSource and updates it. Returns the server's representation of the cloudStorageSource, and an error, if there is any.
-func (c *FakeCloudStorageSources) Update(cloudStorageSource *eventsv1.CloudStorageSource) (result *eventsv1.CloudStorageSource, err error) {
+func (c *FakeCloudStorageSources) Update(ctx context.Context, cloudStorageSource *eventsv1.CloudStorageSource, opts v1.UpdateOptions) (result *eventsv1.CloudStorageSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(cloudstoragesourcesResource, c.ns, cloudStorageSource), &eventsv1.CloudStorageSource{})
 
@@ -102,7 +104,7 @@ func (c *FakeCloudStorageSources) Update(cloudStorageSource *eventsv1.CloudStora
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeCloudStorageSources) UpdateStatus(cloudStorageSource *eventsv1.CloudStorageSource) (*eventsv1.CloudStorageSource, error) {
+func (c *FakeCloudStorageSources) UpdateStatus(ctx context.Context, cloudStorageSource *eventsv1.CloudStorageSource, opts v1.UpdateOptions) (*eventsv1.CloudStorageSource, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(cloudstoragesourcesResource, "status", c.ns, cloudStorageSource), &eventsv1.CloudStorageSource{})
 
@@ -113,7 +115,7 @@ func (c *FakeCloudStorageSources) UpdateStatus(cloudStorageSource *eventsv1.Clou
 }
 
 // Delete takes name of the cloudStorageSource and deletes it. Returns an error if one occurs.
-func (c *FakeCloudStorageSources) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeCloudStorageSources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(cloudstoragesourcesResource, c.ns, name), &eventsv1.CloudStorageSource{})
 
@@ -121,15 +123,15 @@ func (c *FakeCloudStorageSources) Delete(name string, options *v1.DeleteOptions)
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeCloudStorageSources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(cloudstoragesourcesResource, c.ns, listOptions)
+func (c *FakeCloudStorageSources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(cloudstoragesourcesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &eventsv1.CloudStorageSourceList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched cloudStorageSource.
-func (c *FakeCloudStorageSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *eventsv1.CloudStorageSource, err error) {
+func (c *FakeCloudStorageSources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *eventsv1.CloudStorageSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(cloudstoragesourcesResource, c.ns, name, pt, data, subresources...), &eventsv1.CloudStorageSource{})
 

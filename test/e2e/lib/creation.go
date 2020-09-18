@@ -17,6 +17,8 @@ limitations under the License.
 package lib
 
 import (
+	"context"
+
 	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -35,9 +37,10 @@ import (
 )
 
 func (c *Client) CreateUnstructuredObjOrFail(spec *unstructured.Unstructured) {
+	ctx := context.Background()
 	c.T.Helper()
 	gvr, _ := meta.UnsafeGuessKindToResource(spec.GroupVersionKind())
-	_, err := c.Core.Dynamic.Resource(gvr).Namespace(c.Namespace).Create(spec, v1.CreateOptions{})
+	_, err := c.Core.Dynamic.Resource(gvr).Namespace(c.Namespace).Create(ctx, spec, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create object %s %s/%s: %v", spec.GroupVersionKind().String(), c.Namespace, spec.GetName(), err)
 	}
@@ -46,9 +49,10 @@ func (c *Client) CreateUnstructuredObjOrFail(spec *unstructured.Unstructured) {
 }
 
 func (c *Client) CreateChannelOrFail(channel *messagingv1beta1.Channel) {
+	ctx := context.Background()
 	c.T.Helper()
 	channels := c.KnativeGCP.MessagingV1beta1().Channels(c.Namespace)
-	_, err := channels.Create(channel)
+	_, err := channels.Create(ctx, channel, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create channel %s/%s: %v", c.Namespace, channel.Name, err)
 	}
@@ -57,9 +61,10 @@ func (c *Client) CreateChannelOrFail(channel *messagingv1beta1.Channel) {
 }
 
 func (c *Client) CreateAuditLogsOrFail(auditlogs *eventsv1.CloudAuditLogsSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	auditlogses := c.KnativeGCP.EventsV1().CloudAuditLogsSources(c.Namespace)
-	_, err := auditlogses.Create(auditlogs)
+	_, err := auditlogses.Create(ctx, auditlogs, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create auditlogs %s/%s: %v", c.Namespace, auditlogs.Name, err)
 	}
@@ -68,9 +73,10 @@ func (c *Client) CreateAuditLogsOrFail(auditlogs *eventsv1.CloudAuditLogsSource)
 }
 
 func (c *Client) CreateAuditLogsV1beta1OrFail(auditlogs *eventsv1beta1.CloudAuditLogsSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	auditlogses := c.KnativeGCP.EventsV1beta1().CloudAuditLogsSources(c.Namespace)
-	_, err := auditlogses.Create(auditlogs)
+	_, err := auditlogses.Create(ctx, auditlogs, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create auditlogs %s/%s: %v", c.Namespace, auditlogs.Name, err)
 	}
@@ -79,9 +85,10 @@ func (c *Client) CreateAuditLogsV1beta1OrFail(auditlogs *eventsv1beta1.CloudAudi
 }
 
 func (c *Client) CreateAuditLogsV1alpha1OrFail(auditlogs *eventsv1alpha1.CloudAuditLogsSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	auditlogses := c.KnativeGCP.EventsV1alpha1().CloudAuditLogsSources(c.Namespace)
-	_, err := auditlogses.Create(auditlogs)
+	_, err := auditlogses.Create(ctx, auditlogs, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create auditlogs %s/%s: %v", c.Namespace, auditlogs.Name, err)
 	}
@@ -90,9 +97,10 @@ func (c *Client) CreateAuditLogsV1alpha1OrFail(auditlogs *eventsv1alpha1.CloudAu
 }
 
 func (c *Client) CreatePubSubOrFail(pubsub *eventsv1.CloudPubSubSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	pubsubs := c.KnativeGCP.EventsV1().CloudPubSubSources(c.Namespace)
-	_, err := pubsubs.Create(pubsub)
+	_, err := pubsubs.Create(ctx, pubsub, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create pubsub %s/%s: %v", c.Namespace, pubsub.Name, err)
 	}
@@ -101,9 +109,10 @@ func (c *Client) CreatePubSubOrFail(pubsub *eventsv1.CloudPubSubSource) {
 }
 
 func (c *Client) CreatePubSubV1beta1OrFail(pubsub *eventsv1beta1.CloudPubSubSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	pubsubs := c.KnativeGCP.EventsV1beta1().CloudPubSubSources(c.Namespace)
-	_, err := pubsubs.Create(pubsub)
+	_, err := pubsubs.Create(ctx, pubsub, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create pubsub %s/%s: %v", c.Namespace, pubsub.Name, err)
 	}
@@ -112,9 +121,10 @@ func (c *Client) CreatePubSubV1beta1OrFail(pubsub *eventsv1beta1.CloudPubSubSour
 }
 
 func (c *Client) CreatePubSubV1alpha1OrFail(pubsub *eventsv1alpha1.CloudPubSubSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	pubsubs := c.KnativeGCP.EventsV1alpha1().CloudPubSubSources(c.Namespace)
-	_, err := pubsubs.Create(pubsub)
+	_, err := pubsubs.Create(ctx, pubsub, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create pubsub %s/%s: %v", c.Namespace, pubsub.Name, err)
 	}
@@ -123,9 +133,10 @@ func (c *Client) CreatePubSubV1alpha1OrFail(pubsub *eventsv1alpha1.CloudPubSubSo
 }
 
 func (c *Client) CreateBuildOrFail(build *eventsv1.CloudBuildSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	builds := c.KnativeGCP.EventsV1().CloudBuildSources(c.Namespace)
-	_, err := builds.Create(build)
+	_, err := builds.Create(ctx, build, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create build %s/%s: %v", c.Namespace, build.Name, err)
 	}
@@ -134,9 +145,10 @@ func (c *Client) CreateBuildOrFail(build *eventsv1.CloudBuildSource) {
 }
 
 func (c *Client) CreateBuildV1beta1OrFail(build *eventsv1beta1.CloudBuildSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	builds := c.KnativeGCP.EventsV1beta1().CloudBuildSources(c.Namespace)
-	_, err := builds.Create(build)
+	_, err := builds.Create(ctx, build, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create build %s/%s: %v", c.Namespace, build.Name, err)
 	}
@@ -145,9 +157,10 @@ func (c *Client) CreateBuildV1beta1OrFail(build *eventsv1beta1.CloudBuildSource)
 }
 
 func (c *Client) CreateBuildV1alpha1OrFail(build *eventsv1alpha1.CloudBuildSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	builds := c.KnativeGCP.EventsV1alpha1().CloudBuildSources(c.Namespace)
-	_, err := builds.Create(build)
+	_, err := builds.Create(ctx, build, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create build %s/%s: %v", c.Namespace, build.Name, err)
 	}
@@ -156,9 +169,10 @@ func (c *Client) CreateBuildV1alpha1OrFail(build *eventsv1alpha1.CloudBuildSourc
 }
 
 func (c *Client) CreateStorageOrFail(storage *eventsv1.CloudStorageSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	storages := c.KnativeGCP.EventsV1().CloudStorageSources(c.Namespace)
-	_, err := storages.Create(storage)
+	_, err := storages.Create(ctx, storage, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create storage %s/%s: %v", c.Namespace, storage.Name, err)
 	}
@@ -167,9 +181,10 @@ func (c *Client) CreateStorageOrFail(storage *eventsv1.CloudStorageSource) {
 }
 
 func (c *Client) CreateStorageV1beta1OrFail(storage *eventsv1beta1.CloudStorageSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	storages := c.KnativeGCP.EventsV1beta1().CloudStorageSources(c.Namespace)
-	_, err := storages.Create(storage)
+	_, err := storages.Create(ctx, storage, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create storage %s/%s: %v", c.Namespace, storage.Name, err)
 	}
@@ -178,9 +193,10 @@ func (c *Client) CreateStorageV1beta1OrFail(storage *eventsv1beta1.CloudStorageS
 }
 
 func (c *Client) CreateStorageV1alpha1OrFail(storage *eventsv1alpha1.CloudStorageSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	storages := c.KnativeGCP.EventsV1alpha1().CloudStorageSources(c.Namespace)
-	_, err := storages.Create(storage)
+	_, err := storages.Create(ctx, storage, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create storage %s/%s: %v", c.Namespace, storage.Name, err)
 	}
@@ -189,9 +205,10 @@ func (c *Client) CreateStorageV1alpha1OrFail(storage *eventsv1alpha1.CloudStorag
 }
 
 func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *inteventsv1.PullSubscription) {
+	ctx := context.Background()
 	c.T.Helper()
 	pullsubscriptions := c.KnativeGCP.InternalV1().PullSubscriptions(c.Namespace)
-	_, err := pullsubscriptions.Create(pullsubscription)
+	_, err := pullsubscriptions.Create(ctx, pullsubscription, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create pullsubscription %s/%s: %v", c.Namespace, pullsubscription.Name, err)
 	}
@@ -200,9 +217,10 @@ func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *inteventsv1.Pull
 }
 
 func (c *Client) CreatePullSubscriptionV1beta1OrFail(pullsubscription *inteventsv1beta1.PullSubscription) {
+	ctx := context.Background()
 	c.T.Helper()
 	pullsubscriptions := c.KnativeGCP.InternalV1beta1().PullSubscriptions(c.Namespace)
-	_, err := pullsubscriptions.Create(pullsubscription)
+	_, err := pullsubscriptions.Create(ctx, pullsubscription, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create pullsubscription %s/%s: %v", c.Namespace, pullsubscription.Name, err)
 	}
@@ -211,9 +229,10 @@ func (c *Client) CreatePullSubscriptionV1beta1OrFail(pullsubscription *intevents
 }
 
 func (c *Client) CreatePullSubscriptionV1alpha1OrFail(pullsubscription *inteventsv1alpha1.PullSubscription) {
+	ctx := context.Background()
 	c.T.Helper()
 	pullsubscriptions := c.KnativeGCP.InternalV1alpha1().PullSubscriptions(c.Namespace)
-	_, err := pullsubscriptions.Create(pullsubscription)
+	_, err := pullsubscriptions.Create(ctx, pullsubscription, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create pullsubscription %s/%s: %v", c.Namespace, pullsubscription.Name, err)
 	}
@@ -222,9 +241,10 @@ func (c *Client) CreatePullSubscriptionV1alpha1OrFail(pullsubscription *intevent
 }
 
 func (c *Client) CreateSchedulerOrFail(scheduler *eventsv1.CloudSchedulerSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	schedulers := c.KnativeGCP.EventsV1().CloudSchedulerSources(c.Namespace)
-	_, err := schedulers.Create(scheduler)
+	_, err := schedulers.Create(ctx, scheduler, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create scheduler %s/%s: %v", c.Namespace, scheduler.Name, err)
 	}
@@ -233,9 +253,10 @@ func (c *Client) CreateSchedulerOrFail(scheduler *eventsv1.CloudSchedulerSource)
 }
 
 func (c *Client) CreateSchedulerV1beta1OrFail(scheduler *eventsv1beta1.CloudSchedulerSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	schedulers := c.KnativeGCP.EventsV1beta1().CloudSchedulerSources(c.Namespace)
-	_, err := schedulers.Create(scheduler)
+	_, err := schedulers.Create(ctx, scheduler, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create scheduler %s/%s: %v", c.Namespace, scheduler.Name, err)
 	}
@@ -244,9 +265,10 @@ func (c *Client) CreateSchedulerV1beta1OrFail(scheduler *eventsv1beta1.CloudSche
 }
 
 func (c *Client) CreateSchedulerV1alpha1OrFail(scheduler *eventsv1alpha1.CloudSchedulerSource) {
+	ctx := context.Background()
 	c.T.Helper()
 	schedulers := c.KnativeGCP.EventsV1alpha1().CloudSchedulerSources(c.Namespace)
-	_, err := schedulers.Create(scheduler)
+	_, err := schedulers.Create(ctx, scheduler, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create scheduler %s/%s: %v", c.Namespace, scheduler.Name, err)
 	}
@@ -256,12 +278,13 @@ func (c *Client) CreateSchedulerV1alpha1OrFail(scheduler *eventsv1alpha1.CloudSc
 
 // CreateGCPBrokerV1Beta1OrFail will create a GCP Broker or fail the test if there is an error.
 func (c *Client) CreateGCPBrokerV1Beta1OrFail(name string, options ...knativegcptestresources.BrokerV1Beta1Option) *v1beta1.Broker {
+	ctx := context.Background()
 	namespace := c.Namespace
 	broker := knativegcptestresources.BrokerV1Beta1(name, options...)
 	brokers := c.KnativeGCP.EventingV1beta1().Brokers(namespace)
 	c.T.Logf("Creating broker %s", name)
 	// update broker with the new reference
-	broker, err := brokers.Create(broker)
+	broker, err := brokers.Create(ctx, broker, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create broker %q: %v", name, err)
 	}
@@ -271,11 +294,12 @@ func (c *Client) CreateGCPBrokerV1Beta1OrFail(name string, options ...knativegcp
 
 // WithServiceForJob returns an option that creates a Service binded with the given job.
 func WithServiceForJob(name string) func(*batchv1.Job, *Client) error {
+	ctx := context.Background()
 	return func(job *batchv1.Job, client *Client) error {
 		svc := resources.ServiceDefaultHTTP(name, job.Spec.Template.Labels)
 
 		svcs := client.Core.Kube.Kube.CoreV1().Services(job.Namespace)
-		if _, err := svcs.Create(svc); err != nil {
+		if _, err := svcs.Create(ctx, svc, v1.CreateOptions{}); err != nil {
 			return err
 		}
 		client.T.Logf("Created service: %s/%s", job.Namespace, svc.Name)
@@ -285,6 +309,7 @@ func WithServiceForJob(name string) func(*batchv1.Job, *Client) error {
 }
 
 func (c *Client) CreateJobOrFail(job *batchv1.Job, options ...func(*batchv1.Job, *Client) error) {
+	ctx := context.Background()
 	c.T.Helper()
 	// set namespace for the job in case it's empty
 	if job.Namespace == "" {
@@ -298,7 +323,7 @@ func (c *Client) CreateJobOrFail(job *batchv1.Job, options ...func(*batchv1.Job,
 	}
 
 	jobs := c.Core.Kube.Kube.BatchV1().Jobs(job.Namespace)
-	if _, err := jobs.Create(job); err != nil {
+	if _, err := jobs.Create(ctx, job, v1.CreateOptions{}); err != nil {
 		c.T.Fatalf("Failed to create job %s/%s: %v", job.Namespace, job.Name, err)
 	}
 	c.T.Logf("Created job %s/%s", job.Namespace, job.Name)
