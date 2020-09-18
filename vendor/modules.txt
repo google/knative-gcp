@@ -307,7 +307,7 @@ github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/tsenart/vegeta v12.7.1-0.20190725001342-b5f4fca92137+incompatible
 github.com/tsenart/vegeta/lib
-# go.opencensus.io v0.22.4
+# go.opencensus.io v0.22.5-0.20200714042313-af30f77c5f65
 ## explicit
 go.opencensus.io
 go.opencensus.io/internal
