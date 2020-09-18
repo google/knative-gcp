@@ -83,12 +83,19 @@ func (r *Reconciler) addToConfig(ctx context.Context, b *brokerv1beta1.Broker, t
 		// First delete the broker entry.
 		m.Delete()
 
+		brokerQueueState := config.State_UNKNOWN
+		// Set broker decouple queue to be ready only when both the topic and pull subscription are ready.
+		// PubSub will drop messages published to a topic if there is no subscription.
+		if b.Status.GetCondition(brokerv1beta1.BrokerConditionTopic).IsTrue() && b.Status.GetCondition(brokerv1beta1.BrokerConditionSubscription).IsTrue() {
+			brokerQueueState = config.State_READY
+		}
 		// Then reconstruct the broker entry and insert it
 		m.SetID(string(b.UID))
 		m.SetAddress(b.Status.Address.URL.String())
 		m.SetDecoupleQueue(&config.Queue{
 			Topic:        brokerresources.GenerateDecouplingTopicName(b),
 			Subscription: brokerresources.GenerateDecouplingSubscriptionName(b),
+			State:        brokerQueueState,
 		})
 		if b.Status.IsReady() {
 			m.SetState(config.State_READY)
