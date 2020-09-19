@@ -127,8 +127,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusAccepted,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns1",
-				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "202",
 				metricskey.LabelResponseCodeClass: "2xx",
@@ -147,8 +145,6 @@ func TestHandler(t *testing.T) {
 			},
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns1",
-				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "202",
 				metricskey.LabelResponseCodeClass: "2xx",
@@ -183,8 +179,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusNotFound,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns1",
-				metricskey.LabelBrokerName:        "broker-not-exist",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "404",
 				metricskey.LabelResponseCodeClass: "4xx",
@@ -199,8 +193,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusNotFound,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns-not-exist",
-				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "404",
 				metricskey.LabelResponseCodeClass: "4xx",
@@ -215,8 +207,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusServiceUnavailable,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns4",
-				metricskey.LabelBrokerName:        "broker4",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "503",
 				metricskey.LabelResponseCodeClass: "5xx",
@@ -231,8 +221,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusInternalServerError,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns2",
-				metricskey.LabelBrokerName:        "broker2",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "500",
 				metricskey.LabelResponseCodeClass: "5xx",
@@ -247,8 +235,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusInternalServerError,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns3",
-				metricskey.LabelBrokerName:        "broker3",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "500",
 				metricskey.LabelResponseCodeClass: "5xx",
