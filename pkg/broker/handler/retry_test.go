@@ -142,9 +142,9 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
 
 	expectMetrics := reportertest.NewExpectDelivery()
-	expectMetrics.AddTrigger(t, t1.Name, wantRetryTags(t1))
-	expectMetrics.AddTrigger(t, t2.Name, wantRetryTags(t2))
-	expectMetrics.AddTrigger(t, t3.Name, wantRetryTags(t3))
+	expectMetrics.AddTrigger(t, trigger(t1), wantRetryTags(t1))
+	expectMetrics.AddTrigger(t, trigger(t2), wantRetryTags(t2))
+	expectMetrics.AddTrigger(t, trigger(t3), wantRetryTags(t3))
 
 	signal := make(chan struct{})
 	syncPool, err := InitializeTestRetryPool(helper.Targets, retryPod, retryContainer, helper.PubsubClient)
@@ -190,7 +190,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.Expect200(t, t1.Name)
+		expectMetrics.Expect200(t, trigger(t1))
 		expectMetrics.Verify(t)
 	})
 
@@ -224,7 +224,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.Expect200(t, t3.Name)
+		expectMetrics.Expect200(t, trigger(t3))
 		expectMetrics.Verify(t)
 	})
 
@@ -255,9 +255,9 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.Expect200(t, t1.Name)
-		expectMetrics.Expect200(t, t2.Name)
-		expectMetrics.Expect200(t, t3.Name)
+		expectMetrics.Expect200(t, trigger(t1))
+		expectMetrics.Expect200(t, trigger(t2))
+		expectMetrics.Expect200(t, trigger(t3))
 		expectMetrics.Verify(t)
 	})
 
@@ -294,7 +294,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.Expect200(t, t2.Name)
+		expectMetrics.Expect200(t, trigger(t2))
 		expectMetrics.Verify(t)
 	})
 
@@ -315,7 +315,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.Expect200(t, t2.Name)
+		expectMetrics.Expect200(t, trigger(t2))
 		expectMetrics.Verify(t)
 	})
 }
@@ -354,9 +354,6 @@ func genTestEvent(subject, t, id, source string) event.Event {
 
 func wantRetryTags(target *config.Target) map[string]string {
 	return map[string]string{
-		"trigger_name":   target.Name,
-		"broker_name":    target.Broker,
-		"namespace_name": target.Namespace,
 		"filter_type":    "any",
 		"pod_name":       retryPod,
 		"container_name": retryContainer,
