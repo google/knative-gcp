@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"testing"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
 
 	corev1 "k8s.io/api/core/v1"
@@ -38,6 +39,7 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -301,8 +303,57 @@ func TestAllCases(t *testing.T) {
 			"pre": []PubsubAction{},
 		},
 		PostConditions: []func(*testing.T, *TableRow){
-			TopicExists("cre-bkr_testnamespace_test-broker_abc123"),
+			TopicExistsWithConfig("cre-bkr_testnamespace_test-broker_abc123", &pubsub.TopicConfig{
+				Labels: map[string]string{
+					"broker_class": "googlecloud", "name": "test-broker", "namespace": "testnamespace", "resource": "brokers",
+				},
+			}),
 			SubscriptionExists("cre-bkr_testnamespace_test-broker_abc123"),
+		},
+	}, {
+		Name: "Check topic config with correct data residency and label",
+		Key:  testKey,
+		Objects: []runtime.Object{
+			NewBroker(brokerName, testNS,
+				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
+				WithBrokerSetDefaults),
+			NewBrokerCell(resources.DefaultBrokerCellName, systemNS,
+				WithBrokerCellReady,
+				WithBrokerCellSetDefaults),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewBroker(brokerName, testNS,
+				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
+				WithBrokerReadyURI(brokerAddress),
+				WithBrokerSetDefaults,
+			),
+		}},
+		WantEvents: []string{
+			brokerFinalizerUpdatedEvent,
+			Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-bkr_testnamespace_test-broker_abc123"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-bkr_testnamespace_test-broker_abc123"`),
+			brokerReconciledEvent,
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, brokerName, brokerFinalizerName),
+		},
+		OtherTestData: map[string]interface{}{
+			"pre":                    []PubsubAction{},
+			"dataResidencyConfigMap": NewDataresidencyConfigMapFromRegions([]string{"us-east1"}),
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			TopicExistsWithConfig("cre-bkr_testnamespace_test-broker_abc123", &pubsub.TopicConfig{
+				MessageStoragePolicy: pubsub.MessageStoragePolicy{
+					AllowedPersistenceRegions: []string{"us-east1"},
+				},
+				Labels: map[string]string{
+					"broker_class": "googlecloud", "name": "test-broker", "namespace": "testnamespace", "resource": "brokers",
+				},
+			}),
 		},
 	}}
 
@@ -319,14 +370,20 @@ func TestAllCases(t *testing.T) {
 				}
 			}
 		}
+		// If we found "dataResidencyConfigMap" in OtherData, we create a store with the configmap
+		var drStore *dataresidency.Store
+		if cm, ok := testData["dataResidencyConfigMap"]; ok {
+			drStore = NewDataresidencyTestStore(t, cm.(*corev1.ConfigMap))
+		}
 
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
 		r := &Reconciler{
-			Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
-			brokerCellLister: listers.GetBrokerCellLister(),
-			projectID:        testProject,
-			pubsubClient:     psclient,
+			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+			brokerCellLister:   listers.GetBrokerCellLister(),
+			projectID:          testProject,
+			pubsubClient:       psclient,
+			dataresidencyStore: drStore,
 		}
 		return brokerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerLister(), r.Recorder, r, brokerv1beta1.BrokerClass)
 	}))

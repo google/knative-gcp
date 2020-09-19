@@ -22,6 +22,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
+
 	"cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/multierr"
@@ -56,6 +58,8 @@ type Reconciler struct {
 
 	// pubsubClient is used as the Pubsub client when present.
 	pubsubClient *pubsub.Client
+
+	dataresidencyStore *dataresidency.Store
 }
 
 // Check that Reconciler implements Interface
@@ -145,6 +149,13 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	// Check if topic exists, and if not, create it.
 	topicID := resources.GenerateDecouplingTopicName(b)
 	topicConfig := &pubsub.TopicConfig{Labels: labels}
+	if r.dataresidencyStore != nil {
+		if dataresidencyConfig := r.dataresidencyStore.Load(); dataresidencyConfig != nil {
+			if dataresidencyConfig.DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig) {
+				logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Broker", zap.Any("topicConfig", *topicConfig))
+			}
+		}
+	}
 	topic, err := pubsubReconciler.ReconcileTopic(ctx, topicID, topicConfig, b, &b.Status)
 	if err != nil {
 		return err
