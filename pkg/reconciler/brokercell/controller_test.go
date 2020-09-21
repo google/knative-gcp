@@ -48,7 +48,9 @@ func TestNew(t *testing.T) {
 
 	setReconcilerEnv()
 
-	c := NewController(ctx, configmap.NewStaticWatcher(
+	ctor := NewConstructor()
+
+	c := ctor(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      logging.ConfigMapName(),
