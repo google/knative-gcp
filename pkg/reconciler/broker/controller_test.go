@@ -19,6 +19,8 @@ package broker
 import (
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/configmap"
@@ -54,6 +56,13 @@ func TestNew(t *testing.T) {
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      tracingconfig.ConfigName,
+				Namespace: system.Namespace(),
+			},
+			Data: map[string]string{},
+		},
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      dataresidency.ConfigMapName(),
 				Namespace: system.Namespace(),
 			},
 			Data: map[string]string{},

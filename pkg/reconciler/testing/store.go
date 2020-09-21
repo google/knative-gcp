@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 )
 
@@ -31,4 +32,12 @@ func NewGCPAuthTestStore(t *testing.T, config *corev1.ConfigMap) *gcpauth.Store 
 		gcpAuthTestStore.OnConfigChanged(config)
 	}
 	return gcpAuthTestStore
+}
+
+func NewDataresidencyTestStore(t *testing.T, config *corev1.ConfigMap) *dataresidency.Store {
+	dataresidencyTestStore := dataresidency.NewStore(logtesting.TestLogger(t))
+	if config != nil {
+		dataresidencyTestStore.OnConfigChanged(config)
+	}
+	return dataresidencyTestStore
 }

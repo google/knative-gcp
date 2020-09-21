@@ -29,6 +29,7 @@ import (
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	// Fake injection informers
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger/fake"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
@@ -61,6 +62,13 @@ func TestNew(t *testing.T) {
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      tracingconfig.ConfigName,
+				Namespace: system.Namespace(),
+			},
+			Data: map[string]string{},
+		},
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      dataresidency.ConfigMapName(),
 				Namespace: system.Namespace(),
 			},
 			Data: map[string]string{},

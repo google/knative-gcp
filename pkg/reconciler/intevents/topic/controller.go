@@ -29,6 +29,7 @@ import (
 	"knative.dev/pkg/logging"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
@@ -60,9 +61,9 @@ type envConfig struct {
 type Constructor injection.ControllerConstructor
 
 // NewConstructor creates a constructor to make a Topic controller.
-func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton, dataresidencyss *dataresidency.StoreSingleton) Constructor {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw), dataresidencyss.Store(ctx, cmw))
 	}
 }
 
@@ -71,6 +72,7 @@ func newController(
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
 	gcpas *gcpauth.Store,
+	dataresidencyStore *dataresidency.Store,
 ) *controller.Impl {
 	topicInformer := topicinformer.Get(ctx)
 	serviceInformer := serviceinformer.Get(ctx)
@@ -88,12 +90,13 @@ func newController(
 	}
 
 	r := &Reconciler{
-		PubSubBase:     pubsubBase,
-		Identity:       identity.NewIdentity(ctx, ipm, gcpas),
-		topicLister:    topicInformer.Lister(),
-		serviceLister:  serviceInformer.Lister(),
-		publisherImage: env.Publisher,
-		createClientFn: gpubsub.NewClient,
+		PubSubBase:         pubsubBase,
+		Identity:           identity.NewIdentity(ctx, ipm, gcpas),
+		dataresidencyStore: dataresidencyStore,
+		topicLister:        topicInformer.Lister(),
+		serviceLister:      serviceInformer.Lister(),
+		publisherImage:     env.Publisher,
+		createClientFn:     gpubsub.NewClient,
 	}
 
 	impl := topicreconciler.NewImpl(ctx, r)

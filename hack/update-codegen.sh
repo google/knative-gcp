@@ -77,6 +77,7 @@ ${GOPATH}/bin/deepcopy-gen \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
   -i github.com/google/knative-gcp/pkg/apis/configs/gcpauth \
   -i github.com/google/knative-gcp/pkg/apis/configs/broker \
+  -i github.com/google/knative-gcp/pkg/apis/configs/dataresidency \
 
 # TODO(yolocs): generate autoscaling v2beta2 in knative/pkg.
 OUTPUT_PKG="github.com/google/knative-gcp/pkg/client/injection/kube" \

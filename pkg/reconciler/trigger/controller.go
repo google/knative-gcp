@@ -38,6 +38,7 @@ import (
 	"knative.dev/pkg/resolver"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
 	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
@@ -90,12 +91,13 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 			client.Close()
 		}()
 	}
-
+	dataresidencySingleton := &dataresidency.StoreSingleton{}
 	r := &Reconciler{
-		Base:         reconciler.NewBase(ctx, controllerAgentName, cmw),
-		brokerLister: brokerinformer.Get(ctx).Lister(),
-		pubsubClient: client,
-		projectID:    projectID,
+		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+		brokerLister:       brokerinformer.Get(ctx).Lister(),
+		pubsubClient:       client,
+		projectID:          projectID,
+		dataresidencyStore: dataresidencySingleton.Store(ctx, cmw),
 	}
 
 	impl := triggerreconciler.NewImpl(ctx, r, withAgentAndFinalizer)

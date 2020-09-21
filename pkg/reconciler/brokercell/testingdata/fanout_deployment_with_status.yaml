@@ -42,7 +42,7 @@ spec:
     metadata:
       labels: *labels
       annotations:
-        sidecar.istio.io/inject: "false"
+        sidecar.istio.io/inject: "true"
     spec:
       serviceAccountName: broker
       terminationGracePeriodSeconds: 60
