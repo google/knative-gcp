@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	corev1 "k8s.io/api/core/v1"
@@ -56,6 +57,23 @@ func TestReconcileSub(t *testing.T) {
 				`Warning TopicDeleted Unexpected topic deletion detected for subscription: "test-sub"`,
 				`Normal SubscriptionDeleted Deleted PubSub subscription "test-sub"`,
 				`Normal SubscriptionCreated Created PubSub subscription "test-sub"`,
+			},
+			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue},
+		},
+		{
+			name: "sub already exists, modify config",
+			pre: []reconcilertesting.PubsubAction{reconcilertesting.TopicAndSubWithConfig(topic, sub,
+				&pubsub.RetryPolicy{
+					MinimumBackoff: time.Second,
+					MaximumBackoff: time.Second,
+				},
+				&pubsub.DeadLetterPolicy{
+					DeadLetterTopic:     "pubsub://test-dead-letter-topic-id",
+					MaxDeliveryAttempts: 10,
+				},
+			)},
+			wantEvents: []string{
+				`Normal SubscriptionConfigUpdated Updated PubSub subscription config "test-sub"`,
 			},
 			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue},
 		},
@@ -129,5 +147,11 @@ func verifySub(t *testing.T, got *pubsub.Subscription, wantConfig pubsub.Subscri
 	}
 	if !reflect.DeepEqual(gotConfig.Labels, wantConfig.Labels) {
 		t.Errorf("Unexpected labels in config, got:%+v, want: %+v", gotConfig.Labels, wantConfig.Labels)
+	}
+	if !reflect.DeepEqual(gotConfig.RetryPolicy, wantConfig.RetryPolicy) {
+		t.Errorf("Unexpected retry policy in config, got:%+v, want: %+v", gotConfig.RetryPolicy, wantConfig.RetryPolicy)
+	}
+	if !reflect.DeepEqual(gotConfig.DeadLetterPolicy, wantConfig.DeadLetterPolicy) {
+		t.Errorf("Unexpected dead letter policy in config, got:%+v, want: %+v", gotConfig.DeadLetterPolicy, wantConfig.DeadLetterPolicy)
 	}
 }

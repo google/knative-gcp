@@ -31,9 +31,10 @@ import (
 const (
 	// If the topic of the subscription has been deleted, the value of its topic becomes "_deleted-topic_".
 	// See https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#subscription
-	deletedTopic = "_deleted-topic_"
-	subCreated   = "SubscriptionCreated"
-	subDeleted   = "SubscriptionDeleted"
+	deletedTopic     = "_deleted-topic_"
+	subCreated       = "SubscriptionCreated"
+	subDeleted       = "SubscriptionDeleted"
+	subConfigUpdated = "SubscriptionConfigUpdated"
 )
 
 func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subConfig pubsub.SubscriptionConfig, obj runtime.Object, updater StatusUpdater) (*pubsub.Subscription, error) {
@@ -75,6 +76,8 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 				updater.MarkSubscriptionFailed("SubscriptionConfigUpdateFailed", "Failed to update Pub/Sub subscription config: %v", err)
 				return nil, err
 			}
+			logger.Info("Updated PubSub subscription config", zap.String("name", sub.ID()))
+			r.recorder.Eventf(obj, corev1.EventTypeNormal, subConfigUpdated, "Updated PubSub subscription config %q", sub.ID())
 		}
 		updater.MarkSubscriptionReady()
 		return sub, nil

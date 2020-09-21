@@ -43,13 +43,31 @@ func Topic(id string) PubsubAction {
 	}
 }
 
-func SubscriptionWithTopic(id string, tid string) PubsubAction {
+func SubscriptionWithTopicAndConfig(id, tid string, retryPolicy *pubsub.RetryPolicy, deadLetterPolicy *pubsub.DeadLetterPolicy) PubsubAction {
 	return func(ctx context.Context, t *testing.T, c *pubsub.Client) {
-		_, err := c.CreateSubscription(ctx, id, pubsub.SubscriptionConfig{Topic: c.Topic(tid)})
+		_, err := c.CreateSubscription(ctx, id,
+			pubsub.SubscriptionConfig{
+				Topic:            c.Topic(tid),
+				RetryPolicy:      retryPolicy,
+				DeadLetterPolicy: deadLetterPolicy,
+			})
 		if err != nil {
 			t.Fatalf("Error creating subscription %q: %v", id, err)
 		}
 		t.Logf("Created subscription %q", id)
+	}
+}
+
+func SubscriptionWithTopic(id, tid string) PubsubAction {
+	return func(ctx context.Context, t *testing.T, c *pubsub.Client) {
+		SubscriptionWithTopicAndConfig(id, tid, nil, nil)(ctx, t, c)
+	}
+}
+
+func TopicAndSubWithConfig(tid, sid string, retryPolicy *pubsub.RetryPolicy, deadLetterPolicy *pubsub.DeadLetterPolicy) PubsubAction {
+	return func(ctx context.Context, t *testing.T, c *pubsub.Client) {
+		Topic(tid)(ctx, t, c)
+		SubscriptionWithTopicAndConfig(sid, tid, retryPolicy, deadLetterPolicy)(ctx, t, c)
 	}
 }
 
