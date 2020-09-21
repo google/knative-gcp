@@ -72,7 +72,7 @@ func NewConstructor(dataresidencyss *dataresidency.StoreSingleton) Constructor {
 	}
 }
 
-func newController(ctx context.Context, cmw configmap.Watcher, dataresidencyss *dataresidency.Store) *controller.Impl {
+func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidency.Store) *controller.Impl {
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var", zap.Error(err))
@@ -106,7 +106,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, dataresidencyss *
 		brokerLister:       brokerinformer.Get(ctx).Lister(),
 		pubsubClient:       client,
 		projectID:          projectID,
-		dataresidencyStore: dataresidencyss,
+		dataresidencyStore: drs,
 	}
 
 	impl := triggerreconciler.NewImpl(ctx, r, withAgentAndFinalizer)

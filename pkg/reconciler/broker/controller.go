@@ -59,7 +59,7 @@ func NewConstructor(dataresidencyss *dataresidency.StoreSingleton) Constructor {
 	}
 }
 
-func newController(ctx context.Context, cmw configmap.Watcher, dataresidencyss *dataresidency.Store) *controller.Impl {
+func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidency.Store) *controller.Impl {
 	brokerInformer := brokerinformer.Get(ctx)
 	bcInformer := brokercellinformer.Get(ctx)
 
@@ -88,7 +88,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, dataresidencyss *
 		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
 		brokerCellLister:   bcInformer.Lister(),
 		pubsubClient:       client,
-		dataresidencyStore: dataresidencyss,
+		dataresidencyStore: drs,
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass)

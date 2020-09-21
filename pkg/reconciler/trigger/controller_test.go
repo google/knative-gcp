@@ -44,9 +44,7 @@ import (
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
 
-	dataresidencySs := &dataresidency.StoreSingleton{}
-
-	ctor := NewConstructor(dataresidencySs)
+	ctor := NewConstructor(&dataresidency.StoreSingleton{})
 
 	c := ctor(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
