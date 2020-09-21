@@ -26,7 +26,6 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 )
@@ -98,17 +97,17 @@ type Receiver interface {
 	Knockdown(event cloudevents.Event) bool
 }
 
-func (r *receiver) Receive(event cloudevents.Event) (*event.Event, protocol.Result) {
+func (r *receiver) Receive(event cloudevents.Event) protocol.Result {
 	done := r.kdr.Knockdown(event)
 	if done {
 		if err := r.writeSuccessfulTerminationMessage(); err != nil {
 			fmt.Printf("Failed to write termination message, %s.\n", err.Error())
 		}
 		r.cancel()
-		return nil, cehttp.NewResult(http.StatusOK, "OK")
+		return cehttp.NewResult(http.StatusOK, "OK")
 	}
 	fmt.Printf("Event did not knockdown the process.")
-	return nil, cehttp.NewResult(http.StatusNotFound, "Event did not knockdown the process, return 404")
+	return cehttp.NewResult(http.StatusNotFound, "Event did not knockdown the process, return 404")
 }
 
 // writeSuccessfulTerminationMessage should be called to indicate this knock down process received
