@@ -260,8 +260,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusTooManyRequests,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns1",
-				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "429",
 				metricskey.LabelResponseCodeClass: "4xx",
