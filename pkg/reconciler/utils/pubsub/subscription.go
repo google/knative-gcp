@@ -24,6 +24,7 @@ import (
 	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -63,6 +64,17 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 				return nil, fmt.Errorf("topic of the subscription has been deleted, need to recreate the subscription: %v", err)
 			}
 			return r.createSubscription(ctx, id, subConfig, obj, updater)
+		}
+		// Update the subscription config in case the retry or dead letter policy changed
+		if !equality.Semantic.DeepEqual(config.RetryPolicy, subConfig.RetryPolicy) || !equality.Semantic.DeepEqual(config.DeadLetterPolicy, subConfig.DeadLetterPolicy) {
+			updateSubConfig := pubsub.SubscriptionConfigToUpdate{
+				RetryPolicy:      subConfig.RetryPolicy,
+				DeadLetterPolicy: subConfig.DeadLetterPolicy,
+			}
+			if _, err := sub.Update(ctx, updateSubConfig); err != nil {
+				updater.MarkSubscriptionFailed("SubscriptionConfigUpdateFailed", "Failed to update Pub/Sub subscription config: %v", err)
+				return nil, err
+			}
 		}
 		updater.MarkSubscriptionReady()
 		return sub, nil
