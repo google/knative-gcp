@@ -73,7 +73,7 @@ func TestReconcileSub(t *testing.T) {
 				},
 			)},
 			wantEvents: []string{
-				`Normal SubscriptionConfigUpdated Updated PubSub subscription config "test-sub"`,
+				`Normal SubscriptionConfigUpdated Updated config for PubSub subscription "test-sub"`,
 			},
 			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue},
 		},
