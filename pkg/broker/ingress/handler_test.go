@@ -303,7 +303,7 @@ func TestHandler(t *testing.T) {
 				decouple = NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), createPubsubClient(ctx, t, psSrv), pubsub.DefaultPublishSettings)
 			}
 
-			url := createAndStartIngress(ctx, t, psSrv, decoupleSink)
+			url := createAndStartIngress(ctx, t, psSrv, decouple)
 			rec := setupTestReceiver(ctx, t, psSrv)
 
 			res, err := client.Do(createRequest(tc, url))
