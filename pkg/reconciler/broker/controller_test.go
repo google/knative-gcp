@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
+	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,9 +39,7 @@ import (
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
 
-	ctor := NewConstructor(&dataresidency.StoreSingleton{})
-
-	c := ctor(ctx, configmap.NewStaticWatcher(
+	c := NewConstructor(&dataresidency.StoreSingleton{})(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      logging.ConfigMapName(),
@@ -62,13 +61,7 @@ func TestNew(t *testing.T) {
 			},
 			Data: map[string]string{},
 		},
-		&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      dataresidency.ConfigMapName(),
-				Namespace: system.Namespace(),
-			},
-			Data: map[string]string{},
-		},
+		NewDataresidencyConfigMapFromRegions([]string{}),
 	))
 
 	if c == nil {
