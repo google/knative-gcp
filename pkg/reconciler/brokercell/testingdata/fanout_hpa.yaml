@@ -38,10 +38,10 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 95
+        averageUtilization: 30
   - type: Resource
     resource:
       name: memory
       target:
         type: AverageValue
-        averageValue: 1500Mi
+        averageValue: 1000Mi
