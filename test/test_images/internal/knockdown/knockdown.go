@@ -19,6 +19,7 @@ package knockdown
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -64,10 +65,14 @@ func Main(config Config, kdr Receiver) int {
 		return p.OpenInbound(pctx)
 	})
 	eg.Go(func() error {
+		var done bool
 		for {
 			msg, err := p.Receive(ctx)
 			if err == io.EOF {
-				return nil
+				if done {
+					return nil
+				}
+				return errors.New("knockdown not done")
 			}
 			if err != nil {
 				return err
@@ -78,6 +83,7 @@ func Main(config Config, kdr Receiver) int {
 				return err
 			}
 			if kdr.Knockdown(*e) {
+				done = true
 				pcancel()
 			}
 			msg.Finish(nil)
