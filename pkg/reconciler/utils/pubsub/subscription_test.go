@@ -62,16 +62,17 @@ func TestReconcileSub(t *testing.T) {
 		},
 		{
 			name: "sub already exists, modify config",
-			pre: []reconcilertesting.PubsubAction{reconcilertesting.TopicAndSubWithConfig(topic, sub,
-				&pubsub.RetryPolicy{
+			pre:  []reconcilertesting.PubsubAction{reconcilertesting.TopicAndSub(topic, sub)},
+			wantSubConfig: &pubsub.SubscriptionConfig{
+				RetryPolicy: &pubsub.RetryPolicy{
 					MinimumBackoff: time.Second,
 					MaximumBackoff: time.Second,
 				},
-				&pubsub.DeadLetterPolicy{
-					DeadLetterTopic:     "pubsub://test-dead-letter-topic-id",
+				DeadLetterPolicy: &pubsub.DeadLetterPolicy{
+					DeadLetterTopic:     "some-topic-id",
 					MaxDeliveryAttempts: 10,
 				},
-			)},
+			},
 			wantEvents: []string{
 				`Normal SubscriptionConfigUpdated Updated config for PubSub subscription "test-sub"`,
 			},
@@ -85,6 +86,11 @@ func TestReconcileSub(t *testing.T) {
 			r := NewReconciler(tr.client, tr.recorder)
 			su := &utilspubsubtesting.StatusUpdater{}
 			subConfig := pubsub.SubscriptionConfig{Topic: tr.client.Topic(topic)}
+			if tc.wantSubConfig != nil {
+				subConfig.Labels = tc.wantSubConfig.Labels
+				subConfig.RetryPolicy = tc.wantSubConfig.RetryPolicy
+				subConfig.DeadLetterPolicy = tc.wantSubConfig.DeadLetterPolicy
+			}
 			res, err := r.ReconcileSubscription(context.Background(), sub, subConfig, obj, su)
 
 			tr.verify(t, tc, su, err)

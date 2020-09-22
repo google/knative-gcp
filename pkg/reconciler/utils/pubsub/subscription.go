@@ -66,8 +66,9 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 			}
 			return r.createSubscription(ctx, id, subConfig, obj, updater)
 		}
-		// Update the subscription config in case the retry or dead letter policy changed
-		if !equality.Semantic.DeepEqual(config.RetryPolicy, subConfig.RetryPolicy) || !equality.Semantic.DeepEqual(config.DeadLetterPolicy, subConfig.DeadLetterPolicy) {
+		// Update the subscription config in case the retry or dead letter policy changed. A nil policy indicates no change.
+		if (subConfig.RetryPolicy != nil && !equality.Semantic.DeepEqual(config.RetryPolicy, subConfig.RetryPolicy)) ||
+			(subConfig.DeadLetterPolicy != nil && !equality.Semantic.DeepEqual(config.DeadLetterPolicy, subConfig.DeadLetterPolicy)) {
 			updateSubConfig := pubsub.SubscriptionConfigToUpdate{
 				RetryPolicy:      subConfig.RetryPolicy,
 				DeadLetterPolicy: subConfig.DeadLetterPolicy,

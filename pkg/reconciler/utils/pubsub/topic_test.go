@@ -119,6 +119,7 @@ func verifyTopic(t *testing.T, got *pubsub.Topic) {
 type testCase struct {
 	name               string
 	pre                []reconcilertesting.PubsubAction
+	wantSubConfig      *pubsub.SubscriptionConfig
 	wantEvents         []string
 	wantTopicCondition apis.Condition
 	wantSubCondition   apis.Condition
