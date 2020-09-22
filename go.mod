@@ -45,8 +45,6 @@ replace (
 
 // The following packages were pinned as part of the go module transition and should eventually be
 // unpinned.
-replace github.com/blang/semver => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
-
 replace github.com/jmespath/go-jmespath => github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 
 replace github.com/json-iterator/go => github.com/json-iterator/go v1.1.7
