@@ -54,7 +54,7 @@ func Main(config Config, kdr Receiver) int {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Waiting to receive event (timeout in %s)...", config.Time.String())
+	fmt.Printf("Waiting to receive event (timeout in %v)...\n", config.Time)
 	ctx, cancel := context.WithTimeout(context.Background(), config.Time)
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.Go(func() error { return p.OpenInbound(ctx) })
@@ -62,7 +62,6 @@ func Main(config Config, kdr Receiver) int {
 		for {
 			msg, err := p.Receive(ctx)
 			if err != nil {
-				msg.Finish(err)
 				return err
 			}
 			e, err := binding.ToEvent(ctx, msg)

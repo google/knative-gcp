@@ -37,7 +37,7 @@ type storageReceiver struct {
 func (r *storageReceiver) Knockdown(event cloudevents.Event) bool {
 	// Print out event received to log
 	fmt.Printf("storage target received event\n")
-	fmt.Printf(event.Context.String())
+	fmt.Print(event.Context)
 
 	incorrectAttributes := make(map[string]lib.PropPair)
 
