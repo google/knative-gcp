@@ -10,6 +10,9 @@ import (
 	"context"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/reconciler/broker"
+	"github.com/google/knative-gcp/pkg/reconciler/brokercell"
+	"github.com/google/knative-gcp/pkg/reconciler/deployment"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs"
 	"github.com/google/knative-gcp/pkg/reconciler/events/build"
 	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
@@ -20,6 +23,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/static"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel"
+	"github.com/google/knative-gcp/pkg/reconciler/trigger"
 	"knative.dev/pkg/injection"
 )
 
@@ -50,6 +54,10 @@ func InitializeControllers(ctx context.Context) ([]injection.ControllerConstruct
 	dataresidencyStoreSingleton := &dataresidency.StoreSingleton{}
 	topicConstructor := topic.NewConstructor(iamPolicyManager, storeSingleton, dataresidencyStoreSingleton)
 	channelConstructor := channel.NewConstructor(iamPolicyManager, storeSingleton)
-	v2 := Controllers(constructor, storageConstructor, schedulerConstructor, pubsubConstructor, buildConstructor, staticConstructor, kedaConstructor, topicConstructor, channelConstructor)
+	triggerConstructor := trigger.NewConstructor(dataresidencyStoreSingleton)
+	brokerConstructor := broker.NewConstructor(dataresidencyStoreSingleton)
+	deploymentConstructor := deployment.NewConstructor()
+	brokercellConstructor := brokercell.NewConstructor()
+	v2 := Controllers(constructor, storageConstructor, schedulerConstructor, pubsubConstructor, buildConstructor, staticConstructor, kedaConstructor, topicConstructor, channelConstructor, triggerConstructor, brokerConstructor, deploymentConstructor, brokercellConstructor)
 	return v2, nil
 }

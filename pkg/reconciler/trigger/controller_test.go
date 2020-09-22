@@ -28,8 +28,10 @@ import (
 	"knative.dev/pkg/system"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
-	// Fake injection informers
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
+	. "github.com/google/knative-gcp/pkg/reconciler/testing"
+
+	// Fake injection informers
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger/fake"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
@@ -44,7 +46,7 @@ import (
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
 
-	c := NewController(ctx, configmap.NewStaticWatcher(
+	c := NewConstructor(&dataresidency.StoreSingleton{})(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      logging.ConfigMapName(),
@@ -66,13 +68,7 @@ func TestNew(t *testing.T) {
 			},
 			Data: map[string]string{},
 		},
-		&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      dataresidency.ConfigMapName(),
-				Namespace: system.Namespace(),
-			},
-			Data: map[string]string{},
-		},
+		NewDataresidencyConfigMapFromRegions([]string{}),
 	))
 
 	if c == nil {
