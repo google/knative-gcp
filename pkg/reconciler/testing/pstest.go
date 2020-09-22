@@ -197,8 +197,8 @@ func getPubsubClient(r *rtesting.TableRow) *pubsub.Client {
 	return r.OtherTestData["_psclient"].(*pubsub.Client)
 }
 
-func TestPubsubClient(ctx context.Context, projectID string) (*pubsub.Client, func()) {
-	srv := pstest.NewServer()
+func TestPubsubClient(ctx context.Context, projectID string, opts ...pstest.ServerReactorOption) (*pubsub.Client, func()) {
+	srv := pstest.NewServer(opts...)
 	conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
 	if err != nil {
 		panic(fmt.Errorf("failed to dial test pubsub connection: %v", err))

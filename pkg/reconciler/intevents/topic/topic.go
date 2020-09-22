@@ -47,7 +47,6 @@ import (
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic/resources"
@@ -81,9 +80,11 @@ type Reconciler struct {
 	publisherImage string
 	tracingConfig  *tracingconfig.Config
 
-	// createClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
-	// This is needed so that we can inject a mock client for UTs purposes.
-	createClientFn gpubsub.CreateFn
+	// pubsubClient is used as the Pubsub client when present, this
+	// is currently for testing only as source allows project id setting
+	// per resource, so it is impossible to create it ahead, though we
+	// can expand this to be a cache in the future if needed.
+	pubsubClient *pubsub.Client
 }
 
 // Check that our Reconciler implements Interface.
@@ -141,13 +142,16 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1.Topic) error 
 
 	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
 	// pointing at a credential file.
-	client, err := r.createClientFn(ctx, topic.Status.ProjectID)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
+	client := r.pubsubClient
+	if client == nil {
+		var err error
+		client, err = pubsub.NewClient(ctx, topic.Status.ProjectID)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
+			return err
+		}
+		defer client.Close()
 	}
-	defer client.Close()
-
 	t := client.Topic(topic.Spec.Topic)
 	exists, err := t.Exists(ctx)
 	if err != nil {
@@ -198,12 +202,16 @@ func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1.Topic) error {
 
 	// At this point the project ID should have been populated in the status.
 	// Querying Pub/Sub as the topic could have been deleted outside the cluster (e.g, through gcloud).
-	client, err := r.createClientFn(ctx, topic.Status.ProjectID)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
+	client := r.pubsubClient
+	if client == nil {
+		var err error
+		client, err = pubsub.NewClient(ctx, topic.Status.ProjectID)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
+			return err
+		}
+		defer client.Close()
 	}
-	defer client.Close()
 
 	t := client.Topic(topic.Status.TopicID)
 	exists, err := t.Exists(ctx)
