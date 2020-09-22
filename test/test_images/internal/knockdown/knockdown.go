@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"time"
@@ -55,12 +56,19 @@ func Main(config Config, kdr Receiver) int {
 	}
 
 	fmt.Printf("Waiting to receive event (timeout in %v)...\n", config.Time)
-	ctx, cancel := context.WithTimeout(context.Background(), config.Time)
-	eg, ctx := errgroup.WithContext(ctx)
-	eg.Go(func() error { return p.OpenInbound(ctx) })
+	eg, ctx := errgroup.WithContext(context.Background())
+	pctx, pcancel := context.WithTimeout(ctx, config.Time)
+	ctx, cancel := context.WithCancel(ctx)
+	eg.Go(func() error {
+		defer cancel()
+		return p.OpenInbound(pctx)
+	})
 	eg.Go(func() error {
 		for {
 			msg, err := p.Receive(ctx)
+			if err == io.EOF {
+				return nil
+			}
 			if err != nil {
 				return err
 			}
@@ -69,12 +77,10 @@ func Main(config Config, kdr Receiver) int {
 				msg.Finish(err)
 				return err
 			}
-			done := kdr.Knockdown(*e)
-			msg.Finish(nil)
-			if done {
-				cancel()
-				return nil
+			if kdr.Knockdown(*e) {
+				pcancel()
 			}
+			msg.Finish(nil)
 		}
 	})
 	err = eg.Wait()
