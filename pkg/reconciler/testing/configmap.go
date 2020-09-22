@@ -17,8 +17,10 @@ limitations under the License.
 package testing
 
 import (
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/system"
 )
 
 // ConfigMapOption enables further configuration of a ConfigMap.
@@ -65,5 +67,30 @@ func WithConfigMapBinaryDataEntry(key string, value []byte) ConfigMapOption {
 			cm.BinaryData = make(map[string][]byte)
 		}
 		cm.BinaryData[key] = value
+	}
+}
+
+// NewDataresidencyConfigMapFromRegions Create new data residency configuration map
+// from list of allowed persistence regions
+func NewDataresidencyConfigMapFromRegions(regions []string) *corev1.ConfigMap {
+	// Note that the data is in yaml, so no tab is allowed, use spaces instead.
+	configData := `
+  clusterDefaults:    
+    messagestoragepolicy.allowedpersistenceregions:`
+	if regions == nil || len(regions) == 0 {
+		configData += " []"
+	} else {
+		for _, region := range regions {
+			configData += "\n    - " + region
+		}
+	}
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dataresidency.ConfigMapName(),
+			Namespace: system.Namespace(),
+		},
+		Data: map[string]string{
+			"default-dataresidency-config": configData,
+		},
 	}
 }

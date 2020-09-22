@@ -35,6 +35,7 @@ import (
 	"github.com/google/wire"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	"google.golang.org/api/support/bundler"
 	grpccode "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/types"
@@ -174,6 +175,8 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 			statusCode = nethttp.StatusNotFound
 		case errors.Is(res, ErrNotReady):
 			statusCode = nethttp.StatusServiceUnavailable
+		case errors.Is(res, bundler.ErrOverflow):
+			statusCode = nethttp.StatusTooManyRequests
 		case grpcstatus.Code(res) == grpccode.PermissionDenied:
 			nethttp.Error(response, deniedErrMsg, statusCode)
 			return
