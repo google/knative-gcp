@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	avgCPUUtilizationFanout  int32 = 30
+	avgCPUUtilizationFanout  int32 = 50
 	avgCPUUtilizationIngress int32 = 95
 	avgCPUUtilizationRetry   int32 = 95
 	// The limit we set (for Fanout and Retry) is 3000Mi which is mostly used
