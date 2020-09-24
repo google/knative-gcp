@@ -54,7 +54,7 @@ type envConfig struct {
 
 	// MaxOutstandingBytes is the maximum size of unprocessed messages (unacknowledged but not yet expired).
 	// Default is 800Mb (~763Mi)
-	MaxOutstandingBytes int `envconfig:"MAX_OUTSTANDING_BYTES" default:"799999525"`
+	MaxOutstandingBytes int `envconfig:"MAX_OUTSTANDING_BYTES" default:"800000000"`
 
 	// Max to 10m.
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
