@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	avgCPUUtilizationFanout  int32 = 95
+	avgCPUUtilizationFanout  int32 = 50
 	avgCPUUtilizationIngress int32 = 95
 	avgCPUUtilizationRetry   int32 = 95
 	// The limit we set (for Fanout and Retry) is 3000Mi which is mostly used
@@ -31,7 +31,7 @@ const (
 	// Here we only set half of the limit so that in case of surging memory
 	// usage, HPA could have enough time to kick in.
 	// See: https://github.com/google/knative-gcp/issues/1265
-	avgMemoryUsageFanout  string = "1500Mi"
+	avgMemoryUsageFanout  string = "1000Mi"
 	avgMemoryUsageIngress string = "1500Mi"
 	avgMemoryUsageRetry   string = "1500Mi"
 	cpuRequestFanout      string = "1500m"
@@ -40,7 +40,7 @@ const (
 	cpuLimitFanout        string = ""
 	cpuLimitIngress       string = ""
 	cpuLimitRetry         string = ""
-	memoryRequestFanout   string = "500Mi"
+	memoryRequestFanout   string = "3000Mi"
 	memoryRequestIngress  string = "2000Mi"
 	memoryRequestRetry    string = "500Mi"
 	memoryLimitFanout     string = "3000Mi"
