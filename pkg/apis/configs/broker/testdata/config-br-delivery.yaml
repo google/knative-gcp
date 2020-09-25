@@ -17,8 +17,6 @@ kind: ConfigMap
 metadata:
   name: config-br-delivery
   namespace: cloud-run-events
-  annotations:
-    knative.dev/example-checksum: "8a0f7eaf"
 data:
   default-br-delivery-config: |
     clusterDefaults:
