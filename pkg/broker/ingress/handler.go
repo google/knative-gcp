@@ -47,6 +47,9 @@ const (
 	// TODO(liu-cong) configurable timeout
 	decoupleSinkTimeout = 30 * time.Second
 
+	// Limit for request payload in bytes (100Mb)
+	maxRequestBodyBytes = 100000000
+
 	// EventArrivalTime is used to access the metadata stored on a
 	// CloudEvent to measure the time difference between when an event is
 	// received on a broker and before it is dispatched to the trigger function.
@@ -119,13 +122,18 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		response.WriteHeader(nethttp.StatusOK)
 		return
 	}
-
+	
 	ctx := request.Context()
 	ctx = logging.WithLogger(ctx, h.logger)
 	ctx = tracing.WithLogging(ctx, trace.FromContext(ctx))
 	logging.FromContext(ctx).Debug("Serving http", zap.Any("headers", request.Header))
 	if request.Method != nethttp.MethodPost {
 		response.WriteHeader(nethttp.StatusMethodNotAllowed)
+		return
+	}
+
+	if request.ContentLength > maxRequestBodyBytes {
+		response.WriteHeader(nethttp.StatusRequestEntityTooLarge)
 		return
 	}
 

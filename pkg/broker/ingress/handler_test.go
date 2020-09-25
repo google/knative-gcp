@@ -52,6 +52,7 @@ import (
 	logtest "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
+	"math/rand"
 
 	_ "knative.dev/pkg/metrics/testing"
 )
@@ -174,6 +175,13 @@ func TestHandler(t *testing.T) {
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
 			wantCode: nethttp.StatusMethodNotAllowed,
+		},
+		{
+			name:     "an event with a very large payload",
+			method:   "POST",
+			path:     "/ns1/broker1",
+			event:    createTestEventWithPayloadSize("test-event", 110000000),
+			wantCode: nethttp.StatusRequestEntityTooLarge,
 		},
 		{
 			name:     "malformed path",
@@ -464,6 +472,14 @@ func createTestEvent(id string) *cloudevents.Event {
 	event.SetSource("test-source")
 	event.SetType(eventType)
 	return &event
+}
+
+func createTestEventWithPayloadSize(id string, payloadSizeBytes int) *cloudevents.Event {
+	testEvent := createTestEvent(id)
+	payload := make([]byte, payloadSizeBytes)
+	rand.Read(payload)
+	testEvent.SetData("application/octet-stream", payload)
+	return testEvent
 }
 
 // createRequest creates an http request from the test case. If event is specified, it converts the event to a request.
