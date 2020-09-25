@@ -28,7 +28,7 @@ The yamls create the following resources:
 - 2 Triggers `hello-display` and `goodbye-display` that points to the 2
   consumers, respectively. `hello-display` filters events with `type: greeting`
   attribute and `goodbye-display` filters events with `source: sendoff`
-  atribute.
+  attribute.
 
 Verify the broker is ready:
 
