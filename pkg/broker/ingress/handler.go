@@ -122,7 +122,6 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		response.WriteHeader(nethttp.StatusOK)
 		return
 	}
-	
 	ctx := request.Context()
 	ctx = logging.WithLogger(ctx, h.logger)
 	ctx = tracing.WithLogging(ctx, trace.FromContext(ctx))

@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"math/rand"
+
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
@@ -52,7 +54,6 @@ import (
 	logtest "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
-	"math/rand"
 
 	_ "knative.dev/pkg/metrics/testing"
 )
