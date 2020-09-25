@@ -21,7 +21,7 @@ metadata:
     events.cloud.google.com/release: devel
   annotations:
     events.cloud.google.com/initialized: "false"
-    knative.dev/example-checksum: 6642f8a8
+    knative.dev/example-checksum: 529ddd38
 data:
   default-auth-config: |
     clusterDefaults:
@@ -48,7 +48,7 @@ data:
     # GCP auth to apply to all objects that require GCP auth but,
     # do not specify it. This is expected to be Channels and Sources.
     #
-    # When determing the defaults to use for a custom object in a specific
+    # When determining the defaults to use for a custom object in a specific
     # namespace, the precedence rules are:
     # If the custom object's spec specifies the GCP auth to use, use that.
     # If not and that namespace is in the `namespaceDefaults` key, then use the

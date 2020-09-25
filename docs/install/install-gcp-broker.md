@@ -164,14 +164,14 @@ All GCP Brokers share the following data plane components:
     [main.go](https://github.com/google/knative-gcp/blob/master/cmd/broker/ingress/main.go)
   - Deployment: It contains a Service and Deployment, both called
     `broker-ingress` in the `cloud-run-events` namespace.
-- Fanout. Fanout continously pull events from decouple topics for all Brokers,
+- Fanout. Fanout continuously pull events from decouple topics for all Brokers,
   applies Trigger filters, and sends events to consumers. For failed deliveries,
   it sends the events to the corresponding retry topic.
   - Code:
     [main.go](https://github.com/google/knative-gcp/blob/master/cmd/broker/fanout/main.go)
   - Deployment: It a deployment called `broker-fanout` in the `cloud-run-events`
     namespace.
-- Retry. Retry continously resends events that have failed in delivery to the
+- Retry. Retry continuously resends events that have failed in delivery to the
   consumers.
   - Code:
     [main.go](https://github.com/google/knative-gcp/blob/master/cmd/broker/retry/main.go)
