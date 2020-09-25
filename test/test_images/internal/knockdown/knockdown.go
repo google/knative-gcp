@@ -83,6 +83,12 @@ func Main(config Config, kdr Receiver) int {
 				return err
 			}
 			if kdr.Knockdown(*e) {
+				// Knockdown succeeded, mark done and
+				// continue until reaching EOF. This
+				// is necessary to allow the HTTP
+				// receiver to process any queued
+				// messages so that it can shutdown
+				// gracefully.
 				done = true
 				pcancel()
 			}
