@@ -34,11 +34,13 @@ function export_variable() {
   if (( ! IS_PROW )); then
     readonly CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
     readonly PUBSUB_SERVICE_ACCOUNT_EMAIL="${PUBSUB_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
+    readonly DATA_PLANE_SERVICE_ACCOUNT_EMAIL=PUBSUB_SERVICE_ACCOUNT_EMAIL
     readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
   else
     readonly CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
     # Get the PROW service account.
     readonly PROW_PROJECT_NAME=$(cut -d'.' -f1 <<< "$(cut -d'@' -f2 <<< "${PROW_SERVICE_ACCOUNT_EMAIL}")")
+    readonly DATA_PLANE_SERVICE_ACCOUNT_EMAIL="cloud-run-events-source@${PROW_PROJECT_NAME}.iam.gserviceaccount.com"
     readonly PUBSUB_SERVICE_ACCOUNT_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
     readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
   fi
@@ -73,7 +75,7 @@ function control_plane_setup() {
   else
     # If the tests are run on Prow, clean up the member for roles/iam.workloadIdentityUser before running it.
     members=$(gcloud iam service-accounts get-iam-policy \
-      --project="${PROW_PROJECT_NAME}" "${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}" \
+      --project="${PROW_PROJECT_NAME}" "${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}" \
       --format="value(bindings.members)" \
       --filter="bindings.role:roles/iam.workloadIdentityUser" \
       --flatten="bindings[].members")
@@ -84,7 +86,7 @@ function control_plane_setup() {
         gcloud iam service-accounts remove-iam-policy-binding \
           --role roles/iam.workloadIdentityUser \
           --member "${member_name}" \
-          --project "${PROW_PROJECT_NAME}" "${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}"
+          --project "${PROW_PROJECT_NAME}" "${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}"
           # Add a sleep time between each get-set iam-policy-binding loop to avoid concurrency issue. Sleep time is based on the SLO.
           sleep 10
       fi
@@ -150,7 +152,7 @@ function create_private_key_for_pubsub_service_account {
 
 function gcp_auth_setup() {
   # Update config-gcp-auth to use workload identity as default credential setup.
-  sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/PUBSUB-SERVICE-ACCOUNT/${PUBSUB_SERVICE_ACCOUNT_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
+  sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/PUBSUB-SERVICE-ACCOUNT/${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
 }
 
 # Create a cluster with Workload Identity enabled.
