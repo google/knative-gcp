@@ -17,6 +17,7 @@ limitations under the License.
 package dataresidency
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -50,10 +51,8 @@ func NewDefaultsConfigFromMap(data map[string]string) (*Defaults, error) {
 
 	// Parse out the data residency configuration.
 	value, present := data[defaulterKey]
-	// Data residency configuration is not required, in which case it will mean
-	// allow all regions, so we simply use an empty one
 	if !present || value == "" {
-		return nc, nil
+		return nil, fmt.Errorf("ConfigMap is missing (or empty) key: %q : %v", defaulterKey, data)
 	}
 	if err := parseEntry(value, nc); err != nil {
 		return nil, fmt.Errorf("failed to parse the entry: %s", err)
@@ -66,5 +65,9 @@ func parseEntry(entry string, out interface{}) error {
 	if err != nil {
 		return fmt.Errorf("ConfigMap's value could not be converted to JSON: %s : %v", err, entry)
 	}
-	return json.Unmarshal(j, &out)
+	// We are doing extra check for typo here to make sure there is no typo in the data
+	// residency configuration.
+	d := json.NewDecoder(bytes.NewReader(j))
+	d.DisallowUnknownFields()
+	return d.Decode(out)
 }

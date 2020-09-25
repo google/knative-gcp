@@ -22,6 +22,7 @@ import (
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/configs/broker"
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/events"
 	eventsv1 "github.com/google/knative-gcp/pkg/apis/events/v1"
@@ -153,6 +154,8 @@ func newValidationAdmissionController(ctx context.Context, cmw configmap.Watcher
 	)
 }
 
+// NewConfigValidationController creates a new admission controller to validate configuration
+// maps, which will be used when applying new configmap or editing existing configmap.
 func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 	return configmaps.NewAdmissionController(ctx,
 
@@ -170,6 +173,7 @@ func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *co
 			leaderelection.ConfigMapName(): leaderelection.NewConfigFromConfigMap,
 			gcpauth.ConfigMapName():        gcpauth.NewDefaultsConfigFromConfigMap,
 			broker.ConfigMapName():         broker.NewDefaultsConfigFromConfigMap,
+			dataresidency.ConfigMapName():  dataresidency.NewDefaultsConfigFromConfigMap,
 		},
 	)
 }

@@ -104,13 +104,9 @@ func TestComputeAllowedPersistenceRegions(t *testing.T) {
 			expectedRegions:    []string{"us-east1"},
 		},
 	}
-
 	for _, tc := range testCases {
 		t.Run(tc.ns, func(t *testing.T) {
-			defaults, err := NewDefaultsConfigFromMap(map[string]string{})
-			if err != nil {
-				t.Fatalf("NewDefaultsConfigFromConfigMap(empty) = %v", err)
-			}
+			defaults := &Defaults{}
 			defaults.ClusterDefaults.AllowedPersistenceRegions = tc.dsRegions
 			topicConfig := &pubsub.TopicConfig{}
 			topicConfig.MessageStoragePolicy.AllowedPersistenceRegions = tc.topicConfigRegions
@@ -122,7 +118,7 @@ func TestComputeAllowedPersistenceRegions(t *testing.T) {
 	}
 }
 
-func TestNewDefaultsConfigFromConfigMapEmpty(t *testing.T) {
+func TestNewDefaultsConfigFromConfigMapWithKeyError(t *testing.T) {
 	testCases := map[string]struct {
 		name   string
 		config *corev1.ConfigMap
@@ -147,13 +143,26 @@ func TestNewDefaultsConfigFromConfigMapEmpty(t *testing.T) {
 				},
 			},
 		},
+		"wrong format": {
+			config: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "cloud-run-events",
+					Name:      configName,
+				},
+				Data: map[string]string{
+					defaulterKey: `
+  clusterDefaults:
+    typo.allowedpersistenceregions: []`,
+				},
+			},
+		},
 	}
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			_, err := NewDefaultsConfigFromConfigMap(tc.config)
-			if err != nil {
-				t.Errorf("Empty value or no key should pass")
+			if err == nil {
+				t.Fatalf("Expected an error, actually nil")
 			}
 		})
 	}
