@@ -47,8 +47,8 @@ const (
 	// TODO(liu-cong) configurable timeout
 	decoupleSinkTimeout = 30 * time.Second
 
-	// Limit for request payload in bytes (100Mb)
-	maxRequestBodyBytes = 100000000
+	// Limit for request payload in bytes (10Mb -- corresponds to message size limit on PubSub as of 09/2020)
+	maxRequestBodyBytes = 10000000
 
 	// EventArrivalTime is used to access the metadata stored on a
 	// CloudEvent to measure the time difference between when an event is
