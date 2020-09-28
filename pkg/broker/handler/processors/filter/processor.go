@@ -68,7 +68,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return p.Next().Process(ctx, event)
 	}
 
-	if p.passFilter(ctx, target.FilterAttributes, event) {
+	if PassFilter(ctx, target.FilterAttributes, event) {
 		return p.Next().Process(ctx, event)
 	}
 	logging.FromContext(ctx).Debug("event does not pass filter for target", zap.Any("target", target))
@@ -93,7 +93,9 @@ func startSpan(ctx context.Context, trigger types.NamespacedName, event *event.E
 	return tracing.WithLogging(ctx, span), span
 }
 
-func (p *Processor) passFilter(ctx context.Context, attrs map[string]string, event *event.Event) bool {
+// PassFilter checks given event against attributes available in the attrs map to determine
+// if the event should pass or not.
+func PassFilter(ctx context.Context, attrs map[string]string, event *event.Event) bool {
 	// Set standard context attributes. The attributes available may not be
 	// exactly the same as the attributes defined in the current version of the
 	// CloudEvents spec.

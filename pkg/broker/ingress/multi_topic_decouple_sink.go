@@ -32,6 +32,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/extensions"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
 	"github.com/google/knative-gcp/pkg/logging"
 )
 
@@ -69,6 +70,12 @@ type multiTopicDecoupleSink struct {
 
 // Send sends incoming event to its corresponding pubsub topic based on which broker it belongs to.
 func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.NamespacedName, event cev2.Event) protocol.Result {
+	// Check to see if there are any triggers interested in this event. If not, no need to send this
+	// to the decouple topic.
+	if !m.hasTrigger(ctx, &event) {
+		return nil
+	}
+
 	topic, err := m.getTopicForBroker(ctx, broker)
 	if err != nil {
 		trace.FromContext(ctx).Annotate(
@@ -88,6 +95,22 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.Namespac
 
 	_, err = topic.Publish(ctx, msg).Get(ctx)
 	return err
+}
+
+// hasTrigger checks given event against all targets to see if it will pass any of their filters.
+// If one is fouund, hasTrigger returns true.
+func (m *multiTopicDecoupleSink) hasTrigger(ctx context.Context, event *cev2.Event) bool {
+	var hasTrigger bool
+	m.brokerConfig.RangeAllTargets(func(target *config.Target) bool {
+		if filter.PassFilter(ctx, target.FilterAttributes, event) {
+			hasTrigger = true
+			return true
+		}
+
+		return true
+	})
+
+	return hasTrigger
 }
 
 // getTopicForBroker finds the corresponding decouple topic for the broker from the mounted broker configmap volume.
