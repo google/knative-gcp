@@ -238,6 +238,18 @@ func TestAllCasesTrigger(t *testing.T) {
 					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123", "cre-tgr_testnamespace_test-trigger_abc123"),
 				},
 			},
+			// This WantStatusUpdates should be deleted once the following TODO is finished.
+			// TODO(https://github.com/knative/pkg/issues/1149) Add a FilterKind to genreconciler so it will
+			// skip a trigger if it's not pointed to a gcp broker and doesn't have googlecloud finalizer string.
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerFinalizers(finalizerName),
+					WithTriggerSetDefaults,
+					WithInitTriggerConditions,
+					WithTriggerTopicReady,
+				),
+			}},
 		},
 		{
 			Name: "Broker is not ready",
