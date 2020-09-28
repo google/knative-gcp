@@ -137,9 +137,9 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	t2 := helper.GenerateTarget(ctx, t, b1.Key(), map[string]string{"subject": "foo"})
 	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
 	expectMetrics := reportertest.NewExpectDelivery()
-	expectMetrics.AddTrigger(t, t1.Name, wantTags(t1))
-	expectMetrics.AddTrigger(t, t2.Name, wantTags(t2))
-	expectMetrics.AddTrigger(t, t3.Name, wantTags(t3))
+	expectMetrics.AddTrigger(t, trigger(t1), wantTags(t1))
+	expectMetrics.AddTrigger(t, trigger(t2), wantTags(t2))
+	expectMetrics.AddTrigger(t, trigger(t3), wantTags(t3))
 
 	signal := make(chan struct{})
 	syncPool, err := InitializeTestFanoutPool(
@@ -194,8 +194,8 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.Expect200(t, t1.Name)
-		expectMetrics.Expect200(t, t2.Name)
+		expectMetrics.Expect200(t, trigger(t1))
+		expectMetrics.Expect200(t, trigger(t2))
 		expectMetrics.Verify(t)
 	})
 
@@ -237,8 +237,8 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.Expect200(t, t1.Name)
-		expectMetrics.Expect200(t, t2.Name)
+		expectMetrics.Expect200(t, trigger(t1))
+		expectMetrics.Expect200(t, trigger(t2))
 		expectMetrics.Verify(t)
 	})
 
@@ -271,7 +271,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.Expect200(t, t3.Name)
+		expectMetrics.Expect200(t, trigger(t3))
 		expectMetrics.Verify(t)
 	})
 
@@ -292,8 +292,8 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.ExpectProcessing(t, t3.Name)
-		expectMetrics.ExpectDelivery(t, t3.Name, 500)
+		expectMetrics.ExpectProcessing(t, trigger(t3))
+		expectMetrics.ExpectDelivery(t, trigger(t3), 500)
 		expectMetrics.Verify(t)
 	})
 
@@ -333,9 +333,9 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.ExpectProcessing(t, t1.Name)
-		expectMetrics.ExpectTimeout(t, t1.Name)
-		expectMetrics.Expect200(t, t2.Name)
+		expectMetrics.ExpectProcessing(t, trigger(t1))
+		expectMetrics.ExpectTimeout(t, trigger(t1))
+		expectMetrics.Expect200(t, trigger(t2))
 		expectMetrics.Verify(t)
 	})
 
@@ -367,7 +367,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.Expect200(t, t3.Name)
+		expectMetrics.Expect200(t, trigger(t3))
 		expectMetrics.Verify(t)
 	})
 
@@ -389,7 +389,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectMetrics.Expect200(t, t3.Name)
+		expectMetrics.Expect200(t, trigger(t3))
 		expectMetrics.Verify(t)
 	})
 }
@@ -418,11 +418,16 @@ func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 
 func wantTags(target *config.Target) map[string]string {
 	return map[string]string{
-		"trigger_name":   target.Name,
-		"broker_name":    target.Broker,
-		"namespace_name": target.Namespace,
 		"filter_type":    "any",
 		"pod_name":       fanoutPod,
 		"container_name": fanoutContainer,
+	}
+}
+
+func trigger(target *config.Target) reportertest.Trigger {
+	return reportertest.Trigger{
+		Namespace: target.Namespace,
+		Trigger:   target.Name,
+		Broker:    target.Broker,
 	}
 }

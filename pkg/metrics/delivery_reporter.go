@@ -23,11 +23,13 @@ import (
 	"time"
 
 	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/metrics/metricskey"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 )
@@ -177,12 +179,15 @@ func AddRespStatusCodeTags(ctx context.Context, responseCode int) (context.Conte
 }
 
 func AddTargetTags(ctx context.Context, target *config.Target) (context.Context, error) {
-	return tag.New(ctx,
-		tag.Insert(NamespaceNameKey, target.Namespace),
-		tag.Insert(BrokerNameKey, target.Broker),
-		tag.Insert(TriggerNameKey, target.Name),
-		tag.Insert(TriggerFilterTypeKey, filterTypeValue(target.FilterAttributes["type"])),
-	)
+	ctx = metricskey.WithResource(ctx, resource.Resource{
+		Type: metricskey.ResourceTypeKnativeTrigger,
+		Labels: map[string]string{
+			metricskey.LabelNamespaceName: target.GetNamespace(),
+			metricskey.LabelTriggerName:   target.GetName(),
+			metricskey.LabelBrokerName:    target.GetBroker(),
+		},
+	})
+	return tag.New(ctx, tag.Insert(TriggerFilterTypeKey, filterTypeValue(target.FilterAttributes["type"])))
 }
 
 func getStartDeliveryProcessingTime(ctx context.Context) (time.Time, error) {
