@@ -127,7 +127,7 @@ func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 
 // deploymentTemplate creates a template for data plane deployments.
 func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deployment {
-	annotation :=  map[string]string{
+	annotation := map[string]string{
 		"sidecar.istio.io/inject": strconv.FormatBool(args.AllowIstioSidecar),
 	}
 	if args.RolloutRestartTime != "" {
@@ -151,7 +151,7 @@ func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deploy
 			MinReadySeconds: 60,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: Labels(args.BrokerCell.Name, args.ComponentName),
+					Labels:      Labels(args.BrokerCell.Name, args.ComponentName),
 					Annotations: annotation,
 				},
 				Spec: corev1.PodSpec{

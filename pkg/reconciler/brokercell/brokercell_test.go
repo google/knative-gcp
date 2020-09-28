@@ -883,7 +883,7 @@ func TestAllCases(t *testing.T) {
 				},
 			},
 			WantEvents: []string{brokerCellGCEvent},
-		},{
+		}, {
 			Name: "Brokercell has restart time annotation, deployments are updated with restart time annotation successfully",
 			Key:  testKey,
 			Objects: []runtime.Object{
