@@ -32,6 +32,11 @@ const (
 	// RetryName is the name used for the retry container.
 	RetryName          = "retry"
 	BrokerCellLabelKey = "brokerCell"
+
+	// the annotation key of the time to trigger rollout restart of the deployments
+	IngressRestartTimeAnnotationKey = "events.cloud.google.com/ingressRestartedAt"
+	FanoutRestartTimeAnnotationKey = "events.cloud.google.com/fanoutRestartedAt"
+	RetryRestartTimeAnnotationKey = "events.cloud.google.com/retryRestartedAt"
 )
 
 var (
@@ -50,6 +55,7 @@ type Args struct {
 	CPULimit           string
 	MemoryRequest      string
 	MemoryLimit        string
+	RolloutRestartTime string
 }
 
 // IngressArgs are the arguments to create a Broker's ingress Deployment.
