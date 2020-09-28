@@ -63,6 +63,10 @@ func Controllers(
 	kedaPullsubscriptionController kedapullsubscription.Constructor,
 	topicController topic.Constructor,
 	channelController channel.Constructor,
+	triggerController trigger.Constructor,
+	brokerController broker.Constructor,
+	deploymentController deployment.Constructor,
+	brokercellController brokercell.Constructor,
 ) []injection.ControllerConstructor {
 	return []injection.ControllerConstructor{
 		injection.ControllerConstructor(auditlogsController),
@@ -74,10 +78,10 @@ func Controllers(
 		injection.ControllerConstructor(kedaPullsubscriptionController),
 		injection.ControllerConstructor(topicController),
 		injection.ControllerConstructor(channelController),
-		deployment.NewController,
-		broker.NewController,
-		trigger.NewController,
-		brokercell.NewController,
+		injection.ControllerConstructor(triggerController),
+		injection.ControllerConstructor(brokerController),
+		injection.ControllerConstructor(deploymentController),
+		injection.ControllerConstructor(brokercellController),
 	}
 }
 

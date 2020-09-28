@@ -3,15 +3,15 @@ module github.com/google/knative-gcp
 go 1.14
 
 require (
-	cloud.google.com/go v0.62.0
+	cloud.google.com/go v0.65.0
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
 	cloud.google.com/go/pubsub v1.6.1
 	cloud.google.com/go/storage v1.10.0
-	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
-	github.com/cloudevents/sdk-go/v2 v2.2.0
+	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200806165906-9ae0708e27fa
+	github.com/cloudevents/sdk-go/v2 v2.2.1-0.20200729225950-2d83dc10864e
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.4.2
-	github.com/google/go-cmp v0.5.1
+	github.com/google/go-cmp v0.5.2
 	github.com/google/uuid v1.1.1
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
@@ -21,17 +21,17 @@ require (
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	google.golang.org/api v0.29.0
-	google.golang.org/genproto v0.0.0-20200731012542-8145dea6a485
-	google.golang.org/grpc v1.31.0
+	google.golang.org/api v0.31.0
+	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
+	google.golang.org/grpc v1.31.1
 	google.golang.org/protobuf v1.25.0
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.17.1-0.20200918121244-5508e48a03a8
-	knative.dev/pkg v0.0.0-20200917214745-ec3e2dd4bd19
-	knative.dev/serving v0.17.1-0.20200918061744-7472a494a978
-	knative.dev/test-infra v0.0.0-20200918021244-22269d552166 // indirect
+	knative.dev/eventing v0.17.1-0.20200925062844-0c96da56304d
+	knative.dev/pkg v0.0.0-20200925073843-7b99ff5a0bfa
+	knative.dev/serving v0.17.1-0.20200925091543-4a6c9a47f96b
+	knative.dev/test-infra v0.0.0-20200924233740-ac857351ea07 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -46,8 +46,6 @@ replace (
 
 // The following packages were pinned as part of the go module transition and should eventually be
 // unpinned.
-replace github.com/blang/semver => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
-
 replace github.com/jmespath/go-jmespath => github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 
 replace github.com/json-iterator/go => github.com/json-iterator/go v1.1.7

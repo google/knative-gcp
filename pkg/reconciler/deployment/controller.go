@@ -26,6 +26,7 @@ import (
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -44,6 +45,15 @@ const (
 	deploymentName = "controller"
 	envKey         = "GOOGLE_APPLICATION_CREDENTIALS"
 )
+
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a Deployment controller.
+func NewConstructor() Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return NewController(ctx, cmw)
+	}
+}
 
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events.

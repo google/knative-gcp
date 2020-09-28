@@ -19,12 +19,17 @@ package knockdown
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
+	"github.com/cloudevents/sdk-go/v2/protocol/http"
+	"golang.org/x/sync/errgroup"
 )
 
 // Config is a common envconfig filled struct that includes the common options for knockdown
@@ -39,92 +44,90 @@ type Config struct {
 	Time time.Duration `envconfig:"TIME" required:"true"`
 }
 
-// Main should be called by the process' main function. It will run the knockdown test. The return
-// value MUST be used in os.Exit().
-func Main(config Config, kdr Receiver) int {
-	// Note that this only accepts TraceContext style tracing, not B3 style tracing. This is being
-	// done here in test code so that we are effectively asserting that our components output in
-	// TraceContext format. For all production code, kncloudevents.NewDefaultClient() should be used
-	// instead.
-	client, err := cloudevents.NewDefaultClient()
-	if err != nil {
-		panic(err)
-	}
-
-	r := receiver{
-		kdr: kdr,
-	}
-
-	var ctx context.Context
-	ctx, r.cancel = context.WithCancel(context.Background())
-
-	timer := time.NewTimer(config.Time)
-	defer timer.Stop()
-	go func() {
-		<-timer.C
-		// Write the termination message if time out
-		fmt.Printf("Time out waiting for the knock down event(s).")
-		if err := r.writeFailedTerminationMessage(); err != nil {
-			fmt.Printf("Failed to write termination message, %v\n", err)
-		}
-		r.cancel()
-	}()
-
-	fmt.Printf("Waiting to receive event (timeout in %s)...", config.Time.String())
-
-	// Note, we assume that closing the context will gracefully shutdown the receiver. Having looked
-	// at the current implementation, this is true. But nothing guarantees it in the future.
-	if err := client.StartReceiver(ctx, r.Receive); err != nil {
-		log.Fatal(err)
-	}
-
-	return 0
-}
-
-type receiver struct {
-	kdr Receiver
-
-	// cancel will cancel the main receiver's context. Calling this will cause Main() to become
-	// unblocked and call os.Exit(0). In general, write{Successful,Failed}TerminationMessage should be
-	// called first.
-	cancel func()
-}
-
 type Receiver interface {
 	Knockdown(event cloudevents.Event) bool
 }
 
-func (r *receiver) Receive(event cloudevents.Event) {
-	done := r.kdr.Knockdown(event)
-	if done {
-		if err := r.writeSuccessfulTerminationMessage(); err != nil {
-			fmt.Printf("Failed to write termination message, %s.\n", err.Error())
-		}
-		r.cancel()
-		return
+// Main should be called by the process' main function. It will run the knockdown test. The return
+// value MUST be used in os.Exit().
+func Main(config Config, kdr Receiver) int {
+	p, err := http.New()
+	if err != nil {
+		log.Fatal(err)
 	}
-	fmt.Printf("Event did not knockdown the process.")
+
+	fmt.Printf("Waiting to receive event (timeout in %v)...\n", config.Time)
+	eg, ctx := errgroup.WithContext(context.Background())
+	pctx, pcancel := context.WithTimeout(ctx, config.Time)
+	ctx, cancel := context.WithCancel(ctx)
+	eg.Go(func() error {
+		defer cancel()
+		return p.OpenInbound(pctx)
+	})
+	eg.Go(func() error {
+		var done bool
+		for {
+			msg, err := p.Receive(ctx)
+			if err == io.EOF {
+				if done {
+					return nil
+				}
+				return errors.New("knockdown not done")
+			}
+			if err != nil {
+				return err
+			}
+			e, err := binding.ToEvent(ctx, msg)
+			if err != nil {
+				msg.Finish(err)
+				return err
+			}
+			if kdr.Knockdown(*e) {
+				// Knockdown succeeded, mark done and
+				// continue until reaching EOF. This
+				// is necessary to allow the HTTP
+				// receiver to process any queued
+				// messages so that it can shutdown
+				// gracefully.
+				done = true
+				pcancel()
+			}
+			msg.Finish(nil)
+		}
+	})
+	err = eg.Wait()
+	if err != nil {
+		fmt.Printf("Error receiving event: %v\n", err)
+		err = writeFailedTerminationMessage()
+	} else {
+		err = writeSuccessfulTerminationMessage()
+	}
+	if err != nil {
+		fmt.Printf("Error writing termination message: %v\n", err)
+		return 1
+	}
+	return 0
 }
 
 // writeSuccessfulTerminationMessage should be called to indicate this knock down process received
 // all the expected events.
-func (r *receiver) writeSuccessfulTerminationMessage() error {
-	return r.writeTerminationMessage(map[string]interface{}{
+func writeSuccessfulTerminationMessage() error {
+	return writeTerminationMessage(map[string]interface{}{
 		"success": true,
 	})
 }
 
 // writeFailedTerminationMessage should be called to indicate this knock down process did not
 // receive all the expected events.
-func (r *receiver) writeFailedTerminationMessage() error {
-	return r.writeTerminationMessage(map[string]interface{}{
+func writeFailedTerminationMessage() error {
+	return writeTerminationMessage(map[string]interface{}{
 		"success": false,
 	})
 }
 
 // writeTerminationMessage writes the given result to the termination file, which is read by the e2e
 // test framework to determine if this Pod received all the expected knockdown events.
-func (r *receiver) writeTerminationMessage(result interface{}) error {
+func writeTerminationMessage(result interface{}) error {
 	b, err := json.Marshal(result)
 	if err != nil {
 		return err

@@ -18,7 +18,7 @@ metadata:
   name: config-br-delivery
   namespace: cloud-run-events
   annotations:
-    knative.dev/example-checksum: "8a0f7eaf"
+    knative.dev/example-checksum: "a7f41751"
 data:
   default-br-delivery-config: |
     clusterDefaults:
@@ -43,7 +43,7 @@ data:
     # default-br-delivery-config is the configuration for determining the default
     # Broker delivery settings to apply on all GCP Brokers created within a scope.
     #
-    # When determing the defaults to use for a custom object in a specific
+    # When determining the defaults to use for a custom object in a specific
     # namespace, the precedence rules are:
     # If the Broker's spec specifies the delivery settings to use, use that.
     # If not and that namespace is in the `namespaceDefaults` key, then use the

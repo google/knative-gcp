@@ -29,10 +29,12 @@ import (
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
+	cev2 "github.com/cloudevents/sdk-go/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/extensions"
+	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
@@ -42,7 +44,9 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/api/option"
+	"google.golang.org/api/support/bundler"
 	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
 	logtest "knative.dev/pkg/logging/testing"
@@ -110,6 +114,13 @@ type testCase struct {
 	wantEventCount int64
 	// additional assertions on the output event.
 	eventAssertions []eventAssertion
+	decouple        DecoupleSink
+}
+
+type fakeOverloadedDecoupleSink struct{}
+
+func (m *fakeOverloadedDecoupleSink) Send(ctx context.Context, broker types.NamespacedName, event cev2.Event) protocol.Result {
+	return bundler.ErrOverflow
 }
 
 func TestHandler(t *testing.T) {
@@ -256,6 +267,23 @@ func TestHandler(t *testing.T) {
 				metricskey.ContainerName:          container,
 			},
 		},
+		{
+			name:           "pubsub overloaded",
+			path:           "/ns1/broker1",
+			event:          createTestEvent("test-event"),
+			wantCode:       nethttp.StatusTooManyRequests,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns1",
+				metricskey.LabelBrokerName:        "broker1",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "429",
+				metricskey.LabelResponseCodeClass: "4xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
+			},
+			decouple: &fakeOverloadedDecoupleSink{},
+		},
 	}
 
 	client := nethttp.Client{}
@@ -270,7 +298,12 @@ func TestHandler(t *testing.T) {
 			psSrv := pstest.NewServer()
 			defer psSrv.Close()
 
-			url := createAndStartIngress(ctx, t, psSrv)
+			decouple := tc.decouple
+			if decouple == nil {
+				decouple = NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), createPubsubClient(ctx, t, psSrv), pubsub.DefaultPublishSettings)
+			}
+
+			url := createAndStartIngress(ctx, t, psSrv, decouple)
 			rec := setupTestReceiver(ctx, t, psSrv)
 
 			res, err := client.Do(createRequest(tc, url))
@@ -404,9 +437,7 @@ func setupTestReceiver(ctx context.Context, t testing.TB, psSrv *pstest.Server) 
 }
 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
-func createAndStartIngress(ctx context.Context, t testing.TB, psSrv *pstest.Server) string {
-	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), createPubsubClient(ctx, t, psSrv), pubsub.DefaultPublishSettings)
-
+func createAndStartIngress(ctx context.Context, t testing.TB, psSrv *pstest.Server, decouple DecoupleSink) string {
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
 	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
 	if err != nil {

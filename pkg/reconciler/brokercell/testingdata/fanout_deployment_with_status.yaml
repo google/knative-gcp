@@ -86,7 +86,7 @@ spec:
             memory: 3000Mi
           requests:
             cpu: 1500m
-            memory: 500Mi
+            memory: 3000Mi
         ports:
         - name: metrics
           containerPort: 9090

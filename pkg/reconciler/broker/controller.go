@@ -20,6 +20,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
+
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/labels"
@@ -29,6 +31,7 @@ import (
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
@@ -47,7 +50,16 @@ const (
 	controllerAgentName = "broker-controller"
 )
 
-func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a constructor to make a Broker controller.
+func NewConstructor(dataresidencyss *dataresidency.StoreSingleton) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, dataresidencyss.Store(ctx, cmw))
+	}
+}
+
+func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidency.Store) *controller.Impl {
 	brokerInformer := brokerinformer.Get(ctx)
 	bcInformer := brokercellinformer.Get(ctx)
 
@@ -73,9 +85,10 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	}
 
 	r := &Reconciler{
-		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
-		brokerCellLister: bcInformer.Lister(),
-		pubsubClient:     client,
+		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+		brokerCellLister:   bcInformer.Lister(),
+		pubsubClient:       client,
+		dataresidencyStore: drs,
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass)

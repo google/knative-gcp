@@ -72,6 +72,23 @@ func TopicExists(id string) func(*testing.T, *rtesting.TableRow) {
 	}
 }
 
+func TopicExistsWithConfig(id string, expectedTopicConfig *pubsub.TopicConfig) func(*testing.T, *rtesting.TableRow) {
+	return func(t *testing.T, r *rtesting.TableRow) {
+		c := getPubsubClient(r)
+		topic := c.Topic(id)
+		exist, err := topic.Exists(context.Background())
+		if err != nil {
+			t.Errorf("Error checking topic existence: %v", err)
+		} else if !exist {
+			t.Errorf("Expected topic %q to exist", id)
+		}
+		topicConfig, err := topic.Config(context.Background())
+		if diff := cmp.Diff(*expectedTopicConfig, topicConfig); diff != "" {
+			t.Errorf("Wrong topic config expected %v, got %v", *expectedTopicConfig, topicConfig)
+		}
+	}
+}
+
 func OnlyTopics(ids ...string) func(*testing.T, *rtesting.TableRow) {
 	return func(t *testing.T, r *rtesting.TableRow) {
 		c := getPubsubClient(r)

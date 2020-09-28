@@ -52,6 +52,10 @@ type envConfig struct {
 	// continuous sync failures (or no sync at all) to be stale.
 	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"1m"`
 
+	// MaxOutstandingBytes is the maximum size of unprocessed messages (unacknowledged but not yet expired).
+	// Default is 800Mb (~763Mi)
+	MaxOutstandingBytes int `envconfig:"MAX_OUTSTANDING_BYTES" default:"800000000"`
+
 	// Max to 10m.
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
 }
@@ -138,6 +142,9 @@ func buildHandlerOptions(env envConfig) []handler.Option {
 	}
 	if env.TimeoutPerEvent > 0 {
 		opts = append(opts, handler.WithTimeoutPerEvent(env.TimeoutPerEvent))
+	}
+	if env.MaxOutstandingBytes > 0 {
+		rs.MaxOutstandingBytes = env.MaxOutstandingBytes
 	}
 	opts = append(opts, handler.WithPubsubReceiveSettings(rs))
 	// The default CeClient is good?
