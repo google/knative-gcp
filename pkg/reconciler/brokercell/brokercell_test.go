@@ -58,9 +58,9 @@ var (
 
 	creatorAnnotation       = map[string]string{"internal.events.cloud.google.com/creator": "googlecloud"}
 	restartedTimeAnnotation = map[string]string{
-		"events.cloud.google.com/ingressRestartedAt": "2020-09-25T16:28:36-04:00",
-		"events.cloud.google.com/fanoutRestartedAt":  "2020-09-25T16:28:36-04:00",
-		"events.cloud.google.com/retryRestartedAt":   "2020-09-25T16:28:36-04:00",
+		"events.cloud.google.com/ingressRestartRequestedAt": "2020-09-25T16:28:36-04:00",
+		"events.cloud.google.com/fanoutRestartRequestedAt":  "2020-09-25T16:28:36-04:00",
+		"events.cloud.google.com/retryRestartRequestedAt":   "2020-09-25T16:28:36-04:00",
 	}
 
 	brokerCellReconciledEvent     = Eventf(corev1.EventTypeNormal, "BrokerCellReconciled", `BrokerCell reconciled: "testnamespace/test-brokercell"`)

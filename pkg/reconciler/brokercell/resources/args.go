@@ -34,9 +34,10 @@ const (
 	BrokerCellLabelKey = "brokerCell"
 
 	// the annotation key of the time to trigger rollout restart of the deployments
-	IngressRestartTimeAnnotationKey = "events.cloud.google.com/ingressRestartedAt"
-	FanoutRestartTimeAnnotationKey  = "events.cloud.google.com/fanoutRestartedAt"
-	RetryRestartTimeAnnotationKey   = "events.cloud.google.com/retryRestartedAt"
+	IngressRestartTimeAnnotationKey = "events.cloud.google.com/ingressRestartRequestedAt"
+	FanoutRestartTimeAnnotationKey  = "events.cloud.google.com/fanoutRestartRequestedAt"
+	RetryRestartTimeAnnotationKey   = "events.cloud.google.com/retryRestartRequestedAt"
+	RolloutRestartTimeAnnotationKey = "events.cloud.google.com/RestartRequestedAt"
 )
 
 var (

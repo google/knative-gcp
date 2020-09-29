@@ -131,7 +131,7 @@ func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deploy
 		"sidecar.istio.io/inject": strconv.FormatBool(args.AllowIstioSidecar),
 	}
 	if args.RolloutRestartTime != "" {
-		annotation["events.cloud.google.com/RestartedAt"] = args.RolloutRestartTime
+		annotation[RolloutRestartTimeAnnotationKey] = args.RolloutRestartTime
 	}
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{

@@ -43,7 +43,7 @@ spec:
       labels: *labels
       annotations:
         sidecar.istio.io/inject: "true"
-        events.cloud.google.com/RestartedAt: "2020-09-25T16:28:36-04:00"
+        events.cloud.google.com/RestartRequestedAt: "2020-09-25T16:28:36-04:00"
     spec:
       serviceAccountName: broker
       terminationGracePeriodSeconds: 60
