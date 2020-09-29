@@ -49,6 +49,9 @@ const (
 	// TODO(liu-cong) configurable timeout
 	decoupleSinkTimeout = 30 * time.Second
 
+	// Limit for request payload in bytes (10Mb -- corresponds to message size limit on PubSub as of 09/2020)
+	maxRequestBodyBytes = 10000000
+
 	// EventArrivalTime is used to access the metadata stored on a
 	// CloudEvent to measure the time difference between when an event is
 	// received on a broker and before it is dispatched to the trigger function.
@@ -121,7 +124,6 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		response.WriteHeader(nethttp.StatusOK)
 		return
 	}
-
 	ctx := request.Context()
 	ctx = logging.WithLogger(ctx, h.logger)
 	ctx = tracing.WithLogging(ctx, trace.FromContext(ctx))
@@ -130,6 +132,12 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		response.WriteHeader(nethttp.StatusMethodNotAllowed)
 		return
 	}
+
+	if request.ContentLength > maxRequestBodyBytes {
+		response.WriteHeader(nethttp.StatusRequestEntityTooLarge)
+		return
+	}
+	request.Body = nethttp.MaxBytesReader(nil, request.Body, maxRequestBodyBytes)
 
 	broker, err := ConvertPathToNamespacedName(request.URL.Path)
 	if err != nil {
@@ -148,7 +156,11 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 
 	event, err := h.toEvent(ctx, request)
 	if err != nil {
-		nethttp.Error(response, err.Error(), nethttp.StatusBadRequest)
+		httpStatus := nethttp.StatusBadRequest
+		if err.Error() == "http: request body too large" {
+			httpStatus = nethttp.StatusRequestEntityTooLarge
+		}
+		nethttp.Error(response, err.Error(), httpStatus)
 		return
 	}
 
