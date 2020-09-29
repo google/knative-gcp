@@ -118,7 +118,7 @@ type testCase struct {
 	// additional assertions on the output event.
 	eventAssertions []eventAssertion
 	decouple        DecoupleSink
-	contentLength *int64
+	contentLength   *int64
 }
 
 type fakeOverloadedDecoupleSink struct{}
@@ -187,12 +187,12 @@ func TestHandler(t *testing.T) {
 			wantCode: nethttp.StatusRequestEntityTooLarge,
 		},
 		{
-			name:     "malicious requests or requests with unknown Content-Length and a very large payload",
-			method:   "POST",
-			path:     "/ns1/broker1",
-			event:    createTestEventWithPayloadSize("test-event", 110000000),
+			name:          "malicious requests or requests with unknown Content-Length and a very large payload",
+			method:        "POST",
+			path:          "/ns1/broker1",
+			event:         createTestEventWithPayloadSize("test-event", 110000000),
 			contentLength: ptr.Int64(-1),
-			wantCode: nethttp.StatusRequestEntityTooLarge,
+			wantCode:      nethttp.StatusRequestEntityTooLarge,
 		},
 		{
 			name:     "malformed path",

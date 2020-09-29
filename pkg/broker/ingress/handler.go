@@ -154,7 +154,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		nethttp.Error(response, err.Error(), httpStatus)
 		return
 	}
-	
+
 	event.SetExtension(EventArrivalTime, cev2.Timestamp{Time: time.Now()})
 
 	span := trace.FromContext(ctx)
