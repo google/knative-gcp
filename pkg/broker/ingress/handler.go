@@ -135,6 +135,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		response.WriteHeader(nethttp.StatusRequestEntityTooLarge)
 		return
 	}
+	request.Body = nethttp.MaxBytesReader(nil, request.Body, maxRequestBodyBytes)
 
 	broker, err := ConvertPathToNamespacedName(request.URL.Path)
 	ctx = logging.With(ctx, zap.Stringer("broker", broker))
@@ -146,10 +147,14 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 
 	event, err := h.toEvent(ctx, request)
 	if err != nil {
-		nethttp.Error(response, err.Error(), nethttp.StatusBadRequest)
+		httpStatus := nethttp.StatusBadRequest
+		if err.Error() == "http: request body too large" {
+			httpStatus = nethttp.StatusRequestEntityTooLarge
+		}
+		nethttp.Error(response, err.Error(), httpStatus)
 		return
 	}
-
+	
 	event.SetExtension(EventArrivalTime, cev2.Timestamp{Time: time.Now()})
 
 	span := trace.FromContext(ctx)

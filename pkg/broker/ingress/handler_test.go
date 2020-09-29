@@ -54,6 +54,7 @@ import (
 	logtest "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
+	"knative.dev/pkg/ptr"
 
 	_ "knative.dev/pkg/metrics/testing"
 )
@@ -117,6 +118,7 @@ type testCase struct {
 	// additional assertions on the output event.
 	eventAssertions []eventAssertion
 	decouple        DecoupleSink
+	contentLength *int64
 }
 
 type fakeOverloadedDecoupleSink struct{}
@@ -182,6 +184,14 @@ func TestHandler(t *testing.T) {
 			method:   "POST",
 			path:     "/ns1/broker1",
 			event:    createTestEventWithPayloadSize("test-event", 110000000),
+			wantCode: nethttp.StatusRequestEntityTooLarge,
+		},
+		{
+			name:     "malicious requests or requests with unknown Content-Length and a very large payload",
+			method:   "POST",
+			path:     "/ns1/broker1",
+			event:    createTestEventWithPayloadSize("test-event", 110000000),
+			contentLength: ptr.Int64(-1),
 			wantCode: nethttp.StatusRequestEntityTooLarge,
 		},
 		{
@@ -314,8 +324,11 @@ func TestHandler(t *testing.T) {
 
 			url := createAndStartIngress(ctx, t, psSrv, decouple)
 			rec := setupTestReceiver(ctx, t, psSrv)
-
-			res, err := client.Do(createRequest(tc, url))
+			req := createRequest(tc, url)
+			if tc.contentLength != nil {
+				req.ContentLength = *tc.contentLength
+			}
+			res, err := client.Do(req)
 			if err != nil {
 				t.Fatalf("Unexpected error from http client: %v", err)
 			}
