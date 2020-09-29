@@ -57,6 +57,18 @@ func RetryDeploymentWithStatus(t *testing.T) *appsv1.Deployment {
 	return getDeployment(t, "testingdata/retry_deployment_with_status.yaml")
 }
 
+func IngressDeploymentWithRestartAnnotation(t *testing.T) *appsv1.Deployment {
+	return getDeployment(t, "testingdata/ingress_deployment_with_restart_annotation.yaml")
+}
+
+func FanoutDeploymentWithRestartAnnotation(t *testing.T) *appsv1.Deployment {
+	return getDeployment(t, "testingdata/fanout_deployment_with_restart_annotation.yaml")
+}
+
+func RetryDeploymentWithRestartAnnotation(t *testing.T) *appsv1.Deployment {
+	return getDeployment(t, "testingdata/retry_deployment_with_restart_annotation.yaml")
+}
+
 func IngressServiceWithStatus(t *testing.T) *corev1.Service {
 	return getService(t, "testingdata/ingress_service_with_status.yaml")
 }
