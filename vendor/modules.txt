@@ -25,7 +25,7 @@ cloud.google.com/go/logging
 cloud.google.com/go/logging/apiv2
 cloud.google.com/go/logging/internal
 cloud.google.com/go/logging/logadmin
-# cloud.google.com/go/pubsub v1.6.2
+# cloud.google.com/go/pubsub v1.8.0
 ## explicit
 cloud.google.com/go/pubsub
 cloud.google.com/go/pubsub/apiv1
@@ -414,7 +414,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200918232735-d647fc253266
+# golang.org/x/tools v0.0.0-20200929161345-d7fc70abf50f
 golang.org/x/tools/cmd/goimports
 golang.org/x/tools/go/analysis
 golang.org/x/tools/go/analysis/passes/inspect
@@ -476,7 +476,7 @@ google.golang.org/appengine/internal/socket
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/socket
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20200921151605-7abf4a1a14d5
+# google.golang.org/genproto v0.0.0-20200929141702-51c3e5b607fe
 ## explicit
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
