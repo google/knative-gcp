@@ -184,13 +184,21 @@ func TestHandler(t *testing.T) {
 			wantCode: nethttp.StatusRequestEntityTooLarge,
 		},
 		{
-			name:          "malicious requests or requests with unknown Content-Length and a very large payload",
-			method:        "POST",
-			path:          "/ns1/broker1",
-			event:         createTestEventWithPayloadSize("test-event", 11000000), // 11Mb
-			contentLength: ptr.Int64(-1),
-			wantCode:      nethttp.StatusRequestEntityTooLarge,
-			timeout:       10 * time.Second,
+			name:           "malicious requests or requests with unknown Content-Length and a very large payload",
+			method:         "POST",
+			path:           "/ns1/broker1",
+			event:          createTestEventWithPayloadSize("test-event", 11000000), // 11Mb
+			contentLength:  ptr.Int64(-1),
+			wantCode:       nethttp.StatusRequestEntityTooLarge,
+			timeout:        10 * time.Second,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelEventType:         "_invalid_cloud_event_",
+				metricskey.LabelResponseCode:      "413",
+				metricskey.LabelResponseCodeClass: "4xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
+			},
 		},
 		{
 			name:     "malformed path",
@@ -199,10 +207,18 @@ func TestHandler(t *testing.T) {
 			wantCode: nethttp.StatusNotFound,
 		},
 		{
-			name:     "request is not an event",
-			path:     "/ns1/broker1",
-			wantCode: nethttp.StatusBadRequest,
-			header:   nethttp.Header{},
+			name:           "request is not an event",
+			path:           "/ns1/broker1",
+			wantCode:       nethttp.StatusBadRequest,
+			header:         nethttp.Header{},
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelEventType:         "_invalid_cloud_event_",
+				metricskey.LabelResponseCode:      "400",
+				metricskey.LabelResponseCodeClass: "4xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
+			},
 		},
 		{
 			name:           "wrong path - broker doesn't exist in given namespace",

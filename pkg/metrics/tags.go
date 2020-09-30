@@ -58,6 +58,7 @@ var (
 	allowedEventTypes = map[string]struct{}{
 		"e2e-dummy-event-type":              {},
 		"e2e-testing-resp-event-type-dummy": {},
+		"_invalid_cloud_event_":             {},
 	}
 )
 
