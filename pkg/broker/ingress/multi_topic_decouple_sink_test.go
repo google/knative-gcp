@@ -235,14 +235,14 @@ func TestHasTrigger(t *testing.T) {
 		{
 			name: "broker with target with no filters",
 			brokerTargets: map[string]*config.Target{
-				"target_1": &config.Target{},
+				"target_1": {},
 			},
 			hasTrigger: true,
 		},
 		{
 			name: "broker with target with matching filter",
 			brokerTargets: map[string]*config.Target{
-				"target_1": &config.Target{
+				"target_1": {
 					FilterAttributes: map[string]string{
 						"type":   eventType,
 						"source": "test-source",
@@ -254,7 +254,7 @@ func TestHasTrigger(t *testing.T) {
 		{
 			name: "broker with target with non-matching filter",
 			brokerTargets: map[string]*config.Target{
-				"target_1": &config.Target{
+				"target_1": {
 					FilterAttributes: map[string]string{
 						"type":   eventType,
 						"source": "some-random-source",
@@ -266,18 +266,18 @@ func TestHasTrigger(t *testing.T) {
 		{
 			name: "broker with multiple targets with one matching target filter",
 			brokerTargets: map[string]*config.Target{
-				"non_matching_target_1": &config.Target{
+				"non_matching_target_1": {
 					FilterAttributes: map[string]string{
 						"type":   eventType,
 						"source": "some-random-source",
 					},
 				},
-				"non_matching_target_2": &config.Target{
+				"non_matching_target_2": {
 					FilterAttributes: map[string]string{
 						"source": "some-random-other-source",
 					},
 				},
-				"matching_target_3": &config.Target{
+				"matching_target_3": {
 					FilterAttributes: map[string]string{
 						"type": eventType,
 					},
@@ -334,7 +334,7 @@ func TestMultiTopicDecoupleSinkSend(t *testing.T) {
 		Brokers: map[string]*config.Broker{
 			"test_ns_1/test_broker_1": {
 				DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_READY},
-				Targets:       map[string]*config.Target{"target_1": &config.Target{}},
+				Targets:       map[string]*config.Target{"target_1": {}},
 			},
 		},
 	}
