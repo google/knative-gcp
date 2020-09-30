@@ -121,7 +121,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 		// TODO(https://github.com/knative/pkg/issues/1149) Add a FilterKind to genreconciler so it will
 		// skip a trigger if it's not pointed to a gcp broker and doesn't have googlecloud finalizer string.
 		t.Status.MarkTopicReady()
-		return event
+
+		if event == nil {
+			return nil
+		} else if reconcilerEvent, ok := event.(*pkgreconciler.ReconcilerEvent); ok && reconcilerEvent.EventType == corev1.EventTypeNormal {
+			return event
+		} else {
+			return fmt.Errorf("Controller won't retry to handle the error/warning and user will need to address it manually: %w", event)
+		}
 	}
 
 	return r.reconcile(ctx, t, b)
