@@ -294,6 +294,61 @@ func TestHasTrigger(t *testing.T) {
 	}
 }
 
+func TestMultiTopicDecoupleSinkSend(t *testing.T) {
+	filterCalled := false
+	orig := EventFilterFunc
+	defer func() { EventFilterFunc = orig }()
+	EventFilterFunc = func(ctx context.Context, attrs map[string]string, event *event.Event) bool {
+		filterCalled = true
+		return true
+	}
+
+	ctx := logtest.TestContextWithLogger(t)
+	psSrv := pstest.NewServer()
+	defer psSrv.Close()
+	psClient := createPubsubClient(ctx, t, psSrv)
+
+	testBrokerConfig := &config.TargetsConfig{
+		Brokers: map[string]*config.Broker{
+			"test_ns_1/test_broker_1": {
+				DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_READY},
+				Targets:       map[string]*config.Target{"target_1": &config.Target{}},
+			},
+		},
+	}
+
+	brokerConfig := memory.NewTargets(testBrokerConfig)
+
+	testTopic := "test_topic_1"
+	topic := psClient.Topic(testTopic)
+	if exists, err := topic.Exists(ctx); err != nil {
+		t.Fatal(err)
+	} else if !exists {
+		if topic, err = psClient.CreateTopic(ctx, testTopic); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	sink := NewMultiTopicDecoupleSink(ctx, brokerConfig, psClient, pubsub.DefaultPublishSettings)
+	// Send event.
+	event := createTestEvent(uuid.New().String())
+
+	namespace := types.NamespacedName{
+		Namespace: "test_ns_1",
+		Name:      "test_broker_1",
+	}
+
+	err := sink.Send(context.Background(), namespace, *event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify results.
+	if !filterCalled {
+		t.Errorf("Send did not call EventFilterFunc")
+	}
+}
+
 type fakePubsubClient struct {
 	t *testing.T
 	// topics is the mapping from topic name to corresponding channel which contains the event.

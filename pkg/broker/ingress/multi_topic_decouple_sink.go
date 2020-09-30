@@ -97,12 +97,16 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.Namespac
 	return err
 }
 
+// EventFilterFunc is used to see if a target is interested in an event.
+// It is used as a vaiable to allow stubbing out in unit tests.
+var EventFilterFunc = filter.PassFilter
+
 // hasTrigger checks given event against all targets to see if it will pass any of their filters.
 // If one is fouund, hasTrigger returns true.
 func (m *multiTopicDecoupleSink) hasTrigger(ctx context.Context, event *cev2.Event) bool {
 	var hasTrigger bool
 	m.brokerConfig.RangeAllTargets(func(target *config.Target) bool {
-		if filter.PassFilter(ctx, target.FilterAttributes, event) {
+		if EventFilterFunc(ctx, target.FilterAttributes, event) {
 			hasTrigger = true
 			return true
 		}
