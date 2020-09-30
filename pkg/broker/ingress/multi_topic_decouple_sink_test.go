@@ -263,6 +263,28 @@ func TestHasTrigger(t *testing.T) {
 			},
 			hasTrigger: false,
 		},
+		{
+			name: "broker with multiple targets with one matching target filter",
+			brokerTargets: map[string]*config.Target{
+				"non_matching_target_1": &config.Target{
+					FilterAttributes: map[string]string{
+						"type":   eventType,
+						"source": "some-random-source",
+					},
+				},
+				"non_matching_target_2": &config.Target{
+					FilterAttributes: map[string]string{
+						"source": "some-random-other-source",
+					},
+				},
+				"matching_target_3": &config.Target{
+					FilterAttributes: map[string]string{
+						"type": eventType,
+					},
+				},
+			},
+			hasTrigger: true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
