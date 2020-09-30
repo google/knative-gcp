@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -44,7 +45,6 @@ import (
 
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
@@ -90,9 +90,11 @@ type Base struct {
 	MetricsConfig *metrics.ExporterOptions
 	TracingConfig *tracingconfig.Config
 
-	// CreateClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
-	// This is needed so that we can inject a mock client for UTs purposes.
-	CreateClientFn gpubsub.CreateFn
+	// PubsubClient is used as the Pubsub client when present, this
+	// is currently for testing only as source allows project id setting
+	// per resource, so it is impossible to create it ahead, though we
+	// can expand this to be a cache in the future if needed.
+	PubsubClient *pubsub.Client
 
 	// ReconcileDataPlaneFn is the function used to reconcile the data plane resources.
 	ReconcileDataPlaneFn ReconcileDataPlaneFunc
@@ -166,12 +168,16 @@ func (r *Base) reconcileSubscription(ctx context.Context, ps *v1.PullSubscriptio
 
 	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
 	// pointing at a credential file.
-	client, err := r.CreateClientFn(ctx, ps.Status.ProjectID)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
-		return "", err
+	client := r.PubsubClient
+	if client == nil {
+		var err error
+		client, err = pubsub.NewClient(ctx, ps.Status.ProjectID)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
+			return "", err
+		}
+		defer client.Close()
 	}
-	defer client.Close()
 
 	// Generate the subscription name
 	subID := resources.GenerateSubscriptionName(ps)
@@ -196,7 +202,7 @@ func (r *Base) reconcileSubscription(ctx context.Context, ps *v1.PullSubscriptio
 	}
 
 	// subConfig is the wanted config based on settings.
-	subConfig := gpubsub.SubscriptionConfig{
+	subConfig := pubsub.SubscriptionConfig{
 		Topic:               t,
 		RetainAckedMessages: ps.Spec.RetainAckedMessages,
 	}
@@ -261,12 +267,16 @@ func (r *Base) deleteSubscription(ctx context.Context, ps *v1.PullSubscription) 
 
 	// At this point the project ID should have been populated in the status.
 	// Querying Pub/Sub as the subscription could have been deleted outside the cluster (e.g, through gcloud).
-	client, err := r.CreateClientFn(ctx, ps.Status.ProjectID)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
+	client := r.PubsubClient
+	if client == nil {
+		var err error
+		client, err = pubsub.NewClient(ctx, ps.Status.ProjectID)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
+			return err
+		}
+		defer client.Close()
 	}
-	defer client.Close()
 
 	// Load the subscription.
 	sub := client.Subscription(ps.Status.SubscriptionID)

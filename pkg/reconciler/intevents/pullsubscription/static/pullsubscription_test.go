@@ -18,12 +18,13 @@ package static
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/pubsub/pstest"
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+	"google.golang.org/grpc/codes"
 
 	v1 "k8s.io/api/apps/v1"
 
@@ -49,7 +50,6 @@ import (
 	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	pubsubv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
@@ -225,62 +225,6 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 	}, {
-		Name: "create client fails",
-		Objects: []runtime.Object{
-			reconcilertestingv1.NewPullSubscription(sourceName, testNS,
-				reconcilertestingv1.WithPullSubscriptionUID(sourceUID),
-				reconcilertestingv1.WithPullSubscriptionObjectMetaGeneration(generation),
-				reconcilertestingv1.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
-					PubSubSpec: gcpduckv1.PubSubSpec{
-						Secret:  &secret,
-						Project: testProject,
-					},
-					Topic: testTopicID,
-				}),
-				reconcilertestingv1.WithInitPullSubscriptionConditions,
-				reconcilertestingv1.WithPullSubscriptionSink(sinkGVK, sinkName),
-				reconcilertestingv1.WithPullSubscriptionMarkSink(sinkURI),
-				reconcilertestingv1.WithPullSubscriptionSetDefaults,
-			),
-			newSink(),
-			newSecret(),
-		},
-		Key: testNS + "/" + sourceName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: client-create-induced-error"),
-		},
-		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				CreateClientErr: errors.New("client-create-induced-error"),
-			},
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: reconcilertestingv1.NewPullSubscription(sourceName, testNS,
-				reconcilertestingv1.WithPullSubscriptionUID(sourceUID),
-				reconcilertestingv1.WithPullSubscriptionObjectMetaGeneration(generation),
-				reconcilertestingv1.WithPullSubscriptionStatusObservedGeneration(generation),
-				reconcilertestingv1.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
-					PubSubSpec: gcpduckv1.PubSubSpec{
-						Secret:  &secret,
-						Project: testProject,
-					},
-					Topic: testTopicID,
-				}),
-				reconcilertestingv1.WithInitPullSubscriptionConditions,
-				reconcilertestingv1.WithPullSubscriptionProjectID(testProject),
-				reconcilertestingv1.WithPullSubscriptionSink(sinkGVK, sinkName),
-				reconcilertestingv1.WithPullSubscriptionMarkSink(sinkURI),
-				reconcilertestingv1.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				reconcilertestingv1.WithPullSubscriptionTransformerURI(nil),
-				reconcilertestingv1.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "client-create-induced-error")),
-				reconcilertestingv1.WithPullSubscriptionSetDefaults,
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, resourceGroup),
-		},
-	}, {
 		Name: "topic exists fails",
 		Objects: []runtime.Object{
 			reconcilertestingv1.NewPullSubscription(sourceName, testNS,
@@ -304,14 +248,11 @@ func TestAllCases(t *testing.T) {
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: topic-exists-induced-error"),
+			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: rpc error: code = Internal desc = Injected error"),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					ExistsErr: errors.New("topic-exists-induced-error"),
-				},
-			},
+			// GetTopic has a retry policy for Unknown status type, so we use Internal error instead.
+			"server-options": []pstest.ServerReactorOption{pstest.WithErrorInjection("GetTopic", codes.Internal, "Injected error")},
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, resourceGroup),
@@ -334,7 +275,7 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionMarkSink(sinkURI),
 				reconcilertestingv1.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
 				reconcilertestingv1.WithPullSubscriptionTransformerURI(nil),
-				reconcilertestingv1.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "topic-exists-induced-error")),
+				reconcilertestingv1.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "rpc error: code = Internal desc = Injected error")),
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
 		}},
@@ -364,13 +305,7 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
 			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: Topic %q does not exist", testTopicID),
 		},
-		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: false,
-				},
-			},
-		},
+		OtherTestData: map[string]interface{}{},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, resourceGroup),
 		},
@@ -420,14 +355,10 @@ func TestAllCases(t *testing.T) {
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: subscription-exists-induced-error"),
+			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: rpc error: code = Internal desc = Injected error"),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					ExistsErr: errors.New("subscription-exists-induced-error"),
-				},
-			},
+			"server-options": []pstest.ServerReactorOption{pstest.WithErrorInjection("GetSubscription", codes.Internal, "Injected error")},
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, resourceGroup),
@@ -450,7 +381,7 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionMarkSink(sinkURI),
 				reconcilertestingv1.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
 				reconcilertestingv1.WithPullSubscriptionTransformerURI(nil),
-				reconcilertestingv1.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-exists-induced-error")),
+				reconcilertestingv1.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "rpc error: code = Internal desc = Injected error")),
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
 		}},
@@ -478,15 +409,13 @@ func TestAllCases(t *testing.T) {
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: subscription-create-induced-error"),
+			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: rpc error: code = Internal desc = Injected error"),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
-				CreateSubscriptionErr: errors.New("subscription-create-induced-error"),
+			"pre": []PubsubAction{
+				Topic(testTopicID),
 			},
+			"server-options": []pstest.ServerReactorOption{pstest.WithErrorInjection("CreateSubscription", codes.Internal, "Injected error")},
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, resourceGroup),
@@ -509,7 +438,7 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionMarkSink(sinkURI),
 				reconcilertestingv1.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
 				reconcilertestingv1.WithPullSubscriptionTransformerURI(nil),
-				reconcilertestingv1.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-create-induced-error")),
+				reconcilertestingv1.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "rpc error: code = Internal desc = Injected error")),
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
 		}},
@@ -540,10 +469,8 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, "PullSubscriptionReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, sourceName),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
+			"pre": []PubsubAction{
+				Topic(testTopicID),
 			},
 		},
 		WantCreates: []runtime.Object{
@@ -606,10 +533,8 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, "PullSubscriptionReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, sourceName),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
+			"pre": []PubsubAction{
+				Topic(testTopicID),
 			},
 		},
 		WantCreates: []runtime.Object{
@@ -674,10 +599,8 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, "PullSubscriptionReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, sourceName),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
+			"pre": []PubsubAction{
+				Topic(testTopicID),
 			},
 		},
 		WantCreates: []runtime.Object{
@@ -731,10 +654,8 @@ func TestAllCases(t *testing.T) {
 			newAvailableReceiveAdapter(context.Background(), testImage, nil),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
+			"pre": []PubsubAction{
+				Topic(testTopicID),
 			},
 		},
 		Key: testNS + "/" + sourceName,
@@ -791,10 +712,8 @@ func TestAllCases(t *testing.T) {
 			newReceiveAdapter(context.Background(), "old"+testImage, nil),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
+			"pre": []PubsubAction{
+				Topic(testTopicID),
 			},
 		},
 		Key: testNS + "/" + sourceName,
@@ -859,10 +778,8 @@ func TestAllCases(t *testing.T) {
 			newSecret(),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
+			"pre": []PubsubAction{
+				Topic(testTopicID),
 			},
 		},
 		Key: testNS + "/" + sourceName,
@@ -921,10 +838,8 @@ func TestAllCases(t *testing.T) {
 			newSecret(),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
+			"pre": []PubsubAction{
+				Topic(testTopicID),
 			},
 		},
 		Key: testNS + "/" + sourceName,
@@ -987,10 +902,8 @@ func TestAllCases(t *testing.T) {
 			newReceiveAdapter(context.Background(), "old"+testImage, nil),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
+			"pre": []PubsubAction{
+				Topic(testTopicID),
 			},
 		},
 		Key: testNS + "/" + sourceName,
@@ -1058,19 +971,14 @@ func TestAllCases(t *testing.T) {
 			newSecret(),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					Exists:    true,
-					DeleteErr: errors.New("subscription-delete-induced-error"),
-				},
+			"pre": []PubsubAction{
+				TopicAndSub(testTopicID, testSubscriptionID),
 			},
+			"server-options": []pstest.ServerReactorOption{pstest.WithErrorInjection("DeleteSubscription", codes.Unknown, "Injected error")},
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "SubscriptionDeleteFailed", "Failed to delete Pub/Sub subscription: subscription-delete-induced-error"),
+			Eventf(corev1.EventTypeWarning, "SubscriptionDeleteFailed", "Failed to delete Pub/Sub subscription: rpc error: code = Unknown desc = Injected error"),
 		},
 		WantStatusUpdates: nil,
 	}, {
@@ -1097,13 +1005,8 @@ func TestAllCases(t *testing.T) {
 			newSecret(),
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					Exists: true,
-				},
+			"pre": []PubsubAction{
+				TopicAndSub(testTopicID, testSubscriptionID),
 			},
 		},
 		Key:        testNS + "/" + sourceName,
@@ -1112,6 +1015,21 @@ func TestAllCases(t *testing.T) {
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		ctx = addressable.WithDuck(ctx)
+		opts := []pstest.ServerReactorOption{}
+		if testData != nil && testData["server-options"] != nil {
+			opts = testData["server-options"].([]pstest.ServerReactorOption)
+		}
+		psclient, close := TestPubsubClient(ctx, testProject, opts...)
+		t.Cleanup(close)
+		if testData != nil {
+			InjectPubsubClient(testData, psclient)
+			if testData["pre"] != nil {
+				fixtures := testData["pre"].([]PubsubAction)
+				for _, f := range fixtures {
+					f(ctx, t, psclient)
+				}
+			}
+		}
 		pubsubBase := &intevents.PubSubBase{
 			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 		}
@@ -1122,7 +1040,7 @@ func TestAllCases(t *testing.T) {
 				PullSubscriptionLister: listers.GetPullSubscriptionLister(),
 				UriResolver:            resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 				ReceiveAdapterImage:    testImage,
-				CreateClientFn:         gpubsub.TestClientCreator(testData["ps"]),
+				PubsubClient:           psclient,
 				ControllerAgentName:    controllerAgentName,
 				ResourceGroup:          resourceGroup,
 			},
