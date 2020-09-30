@@ -220,6 +220,80 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 	}
 }
 
+func TestHasTrigger(t *testing.T) {
+	DecoupleQueue := &config.Queue{Topic: "test_topic", State: config.State_READY}
+
+	tests := []struct {
+		name       string
+		targets    map[string]*config.Target
+		hasTrigger bool
+	}{
+		{
+			name:       "broker with no target",
+			hasTrigger: false,
+		},
+		{
+			name: "broker with target with no filters",
+			targets: map[string]*config.Target{
+				"target_1": &config.Target{},
+			},
+			hasTrigger: true,
+		},
+		{
+			name: "broker with target with matching filter",
+			targets: map[string]*config.Target{
+				"target_1": &config.Target{
+					FilterAttributes: map[string]string{
+						"type":   eventType,
+						"source": "test-source",
+					},
+				},
+			},
+			hasTrigger: true,
+		},
+		{
+			name: "broker with target with non-matching filter",
+			targets: map[string]*config.Target{
+				"target_1": &config.Target{
+					FilterAttributes: map[string]string{
+						"type":   eventType,
+						"source": "some-random-source",
+					},
+				},
+			},
+			hasTrigger: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logtest.TestContextWithLogger(t)
+			psSrv := pstest.NewServer()
+			defer psSrv.Close()
+			psClient := createPubsubClient(ctx, t, psSrv)
+
+			testBrokerConfig := &config.TargetsConfig{
+				Brokers: map[string]*config.Broker{
+					"test_ns_1/test_broker_1": {
+						DecoupleQueue: DecoupleQueue,
+						Targets:       tt.targets,
+					},
+				},
+			}
+
+			brokerConfig := memory.NewTargets(testBrokerConfig)
+			sink := NewMultiTopicDecoupleSink(ctx, brokerConfig, psClient, pubsub.DefaultPublishSettings)
+
+			event := createTestEvent(uuid.New().String())
+			fmt.Printf("Event type: %s\n", event.Type())
+
+			hasTrigger := sink.hasTrigger(context.Background(), event)
+			if hasTrigger != tt.hasTrigger {
+				t.Errorf("Sink says event has trigger %t which should be %t", hasTrigger, tt.hasTrigger)
+			}
+		})
+	}
+}
+
 type fakePubsubClient struct {
 	t *testing.T
 	// topics is the mapping from topic name to corresponding channel which contains the event.
