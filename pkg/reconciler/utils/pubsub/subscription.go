@@ -24,15 +24,17 @@ import (
 	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
 	// If the topic of the subscription has been deleted, the value of its topic becomes "_deleted-topic_".
 	// See https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#subscription
-	deletedTopic = "_deleted-topic_"
-	subCreated   = "SubscriptionCreated"
-	subDeleted   = "SubscriptionDeleted"
+	deletedTopic     = "_deleted-topic_"
+	subCreated       = "SubscriptionCreated"
+	subDeleted       = "SubscriptionDeleted"
+	subConfigUpdated = "SubscriptionConfigUpdated"
 )
 
 func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subConfig pubsub.SubscriptionConfig, obj runtime.Object, updater StatusUpdater) (*pubsub.Subscription, error) {
@@ -63,6 +65,20 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 				return nil, fmt.Errorf("topic of the subscription has been deleted, need to recreate the subscription: %v", err)
 			}
 			return r.createSubscription(ctx, id, subConfig, obj, updater)
+		}
+		// Update the subscription config in case the retry or dead letter policy changed. A nil policy indicates no change.
+		if (subConfig.RetryPolicy != nil && !equality.Semantic.DeepEqual(config.RetryPolicy, subConfig.RetryPolicy)) ||
+			(subConfig.DeadLetterPolicy != nil && !equality.Semantic.DeepEqual(config.DeadLetterPolicy, subConfig.DeadLetterPolicy)) {
+			updateSubConfig := pubsub.SubscriptionConfigToUpdate{
+				RetryPolicy:      subConfig.RetryPolicy,
+				DeadLetterPolicy: subConfig.DeadLetterPolicy,
+			}
+			if _, err := sub.Update(ctx, updateSubConfig); err != nil {
+				updater.MarkSubscriptionFailed("SubscriptionConfigUpdateFailed", "Failed to update Pub/Sub subscription config: %v", err)
+				return nil, err
+			}
+			logger.Info("Updated PubSub subscription config", zap.String("name", sub.ID()))
+			r.recorder.Eventf(obj, corev1.EventTypeNormal, subConfigUpdated, "Updated config for PubSub subscription %q", sub.ID())
 		}
 		updater.MarkSubscriptionReady()
 		return sub, nil
