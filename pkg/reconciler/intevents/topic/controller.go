@@ -29,6 +29,7 @@ import (
 	"knative.dev/pkg/logging"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
@@ -95,7 +96,7 @@ func newController(
 		topicLister:        topicInformer.Lister(),
 		serviceLister:      serviceInformer.Lister(),
 		publisherImage:     env.Publisher,
-		pubsubClient:       nil, // we need project id to set it
+		createClientFn:     pubsub.NewClient,
 	}
 
 	impl := topicreconciler.NewImpl(ctx, r)

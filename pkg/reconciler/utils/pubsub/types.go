@@ -17,9 +17,16 @@ limitations under the License.
 package pubsub
 
 import (
+	"context"
+
 	"cloud.google.com/go/pubsub"
+	"google.golang.org/api/option"
 	"k8s.io/client-go/tools/record"
 )
+
+// CreateFn is a factory function to create a Pub/Sub client. It is copied from gclient/pubsub
+// to avoid unnecessary dependency on gpubsub.
+type CreateFn func(ctx context.Context, projectID string, opts ...option.ClientOption) (*pubsub.Client, error)
 
 type Reconciler struct {
 	client   *pubsub.Client

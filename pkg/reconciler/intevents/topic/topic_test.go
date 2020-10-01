@@ -22,8 +22,13 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
+
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
 	corev1 "k8s.io/api/core/v1"
@@ -131,6 +136,49 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
+	}, {
+		Name: "create client fails",
+		Objects: []runtime.Object{
+			reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				reconcilertestingv1.WithTopicPropagationPolicy("NoCreateNoDelete"),
+				reconcilertestingv1.WithTopicSetDefaults,
+			),
+			newSink(),
+			newSecret(),
+		},
+		Key: testNS + "/" + topicName,
+		OtherTestData: map[string]interface{}{
+			"client-error": true,
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+			Eventf(corev1.EventTypeWarning, reconciledTopicFailedReason, "Failed to reconcile Pub/Sub topic: create-client-induced-error"),
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, topicName, resourceGroup),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicProjectID(testProject),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				reconcilertestingv1.WithTopicPropagationPolicy("NoCreateNoDelete"),
+				// Updates
+				reconcilertestingv1.WithInitTopicConditions,
+				reconcilertestingv1.WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-client-induced-error")),
+				reconcilertestingv1.WithTopicSetDefaults,
+			),
+		}},
 	}, {
 		Name: "verify topic exists fails",
 		Objects: []runtime.Object{
@@ -606,6 +654,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				reconcilertestingv1.WithTopicPropagationPolicy("CreateDelete"),
 				reconcilertestingv1.WithTopicTopicID(testTopicID),
+				reconcilertestingv1.WithTopicProjectID(testProject),
 				reconcilertestingv1.WithTopicDeleted,
 				reconcilertestingv1.WithTopicSetDefaults,
 			),
@@ -635,6 +684,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				reconcilertestingv1.WithTopicPropagationPolicy("CreateDelete"),
 				reconcilertestingv1.WithTopicTopicID(testTopicID),
+				reconcilertestingv1.WithTopicProjectID(testProject),
 				reconcilertestingv1.WithTopicDeleted,
 				reconcilertestingv1.WithTopicSetDefaults,
 			),
@@ -666,7 +716,18 @@ func TestAllCases(t *testing.T) {
 				opts = testData["server-options"].([]pstest.ServerReactorOption)
 			}
 		}
-		psclient, close := TestPubsubClient(ctx, testProject, opts...)
+
+		srv := pstest.NewServer(opts...)
+
+		psclient, _ := GetTestClientCreatFunc(srv.Addr)(ctx, testProject)
+		conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
+		if err != nil {
+			panic(fmt.Errorf("failed to dial test pubsub connection: %v", err))
+		}
+		close := func() {
+			srv.Close()
+			conn.Close()
+		}
 		t.Cleanup(close)
 		if testData != nil {
 			InjectPubsubClient(testData, psclient)
@@ -677,6 +738,15 @@ func TestAllCases(t *testing.T) {
 				}
 			}
 		}
+		// use normal create function or always error one
+		var createClientFn reconcilerutilspubsub.CreateFn
+		if testData != nil && testData["client-error"] != nil {
+			createClientFn = func(ctx context.Context, projectID string, opts ...option.ClientOption) (*pubsub.Client, error) {
+				return nil, fmt.Errorf("create-client-induced-error")
+			}
+		} else {
+			createClientFn = GetTestClientCreatFunc(srv.Addr)
+		}
 		pubsubBase := &intevents.PubSubBase{
 			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 		}
@@ -685,7 +755,7 @@ func TestAllCases(t *testing.T) {
 			topicLister:    listers.GetTopicLister(),
 			serviceLister:  listers.GetV1ServiceLister(),
 			publisherImage: testImage,
-			pubsubClient:   psclient,
+			createClientFn: createClientFn,
 		}
 		return topic.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetTopicLister(), r.Recorder, r)
 	}))
