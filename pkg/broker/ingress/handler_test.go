@@ -179,14 +179,14 @@ func TestHandler(t *testing.T) {
 			name:     "an event with a very large payload",
 			method:   "POST",
 			path:     "/ns1/broker1",
-			event:    createTestEventWithPayloadSize("test-event", 10000001), // 10Mb + extra byte
+			event:    createTestEventWithPayloadSize("test-event", 11000000), // 11Mb
 			wantCode: nethttp.StatusRequestEntityTooLarge,
 		},
 		{
 			name:          "malicious requests or requests with unknown Content-Length and a very large payload",
 			method:        "POST",
 			path:          "/ns1/broker1",
-			event:         createTestEventWithPayloadSize("test-event", 10000001), // 10Mb + extra byte
+			event:         createTestEventWithPayloadSize("test-event", 11000000), // 11Mb
 			contentLength: ptr.Int64(-1),
 			wantCode:      nethttp.StatusRequestEntityTooLarge,
 		},
