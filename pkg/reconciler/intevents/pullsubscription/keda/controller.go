@@ -21,6 +21,7 @@ import (
 
 	"knative.dev/pkg/injection"
 
+	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/cache"
@@ -103,7 +104,7 @@ func newController(
 			DeploymentLister:       deploymentInformer.Lister(),
 			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
 			ReceiveAdapterImage:    env.ReceiveAdapter,
-			PubsubClient:           nil,
+			CreateClientFn:         pubsub.NewClient,
 			ControllerAgentName:    controllerAgentName,
 			ResourceGroup:          resourceGroup,
 		},

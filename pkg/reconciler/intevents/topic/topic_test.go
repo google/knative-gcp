@@ -154,7 +154,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + topicName,
 		OtherTestData: map[string]interface{}{
-			"client-error": true,
+			"client-error": "create-client-induced-error",
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
@@ -742,7 +742,7 @@ func TestAllCases(t *testing.T) {
 		var createClientFn reconcilerutilspubsub.CreateFn
 		if testData != nil && testData["client-error"] != nil {
 			createClientFn = func(ctx context.Context, projectID string, opts ...option.ClientOption) (*pubsub.Client, error) {
-				return nil, fmt.Errorf("create-client-induced-error")
+				return nil, fmt.Errorf(testData["client-error"].(string))
 			}
 		} else {
 			createClientFn = GetTestClientCreatFunc(srv.Addr)

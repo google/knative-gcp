@@ -81,7 +81,7 @@ type Reconciler struct {
 	publisherImage string
 	tracingConfig  *tracingconfig.Config
 
-	// CreateClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
+	// createClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
 	// This is needed so that we can inject a mock client for UTs purposes.
 	createClientFn reconcilerutilspubsub.CreateFn
 }

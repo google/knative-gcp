@@ -22,8 +22,11 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
 	v1 "k8s.io/api/apps/v1"
@@ -57,6 +60,7 @@ import (
 	. "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/keda/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
+	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
 )
 
 const (
@@ -249,6 +253,62 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
 		}},
+	}, {
+		Name: "create client fails",
+		Objects: []runtime.Object{
+			reconcilertestingv1.NewPullSubscription(sourceName, testNS,
+				reconcilertestingv1.WithPullSubscriptionUID(sourceUID),
+				reconcilertestingv1.WithPullSubscriptionAnnotations(newAnnotations()),
+				reconcilertestingv1.WithPullSubscriptionObjectMetaGeneration(generation),
+				reconcilertestingv1.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
+				}),
+				reconcilertestingv1.WithInitPullSubscriptionConditions,
+				reconcilertestingv1.WithPullSubscriptionSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithPullSubscriptionMarkSink(sinkURI),
+				reconcilertestingv1.WithPullSubscriptionSetDefaults,
+			),
+			newSink(),
+			newSecret(),
+		},
+		Key: testNS + "/" + sourceName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: client-create-induced-error"),
+		},
+		OtherTestData: map[string]interface{}{
+			"client-error": "client-create-induced-error",
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: reconcilertestingv1.NewPullSubscription(sourceName, testNS,
+				reconcilertestingv1.WithPullSubscriptionUID(sourceUID),
+				reconcilertestingv1.WithPullSubscriptionAnnotations(newAnnotations()),
+				reconcilertestingv1.WithPullSubscriptionObjectMetaGeneration(generation),
+				reconcilertestingv1.WithPullSubscriptionStatusObservedGeneration(generation),
+				reconcilertestingv1.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
+				}),
+				reconcilertestingv1.WithInitPullSubscriptionConditions,
+				reconcilertestingv1.WithPullSubscriptionProjectID(testProject),
+				reconcilertestingv1.WithPullSubscriptionSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithPullSubscriptionMarkSink(sinkURI),
+				reconcilertestingv1.WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+				reconcilertestingv1.WithPullSubscriptionTransformerURI(nil),
+				reconcilertestingv1.WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "client-create-induced-error")),
+				reconcilertestingv1.WithPullSubscriptionSetDefaults,
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
 	}, {
 		Name: "topic exists fails",
 		Objects: []runtime.Object{
@@ -689,6 +749,7 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionMarkSubscribed(testSubscriptionID),
 				reconcilertestingv1.WithPullSubscriptionMarkDeployed(deploymentName(testSubscriptionID), testNS),
 				reconcilertestingv1.WithPullSubscriptionMarkSink(sinkURI),
+				reconcilertestingv1.WithPullSubscriptionProjectID(testProject),
 				reconcilertestingv1.WithPullSubscriptionDeleted,
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
@@ -933,6 +994,7 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionMarkSubscribed(testSubscriptionID),
 				reconcilertestingv1.WithPullSubscriptionMarkDeployed(deploymentName(testSubscriptionID), testNS),
 				reconcilertestingv1.WithPullSubscriptionMarkSink(sinkURI),
+				reconcilertestingv1.WithPullSubscriptionProjectID(testProject),
 				reconcilertestingv1.WithPullSubscriptionDeleted,
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
@@ -958,7 +1020,17 @@ func TestAllCases(t *testing.T) {
 		if testData != nil && testData["server-options"] != nil {
 			opts = testData["server-options"].([]pstest.ServerReactorOption)
 		}
-		psclient, close := TestPubsubClient(ctx, testProject, opts...)
+		srv := pstest.NewServer(opts...)
+
+		psclient, _ := GetTestClientCreatFunc(srv.Addr)(ctx, testProject)
+		conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
+		if err != nil {
+			panic(fmt.Errorf("failed to dial test pubsub connection: %v", err))
+		}
+		close := func() {
+			srv.Close()
+			conn.Close()
+		}
 		t.Cleanup(close)
 		if testData != nil {
 			InjectPubsubClient(testData, psclient)
@@ -968,6 +1040,15 @@ func TestAllCases(t *testing.T) {
 					f(ctx, t, psclient)
 				}
 			}
+		}
+		// use normal create function or always error one
+		var createClientFn reconcilerutilspubsub.CreateFn
+		if testData != nil && testData["client-error"] != nil {
+			createClientFn = func(ctx context.Context, projectID string, opts ...option.ClientOption) (*pubsub.Client, error) {
+				return nil, fmt.Errorf(testData["client-error"].(string))
+			}
+		} else {
+			createClientFn = GetTestClientCreatFunc(srv.Addr)
 		}
 		pubsubBase := &intevents.PubSubBase{
 			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
@@ -979,7 +1060,7 @@ func TestAllCases(t *testing.T) {
 				PullSubscriptionLister: listers.GetPullSubscriptionLister(),
 				UriResolver:            resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 				ReceiveAdapterImage:    testImage,
-				PubsubClient:           psclient,
+				CreateClientFn:         createClientFn,
 				ControllerAgentName:    controllerAgentName,
 				ResourceGroup:          resourceGroup,
 			},
