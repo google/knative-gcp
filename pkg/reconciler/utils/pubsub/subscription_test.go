@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	corev1 "k8s.io/api/core/v1"
@@ -59,6 +60,24 @@ func TestReconcileSub(t *testing.T) {
 			},
 			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue},
 		},
+		{
+			name: "sub already exists, modify config",
+			pre:  []reconcilertesting.PubsubAction{reconcilertesting.TopicAndSub(topic, sub)},
+			wantSubConfig: &pubsub.SubscriptionConfig{
+				RetryPolicy: &pubsub.RetryPolicy{
+					MinimumBackoff: time.Second,
+					MaximumBackoff: time.Second,
+				},
+				DeadLetterPolicy: &pubsub.DeadLetterPolicy{
+					DeadLetterTopic:     "some-topic-id",
+					MaxDeliveryAttempts: 10,
+				},
+			},
+			wantEvents: []string{
+				`Normal SubscriptionConfigUpdated Updated config for PubSub subscription "test-sub"`,
+			},
+			wantSubCondition: apis.Condition{Status: corev1.ConditionTrue},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -67,6 +86,11 @@ func TestReconcileSub(t *testing.T) {
 			r := NewReconciler(tr.client, tr.recorder)
 			su := &utilspubsubtesting.StatusUpdater{}
 			subConfig := pubsub.SubscriptionConfig{Topic: tr.client.Topic(topic)}
+			if tc.wantSubConfig != nil {
+				subConfig.Labels = tc.wantSubConfig.Labels
+				subConfig.RetryPolicy = tc.wantSubConfig.RetryPolicy
+				subConfig.DeadLetterPolicy = tc.wantSubConfig.DeadLetterPolicy
+			}
 			res, err := r.ReconcileSubscription(context.Background(), sub, subConfig, obj, su)
 
 			tr.verify(t, tc, su, err)
@@ -129,5 +153,11 @@ func verifySub(t *testing.T, got *pubsub.Subscription, wantConfig pubsub.Subscri
 	}
 	if !reflect.DeepEqual(gotConfig.Labels, wantConfig.Labels) {
 		t.Errorf("Unexpected labels in config, got:%+v, want: %+v", gotConfig.Labels, wantConfig.Labels)
+	}
+	if !reflect.DeepEqual(gotConfig.RetryPolicy, wantConfig.RetryPolicy) {
+		t.Errorf("Unexpected retry policy in config, got:%+v, want: %+v", gotConfig.RetryPolicy, wantConfig.RetryPolicy)
+	}
+	if !reflect.DeepEqual(gotConfig.DeadLetterPolicy, wantConfig.DeadLetterPolicy) {
+		t.Errorf("Unexpected dead letter policy in config, got:%+v, want: %+v", gotConfig.DeadLetterPolicy, wantConfig.DeadLetterPolicy)
 	}
 }

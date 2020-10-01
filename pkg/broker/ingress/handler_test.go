@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"math/rand"
+
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
@@ -52,6 +54,7 @@ import (
 	logtest "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
+	"knative.dev/pkg/ptr"
 
 	_ "knative.dev/pkg/metrics/testing"
 )
@@ -115,6 +118,7 @@ type testCase struct {
 	// additional assertions on the output event.
 	eventAssertions []eventAssertion
 	decouple        DecoupleSink
+	contentLength   *int64
 }
 
 type fakeOverloadedDecoupleSink struct{}
@@ -138,8 +142,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusAccepted,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns1",
-				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "202",
 				metricskey.LabelResponseCodeClass: "2xx",
@@ -158,8 +160,6 @@ func TestHandler(t *testing.T) {
 			},
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns1",
-				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "202",
 				metricskey.LabelResponseCodeClass: "2xx",
@@ -174,6 +174,21 @@ func TestHandler(t *testing.T) {
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
 			wantCode: nethttp.StatusMethodNotAllowed,
+		},
+		{
+			name:     "an event with a very large payload",
+			method:   "POST",
+			path:     "/ns1/broker1",
+			event:    createTestEventWithPayloadSize("test-event", 110000000),
+			wantCode: nethttp.StatusRequestEntityTooLarge,
+		},
+		{
+			name:          "malicious requests or requests with unknown Content-Length and a very large payload",
+			method:        "POST",
+			path:          "/ns1/broker1",
+			event:         createTestEventWithPayloadSize("test-event", 110000000),
+			contentLength: ptr.Int64(-1),
+			wantCode:      nethttp.StatusRequestEntityTooLarge,
 		},
 		{
 			name:     "malformed path",
@@ -194,8 +209,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusNotFound,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns1",
-				metricskey.LabelBrokerName:        "broker-not-exist",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "404",
 				metricskey.LabelResponseCodeClass: "4xx",
@@ -210,8 +223,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusNotFound,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns-not-exist",
-				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "404",
 				metricskey.LabelResponseCodeClass: "4xx",
@@ -226,8 +237,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusServiceUnavailable,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns4",
-				metricskey.LabelBrokerName:        "broker4",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "503",
 				metricskey.LabelResponseCodeClass: "5xx",
@@ -242,8 +251,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusInternalServerError,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns2",
-				metricskey.LabelBrokerName:        "broker2",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "500",
 				metricskey.LabelResponseCodeClass: "5xx",
@@ -258,8 +265,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusInternalServerError,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns3",
-				metricskey.LabelBrokerName:        "broker3",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "500",
 				metricskey.LabelResponseCodeClass: "5xx",
@@ -274,8 +279,6 @@ func TestHandler(t *testing.T) {
 			wantCode:       nethttp.StatusTooManyRequests,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns1",
-				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "429",
 				metricskey.LabelResponseCodeClass: "4xx",
@@ -305,8 +308,11 @@ func TestHandler(t *testing.T) {
 
 			url := createAndStartIngress(ctx, t, psSrv, decouple)
 			rec := setupTestReceiver(ctx, t, psSrv)
-
-			res, err := client.Do(createRequest(tc, url))
+			req := createRequest(tc, url)
+			if tc.contentLength != nil {
+				req.ContentLength = *tc.contentLength
+			}
+			res, err := client.Do(req)
 			if err != nil {
 				t.Fatalf("Unexpected error from http client: %v", err)
 			}
@@ -464,6 +470,14 @@ func createTestEvent(id string) *cloudevents.Event {
 	event.SetSource("test-source")
 	event.SetType(eventType)
 	return &event
+}
+
+func createTestEventWithPayloadSize(id string, payloadSizeBytes int) *cloudevents.Event {
+	testEvent := createTestEvent(id)
+	payload := make([]byte, payloadSizeBytes)
+	rand.Read(payload)
+	testEvent.SetData("application/octet-stream", payload)
+	return testEvent
 }
 
 // createRequest creates an http request from the test case. If event is specified, it converts the event to a request.

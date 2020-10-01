@@ -33,9 +33,6 @@ func TestReportEventDispatchTime(t *testing.T) {
 	reportertest.ResetDeliveryMetrics()
 
 	wantTags := map[string]string{
-		metricskey.LabelNamespaceName:     "testns",
-		metricskey.LabelBrokerName:        "testbroker",
-		metricskey.LabelTriggerName:       "testtrigger",
 		metricskey.LabelFilterType:        "testeventtype",
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
@@ -80,12 +77,9 @@ func TestReportEventProcessingTime(t *testing.T) {
 	reportertest.ResetDeliveryMetrics()
 
 	wantTags := map[string]string{
-		metricskey.LabelNamespaceName: "testns",
-		metricskey.LabelBrokerName:    "testbroker",
-		metricskey.LabelTriggerName:   "testtrigger",
-		metricskey.LabelFilterType:    "testeventtype",
-		metricskey.PodName:            "testpod",
-		metricskey.ContainerName:      "testcontainer",
+		metricskey.LabelFilterType: "testeventtype",
+		metricskey.PodName:         "testpod",
+		metricskey.ContainerName:   "testcontainer",
 	}
 
 	r, err := NewDeliveryReporter("testpod", "testcontainer")
@@ -138,9 +132,6 @@ func TestMetricsWithEmptySourceAndTypeFilter(t *testing.T) {
 	reportertest.ResetDeliveryMetrics()
 
 	wantTags := map[string]string{
-		metricskey.LabelNamespaceName:     "testns",
-		metricskey.LabelBrokerName:        "testbroker",
-		metricskey.LabelTriggerName:       "testtrigger",
 		metricskey.LabelFilterType:        "any", // Expects this to be "any" instead of empty string
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",

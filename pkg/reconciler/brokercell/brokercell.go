@@ -240,6 +240,7 @@ func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.Ingre
 			CPULimit:           bc.Spec.Components.Ingress.CPULimit,
 			MemoryRequest:      bc.Spec.Components.Ingress.MemoryRequest,
 			MemoryLimit:        bc.Spec.Components.Ingress.MemoryLimit,
+			RolloutRestartTime: bc.GetAnnotations()[resources.IngressRestartTimeAnnotationKey],
 		},
 		Port: r.env.IngressPort,
 	}
@@ -269,6 +270,7 @@ func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell) resources.Fanout
 			CPULimit:           bc.Spec.Components.Fanout.CPULimit,
 			MemoryRequest:      bc.Spec.Components.Fanout.MemoryRequest,
 			MemoryLimit:        bc.Spec.Components.Fanout.MemoryLimit,
+			RolloutRestartTime: bc.GetAnnotations()[resources.FanoutRestartTimeAnnotationKey],
 		},
 	}
 }
@@ -297,6 +299,7 @@ func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell) resources.RetryAr
 			CPULimit:           bc.Spec.Components.Retry.CPULimit,
 			MemoryRequest:      bc.Spec.Components.Retry.MemoryRequest,
 			MemoryLimit:        bc.Spec.Components.Retry.MemoryLimit,
+			RolloutRestartTime: bc.GetAnnotations()[resources.RetryRestartTimeAnnotationKey],
 		},
 	}
 }

@@ -71,16 +71,17 @@ var (
 
 	testKey = fmt.Sprintf("%s/%s", testNS, triggerName)
 
-	triggerFinalizerUpdatedEvent = Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`)
-	triggerReconciledEvent       = Eventf(corev1.EventTypeNormal, "TriggerReconciled", `Trigger reconciled: "testnamespace/test-trigger"`)
-	triggerFinalizedEvent        = Eventf(corev1.EventTypeNormal, "TriggerFinalized", `Trigger finalized: "testnamespace/test-trigger"`)
-	topicCreatedEvent            = Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`)
-	topicDeletedEvent            = Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`)
-	deadLetterTopicCreatedEvent  = Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "test-dead-letter-topic-id"`)
-	subscriptionCreatedEvent     = Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`)
-	subscriptionDeletedEvent     = Eventf(corev1.EventTypeNormal, "SubscriptionDeleted", `Deleted PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`)
-	subscriberAPIVersion         = fmt.Sprintf("%s/%s", subscriberGroup, subscriberVersion)
-	subscriberGVK                = metav1.GroupVersionKind{
+	triggerFinalizerUpdatedEvent   = Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`)
+	triggerReconciledEvent         = Eventf(corev1.EventTypeNormal, "TriggerReconciled", `Trigger reconciled: "testnamespace/test-trigger"`)
+	triggerFinalizedEvent          = Eventf(corev1.EventTypeNormal, "TriggerFinalized", `Trigger finalized: "testnamespace/test-trigger"`)
+	topicCreatedEvent              = Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`)
+	topicDeletedEvent              = Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`)
+	deadLetterTopicCreatedEvent    = Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "test-dead-letter-topic-id"`)
+	subscriptionCreatedEvent       = Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`)
+	subscriptionDeletedEvent       = Eventf(corev1.EventTypeNormal, "SubscriptionDeleted", `Deleted PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`)
+	subscriptionConfigUpdatedEvent = Eventf(corev1.EventTypeNormal, "SubscriptionConfigUpdated", `Updated config for PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`)
+	subscriberAPIVersion           = fmt.Sprintf("%s/%s", subscriberGroup, subscriberVersion)
+	subscriberGVK                  = metav1.GroupVersionKind{
 		Group:   subscriberGroup,
 		Version: subscriberVersion,
 		Kind:    subscriberKind,
@@ -383,6 +384,65 @@ func TestAllCasesTrigger(t *testing.T) {
 						"name": "test-trigger", "namespace": "testnamespace", "resource": "triggers",
 					},
 				}),
+			},
+		},
+		{
+			Name: "Sub already exists, update config",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithInitBrokerConditions,
+					WithBrokerReady("url"),
+					WithBrokerDeliverySpec(brokerDeliverySpec),
+					WithBrokerSetDefaults,
+				),
+				makeSubscriberAddressableAsUnstructured(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerSetDefaults),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerBrokerReady,
+					WithTriggerSubscriptionReady,
+					WithTriggerTopicReady,
+					WithTriggerDependencyReady,
+					WithTriggerSubscriberResolvedSucceeded,
+					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerSetDefaults,
+				),
+			}},
+			WantEvents: []string{
+				triggerFinalizerUpdatedEvent,
+				subscriptionConfigUpdatedEvent,
+				triggerReconciledEvent,
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName, finalizerName),
+			},
+			OtherTestData: map[string]interface{}{
+				"pre": []PubsubAction{
+					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123", "cre-tgr_testnamespace_test-trigger_abc123"),
+					Topic("test-dead-letter-topic-id"),
+				},
+			},
+			PostConditions: []func(*testing.T, *TableRow){
+				OnlyTopics("cre-tgr_testnamespace_test-trigger_abc123", "test-dead-letter-topic-id"),
+				OnlySubscriptions("cre-tgr_testnamespace_test-trigger_abc123"),
+				SubscriptionHasRetryPolicy("cre-tgr_testnamespace_test-trigger_abc123",
+					&pubsub.RetryPolicy{
+						MaximumBackoff: 5 * time.Second,
+						MinimumBackoff: 5 * time.Second,
+					}),
+				SubscriptionHasDeadLetterPolicy("cre-tgr_testnamespace_test-trigger_abc123",
+					&pubsub.DeadLetterPolicy{
+						MaxDeliveryAttempts: 3,
+						DeadLetterTopic:     "projects/test-project-id/topics/test-dead-letter-topic-id",
+					}),
 			},
 		},
 		{

@@ -33,6 +33,7 @@ import (
 	"github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/wire"
+	"go.opencensus.io/resource"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"google.golang.org/api/support/bundler"
@@ -41,11 +42,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/kncloudevents"
 	kntracing "knative.dev/eventing/pkg/tracing"
+	"knative.dev/pkg/metrics/metricskey"
 )
 
 const (
 	// TODO(liu-cong) configurable timeout
 	decoupleSinkTimeout = 30 * time.Second
+
+	// Limit for request payload in bytes (10Mb -- corresponds to message size limit on PubSub as of 09/2020)
+	maxRequestBodyBytes = 10000000
 
 	// EventArrivalTime is used to access the metadata stored on a
 	// CloudEvent to measure the time difference between when an event is
@@ -119,7 +124,6 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		response.WriteHeader(nethttp.StatusOK)
 		return
 	}
-
 	ctx := request.Context()
 	ctx = logging.WithLogger(ctx, h.logger)
 	ctx = tracing.WithLogging(ctx, trace.FromContext(ctx))
@@ -129,17 +133,34 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 
+	if request.ContentLength > maxRequestBodyBytes {
+		response.WriteHeader(nethttp.StatusRequestEntityTooLarge)
+		return
+	}
+	request.Body = nethttp.MaxBytesReader(nil, request.Body, maxRequestBodyBytes)
+
 	broker, err := ConvertPathToNamespacedName(request.URL.Path)
-	ctx = logging.With(ctx, zap.Stringer("broker", broker))
 	if err != nil {
 		logging.FromContext(ctx).Debug("Malformed request path", zap.String("path", request.URL.Path))
 		nethttp.Error(response, err.Error(), nethttp.StatusNotFound)
 		return
 	}
+	ctx = logging.With(ctx, zap.Stringer("broker", broker))
+	ctx = metricskey.WithResource(ctx, resource.Resource{
+		Type: metricskey.ResourceTypeKnativeBroker,
+		Labels: map[string]string{
+			metricskey.LabelNamespaceName: broker.Namespace,
+			metricskey.LabelBrokerName:    broker.Name,
+		},
+	})
 
 	event, err := h.toEvent(ctx, request)
 	if err != nil {
-		nethttp.Error(response, err.Error(), nethttp.StatusBadRequest)
+		httpStatus := nethttp.StatusBadRequest
+		if err.Error() == "http: request body too large" {
+			httpStatus = nethttp.StatusRequestEntityTooLarge
+		}
+		nethttp.Error(response, err.Error(), httpStatus)
 		return
 	}
 
@@ -165,7 +186,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	statusCode := nethttp.StatusAccepted
 	ctx, cancel := context.WithTimeout(ctx, decoupleSinkTimeout)
 	defer cancel()
-	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode) }()
+	defer func() { h.reportMetrics(ctx, event, statusCode) }()
 	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
 		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.Error(res))
 		statusCode = nethttp.StatusInternalServerError
@@ -209,14 +230,12 @@ func (h *Handler) toEvent(ctx context.Context, request *nethttp.Request) (*cev2.
 	return event, nil
 }
 
-func (h *Handler) reportMetrics(ctx context.Context, broker types.NamespacedName, event *cev2.Event, statusCode int) {
+func (h *Handler) reportMetrics(ctx context.Context, event *cev2.Event, statusCode int) {
 	args := metrics.IngressReportArgs{
-		Namespace:    broker.Namespace,
-		Broker:       broker.Name,
 		EventType:    event.Type(),
 		ResponseCode: statusCode,
 	}
 	if err := h.reporter.ReportEventCount(ctx, args); err != nil {
-		logging.FromContext(ctx).Warn("Failed to record metrics.", zap.Any("broker", broker.Name), zap.Error(err))
+		logging.FromContext(ctx).Warn("Failed to record metrics.", zap.Error(err))
 	}
 }
