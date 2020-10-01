@@ -70,12 +70,6 @@ type multiTopicDecoupleSink struct {
 
 // Send sends incoming event to its corresponding pubsub topic based on which broker it belongs to.
 func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.NamespacedName, event cev2.Event) protocol.Result {
-	// Check to see if there are any triggers interested in this event. If not, no need to send this
-	// to the decouple topic.
-	if !m.hasTrigger(ctx, &event) {
-		return nil
-	}
-
 	topic, err := m.getTopicForBroker(ctx, broker)
 	if err != nil {
 		trace.FromContext(ctx).Annotate(
@@ -85,6 +79,12 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.Namespac
 			"unable to accept event",
 		)
 		return err
+	}
+
+	// Check to see if there are any triggers interested in this event. If not, no need to send this
+	// to the decouple topic.
+	if !m.hasTrigger(ctx, &event) {
+		return nil
 	}
 
 	dt := extensions.FromSpanContext(trace.FromContext(ctx).SpanContext())
