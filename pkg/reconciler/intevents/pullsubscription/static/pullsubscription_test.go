@@ -279,6 +279,9 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
 		}},
+		PostConditions: []func(*testing.T, *TableRow){
+			NoSubscriptionsExist(),
+		},
 	}, {
 		Name: "topic does not exist",
 		Objects: []runtime.Object{
@@ -331,6 +334,9 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
 		}},
+		PostConditions: []func(*testing.T, *TableRow){
+			NoSubscriptionsExist(),
+		},
 	}, {
 		Name: "subscription exists fails",
 		Objects: []runtime.Object{
@@ -503,6 +509,9 @@ func TestAllCases(t *testing.T) {
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, resourceGroup),
 		},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlySubscriptions(testSubscriptionID),
+		},
 	}, {
 		Name: "sink namespace empty, default to the source one",
 		Objects: []runtime.Object{
@@ -566,6 +575,9 @@ func TestAllCases(t *testing.T) {
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlySubscriptions(testSubscriptionID),
 		},
 	}, {
 		Name: "sink URI set instead of ref",
@@ -633,6 +645,9 @@ func TestAllCases(t *testing.T) {
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, resourceGroup),
 		},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlySubscriptions(testSubscriptionID),
+		},
 	}, {
 		Name: "successful create - reuse existing receive adapter - match",
 		Objects: []runtime.Object{
@@ -689,6 +704,9 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
 		}},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlySubscriptions(testSubscriptionID),
+		},
 	}, {
 		Name: "successful create - reuse existing receive adapter - mismatch",
 		Objects: []runtime.Object{
@@ -756,6 +774,9 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
 		}},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlySubscriptions(testSubscriptionID),
+		},
 	}, {
 		Name: "get existing receiver adapter fails",
 		Objects: []runtime.Object{
@@ -816,6 +837,9 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
 		}},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlySubscriptions(testSubscriptionID),
+		},
 	}, {
 		Name: "create receiver adapter fails",
 		Objects: []runtime.Object{
@@ -879,6 +903,9 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
 		}},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlySubscriptions(testSubscriptionID),
+		},
 	}, {
 		Name: "update receiver adapter fails",
 		Objects: []runtime.Object{
@@ -948,6 +975,9 @@ func TestAllCases(t *testing.T) {
 				reconcilertestingv1.WithPullSubscriptionSetDefaults,
 			),
 		}},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlySubscriptions(testSubscriptionID),
+		},
 	}, {
 		Name: "deleting - failed to delete subscription",
 		Objects: []runtime.Object{
@@ -1008,6 +1038,9 @@ func TestAllCases(t *testing.T) {
 			"pre": []PubsubAction{
 				TopicAndSub(testTopicID, testSubscriptionID),
 			},
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			NoSubscriptionsExist(),
 		},
 		Key:        testNS + "/" + sourceName,
 		WantEvents: nil,
