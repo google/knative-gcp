@@ -167,6 +167,10 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			psSrv := pstest.NewServer()
 			defer psSrv.Close()
 			psClient := createPubsubClient(ctx, t, psSrv)
+
+			// Add a target to the broker to ensure all events are sent to pub/sub.
+			tt.brokerConfig.Targets = map[string]*config.Target{"target": {}}
+
 			brokerConfig := memory.NewTargets(tt.brokerConfig)
 			for i, testCase := range tt.cases {
 				topic := psClient.Topic(testCase.topic)
@@ -316,7 +320,7 @@ func TestHasTrigger(t *testing.T) {
 	}
 }
 
-func TestMultiTopicDecoupleSinkSend(t *testing.T) {
+func TestMultiTopicDecoupleSinkSendChecksFilter(t *testing.T) {
 	filterCalled := false
 	orig := EventFilterFunc
 	defer func() { EventFilterFunc = orig }()
