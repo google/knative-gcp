@@ -71,6 +71,9 @@ const (
 	container = "testcontainer"
 )
 
+// Add a target to every broker to ensure events are sent to pub/sub.
+var brokerTargets = map[string]*config.Target{"target": {}}
+
 var brokerConfig = &config.TargetsConfig{
 	Brokers: map[string]*config.Broker{
 		"ns1/broker1": {
@@ -78,24 +81,28 @@ var brokerConfig = &config.TargetsConfig{
 			Name:          "broker1",
 			Namespace:     "ns1",
 			DecoupleQueue: &config.Queue{Topic: topicID, State: config.State_READY},
+			Targets:       brokerTargets,
 		},
 		"ns2/broker2": {
 			Id:            "b-uid-2",
 			Name:          "broker2",
 			Namespace:     "ns2",
 			DecoupleQueue: nil,
+			Targets:       brokerTargets,
 		},
 		"ns3/broker3": {
 			Id:            "b-uid-3",
 			Name:          "broker3",
 			Namespace:     "ns3",
 			DecoupleQueue: &config.Queue{Topic: ""},
+			Targets:       brokerTargets,
 		},
 		"ns4/broker4": {
 			Id:            "b-uid-4",
 			Name:          "broker4",
 			Namespace:     "ns4",
 			DecoupleQueue: &config.Queue{Topic: "topic4", State: config.State_UNKNOWN},
+			Targets:       brokerTargets,
 		},
 	},
 }
