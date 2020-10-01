@@ -96,8 +96,12 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 		},
 		{
-			name:         "broker doesn't exist in config",
-			brokerConfig: &config.TargetsConfig{},
+			name: "broker doesn't exist in config",
+			brokerConfig: &config.TargetsConfig{
+				Brokers: map[string]*config.Broker{
+					"test_ns_2/test_broker_2": {DecoupleQueue: &config.Queue{Topic: "test_topic_2", State: config.State_READY}, Targets: brokerTargets},
+				},
+			},
 			cases: []brokerTestCase{
 				{
 					broker: types.NamespacedName{
