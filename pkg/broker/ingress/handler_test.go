@@ -119,6 +119,7 @@ type testCase struct {
 	eventAssertions []eventAssertion
 	decouple        DecoupleSink
 	contentLength   *int64
+	timeout time.Duration
 }
 
 type fakeOverloadedDecoupleSink struct{}
@@ -181,6 +182,7 @@ func TestHandler(t *testing.T) {
 			path:     "/ns1/broker1",
 			event:    createTestEventWithPayloadSize("test-event", 11000000), // 11Mb
 			wantCode: nethttp.StatusRequestEntityTooLarge,
+			timeout: 5*time.Second,
 		},
 		{
 			name:          "malicious requests or requests with unknown Content-Length and a very large payload",
@@ -189,6 +191,7 @@ func TestHandler(t *testing.T) {
 			event:         createTestEventWithPayloadSize("test-event", 11000000), // 11Mb
 			contentLength: ptr.Int64(-1),
 			wantCode:      nethttp.StatusRequestEntityTooLarge,
+			timeout: 10*time.Second,
 		},
 		{
 			name:     "malformed path",
@@ -295,7 +298,11 @@ func TestHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			reportertest.ResetIngressMetrics()
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
-			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			timeout := 3*time.Second
+			if tc.timeout > 0 {
+				timeout = tc.timeout
+			}
+			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
 
 			psSrv := pstest.NewServer()
