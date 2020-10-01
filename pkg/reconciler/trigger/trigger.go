@@ -122,11 +122,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 		// skip a trigger if it's not pointed to a gcp broker and doesn't have googlecloud finalizer string.
 		t.Status.MarkTopicReady()
 		var reconcilerEvent *pkgreconciler.ReconcilerEvent
-		if event == nil {
+		switch {
+		case event == nil:
 			return nil
-		} else if pkgreconciler.EventAs(event, &reconcilerEvent) {
+		case pkgreconciler.EventAs(event, &reconcilerEvent):
 			return event
-		} else {
+		default:
 			return fmt.Errorf("Error won't be retried, please manually delete PubSub resources:: %w", event)
 		}
 	}
