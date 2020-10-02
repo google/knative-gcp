@@ -18,9 +18,9 @@ package broker
 
 import (
 	"context"
-	"os"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
+	"github.com/kelseyhightower/envconfig"
 
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
@@ -50,6 +50,10 @@ const (
 	controllerAgentName = "broker-controller"
 )
 
+type envConfig struct {
+	utils.ProjectIDEnvConfig
+}
+
 type Constructor injection.ControllerConstructor
 
 // NewConstructor creates a constructor to make a Broker controller.
@@ -60,20 +64,27 @@ func NewConstructor(dataresidencyss *dataresidency.StoreSingleton) Constructor {
 }
 
 func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidency.Store) *controller.Impl {
+	// Parse all env vars of interest
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
+		logging.FromContext(ctx).Fatal("Failed to process env var", zap.Error(err))
+	}
+
 	brokerInformer := brokerinformer.Get(ctx)
 	bcInformer := brokercellinformer.Get(ctx)
 
 	// If there is an error, the projectID will be empty. The reconciler will retry
 	// to get the projectID during reconciliation.
-	projectID, err := utils.ProjectID(os.Getenv(utils.ProjectIDEnvKey), metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to get project ID", zap.Error(err))
 	}
 	// Attempt to create a pubsub client for all worker threads to use. If this
 	// fails, pass a nil value to the Reconciler. They will attempt to
 	// create a client on reconcile.
-	client, err := newPubsubClient(ctx, projectID)
+	client, err := pubsub.NewClient(ctx, projectID)
 	if err != nil {
+		client = nil
 		logging.FromContext(ctx).Error("Failed to create controller-wide Pub/Sub client", zap.Error(err))
 	}
 
@@ -123,17 +134,4 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 	))
 
 	return impl
-}
-
-func newPubsubClient(ctx context.Context, projectID string) (*pubsub.Client, error) {
-	projectID, err := utils.ProjectID(projectID, metadataClient.NewDefaultMetadataClient())
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := pubsub.NewClient(ctx, projectID)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
 }

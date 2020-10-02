@@ -25,6 +25,11 @@ const (
 	ProjectIDEnvKey = "PROJECT_ID"
 )
 
+// ProjectIDEnvConfig is a struct to parse Project id from env var
+type ProjectIDEnvConfig struct {
+	ProjectID string `envconfig:"PROJECT_ID"`
+}
+
 // ProjectID returns the project ID for a particular resource.
 func ProjectID(project string, client metadataClient.Client) (string, error) {
 	// If project is set, then return that one.

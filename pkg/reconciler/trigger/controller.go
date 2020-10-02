@@ -60,7 +60,7 @@ const (
 var filterBroker = pkgreconciler.AnnotationFilterFunc(eventingv1beta1.BrokerClassAnnotationKey, brokerv1beta1.BrokerClass, false /*allowUnset*/)
 
 type envConfig struct {
-	ProjectID string `envconfig:"PROJECT_ID"`
+	utils.ProjectIDEnvConfig
 }
 
 type Constructor injection.ControllerConstructor
@@ -73,6 +73,7 @@ func NewConstructor(dataresidencyss *dataresidency.StoreSingleton) Constructor {
 }
 
 func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidency.Store) *controller.Impl {
+	// Parse all env vars of interest
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var", zap.Error(err))
@@ -90,8 +91,9 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 	// Attempt to create a pubsub client for all worker threads to use. If this
 	// fails, pass a nil value to the Reconciler. They will attempt to
 	// create a client on reconcile.
-	client, err := newPubsubClient(ctx, projectID)
+	client, err := pubsub.NewClient(ctx, projectID)
 	if err != nil {
+		client = nil
 		logging.FromContext(ctx).Error("Failed to create controller-wide Pub/Sub client", zap.Error(err))
 	}
 
@@ -139,19 +141,6 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 	)
 
 	return impl
-}
-
-func newPubsubClient(ctx context.Context, projectID string) (*pubsub.Client, error) {
-	projectID, err := utils.ProjectID(projectID, metadataClient.NewDefaultMetadataClient())
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := pubsub.NewClient(ctx, projectID)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
 }
 
 func withAgentAndFinalizer(impl *pkgcontroller.Impl) pkgcontroller.Options {
