@@ -182,7 +182,6 @@ func TestHandler(t *testing.T) {
 			path:     "/ns1/broker1",
 			event:    createTestEventWithPayloadSize("test-event", 11000000), // 11Mb
 			wantCode: nethttp.StatusRequestEntityTooLarge,
-			timeout:  5 * time.Second,
 		},
 		{
 			name:          "malicious requests or requests with unknown Content-Length and a very large payload",
@@ -298,7 +297,7 @@ func TestHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			reportertest.ResetIngressMetrics()
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
-			timeout := 3 * time.Second
+			timeout := 5 * time.Second
 			if tc.timeout > 0 {
 				timeout = tc.timeout
 			}
