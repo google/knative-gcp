@@ -1022,7 +1022,7 @@ func TestAllCases(t *testing.T) {
 		}
 		srv := pstest.NewServer(opts...)
 
-		psclient, _ := GetTestClientCreatFunc(srv.Addr)(ctx, testProject)
+		psclient, _ := GetTestClientCreateFunc(srv.Addr)(ctx, testProject)
 		conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
 		if err != nil {
 			panic(fmt.Errorf("failed to dial test pubsub connection: %v", err))
@@ -1048,7 +1048,7 @@ func TestAllCases(t *testing.T) {
 				return nil, fmt.Errorf(testData["client-error"].(string))
 			}
 		} else {
-			createClientFn = GetTestClientCreatFunc(srv.Addr)
+			createClientFn = GetTestClientCreateFunc(srv.Addr)
 		}
 		pubsubBase := &intevents.PubSubBase{
 			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),

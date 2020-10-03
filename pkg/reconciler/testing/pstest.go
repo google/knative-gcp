@@ -199,7 +199,7 @@ func getPubsubClient(r *rtesting.TableRow) *pubsub.Client {
 
 func TestPubsubClient(ctx context.Context, projectID string, opts ...pstest.ServerReactorOption) (*pubsub.Client, func()) {
 	srv := pstest.NewServer(opts...)
-	client, _ := GetTestClientCreatFunc(srv.Addr)(ctx, projectID)
+	client, _ := GetTestClientCreateFunc(srv.Addr)(ctx, projectID)
 	close := func() {
 		srv.Close()
 		client.Close()
@@ -207,15 +207,20 @@ func TestPubsubClient(ctx context.Context, projectID string, opts ...pstest.Serv
 	return client, close
 }
 
-// GetTestClientCreatFunc returns a client creation function with same type as pubsub.NewClient. With
+// GetTestClientCreateFunc returns a client creation function with same type as pubsub.NewClient. With
 // this helper function, multiple clients can be created. This is necessary for any test involving
 // mulitple projects. Eg. in sources multiple project is allowed for topics.
-func GetTestClientCreatFunc(target string) func(context.Context, string, ...option.ClientOption) (*pubsub.Client, error) {
+func GetTestClientCreateFunc(target string) func(context.Context, string, ...option.ClientOption) (*pubsub.Client, error) {
 	return func(ctx context.Context, projectID string, opts ...option.ClientOption) (*pubsub.Client, error) {
 		newConn, err := grpc.Dial(target, grpc.WithInsecure())
 		if err != nil {
 			panic(fmt.Errorf("failed to dial test pubsub connection: %v", err))
 		}
+		// Connection cleanup
+		go func() {
+			<-ctx.Done()
+			newConn.Close()
+		}()
 		c, err := pubsub.NewClient(context.Background(), projectID, option.WithGRPCConn(newConn))
 		if err != nil {
 			panic(fmt.Errorf("failed to create test pubsub client: %v", err))
