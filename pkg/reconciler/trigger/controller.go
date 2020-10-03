@@ -81,20 +81,20 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 
 	triggerInformer := triggerinformer.Get(ctx)
 
+	var client *pubsub.Client = nil
 	// If there is an error, the projectID will be empty. The reconciler will retry
 	// to get the projectID during reconciliation.
 	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to get project ID", zap.Error(err))
-	}
-
-	// Attempt to create a pubsub client for all worker threads to use. If this
-	// fails, pass a nil value to the Reconciler. They will attempt to
-	// create a client on reconcile.
-	client, err := pubsub.NewClient(ctx, projectID)
-	if err != nil {
-		client = nil
-		logging.FromContext(ctx).Error("Failed to create controller-wide Pub/Sub client", zap.Error(err))
+	} else {
+		// Attempt to create a pubsub client for all worker threads to use. If this
+		// fails, pass a nil value to the Reconciler. They will attempt to
+		// create a client on reconcile.
+		if client, err = pubsub.NewClient(ctx, projectID); err != nil {
+			client = nil
+			logging.FromContext(ctx).Error("Failed to create controller-wide Pub/Sub client", zap.Error(err))
+		}
 	}
 
 	if client != nil {
