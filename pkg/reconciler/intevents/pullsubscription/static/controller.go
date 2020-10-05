@@ -21,11 +21,11 @@ import (
 
 	"knative.dev/pkg/injection"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/pullsubscription"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -100,7 +100,7 @@ func newController(
 			DeploymentLister:       deploymentInformer.Lister(),
 			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
 			ReceiveAdapterImage:    env.ReceiveAdapter,
-			CreateClientFn:         gpubsub.NewClient,
+			CreateClientFn:         pubsub.NewClient,
 			ControllerAgentName:    controllerAgentName,
 			ResourceGroup:          resourceGroup,
 		},
