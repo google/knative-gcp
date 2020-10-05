@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
-	"github.com/kelseyhightower/envconfig"
 
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
@@ -39,7 +38,6 @@ import (
 	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
 	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/utils"
 )
@@ -49,10 +47,6 @@ const (
 	// itself when creating events.
 	controllerAgentName = "broker-controller"
 )
-
-type envConfig struct {
-	utils.ProjectIDEnvConfig
-}
 
 type Constructor injection.ControllerConstructor
 
@@ -64,19 +58,13 @@ func NewConstructor(dataresidencyss *dataresidency.StoreSingleton) Constructor {
 }
 
 func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidency.Store) *controller.Impl {
-	// Parse all env vars of interest
-	var env envConfig
-	if err := envconfig.Process("", &env); err != nil {
-		logging.FromContext(ctx).Fatal("Failed to process env var", zap.Error(err))
-	}
-
 	brokerInformer := brokerinformer.Get(ctx)
 	bcInformer := brokercellinformer.Get(ctx)
 
 	var client *pubsub.Client
 	// If there is an error, the projectID will be empty. The reconciler will retry
 	// to get the projectID during reconciliation.
-	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault(ctx, "")
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to get project ID", zap.Error(err))
 	} else {

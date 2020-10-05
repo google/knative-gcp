@@ -30,7 +30,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils"
 
@@ -130,7 +129,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1.Topic) reconci
 
 func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1.Topic) error {
 	if topic.Status.ProjectID == "" {
-		projectID, err := utils.ProjectID(topic.Spec.Project, metadataClient.NewDefaultMetadataClient())
+		projectID, err := utils.ProjectIDOrDefault(ctx, topic.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return err

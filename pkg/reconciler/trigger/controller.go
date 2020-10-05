@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
@@ -43,7 +42,6 @@ import (
 	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
 	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/utils"
 )
@@ -59,10 +57,6 @@ const (
 // filterBroker is the function to filter brokers with proper brokerclass.
 var filterBroker = pkgreconciler.AnnotationFilterFunc(eventingv1beta1.BrokerClassAnnotationKey, brokerv1beta1.BrokerClass, false /*allowUnset*/)
 
-type envConfig struct {
-	utils.ProjectIDEnvConfig
-}
-
 type Constructor injection.ControllerConstructor
 
 // NewConstructor creates a constructor to make a Trigger controller.
@@ -73,18 +67,12 @@ func NewConstructor(dataresidencyss *dataresidency.StoreSingleton) Constructor {
 }
 
 func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidency.Store) *controller.Impl {
-	// Parse all env vars of interest
-	var env envConfig
-	if err := envconfig.Process("", &env); err != nil {
-		logging.FromContext(ctx).Fatal("Failed to process env var", zap.Error(err))
-	}
-
 	triggerInformer := triggerinformer.Get(ctx)
 
 	var client *pubsub.Client
 	// If there is an error, the projectID will be empty. The reconciler will retry
 	// to get the projectID during reconciliation.
-	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault(ctx, "")
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to get project ID", zap.Error(err))
 	} else {

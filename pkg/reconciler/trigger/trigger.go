@@ -39,7 +39,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
@@ -214,7 +213,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	logger.Debug("Reconciling retry topic")
 	// get ProjectID from metadata
 	//TODO get from context
-	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault(ctx, r.projectID)
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		trig.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %v", err)
@@ -328,7 +327,7 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 
 	// get ProjectID from metadata
 	//TODO get from context
-	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault(ctx, r.projectID)
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		trig.Status.MarkTopicUnknown("FinalizeTopicProjectIdNotFound", "Failed to find project id: %v", err)
