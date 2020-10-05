@@ -81,7 +81,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 
 	triggerInformer := triggerinformer.Get(ctx)
 
-	var client *pubsub.Client = nil
+	var client *pubsub.Client
 	// If there is an error, the projectID will be empty. The reconciler will retry
 	// to get the projectID during reconciliation.
 	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())

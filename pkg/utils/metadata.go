@@ -25,7 +25,7 @@ const (
 	ProjectIDEnvKey = "PROJECT_ID"
 )
 
-// ProjectIDEnvConfig is a struct to parse Project id from env var
+// ProjectIDEnvConfig is a struct to parse project ID from env var
 type ProjectIDEnvConfig struct {
 	ProjectID string `envconfig:"PROJECT_ID"`
 }
