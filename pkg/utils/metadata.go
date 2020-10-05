@@ -64,7 +64,7 @@ func ProjectIDOrDefault(ctx context.Context, projectID string) (string, error) {
 	// Parse project id from env var, if not found we simply continue
 	var env ProjectIDEnvConfig
 	if err := envconfig.Process("", &env); err != nil {
-		logging.FromContext(ctx).Fatal("Failed to process env var", zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to process env var", zap.Error(err))
 	}
 	return ProjectID(env.ProjectID, defaultMetadataClientCreator())
 }
