@@ -108,7 +108,7 @@ func (m *multiTopicDecoupleSink) hasTrigger(ctx context.Context, event *cev2.Eve
 	m.brokerConfig.RangeAllTargets(func(target *config.Target) bool {
 		if EventFilterFunc(ctx, target.FilterAttributes, event) {
 			hasTrigger = true
-			return true
+			return false
 		}
 
 		return true

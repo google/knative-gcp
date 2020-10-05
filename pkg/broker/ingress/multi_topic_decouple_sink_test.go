@@ -314,9 +314,8 @@ func TestHasTrigger(t *testing.T) {
 			sink := NewMultiTopicDecoupleSink(ctx, brokerConfig, psClient, pubsub.DefaultPublishSettings)
 
 			event := createTestEvent(uuid.New().String())
-			fmt.Printf("Event type: %s\n", event.Type())
 
-			hasTrigger := sink.hasTrigger(context.Background(), event)
+			hasTrigger := sink.hasTrigger(ctx, event)
 			if hasTrigger != test.hasTrigger {
 				t.Errorf("Sink says event has trigger %t which should be %t", hasTrigger, test.hasTrigger)
 			}
