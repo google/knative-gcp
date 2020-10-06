@@ -46,8 +46,6 @@ replace (
 
 // The following packages were pinned as part of the go module transition and should eventually be
 // unpinned.
-replace github.com/jmespath/go-jmespath => github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
-
 replace github.com/json-iterator/go => github.com/json-iterator/go v1.1.7
 
 replace github.com/modern-go/reflect2 => github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
