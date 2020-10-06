@@ -27,48 +27,6 @@ import (
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
-func TestProjectID(t *testing.T) {
-	testCases := map[string]struct {
-		want  string
-		data  testingMetadataClient.TestClientData
-		input string
-		error bool
-	}{
-		"project id exists": {
-			want:  "testing-project",
-			data:  testingMetadataClient.TestClientData{},
-			input: "testing-project",
-			error: false,
-		},
-		"project id doesn't exist, successfully get project id ": {
-			want:  testingMetadataClient.FakeProjectID,
-			data:  testingMetadataClient.TestClientData{},
-			input: "",
-			error: false,
-		},
-		"project id doesn't exist, get project idfailed": {
-			want: "",
-			data: testingMetadataClient.TestClientData{
-				ProjectIDErr: fmt.Errorf("error getting project id"),
-			},
-			input: "",
-			error: true,
-		},
-	}
-	for n, tc := range testCases {
-		t.Run(n, func(t *testing.T) {
-			client := testingMetadataClient.NewTestClient(tc.data)
-			got, err := ProjectID(tc.input, client)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("Unexpected differences (-want +got): %v", diff)
-			}
-			if tc.error != (err != nil) {
-				t.Fatalf("Unexpected validation failure. Got %v", err)
-			}
-		})
-	}
-}
-
 func TestProjectIDOrDefault(t *testing.T) {
 	testCases := map[string]struct {
 		want  string

@@ -45,20 +45,6 @@ type ProjectIDEnvConfig struct {
 	ProjectID string `envconfig:"PROJECT_ID"`
 }
 
-// ProjectID returns the project ID for a particular resource.
-func ProjectID(project string, client metadataClient.Client) (string, error) {
-	// If project is set, then return that one.
-	if project != "" {
-		return project, nil
-	}
-	// Otherwise, ask GKE metadata server.
-	projectID, err := client.ProjectID()
-	if err != nil {
-		return "", err
-	}
-	return projectID, nil
-}
-
 // ProjectIDOrDefault returns the project ID by performing the following order:
 // 1) if the input project ID is valid, simply use it.
 // 2) if there is a PROJECT_ID environmental variable, use it.
@@ -67,7 +53,15 @@ func ProjectIDOrDefault(ctx context.Context, projectID string) (string, error) {
 	if projectID != "" {
 		return projectID, nil
 	}
-	return ProjectID(projectIDFromEnv, defaultMetadataClientCreator())
+	if projectIDFromEnv != "" {
+		return projectIDFromEnv, nil
+	}
+	// Otherwise, ask GKE metadata server.
+	projectGKE, err := defaultMetadataClientCreator().ProjectID()
+	if err != nil {
+		return "", err
+	}
+	return projectGKE, nil
 }
 
 // ClusterName returns the cluster name for a particular resource.
