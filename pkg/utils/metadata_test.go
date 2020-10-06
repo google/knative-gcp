@@ -19,7 +19,6 @@ package utils
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -110,12 +109,12 @@ func TestProjectIDOrDefault(t *testing.T) {
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			// Save and restore changed variables
-			origEnv := os.Getenv(ProjectIDEnvKey)
-			defer func() { os.Setenv(ProjectIDEnvKey, origEnv) }()
+			origEnv := projectIDFromEnv
+			defer func() { projectIDFromEnv = origEnv }()
 			orig := defaultMetadataClientCreator
 			defer func() { defaultMetadataClientCreator = orig }()
 
-			os.Setenv(ProjectIDEnvKey, tc.env)
+			projectIDFromEnv = tc.env
 			defaultMetadataClientCreator = func() metadataClient.Client {
 				return testingMetadataClient.NewTestClient(tc.data)
 			}

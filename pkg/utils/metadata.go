@@ -18,21 +18,27 @@ package utils
 
 import (
 	"context"
+	"os"
 
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-	"github.com/google/knative-gcp/pkg/logging"
-	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
 )
 
 const (
 	clusterNameAttr = "cluster-name"
+	// ProjectIDEnvKey is the name of environmental variable for project ID
 	ProjectIDEnvKey = "PROJECT_ID"
 )
 
 // defaultMetadataClientCreator is a create function to get a default metadata client. This can be
 // swapped during testing.
 var defaultMetadataClientCreator func() metadataClient.Client = metadataClient.NewDefaultMetadataClient
+
+// projectIDFromEnv loads project ID from env once when startup.
+var projectIDFromEnv string
+
+func init() {
+	projectIDFromEnv = os.Getenv(ProjectIDEnvKey)
+}
 
 // ProjectIDEnvConfig is a struct to parse project ID from env var
 type ProjectIDEnvConfig struct {
@@ -61,12 +67,7 @@ func ProjectIDOrDefault(ctx context.Context, projectID string) (string, error) {
 	if projectID != "" {
 		return projectID, nil
 	}
-	// Parse project id from env var, if not found we simply continue
-	var env ProjectIDEnvConfig
-	if err := envconfig.Process("", &env); err != nil {
-		logging.FromContext(ctx).Error("Failed to process env var", zap.Error(err))
-	}
-	return ProjectID(env.ProjectID, defaultMetadataClientCreator())
+	return ProjectID(projectIDFromEnv, defaultMetadataClientCreator())
 }
 
 // ClusterName returns the cluster name for a particular resource.
