@@ -46,6 +46,7 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	pubsubv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -559,7 +560,7 @@ func TestAllCases(t *testing.T) {
 		}},
 		OtherTestData: map[string]interface{}{},
 		PostConditions: []func(*testing.T, *TableRow){
-			TopicExists(testTopicID),
+			TopicExistsWithConfig(testTopicID, &pubsub.TopicConfig{}),
 		},
 	}, {
 		Name: "topic successfully reconciles and reuses existing publisher",
@@ -705,8 +706,66 @@ func TestAllCases(t *testing.T) {
 		PostConditions: []func(*testing.T, *TableRow){
 			TopicExists(testTopicID),
 		},
-	},
-	}
+	}, {
+		Name: "topic successfully reconciles with data residency config",
+		Objects: []runtime.Object{
+			reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
+				reconcilertestingv1.WithTopicSetDefaults,
+			),
+			newSink(),
+			newSecret(),
+		},
+		Key: testNS + "/" + topicName,
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, topicName, resourceGroup),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, testNS, topicName),
+		},
+		WithReactors: []clientgotesting.ReactionFunc{
+			ProvideResource("create", "services", makeReadyPublisher()),
+		},
+		WantCreates: []runtime.Object{
+			newPublisher(),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: reconcilertestingv1.NewTopic(topicName, testNS,
+				reconcilertestingv1.WithTopicUID(topicUID),
+				reconcilertestingv1.WithTopicProjectID(testProject),
+				reconcilertestingv1.WithTopicSpec(pubsubv1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				reconcilertestingv1.WithTopicPropagationPolicy("CreateNoDelete"),
+				// Updates
+				reconcilertestingv1.WithInitTopicConditions,
+				reconcilertestingv1.WithTopicReadyAndPublisherDeployed(testTopicID),
+				reconcilertestingv1.WithTopicPublisherDeployed,
+				reconcilertestingv1.WithTopicAddress(testTopicURI),
+				reconcilertestingv1.WithTopicSetDefaults,
+			),
+		}},
+		OtherTestData: map[string]interface{}{
+			"pre":                    []PubsubAction{},
+			"dataResidencyConfigMap": NewDataresidencyConfigMapFromRegions([]string{"us-east1"}),
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			TopicExistsWithConfig(testTopicID, &pubsub.TopicConfig{
+				MessageStoragePolicy: pubsub.MessageStoragePolicy{
+					AllowedPersistenceRegions: []string{"us-east1"},
+				},
+			}),
+		},
+	}}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		// Insert pubsub client for PostConditions and create fixtures
@@ -738,6 +797,12 @@ func TestAllCases(t *testing.T) {
 				}
 			}
 		}
+
+		// If we found "dataResidencyConfigMap" in OtherData, we create a store with the configmap
+		var drStore *dataresidency.Store
+		if cm, ok := testData["dataResidencyConfigMap"]; ok {
+			drStore = NewDataresidencyTestStore(t, cm.(*corev1.ConfigMap))
+		}
 		// use normal create function or always error one
 		var createClientFn reconcilerutilspubsub.CreateFn
 		if testData != nil && testData["client-error"] != nil {
@@ -751,11 +816,12 @@ func TestAllCases(t *testing.T) {
 			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 		}
 		r := &Reconciler{
-			PubSubBase:     pubsubBase,
-			topicLister:    listers.GetTopicLister(),
-			serviceLister:  listers.GetV1ServiceLister(),
-			publisherImage: testImage,
-			createClientFn: createClientFn,
+			PubSubBase:         pubsubBase,
+			topicLister:        listers.GetTopicLister(),
+			serviceLister:      listers.GetV1ServiceLister(),
+			publisherImage:     testImage,
+			createClientFn:     createClientFn,
+			dataresidencyStore: drStore,
 		}
 		return topic.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetTopicLister(), r.Recorder, r)
 	}))
