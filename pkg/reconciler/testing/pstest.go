@@ -209,7 +209,7 @@ func TestPubsubClient(ctx context.Context, projectID string, opts ...pstest.Serv
 
 // GetTestClientCreateFunc returns a client creation function with same type as pubsub.NewClient. With
 // this helper function, multiple clients can be created. This is necessary for any test involving
-// mulitple projects. Eg. in sources multiple project is allowed for topics.
+// multiple projects. Eg. in sources multiple project is allowed for topics.
 func GetTestClientCreateFunc(target string) func(context.Context, string, ...option.ClientOption) (*pubsub.Client, error) {
 	return func(ctx context.Context, projectID string, opts ...option.ClientOption) (*pubsub.Client, error) {
 		newConn, err := grpc.Dial(target, grpc.WithInsecure())
