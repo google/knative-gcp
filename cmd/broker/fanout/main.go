@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
@@ -42,7 +41,6 @@ const (
 
 type envConfig struct {
 	PodName                string `envconfig:"POD_NAME" required:"true"`
-	ProjectID              string `envconfig:"PROJECT_ID"`
 	TargetsConfigPath      string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
 	HandlerConcurrency     int    `envconfig:"HANDLER_CONCURRENCY"`
 	MaxConcurrencyPerEvent int    `envconfig:"MAX_CONCURRENCY_PER_EVENT"`
@@ -78,7 +76,7 @@ func main() {
 
 	logger.Info("Starting the broker fanout")
 
-	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault(ctx, "")
 	if err != nil {
 		logger.Fatalf("failed to get default ProjectID: %v", err)
 	}
