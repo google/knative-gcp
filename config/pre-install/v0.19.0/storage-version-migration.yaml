@@ -1,0 +1,58 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # naming it to storage-version-migration-knative-gcp-v0.19.0 will create the job,
+  # but leaves the job in a limbo state that it does not start:
+  #
+  # $ kubectl get job -n cloud-run-events
+  # NAME                                            COMPLETIONS   DURATION   AGE
+  # storage-version-migration-knative-gcp           1/1           8s         13m
+  # storage-version-migration-knative-gcp-v0.19.0   0/1                      15s
+  #
+  # The corresponding pod is not created either:
+  #
+  # $ kubectl get pods -n cloud-run-events
+  # NAME                                                  READY   STATUS      RESTARTS   AGE
+  # controller-7847f7d8d7-mwdsm                           1/1     Running     0          4m31s
+  # storage-version-migration-knative-gcp-fsxvk           0/1     Completed   0          13m
+  # webhook-64b8795fcd-lflhh                              1/1     Running     0          5m49s
+  #
+  # The reason is why this is happening is unknown, changing it to the following name works.
+  name: storage-version-migration-knative-gcp-v0-19-0
+  namespace: cloud-run-events
+  labels:
+    app: "storage-version-migration-knative-gcp-v0-19-0"
+    events.cloud.google.com/release: devel
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 10
+  template:
+    metadata:
+      labels:
+        app: "storage-version-migration-knative-gcp-v0-19-0"
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      serviceAccountName: knative-gcp-pre-install-job-v0-19-0
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          # This is the Go import path for the binary that is containerized
+          # and substituted here.
+          image: ko://github.com/google/knative-gcp/vendor/knative.dev/pkg/apiextensions/storageversion/cmd/migrate
+          args:
+            - "cloudbuildsources.events.cloud.google.com"
