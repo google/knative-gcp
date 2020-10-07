@@ -167,14 +167,14 @@ and replace the `default-auth-config:` part with:
 `$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the Pub/Sub
 enabled Google Cloud Service Account.
 
-Then, add `-workloadIndentity=true` and `-serviceAccountName=test-default-ksa`
+Then, add `-workloadIdentity=true` and `-serviceAccountName=test-default-ksa`
 to the `go test` command.
 
 For example,
 
 ```shell
 E2E_PROJECT_ID=<project name> go test --tags=e2e ./test/e2e/... \
-  -workloadIndentity=true \
+  -workloadIdentity=true \
   -serviceAccountName=test-default-ksa \
   -run TestPullSubscription
 ```
