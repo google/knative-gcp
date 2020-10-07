@@ -98,9 +98,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 		{
 			name: "broker doesn't exist in config",
 			brokerConfig: &config.TargetsConfig{
-				Brokers: map[string]*config.Broker{
-					"test_ns_2/test_broker_2": {DecoupleQueue: &config.Queue{Topic: "test_topic_2", State: config.State_READY}, Targets: brokerTargets},
-				},
+				Brokers: map[string]*config.Broker{},
 			},
 			cases: []brokerTestCase{
 				{
@@ -324,9 +322,15 @@ func TestHasTrigger(t *testing.T) {
 }
 
 func TestMultiTopicDecoupleSinkSendChecksFilter(t *testing.T) {
+	origEnableEventFilterFunc := EnableEventFilterFunc
+	defer func() { EnableEventFilterFunc = origEnableEventFilterFunc }()
+	EnableEventFilterFunc = func() bool {
+		return true
+	}
+
 	filterCalled := false
-	orig := EventFilterFunc
-	defer func() { EventFilterFunc = orig }()
+	origEventFilterFunc := EventFilterFunc
+	defer func() { EventFilterFunc = origEventFilterFunc }()
 	EventFilterFunc = func(ctx context.Context, attrs map[string]string, event *event.Event) bool {
 		filterCalled = true
 		return true
@@ -375,6 +379,63 @@ func TestMultiTopicDecoupleSinkSendChecksFilter(t *testing.T) {
 	// Verify results.
 	if !filterCalled {
 		t.Errorf("Send did not call EventFilterFunc")
+	}
+}
+
+// Temoporary test to ensure the filtering feature is disabled by default.
+// TODO(#1804): remove this test when enabling the feature by default.
+func TestMultiTopicDecoupleSinkSendDoesNotChecksFilterWhenFeatureDisabled(t *testing.T) {
+	filterCalled := false
+	origEventFilterFunc := EventFilterFunc
+	defer func() { EventFilterFunc = origEventFilterFunc }()
+	EventFilterFunc = func(ctx context.Context, attrs map[string]string, event *event.Event) bool {
+		filterCalled = true
+		return true
+	}
+
+	ctx := logtest.TestContextWithLogger(t)
+	psSrv := pstest.NewServer()
+	defer psSrv.Close()
+	psClient := createPubsubClient(ctx, t, psSrv)
+
+	testBrokerConfig := &config.TargetsConfig{
+		Brokers: map[string]*config.Broker{
+			"test_ns_1/test_broker_1": {
+				DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_READY},
+				Targets:       map[string]*config.Target{"target_1": {}},
+			},
+		},
+	}
+
+	brokerConfig := memory.NewTargets(testBrokerConfig)
+
+	testTopic := "test_topic_1"
+	topic := psClient.Topic(testTopic)
+	if exists, err := topic.Exists(ctx); err != nil {
+		t.Fatal(err)
+	} else if !exists {
+		if topic, err = psClient.CreateTopic(ctx, testTopic); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	sink := NewMultiTopicDecoupleSink(ctx, brokerConfig, psClient, pubsub.DefaultPublishSettings)
+	// Send event.
+	event := createTestEvent(uuid.New().String())
+
+	namespace := types.NamespacedName{
+		Namespace: "test_ns_1",
+		Name:      "test_broker_1",
+	}
+
+	err := sink.Send(context.Background(), namespace, *event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify results.
+	if filterCalled {
+		t.Errorf("Send called EventFilterFunc when feature is disabled")
 	}
 }
 
