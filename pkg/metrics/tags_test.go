@@ -39,6 +39,9 @@ func TestEventTypeMetricValue(t *testing.T) {
 		{"some.custom.event", "custom"},
 		{"", "custom"},
 
+		// Used to mark invalid cloud events
+		{"_invalid_cloud_event_", "_invalid_cloud_event_"},
+
 		// Used in E2E tests
 		{"e2e-dummy-event-type", "e2e-dummy-event-type"},
 		{"e2e-testing-resp-event-type-dummy", "e2e-testing-resp-event-type-dummy"},
