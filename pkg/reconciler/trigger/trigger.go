@@ -213,7 +213,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	logger.Debug("Reconciling retry topic")
 	// get ProjectID from metadata
 	//TODO get from context
-	projectID, err := utils.ProjectIDOrDefault(ctx, r.projectID)
+	projectID, err := utils.ProjectIDOrDefault(r.projectID)
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		trig.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %v", err)
@@ -327,7 +327,7 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 
 	// get ProjectID from metadata
 	//TODO get from context
-	projectID, err := utils.ProjectIDOrDefault(ctx, r.projectID)
+	projectID, err := utils.ProjectIDOrDefault(r.projectID)
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		trig.Status.MarkTopicUnknown("FinalizeTopicProjectIdNotFound", "Failed to find project id: %v", err)

@@ -154,7 +154,7 @@ func (r *Base) ReconcileKind(ctx context.Context, ps *v1.PullSubscription) recon
 
 func (r *Base) reconcileSubscription(ctx context.Context, ps *v1.PullSubscription) (string, error) {
 	if ps.Status.ProjectID == "" {
-		projectID, err := utils.ProjectIDOrDefault(ctx, ps.Spec.Project)
+		projectID, err := utils.ProjectIDOrDefault(ps.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return "", err

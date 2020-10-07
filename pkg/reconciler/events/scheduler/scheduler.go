@@ -94,7 +94,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1.CloudSched
 
 func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1.CloudSchedulerSource, topic, jobName string) error {
 	if scheduler.Status.ProjectID == "" {
-		projectID, err := utils.ProjectIDOrDefault(ctx, scheduler.Spec.Project)
+		projectID, err := utils.ProjectIDOrDefault(scheduler.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return err

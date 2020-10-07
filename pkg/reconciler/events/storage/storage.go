@@ -110,7 +110,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1.CloudStorage
 
 func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1.CloudStorageSource) (string, error) {
 	if storage.Status.ProjectID == "" {
-		projectID, err := utils.ProjectIDOrDefault(ctx, storage.Spec.Project)
+		projectID, err := utils.ProjectIDOrDefault(storage.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return "", err

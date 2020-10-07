@@ -76,7 +76,7 @@ func main() {
 
 	logger.Info("Starting the broker fanout")
 
-	projectID, err := utils.ProjectIDOrDefault(ctx, "")
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logger.Fatalf("failed to get default ProjectID: %v", err)
 	}

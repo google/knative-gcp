@@ -17,7 +17,6 @@ limitations under the License.
 package utils
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -76,7 +75,7 @@ func TestProjectIDOrDefault(t *testing.T) {
 			defaultMetadataClientCreator = func() metadataClient.Client {
 				return testingMetadataClient.NewTestClient(tc.data)
 			}
-			got, err := ProjectIDOrDefault(context.Background(), tc.input)
+			got, err := ProjectIDOrDefault(tc.input)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}

@@ -112,7 +112,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling decoupling topic", zap.Any("broker", b))
 	// get ProjectID from metadata if projectID isn't set
-	projectID, err := utils.ProjectIDOrDefault(ctx, r.projectID)
+	projectID, err := utils.ProjectIDOrDefault(r.projectID)
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %v", err)
@@ -188,7 +188,7 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 	logger.Debug("Deleting decoupling topic")
 
 	// get ProjectID from metadata if projectID isn't set
-	projectID, err := utils.ProjectIDOrDefault(ctx, r.projectID)
+	projectID, err := utils.ProjectIDOrDefault(r.projectID)
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		b.Status.MarkTopicUnknown("FinalizeTopicProjectIdNotFound", "Failed to find project id: %v", err)

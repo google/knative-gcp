@@ -129,7 +129,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1.Topic) reconci
 
 func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1.Topic) error {
 	if topic.Status.ProjectID == "" {
-		projectID, err := utils.ProjectIDOrDefault(ctx, topic.Spec.Project)
+		projectID, err := utils.ProjectIDOrDefault(topic.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return err

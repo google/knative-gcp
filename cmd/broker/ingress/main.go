@@ -53,7 +53,7 @@ func main() {
 	defer res.Cleanup()
 	logger := res.Logger
 
-	projectID, err := utils.ProjectIDOrDefault(ctx, "")
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logger.Desugar().Fatal("Failed to create project id", zap.Error(err))
 	}

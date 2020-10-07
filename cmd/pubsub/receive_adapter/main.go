@@ -148,7 +148,7 @@ func main() {
 		logger.Error("Failed to setup tracing", zap.Error(err), zap.Any("tracingConfig", tracingConfig))
 	}
 
-	projectID, err := utils.ProjectIDOrDefault(ctx, "")
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logger.Fatal("Failed to retrieve project id", zap.Error(err))
 	}

@@ -77,7 +77,7 @@ func main() {
 	targetsUpdateCh := make(chan struct{})
 	logger.Info("Starting the broker retry")
 
-	projectID, err := utils.ProjectIDOrDefault(ctx, "")
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logger.Fatalf("failed to get default ProjectID: %v", err)
 	}

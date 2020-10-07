@@ -65,7 +65,7 @@ func main() {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	projectID, err := utils.ProjectIDOrDefault(ctx, "")
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logger.Fatal("Failed to retrieve project id", zap.Error(err))
 	}

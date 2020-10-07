@@ -17,7 +17,6 @@ limitations under the License.
 package utils
 
 import (
-	"context"
 	"os"
 
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
@@ -49,7 +48,7 @@ type ProjectIDEnvConfig struct {
 // 1) if the input project ID is valid, simply use it.
 // 2) if there is a PROJECT_ID environmental variable, use it.
 // 3) use metadataClient to resolve project id.
-func ProjectIDOrDefault(ctx context.Context, projectID string) (string, error) {
+func ProjectIDOrDefault(projectID string) (string, error) {
 	if projectID != "" {
 		return projectID, nil
 	}

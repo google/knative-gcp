@@ -168,7 +168,7 @@ func (i *Identity) createServiceAccount(ctx context.Context, identityNames resou
 // TODO he iam policy binding should be mocked so that we can unit test it. issue https://github.com/google/knative-gcp/issues/657
 // addIamPolicyBinding will add iam policy binding, which is related to a provided k8s ServiceAccount, to a GCP ServiceAccount.
 func (i *Identity) addIamPolicyBinding(ctx context.Context, projectID string, identityNames resources.IdentityNames) error {
-	projectID, err := utils.ProjectIDOrDefault(ctx, projectID)
+	projectID, err := utils.ProjectIDOrDefault(projectID)
 	if err != nil {
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
@@ -181,7 +181,7 @@ func (i *Identity) addIamPolicyBinding(ctx context.Context, projectID string, id
 
 // removeIamPolicyBinding will remove iam policy binding, which is related to a provided k8s ServiceAccount, from a GCP ServiceAccount.
 func (i *Identity) removeIamPolicyBinding(ctx context.Context, projectID string, identityNames resources.IdentityNames) error {
-	projectID, err := utils.ProjectIDOrDefault(ctx, projectID)
+	projectID, err := utils.ProjectIDOrDefault(projectID)
 	if err != nil {
 		return fmt.Errorf("failed to get project id: %w", err)
 	}

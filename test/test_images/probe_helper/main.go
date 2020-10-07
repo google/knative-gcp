@@ -127,7 +127,7 @@ func main() {
 	if err := envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var", zap.Error(err))
 	}
-	projectID, err := utils.ProjectIDOrDefault(ctx, "")
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logging.FromContext(ctx).Fatal("Failed to get the default project ID", zap.Error(err))
 	}

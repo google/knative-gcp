@@ -72,7 +72,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 	var client *pubsub.Client
 	// If there is an error, the projectID will be empty. The reconciler will retry
 	// to get the projectID during reconciliation.
-	projectID, err := utils.ProjectIDOrDefault(ctx, "")
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to get project ID", zap.Error(err))
 	} else {
