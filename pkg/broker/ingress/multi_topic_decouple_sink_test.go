@@ -239,6 +239,11 @@ func TestHasTrigger(t *testing.T) {
 			hasTrigger: false,
 		},
 		{
+			name:          "broker with empty target",
+			brokerTargets: map[string]*config.Target{},
+			hasTrigger:    false,
+		},
+		{
 			name: "broker with target with no filters",
 			brokerTargets: map[string]*config.Target{
 				"target_1": {},
