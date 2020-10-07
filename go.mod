@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/pubsub v1.8.0
 	cloud.google.com/go/storage v1.10.0
 	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200806165906-9ae0708e27fa
-	github.com/cloudevents/sdk-go/v2 v2.2.1-0.20200729225950-2d83dc10864e
+	github.com/cloudevents/sdk-go/v2 v2.3.1
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.2
@@ -28,9 +28,10 @@ require (
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.17.1-0.20200929080328-74b9bed2ebf2
-	knative.dev/pkg v0.0.0-20200929052028-236c084e37a3
-	knative.dev/serving v0.17.1-0.20200929093229-7960ee24cc7b
+	knative.dev/eventing v0.18.1-0.20201005151035-f0dc15b0d493
+	knative.dev/pkg v0.0.0-20201005175134-21cb070a8b05
+	knative.dev/serving v0.18.1-0.20201005174834-d6be45241d84
+	knative.dev/test-infra v0.0.0-20201005021934-df2084cec789 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -45,8 +46,6 @@ replace (
 
 // The following packages were pinned as part of the go module transition and should eventually be
 // unpinned.
-replace github.com/jmespath/go-jmespath => github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
-
 replace github.com/json-iterator/go => github.com/json-iterator/go v1.1.7
 
 replace github.com/modern-go/reflect2 => github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
@@ -62,3 +61,5 @@ replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
 replace honnef.co/go/tools => honnef.co/go/tools v0.0.1-2019.2.3
 
 replace sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
+
+replace knative.dev/serving => knative.dev/serving v0.18.0

@@ -47,10 +47,10 @@ import (
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic/resources"
+	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
 )
 
 const (
@@ -83,7 +83,7 @@ type Reconciler struct {
 
 	// createClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
 	// This is needed so that we can inject a mock client for UTs purposes.
-	createClientFn gpubsub.CreateFn
+	createClientFn reconcilerutilspubsub.CreateFn
 }
 
 // Check that our Reconciler implements Interface.
@@ -204,7 +204,6 @@ func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1.Topic) error {
 		return err
 	}
 	defer client.Close()
-
 	t := client.Topic(topic.Status.TopicID)
 	exists, err := t.Exists(ctx)
 	if err != nil {

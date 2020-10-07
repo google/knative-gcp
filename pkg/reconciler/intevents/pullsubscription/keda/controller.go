@@ -21,6 +21,7 @@ import (
 
 	"knative.dev/pkg/injection"
 
+	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/cache"
@@ -31,7 +32,6 @@ import (
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1/resource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/pullsubscription"
 	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -104,7 +104,7 @@ func newController(
 			DeploymentLister:       deploymentInformer.Lister(),
 			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
 			ReceiveAdapterImage:    env.ReceiveAdapter,
-			CreateClientFn:         gpubsub.NewClient,
+			CreateClientFn:         pubsub.NewClient,
 			ControllerAgentName:    controllerAgentName,
 			ResourceGroup:          resourceGroup,
 		},

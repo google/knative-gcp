@@ -9,6 +9,9 @@ approvers:
 - liu-cong
 - grac3gao
 - nlopezgi
+- tommyreddad
+- danyinggu
+- zhongduo
 
 # Reviewers are suggested from the reviewers list first, then the approvers
 # list. To add reviewers while spreading the load among existing approvers,
@@ -28,3 +31,4 @@ reviewers:
 - nlopezgi
 - tommyreddad
 - zhongduo
+- danyinggu

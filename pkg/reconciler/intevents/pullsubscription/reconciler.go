@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -44,10 +45,10 @@ import (
 
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
+	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
 	"github.com/google/knative-gcp/pkg/tracing"
 )
 
@@ -92,7 +93,7 @@ type Base struct {
 
 	// CreateClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
 	// This is needed so that we can inject a mock client for UTs purposes.
-	CreateClientFn gpubsub.CreateFn
+	CreateClientFn reconcilerutilspubsub.CreateFn
 
 	// ReconcileDataPlaneFn is the function used to reconcile the data plane resources.
 	ReconcileDataPlaneFn ReconcileDataPlaneFunc
@@ -196,7 +197,7 @@ func (r *Base) reconcileSubscription(ctx context.Context, ps *v1.PullSubscriptio
 	}
 
 	// subConfig is the wanted config based on settings.
-	subConfig := gpubsub.SubscriptionConfig{
+	subConfig := pubsub.SubscriptionConfig{
 		Topic:               t,
 		RetainAckedMessages: ps.Spec.RetainAckedMessages,
 	}
