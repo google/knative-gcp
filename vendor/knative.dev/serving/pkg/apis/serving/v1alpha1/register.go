@@ -45,14 +45,8 @@ var (
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&Revision{},
-		&RevisionList{},
-		&Configuration{},
-		&ConfigurationList{},
-		&Route{},
-		&RouteList{},
-		&Service{},
-		&ServiceList{},
+		&DomainMapping{},
+		&DomainMappingList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
