@@ -1,11 +1,11 @@
 /*
-Copyright 2020 The Knative Authors.
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    https://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,14 +21,21 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-var realmCondSet = apis.NewLivingConditionSet()
+var domainMappingCondSet = apis.NewLivingConditionSet(
+	DomainMappingConditionIngressReady,
+)
 
 // GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
-func (*Realm) GetConditionSet() apis.ConditionSet {
-	return realmCondSet
+func (*DomainMapping) GetConditionSet() apis.ConditionSet {
+	return domainMappingCondSet
 }
 
-// GetGroupVersionKind returns SchemeGroupVersion of an Realm
-func (*Realm) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("Realm")
+// GetGroupVersionKind returns the GroupVersionKind.
+func (dm *DomainMapping) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("DomainMapping")
+}
+
+// InitializeConditions sets the initial values to the conditions.
+func (dms *DomainMappingStatus) InitializeConditions() {
+	domainMappingCondSet.Manage(dms).InitializeConditions()
 }
