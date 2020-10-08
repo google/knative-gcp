@@ -17,31 +17,50 @@ limitations under the License.
 package utils
 
 import (
+	"os"
+
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 )
 
 const (
 	clusterNameAttr = "cluster-name"
+	// ProjectIDEnvKey is the name of environmental variable for project ID
 	ProjectIDEnvKey = "PROJECT_ID"
 )
+
+// defaultMetadataClientCreator is a create function to get a default metadata client. This can be
+// swapped during testing.
+var defaultMetadataClientCreator func() metadataClient.Client = metadataClient.NewDefaultMetadataClient
+
+// projectIDFromEnv loads project ID from env once when startup.
+var projectIDFromEnv string
+
+func init() {
+	projectIDFromEnv = os.Getenv(ProjectIDEnvKey)
+}
 
 // ProjectIDEnvConfig is a struct to parse project ID from env var
 type ProjectIDEnvConfig struct {
 	ProjectID string `envconfig:"PROJECT_ID"`
 }
 
-// ProjectID returns the project ID for a particular resource.
-func ProjectID(project string, client metadataClient.Client) (string, error) {
-	// If project is set, then return that one.
-	if project != "" {
-		return project, nil
+// ProjectIDOrDefault returns the project ID by performing the following order:
+// 1) if the input project ID is valid, simply use it.
+// 2) if there is a PROJECT_ID environmental variable, use it.
+// 3) use metadataClient to resolve project id.
+func ProjectIDOrDefault(projectID string) (string, error) {
+	if projectID != "" {
+		return projectID, nil
+	}
+	if projectIDFromEnv != "" {
+		return projectIDFromEnv, nil
 	}
 	// Otherwise, ask GKE metadata server.
-	projectID, err := client.ProjectID()
+	projectGKE, err := defaultMetadataClientCreator().ProjectID()
 	if err != nil {
 		return "", err
 	}
-	return projectID, nil
+	return projectGKE, nil
 }
 
 // ClusterName returns the cluster name for a particular resource.

@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
@@ -29,9 +28,8 @@ import (
 )
 
 type envConfig struct {
-	PodName   string `envconfig:"POD_NAME" required:"true"`
-	Port      int    `envconfig:"PORT" default:"8080"`
-	ProjectID string `envconfig:"PROJECT_ID"`
+	PodName string `envconfig:"POD_NAME" required:"true"`
+	Port    int    `envconfig:"PORT" default:"8080"`
 
 	// Default 300Mi.
 	PublishBufferedByteLimit int `envconfig:"PUBLISH_BUFFERED_BYTES_LIMIT" default:"314572800"`
@@ -55,7 +53,7 @@ func main() {
 	defer res.Cleanup()
 	logger := res.Logger
 
-	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logger.Desugar().Fatal("Failed to create project id", zap.Error(err))
 	}

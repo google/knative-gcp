@@ -34,7 +34,6 @@ import (
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
@@ -113,7 +112,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling decoupling topic", zap.Any("broker", b))
 	// get ProjectID from metadata if projectID isn't set
-	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault(r.projectID)
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %v", err)
@@ -189,7 +188,7 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 	logger.Debug("Deleting decoupling topic")
 
 	// get ProjectID from metadata if projectID isn't set
-	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault(r.projectID)
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		b.Status.MarkTopicUnknown("FinalizeTopicProjectIdNotFound", "Failed to find project id: %v", err)

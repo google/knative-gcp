@@ -22,14 +22,16 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
-func TestProjectID(t *testing.T) {
+func TestProjectIDOrDefault(t *testing.T) {
 	testCases := map[string]struct {
 		want  string
 		data  testingMetadataClient.TestClientData
 		input string
+		env   string
 		error bool
 	}{
 		"project id exists": {
@@ -38,13 +40,20 @@ func TestProjectID(t *testing.T) {
 			input: "testing-project",
 			error: false,
 		},
-		"project id doesn't exist, successfully get project id ": {
+		"Successfully get project id from env": {
+			want:  "testing-project",
+			data:  testingMetadataClient.TestClientData{},
+			env:   "testing-project",
+			input: "",
+			error: false,
+		},
+		"Successfully get project id from client": {
 			want:  testingMetadataClient.FakeProjectID,
 			data:  testingMetadataClient.TestClientData{},
 			input: "",
 			error: false,
 		},
-		"project id doesn't exist, get project idfailed": {
+		"project id doesn't exist, get project id failed": {
 			want: "",
 			data: testingMetadataClient.TestClientData{
 				ProjectIDErr: fmt.Errorf("error getting project id"),
@@ -53,10 +62,20 @@ func TestProjectID(t *testing.T) {
 			error: true,
 		},
 	}
+
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			client := testingMetadataClient.NewTestClient(tc.data)
-			got, err := ProjectID(tc.input, client)
+			// Save and restore changed variables
+			origEnv := projectIDFromEnv
+			defer func() { projectIDFromEnv = origEnv }()
+			orig := defaultMetadataClientCreator
+			defer func() { defaultMetadataClientCreator = orig }()
+
+			projectIDFromEnv = tc.env
+			defaultMetadataClientCreator = func() metadataClient.Client {
+				return testingMetadataClient.NewTestClient(tc.data)
+			}
+			got, err := ProjectIDOrDefault(tc.input)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}

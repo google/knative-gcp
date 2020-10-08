@@ -32,7 +32,6 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/utils"
 
 	"knative.dev/pkg/apis"
@@ -156,7 +155,7 @@ func (r *Base) ReconcileKind(ctx context.Context, ps *v1.PullSubscription) recon
 
 func (r *Base) reconcileSubscription(ctx context.Context, ps *v1.PullSubscription) (string, error) {
 	if ps.Status.ProjectID == "" {
-		projectID, err := utils.ProjectID(ps.Spec.Project, metadataClient.NewDefaultMetadataClient())
+		projectID, err := utils.ProjectIDOrDefault(ps.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return "", err
