@@ -167,8 +167,8 @@ and replace the `default-auth-config:` part with:
 `$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the Pub/Sub
 enabled Google Cloud Service Account.
 
-Then, add `-workloadIdentity=true` and `-serviceAccountName=test-default-ksa`
-to the `go test` command.
+Then, add `-workloadIdentity=true` and `-serviceAccountName=test-default-ksa` to
+the `go test` command.
 
 For example,
 
