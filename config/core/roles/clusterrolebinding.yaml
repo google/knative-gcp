@@ -47,6 +47,22 @@ roleRef:
   name: addressable-resolver
 
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloud-run-events-controller-source-observer
+  labels:
+   events.cloud.google.com/release: devel
+subjects:
+  - kind: ServiceAccount
+    name: controller
+    namespace: cloud-run-events
+roleRef:
+  kind: ClusterRole
+  name: cloud-run-events-source-observer
+  apiGroup: rbac.authorization.k8s.io
+
+---
 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
