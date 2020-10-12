@@ -33,19 +33,19 @@ const (
 	// See: https://github.com/google/knative-gcp/issues/1265
 	avgMemoryUsageFanout  string = "1000Mi"
 	avgMemoryUsageIngress string = "1500Mi"
-	avgMemoryUsageRetry   string = "1500Mi"
+	avgMemoryUsageRetry   string = "1000Mi"
 	cpuRequestFanout      string = "1500m"
 	cpuRequestIngress     string = "2000m"
-	cpuRequestRetry       string = "1000m"
+	cpuRequestRetry       string = "2000m"
 	cpuLimitFanout        string = ""
 	cpuLimitIngress       string = ""
 	cpuLimitRetry         string = ""
-	memoryRequestFanout   string = "3000Mi"
+	memoryRequestFanout   string = "2500Mi"
 	memoryRequestIngress  string = "2000Mi"
-	memoryRequestRetry    string = "500Mi"
-	memoryLimitFanout     string = "3000Mi"
+	memoryRequestRetry    string = "2000Mi"
+	memoryLimitFanout     string = "2500Mi"
 	memoryLimitIngress    string = "2000Mi"
-	memoryLimitRetry      string = "3000Mi"
+	memoryLimitRetry      string = "2000Mi"
 	minReplicas           int32  = 1
 	maxReplicas           int32  = 10
 )
