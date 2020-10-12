@@ -321,7 +321,7 @@ func TestHandler(t *testing.T) {
 			defer cancel()
 
 			psSrv := pstest.NewServer()
-			defer psSrv.Close()
+			t.Cleanup(func() { psSrv.Close() })
 
 			decouple := tc.decouple
 			if decouple == nil {
@@ -351,6 +351,7 @@ func TestHandler(t *testing.T) {
 				}
 				savedToSink, err := binding.ToEvent(ctx, m)
 				if err != nil {
+					m.Finish(err)
 					t.Fatal(err)
 				}
 				// Retrieve the event from the decouple sink.
@@ -363,6 +364,7 @@ func TestHandler(t *testing.T) {
 				for _, assertion := range tc.eventAssertions {
 					assertion(t, savedToSink)
 				}
+				m.Finish(nil)
 			}
 
 			select {
@@ -460,7 +462,13 @@ func setupTestReceiver(ctx context.Context, t testing.TB, psSrv *pstest.Server) 
 		t.Fatal(err)
 	}
 
-	go p.OpenInbound(cecontext.WithLogger(ctx, logtest.TestLogger(t)))
+	errChan := make(chan error)
+	go func() {
+		errChan <- p.OpenInbound(cecontext.WithLogger(ctx, logtest.TestLogger(t)))
+	}()
+	t.Cleanup(func() {
+		<-errChan
+	})
 	return p
 }
 
