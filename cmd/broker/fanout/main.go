@@ -54,7 +54,7 @@ type envConfig struct {
 	// Default is 400Mb
 	MaxOutstandingBytes int `envconfig:"MAX_OUTSTANDING_BYTES" default:"400000000"`
 
-	// MaxOutstandingBytes is the maximum number of unprocessed messages (unacknowledged but not yet expired).
+	// MaxOutstandingMessages is the maximum number of unprocessed messages (unacknowledged but not yet expired).
 	MaxOutstandingMessages int `envconfig:"MAX_OUTSTANDING_MESSAGES" default:"4000"`
 
 	// Max to 10m.
