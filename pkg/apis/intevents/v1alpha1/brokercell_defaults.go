@@ -42,10 +42,10 @@ const (
 	cpuLimitRetry         string = ""
 	memoryRequestFanout   string = "2500Mi"
 	memoryRequestIngress  string = "2000Mi"
-	memoryRequestRetry    string = "2000Mi"
+	memoryRequestRetry    string = "1500Mi"
 	memoryLimitFanout     string = "2500Mi"
 	memoryLimitIngress    string = "2000Mi"
-	memoryLimitRetry      string = "2000Mi"
+	memoryLimitRetry      string = "1500Mi"
 	minReplicas           int32  = 1
 	maxReplicas           int32  = 10
 )
