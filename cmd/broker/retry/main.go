@@ -46,9 +46,9 @@ type envConfig struct {
 
 	// Outstanding messages effectively limits how many connections we will create to each subscriber.
 	// If such connections are long, it will consume a lot of memory (aggregated) without limiting.
-	OutstandingMessagesPerSub int `envconfig:"OUTSTANDING_MESSAGES_PER_SUB" default:"100"`
+	OutstandingMessagesPerSub int `envconfig:"OUTSTANDING_MESSAGES_PER_SUB" default:"200"`
 	// 3Mi. We also want to limit the memory usage from each subscription.
-	OutstandingBytesPerSub int `envconfig:"OUTSTANDING_BYTES_PER_SUB" default:"3000000"`
+	OutstandingBytesPerSub int `envconfig:"OUTSTANDING_BYTES_PER_SUB" default:"1000000"`
 
 	// MaxStaleDuration is the max duration of the handler pool without being synced.
 	// With the internal pool resync period being 15s, it requires at least 4
