@@ -12,7 +12,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.2
-	github.com/google/uuid v1.1.1
+	github.com/google/uuid v1.1.2
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -22,16 +22,16 @@ require (
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	google.golang.org/api v0.30.0
-	google.golang.org/genproto v0.0.0-20200828030656-73b5761be4c5
-	google.golang.org/grpc v1.31.1
+	google.golang.org/api v0.31.0
+	google.golang.org/genproto v0.0.0-20200914193844-75d14daec038
+	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.25.0
 	k8s.io/api v0.18.7-rc.0
-	k8s.io/apimachinery v0.19.0
+	k8s.io/apimachinery v0.19.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.17.3
-	knative.dev/pkg v0.0.0-20200824160247-5343c1d19369
-	knative.dev/serving v0.17.2
+	knative.dev/eventing v0.17.7
+	knative.dev/pkg v0.0.0-20200831162708-14fb2347fb77
+	knative.dev/serving v0.17.4-0.20201013135631-4ed85f328cd3
 	sigs.k8s.io/yaml v1.2.0
 )
 
