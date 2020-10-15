@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
-	knativegcptestresources "github.com/google/knative-gcp/test/e2e/lib/resources"
+	knativegcptestresources "github.com/google/knative-gcp/test/lib/resources"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
@@ -33,8 +33,8 @@ import (
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	"github.com/google/knative-gcp/test/e2e/lib"
-	kngcphelpers "github.com/google/knative-gcp/test/e2e/lib/helpers"
+	"github.com/google/knative-gcp/test/lib"
+	kngcphelpers "github.com/google/knative-gcp/test/lib/helpers"
 )
 
 /*

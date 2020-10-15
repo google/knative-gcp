@@ -29,7 +29,7 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/lib"
 )
 
 type Receiver struct {

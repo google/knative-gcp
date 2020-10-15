@@ -28,8 +28,8 @@ import (
 	"knative.dev/pkg/test/helpers"
 
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/e2e/lib"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"github.com/google/knative-gcp/test/lib"
+	"github.com/google/knative-gcp/test/lib/resources"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package conformance
 
 import (
 	"context"
@@ -30,8 +30,8 @@ import (
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	"github.com/google/knative-gcp/test/e2e/lib"
-	kngcphelpers "github.com/google/knative-gcp/test/e2e/lib/helpers"
+	"github.com/google/knative-gcp/test/lib"
+	kngcphelpers "github.com/google/knative-gcp/test/lib/helpers"
 )
 
 /*

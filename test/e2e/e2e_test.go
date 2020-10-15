@@ -22,15 +22,13 @@ import (
 	"context"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	conformancehelpers "knative.dev/eventing/test/conformance/helpers"
 	e2ehelpers "knative.dev/eventing/test/e2e/helpers"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/logstream"
 
 	"github.com/cloudevents/sdk-go/v2/binding"
-	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/lib"
 )
 
 // All e2e tests go below:
@@ -185,67 +183,6 @@ func TestChannelChain(t *testing.T) {
 	)
 }
 
-func TestEventTransformationForTrigger(t *testing.T) {
-	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-
-	brokerClass := "MTChannelBasedBroker"
-	brokerVersion := "v1beta1"
-	triggerVersion := "v1beta1"
-	channelTestRunner.RunTests(t, eventingtestlib.FeatureBasic, func(t *testing.T, component metav1.TypeMeta) {
-		e2ehelpers.EventTransformationForTriggerTestHelper(
-			context.Background(),
-			t,
-			brokerVersion,
-			triggerVersion,
-			e2ehelpers.ChannelBasedBrokerCreator(component, brokerClass),
-			func(client *eventingtestlib.Client) {
-				// This test is running based on code in knative/eventing, so it does not use the same
-				// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
-				// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
-				// repo whose functionality we need to copy here.
-
-				// Copy the secret from the default namespace to the namespace used in the test.
-				lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
-			},
-		)
-	})
-}
-
-func TestBrokerChannelFlow(t *testing.T) {
-	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-
-	brokerClass := "MTChannelBasedBroker"
-	brokerVersion := "v1beta1"
-	triggerVersion := "v1beta1"
-	e2ehelpers.BrokerChannelFlowWithTransformation(
-		context.Background(),
-		t,
-		brokerClass,
-		brokerVersion,
-		triggerVersion,
-		channelTestRunner,
-		func(client *eventingtestlib.Client) {
-			// This test is running based on code in knative/eventing, so it does not use the same
-			// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
-			// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
-			// repo whose functionality we need to copy here.
-
-			// Copy the secret from the default namespace to the namespace used in the test.
-			lib.GetCredential(context.Background(), client, authConfig.WorkloadIdentity)
-		},
-	)
-}
-
 func TestChannelDeadLetterSink(t *testing.T) {
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
@@ -360,28 +297,6 @@ func TestCloudPubSubSourceStackDriverMetrics(t *testing.T) {
 	CloudPubSubSourceWithTargetTestImpl(t, true /*assertMetrics */, authConfig)
 }
 
-// TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
-func TestBrokerWithPubSubChannel(t *testing.T) {
-	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-	BrokerWithPubSubChannelTestImpl(t, authConfig)
-}
-
-// TestCloudPubSubSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudPubSubSource.
-func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
-	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-	PubSubSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
-}
-
 // TestSmokeCloudBuildSourceV1alpha1 we can create a v1alpha1 CloudBuildSource to ready state.
 // We keep a set of smoke tests for each supported version of CloudBuildSource to make sure the webhook works.
 func TestSmokeCloudBuildSourceV1alpha1(t *testing.T) {
@@ -410,39 +325,6 @@ func TestCloudBuildSourceWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	CloudBuildSourceWithTargetTestImpl(t, authConfig)
-}
-
-// TestCloudStorageSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudStorageSource.
-func TestCloudStorageSourceBrokerWithPubSubChannel(t *testing.T) {
-	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-	StorageSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
-}
-
-// TestCloudAuditLogsSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudAuditLogsSource.
-func TestCloudAuditLogsSourceBrokerWithPubSubChannel(t *testing.T) {
-	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-	AuditLogsSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
-}
-
-// TestCloudSchedulerSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudSchedulerSource.
-func TestCloudSchedulerSourceBrokerWithPubSubChannel(t *testing.T) {
-	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-	SchedulerSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
 }
 
 // TestSmokeCloudStorageSourceWithDeletion tests if we can create a CloudStorageSource to ready state and delete a CloudStorageSource and its underlying resources.

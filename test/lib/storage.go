@@ -33,7 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/test/helpers"
 
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"github.com/google/knative-gcp/test/lib/resources"
 )
 
 type StorageConfig struct {

@@ -35,7 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"github.com/google/knative-gcp/test/lib/resources"
 )
 
 const (

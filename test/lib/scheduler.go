@@ -35,7 +35,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/gclient/scheduler"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"github.com/google/knative-gcp/test/lib/resources"
 )
 
 type SchedulerConfig struct {
