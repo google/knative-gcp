@@ -598,3 +598,10 @@ func TestCloudSchedulerSourceWithGCPBroker(t *testing.T) {
 	defer cancel()
 	SchedulerSourceWithGCPBrokerTestImpl(t, authConfig)
 }
+
+// TestTriggerDependencyAnnotation tests that Trigger with DependencyAnnotation works.
+func TestTriggerDependencyAnnotation(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	TriggerDependencyAnnotationTestImpl(t, authConfig)
+}
