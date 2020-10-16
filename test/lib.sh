@@ -37,7 +37,7 @@ function start_knative_gcp_monitoring() {
 function start_knative_gcp() {
   start_latest_knative_serving || return 1
   start_latest_knative_eventing || return 1
-  start_knative_gcp_monitoring "$KNATIVE_GCP_MONITORING_RELEASE" || return 1
+  start_knative_gcp_monitoring "$KNATIVE_GCP_MONITORING_YAML" || return 1
   cloud_run_events_setup || return 1
   istio_patch || return 1
   knative_eventing_config_tracing || return 1
