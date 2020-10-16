@@ -95,7 +95,7 @@ var setStackDriverConfigOnce = sync.Once{}
 func (c *Client) SetupStackDriverMetrics(ctx context.Context, t *testing.T) {
 	t.Helper()
 	setStackDriverConfigOnce.Do(func() {
-		err := c.Core.Kube.UpdateConfigMap(ctx, "cloud-run-events", "config-observability", map[string]string{
+		err := pkgTest.UpdateConfigMap(ctx, c.Core.Kube, "cloud-run-events", "config-observability", map[string]string{
 			"metrics.allow-stackdriver-custom-metrics":     "false",
 			"metrics.backend-destination":                  "stackdriver",
 			"metrics.stackdriver-custom-metrics-subdomain": "cloud.google.com",
@@ -128,7 +128,7 @@ const (
 func (c *Client) WaitUntilJobDone(ctx context.Context, namespace, name string) (string, error) {
 	cc := c.Core
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		job, err := cc.Kube.Kube.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
+		job, err := cc.Kube.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				log.Println(namespace, name, "not found", err)
@@ -145,7 +145,7 @@ func (c *Client) WaitUntilJobDone(ctx context.Context, namespace, name string) (
 
 	// poll until the pod is terminated.
 	err = wait.PollImmediate(interval, timeout, func() (bool, error) {
-		pod, err := operations.GetJobPodByJobName(context.TODO(), cc.Kube.Kube, namespace, name)
+		pod, err := operations.GetJobPodByJobName(context.TODO(), cc.Kube, namespace, name)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				log.Println(namespace, name, "not found", err)
@@ -167,7 +167,7 @@ func (c *Client) WaitUntilJobDone(ctx context.Context, namespace, name string) (
 	if err != nil {
 		return "", err
 	}
-	pod, err := operations.GetJobPodByJobName(context.TODO(), cc.Kube.Kube, namespace, name)
+	pod, err := operations.GetJobPodByJobName(context.TODO(), cc.Kube, namespace, name)
 	if err != nil {
 		return "", err
 	}
@@ -178,7 +178,7 @@ func (c *Client) WaitUntilJobDone(ctx context.Context, namespace, name string) (
 func (c *Client) LogsFor(ctx context.Context, namespace, name string, tm *metav1.TypeMeta) (string, error) {
 	cc := c.Core
 	// Get all pods in this namespace.
-	pods, err := cc.Kube.Kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+	pods, err := cc.Kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -189,7 +189,7 @@ func (c *Client) LogsFor(ctx context.Context, namespace, name string, tm *metav1
 	for _, pod := range pods.Items {
 		if strings.HasPrefix(pod.Name, name) {
 			// Collect all the logs from all the containers for this pod.
-			if l, err := cc.Kube.Kube.CoreV1().Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{}).DoRaw(ctx); err != nil {
+			if l, err := cc.Kube.CoreV1().Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{}).DoRaw(ctx); err != nil {
 				logs = append(logs, err.Error())
 			} else {
 				logs = append(logs, string(l))
@@ -206,7 +206,7 @@ func (c *Client) LogsFor(ctx context.Context, namespace, name string, tm *metav1
 }
 
 // TODO make this function more generic.
-func (c *Client) StackDriverEventCountMetricFor(namespace, projectID, filter string) (int64, error) {
+func (c *Client) StackDriverEventCountMetricFor(_, projectID, filter string) (int64, error) {
 	metricClient, err := monitoring.NewMetricClient(context.TODO())
 	if err != nil {
 		return 0, fmt.Errorf("failed to create stackdriver metric client: %v", err)

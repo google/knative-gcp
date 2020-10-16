@@ -298,7 +298,7 @@ func WithServiceForJob(name string) func(*batchv1.Job, *Client) error {
 	return func(job *batchv1.Job, client *Client) error {
 		svc := resources.ServiceDefaultHTTP(name, job.Spec.Template.Labels)
 
-		svcs := client.Core.Kube.Kube.CoreV1().Services(job.Namespace)
+		svcs := client.Core.Kube.CoreV1().Services(job.Namespace)
 		if _, err := svcs.Create(ctx, svc, v1.CreateOptions{}); err != nil {
 			return err
 		}
@@ -322,7 +322,7 @@ func (c *Client) CreateJobOrFail(job *batchv1.Job, options ...func(*batchv1.Job,
 		}
 	}
 
-	jobs := c.Core.Kube.Kube.BatchV1().Jobs(job.Namespace)
+	jobs := c.Core.Kube.BatchV1().Jobs(job.Namespace)
 	if _, err := jobs.Create(ctx, job, v1.CreateOptions{}); err != nil {
 		c.T.Fatalf("Failed to create job %s/%s: %v", job.Namespace, job.Name, err)
 	}

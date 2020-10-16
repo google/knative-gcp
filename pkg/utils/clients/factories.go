@@ -34,8 +34,8 @@ type ProjectID string
 type MaxConnsPerHost int
 
 // NewHTTPMessageReceiver wraps kncloudevents.NewHttpMessageReceiver with type-safe options.
-func NewHTTPMessageReceiver(port Port) *kncloudevents.HttpMessageReceiver {
-	return kncloudevents.NewHttpMessageReceiver(int(port))
+func NewHTTPMessageReceiver(port Port) *kncloudevents.HTTPMessageReceiver {
+	return kncloudevents.NewHTTPMessageReceiver(int(port))
 }
 
 // NewPubsubClient provides a pubsub client from PubsubClientOpts.

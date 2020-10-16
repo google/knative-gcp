@@ -71,7 +71,7 @@ Please refer to "Configure the Authentication Mechanism for GCP" at https://gith
 var HandlerSet wire.ProviderSet = wire.NewSet(
 	NewHandler,
 	clients.NewHTTPMessageReceiver,
-	wire.Bind(new(HttpMessageReceiver), new(*kncloudevents.HttpMessageReceiver)),
+	wire.Bind(new(HttpMessageReceiver), new(*kncloudevents.HTTPMessageReceiver)),
 	NewMultiTopicDecoupleSink,
 	wire.Bind(new(DecoupleSink), new(*multiTopicDecoupleSink)),
 	clients.NewPubsubClient,
