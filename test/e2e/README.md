@@ -22,7 +22,7 @@ test/e2e
 We leverage the
 [test library in Eventing](https://github.com/knative/eventing/tree/master/test/lib)
 as much as possible for implementing the e2e tests. Logic specific to
-knative-gcp should be added under [knative-gcp e2e test lib](lib).
+knative-gcp should be added under [knative-gcp e2e test lib](../lib).
 
 ## Setup a test cluster
 
