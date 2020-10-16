@@ -22,10 +22,10 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
+	"knative.dev/pkg/tracing"
 
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"

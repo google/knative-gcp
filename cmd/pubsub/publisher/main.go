@@ -29,7 +29,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"knative.dev/eventing/pkg/tracing"
+	"knative.dev/pkg/tracing"
 )
 
 type envConfig struct {

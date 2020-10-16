@@ -25,7 +25,7 @@ readonly CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW="cloud-run-events"
 # Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
 readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW="cre-pubsub"
 
-# Vendored eventing test iamges.
+# Vendored eventing test images.
 readonly VENDOR_EVENTING_TEST_IMAGES="vendor/knative.dev/eventing/test/test_images/"
 
 # Constants used for authentication setup for GCP Broker if it's not running on Prow.

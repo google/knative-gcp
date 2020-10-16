@@ -46,7 +46,7 @@ func printAllPodMetricsIfTestFailed(ctx context.Context, client *Client) {
 		// No failure, so no need for logs!
 		return
 	}
-	pods, err := client.Core.Kube.Kube.CoreV1().Pods(client.Namespace).List(ctx, metav1.ListOptions{})
+	pods, err := client.Core.Kube.CoreV1().Pods(client.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		client.T.Logf("Unable to list pods: %v", err)
 		return

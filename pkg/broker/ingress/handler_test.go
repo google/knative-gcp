@@ -124,7 +124,7 @@ type testCase struct {
 
 type fakeOverloadedDecoupleSink struct{}
 
-func (m *fakeOverloadedDecoupleSink) Send(ctx context.Context, broker types.NamespacedName, event cev2.Event) protocol.Result {
+func (m *fakeOverloadedDecoupleSink) Send(_ context.Context, _ types.NamespacedName, _ cev2.Event) protocol.Result {
 	return bundler.ErrOverflow
 }
 

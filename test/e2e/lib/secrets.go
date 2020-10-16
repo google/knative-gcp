@@ -21,6 +21,8 @@ import (
 	"sync"
 	"time"
 
+	pkgtest "knative.dev/pkg/test"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	eventingtestlib "knative.dev/eventing/test/lib"
@@ -36,12 +38,12 @@ var setTracingConfigOnce = sync.Once{}
 // DuplicatePubSubSecret duplicates the PubSub secret to the test namespace.
 func DuplicatePubSubSecret(ctx context.Context, client *eventingtestlib.Client) {
 	client.T.Helper()
-	secret, err := client.Kube.Kube.CoreV1().Secrets(pubSubSecretNamespace).Get(ctx, pubSubSecretName, metav1.GetOptions{})
+	secret, err := client.Kube.CoreV1().Secrets(pubSubSecretNamespace).Get(ctx, pubSubSecretName, metav1.GetOptions{})
 	if err != nil {
 		client.T.Fatalf("could not get secret: %v", err)
 	}
 
-	if _, err = client.Kube.Kube.CoreV1().Secrets(client.Namespace).Create(ctx, &corev1.Secret{
+	if _, err = client.Kube.CoreV1().Secrets(client.Namespace).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        secret.Name,
 			Labels:      secret.Labels,
@@ -65,9 +67,9 @@ func GetCredential(ctx context.Context, client *eventingtestlib.Client, workload
 func SetTracingToZipkin(ctx context.Context, client *eventingtestlib.Client) {
 	client.T.Helper()
 	setTracingConfigOnce.Do(func() {
-		err := client.Kube.UpdateConfigMap(ctx, "cloud-run-events", "config-tracing", map[string]string{
+		err := pkgtest.UpdateConfigMap(ctx, client.Kube, "cloud-run-events", "config-tracing", map[string]string{
 			"backend":         "zipkin",
-			"zipkin-endpoint": "http://zipkin.istio-system.svc.cluster.local:9411/api/v2/spans",
+			"zipkin-endpoint": "http://zipkin.knative-eventing.svc.cluster.local:9411/api/v2/spans",
 		})
 		if err != nil {
 			client.T.Fatalf("Unable to set the ConfigMap: %v", err)
