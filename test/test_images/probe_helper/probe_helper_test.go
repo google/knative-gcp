@@ -326,70 +326,11 @@ func TestProbeHelper(t *testing.T) {
 	group, ctx := errgroup.WithContext(ctx)
 	ctx, cancel := context.WithCancel(ctx)
 
-	// Set up ports for testing the probe helper.
-	receiverListener, err := GetFreePortListener()
-	if err != nil {
-		t.Fatalf("Failed to get free receiver port listener: %v", err)
-	}
-	receiverPort := receiverListener.Addr().(*net.TCPAddr).Port
-	receiverURL := fmt.Sprintf("http://localhost:%d", receiverPort)
-	probeListener, err := GetFreePortListener()
-	if err != nil {
-		t.Fatalf("Failed to get free probe port listener: %v", err)
-	}
-	probePort := probeListener.Addr().(*net.TCPAddr).Port
-	probeURL := fmt.Sprintf("http://localhost:%d", probePort)
-
-	// Set up the resources for testing the CloudPubSubSource.
-	pubsubClient, closePubsub := testPubsubClient(ctx, t, testProjectID)
-	topic, err := pubsubClient.CreateTopic(ctx, testTopicID)
-	if err != nil {
-		t.Fatalf("Failed to create test topic: %v", err)
-	}
-	sub, err := pubsubClient.CreateSubscription(ctx, testSubscriptionID, pubsub.SubscriptionConfig{
-		Topic: topic,
-	})
-	if err != nil {
-		t.Fatalf("Failed to create test subscription: %v", err)
-	}
-	// Run the test CloudPubSubSource.
-	runTestCloudPubSubSource(ctx, group, sub, receiverURL)
-
-	// Set up resources for testing the CloudStorageSource.
-	storageClient, gotCloudStorageRequest, closeStorage := testStorageClient(ctx, t)
-	// Run the test CloudStorageSource.
-	runTestCloudStorageSource(ctx, group, gotCloudStorageRequest, receiverURL)
-
-	// Run the test CloudSchedulerSource.
-	runTestCloudSchedulerSource(ctx, group, 100*time.Millisecond, receiverURL)
-
-	// Run the test CloudAuditLogsSource.
-	runTestCloudAuditLogsSource(ctx, group, pubsubClient, receiverURL)
-
-	// Run the test Broker for testing Broker E2E delivery.
-	brokerURL := runTestBroker(ctx, group, receiverURL)
-
-	// Create the probe helper and start a goroutine to run it.
-	ph := &ProbeHelper{
-		projectID:                  testProjectID,
-		brokerURL:                  brokerURL,
-		cloudPubSubSourceTopicID:   testTopicID,
-		pubsubClient:               pubsubClient,
-		cloudStorageSourceBucketID: testStorageBucket,
-		storageClient:              storageClient,
-		probeListener:              probeListener,
-		receiverListener:           receiverListener,
-		cloudSchedulerSourcePeriod: time.Minute,
-		timeoutDuration:            30 * time.Minute,
-		healthChecker: &healthChecker{
-			port:             0,
-			maxStaleDuration: time.Minute,
-		},
-	}
-	go ph.run(ctx)
+	phr := makeProbeHelper(ctx, t, group)
+	go phr.probeHelper.run(ctx)
 
 	// Create a testing client from which to send probe events to the probe helper.
-	p, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeURL))
+	p, err := cloudevents.NewHTTP(cloudevents.WithTarget(phr.probeURL))
 	if err != nil {
 		t.Fatalf("Failed to create HTTP protocol of the testing client: %s", err.Error())
 	}
@@ -512,16 +453,100 @@ func TestProbeHelper(t *testing.T) {
 		})
 	}
 	// Cancel gracefully to avoid logger panic if parent goroutine terminates.
-	closePubsub()
-	closeStorage()
+	phr.cleanup()
 	cancel()
 	if err := group.Wait(); err != nil {
 		t.Fatalf("Error in probe helper fake sources: %v", err)
 	}
 }
 
-func assertHealthCheckResult(t *testing.T, port int, ok bool) {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/healthz", port), nil)
+type makeProbeHelperReturn struct {
+	probeHelper    *ProbeHelper
+	probeURL       string
+	healthCheckURL string
+	cleanup        func()
+}
+
+func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) makeProbeHelperReturn {
+	// Set up ports for testing the probe helper.
+	receiverListener, err := GetFreePortListener()
+	if err != nil {
+		t.Fatalf("Failed to get free receiver port listener: %v", err)
+	}
+	receiverPort := receiverListener.Addr().(*net.TCPAddr).Port
+	receiverURL := fmt.Sprintf("http://localhost:%d", receiverPort)
+	probeListener, err := GetFreePortListener()
+	if err != nil {
+		t.Fatalf("Failed to get free probe port listener: %v", err)
+	}
+	probePort := probeListener.Addr().(*net.TCPAddr).Port
+	probeURL := fmt.Sprintf("http://localhost:%d", probePort)
+
+	healthCheckerListener, err := GetFreePortListener()
+	if err != nil {
+		t.Errorf("Failed to get free health checker port listener: %v", err)
+	}
+	healthCheckerPort := healthCheckerListener.Addr().(*net.TCPAddr).Port
+	healthCheckerURL := fmt.Sprintf("http://localhost:%d/healthz", healthCheckerPort)
+
+	// Set up the resources for testing the CloudPubSubSource.
+	pubsubClient, closePubsub := testPubsubClient(ctx, t, testProjectID)
+	topic, err := pubsubClient.CreateTopic(ctx, testTopicID)
+	if err != nil {
+		t.Fatalf("Failed to create test topic: %v", err)
+	}
+	sub, err := pubsubClient.CreateSubscription(ctx, testSubscriptionID, pubsub.SubscriptionConfig{
+		Topic: topic,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create test subscription: %v", err)
+	}
+	// Run the test CloudPubSubSource.
+	runTestCloudPubSubSource(ctx, group, sub, receiverURL)
+
+	// Set up resources for testing the CloudStorageSource.
+	storageClient, gotCloudStorageRequest, closeStorage := testStorageClient(ctx, t)
+	// Run the test CloudStorageSource.
+	runTestCloudStorageSource(ctx, group, gotCloudStorageRequest, receiverURL)
+
+	// Run the test CloudSchedulerSource.
+	runTestCloudSchedulerSource(ctx, group, 100*time.Millisecond, receiverURL)
+
+	// Run the test CloudAuditLogsSource.
+	runTestCloudAuditLogsSource(ctx, group, pubsubClient, receiverURL)
+
+	// Run the test Broker for testing Broker E2E delivery.
+	brokerURL := runTestBroker(ctx, group, receiverURL)
+	// Create the probe helper and start a goroutine to run it.
+	ph := &ProbeHelper{
+		projectID:                  testProjectID,
+		brokerURL:                  brokerURL,
+		cloudPubSubSourceTopicID:   testTopicID,
+		pubsubClient:               pubsubClient,
+		cloudStorageSourceBucketID: testStorageBucket,
+		storageClient:              storageClient,
+		probeListener:              probeListener,
+		receiverListener:           receiverListener,
+		cloudSchedulerSourcePeriod: time.Minute,
+		timeoutDuration:            30 * time.Minute,
+		healthChecker: &healthChecker{
+			listener:         healthCheckerListener,
+			maxStaleDuration: time.Second,
+		},
+	}
+	return makeProbeHelperReturn{
+		probeHelper:    ph,
+		probeURL:       probeURL,
+		healthCheckURL: healthCheckerURL,
+		cleanup: func() {
+			closeStorage()
+			closePubsub()
+		},
+	}
+}
+
+func assertHealthCheckResult(t *testing.T, url string, ok bool) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		t.Fatalf("Failed to create health check request: %v", err)
 	}
@@ -549,33 +574,27 @@ func GetFreePortListener() (net.Listener, error) {
 }
 
 func TestProbeHelperHealth(t *testing.T) {
-	t.Run("Force unhealth check", func(t *testing.T) {
-		ctx := logtest.TestContextWithLogger(t)
-		ctx, cancel := context.WithCancel(ctx)
-		defer cancel()
+	ctx := logtest.TestContextWithLogger(t)
+	group, ctx := errgroup.WithContext(ctx)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-		healthCheckerListener, err := GetFreePortListener()
-		if err != nil {
-			t.Errorf("Failed to get free health checker port listener: %v", err)
-		}
-		healthCheckerPort := healthCheckerListener.Addr().(*net.TCPAddr).Port
-		// Create the probe helper and start a goroutine to run it.
-		ph := &ProbeHelper{
-			projectID: testProjectID,
-			brokerURL: "http://localhost:0/",
-			healthChecker: &healthChecker{
-				listener:         healthCheckerListener,
-				maxStaleDuration: time.Second,
-			},
-		}
-		go ph.run(ctx)
+	phr := makeProbeHelper(ctx, t, group)
+	go phr.probeHelper.run(ctx)
 
-		// Make sure the health checker is up.
-		time.Sleep(500 * time.Millisecond)
-		assertHealthCheckResult(t, healthCheckerPort, true)
+	// Make sure the health checker is up.
+	time.Sleep(500 * time.Millisecond)
+	assertHealthCheckResult(t, phr.healthCheckURL, true)
 
-		// Intentionally causing an unhealth check.
-		time.Sleep(time.Second)
-		assertHealthCheckResult(t, healthCheckerPort, false)
-	})
+	// Guarantee that it has been long enough that the stale duration has been hit. This will cause
+	// the health checker's result to be unhealthy.
+	time.Sleep(2 * phr.probeHelper.healthChecker.maxStaleDuration)
+	assertHealthCheckResult(t, phr.healthCheckURL, false)
+
+	// Cancel gracefully to avoid logger panic if parent goroutine terminates.
+	phr.cleanup()
+	cancel()
+	if err := group.Wait(); err != nil {
+		t.Fatalf("Error in probe helper fake sources: %v", err)
+	}
 }
