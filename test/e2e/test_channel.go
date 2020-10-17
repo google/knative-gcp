@@ -24,7 +24,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
-	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/lib"
 )
 
 // SmokeTestChannelImpl makes sure we can run tests.

@@ -56,7 +56,7 @@ const (
 	E2ESchedulerRespType    = E2ERespEventTypePrefix + "-scheduler"
 	E2EDummyRespEventType   = E2ERespEventTypePrefix + "-dummy"
 
-	// Used in ../../test_images/sender, ../../test_images/receiver and ../../test_images/receiver
+	// Used in ../test_images/sender, ../test_images/receiver and ../test_images/receiver
 	// E2EDummyEventID is the id of the event sent by image `sender`
 	E2EDummyEventID = "e2e-dummy-event-id"
 	// E2EDummyEventType is the type of the event sent by image `sender`

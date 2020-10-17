@@ -38,8 +38,8 @@ import (
 	pkgTest "knative.dev/pkg/test"
 
 	knativegcp "github.com/google/knative-gcp/pkg/client/clientset/versioned"
-	"github.com/google/knative-gcp/test/e2e/lib/metrics"
-	"github.com/google/knative-gcp/test/e2e/lib/operations"
+	"github.com/google/knative-gcp/test/lib/metrics"
+	"github.com/google/knative-gcp/test/lib/operations"
 )
 
 // Setup runs the Setup in the common eventing test framework.

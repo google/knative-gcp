@@ -28,8 +28,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/e2e/lib/metrics"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"github.com/google/knative-gcp/test/lib/metrics"
+	"github.com/google/knative-gcp/test/lib/resources"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgmetrics "knative.dev/pkg/metrics"
 )

@@ -32,7 +32,7 @@ import (
 	"google.golang.org/api/option"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"github.com/google/knative-gcp/test/lib/resources"
 	cloudbuildpb "google.golang.org/genproto/googleapis/devtools/cloudbuild/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

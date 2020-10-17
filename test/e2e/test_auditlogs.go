@@ -24,8 +24,8 @@ import (
 	"time"
 
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/e2e/lib"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"github.com/google/knative-gcp/test/lib"
+	"github.com/google/knative-gcp/test/lib/resources"
 
 	"knative.dev/pkg/test/helpers"
 
