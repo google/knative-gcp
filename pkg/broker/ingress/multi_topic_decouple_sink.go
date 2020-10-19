@@ -53,7 +53,7 @@ func NewMultiTopicDecoupleSink(
 		// TODO(#1118): remove Topic when broker config is removed
 		topics: make(map[types.NamespacedName]*pubsub.Topic),
 		// TODO(#1804): remove this field when enabling the feature by default.
-		enableEventFiltering: EnableEventFilterFunc(),
+		enableEventFiltering: enableEventFilterFunc(),
 	}
 }
 
@@ -90,6 +90,7 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.Namespac
 	// to the decouple topic.
 	// TODO(#1804): remove first check when enabling the feature by default.
 	if m.enableEventFiltering && !m.hasTrigger(ctx, &event) {
+		logging.FromContext(ctx).Debug("Filering target-less event at ingress", zap.Any("event", event))
 		return nil
 	}
 
@@ -103,26 +104,26 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.Namespac
 	return err
 }
 
-// EventFilterFunc is used to see if a target is interested in an event.
+// eventFilterFunc is used to see if a target is interested in an event.
 // It is used as a vaiable to allow stubbing out in unit tests.
-var EventFilterFunc = filter.PassFilter
+var eventFilterFunc = filter.PassFilter
 
-// EnableEventFilterFunc is a temporary function to control enabling and
+// enableEventFilterFunc is a temporary function to control enabling and
 // disabling trigger-less event filtering in ingress.
 // TODO(#1804): remove this variable when enabling the feature by default.
-var EnableEventFilterFunc = isEventFilteringEnabled
+var enableEventFilterFunc = isEventFilteringEnabled
 
 // TODO(#1804): remove this method when enabling the feature by default.
 func isEventFilteringEnabled() bool {
-	return os.Getenv("ENABLE_EVENT_FILTERING") == "true"
+	return os.Getenv("ENABLE_INGRESS_EVENT_FILTERING") == "true"
 }
 
 // hasTrigger checks given event against all targets to see if it will pass any of their filters.
 // If one is fouund, hasTrigger returns true.
 func (m *multiTopicDecoupleSink) hasTrigger(ctx context.Context, event *cev2.Event) bool {
-	var hasTrigger bool
+	hasTrigger := false
 	m.brokerConfig.RangeAllTargets(func(target *config.Target) bool {
-		if EventFilterFunc(ctx, target.FilterAttributes, event) {
+		if eventFilterFunc(ctx, target.FilterAttributes, event) {
 			hasTrigger = true
 			return false
 		}

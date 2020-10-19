@@ -40,7 +40,9 @@ import (
 )
 
 func TestMultiTopicDecoupleSink(t *testing.T) {
-	// Add a target to the broker to ensure all events are sent to pub/sub.
+	// If the broker has no targets, it will drop events at ingress without sending them
+	// to pub/sub. So we add a target with no filter to the broker to ensure events are not
+	// dropped due to ingress filtering.
 	brokerTargets := map[string]*config.Target{"target": {}}
 
 	type brokerTestCase struct {
@@ -296,6 +298,28 @@ func TestHasTrigger(t *testing.T) {
 			},
 			hasTrigger: true,
 		},
+		{
+			name: "broker with multiple targets with no matching target filters",
+			brokerTargets: map[string]*config.Target{
+				"non_matching_target_1": {
+					FilterAttributes: map[string]string{
+						"type":   eventType,
+						"source": "some-random-source",
+					},
+				},
+				"non_matching_target_2": {
+					FilterAttributes: map[string]string{
+						"source": "some-random-other-source",
+					},
+				},
+				"non_matching_target_3": {
+					FilterAttributes: map[string]string{
+						"type": eventType + "dummy",
+					},
+				},
+			},
+			hasTrigger: false,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -327,16 +351,17 @@ func TestHasTrigger(t *testing.T) {
 }
 
 func TestMultiTopicDecoupleSinkSendChecksFilter(t *testing.T) {
-	origEnableEventFilterFunc := EnableEventFilterFunc
-	defer func() { EnableEventFilterFunc = origEnableEventFilterFunc }()
-	EnableEventFilterFunc = func() bool {
+	// TODO(#1804): remove this mock when enabling the feature by default.
+	origEnableEventFilterFunc := enableEventFilterFunc
+	defer func() { enableEventFilterFunc = origEnableEventFilterFunc }()
+	enableEventFilterFunc = func() bool {
 		return true
 	}
 
 	filterCalled := false
-	origEventFilterFunc := EventFilterFunc
-	defer func() { EventFilterFunc = origEventFilterFunc }()
-	EventFilterFunc = func(ctx context.Context, attrs map[string]string, event *event.Event) bool {
+	origEventFilterFunc := eventFilterFunc
+	defer func() { eventFilterFunc = origEventFilterFunc }()
+	eventFilterFunc = func(ctx context.Context, attrs map[string]string, event *event.Event) bool {
 		filterCalled = true
 		return true
 	}
@@ -391,9 +416,9 @@ func TestMultiTopicDecoupleSinkSendChecksFilter(t *testing.T) {
 // TODO(#1804): remove this test when enabling the feature by default.
 func TestMultiTopicDecoupleSinkSendDoesNotChecksFilterWhenFeatureDisabled(t *testing.T) {
 	filterCalled := false
-	origEventFilterFunc := EventFilterFunc
-	defer func() { EventFilterFunc = origEventFilterFunc }()
-	EventFilterFunc = func(ctx context.Context, attrs map[string]string, event *event.Event) bool {
+	origEventFilterFunc := eventFilterFunc
+	defer func() { eventFilterFunc = origEventFilterFunc }()
+	eventFilterFunc = func(ctx context.Context, attrs map[string]string, event *event.Event) bool {
 		filterCalled = true
 		return true
 	}

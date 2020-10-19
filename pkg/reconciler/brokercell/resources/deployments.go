@@ -35,6 +35,14 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 	container := containerTemplate(args.Args)
 	// Decorate the container template with ingress port.
 	container.Env = append(container.Env, corev1.EnvVar{Name: "PORT", Value: strconv.Itoa(args.Port)})
+
+	// TODO(#1804): remove this env variable when enabling the feature by default.
+	// Enable ingress filtering if necessary.
+	container.Env = append(container.Env, corev1.EnvVar{
+		Name:  "ENABLE_INGRESS_EVENT_FILTERING",
+		Value: strconv.FormatBool(args.EnableIngressFilter),
+	})
+
 	container.Ports = append(container.Ports, corev1.ContainerPort{Name: "http", ContainerPort: int32(args.Port)})
 	container.ReadinessProbe = &corev1.Probe{
 		Handler: corev1.Handler{

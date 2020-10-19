@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO(1804): remove this yaml file when enabling the feature by default
+
 # This yaml matches the ingress deployment objected created by the reconciler.
 metadata:
   name: test-brokercell-brokercell-ingress
@@ -42,6 +44,7 @@ spec:
       labels: *labels
       annotations:
         sidecar.istio.io/inject: "true"
+        events.cloud.google.com/ingressFilteringEnabled: "true"
     spec:
       serviceAccountName: broker
       terminationGracePeriodSeconds: 60
@@ -69,7 +72,7 @@ spec:
           timeoutSeconds: 5
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
-          value: /var/secrets/google/key.json        
+          value: /var/secrets/google/key.json
         - name: SYSTEM_NAMESPACE
           value: knative-testing
         - name: POD_NAME
@@ -86,12 +89,12 @@ spec:
           value: "8080"
         # TODO(1804): remove this env variable when the feature is enabled by default.
         - name: ENABLE_INGRESS_EVENT_FILTERING
-          value: false
+          value: "true"
         volumeMounts:
         - name: broker-config
           mountPath: /var/run/cloud-run-events/broker
         - name: google-broker-key
-          mountPath: /var/secrets/google          
+          mountPath: /var/secrets/google
         resources:
           limits:
             memory: 2000Mi
