@@ -71,7 +71,7 @@ Please refer to "Configure the Authentication Mechanism for GCP" at https://gith
 var HandlerSet wire.ProviderSet = wire.NewSet(
 	NewHandler,
 	clients.NewHTTPMessageReceiver,
-	wire.Bind(new(HttpMessageReceiver), new(*kncloudevents.HttpMessageReceiver)),
+	wire.Bind(new(HttpMessageReceiver), new(*kncloudevents.HTTPMessageReceiver)),
 	NewMultiTopicDecoupleSink,
 	wire.Bind(new(DecoupleSink), new(*multiTopicDecoupleSink)),
 	clients.NewPubsubClient,
@@ -161,6 +161,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 			httpStatus = nethttp.StatusRequestEntityTooLarge
 		}
 		nethttp.Error(response, err.Error(), httpStatus)
+		h.reportMetrics(ctx, "_invalid_cloud_event_", httpStatus)
 		return
 	}
 
@@ -186,7 +187,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	statusCode := nethttp.StatusAccepted
 	ctx, cancel := context.WithTimeout(ctx, decoupleSinkTimeout)
 	defer cancel()
-	defer func() { h.reportMetrics(ctx, event, statusCode) }()
+	defer func() { h.reportMetrics(ctx, event.Type(), statusCode) }()
 	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
 		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.Error(res))
 		statusCode = nethttp.StatusInternalServerError
@@ -230,9 +231,9 @@ func (h *Handler) toEvent(ctx context.Context, request *nethttp.Request) (*cev2.
 	return event, nil
 }
 
-func (h *Handler) reportMetrics(ctx context.Context, event *cev2.Event, statusCode int) {
+func (h *Handler) reportMetrics(ctx context.Context, eventType string, statusCode int) {
 	args := metrics.IngressReportArgs{
-		EventType:    event.Type(),
+		EventType:    eventType,
 		ResponseCode: statusCode,
 	}
 	if err := h.reporter.ReportEventCount(ctx, args); err != nil {

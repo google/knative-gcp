@@ -27,7 +27,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/lib"
 )
 
 // SmokePullSubscriptionTestHelper tests we can create a pull subscription to ready state.

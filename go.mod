@@ -28,10 +28,9 @@ require (
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.18.1-0.20201005151035-f0dc15b0d493
-	knative.dev/pkg v0.0.0-20201005175134-21cb070a8b05
-	knative.dev/serving v0.18.1-0.20201005174834-d6be45241d84
-	knative.dev/test-infra v0.0.0-20201005021934-df2084cec789 // indirect
+	knative.dev/eventing v0.18.1-0.20201016103056-eca0035fa3f2
+	knative.dev/pkg v0.0.0-20201016021557-c1a8664276b4
+	knative.dev/serving v0.18.1-0.20201016151557-1679f3bb7112
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -61,5 +60,3 @@ replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
 replace honnef.co/go/tools => honnef.co/go/tools v0.0.1-2019.2.3
 
 replace sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
-
-replace knative.dev/serving => knative.dev/serving v0.18.0

@@ -22,12 +22,11 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
+	"knative.dev/pkg/tracing"
 
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
@@ -47,9 +46,6 @@ const (
 // TODO we should refactor this and reduce the number of environment variables.
 //  most of them are due to metrics, which has to change anyways.
 type envConfig struct {
-	// Environment variable containing project id.
-	Project string `envconfig:"PROJECT_ID"`
-
 	// Environment variable containing the sink URI.
 	Sink string `envconfig:"SINK_URI" required:"true"`
 
@@ -152,7 +148,7 @@ func main() {
 		logger.Error("Failed to setup tracing", zap.Error(err), zap.Any("tracingConfig", tracingConfig))
 	}
 
-	projectID, err := utils.ProjectID(env.Project, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logger.Fatal("Failed to retrieve project id", zap.Error(err))
 	}

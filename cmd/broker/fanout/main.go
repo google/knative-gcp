@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
@@ -42,7 +41,6 @@ const (
 
 type envConfig struct {
 	PodName                string `envconfig:"POD_NAME" required:"true"`
-	ProjectID              string `envconfig:"PROJECT_ID"`
 	TargetsConfigPath      string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
 	HandlerConcurrency     int    `envconfig:"HANDLER_CONCURRENCY"`
 	MaxConcurrencyPerEvent int    `envconfig:"MAX_CONCURRENCY_PER_EVENT"`
@@ -53,8 +51,11 @@ type envConfig struct {
 	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"1m"`
 
 	// MaxOutstandingBytes is the maximum size of unprocessed messages (unacknowledged but not yet expired).
-	// Default is 800Mb (~763Mi)
-	MaxOutstandingBytes int `envconfig:"MAX_OUTSTANDING_BYTES" default:"800000000"`
+	// Default is 400Mb
+	MaxOutstandingBytes int `envconfig:"MAX_OUTSTANDING_BYTES" default:"400000000"`
+
+	// MaxOutstandingMessages is the maximum number of unprocessed messages (unacknowledged but not yet expired).
+	MaxOutstandingMessages int `envconfig:"MAX_OUTSTANDING_MESSAGES" default:"4000"`
 
 	// Max to 10m.
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
@@ -78,7 +79,7 @@ func main() {
 
 	logger.Info("Starting the broker fanout")
 
-	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logger.Fatalf("failed to get default ProjectID: %v", err)
 	}
@@ -145,6 +146,9 @@ func buildHandlerOptions(env envConfig) []handler.Option {
 	}
 	if env.MaxOutstandingBytes > 0 {
 		rs.MaxOutstandingBytes = env.MaxOutstandingBytes
+	}
+	if env.MaxOutstandingMessages > 0 {
+		rs.MaxOutstandingMessages = env.MaxOutstandingMessages
 	}
 	opts = append(opts, handler.WithPubsubReceiveSettings(rs))
 	// The default CeClient is good?

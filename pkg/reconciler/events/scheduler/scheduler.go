@@ -30,7 +30,6 @@ import (
 	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudschedulersource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -95,7 +94,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1.CloudSched
 
 func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1.CloudSchedulerSource, topic, jobName string) error {
 	if scheduler.Status.ProjectID == "" {
-		projectID, err := utils.ProjectID(scheduler.Spec.Project, metadataClient.NewDefaultMetadataClient())
+		projectID, err := utils.ProjectIDOrDefault(scheduler.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return err

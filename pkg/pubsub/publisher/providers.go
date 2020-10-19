@@ -17,7 +17,7 @@ var PublisherSet wire.ProviderSet = wire.NewSet(
 	clients.NewHTTPMessageReceiver,
 	clients.NewPubsubClient,
 	NewPubSubTopic,
-	wire.Bind(new(HttpMessageReceiver), new(*kncloudevents.HttpMessageReceiver)),
+	wire.Bind(new(HttpMessageReceiver), new(*kncloudevents.HTTPMessageReceiver)),
 )
 
 // NewPubSubTopic provides a pubsub topic from a PubSub client.

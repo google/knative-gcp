@@ -21,10 +21,10 @@ data:
   channelTemplateSpec: |
     apiVersion: messaging.cloud.google.com/v1beta1
     kind: Channel
-    Spec:
-#  # If running with workload identity enabled, update spec.googleServiceAccount.
-#      googleServiceAccount: service-account@project-id@.iam.gserviceaccount.com
-#  # If running with secret, here is the default secret name and key, change this if required.
+    spec:
+#        # If running with workload identity enabled, update serviceAccountName.
+#      serviceAccountName: kubernetes-service-account-name
+#        # If running with secret, here is the default secret name and key, change this if required.
 #      secret:
 #        name: google-cloud-key
 #        key: key.json

@@ -34,7 +34,7 @@ type EnvironmentFlags struct {
 // InitializeFlags registers flags used by e2e tests, calling flag.Parse() here would fail in
 // go1.13+, see https://github.com/knative/test-infra/issues/1329 for details
 func InitializeFlags() {
-	flag.BoolVar(&Flags.WorkloadIdentity, "workloadIndentity", false, "Indicating whether the workload identity is enabled or not.")
+	flag.BoolVar(&Flags.WorkloadIdentity, "workloadIdentity", false, "Indicating whether the workload identity is enabled or not.")
 	flag.StringVar(&Flags.ServiceAccountName, "serviceAccountName", "", "Kubernetes ServiceAccount bound to a Google Cloud Service, which is used for data plane.")
 
 	// WorkloadIdentity will be enabled only if the input is true.

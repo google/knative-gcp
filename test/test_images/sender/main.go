@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	"github.com/google/knative-gcp/pkg/kncloudevents"
-	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/lib"
 )
 
 type envConfig struct {

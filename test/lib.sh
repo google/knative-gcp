@@ -19,11 +19,25 @@
 readonly CLOUD_RUN_EVENTS_CONFIG="config/"
 readonly CLOUD_RUN_EVENTS_ISTIO_CONFIG="config/istio"
 
+# Installs Zipkin for tracing tests.
+readonly KNATIVE_GCP_MONITORING_YAML="test/e2e/config/monitoring.yaml"
+
+# Install Knative Monitoring in the current cluster.
+# Parameters: $1 - Knative Monitoring manifest.
+# This is a lightly modified version of start_knative_monitoring() from test-infra's library.sh.
+function start_knative_gcp_monitoring() {
+  header "Starting Knative Eventing Monitoring"
+  subheader "Installing Knative Eventing Monitoring"
+  echo "Installing Monitoring from $1"
+  kubectl apply -f "$1" || return 1
+  wait_until_pods_running knative-eventing || return 1
+}
+
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
   start_latest_knative_serving || return 1
   start_latest_knative_eventing || return 1
-  start_knative_monitoring "$KNATIVE_MONITORING_RELEASE" || return 1
+  start_knative_gcp_monitoring "$KNATIVE_GCP_MONITORING_YAML" || return 1
   cloud_run_events_setup || return 1
   istio_patch || return 1
   knative_eventing_config_tracing || return 1

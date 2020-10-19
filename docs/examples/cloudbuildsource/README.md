@@ -13,17 +13,16 @@ build completes.
 
 1. [Create a Service Account for Data Plane](../../install/dataplane-service-account.md)
 
-1. Enable the `Cloud Build API` and `Cloud Pub/Sub API`, on your project:
+1. Enable the `Cloud Build API` on your project, this is needed to submit builds
+   via gcloud cli.
 
    ```shell
    gcloud services enable cloudbuild.googleapis.com
-   gcloud services enable pubsub.googleapis.com
    ```
 
-   The Pub/Sub topic to which Cloud Build publishes these build update messages
-   is called `cloud-builds`. When you enable the `Cloud Build API` and
-   `Cloud Pub/Sub API`, the `cloud-builds` topic will automatically be created
-   for you.
+1. Follow the `Receiving build notifications` section in
+   [Subscribing to build notifications](https:/cloud.google.com/cloud-build/docs/subscribe-build-notifications#receiving_build_notifications)
+   to set up Cloud Build to emit build notifications.
 
 ## Deployment
 

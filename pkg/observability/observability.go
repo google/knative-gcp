@@ -6,12 +6,12 @@ import (
 	"os"
 
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/profiling"
+	"knative.dev/pkg/tracing"
 	tracingconfig "knative.dev/pkg/tracing/config"
 )
 
@@ -20,7 +20,7 @@ import (
 // be called before exit.
 // The input context should have KubeClient injected.
 func SetupDynamicConfigOrDie(ctx context.Context, componentName string, metricNamespace string) (context.Context, *configmap.InformedWatcher, *profiling.Handler, func()) {
-	sharedmain.MemStatsOrDie(ctx)
+	metrics.MemStatsOrDie(ctx)
 	// Set up our logger.
 	logger, atomicLevel := sharedmain.SetupLoggerOrDie(ctx, componentName)
 	// Watch the logging config map and dynamically update logging levels.

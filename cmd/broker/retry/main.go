@@ -26,7 +26,6 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
@@ -42,15 +41,14 @@ const (
 
 type envConfig struct {
 	PodName            string `envconfig:"POD_NAME" required:"true"`
-	ProjectID          string `envconfig:"PROJECT_ID"`
 	TargetsConfigPath  string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
 	HandlerConcurrency int    `envconfig:"HANDLER_CONCURRENCY"`
 
 	// Outstanding messages effectively limits how many connections we will create to each subscriber.
 	// If such connections are long, it will consume a lot of memory (aggregated) without limiting.
-	OutstandingMessagesPerSub int `envconfig:"OUTSTANDING_MESSAGES_PER_SUB" default:"100"`
+	OutstandingMessagesPerSub int `envconfig:"OUTSTANDING_MESSAGES_PER_SUB" default:"200"`
 	// 3Mi. We also want to limit the memory usage from each subscription.
-	OutstandingBytesPerSub int `envconfig:"OUTSTANDING_BYTES_PER_SUB" default:"3000000"`
+	OutstandingBytesPerSub int `envconfig:"OUTSTANDING_BYTES_PER_SUB" default:"1000000"`
 
 	// MaxStaleDuration is the max duration of the handler pool without being synced.
 	// With the internal pool resync period being 15s, it requires at least 4
@@ -79,7 +77,7 @@ func main() {
 	targetsUpdateCh := make(chan struct{})
 	logger.Info("Starting the broker retry")
 
-	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logger.Fatalf("failed to get default ProjectID: %v", err)
 	}

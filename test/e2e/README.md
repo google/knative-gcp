@@ -22,7 +22,7 @@ test/e2e
 We leverage the
 [test library in Eventing](https://github.com/knative/eventing/tree/master/test/lib)
 as much as possible for implementing the e2e tests. Logic specific to
-knative-gcp should be added under [knative-gcp e2e test lib](lib).
+knative-gcp should be added under [knative-gcp e2e test lib](../lib).
 
 ## Setup a test cluster
 
@@ -167,14 +167,14 @@ and replace the `default-auth-config:` part with:
 `$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the Pub/Sub
 enabled Google Cloud Service Account.
 
-Then, add `-workloadIndentity=true` and `-serviceAccountName=test-default-ksa`
-to the `go test` command.
+Then, add `-workloadIdentity=true` and `-serviceAccountName=test-default-ksa` to
+the `go test` command.
 
 For example,
 
 ```shell
 E2E_PROJECT_ID=<project name> go test --tags=e2e ./test/e2e/... \
-  -workloadIndentity=true \
+  -workloadIdentity=true \
   -serviceAccountName=test-default-ksa \
   -run TestPullSubscription
 ```

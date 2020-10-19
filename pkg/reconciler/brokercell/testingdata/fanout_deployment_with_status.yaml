@@ -83,10 +83,10 @@ spec:
           mountPath: /var/secrets/google          
         resources:
           limits:
-            memory: 3000Mi
+            memory: 2500Mi
           requests:
             cpu: 1500m
-            memory: 3000Mi
+            memory: 2500Mi
         ports:
         - name: metrics
           containerPort: 9090

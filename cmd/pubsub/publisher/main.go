@@ -21,7 +21,6 @@ import (
 	"flag"
 	"log"
 
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	. "github.com/google/knative-gcp/pkg/pubsub/publisher"
 	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -30,15 +29,12 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"knative.dev/eventing/pkg/tracing"
+	"knative.dev/pkg/tracing"
 )
 
 type envConfig struct {
 	// Environment variable containing the port for the publisher.
 	Port int `envconfig:"PORT" default:"8080"`
-
-	// Environment variable containing project id.
-	Project string `envconfig:"PROJECT_ID"`
 
 	// Topic is the environment variable containing the PubSub Topic being
 	// subscribed to's name. In the form that is unique within the project.
@@ -69,7 +65,7 @@ func main() {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	projectID, err := utils.ProjectID(env.Project, metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logger.Fatal("Failed to retrieve project id", zap.Error(err))
 	}

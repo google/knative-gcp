@@ -32,7 +32,6 @@ import (
 	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1/cloudstoragesource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -111,7 +110,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1.CloudStorage
 
 func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1.CloudStorageSource) (string, error) {
 	if storage.Status.ProjectID == "" {
-		projectID, err := utils.ProjectID(storage.Spec.Project, metadataClient.NewDefaultMetadataClient())
+		projectID, err := utils.ProjectIDOrDefault(storage.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return "", err
