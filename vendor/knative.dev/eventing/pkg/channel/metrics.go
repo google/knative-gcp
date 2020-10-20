@@ -14,17 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package channel
 
-import "os"
+import "go.opencensus.io/tag"
 
-// SystemNamespace is the namespace where Eventing is installed, it's default to be knative-eventing.
-var SystemNamespace = getenv("TEST_EVENTING_NAMESPACE", "knative-eventing")
+const (
+	// LabelUniqueName is the label for the unique name per stats_reporter instance.
+	LabelUniqueName = "unique_name"
 
-func getenv(name, defaultValue string) string {
-	value, set := os.LookupEnv(name)
-	if !set {
-		value = defaultValue
-	}
-	return value
-}
+	// LabelContainerName is the label for the immutable name of the container.
+	LabelContainerName = "container_name"
+)
+
+var (
+	ContainerTagKey = tag.MustNewKey(LabelContainerName)
+	UniqueTagKey    = tag.MustNewKey(LabelUniqueName)
+)
