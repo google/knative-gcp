@@ -144,3 +144,26 @@ function dump_extra_cluster_state() {
     done
   done
 }
+
+function wait_for_file() {
+  local file timeout waits
+  file="$1"
+  waits=300
+  timeout=$waits
+
+  echo "Waiting for existence of file: ${file}"
+
+  while [ ! -f "${file}" ]; do
+    # When the timeout is equal to zero, show an error and leave the loop.
+    if [ "${timeout}" == 0 ]; then
+      echo "ERROR: Timeout (${waits}s) while waiting for the file ${file}."
+      return 1
+    fi
+
+    sleep 1
+
+    # Decrease the timeout of one
+    ((timeout--))
+  done
+  return 0
+}

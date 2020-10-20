@@ -16,7 +16,12 @@ require (
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/mitchellh/go-homedir v1.1.0
+	github.com/pelletier/go-toml v1.8.0
+	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/rickb777/date v1.13.0
+	github.com/stretchr/testify v1.5.1
+	github.com/wavesoftware/go-ensure v1.0.0
 	go.opencensus.io v0.22.5-0.20200714042313-af30f77c5f65
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
