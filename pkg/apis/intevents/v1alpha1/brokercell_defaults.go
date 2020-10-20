@@ -36,7 +36,7 @@ const (
 	avgMemoryUsageRetry   string = "1000Mi"
 	cpuRequestFanout      string = "1500m"
 	cpuRequestIngress     string = "2000m"
-	cpuRequestRetry       string = "2000m"
+	cpuRequestRetry       string = "1000m"
 	cpuLimitFanout        string = ""
 	cpuLimitIngress       string = ""
 	cpuLimitRetry         string = ""

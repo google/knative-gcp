@@ -84,7 +84,7 @@ spec:
             limits:
               memory: 1500Mi
             requests:
-              cpu: 2000m
+              cpu: 1000m
               memory: 1500Mi
           ports:
             - name: metrics
