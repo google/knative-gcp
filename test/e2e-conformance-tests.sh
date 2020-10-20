@@ -16,14 +16,17 @@
 # Script entry point.
 source $(dirname "$0")/e2e-secret-tests.sh
 
-initialize $@
-
+# TODO: Fix https://github.com/google/knative-gcp/issues/1844. Until then,
+# temporarily disable conformance tests.
+SKIP_TESTS="true"
 if [ "${SKIP_TESTS:-}" == "true" ]; then
   echo "**************************************"
   echo "***         TESTS SKIPPED          ***"
   echo "**************************************"
   exit 0
 fi
+
+initialize $@
 
 go_test_e2e -timeout=30m -parallel=12 ./test/conformance \
   -channels='messaging.cloud.google.com/v1alpha1:Channel,messaging.cloud.google.com/v1beta1:Channel' \
