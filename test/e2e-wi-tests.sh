@@ -155,16 +155,16 @@ function gcp_auth_setup() {
   sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/PUBSUB-SERVICE-ACCOUNT/${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
 }
 
-# Create a cluster with Workload Identity enabled.
-# We could specify --version to force the cluster using a particular GKE version.
-initialize "$@" --enable-workload-identity=true
-
 if [ "${SKIP_TESTS:-}" == "true" ]; then
   echo "**************************************"
   echo "***         TESTS SKIPPED          ***"
   echo "**************************************"
   exit 0
 fi
+
+# Create a cluster with Workload Identity enabled.
+# We could specify --version to force the cluster using a particular GKE version.
+initialize "$@" --enable-workload-identity=true
 
 # Channel related e2e tests we have in Eventing is not running here.
 go_test_e2e -timeout=30m -parallel=6 ./test/e2e -workloadIdentity=true -serviceAccountName="${K8S_SERVICE_ACCOUNT_NAME}" || fail_test
