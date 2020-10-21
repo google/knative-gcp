@@ -382,14 +382,16 @@ func TestHandler(t *testing.T) {
 }
 
 func BenchmarkIngressHandler(b *testing.B) {
-	for _, eventSize := range kgcptesting.BenchmarkEventSizes {
-		b.Run(fmt.Sprintf("%d bytes", eventSize), func(b *testing.B) {
-			runIngressHandlerBenchmark(b, eventSize)
-		})
+	for _, targetCounts := range []int{1, 5, 10, 50, 100} {
+		for _, eventSize := range kgcptesting.BenchmarkEventSizes {
+			b.Run(fmt.Sprintf("event size %d bytes - %d targets", eventSize, targetCounts), func(b *testing.B) {
+				runIngressHandlerBenchmark(b, eventSize, targetCounts)
+			})
+		}
 	}
 }
 
-func runIngressHandlerBenchmark(b *testing.B, eventSize int) {
+func runIngressHandlerBenchmark(b *testing.B, eventSize int, targetCounts int) {
 	reportertest.ResetIngressMetrics()
 
 	ctx := logging.WithLogger(context.Background(),
@@ -402,6 +404,10 @@ func runIngressHandlerBenchmark(b *testing.B, eventSize int) {
 	defer psSrv.Close()
 
 	psClient := createPubsubClient(ctx, b, psSrv)
+
+	setBrokerConfigTargets(targetCounts)
+	defer restoreBrokerConfigTargets()
+
 	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), psClient, pubsub.DefaultPublishSettings)
 	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
 	if err != nil {
@@ -430,6 +436,37 @@ func runIngressHandlerBenchmark(b *testing.B, eventSize int) {
 			}
 		}
 	})
+}
+
+// setBrokerConfigTargets updates 'brokerConfig' targets such that each broker has
+// 'targetCounts' number of targets, where the first N - 1 targets have non-matching
+// filters, and the N-th one has an all pass filter (i.e., it has interest in every event).
+// In go iterating over a map is randomized, so on average this represents the worst case
+// scenario for ingress filtering.
+func setBrokerConfigTargets(targetCounts int) {
+	var targets = make(map[string]*config.Target)
+
+	for i := 0; i < targetCounts-1; i++ {
+		key := fmt.Sprintf("non_matching_target_%d", i)
+		targets[key] = &config.Target{
+			FilterAttributes: map[string]string{
+				"type":   eventType,
+				"source": "some-non-matching-test-source",
+			},
+		}
+	}
+
+	targets["matching_target"] = &config.Target{}
+
+	for _, cfg := range brokerConfig.Brokers {
+		cfg.Targets = targets
+	}
+}
+
+func restoreBrokerConfigTargets() {
+	for _, cfg := range brokerConfig.Brokers {
+		cfg.Targets = brokerTargets
+	}
 }
 
 func createPubsubClient(ctx context.Context, t testing.TB, psSrv *pstest.Server) *pubsub.Client {
