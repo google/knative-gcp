@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/utils/clients"

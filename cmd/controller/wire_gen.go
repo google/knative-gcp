@@ -6,8 +6,9 @@
 package main
 
 import (
-	"cloud.google.com/go/iam/admin/apiv1"
 	"context"
+
+	admin "cloud.google.com/go/iam/admin/apiv1"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/reconciler/broker"
@@ -25,9 +26,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel"
 	"github.com/google/knative-gcp/pkg/reconciler/trigger"
 	"knative.dev/pkg/injection"
-)
 
-import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
