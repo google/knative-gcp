@@ -1113,7 +1113,6 @@ knative.dev/eventing/test/test_images
 knative.dev/eventing/test/test_images/event-sender
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
-knative.dev/eventing/test/test_images/transformevents
 # knative.dev/networking v0.0.0-20201015161058-8425f7b44b89
 knative.dev/networking/pkg
 knative.dev/networking/pkg/apis/networking

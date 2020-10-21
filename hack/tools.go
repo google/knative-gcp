@@ -25,7 +25,6 @@ import (
 
 	_ "knative.dev/eventing/test/test_images/event-sender"
 	_ "knative.dev/eventing/test/test_images/recordevents"
-	_ "knative.dev/eventing/test/test_images/transformevents"
 
 	_ "knative.dev/eventing/test/test_images/performance"
 	_ "knative.dev/pkg/apiextensions/storageversion/cmd/migrate"
