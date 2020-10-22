@@ -19,5 +19,5 @@ metadata:
   namespace: cloud-run-events
 data:
   channelTemplateSpec: |
-    apiVersion: messaging.cloud.google.com/v1alpha1
+    apiVersion: messaging.cloud.google.com/v1beta1
     kind: Channel

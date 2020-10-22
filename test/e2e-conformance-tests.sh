@@ -26,7 +26,7 @@ fi
 initialize $@
 
 go_test_e2e -timeout=30m -parallel=12 ./test/conformance \
-  -channels='messaging.cloud.google.com/v1alpha1:Channel,messaging.cloud.google.com/v1beta1:Channel' \
+  -channels='messaging.cloud.google.com/v1beta1:Channel' \
   || fail_test
 
 success

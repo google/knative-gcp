@@ -57,14 +57,6 @@ func TestMain(m *testing.M) {
 			// Each pair means the channel support the given list of features.
 			ComponentFeatureMap: map[metav1.TypeMeta][]eventingtestlib.Feature{
 				{
-					APIVersion: resources.MessagingAPIVersion,
-					Kind:       "Channel",
-				}: {
-					eventingtestlib.FeatureBasic,
-					eventingtestlib.FeatureRedelivery,
-					eventingtestlib.FeaturePersistence,
-				},
-				{
 					APIVersion: resources.MessagingV1beta1APIVersion,
 					Kind:       "Channel",
 				}: {
