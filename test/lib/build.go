@@ -25,8 +25,6 @@ import (
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
 
-	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
-
 	v1 "k8s.io/api/core/v1"
 
 	"google.golang.org/api/option"
@@ -66,18 +64,6 @@ func MakeBuildV1beta1OrDie(client *Client, config BuildConfig) {
 	// CloudBuildSource source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
 	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.BuildName, CloudBuildSourceV1beta1TypeMeta)
-}
-
-func MakeBuildV1alpha1OrDie(client *Client, config BuildConfig) {
-	client.T.Helper()
-	so := make([]reconcilertestingv1alpha1.CloudBuildSourceOption, 0)
-	so = append(so, reconcilertestingv1alpha1.WithCloudBuildSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, reconcilertestingv1alpha1.WithCloudBuildSourceServiceAccount(config.ServiceAccountName))
-	build := reconcilertestingv1alpha1.NewCloudBuildSource(config.BuildName, client.Namespace, so...)
-	client.CreateBuildV1alpha1OrFail(build)
-	// CloudBuildSource source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
-	time.Sleep(resources.WaitExtraSourceReadyTime)
-	client.Core.WaitForResourceReadyOrFail(config.BuildName, CloudBuildSourceV1alpha1TypeMeta)
 }
 
 func MakeBuildTargetJobOrDie(client *Client, images, targetName, eventType string) {

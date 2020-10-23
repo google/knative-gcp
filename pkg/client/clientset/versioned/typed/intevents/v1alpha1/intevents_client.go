@@ -27,8 +27,6 @@ import (
 type InternalV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	BrokerCellsGetter
-	PullSubscriptionsGetter
-	TopicsGetter
 }
 
 // InternalV1alpha1Client is used to interact with features provided by the internal.events.cloud.google.com group.
@@ -38,14 +36,6 @@ type InternalV1alpha1Client struct {
 
 func (c *InternalV1alpha1Client) BrokerCells(namespace string) BrokerCellInterface {
 	return newBrokerCells(c, namespace)
-}
-
-func (c *InternalV1alpha1Client) PullSubscriptions(namespace string) PullSubscriptionInterface {
-	return newPullSubscriptions(c, namespace)
-}
-
-func (c *InternalV1alpha1Client) Topics(namespace string) TopicInterface {
-	return newTopics(c, namespace)
 }
 
 // NewForConfig creates a new InternalV1alpha1Client for the given config.

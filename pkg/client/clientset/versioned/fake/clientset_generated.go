@@ -24,8 +24,6 @@ import (
 	fakeeventingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/broker/v1beta1/fake"
 	eventsv1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1"
 	fakeeventsv1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1/fake"
-	eventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1"
-	fakeeventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1/fake"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1"
 	fakeeventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1/fake"
 	internalv1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1"
@@ -93,11 +91,6 @@ var _ clientset.Interface = &Clientset{}
 // EventingV1beta1 retrieves the EventingV1beta1Client
 func (c *Clientset) EventingV1beta1() eventingv1beta1.EventingV1beta1Interface {
 	return &fakeeventingv1beta1.FakeEventingV1beta1{Fake: &c.Fake}
-}
-
-// EventsV1alpha1 retrieves the EventsV1alpha1Client
-func (c *Clientset) EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface {
-	return &fakeeventsv1alpha1.FakeEventsV1alpha1{Fake: &c.Fake}
 }
 
 // EventsV1beta1 retrieves the EventsV1beta1Client

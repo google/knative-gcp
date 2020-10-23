@@ -51,9 +51,7 @@ func SmokePullSubscriptionTestHelper(t *testing.T, authConfig lib.AuthConfig, pu
 		ServiceAccountName:   authConfig.ServiceAccountName,
 	}
 
-	if pullsubscriptionVersion == "v1alpha1" {
-		lib.MakePullSubscriptionV1alpha1OrDie(client, pullSubscriptionConfig)
-	} else if pullsubscriptionVersion == "v1beta1" {
+	if pullsubscriptionVersion == "v1beta1" {
 		lib.MakePullSubscriptionV1beta1OrDie(client, pullSubscriptionConfig)
 	} else if pullsubscriptionVersion == "v1" {
 		lib.MakePullSubscriptionOrDie(client, pullSubscriptionConfig)

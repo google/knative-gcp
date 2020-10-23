@@ -23,7 +23,6 @@ import (
 	"time"
 
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
-	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
 	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
 
 	"google.golang.org/api/option"
@@ -76,22 +75,6 @@ func MakeSchedulerV1beta1OrDie(client *Client, config SchedulerConfig) {
 	// Scheduler source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
 	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceV1beta1TypeMeta)
-}
-
-func MakeSchedulerV1alpha1OrDie(client *Client, config SchedulerConfig) {
-	client.T.Helper()
-	so := make([]reconcilertestingv1alpha1.CloudSchedulerSourceOption, 0)
-	so = append(so, reconcilertestingv1alpha1.WithCloudSchedulerSourceLocation("us-central1"))
-	so = append(so, reconcilertestingv1alpha1.WithCloudSchedulerSourceData(config.Data))
-	so = append(so, reconcilertestingv1alpha1.WithCloudSchedulerSourceSchedule("* * * * *"))
-	so = append(so, reconcilertestingv1alpha1.WithCloudSchedulerSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, reconcilertestingv1alpha1.WithCloudSchedulerSourceServiceAccount(config.ServiceAccountName))
-	scheduler := reconcilertestingv1alpha1.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
-
-	client.CreateSchedulerV1alpha1OrFail(scheduler)
-	// Scheduler source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
-	time.Sleep(resources.WaitExtraSourceReadyTime)
-	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceV1alpha1TypeMeta)
 }
 
 func MakeSchedulerJobOrDie(client *Client, data, targetName, eventType string) {

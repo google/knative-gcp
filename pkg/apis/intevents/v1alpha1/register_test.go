@@ -31,12 +31,6 @@ func TestKind(t *testing.T) {
 		"BrokerCell": {
 			kind: "BrokerCell",
 		},
-		"PullSubscription": {
-			kind: "PullSubscription",
-		},
-		"Topic": {
-			kind: "Topic",
-		},
 	} {
 		t.Run(n, func(t *testing.T) {
 			want := schema.GroupKind{
@@ -57,12 +51,6 @@ func TestResource(t *testing.T) {
 	}{
 		"BrokerCell": {
 			resource: "BrokerCell",
-		},
-		"PullSubscription": {
-			resource: "PullSubscription",
-		},
-		"Topic": {
-			resource: "Topic",
 		},
 	} {
 		t.Run(n, func(t *testing.T) {
@@ -87,10 +75,6 @@ func TestAddKnownTypes(t *testing.T) {
 	want := []string{
 		"BrokerCell",
 		"BrokerCellList",
-		"PullSubscription",
-		"PullSubscriptionList",
-		"Topic",
-		"TopicList",
 	}
 	got := scheme.KnownTypes(schema.GroupVersion{Group: "internal.events.cloud.google.com", Version: "v1alpha1"})
 

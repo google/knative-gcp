@@ -26,7 +26,7 @@ import (
 )
 
 // ConvertTo implements apis.Convertible.
-// Converts from a v1alpha1.CloudSchedulerSource to a higher version of CloudSchedulerSource.
+// Converts from a v1beta1.CloudSchedulerSource to a higher version of CloudSchedulerSource.
 // Currently, we only support v1 as a higher version.
 func (source *CloudSchedulerSource) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
@@ -45,7 +45,7 @@ func (source *CloudSchedulerSource) ConvertTo(ctx context.Context, to apis.Conve
 }
 
 // ConvertFrom implements apis.Convertible.
-// Converts from a higher version of CloudSchedulerSource to a v1alpha1.CloudSchedulerSource.
+// Converts from a higher version of CloudSchedulerSource to a v1beta1.CloudSchedulerSource.
 // Currently, we only support v1 as a higher version.
 func (sink *CloudSchedulerSource) ConvertFrom(ctx context.Context, from apis.Convertible) error {
 	switch source := from.(type) {

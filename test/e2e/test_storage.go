@@ -57,9 +57,7 @@ func SmokeCloudStorageSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, 
 		ServiceAccountName: authConfig.ServiceAccountName,
 	}
 
-	if cloudStorageSourceVersion == "v1alpha1" {
-		lib.MakeStorageV1alpha1OrDie(client, storageConfig)
-	} else if cloudStorageSourceVersion == "v1beta1" {
+	if cloudStorageSourceVersion == "v1beta1" {
 		lib.MakeStorageV1beta1OrDie(client, storageConfig)
 	} else if cloudStorageSourceVersion == "v1" {
 		lib.MakeStorageOrDie(client, storageConfig)
