@@ -44,7 +44,11 @@ func (p *prober) Verify() ([]error, int) {
 	}
 	errs := make([]error, 0)
 	for _, t := range report.Thrown {
-		errs = append(errs, errors.New(t))
+		if strings.Contains(t, "should be received once") {
+			p.log.Warn("Duplicate events: ", t)
+		} else {
+			errs = append(errs, errors.New(t))
+		}
 	}
 	return errs, report.Events
 }
