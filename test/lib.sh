@@ -60,14 +60,16 @@ function cloud_run_events_setup() {
 }
 
 latest_version() {
+  # TODO: currently we don't have the right version tag in master,
+  # we should switch back to use the above logic instead in v0.19
+  # https://github.com/google/knative-gcp/issues/1857
+
   #local semver=$(git describe --match "v[0-9]*" --abbrev=0)
   #local major_minor=$(echo "$semver" | cut -d. -f1-2)
 
   # Get the latest patch release for the major minor
   #git tag -l "${major_minor}*" | sort -r --version-sort | head -n1
   
-  # FIXME: currently we don't have the right version tag in master,
-  # we should switch back to use the above logic instead in v0.19
   git tag | sort -r --version-sort | head -n1
 }
 
