@@ -153,6 +153,12 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 		Annotations: resources.GetAnnotations(annotations, resourceGroup),
 	}
 
+	if v, present := pubsubable.GetObjectMeta().GetAnnotations()[inteventsv1.LoggingE2ETestAnnotation]; present {
+		// This is added purely for the TestCloudLogging E2E tests, which verify that the log line
+		// is written if this annotation is present.
+		args.Annotations[inteventsv1.LoggingE2ETestAnnotation] = v
+	}
+
 	newPS := resources.MakePullSubscription(args)
 
 	pullSubscriptions := psb.pubsubClient.InternalV1().PullSubscriptions(namespace)

@@ -67,6 +67,15 @@ func makePublisherPodSpec(args *PublisherArgs) *corev1.PodSpec {
 		}},
 	}
 
+	if v, present := args.Topic.Annotations[v1.LoggingE2ETestAnnotation]; present {
+		// This is added purely for the TestCloudLogging E2E tests, which verify that the log line
+		// is written if this annotation is present.
+		publisherContainer.Env = append(publisherContainer.Env, corev1.EnvVar{
+			Name:  v1.LoggingE2ETestEnvVarName,
+			Value: v,
+		})
+	}
+
 	// If k8s service account is specified, use that service account as credential.
 	if args.Topic.Spec.ServiceAccountName != "" {
 		return &corev1.PodSpec{

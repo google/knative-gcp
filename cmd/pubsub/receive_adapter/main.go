@@ -19,7 +19,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"time"
+
+	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
@@ -127,6 +130,12 @@ func main() {
 	logger := sl.Desugar()
 	defer flush(logger)
 	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
+
+	if v := os.Getenv(v1.LoggingE2ETestEnvVarName); v != "" {
+		// This is added purely for the TestCloudLogging E2E tests, which verify that the log line
+		// is written if this annotation is present.
+		logging.FromContext(ctx).Desugar().Error("Adding log line for the TestCloudLogging E2E tests", zap.String(v1.LoggingE2EFieldName, v))
+	}
 
 	// Convert json metrics.ExporterOptions to metrics.ExporterOptions.
 	metricsConfig, err := metrics.JsonToMetricsOptions(env.MetricsConfigJson)
