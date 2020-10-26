@@ -32,8 +32,6 @@ import (
 	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/messaging"
-	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing/pkg/logconfig"
@@ -59,8 +57,7 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	brokerv1beta1.SchemeGroupVersion.WithKind("Broker"): &brokerv1beta1.Broker{},
 
 	// For group messaging.cloud.google.com.
-	messagingv1alpha1.SchemeGroupVersion.WithKind("Channel"): &messagingv1alpha1.Channel{},
-	messagingv1beta1.SchemeGroupVersion.WithKind("Channel"):  &messagingv1beta1.Channel{},
+	messagingv1beta1.SchemeGroupVersion.WithKind("Channel"): &messagingv1beta1.Channel{},
 
 	// For group events.cloud.google.com.
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource"):   &eventsv1alpha1.CloudStorageSource{},
@@ -191,8 +188,6 @@ func newConversionController(ctx context.Context, cmw configmap.Watcher, brokers
 		eventsv1alpha1_    = eventsv1alpha1.SchemeGroupVersion.Version
 		eventsv1beta1_     = eventsv1beta1.SchemeGroupVersion.Version
 		eventsv1_          = eventsv1.SchemeGroupVersion.Version
-		messagingv1alpha1_ = messagingv1alpha1.SchemeGroupVersion.Version
-		messagingv1beta1_  = messagingv1beta1.SchemeGroupVersion.Version
 		inteventsv1alpha1_ = inteventsv1alpha1.SchemeGroupVersion.Version
 		inteventsv1beta1_  = inteventsv1beta1.SchemeGroupVersion.Version
 		inteventsv1_       = inteventsv1.SchemeGroupVersion.Version
@@ -272,15 +267,6 @@ func newConversionController(ctx context.Context, cmw configmap.Watcher, brokers
 					inteventsv1alpha1_: &inteventsv1alpha1.Topic{},
 					inteventsv1beta1_:  &inteventsv1beta1.Topic{},
 					inteventsv1_:       &inteventsv1.Topic{},
-				},
-			},
-			// messaging
-			messagingv1alpha1.Kind("Channel"): {
-				DefinitionName: messaging.ChannelsResource.String(),
-				HubVersion:     messagingv1alpha1_,
-				Zygotes: map[string]conversion.ConvertibleObject{
-					messagingv1alpha1_: &messagingv1alpha1.Channel{},
-					messagingv1beta1_:  &messagingv1beta1.Channel{},
 				},
 			},
 		},
