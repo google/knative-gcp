@@ -25,17 +25,17 @@ require (
 	go.opencensus.io v0.22.5-0.20200714042313-af30f77c5f65
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
-	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	google.golang.org/api v0.32.0
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	google.golang.org/api v0.33.0
 	google.golang.org/genproto v0.0.0-20200929141702-51c3e5b607fe
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.25.0
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.18.1-0.20201016103056-eca0035fa3f2
-	knative.dev/pkg v0.0.0-20201016021557-c1a8664276b4
-	knative.dev/serving v0.18.1-0.20201016151557-1679f3bb7112
+	knative.dev/eventing v0.18.1-0.20201026134241-f8ba1df32d81
+	knative.dev/pkg v0.0.0-20201026015042-efadd36f9c63
+	knative.dev/serving v0.18.1-0.20201026065041-5dd330fe7b58
 	sigs.k8s.io/yaml v1.2.0
 )
 
