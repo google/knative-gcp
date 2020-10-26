@@ -24,18 +24,24 @@ import (
 type ServiceAccountOption func(*corev1.ServiceAccount)
 
 // NewServiceAccount creates a ServiceAccount
-func NewServiceAccount(name, namespace, gServiceAccount string, so ...ServiceAccountOption) *corev1.ServiceAccount {
+func NewServiceAccount(name, namespace string, so ...ServiceAccountOption) *corev1.ServiceAccount {
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Namespace:   namespace,
-			Annotations: map[string]string{"iam.gke.io/gcp-service-account": gServiceAccount},
+			Annotations: map[string]string{},
 		},
 	}
 	for _, opt := range so {
 		opt(sa)
 	}
 	return sa
+}
+
+func WithServiceAccountAnnotation(gServiceAccount string) ServiceAccountOption {
+	return func(s *corev1.ServiceAccount) {
+		s.Annotations["iam.gke.io/gcp-service-account"] = gServiceAccount
+	}
 }
 
 func WithServiceAccountOwnerReferences(ownerReferences []metav1.OwnerReference) ServiceAccountOption {
