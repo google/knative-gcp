@@ -23,7 +23,6 @@ import (
 	"time"
 
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
-	reconcilertestingv1alpha1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1alpha1"
 	reconcilertestingv1beta1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1beta1"
 
 	"cloud.google.com/go/storage"
@@ -69,19 +68,6 @@ func MakeStorageV1beta1OrDie(client *Client, config StorageConfig) {
 	// Storage source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
 	time.Sleep(resources.WaitExtraSourceReadyTime)
 	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceV1beta1TypeMeta)
-}
-
-func MakeStorageV1alpha1OrDie(client *Client, config StorageConfig) {
-	client.T.Helper()
-	so := make([]reconcilertestingv1alpha1.CloudStorageSourceOption, 0)
-	so = append(so, reconcilertestingv1alpha1.WithCloudStorageSourceBucket(config.BucketName))
-	so = append(so, reconcilertestingv1alpha1.WithCloudStorageSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, reconcilertestingv1alpha1.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
-	eventsStorage := reconcilertestingv1alpha1.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
-	client.CreateStorageV1alpha1OrFail(eventsStorage)
-	// Storage source may not be ready within the 2 min timeout in WaitForResourceReadyOrFail function.
-	time.Sleep(resources.WaitExtraSourceReadyTime)
-	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceV1alpha1TypeMeta)
 }
 
 func MakeStorageJobOrDie(client *Client, source, subject, targetName, eventType string) {

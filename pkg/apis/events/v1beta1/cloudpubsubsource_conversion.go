@@ -26,7 +26,7 @@ import (
 )
 
 // ConvertTo implements apis.Convertible.
-// Converts from a v1alpha1.CloudPubSubSource to a higher version of CloudPubSubSource.
+// Converts from a v1beta1.CloudPubSubSource to a higher version of CloudPubSubSource.
 // Currently, we only support v1 as a higher version.
 func (source *CloudPubSubSource) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
@@ -46,7 +46,7 @@ func (source *CloudPubSubSource) ConvertTo(ctx context.Context, to apis.Converti
 }
 
 // ConvertFrom implements apis.Convertible.
-// Converts from a higher version of CloudPubSubSource to a v1alpha1.CloudPubSubSource.
+// Converts from a higher version of CloudPubSubSource to a v1beta1.CloudPubSubSource.
 // Currently, we only support v1 as a higher version.
 func (sink *CloudPubSubSource) ConvertFrom(ctx context.Context, from apis.Convertible) error {
 	switch source := from.(type) {

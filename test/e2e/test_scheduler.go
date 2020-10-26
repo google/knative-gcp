@@ -50,9 +50,7 @@ func SmokeCloudSchedulerSourceTestHelper(t *testing.T, authConfig lib.AuthConfig
 		ServiceAccountName: authConfig.ServiceAccountName,
 	}
 
-	if cloudSchedulerSourceVersion == "v1alpha1" {
-		lib.MakeSchedulerOrDie(client, schedulerConfig)
-	} else if cloudSchedulerSourceVersion == "v1beta1" {
+	if cloudSchedulerSourceVersion == "v1beta1" {
 		lib.MakeSchedulerOrDie(client, schedulerConfig)
 	} else if cloudSchedulerSourceVersion == "v1" {
 		lib.MakeSchedulerOrDie(client, schedulerConfig)

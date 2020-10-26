@@ -56,9 +56,7 @@ func SmokeCloudPubSubSourceTestHelper(t *testing.T, authConfig lib.AuthConfig, c
 		ServiceAccountName: authConfig.ServiceAccountName,
 	}
 
-	if cloudPubSubSourceVersion == "v1alpha1" {
-		lib.MakePubSubV1alpha1OrDie(client, pubSubConfig)
-	} else if cloudPubSubSourceVersion == "v1beta1" {
+	if cloudPubSubSourceVersion == "v1beta1" {
 		lib.MakePubSubV1beta1OrDie(client, pubSubConfig)
 	} else if cloudPubSubSourceVersion == "v1" {
 		lib.MakePubSubOrDie(client, pubSubConfig)

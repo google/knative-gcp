@@ -58,9 +58,7 @@ func SmokeCloudAuditLogsSourceTestHelper(t *testing.T, authConfig lib.AuthConfig
 		ServiceAccountName: authConfig.ServiceAccountName,
 	}
 
-	if cloudAuditLogsSourceVersion == "v1alpha1" {
-		lib.MakeAuditLogsV1alpha1OrDie(client, auditLogsConfig)
-	} else if cloudAuditLogsSourceVersion == "v1beta1" {
+	if cloudAuditLogsSourceVersion == "v1beta1" {
 		lib.MakeAuditLogsV1beta1OrDie(client, auditLogsConfig)
 	} else if cloudAuditLogsSourceVersion == "v1" {
 		lib.MakeAuditLogsOrDie(client, auditLogsConfig)
