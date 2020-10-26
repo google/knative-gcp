@@ -88,9 +88,10 @@ func TestKSACreates(t *testing.T) {
 			name:   "default serviceAccountName, k8s service account doesn't exist, create it",
 			config: ConfigMapFromTestFile(t, "config-gcp-auth", "default-auth-config"),
 			wantCreates: []runtime.Object{
-				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
+				NewServiceAccount(kServiceAccountName, testNS, WithServiceAccountAnnotation(gServiceAccountName)),
 			},
-			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS,
+				WithServiceAccountAnnotation(gServiceAccountName),
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 					APIVersion:         "events.cloud.google.com/v1",
 					Kind:               "CloudPubSubSource",
@@ -104,10 +105,29 @@ func TestKSACreates(t *testing.T) {
 		}, {
 			name: "default serviceAccountName, k8s service account exists, but doesn't have ownerReference",
 			objects: []runtime.Object{
-				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
+				NewServiceAccount(kServiceAccountName, testNS, WithServiceAccountAnnotation(gServiceAccountName)),
 			},
 			config: ConfigMapFromTestFile(t, "config-gcp-auth", "default-auth-config"),
-			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS,
+				WithServiceAccountAnnotation(gServiceAccountName),
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1",
+					Kind:               "CloudPubSubSource",
+					UID:                "test-pubsub-uid",
+					Name:               identifiableName,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+			wantErrCode: codes.NotFound,
+		}, {
+			name: "default serviceAccountName, k8s service account exists, but doesn't have annotation",
+			objects: []runtime.Object{
+				NewServiceAccount(kServiceAccountName, testNS),
+			},
+			config: ConfigMapFromTestFile(t, "config-gcp-auth", "default-auth-config"),
+			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS,
+				WithServiceAccountAnnotation(gServiceAccountName),
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 					APIVersion:         "events.cloud.google.com/v1",
 					Kind:               "CloudPubSubSource",
@@ -200,7 +220,8 @@ func TestKSADeletes(t *testing.T) {
 		}, {
 			name: "default serviceAccountName, delete k8s service account, failed with removing iam policy binding.",
 			objects: []runtime.Object{
-				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+				NewServiceAccount(kServiceAccountName, testNS,
+					WithServiceAccountAnnotation(gServiceAccountName),
 					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 						APIVersion:         "events.cloud.google.com/v1beta1",
 						Kind:               "CloudPubSubSource",
@@ -216,7 +237,8 @@ func TestKSADeletes(t *testing.T) {
 		}, {
 			name: "default serviceAccountName, no need to remove k8s service account",
 			objects: []runtime.Object{
-				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+				NewServiceAccount(kServiceAccountName, testNS,
+					WithServiceAccountAnnotation(gServiceAccountName),
 					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 						APIVersion:         "events.cloud.google.com/v1beta1",
 						Kind:               "CloudPubSubSource",
