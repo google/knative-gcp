@@ -83,7 +83,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 	ingressServiceName := brokercellresources.Name(bc.Name, brokercellresources.IngressName)
 	b.Status.SetAddress(&apis.URL{
 		Scheme: "http",
-		Host:   network.GetServiceHostName(ingressServiceName, bc.Namespace),
+		Host:   network.GetServiceHostname(ingressServiceName, bc.Namespace),
 		Path:   ingress.BrokerPath(b.Namespace, b.Name),
 	})
 

@@ -159,7 +159,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		return err
 	}
 	bc.Status.PropagateIngressAvailability(endpoints)
-	hostName := network.GetServiceHostName(endpoints.GetName(), endpoints.GetNamespace())
+	hostName := network.GetServiceHostname(endpoints.GetName(), endpoints.GetNamespace())
 	bc.Status.IngressTemplate = fmt.Sprintf("http://%s/{namespace}/{name}", hostName)
 
 	// Reconcile fanout deployment and HPA.
