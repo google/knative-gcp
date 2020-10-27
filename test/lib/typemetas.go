@@ -45,7 +45,7 @@ var ChannelTypeMeta = messagingTypeMeta(resources.ChannelKind)
 func messagingTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
-		APIVersion: resources.MessagingAPIVersion,
+		APIVersion: resources.MessagingV1beta1APIVersion,
 	}
 }
 

@@ -23,12 +23,10 @@ import (
 
 	v1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	v1 "github.com/google/knative-gcp/pkg/apis/events/v1"
-	v1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	v1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
-	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -78,18 +76,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	case v1.SchemeGroupVersion.WithResource("cloudstoragesources"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1().CloudStorageSources().Informer()}, nil
 
-		// Group=events.cloud.google.com, Version=v1alpha1
-	case v1alpha1.SchemeGroupVersion.WithResource("cloudauditlogssources"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().CloudAuditLogsSources().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("cloudbuildsources"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().CloudBuildSources().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("cloudpubsubsources"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().CloudPubSubSources().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("cloudschedulersources"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().CloudSchedulerSources().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("cloudstoragesources"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().CloudStorageSources().Informer()}, nil
-
 		// Group=events.cloud.google.com, Version=v1beta1
 	case eventsv1beta1.SchemeGroupVersion.WithResource("cloudauditlogssources"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1beta1().CloudAuditLogsSources().Informer()}, nil
@@ -109,22 +95,14 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1().Topics().Informer()}, nil
 
 		// Group=internal.events.cloud.google.com, Version=v1alpha1
-	case inteventsv1alpha1.SchemeGroupVersion.WithResource("brokercells"):
+	case v1alpha1.SchemeGroupVersion.WithResource("brokercells"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1alpha1().BrokerCells().Informer()}, nil
-	case inteventsv1alpha1.SchemeGroupVersion.WithResource("pullsubscriptions"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1alpha1().PullSubscriptions().Informer()}, nil
-	case inteventsv1alpha1.SchemeGroupVersion.WithResource("topics"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1alpha1().Topics().Informer()}, nil
 
 		// Group=internal.events.cloud.google.com, Version=v1beta1
 	case inteventsv1beta1.SchemeGroupVersion.WithResource("pullsubscriptions"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1beta1().PullSubscriptions().Informer()}, nil
 	case inteventsv1beta1.SchemeGroupVersion.WithResource("topics"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1beta1().Topics().Informer()}, nil
-
-		// Group=messaging.cloud.google.com, Version=v1alpha1
-	case messagingv1alpha1.SchemeGroupVersion.WithResource("channels"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1alpha1().Channels().Informer()}, nil
 
 		// Group=messaging.cloud.google.com, Version=v1beta1
 	case messagingv1beta1.SchemeGroupVersion.WithResource("channels"):

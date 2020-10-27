@@ -26,10 +26,6 @@ import (
 type Interface interface {
 	// BrokerCells returns a BrokerCellInformer.
 	BrokerCells() BrokerCellInformer
-	// PullSubscriptions returns a PullSubscriptionInformer.
-	PullSubscriptions() PullSubscriptionInformer
-	// Topics returns a TopicInformer.
-	Topics() TopicInformer
 }
 
 type version struct {
@@ -46,14 +42,4 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // BrokerCells returns a BrokerCellInformer.
 func (v *version) BrokerCells() BrokerCellInformer {
 	return &brokerCellInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// PullSubscriptions returns a PullSubscriptionInformer.
-func (v *version) PullSubscriptions() PullSubscriptionInformer {
-	return &pullSubscriptionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Topics returns a TopicInformer.
-func (v *version) Topics() TopicInformer {
-	return &topicInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

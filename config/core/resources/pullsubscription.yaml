@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -186,12 +186,11 @@ spec:
               transformerUri:
                 type: string
   - << : *version
-    name: v1alpha1
-    # TODO: Flip served bit of v1alpha1 in https://github.com/google/knative-gcp/issues/1544.
+    name: v1beta1
     served: true
     storage: false
-    # v1alpha1 and v1beta have spec.properties.mode and status.properties.serviceAccountName in the schema
-    schema: &v1alpha1Schema
+    # v1beta has spec.properties.mode and status.properties.serviceAccountName in the schema
+    schema:
       openAPIV3Schema:
         << : *openAPIV3Schema
         properties:
@@ -210,9 +209,3 @@ spec:
               << : *statusProperties
               serviceAccountName:
                 type: string
-  - << : *version
-    name: v1beta1
-    served: true
-    storage: false
-    # the schema of v1beta1 is exactly the same as v1alpha1 schema
-    schema: *v1alpha1Schema

@@ -26,14 +26,11 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/events"
 	eventsv1 "github.com/google/knative-gcp/pkg/apis/events/v1"
-	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/intevents"
 	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/messaging"
-	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing/pkg/logconfig"
@@ -59,34 +56,26 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	brokerv1beta1.SchemeGroupVersion.WithKind("Broker"): &brokerv1beta1.Broker{},
 
 	// For group messaging.cloud.google.com.
-	messagingv1alpha1.SchemeGroupVersion.WithKind("Channel"): &messagingv1alpha1.Channel{},
-	messagingv1beta1.SchemeGroupVersion.WithKind("Channel"):  &messagingv1beta1.Channel{},
+	messagingv1beta1.SchemeGroupVersion.WithKind("Channel"): &messagingv1beta1.Channel{},
 
 	// For group events.cloud.google.com.
-	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource"):   &eventsv1alpha1.CloudStorageSource{},
-	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource"): &eventsv1alpha1.CloudSchedulerSource{},
-	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource"):    &eventsv1alpha1.CloudPubSubSource{},
-	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"): &eventsv1alpha1.CloudAuditLogsSource{},
-	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudBuildSource"):     &eventsv1alpha1.CloudBuildSource{},
-	eventsv1beta1.SchemeGroupVersion.WithKind("CloudStorageSource"):    &eventsv1beta1.CloudStorageSource{},
-	eventsv1beta1.SchemeGroupVersion.WithKind("CloudSchedulerSource"):  &eventsv1beta1.CloudSchedulerSource{},
-	eventsv1beta1.SchemeGroupVersion.WithKind("CloudPubSubSource"):     &eventsv1beta1.CloudPubSubSource{},
-	eventsv1beta1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"):  &eventsv1beta1.CloudAuditLogsSource{},
-	eventsv1beta1.SchemeGroupVersion.WithKind("CloudBuildSource"):      &eventsv1beta1.CloudBuildSource{},
-	eventsv1.SchemeGroupVersion.WithKind("CloudStorageSource"):         &eventsv1.CloudStorageSource{},
-	eventsv1.SchemeGroupVersion.WithKind("CloudSchedulerSource"):       &eventsv1.CloudSchedulerSource{},
-	eventsv1.SchemeGroupVersion.WithKind("CloudPubSubSource"):          &eventsv1.CloudPubSubSource{},
-	eventsv1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"):       &eventsv1.CloudAuditLogsSource{},
-	eventsv1.SchemeGroupVersion.WithKind("CloudBuildSource"):           &eventsv1.CloudBuildSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudStorageSource"):   &eventsv1beta1.CloudStorageSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudSchedulerSource"): &eventsv1beta1.CloudSchedulerSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudPubSubSource"):    &eventsv1beta1.CloudPubSubSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"): &eventsv1beta1.CloudAuditLogsSource{},
+	eventsv1beta1.SchemeGroupVersion.WithKind("CloudBuildSource"):     &eventsv1beta1.CloudBuildSource{},
+	eventsv1.SchemeGroupVersion.WithKind("CloudStorageSource"):        &eventsv1.CloudStorageSource{},
+	eventsv1.SchemeGroupVersion.WithKind("CloudSchedulerSource"):      &eventsv1.CloudSchedulerSource{},
+	eventsv1.SchemeGroupVersion.WithKind("CloudPubSubSource"):         &eventsv1.CloudPubSubSource{},
+	eventsv1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"):      &eventsv1.CloudAuditLogsSource{},
+	eventsv1.SchemeGroupVersion.WithKind("CloudBuildSource"):          &eventsv1.CloudBuildSource{},
 
 	// For group internal.events.cloud.google.com.
-	inteventsv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &inteventsv1alpha1.PullSubscription{},
-	inteventsv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &inteventsv1alpha1.Topic{},
-	inteventsv1beta1.SchemeGroupVersion.WithKind("PullSubscription"):  &inteventsv1beta1.PullSubscription{},
-	inteventsv1beta1.SchemeGroupVersion.WithKind("Topic"):             &inteventsv1beta1.Topic{},
-	inteventsv1.SchemeGroupVersion.WithKind("PullSubscription"):       &inteventsv1.PullSubscription{},
-	inteventsv1.SchemeGroupVersion.WithKind("Topic"):                  &inteventsv1.Topic{},
-	inteventsv1alpha1.SchemeGroupVersion.WithKind("BrokerCell"):       &inteventsv1alpha1.BrokerCell{},
+	inteventsv1beta1.SchemeGroupVersion.WithKind("PullSubscription"): &inteventsv1beta1.PullSubscription{},
+	inteventsv1beta1.SchemeGroupVersion.WithKind("Topic"):            &inteventsv1beta1.Topic{},
+	inteventsv1.SchemeGroupVersion.WithKind("PullSubscription"):      &inteventsv1.PullSubscription{},
+	inteventsv1.SchemeGroupVersion.WithKind("Topic"):                 &inteventsv1.Topic{},
+	inteventsv1alpha1.SchemeGroupVersion.WithKind("BrokerCell"):      &inteventsv1alpha1.BrokerCell{},
 }
 
 type defaultingAdmissionController func(context.Context, configmap.Watcher) *controller.Impl
@@ -188,14 +177,10 @@ func newConversionConstructor(brokers *broker.StoreSingleton, gcpas *gcpauth.Sto
 
 func newConversionController(ctx context.Context, cmw configmap.Watcher, brokers *broker.Store, gcpas *gcpauth.Store) *controller.Impl {
 	var (
-		eventsv1alpha1_    = eventsv1alpha1.SchemeGroupVersion.Version
-		eventsv1beta1_     = eventsv1beta1.SchemeGroupVersion.Version
-		eventsv1_          = eventsv1.SchemeGroupVersion.Version
-		messagingv1alpha1_ = messagingv1alpha1.SchemeGroupVersion.Version
-		messagingv1beta1_  = messagingv1beta1.SchemeGroupVersion.Version
-		inteventsv1alpha1_ = inteventsv1alpha1.SchemeGroupVersion.Version
-		inteventsv1beta1_  = inteventsv1beta1.SchemeGroupVersion.Version
-		inteventsv1_       = inteventsv1.SchemeGroupVersion.Version
+		eventsv1beta1_    = eventsv1beta1.SchemeGroupVersion.Version
+		eventsv1_         = eventsv1.SchemeGroupVersion.Version
+		inteventsv1beta1_ = inteventsv1beta1.SchemeGroupVersion.Version
+		inteventsv1_      = inteventsv1.SchemeGroupVersion.Version
 	)
 
 	// Decorate contexts with the current state of the config.
@@ -212,75 +197,59 @@ func newConversionController(ctx context.Context, cmw configmap.Watcher, brokers
 			// events
 			eventsv1.Kind("CloudAuditLogsSource"): {
 				DefinitionName: events.CloudAuditLogsSourcesResource.String(),
-				HubVersion:     eventsv1alpha1_,
+				HubVersion:     eventsv1beta1_,
 				Zygotes: map[string]conversion.ConvertibleObject{
-					eventsv1alpha1_: &eventsv1alpha1.CloudAuditLogsSource{},
-					eventsv1beta1_:  &eventsv1beta1.CloudAuditLogsSource{},
-					eventsv1_:       &eventsv1.CloudAuditLogsSource{},
+					eventsv1beta1_: &eventsv1beta1.CloudAuditLogsSource{},
+					eventsv1_:      &eventsv1.CloudAuditLogsSource{},
 				},
 			},
 			eventsv1.Kind("CloudPubSubSource"): {
 				DefinitionName: events.CloudPubSubSourcesResource.String(),
-				HubVersion:     eventsv1alpha1_,
+				HubVersion:     eventsv1beta1_,
 				Zygotes: map[string]conversion.ConvertibleObject{
-					eventsv1alpha1_: &eventsv1alpha1.CloudPubSubSource{},
-					eventsv1beta1_:  &eventsv1beta1.CloudPubSubSource{},
-					eventsv1_:       &eventsv1.CloudPubSubSource{},
+					eventsv1beta1_: &eventsv1beta1.CloudPubSubSource{},
+					eventsv1_:      &eventsv1.CloudPubSubSource{},
 				},
 			},
 			eventsv1.Kind("CloudSchedulerSource"): {
 				DefinitionName: events.CloudSchedulerSourcesResource.String(),
-				HubVersion:     eventsv1alpha1_,
+				HubVersion:     eventsv1beta1_,
 				Zygotes: map[string]conversion.ConvertibleObject{
-					eventsv1alpha1_: &eventsv1alpha1.CloudSchedulerSource{},
-					eventsv1beta1_:  &eventsv1beta1.CloudSchedulerSource{},
-					eventsv1_:       &eventsv1.CloudSchedulerSource{},
+					eventsv1beta1_: &eventsv1beta1.CloudSchedulerSource{},
+					eventsv1_:      &eventsv1.CloudSchedulerSource{},
 				},
 			},
 			eventsv1.Kind("CloudStorageSource"): {
 				DefinitionName: events.CloudStorageSourcesResource.String(),
-				HubVersion:     eventsv1alpha1_,
+				HubVersion:     eventsv1beta1_,
 				Zygotes: map[string]conversion.ConvertibleObject{
-					eventsv1alpha1_: &eventsv1alpha1.CloudStorageSource{},
-					eventsv1beta1_:  &eventsv1beta1.CloudStorageSource{},
-					eventsv1_:       &eventsv1.CloudStorageSource{},
+					eventsv1beta1_: &eventsv1beta1.CloudStorageSource{},
+					eventsv1_:      &eventsv1.CloudStorageSource{},
 				},
 			},
 			eventsv1.Kind("CloudBuildSource"): {
 				DefinitionName: events.CloudBuildSourcesResource.String(),
-				HubVersion:     eventsv1alpha1_,
+				HubVersion:     eventsv1beta1_,
 				Zygotes: map[string]conversion.ConvertibleObject{
-					eventsv1alpha1_: &eventsv1alpha1.CloudBuildSource{},
-					eventsv1beta1_:  &eventsv1beta1.CloudBuildSource{},
-					eventsv1_:       &eventsv1.CloudBuildSource{},
+					eventsv1beta1_: &eventsv1beta1.CloudBuildSource{},
+					eventsv1_:      &eventsv1.CloudBuildSource{},
 				},
 			},
 			// intevents
 			inteventsv1.Kind("PullSubscription"): {
 				DefinitionName: intevents.PullSubscriptionsResource.String(),
-				HubVersion:     inteventsv1alpha1_,
+				HubVersion:     inteventsv1beta1_,
 				Zygotes: map[string]conversion.ConvertibleObject{
-					inteventsv1alpha1_: &inteventsv1alpha1.PullSubscription{},
-					inteventsv1beta1_:  &inteventsv1beta1.PullSubscription{},
-					inteventsv1_:       &inteventsv1.PullSubscription{},
+					inteventsv1beta1_: &inteventsv1beta1.PullSubscription{},
+					inteventsv1_:      &inteventsv1.PullSubscription{},
 				},
 			},
 			inteventsv1.Kind("Topic"): {
 				DefinitionName: intevents.TopicsResource.String(),
-				HubVersion:     inteventsv1alpha1_,
+				HubVersion:     inteventsv1beta1_,
 				Zygotes: map[string]conversion.ConvertibleObject{
-					inteventsv1alpha1_: &inteventsv1alpha1.Topic{},
-					inteventsv1beta1_:  &inteventsv1beta1.Topic{},
-					inteventsv1_:       &inteventsv1.Topic{},
-				},
-			},
-			// messaging
-			messagingv1alpha1.Kind("Channel"): {
-				DefinitionName: messaging.ChannelsResource.String(),
-				HubVersion:     messagingv1alpha1_,
-				Zygotes: map[string]conversion.ConvertibleObject{
-					messagingv1alpha1_: &messagingv1alpha1.Channel{},
-					messagingv1beta1_:  &messagingv1beta1.Channel{},
+					inteventsv1beta1_: &inteventsv1beta1.Topic{},
+					inteventsv1_:      &inteventsv1.Topic{},
 				},
 			},
 		},

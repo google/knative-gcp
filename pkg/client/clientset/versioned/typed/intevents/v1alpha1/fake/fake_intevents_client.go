@@ -32,14 +32,6 @@ func (c *FakeInternalV1alpha1) BrokerCells(namespace string) v1alpha1.BrokerCell
 	return &FakeBrokerCells{c, namespace}
 }
 
-func (c *FakeInternalV1alpha1) PullSubscriptions(namespace string) v1alpha1.PullSubscriptionInterface {
-	return &FakePullSubscriptions{c, namespace}
-}
-
-func (c *FakeInternalV1alpha1) Topics(namespace string) v1alpha1.TopicInterface {
-	return &FakeTopics{c, namespace}
-}
-
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeInternalV1alpha1) RESTClient() rest.Interface {

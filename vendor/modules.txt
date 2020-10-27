@@ -262,6 +262,9 @@ github.com/mailru/easyjson/jwriter
 github.com/markbates/inflect
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
+# github.com/mitchellh/go-homedir v1.1.0
+## explicit
+github.com/mitchellh/go-homedir
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1 => github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
@@ -273,6 +276,12 @@ github.com/openzipkin/zipkin-go/model
 github.com/openzipkin/zipkin-go/propagation
 github.com/openzipkin/zipkin-go/reporter
 github.com/openzipkin/zipkin-go/reporter/http
+# github.com/pelletier/go-toml v1.8.0
+## explicit
+github.com/pelletier/go-toml
+# github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
+## explicit
+github.com/phayes/freeport
 # github.com/pkg/errors v0.9.1 => github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
@@ -313,10 +322,14 @@ github.com/sirupsen/logrus
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
 # github.com/stretchr/testify v1.5.1
+## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/tsenart/vegeta v12.7.1-0.20190725001342-b5f4fca92137+incompatible
 github.com/tsenart/vegeta/lib
+# github.com/wavesoftware/go-ensure v1.0.0
+## explicit
+github.com/wavesoftware/go-ensure
 # go.opencensus.io v0.22.5-0.20200714042313-af30f77c5f65
 ## explicit
 go.opencensus.io
@@ -1099,6 +1112,7 @@ knative.dev/eventing/test/lib/dropevents
 knative.dev/eventing/test/lib/dropevents/dropeventsfibonacci
 knative.dev/eventing/test/lib/dropevents/dropeventsfirst
 knative.dev/eventing/test/lib/duck
+knative.dev/eventing/test/lib/nodes
 knative.dev/eventing/test/lib/recordevents
 knative.dev/eventing/test/lib/recordevents/observer
 knative.dev/eventing/test/lib/recordevents/recorder_vent
@@ -1114,6 +1128,15 @@ knative.dev/eventing/test/test_images
 knative.dev/eventing/test/test_images/event-sender
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
+knative.dev/eventing/test/test_images/wathola-forwarder
+knative.dev/eventing/test/test_images/wathola-receiver
+knative.dev/eventing/test/test_images/wathola-sender
+knative.dev/eventing/test/upgrade/prober/wathola/client
+knative.dev/eventing/test/upgrade/prober/wathola/config
+knative.dev/eventing/test/upgrade/prober/wathola/event
+knative.dev/eventing/test/upgrade/prober/wathola/forwarder
+knative.dev/eventing/test/upgrade/prober/wathola/receiver
+knative.dev/eventing/test/upgrade/prober/wathola/sender
 # knative.dev/networking v0.0.0-20201015161058-8425f7b44b89
 knative.dev/networking/pkg
 knative.dev/networking/pkg/apis/networking

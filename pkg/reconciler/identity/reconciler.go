@@ -161,6 +161,15 @@ func (i *Identity) createServiceAccount(ctx context.Context, identityNames resou
 		}
 		logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
 		return nil, fmt.Errorf("getting k8s service account failed with: %w", err)
+	} else if kServiceAccount.Annotations[resources.WorkloadIdentityKey] == "" {
+		// In case annotations was accidentally deleted.
+		kServiceAccount.Annotations[resources.WorkloadIdentityKey] = identityNames.GoogleServiceAccountName
+		kServiceAccount, err = i.kubeClient.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Update(ctx, kServiceAccount, metav1.UpdateOptions{})
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to update k8s service account", zap.Error(err))
+			return nil, fmt.Errorf("failed to update k8s service account: %w", err)
+		}
+		return kServiceAccount, nil
 	}
 	return kServiceAccount, nil
 }

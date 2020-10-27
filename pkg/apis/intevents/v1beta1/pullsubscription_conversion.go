@@ -26,7 +26,7 @@ import (
 )
 
 // ConvertTo implements apis.Convertible.
-// Converts v1alpha1.PullSubscription to a higher version of PullSubscription.
+// Converts v1beta1.PullSubscription to a higher version of PullSubscription.
 // Currently, we only support v1 as a higher version.
 func (source *PullSubscription) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
