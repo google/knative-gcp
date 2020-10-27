@@ -16,7 +16,8 @@
 
 # Include after test-infra/scripts/library.sh
 
-# Export SYSTEM_NAMESPACE for pkg/system.
+# Set and export SYSTEM_NAMESPACE where Knative Eventing is installed for pkg/system.
+readonly SYSTEM_NAMESPACE="knative-eventing"
 export SYSTEM_NAMESPACE
 
 readonly CLOUD_RUN_EVENTS_CONFIG="config/"
