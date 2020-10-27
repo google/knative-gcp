@@ -398,13 +398,16 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *broker
 	return nil
 }
 
+// createPubsubClientFn is a function for pubsub client creation. Changed in testing only.
+var createPubsubClientFn reconcilerutilspubsub.CreateFn = pubsub.NewClient
+
 // getClientOrCreateNew Return the pubsubCient if it is valid, otherwise it tries to create a new client
 // and register it for later usage.
 func (r *Reconciler) getClientOrCreateNew(ctx context.Context, projectID string, trig *brokerv1beta1.Trigger) (*pubsub.Client, error) {
 	if r.pubsubClient != nil {
 		return r.pubsubClient, nil
 	}
-	client, err := pubsub.NewClient(ctx, projectID)
+	client, err := createPubsubClientFn(ctx, projectID)
 	if err != nil {
 		trig.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
 		trig.Status.MarkSubscriptionUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)

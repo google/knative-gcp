@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/pstest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -525,11 +526,129 @@ func TestAllCasesTrigger(t *testing.T) {
 				}),
 			},
 		},
+		{
+			Name: "Trigger created, broker ready, subscriber is addressable, nil pubsub client",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithInitBrokerConditions,
+					WithBrokerReady("url"),
+					WithBrokerDeliverySpec(brokerDeliverySpec),
+					WithBrokerSetDefaults,
+				),
+				makeSubscriberAddressableAsUnstructured(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerSetDefaults),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerBrokerReady,
+					WithTriggerSubscriptionReady,
+					WithTriggerTopicReady,
+					WithTriggerDependencyReady,
+					WithTriggerSubscriberResolvedSucceeded,
+					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerSetDefaults,
+				),
+			}},
+			WantEvents: []string{
+				triggerFinalizerUpdatedEvent,
+				topicCreatedEvent,
+				subscriptionCreatedEvent,
+				triggerReconciledEvent,
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName, finalizerName),
+			},
+			OtherTestData: map[string]interface{}{
+				"pre": []PubsubAction{
+					Topic("test-dead-letter-topic-id"),
+				},
+				"maxPSClientCreateTime": 1,
+			},
+			PostConditions: []func(*testing.T, *TableRow){
+				OnlyTopics("cre-tgr_testnamespace_test-trigger_abc123", "test-dead-letter-topic-id"),
+				OnlySubscriptions("cre-tgr_testnamespace_test-trigger_abc123"),
+				SubscriptionHasRetryPolicy("cre-tgr_testnamespace_test-trigger_abc123",
+					&pubsub.RetryPolicy{
+						MaximumBackoff: 5 * time.Second,
+						MinimumBackoff: 5 * time.Second,
+					}),
+				SubscriptionHasDeadLetterPolicy("cre-tgr_testnamespace_test-trigger_abc123",
+					&pubsub.DeadLetterPolicy{
+						MaxDeliveryAttempts: 3,
+						DeadLetterTopic:     "projects/test-project-id/topics/test-dead-letter-topic-id",
+					}),
+				TopicExistsWithConfig("cre-tgr_testnamespace_test-trigger_abc123", &pubsub.TopicConfig{
+					Labels: map[string]string{
+						"name": "test-trigger", "namespace": "testnamespace", "resource": "triggers",
+					},
+				}),
+			},
+		},
+		{
+			Name: "Trigger created, broker ready, subscriber is addressable, pubsub client creation fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithInitBrokerConditions,
+					WithBrokerReady("url"),
+					WithBrokerDeliverySpec(brokerDeliverySpec),
+					WithBrokerSetDefaults,
+				),
+				makeSubscriberAddressableAsUnstructured(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerSetDefaults),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerBrokerReady,
+					WithTriggerSubscriptionReady,
+					WithTriggerTopicReady,
+					WithTriggerSubscriberResolvedSucceeded,
+					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerSetDefaults,
+					WithTriggerDependencyUnknown("", ""),
+					WithTriggerTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: Invoke time 0 reaches the max invoke time 0"),
+					WithTriggerSubscriptionUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: Invoke time 0 reaches the max invoke time 0"),
+				),
+			}},
+			WantEvents: []string{
+				triggerFinalizerUpdatedEvent,
+				Eventf(corev1.EventTypeWarning, "InternalError", "Invoke time 0 reaches the max invoke time 0"),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName, finalizerName),
+			},
+			OtherTestData: map[string]interface{}{
+				"pre": []PubsubAction{
+					Topic("test-dead-letter-topic-id"),
+				},
+				"maxPSClientCreateTime": 0,
+			},
+			WantErr: true,
+		},
 	}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
+		srv := pstest.NewServer()
 		// Insert pubsub client for PostConditions and create fixtures
-		psclient, close := TestPubsubClient(ctx, testProject)
+		psclient, _ := GetTestClientCreateFunc(srv.Addr)(ctx, testProject)
+		savedCreateFn := createPubsubClientFn
+		close := func() {
+			srv.Close()
+			createPubsubClientFn = savedCreateFn
+		}
 		t.Cleanup(close)
 		var drStore *dataresidency.Store
 		if testData != nil {
@@ -547,6 +666,16 @@ func TestAllCasesTrigger(t *testing.T) {
 			}
 		}
 
+		// if maxPSClientCreateTime is in testData, no pubsub client is passed to reconciler, the reconciler
+		// will create one in demand
+		testPSClient := psclient
+		if maxTime, ok := testData["maxPSClientCreateTime"]; ok {
+			// Overwrite the createPubsubClientFn to one that failed when calling more than once, this does
+			// not really work since we never test anything that reconcile twice or both reconcile and delete
+			createPubsubClientFn = GetFailedTestClientCreateFunc(srv.Addr, maxTime.(int))
+			testPSClient = nil
+		}
+
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
 		ctx = conditions.WithDuck(ctx)
@@ -558,7 +687,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			addressableTracker: duck.NewListableTracker(ctx, addressable.Get, func(types.NamespacedName) {}, 0),
 			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			projectID:          testProject,
-			pubsubClient:       psclient,
+			pubsubClient:       testPSClient,
 			dataresidencyStore: drStore,
 		}
 
