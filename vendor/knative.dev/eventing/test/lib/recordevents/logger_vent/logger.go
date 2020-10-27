@@ -14,17 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package logger_vent
 
-import "os"
+import "knative.dev/eventing/test/lib/recordevents"
 
-// SystemNamespace is the namespace where Eventing is installed, it's default to be knative-eventing.
-var SystemNamespace = getenv("TEST_EVENTING_NAMESPACE", "knative-eventing")
+type Logger func(string, ...interface{})
 
-func getenv(name, defaultValue string) string {
-	value, set := os.LookupEnv(name)
-	if !set {
-		value = defaultValue
-	}
-	return value
+func (l Logger) Vent(observed recordevents.EventInfo) error {
+	l("Event: \n%s", observed.String())
+
+	return nil
 }

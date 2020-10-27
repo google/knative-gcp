@@ -16,6 +16,9 @@
 
 # Include after test-infra/scripts/library.sh
 
+# Export SYSTEM_NAMESPACE for pkg/system.
+export SYSTEM_NAMESPACE
+
 readonly CLOUD_RUN_EVENTS_CONFIG="config/"
 readonly CLOUD_RUN_EVENTS_ISTIO_CONFIG="config/istio"
 
@@ -69,7 +72,7 @@ latest_version() {
 
   # Get the latest patch release for the major minor
   #git tag -l "${major_minor}*" | sort -r --version-sort | head -n1
-  
+
   git tag | sort -r --version-sort | head -n1
 }
 

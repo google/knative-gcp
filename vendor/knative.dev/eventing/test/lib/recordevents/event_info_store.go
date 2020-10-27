@@ -52,7 +52,7 @@ func StartEventRecordOrFail(ctx context.Context, client *testlib.Client, podName
 
 // Stateful store of events received by the recordevents pod it is pointed at.
 // This pulls events from the pod during any Find or Wait call, storing them
-// locally and triming them from the remote pod store.
+// locally and trimming them from the remote pod store.
 type EventInfoStore struct {
 	tb testing.TB
 
@@ -61,6 +61,9 @@ type EventInfoStore struct {
 
 	lock      sync.Mutex
 	collected []EventInfo
+
+	eventsSeen    int
+	eventsNotMine int
 }
 
 // Creates an EventInfoStore that is used to iteratively download events recorded by the
@@ -72,7 +75,8 @@ func NewEventInfoStore(client *testlib.Client, podName string, podNamespace stri
 		podNamespace: podNamespace,
 	}
 
-	client.EventListener.AddHandler(store.handle)
+	numEventsAlreadyPresent := client.EventListener.AddHandler(store.handle)
+	client.T.Logf("EventInfoStore added to the EventListener, which has already seen %v events", numEventsAlreadyPresent)
 
 	return store, nil
 }
@@ -84,8 +88,12 @@ func (ei *EventInfoStore) getEventInfo() []EventInfo {
 }
 
 func (ei *EventInfoStore) handle(event *corev1.Event) {
+	ei.lock.Lock()
+	defer ei.lock.Unlock()
+	ei.eventsSeen += 1
 	// Filter events
 	if !ei.isMyEvent(event) {
+		ei.eventsNotMine += 1
 		return
 	}
 
@@ -96,8 +104,6 @@ func (ei *EventInfoStore) handle(event *corev1.Event) {
 		return
 	}
 
-	ei.lock.Lock()
-	defer ei.lock.Unlock()
 	ei.collected = append(ei.collected, eventInfo)
 }
 
@@ -120,7 +126,12 @@ func (ei *EventInfoStore) Find(matchers ...EventInfoMatcher) ([]EventInfo, Searc
 	f := AllOf(matchers...)
 	const maxLastEvents = 5
 	allMatch := []EventInfo{}
-	sInfo := SearchedInfo{}
+	ei.lock.Lock()
+	sInfo := SearchedInfo{
+		storeEventsSeen:    ei.eventsSeen,
+		storeEventsNotMine: ei.eventsNotMine,
+	}
+	ei.lock.Unlock()
 	lastEvents := []EventInfo{}
 	var nonMatchingErrors []error
 
