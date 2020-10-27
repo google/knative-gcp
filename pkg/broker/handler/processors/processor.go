@@ -83,7 +83,7 @@ func (p noOpProcessor) Process(_ context.Context, _ *event.Event) error {
 }
 
 // Next here shouldn't really be called because
-// reaching noop-processor already means the chain of processors hit a nil.
+// reaching noop-processor already means the chain of processors reach a nil.
 func (p noOpProcessor) Next() Interface {
 	return nil
 }

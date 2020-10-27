@@ -89,7 +89,7 @@ func sendEvent(ceClient cev2.Client, needRetry bool) (span *trace.Span, err erro
 		ctx := cev2.WithEncodingBinary(context.Background())
 		ctx, span = trace.StartSpan(ctx, "sender", trace.WithSampler(trace.AlwaysSample()))
 		defer span.End()
-		result := ceClient.Send(ctx, dummyCloudEvent())
+		result := ceClient.Send(ctx, sampleCloudEvent())
 		return result
 	}
 
@@ -101,11 +101,11 @@ func sendEvent(ceClient cev2.Client, needRetry bool) (span *trace.Span, err erro
 	return
 }
 
-func dummyCloudEvent() cev2.Event {
+func sampleCloudEvent() cev2.Event {
 	event := cev2.NewEvent(cev2.VersionV1)
-	event.SetID(lib.E2EDummyEventID)
-	event.SetType(lib.E2EDummyEventType)
-	event.SetSource(lib.E2EDummyEventSource)
+	event.SetID(lib.E2ESampleEventID)
+	event.SetType(lib.E2ESampleEventType)
+	event.SetSource(lib.E2ESampleEventSource)
 	event.SetData(cev2.ApplicationJSON, `{"source": "sender!"}`)
 	return event
 }
