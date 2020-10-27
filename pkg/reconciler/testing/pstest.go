@@ -228,3 +228,16 @@ func GetTestClientCreateFunc(target string) func(context.Context, string, ...opt
 		return c, nil
 	}
 }
+
+// GetFailedTestClientCreateFunc returns a pubsub client creation function that will fail when the invoke
+// time reaches maxCallTime. When maxCallTime is set to 0, it will always fail.
+func GetFailedTestClientCreateFunc(target string, maxCallTime int) func(context.Context, string, ...option.ClientOption) (*pubsub.Client, error) {
+	i := 0
+	return func(ctx context.Context, projectID string, opts ...option.ClientOption) (*pubsub.Client, error) {
+		if i >= maxCallTime {
+			return nil, fmt.Errorf("Invoke time %v reaches the max invoke time %v", i, maxCallTime)
+		}
+		i++
+		return GetTestClientCreateFunc(target)(ctx, projectID)
+	}
+}

@@ -206,13 +206,16 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 	return err
 }
 
+// createPubsubClientFn is a function for pubsub client creation. Changed in testing only.
+var createPubsubClientFn reconcilerutilspubsub.CreateFn = pubsub.NewClient
+
 // getClientOrCreateNew Return the pubsubCient if it is valid, otherwise it tries to create a new client
 // and register it for later usage.
 func (r *Reconciler) getClientOrCreateNew(ctx context.Context, projectID string, b *brokerv1beta1.Broker) (*pubsub.Client, error) {
 	if r.pubsubClient != nil {
 		return r.pubsubClient, nil
 	}
-	client, err := pubsub.NewClient(ctx, projectID)
+	client, err := createPubsubClientFn(ctx, projectID)
 	if err != nil {
 		b.Status.MarkTopicUnknown("FinalizeTopicPubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
 		b.Status.MarkSubscriptionUnknown("FinalizeSubscriptionPubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
