@@ -56,7 +56,12 @@ const (
 var (
 	testKey = fmt.Sprintf("%s/%s", testNS, brokerCellName)
 
-	creatorAnnotation = map[string]string{"internal.events.cloud.google.com/creator": "googlecloud"}
+	creatorAnnotation       = map[string]string{"internal.events.cloud.google.com/creator": "googlecloud"}
+	restartedTimeAnnotation = map[string]string{
+		"events.cloud.google.com/ingressRestartRequestedAt": "2020-09-25T16:28:36-04:00",
+		"events.cloud.google.com/fanoutRestartRequestedAt":  "2020-09-25T16:28:36-04:00",
+		"events.cloud.google.com/retryRestartRequestedAt":   "2020-09-25T16:28:36-04:00",
+	}
 
 	brokerCellReconciledEvent     = Eventf(corev1.EventTypeNormal, "BrokerCellReconciled", `BrokerCell reconciled: "testnamespace/test-brokercell"`)
 	brokerCellGCEvent             = Eventf(corev1.EventTypeNormal, "BrokerCellGarbageCollected", `BrokerCell garbage collected: "testnamespace/test-brokercell"`)
@@ -878,6 +883,42 @@ func TestAllCases(t *testing.T) {
 				},
 			},
 			WantEvents: []string{brokerCellGCEvent},
+		}, {
+			Name: "Brokercell has restart time annotation, deployments are updated with restart time annotation successfully",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults,
+					WithBrokerCellAnnotations(restartedTimeAnnotation)),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)),
+				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
+					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+				testingdata.IngressDeploymentWithStatus(t),
+				testingdata.IngressServiceWithStatus(t),
+				testingdata.FanoutDeploymentWithStatus(t),
+				testingdata.RetryDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
+				testingdata.FanoutHPA(t),
+				testingdata.RetryHPA(t),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBrokerCell(brokerCellName, testNS,
+					WithBrokerCellReady,
+					WithBrokerCellAnnotations(restartedTimeAnnotation),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+					WithBrokerCellSetDefaults,
+				),
+			}},
+			WantUpdates: []clientgotesting.UpdateActionImpl{
+				{Object: testingdata.IngressDeploymentWithRestartAnnotation(t)},
+				{Object: testingdata.FanoutDeploymentWithRestartAnnotation(t)},
+				{Object: testingdata.RetryDeploymentWithRestartAnnotation(t)},
+			},
+			WantEvents: []string{
+				ingressDeploymentUpdatedEvent,
+				fanoutDeploymentUpdatedEvent,
+				retryDeploymentUpdatedEvent,
+				brokerCellReconciledEvent,
+			},
 		},
 	}
 
