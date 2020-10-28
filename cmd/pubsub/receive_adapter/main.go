@@ -129,7 +129,7 @@ func main() {
 	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
 
 	// Convert json metrics.ExporterOptions to metrics.ExporterOptions.
-	metricsConfig, err := metrics.JsonToMetricsOptions(env.MetricsConfigJson)
+	metricsConfig, err := metrics.JSONToOptions(env.MetricsConfigJson)
 	if err != nil {
 		logger.Error("Failed to process metrics options", zap.Error(err))
 	}

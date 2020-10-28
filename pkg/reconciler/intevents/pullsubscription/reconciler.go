@@ -299,7 +299,7 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1.PullSubsc
 		r.MetricsConfig.Component = component
 	}
 
-	metricsConfig, err := metrics.MetricsOptionsToJson(r.MetricsConfig)
+	metricsConfig, err := metrics.OptionsToJSON(r.MetricsConfig)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Error serializing metrics config", zap.Error(err))
 	}

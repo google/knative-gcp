@@ -32,7 +32,8 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	hpav2beta2listers "k8s.io/client-go/listers/autoscaling/v2beta2"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-	"knative.dev/eventing/pkg/reconciler/names"
+	"knative.dev/pkg/network"
+
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -158,7 +159,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		return err
 	}
 	bc.Status.PropagateIngressAvailability(endpoints)
-	hostName := names.ServiceHostName(endpoints.GetName(), endpoints.GetNamespace())
+	hostName := network.GetServiceHostname(endpoints.GetName(), endpoints.GetNamespace())
 	bc.Status.IngressTemplate = fmt.Sprintf("http://%s/{namespace}/{name}", hostName)
 
 	// Reconcile fanout deployment and HPA.
