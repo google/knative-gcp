@@ -66,7 +66,7 @@ func SetTracingToZipkin(client *eventingtestlib.Client) {
 	setTracingConfigOnce.Do(func() {
 		err := client.Kube.UpdateConfigMap("cloud-run-events", "config-tracing", map[string]string{
 			"backend":         "zipkin",
-			"zipkin-endpoint": "http://zipkin.istio-system.svc.cluster.local:9411/api/v2/spans",
+			"zipkin-endpoint": "http://zipkin.knative-eventing.svc.cluster.local:9411/api/v2/spans",
 		})
 		if err != nil {
 			client.T.Fatalf("Unable to set the ConfigMap: %v", err)
