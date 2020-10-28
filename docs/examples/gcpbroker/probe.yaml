@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloud-run-events-probe
+
+---
+
+apiVersion: eventing.knative.dev/v1beta1
+kind: Broker
+metadata:
+  name: default
+  namespace: cloud-run-events-probe
+  annotations:
+    "eventing.knative.dev/broker.class": "googlecloud"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: default-brokercell-ingress-nodeport
+  namespace: cloud-run-events
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+  type: NodePort
+  selector:
+    app: cloud-run-events
+    brokerCell: default
+    role: ingress
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: probe-helper
+  namespace: cloud-run-events
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+  type: NodePort
+  selector:
+    app: cloud-run-events
+    brokerCell: default
+    role: ingress
+
+
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: probe-ingress
+  namespace: cloud-run-events
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /broker
+        backend:
+          serviceName: default-brokercell-ingress-nodeport
+          servicePort: 80
+      - path: /helper
+        backend:
+          serviceName: probe-helper
+          servicePort: 80

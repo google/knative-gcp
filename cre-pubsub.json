@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "conliu-anthos-dev",
+  "private_key_id": "20fa323b9a55ce5ba7c04505ea61d320c36fdb8b",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC4ZHEak9sAXw31\npe6EpHBeEfNQHcLzC8HqsNO7pvOvBmcLImTcIlGmVLJ4wKSDtUUJQk7RTGJOZquE\nNRXiRn4K8hH+kxJvGfPiNCp8bjkICQMct/LmizsklXPlqDG3/Rm8Ie9MRI0wz+S1\nIKwCeEZNoet0VVSky4bYBjSaXuwWYplApE4+o/zDQxaS7p4s6ycc2Da+nmSDKSXD\nf9tGVTXGJhASslGJFgOzoH/UY/j5L5lRGFDTNnDG627xqUkbV/9IQBVTzQuaoyvZ\nyZ8QdHZPmWcLl8FBe95ZYyh5dToFa9tlZDvo7IGK/9GXS8oDf6lbPl5c13bv+qyr\nFFO5XVxlAgMBAAECggEAH70GLNVzVjqGTBiOGB23y7FaSJl+01fcPnnGUB/6BM/c\nz7FRXAS6Oh+NArTh/FuosOHNcEAuEaGhdyWuCR8qFdc52rBU9XOpo29oOre8MFJg\ny0IsWJtxiCgDZW3QdQNnORc8Ocv444R9MOIZSWmLbFRpE0KWybDQmoFi74lUKLvv\nmRAWOgEF92ulvubezk8VWgn53v4t1Axpm7AV1M70VouGyxLHSGexQaEHZuy/PjpS\n31gAYHCXH6Bn8XCmwRWShhjO0TZNfzcUexNwJh/pOLDfXEYIDVk4UyruPfecPg7X\nPY9MIvcp2zXiMQK3kVoIeEiitN60LAjAHWx2JADjFwKBgQD1wulMj+jBHBP8j57T\nZscyn0JdZl40IY46vLLvNB49IzT5M2l1rNcTwkDQDAhOeOyXeM0bmH7THXaTVE1k\nsCxWP0XrIAT1rWZxUyp2XS+pomPZHFhKq2mMqvJjbFayARvfnU109c8d8ab+l6e5\nuAcNeWxUP9iQB2giFXheCoZi5wKBgQDAEwTbk8PkNtiQxQlhD6Yf1VjZeGJkmFZy\nVmJRBygATp0i7otyRa7Qr5ayPvnz/B/Odjlx4WfYTGM5GEpVgky5GT3FtnCSnl+s\nSCWaywctaFePbdZwcFkQUz0ew1gljhMcgjaUEE3JwlDK8dKBVQu0Thdet2tVRocI\nNvB4hrRo0wKBgQDRuWaMPpbbDNIFiq54K1I8YeopeG1VwXj1qQht1yUi+UOAkh4i\nHMBiDThwEoSYKtuEG8O1E/rOwGrrKVruXOVJKK/LCcURvssYVGd9IOLGuVzJ70Vt\nW0A0mcFFlTOarhWSS1PJRudb31eqFdM9Ss1B82e9scpmhtuXkojof8TU6wKBgCal\n7Q1Nv1X1X0BKFWgNYQz4vecMXSgGqyZYkXHicb8WEnJL840rzlA5dKYrG9pnOfMu\nQMLUazPPswtzAsoP7OY12QMmgaJO8ctVvRNXlPsjCrNWk5aOVK1/QkYlYmA0JU5Q\nOTEz0qMtUVp0rDnP5goCyJsLZzKCfXs+qsZlvHl3AoGAE9lWX5T/NaS2qi34bcAJ\n2Ur2jd6+ko5+aQTtsRb/6XrSnAyezF8VyGbRuDdUOb0b0JE0BJCO9Ga6FG0GVpco\nWDgpiedFCAACQQdCN3tp33p5QLr0BNq2yQP4bQhwogW9w5W1ZUqmOcyyYjs82Ppe\nyQitQRhm/6cIwBHhKbK6J1M=\n-----END PRIVATE KEY-----\n",
+  "client_email": "cre-pubsub@conliu-anthos-dev.iam.gserviceaccount.com",
+  "client_id": "108470070441110023658",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/cre-pubsub%40conliu-anthos-dev.iam.gserviceaccount.com"
+}

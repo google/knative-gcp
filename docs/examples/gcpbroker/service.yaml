@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami
+  labels:
+    app: whoami
+spec:
+  replicas: 2
+  minReadySeconds: 20
+  selector:
+    matchLabels:
+      app: whoami
+  template:
+    metadata:
+      name: whoami
+      labels:
+        app: whoami
+        env: dev
+    spec:
+      containers:
+      - name: whoami
+        image: cizixs/whoami:v0.5
+        env:
+          - name: MESSAGE
+            value: Hello
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami-np
+spec:
+  ports:
+    - port: 8080
+      targetPort: 3000
+      nodePort: 30000
+      protocol: TCP
+  type: NodePort
+  selector:
+    app: whoami
+    env: dev
