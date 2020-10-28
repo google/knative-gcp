@@ -20,7 +20,7 @@ set -o pipefail
 
 export GO111MODULE=on
 
-source $(dirname "$0")/../vendor/knative.dev/test-infra/scripts/library.sh
+source $(dirname "$0")/../vendor/knative.dev/hack/library.sh
 
 # There is a directory named `internal`, so we need to move the backup files out
 # of the repo root, otherwise go tools will complain that something is trying to
