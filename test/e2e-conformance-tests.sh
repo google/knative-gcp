@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # Script entry point.
-source $(dirname "$0")/e2e-secret-tests.sh
+source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
 
 # Automatically succeed on conformance tests in releases <0.19.
 success
