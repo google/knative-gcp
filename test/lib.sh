@@ -55,18 +55,33 @@ function get_latest_knative_yaml_source() {
 }
 
 # Get the latest YAML sources again to override the test-infra sources which
-# fail to recognize release-0.15b as a release branch.
-readonly KNATIVE_SERVING_RELEASE_CRDS="$(get_latest_knative_yaml_source "serving" "serving-crds")"
-readonly KNATIVE_SERVING_RELEASE_CORE="$(get_latest_knative_yaml_source "serving" "serving-core")"
-readonly KNATIVE_NET_ISTIO_RELEASE="$(get_latest_knative_yaml_source "net-istio" "net-istio")"
-readonly KNATIVE_EVENTING_RELEASE="$(get_latest_knative_yaml_source "eventing" "eventing")"
-readonly KNATIVE_MONITORING_RELEASE="$(get_latest_knative_yaml_source "serving" "monitoring")"
+# fail to recognize release-0.15b as a release branch. Must rename the variables
+# since the originals are readonly.
+readonly OVERRIDE_KNATIVE_SERVING_RELEASE_CRDS="$(get_latest_knative_yaml_source "serving" "serving-crds")"
+readonly OVERRIDE_KNATIVE_SERVING_RELEASE_CORE="$(get_latest_knative_yaml_source "serving" "serving-core")"
+readonly OVERRIDE_KNATIVE_NET_ISTIO_RELEASE="$(get_latest_knative_yaml_source "net-istio" "net-istio")"
+readonly OVERRIDE_KNATIVE_EVENTING_RELEASE="$(get_latest_knative_yaml_source "eventing" "eventing")"
+readonly OVERRIDE_KNATIVE_MONITORING_RELEASE="$(get_latest_knative_yaml_source "serving" "monitoring")"
+
+# Install the latest stable Knative Eventing in the current cluster.
+# Overrides test-infra's start_latest_knative_eventing to use the special
+# overridden variables.
+function start_latest_knative_eventing() {
+  start_knative_eventing "${OVERRIDE_KNATIVE_EVENTING_RELEASE}"
+}
+
+# Install the latest stable Knative Serving in the current cluster.
+# Overrides test-infra's start_latest_knative_serving to use the special
+# overridden variables.
+function start_latest_knative_serving() {
+  start_knative_serving "${OVERRIDE_KNATIVE_SERVING_RELEASE_CRDS}" "${OVERRIDE_KNATIVE_SERVING_RELEASE_CORE}" "${OVERRIDE_KNATIVE_NET_ISTIO_RELEASE}"
+}
 
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
   start_latest_knative_serving || return 1
   start_latest_knative_eventing || return 1
-  start_knative_monitoring "$KNATIVE_MONITORING_RELEASE" || return 1
+  start_knative_monitoring "$OVERRIDE_KNATIVE_MONITORING_RELEASE" || return 1
   cloud_run_events_setup || return 1
   istio_patch || return 1
 }
