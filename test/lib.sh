@@ -19,6 +19,49 @@
 readonly CLOUD_RUN_EVENTS_CONFIG="config/"
 readonly CLOUD_RUN_EVENTS_ISTIO_CONFIG="config/istio"
 
+# Returns whether the current branch is a release branch.
+# Overrides test-infra's is_release_branch to allow for an optional letter suffix.
+function is_release_branch() {
+  [[ $(current_branch) =~ ^release-[0-9\.]+[a-z]?$ ]]
+}
+
+# Returns the URL to the latest manifest for the given Knative project.
+# Overrides test-infra's get_latest_knative_yaml_source to prune optional letter suffix
+# for release branches.
+# Parameters: $1 - repository name of the given project
+#             $2 - name of the yaml file, without extension
+function get_latest_knative_yaml_source() {
+  local repo_name="$1"
+  local yaml_name="$2"
+  # If it's a release branch, the yaml source URL should point to a specific version.
+  if is_release_branch; then
+    # Extract the release major&minor version from the branch name.
+    local branch_name="$(current_branch)"
+    local major_minor="${${branch_name##release-}%%[a-z]}"
+    # Find the latest release manifest with the same major&minor version.
+    local yaml_source_path="$(
+      gsutil ls gs://knative-releases/${repo_name}/previous/v${major_minor}.*/${yaml_name}.yaml 2> /dev/null \
+      | sort \
+      | tail -n 1 \
+      | cut -b6-)"
+    # The version does exist, return it.
+    if [[ -n "${yaml_source_path}" ]]; then
+      echo "https://storage.googleapis.com/${yaml_source_path}"
+      return
+    fi
+    # Otherwise, fall back to nightly.
+  fi
+  echo "https://storage.googleapis.com/knative-nightly/${repo_name}/latest/${yaml_name}.yaml"
+}
+
+# Get the latest YAML sources again to override the test-infra sources which
+# fail to recognize release-0.15b as a release branch.
+readonly KNATIVE_SERVING_RELEASE_CRDS="$(get_latest_knative_yaml_source "serving" "serving-crds")"
+readonly KNATIVE_SERVING_RELEASE_CORE="$(get_latest_knative_yaml_source "serving" "serving-core")"
+readonly KNATIVE_NET_ISTIO_RELEASE="$(get_latest_knative_yaml_source "net-istio" "net-istio")"
+readonly KNATIVE_EVENTING_RELEASE="$(get_latest_knative_yaml_source "eventing" "eventing")"
+readonly KNATIVE_MONITORING_RELEASE="$(get_latest_knative_yaml_source "serving" "monitoring")"
+
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
   start_latest_knative_serving || return 1
