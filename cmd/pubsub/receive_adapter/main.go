@@ -113,7 +113,7 @@ func main() {
 	}
 
 	// Convert json logging.Config to logging.Config.
-	loggingConfig, err := logging.JsonToLoggingConfig(env.LoggingConfigJson)
+	loggingConfig, err := logging.JSONToConfig(env.LoggingConfigJson)
 	if err != nil {
 		fmt.Printf("Failed to process logging config: %s", err.Error())
 		// Use default logging config.

@@ -285,7 +285,7 @@ func (r *Base) deleteSubscription(ctx context.Context, ps *v1.PullSubscription) 
 }
 
 func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1.PullSubscription, f ReconcileDataPlaneFunc) error {
-	loggingConfig, err := logging.LoggingConfigToJson(r.LoggingConfig)
+	loggingConfig, err := logging.ConfigToJSON(r.LoggingConfig)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Error serializing existing logging config", zap.Error(err))
 	}

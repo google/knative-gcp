@@ -113,10 +113,14 @@ type Backoff func(attemptNum int, resp *nethttp.Response) time.Duration
 type RetryConfig struct {
 	// Maximum number of retries
 	RetryMax int
+	// These next two variables are just copied from the original DeliverySpec so
+	// we can detect if anything has changed. We can not do that with the CheckRetry
+	// Backoff (at least not easily).
+	BackoffDelay  *string
+	BackoffPolicy *duckv1.BackoffPolicyType
 
 	CheckRetry CheckRetry
-
-	Backoff Backoff
+	Backoff    Backoff
 }
 
 func (s *HTTPMessageSender) SendWithRetries(req *nethttp.Request, config *RetryConfig) (*nethttp.Response, error) {
@@ -138,7 +142,12 @@ func (s *HTTPMessageSender) SendWithRetries(req *nethttp.Request, config *RetryC
 		},
 	}
 
-	return retryableClient.Do(&retryablehttp.Request{Request: req})
+	retryableReq, err := retryablehttp.FromRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return retryableClient.Do(retryableReq)
 }
 
 func NoRetries() RetryConfig {
@@ -154,6 +163,8 @@ func RetryConfigFromDeliverySpec(spec duckv1.DeliverySpec) (RetryConfig, error) 
 	if spec.Retry != nil {
 		retryConfig.RetryMax = int(*spec.Retry)
 	}
+	retryConfig.BackoffPolicy = spec.BackoffPolicy
+	retryConfig.BackoffDelay = spec.BackoffDelay
 
 	if spec.BackoffPolicy != nil && spec.BackoffDelay != nil {
 

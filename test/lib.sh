@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Include after test-infra/scripts/library.sh
+# Include after hack/library.sh
 
 # Set and export SYSTEM_NAMESPACE where Knative Eventing is installed for pkg/system.
 readonly SYSTEM_NAMESPACE="knative-eventing"
