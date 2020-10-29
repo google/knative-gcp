@@ -33,6 +33,11 @@ func IngressDeployment(t *testing.T) *appsv1.Deployment {
 	return getDeployment(t, "testingdata/ingress_deployment.yaml")
 }
 
+// TODO(1804): remove this function when ingress filtering is enabled by default.
+func IngressDeploymentWithFilteringAnnotation(t *testing.T) *appsv1.Deployment {
+	return getDeployment(t, "testingdata/ingress_deployment_with_filtering_annotation.yaml")
+}
+
 func FanoutDeployment(t *testing.T) *appsv1.Deployment {
 	return getDeployment(t, "testingdata/fanout_deployment.yaml")
 }

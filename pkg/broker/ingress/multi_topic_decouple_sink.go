@@ -19,6 +19,7 @@ package ingress
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 
 	"cloud.google.com/go/pubsub"
@@ -32,6 +33,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/extensions"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
 	"github.com/google/knative-gcp/pkg/logging"
 )
 
@@ -50,6 +52,8 @@ func NewMultiTopicDecoupleSink(
 		brokerConfig:    brokerConfig,
 		// TODO(#1118): remove Topic when broker config is removed
 		topics: make(map[types.NamespacedName]*pubsub.Topic),
+		// TODO(#1804): remove this field when enabling the feature by default.
+		enableEventFiltering: enableEventFilterFunc(),
 	}
 }
 
@@ -65,6 +69,8 @@ type multiTopicDecoupleSink struct {
 	// brokerConfig holds configurations for all brokers. It's a view of a configmap populated by
 	// the broker controller.
 	brokerConfig config.ReadonlyTargets
+	// TODO(#1804): remove this field when enabling the feature by default.
+	enableEventFiltering bool
 }
 
 // Send sends incoming event to its corresponding pubsub topic based on which broker it belongs to.
@@ -80,6 +86,14 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.Namespac
 		return err
 	}
 
+	// Check to see if there are any triggers interested in this event. If not, no need to send this
+	// to the decouple topic.
+	// TODO(#1804): remove first check when enabling the feature by default.
+	if m.enableEventFiltering && !m.hasTrigger(ctx, &event) {
+		logging.FromContext(ctx).Debug("Filering target-less event at ingress", zap.String("Eventid", event.ID()))
+		return nil
+	}
+
 	dt := extensions.FromSpanContext(trace.FromContext(ctx).SpanContext())
 	msg := new(pubsub.Message)
 	if err := cepubsub.WritePubSubMessage(ctx, binding.ToMessage(&event), msg, dt.WriteTransformer()); err != nil {
@@ -88,6 +102,36 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.Namespac
 
 	_, err = topic.Publish(ctx, msg).Get(ctx)
 	return err
+}
+
+// eventFilterFunc is used to see if a target is interested in an event.
+// It is used as a vaiable to allow stubbing out in unit tests.
+var eventFilterFunc = filter.PassFilter
+
+// enableEventFilterFunc is a temporary function to control enabling and
+// disabling trigger-less event filtering in ingress.
+// TODO(#1804): remove this variable when enabling the feature by default.
+var enableEventFilterFunc = isEventFilteringEnabled
+
+// TODO(#1804): remove this method when enabling the feature by default.
+func isEventFilteringEnabled() bool {
+	return os.Getenv("ENABLE_INGRESS_EVENT_FILTERING") == "true"
+}
+
+// hasTrigger checks given event against all targets to see if it will pass any of their filters.
+// If one is fouund, hasTrigger returns true.
+func (m *multiTopicDecoupleSink) hasTrigger(ctx context.Context, event *cev2.Event) bool {
+	hasTrigger := false
+	m.brokerConfig.RangeAllTargets(func(target *config.Target) bool {
+		if eventFilterFunc(ctx, target.FilterAttributes, event) {
+			hasTrigger = true
+			return false
+		}
+
+		return true
+	})
+
+	return hasTrigger
 }
 
 // getTopicForBroker finds the corresponding decouple topic for the broker from the mounted broker configmap volume.

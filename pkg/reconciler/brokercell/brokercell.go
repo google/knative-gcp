@@ -244,7 +244,18 @@ func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.Ingre
 			RolloutRestartTime: bc.GetAnnotations()[resources.IngressRestartTimeAnnotationKey],
 		},
 		Port: r.env.IngressPort,
+		// TODO(#1804): remove this arg when enabling the feature by default.
+		EnableIngressFilter: getIngressFilteringEnabled(bc),
 	}
+}
+
+// TODO(#1804): remove this function when enabling the feature by default.
+func getIngressFilteringEnabled(bc *intv1alpha1.BrokerCell) bool {
+	if val, ok := bc.GetAnnotations()[resources.IngressFilteringEnabledAnnotationKey]; ok {
+		return val == "true"
+	}
+
+	return false
 }
 
 func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.AutoscalingArgs {

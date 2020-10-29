@@ -85,6 +85,9 @@ spec:
           value: knative.dev/internal/eventing
         - name: PORT
           value: "8080"
+        # TODO(1804): remove this env variable when the feature is enabled by default.
+        - name: ENABLE_INGRESS_EVENT_FILTERING
+          value: false
         volumeMounts:
         - name: broker-config
           mountPath: /var/run/cloud-run-events/broker
