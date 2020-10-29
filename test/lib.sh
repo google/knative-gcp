@@ -37,7 +37,8 @@ function get_latest_knative_yaml_source() {
   if is_release_branch; then
     # Extract the release major&minor version from the branch name.
     local branch_name="$(current_branch)"
-    local major_minor="${${branch_name##release-}%%[a-z]}"
+    local major_minor_suffix="${branch_name##release-}"
+    local major_minor="${major_minor_suffix%%[a-z]}"
     # Find the latest release manifest with the same major&minor version.
     local yaml_source_path="$(
       gsutil ls gs://knative-releases/${repo_name}/previous/v${major_minor}.*/${yaml_name}.yaml 2> /dev/null \
