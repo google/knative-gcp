@@ -27,9 +27,8 @@ type ServiceAccountOption func(*corev1.ServiceAccount)
 func NewServiceAccount(name, namespace string, so ...ServiceAccountOption) *corev1.ServiceAccount {
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   namespace,
-			Annotations: map[string]string{},
+			Name:      name,
+			Namespace: namespace,
 		},
 	}
 	for _, opt := range so {
@@ -40,6 +39,9 @@ func NewServiceAccount(name, namespace string, so ...ServiceAccountOption) *core
 
 func WithServiceAccountAnnotation(gServiceAccount string) ServiceAccountOption {
 	return func(s *corev1.ServiceAccount) {
+		if s.Annotations == nil {
+			s.Annotations = make(map[string]string)
+		}
 		s.Annotations["iam.gke.io/gcp-service-account"] = gServiceAccount
 	}
 }
