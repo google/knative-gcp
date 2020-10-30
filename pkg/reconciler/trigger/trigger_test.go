@@ -569,6 +569,8 @@ func TestAllCasesTrigger(t *testing.T) {
 				"pre": []PubsubAction{
 					Topic("test-dead-letter-topic-id"),
 				},
+				// TODO: This should make sure the function is called only once, but currently this case only check the create function
+				// will be called on demand since there is no test that reconcile twice or with both reconcile and delete.
 				"maxPSClientCreateTime": 1,
 			},
 			PostConditions: []func(*testing.T, *TableRow){
@@ -666,12 +668,12 @@ func TestAllCasesTrigger(t *testing.T) {
 			}
 		}
 
-		// if maxPSClientCreateTime is in testData, no pubsub client is passed to reconciler, the reconciler
+		// If maxPSClientCreateTime is in testData, no pubsub client is passed to reconciler, the reconciler
 		// will create one in demand
 		testPSClient := psclient
 		if maxTime, ok := testData["maxPSClientCreateTime"]; ok {
-			// Overwrite the createPubsubClientFn to one that failed when calling more than once, this does
-			// not really work since we never test anything that reconcile twice or both reconcile and delete
+			// Overwrite the createPubsubClientFn to one that failed when called more than maxTime times.
+			// maxTime=0 is used to inject error
 			createPubsubClientFn = GetFailedTestClientCreateFunc(srv.Addr, maxTime.(int))
 			testPSClient = nil
 		}
