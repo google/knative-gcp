@@ -161,7 +161,7 @@ func (i *Identity) createServiceAccount(ctx context.Context, identityNames resou
 		}
 		logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
 		return nil, fmt.Errorf("getting k8s service account failed with: %w", err)
-	} else if kServiceAccount.Annotations == nil || kServiceAccount.Annotations[resources.WorkloadIdentityKey] == "" {
+	} else if kServiceAccount.Annotations[resources.WorkloadIdentityKey] == "" {
 		// In case annotations never existed or was accidentally deleted.
 		if kServiceAccount.Annotations == nil {
 			kServiceAccount.Annotations = make(map[string]string)
