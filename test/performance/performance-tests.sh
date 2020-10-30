@@ -22,7 +22,7 @@
 export PROJECT_NAME="knative-eventing-performance"
 export BENCHMARK_ROOT_PATH="test/performance/benchmarks"
 
-source vendor/knative.dev/test-infra/scripts/performance-tests.sh
+source vendor/knative.dev/hack/performance-tests.sh
 source $(dirname $0)/../lib.sh
 
 # Vars used in this script
@@ -53,7 +53,7 @@ function update_knative() {
 
 function update_benchmark() {
   local benchmark_path="${BENCHMARK_ROOT_PATH}/$1"
-  # TODO(chizhg): add update_environment function in test-infra/scripts/performance-tests.sh and move the below code there
+  # TODO(chizhg): add update_environment function in hack/performance-tests.sh and move the below code there
   echo ">> Updating configmap"
   kubectl delete configmap config-mako -n "${TEST_NAMESPACE}" --ignore-not-found=true
   kubectl create configmap config-mako -n "${TEST_NAMESPACE}" --from-file="${benchmark_path}/prod.config" || abort "failed to create config-mako configmap"

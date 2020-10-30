@@ -38,6 +38,9 @@ const (
 	FanoutRestartTimeAnnotationKey  = "events.cloud.google.com/fanoutRestartRequestedAt"
 	RetryRestartTimeAnnotationKey   = "events.cloud.google.com/retryRestartRequestedAt"
 	RolloutRestartTimeAnnotationKey = "events.cloud.google.com/RestartRequestedAt"
+	// IngressFilteringEnabledAnnotationKey is the annotation key for enabling ingress filtering.
+	// TODO(#1804): remove this constant when enabling the feature by default.
+	IngressFilteringEnabledAnnotationKey = "events.cloud.google.com/ingressFilteringEnabled"
 )
 
 var (
@@ -63,6 +66,8 @@ type Args struct {
 type IngressArgs struct {
 	Args
 	Port int
+	// TODO(#1804): remove this field when enabling the feature by default.
+	EnableIngressFilter bool
 }
 
 // FanoutArgs are the arguments to create a Broker's fanout Deployment.

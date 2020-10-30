@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source $(dirname "$0")/../vendor/knative.dev/test-infra/scripts/library.sh
+source $(dirname "$0")/../vendor/knative.dev/hack/library.sh
 
 # Compute _example hash for all configmaps.
 for file in "${REPO_ROOT_DIR}"/config/core/configmaps/*.yaml

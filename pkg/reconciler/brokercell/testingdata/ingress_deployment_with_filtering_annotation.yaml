@@ -1,0 +1,116 @@
+# Copyright 2020 Google LLC
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# TODO(1804): remove this yaml file when enabling the feature by default
+
+# This yaml matches the ingress deployment objected created by the reconciler.
+metadata:
+  name: test-brokercell-brokercell-ingress
+  namespace: testnamespace
+  labels:
+    app: cloud-run-events
+    brokerCell: test-brokercell
+    role: ingress
+  ownerReferences:
+  - apiVersion: internal.events.cloud.google.com/v1alpha1
+    kind: BrokerCell
+    name: test-brokercell
+    controller: true
+    blockOwnerDeletion: true
+spec:
+  selector:
+    matchLabels: &labels
+      app: cloud-run-events
+      brokerCell: test-brokercell
+      role: ingress
+  minReadySeconds: 60
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels: *labels
+      annotations:
+        sidecar.istio.io/inject: "true"
+        events.cloud.google.com/ingressFilteringEnabled: "true"
+    spec:
+      serviceAccountName: broker
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: ingress
+        image: ingress
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 5
+        readinessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 5
+        env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
+        - name: SYSTEM_NAMESPACE
+          value: knative-testing
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: knative.dev/internal/eventing
+        - name: PORT
+          value: "8080"
+        # TODO(1804): remove this env variable when the feature is enabled by default.
+        - name: ENABLE_INGRESS_EVENT_FILTERING
+          value: "true"
+        volumeMounts:
+        - name: broker-config
+          mountPath: /var/run/cloud-run-events/broker
+        - name: google-broker-key
+          mountPath: /var/secrets/google
+        resources:
+          limits:
+            memory: 2000Mi
+          requests:
+            cpu: 2000m
+            memory: 2000Mi
+        ports:
+        - name: metrics
+          containerPort: 9090
+        - name: http
+          containerPort: 8080
+      volumes:
+      - name: broker-config
+        configMap:
+          name: test-brokercell-brokercell-broker-targets
+      - name: google-broker-key
+        secret:
+          secretName: google-broker-key
+          optional: true

@@ -224,16 +224,10 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	//TODO uncomment when eventing webhook allows this
 	//trig.Status.ProjectID = projectID
 
-	client := r.pubsubClient
-	if client == nil {
-		client, err := pubsub.NewClient(ctx, projectID)
-		if err != nil {
-			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-			trig.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
-			trig.Status.MarkSubscriptionUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
-			return err
-		}
-		defer client.Close()
+	client, err := r.getClientOrCreateNew(ctx, projectID, trig)
+	if err != nil {
+		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
+		return err
 	}
 
 	pubsubReconciler := reconcilerutilspubsub.NewReconciler(client, r.Recorder)
@@ -335,16 +329,10 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 		return err
 	}
 
-	client := r.pubsubClient
-	if client == nil {
-		client, err := pubsub.NewClient(ctx, projectID)
-		if err != nil {
-			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-			trig.Status.MarkTopicUnknown("FinalizeTopicPubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
-			trig.Status.MarkSubscriptionUnknown("FinalizeSubscriptionPubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
-			return err
-		}
-		defer client.Close()
+	client, err := r.getClientOrCreateNew(ctx, projectID, trig)
+	if err != nil {
+		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
+		return err
 	}
 	pubsubReconciler := reconcilerutilspubsub.NewReconciler(client, r.Recorder)
 
@@ -408,4 +396,24 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *broker
 	}
 	t.Status.PropagateDependencyStatus(dependency)
 	return nil
+}
+
+// createPubsubClientFn is a function for pubsub client creation. Changed in testing only.
+var createPubsubClientFn reconcilerutilspubsub.CreateFn = pubsub.NewClient
+
+// getClientOrCreateNew Return the pubsubCient if it is valid, otherwise it tries to create a new client
+// and register it for later usage.
+func (r *Reconciler) getClientOrCreateNew(ctx context.Context, projectID string, trig *brokerv1beta1.Trigger) (*pubsub.Client, error) {
+	if r.pubsubClient != nil {
+		return r.pubsubClient, nil
+	}
+	client, err := createPubsubClientFn(ctx, projectID)
+	if err != nil {
+		trig.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
+		trig.Status.MarkSubscriptionUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
+		return nil, err
+	}
+	// Register the client for next run
+	r.pubsubClient = client
+	return client, nil
 }

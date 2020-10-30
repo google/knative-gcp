@@ -71,9 +71,9 @@ spec:
           jsonPath: .metadata.creationTimestamp
       # We remove status.ServiceAccountName from the schema in v1.
       schema: &v1Schema
-        openAPIV3Schema: &openAPIV3Schema
+        openAPIV3Schema:
           type: object
-          properties: &properties
+          properties:
             spec:
               type: object
               required:
@@ -141,9 +141,9 @@ spec:
                   description: >
                     Google Cloud Project ID of the project into which the topic should be created. If omitted uses
                     the Project ID from the GKE cluster metadata service.
-            status: &status
+            status:
               type: object
-              properties: &statusProperties
+              properties:
                 observedGeneration:
                   type: integer
                   format: int64
@@ -190,20 +190,3 @@ spec:
       served: true
       storage: false
       schema: *v1Schema
-    - <<: *version
-      # TODO: remove v1alpha1 schema from CRD
-      name: v1alpha1
-      served: false
-      storage: false
-      # v1alpha1 have status.properties.serviceAccountName in the schema
-      schema:
-        openAPIV3Schema:
-          <<: *openAPIV3Schema
-          properties:
-            <<: *properties
-            status:
-              <<: *status
-              properties:
-                <<: *statusProperties
-                serviceAccountName:
-                  type: string

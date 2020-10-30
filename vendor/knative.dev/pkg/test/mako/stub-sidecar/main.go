@@ -19,12 +19,13 @@ package main
 import (
 	"context"
 	"encoding/csv"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/golang/protobuf/jsonpb" //nolint: the newer package has differnet interface.
+	"github.com/golang/protobuf/jsonpb" //nolint // the newer package has different interface.
 	mako "github.com/google/mako/spec/proto/mako_go_proto"
 
 	"log"
@@ -158,7 +159,7 @@ func main() {
 		m.HandleFunc("/close", func(writer http.ResponseWriter, request *http.Request) {
 			s.Shutdown(context.Background())
 		})
-		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}
 		fmt.Println("Successfully served the results")

@@ -191,6 +191,18 @@ func WithTriggerTopicReady(t *brokerv1beta1.Trigger) {
 	t.Status.MarkTopicReady()
 }
 
+func WithTriggerTopicUnknown(reason, msg string) TriggerOption {
+	return func(t *brokerv1beta1.Trigger) {
+		t.Status.MarkTopicUnknown(reason, msg)
+	}
+}
+
+func WithTriggerSubscriptionUnknown(reason, msg string) TriggerOption {
+	return func(t *brokerv1beta1.Trigger) {
+		t.Status.MarkSubscriptionUnknown(reason, msg)
+	}
+}
+
 func WithTriggerDeletionTimestamp(t *brokerv1beta1.Trigger) {
 	deleteTime := metav1.NewTime(time.Unix(1e9, 0))
 	t.ObjectMeta.SetDeletionTimestamp(&deleteTime)

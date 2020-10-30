@@ -26,8 +26,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/eventing/pkg/reconciler/names"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/network"
 	"knative.dev/pkg/system"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
@@ -83,7 +83,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 	ingressServiceName := brokercellresources.Name(bc.Name, brokercellresources.IngressName)
 	b.Status.SetAddress(&apis.URL{
 		Scheme: "http",
-		Host:   names.ServiceHostName(ingressServiceName, bc.Namespace),
+		Host:   network.GetServiceHostname(ingressServiceName, bc.Namespace),
 		Path:   ingress.BrokerPath(b.Namespace, b.Name),
 	})
 
