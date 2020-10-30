@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/pstest"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
 
 	corev1 "k8s.io/api/core/v1"
@@ -355,11 +356,95 @@ func TestAllCases(t *testing.T) {
 				},
 			}),
 		},
+	}, {
+		Name: "Create broker with ready brokercell with nil Pubsub client",
+		Key:  testKey,
+		Objects: []runtime.Object{
+			NewBroker(brokerName, testNS,
+				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
+				WithBrokerSetDefaults),
+			NewBrokerCell(resources.DefaultBrokerCellName, systemNS,
+				WithBrokerCellReady,
+				WithBrokerCellSetDefaults),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewBroker(brokerName, testNS,
+				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
+				WithBrokerReadyURI(brokerAddress),
+				WithBrokerSetDefaults,
+			),
+		}},
+		WantEvents: []string{
+			brokerFinalizerUpdatedEvent,
+			Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-bkr_testnamespace_test-broker_abc123"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-bkr_testnamespace_test-broker_abc123"`),
+			brokerReconciledEvent,
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, brokerName, brokerFinalizerName),
+		},
+		OtherTestData: map[string]interface{}{
+			"pre": []PubsubAction{},
+			// TODO: This should make sure the function is called only once, but currently this case only check the create function
+			// will be called on demand since there is no test that reconcile twice or with both reconcile and delete.
+			"maxPSClientCreateTime": 1,
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			TopicExists("cre-bkr_testnamespace_test-broker_abc123"),
+			SubscriptionExists("cre-bkr_testnamespace_test-broker_abc123"),
+		},
+	}, {
+		Name: "Create broker with pubsub client creation failure",
+		Key:  testKey,
+		Objects: []runtime.Object{
+			NewBroker(brokerName, testNS,
+				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
+				WithBrokerSetDefaults),
+			NewBrokerCell(resources.DefaultBrokerCellName, systemNS,
+				WithBrokerCellReady,
+				WithBrokerCellSetDefaults),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewBroker(brokerName, testNS,
+				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerUID(testUID),
+				WithBrokerDeliverySpec(brokerDeliverySpec),
+				WithBrokerReadyURI(brokerAddress),
+				WithBrokerSetDefaults,
+				WithBrokerTopicUnknown("FinalizeTopicPubSubClientCreationFailed", "Failed to create Pub/Sub client: Invoke time 0 reaches the max invoke time 0"),
+				WithBrokerSubscriptionUnknown("FinalizeSubscriptionPubSubClientCreationFailed", "Failed to create Pub/Sub client: Invoke time 0 reaches the max invoke time 0"),
+			),
+		}},
+		WantEvents: []string{
+			brokerFinalizerUpdatedEvent,
+			Eventf(corev1.EventTypeWarning, "InternalError", "failed to reconcile broker: decoupling topic reconcile failed: Invoke time 0 reaches the max invoke time 0"),
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, brokerName, brokerFinalizerName),
+		},
+		OtherTestData: map[string]interface{}{
+			"pre":                   []PubsubAction{},
+			"maxPSClientCreateTime": 0,
+		},
+		PostConditions: []func(*testing.T, *TableRow){},
+		WantErr:        true,
 	}}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
+		srv := pstest.NewServer()
 		// Insert pubsub client for PostConditions and create fixtures
-		psclient, close := TestPubsubClient(ctx, testProject)
+		psclient, _ := GetTestClientCreateFunc(srv.Addr)(ctx, testProject)
+		savedCreateFn := createPubsubClientFn
+		close := func() {
+			srv.Close()
+			createPubsubClientFn = savedCreateFn
+		}
 		t.Cleanup(close)
 		if testData != nil {
 			InjectPubsubClient(testData, psclient)
@@ -376,13 +461,23 @@ func TestAllCases(t *testing.T) {
 			drStore = NewDataresidencyTestStore(t, cm.(*corev1.ConfigMap))
 		}
 
+		// If maxPSClientCreateTime is in testData, no pubsub client is passed to reconciler, the reconciler
+		// will create one in demand
+		testPSClient := psclient
+		if maxTime, ok := testData["maxPSClientCreateTime"]; ok {
+			// Overwrite the createPubsubClientFn to one that failed when called more than maxTime times.
+			// maxTime=0 is used to inject error
+			createPubsubClientFn = GetFailedTestClientCreateFunc(srv.Addr, maxTime.(int))
+			testPSClient = nil
+		}
+
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
 		r := &Reconciler{
 			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
 			brokerCellLister:   listers.GetBrokerCellLister(),
 			projectID:          testProject,
-			pubsubClient:       psclient,
+			pubsubClient:       testPSClient,
 			dataresidencyStore: drStore,
 		}
 		return brokerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerLister(), r.Recorder, r, brokerv1beta1.BrokerClass)
