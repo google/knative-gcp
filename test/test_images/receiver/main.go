@@ -78,7 +78,7 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) (*event
 
 	// Check if the received event is the sample event sent by sender pod.
 	// If it is, send back a response CloudEvent.
-	if event.ID() == lib.E2ESampleRespEventID {
+	if event.ID() == lib.E2ESampleEventID {
 		event = cloudevents.NewEvent(cloudevents.VersionV1)
 		event.SetID(lib.E2ESampleRespEventID)
 		event.SetType(lib.E2ESampleRespEventType)
