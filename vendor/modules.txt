@@ -1137,6 +1137,7 @@ knative.dev/eventing/test/upgrade/prober/wathola/forwarder
 knative.dev/eventing/test/upgrade/prober/wathola/receiver
 knative.dev/eventing/test/upgrade/prober/wathola/sender
 # knative.dev/hack v0.0.0-20201028205534-fe80f1c8af68
+## explicit
 knative.dev/hack
 # knative.dev/networking v0.0.0-20201028132534-429a6210295c
 knative.dev/networking/pkg
