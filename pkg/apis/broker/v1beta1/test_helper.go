@@ -67,8 +67,8 @@ func (t testHelper) AvailableEndpoints() *corev1.Endpoints {
 	}
 }
 
-func (t testHelper) ReadyDependencyStatus() *duckv1.KResource {
-	kr := &duckv1.KResource{}
+func (t testHelper) ReadyDependencyStatus() *duckv1.Source {
+	kr := &duckv1.Source{}
 	kr.Status.SetConditions(apis.Conditions{{
 		Type:   "Ready",
 		Status: corev1.ConditionTrue,
@@ -76,13 +76,13 @@ func (t testHelper) ReadyDependencyStatus() *duckv1.KResource {
 	return kr
 }
 
-func (t testHelper) UnconfiguredDependencyStatus() *duckv1.KResource {
-	kr := &duckv1.KResource{}
+func (t testHelper) UnconfiguredDependencyStatus() *duckv1.Source {
+	kr := &duckv1.Source{}
 	return kr
 }
 
-func (t testHelper) UnknownDependencyStatus() *duckv1.KResource {
-	kr := &duckv1.KResource{}
+func (t testHelper) UnknownDependencyStatus() *duckv1.Source {
+	kr := &duckv1.Source{}
 	kr.Status.SetConditions(apis.Conditions{{
 		Type:   "Ready",
 		Status: corev1.ConditionUnknown,
@@ -90,8 +90,8 @@ func (t testHelper) UnknownDependencyStatus() *duckv1.KResource {
 	return kr
 }
 
-func (t testHelper) FalseDependencyStatus() *duckv1.KResource {
-	kr := &duckv1.KResource{}
+func (t testHelper) FalseDependencyStatus() *duckv1.Source {
+	kr := &duckv1.Source{}
 	kr.Status.SetConditions(apis.Conditions{{
 		Type:   "Ready",
 		Status: corev1.ConditionFalse,
