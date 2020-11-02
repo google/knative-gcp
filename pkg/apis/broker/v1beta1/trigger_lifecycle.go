@@ -141,21 +141,21 @@ func (ts *TriggerStatus) MarkDependencyNotConfigured() {
 		"DependencyNotConfigured", "Dependency has not yet been reconciled.")
 }
 
-func (ts *TriggerStatus) PropagateDependencyStatus(ks *duckv1.KResource) {
-	kc := ks.Status.GetCondition(apis.ConditionReady)
-	if kc == nil {
+func (ts *TriggerStatus) PropagateDependencyStatus(src *duckv1.Source) {
+	sc := src.Status.GetCondition(apis.ConditionReady)
+	if sc == nil {
 		ts.MarkDependencyNotConfigured()
 		return
 	}
 
 	switch {
-	case kc.Status == corev1.ConditionUnknown:
-		ts.MarkDependencyUnknown(kc.Reason, kc.Message)
-	case kc.Status == corev1.ConditionTrue:
+	case sc.Status == corev1.ConditionUnknown:
+		ts.MarkDependencyUnknown(sc.Reason, sc.Message)
+	case sc.Status == corev1.ConditionTrue:
 		ts.MarkDependencySucceeded()
-	case kc.Status == corev1.ConditionFalse:
-		ts.MarkDependencyFailed(kc.Reason, kc.Message)
+	case sc.Status == corev1.ConditionFalse:
+		ts.MarkDependencyFailed(sc.Reason, sc.Message)
 	default:
-		ts.MarkDependencyUnknown("DependencyUnknown", "The status of Dependency is invalid: %v", kc.Status)
+		ts.MarkDependencyUnknown("DependencyUnknown", "The status of Dependency is invalid: %v", sc.Status)
 	}
 }

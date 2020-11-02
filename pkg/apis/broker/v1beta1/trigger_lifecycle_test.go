@@ -263,7 +263,7 @@ func TestTriggerConditionStatus(t *testing.T) {
 		topicStatus              corev1.ConditionStatus
 		subscriptionStatus       corev1.ConditionStatus
 		subscriberResolvedStatus corev1.ConditionStatus
-		dependencyStatus         *duckv1.KResource
+		dependencyStatus         *duckv1.Source
 		wantConditionStatus      corev1.ConditionStatus
 	}{{
 		name:                     "all happy",

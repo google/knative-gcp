@@ -36,7 +36,7 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
-	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
+	"knative.dev/pkg/client/injection/ducks/duck/v1/source"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	. "knative.dev/pkg/reconciler/testing"
@@ -680,12 +680,12 @@ func TestAllCasesTrigger(t *testing.T) {
 
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
-		ctx = conditions.WithDuck(ctx)
+		ctx = source.WithDuck(ctx)
 
 		r := &Reconciler{
 			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
 			brokerLister:       listers.GetBrokerLister(),
-			kresourceTracker:   duck.NewListableTracker(ctx, conditions.Get, func(types.NamespacedName) {}, 0),
+			sourceTracker:      duck.NewListableTracker(ctx, source.Get, func(types.NamespacedName) {}, 0),
 			addressableTracker: duck.NewListableTracker(ctx, addressable.Get, func(types.NamespacedName) {}, 0),
 			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			projectID:          testProject,
