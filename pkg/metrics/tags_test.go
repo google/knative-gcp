@@ -43,8 +43,8 @@ func TestEventTypeMetricValue(t *testing.T) {
 		{"_invalid_cloud_event_", "_invalid_cloud_event_"},
 
 		// Used in E2E tests
-		{"e2e-dummy-event-type", "e2e-dummy-event-type"},
-		{"e2e-testing-resp-event-type-dummy", "e2e-testing-resp-event-type-dummy"},
+		{"e2e-sample-event-type", "e2e-sample-event-type"},
+		{"e2e-testing-resp-event-type-sample", "e2e-testing-resp-event-type-sample"},
 	}
 
 	for _, test := range tests {
