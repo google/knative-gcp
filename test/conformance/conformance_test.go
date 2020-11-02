@@ -92,16 +92,6 @@ func TestBrokerChannelFlow(t *testing.T) {
 	)
 }
 
-// TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
-func TestBrokerWithPubSubChannel(t *testing.T) {
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-	BrokerWithPubSubChannelTestImpl(t, authConfig)
-}
-
 // TestCloudPubSubSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudPubSubSource.
 func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 	if authConfig.WorkloadIdentity {
@@ -110,34 +100,4 @@ func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	PubSubSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
-}
-
-// TestCloudStorageSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudStorageSource.
-func TestCloudStorageSourceBrokerWithPubSubChannel(t *testing.T) {
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-	StorageSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
-}
-
-// TestCloudAuditLogsSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudAuditLogsSource.
-func TestCloudAuditLogsSourceBrokerWithPubSubChannel(t *testing.T) {
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-	AuditLogsSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
-}
-
-// TestCloudSchedulerSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudSchedulerSource.
-func TestCloudSchedulerSourceBrokerWithPubSubChannel(t *testing.T) {
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-	SchedulerSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
 }
