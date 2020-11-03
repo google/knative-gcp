@@ -30,6 +30,7 @@ import (
 	"github.com/google/uuid"
 	cloudlogging "google.golang.org/api/logging/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/eventing/test/lib/duck"
 	"knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/apis"
@@ -86,22 +87,22 @@ func CloudLoggingGCPControlPlaneTestImpl(t *testing.T, authConfig lib.AuthConfig
 		t.Fatalf("Topic did not become ready: %v", err)
 	}
 
-	// Sleep so that the logging API has a chance to receive the logs lines and process them before
-	// we try to retrieve them.
-	time.Sleep(2 * time.Minute)
-
 	// Read from the Cloud Logging API.
 	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
-	verifyLogEntryInCloudLogging(t, ctx, containerHierarchy{
-		gcpProject: project,
-		namespace:  "cloud-run-events",
-		container:  "controller",
-	}, startTimestamp, randomString)
-	verifyLogEntryInCloudLogging(t, ctx, containerHierarchy{
-		gcpProject: project,
-		namespace:  "cloud-run-events",
-		container:  "webhook",
-	}, startTimestamp, randomString)
+	err = pollForStringInContainers(ctx, startTimestamp, randomString,
+		containerHierarchy{
+			gcpProject: project,
+			namespace:  "cloud-run-events",
+			container:  "controller",
+		},
+		containerHierarchy{
+			gcpProject: project,
+			namespace:  "cloud-run-events",
+			container:  "webhook",
+		})
+	if err != nil {
+		t.Fatalf("Unable to read the expected line from Cloud Logging: %s", err)
+	}
 }
 
 func CloudLoggingCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
@@ -158,11 +159,15 @@ func CloudLoggingCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConf
 
 	// Read from the Cloud Logging API.
 	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
-	verifyLogEntryInCloudLogging(t, ctx, containerHierarchy{
-		gcpProject: project,
-		namespace:  client.Namespace,
-		container:  "receive-adapter",
-	}, startTimestamp, randomString)
+	err = pollForStringInContainers(ctx, startTimestamp, randomString,
+		containerHierarchy{
+			gcpProject: project,
+			namespace:  client.Namespace,
+			container:  "receive-adapter",
+		})
+	if err != nil {
+		t.Fatalf("Unable to read the expected line from Cloud Logging: %s", err)
+	}
 }
 
 func CloudLoggingTopicTestImpl(t *testing.T, authConfig lib.AuthConfig) {
@@ -209,11 +214,15 @@ func CloudLoggingTopicTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	// Read from the Cloud Logging API.
 	project := lib.GetEnvOrFail(t, lib.ProwProjectKey)
-	verifyLogEntryInCloudLogging(t, ctx, containerHierarchy{
-		gcpProject: project,
-		namespace:  client.Namespace,
-		container:  "user-container",
-	}, startTimestamp, randomString)
+	err = pollForStringInContainers(ctx, startTimestamp, randomString,
+		containerHierarchy{
+			gcpProject: project,
+			namespace:  client.Namespace,
+			container:  "user-container",
+		})
+	if err != nil {
+		t.Fatalf("Unable to read the expected line from Cloud Logging: %s", err)
+	}
 }
 
 type containerHierarchy struct {
@@ -222,21 +231,37 @@ type containerHierarchy struct {
 	container  string
 }
 
-func verifyLogEntryInCloudLogging(t *testing.T, ctx context.Context, ch containerHierarchy, startTimestamp time.Time, toSearchFor string) {
-	present, err := readFromCloudLogging(ctx, ch, startTimestamp, toSearchFor)
-	if err != nil {
-		t.Errorf("Error reading from cloud logging API: %v", err)
-	}
-	if !present {
-		t.Errorf("Unable to find %s's logs in cloud logging API", ch.container)
-	}
+func (c containerHierarchy) String() string {
+	return fmt.Sprintf("%s/%s", c.namespace, c.container)
 }
 
-func readFromCloudLogging(ctx context.Context, ch containerHierarchy, startTimestamp time.Time, toSearchFor string) (bool, error) {
-	loggingService, err := cloudlogging.NewService(ctx)
+func pollForStringInContainers(ctx context.Context, startTimestamp time.Time, toSearchFor string, chs ...containerHierarchy) error {
+	var containersMissingString []containerHierarchy
+	// 15 seconds and 2 minutes were chosen arbitrarily.
+	err := wait.Poll(15*time.Second, 2*time.Minute, func() (done bool, err error) {
+		containersMissingString = make([]containerHierarchy, 0, len(chs))
+		loggingService, err := cloudlogging.NewService(ctx)
+		if err != nil {
+			return false, err
+		}
+		for _, ch := range chs {
+			hasString, err := readFromCloudLogging(ctx, loggingService, startTimestamp, toSearchFor, ch)
+			if err != nil {
+				return false, fmt.Errorf("reading logs for %s: %w", ch, err)
+			}
+			if !hasString {
+				containersMissingString = append(containersMissingString, ch)
+			}
+		}
+		return len(containersMissingString) == 0, nil
+	})
 	if err != nil {
-		return false, err
+		return fmt.Errorf("containers missing the string %v: %w", containersMissingString, err)
 	}
+	return nil
+}
+
+func readFromCloudLogging(_ context.Context, loggingService *cloudlogging.Service, startTimestamp time.Time, toSearchFor string, ch containerHierarchy) (bool, error) {
 	// Generate the filter we will send to Cloud Logging.
 	filter := strings.Builder{}
 	// Only get entries after the start of the test. We subtract five minutes, just in case there is
