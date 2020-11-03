@@ -76,7 +76,7 @@ ${GOPATH}/bin/deepcopy-gen \
   -O zz_generated.deepcopy \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
   -i github.com/google/knative-gcp/pkg/apis/configs/gcpauth \
-  -i github.com/google/knative-gcp/pkg/apis/configs/broker \
+  -i github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery \
   -i github.com/google/knative-gcp/pkg/apis/configs/dataresidency \
 
 # TODO(yolocs): generate autoscaling v2beta2 in knative/pkg.

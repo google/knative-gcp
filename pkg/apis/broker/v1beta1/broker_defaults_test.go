@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/broker"
+	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/pkg/apis"
@@ -39,11 +39,11 @@ var (
 	nsDefaultedRetry              int32 = 10
 	customRetry                   int32 = 5
 
-	defaultConfig = &broker.Config{
-		BrokerDeliverySpecDefaults: &broker.Defaults{
+	defaultConfig = &brokerdelivery.Config{
+		BrokerDeliverySpecDefaults: &brokerdelivery.Defaults{
 			// NamespaceDefaultsConfig are the default Broker Configs for each namespace.
 			// Namespace is the key, the value is the KReference to the config.
-			NamespaceDefaults: map[string]broker.ScopedDefaults{
+			NamespaceDefaults: map[string]brokerdelivery.ScopedDefaults{
 				"mynamespace": {
 					DeliverySpec: &eventingduckv1beta1.DeliverySpec{
 						BackoffDelay:  &nsDefaultedBackoffDelay,
@@ -80,7 +80,7 @@ var (
 					},
 				},
 			},
-			ClusterDefaults: broker.ScopedDefaults{
+			ClusterDefaults: brokerdelivery.ScopedDefaults{
 				DeliverySpec: &eventingduckv1beta1.DeliverySpec{
 					BackoffDelay:  &clusterDefaultedBackoffDelay,
 					BackoffPolicy: &clusterDefaultedBackoffPolicy,
@@ -256,7 +256,7 @@ func TestBroker_SetDefaults(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			tc.initial.SetDefaults(broker.ToContext(context.Background(), defaultConfig))
+			tc.initial.SetDefaults(brokerdelivery.ToContext(context.Background(), defaultConfig))
 			if diff := cmp.Diff(tc.expected, tc.initial); diff != "" {
 				t.Fatalf("Unexpected defaults (-want, +got): %s", diff)
 			}

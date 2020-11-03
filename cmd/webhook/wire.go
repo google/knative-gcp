@@ -18,7 +18,7 @@ package main
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/broker"
+	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/wire"
 	"knative.dev/pkg/injection"
@@ -27,7 +27,7 @@ import (
 func InitializeControllers(ctx context.Context) ([]injection.ControllerConstructor, error) {
 	panic(wire.Build(
 		Controllers,
-		wire.Struct(new(broker.StoreSingleton)),
+		wire.Struct(new(brokerdelivery.StoreSingleton)),
 		wire.Struct(new(gcpauth.StoreSingleton)),
 		newConversionConstructor,
 		newDefaultingAdmissionConstructor,

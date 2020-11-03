@@ -14,31 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package broker
+package brokerdelivery
 
 import (
 	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	. "knative.dev/pkg/configmap"
+	logtesting "knative.dev/pkg/logging/testing"
+
 	. "knative.dev/pkg/configmap/testing"
 )
 
-func TestStoreSingletonLoadWithContext(t *testing.T) {
-	ctx := context.Background()
-
-	storeSingleton := &StoreSingleton{}
+func TestStoreLoadWithContext(t *testing.T) {
+	store := NewStore(logtesting.TestLogger(t))
 
 	_, defaultsConfig := ConfigMapsFromTestFile(t, configName, defaulterKey)
-	cmw := NewStaticWatcher(defaultsConfig)
 
-	store := storeSingleton.Store(ctx, cmw)
+	store.OnConfigChanged(defaultsConfig)
+
+	config := FromContextOrDefaults(store.ToContext(context.Background()))
 
 	t.Run("defaults", func(t *testing.T) {
 		expected, _ := NewDefaultsConfigFromConfigMap(defaultsConfig)
-		if diff := cmp.Diff(expected, store.Load().BrokerDeliverySpecDefaults); diff != "" {
+		if diff := cmp.Diff(expected, config.BrokerDeliverySpecDefaults); diff != "" {
 			t.Errorf("Unexpected defaults config (-want, +got): %v", diff)
+			t.Fatalf("Unexpected defaults config (-want, +got): %v", diff)
 		}
 	})
 }

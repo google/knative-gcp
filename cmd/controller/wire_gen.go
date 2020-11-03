@@ -8,10 +8,10 @@ package main
 import (
 	"cloud.google.com/go/iam/admin/apiv1"
 	"context"
-	"github.com/google/knative-gcp/pkg/apis/configs/broker"
+	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	broker2 "github.com/google/knative-gcp/pkg/reconciler/broker"
+	"github.com/google/knative-gcp/pkg/reconciler/broker"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler/deployment"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs"
@@ -56,8 +56,8 @@ func InitializeControllers(ctx context.Context) ([]injection.ControllerConstruct
 	topicConstructor := topic.NewConstructor(iamPolicyManager, storeSingleton, dataresidencyStoreSingleton)
 	channelConstructor := channel.NewConstructor(iamPolicyManager, storeSingleton)
 	triggerConstructor := trigger.NewConstructor(dataresidencyStoreSingleton)
-	brokerStoreSingleton := &broker.StoreSingleton{}
-	brokerConstructor := broker2.NewConstructor(brokerStoreSingleton, dataresidencyStoreSingleton)
+	brokerdeliveryStoreSingleton := &brokerdelivery.StoreSingleton{}
+	brokerConstructor := broker.NewConstructor(brokerdeliveryStoreSingleton, dataresidencyStoreSingleton)
 	deploymentConstructor := deployment.NewConstructor()
 	brokercellConstructor := brokercell.NewConstructor()
 	v2 := Controllers(constructor, storageConstructor, schedulerConstructor, pubsubConstructor, buildConstructor, staticConstructor, kedaConstructor, topicConstructor, channelConstructor, triggerConstructor, brokerConstructor, deploymentConstructor, brokercellConstructor)

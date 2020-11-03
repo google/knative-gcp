@@ -23,14 +23,14 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/broker"
+	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 )
 
 // SetDefaults sets the default field values for a Broker.
 func (b *Broker) SetDefaults(ctx context.Context) {
 	// Apply the default Broker delivery settings from the context.
 	withNS := apis.WithinParent(ctx, b.ObjectMeta)
-	deliverySpecDefaults := broker.FromContextOrDefaults(withNS).BrokerDeliverySpecDefaults
+	deliverySpecDefaults := brokerdelivery.FromContextOrDefaults(withNS).BrokerDeliverySpecDefaults
 	if deliverySpecDefaults == nil {
 		logging.FromContext(ctx).Error("Failed to get the BrokerDeliverySpecDefaults")
 		return
