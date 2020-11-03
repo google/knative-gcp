@@ -17,9 +17,13 @@ limitations under the License.
 package testing
 
 import (
+	"fmt"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/system"
 )
 
@@ -75,7 +79,7 @@ func WithConfigMapBinaryDataEntry(key string, value []byte) ConfigMapOption {
 func NewDataresidencyConfigMapFromRegions(regions []string) *corev1.ConfigMap {
 	// Note that the data is in yaml, so no tab is allowed, use spaces instead.
 	configData := `
-  clusterDefaults:    
+  clusterDefaults:
     messagestoragepolicy.allowedpersistenceregions:`
 	if regions == nil || len(regions) == 0 {
 		configData += " []"
@@ -91,6 +95,41 @@ func NewDataresidencyConfigMapFromRegions(regions []string) *corev1.ConfigMap {
 		},
 		Data: map[string]string{
 			"default-dataresidency-config": configData,
+		},
+	}
+}
+
+// NewBrokerDeliveryConfigMapFromDeliverySpec creates a new cluster defaulted
+// broker delivery configuration map from a given delivery spec.
+func NewBrokerDeliveryConfigMapFromDeliverySpec(spec *eventingduckv1beta1.DeliverySpec) *corev1.ConfigMap {
+	configData := `
+  clusterDefaults:`
+	if spec != nil {
+		if spec.BackoffPolicy != nil {
+			configData += `
+      backoffPolicy: ` + string(*spec.BackoffPolicy)
+		}
+		if spec.BackoffDelay != nil {
+			configData += `
+      backoffDelay: ` + *spec.BackoffDelay
+		}
+		if spec.Retry != nil {
+			configData += `
+      retry: ` + fmt.Sprint(*spec.Retry)
+		}
+		if spec.DeadLetterSink != nil {
+			configData += `
+      deadLetterSink:
+        uri: ` + spec.DeadLetterSink.URI.String()
+		}
+	}
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      brokerdelivery.ConfigMapName(),
+			Namespace: system.Namespace(),
+		},
+		Data: map[string]string{
+			"default-br-delivery-config": configData,
 		},
 	}
 }
