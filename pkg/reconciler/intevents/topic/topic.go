@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
+
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -90,6 +92,10 @@ var _ topicreconciler.Interface = (*Reconciler)(nil)
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1.Topic) reconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("topic", topic)))
+
+	// This is added purely for the TestCloudLogging E2E tests, which verify that the log line is
+	// written based on certain annotations.
+	testloggingutil.LogBasedOnAnnotations(logging.FromContext(ctx).Desugar(), topic.Annotations)
 
 	topic.Status.InitializeConditions()
 	topic.Status.ObservedGeneration = topic.Generation

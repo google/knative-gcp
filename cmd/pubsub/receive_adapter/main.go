@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
+
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
@@ -127,6 +129,10 @@ func main() {
 	logger := sl.Desugar()
 	defer flush(logger)
 	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
+
+	// This is added purely for the TestCloudLogging E2E tests, which verify that the log line is
+	// written based on environment variables.
+	testloggingutil.LogBasedOnEnv(logger)
 
 	// Convert json metrics.ExporterOptions to metrics.ExporterOptions.
 	metricsConfig, err := metrics.JSONToOptions(env.MetricsConfigJson)

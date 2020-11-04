@@ -22,6 +22,7 @@ import (
 	"log"
 
 	. "github.com/google/knative-gcp/pkg/pubsub/publisher"
+	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
 	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
@@ -59,6 +60,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to create logger: %v", err)
 	}
+
+	// This is added purely for the TestCloudLogging E2E tests, which verify that the log line is
+	// written based on environment variables.
+	testloggingutil.LogBasedOnEnv(logger)
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {

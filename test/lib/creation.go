@@ -154,6 +154,19 @@ func (c *Client) CreateStorageV1beta1OrFail(storage *eventsv1beta1.CloudStorageS
 	c.Tracker.AddObj(storage)
 }
 
+func (c *Client) CreateTopicOrFail(topic *inteventsv1.Topic) {
+	ctx := context.Background()
+	c.T.Helper()
+	topic.Namespace = c.Namespace
+	topics := c.KnativeGCP.InternalV1().Topics(c.Namespace)
+	_, err := topics.Create(ctx, topic, v1.CreateOptions{})
+	if err != nil {
+		c.T.Fatalf("Failed to create topic %s/%s: %v", c.Namespace, topic.Name, err)
+	}
+	c.T.Logf("Created topic: %s/%s", c.Namespace, topic.Name)
+	c.Tracker.AddObj(topic)
+}
+
 func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *inteventsv1.PullSubscription) {
 	ctx := context.Background()
 	c.T.Helper()

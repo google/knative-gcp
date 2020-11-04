@@ -19,15 +19,20 @@ package v1
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/logging"
 	"knative.dev/pkg/apis"
 )
 
 func (t *Topic) Validate(ctx context.Context) *apis.FieldError {
+	// This is added purely for the TestCloudLogging E2E tests, which verify that the log line is
+	// written based on certain annotations.
+	testloggingutil.LogBasedOnAnnotations(logging.FromContext(ctx), t.Annotations)
+
 	err := t.Spec.Validate(ctx).ViaField("spec")
 
 	if apis.IsInUpdate(ctx) {

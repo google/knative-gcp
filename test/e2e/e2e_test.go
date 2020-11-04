@@ -439,3 +439,27 @@ func TestTriggerDependencyAnnotation(t *testing.T) {
 	defer cancel()
 	TriggerDependencyAnnotationTestImpl(t, authConfig)
 }
+
+// TestCloudLoggingGCPControlPlane tests that log messages written by the knative-gcp Controller and
+// Webhook are written to the GCP Cloud Logging API.
+func TestCloudLoggingGCPControlPlane(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	CloudLoggingGCPControlPlaneTestImpl(t, authConfig)
+}
+
+// TestCloudLoggingGCPSource tests that log messages written by the CloudPubSubSource, as an exemplar
+// of all knative-gcp sources, are written to the GCP Cloud Logging API.
+func TestCloudLoggingGCPSource(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	CloudLoggingCloudPubSubSourceTestImpl(t, authConfig)
+}
+
+// TestCloudLoggingGCPTopic tests that log messages written by the Topic data plane publisher are
+// written to the GCP Cloud Logging API.
+func TestCloudLoggingGCPTopic(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	CloudLoggingTopicTestImpl(t, authConfig)
+}

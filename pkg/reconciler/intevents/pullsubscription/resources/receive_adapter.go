@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
+
 	"go.uber.org/zap"
 
 	"knative.dev/pkg/apis"
@@ -158,6 +160,11 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 			ContainerPort: 9090,
 		}},
 	}
+
+	// This is added purely for the TestCloudLogging E2E tests, which verify that the log line is
+	// written certain annotations are present.
+	receiveAdapterContainer.Env = testloggingutil.PropagateLoggingE2ETestAnnotation(
+		args.PullSubscription.Annotations, receiveAdapterContainer.Env)
 
 	// If there is no secret to embed, return what we have.
 	if args.PullSubscription.Spec.Secret == nil {
