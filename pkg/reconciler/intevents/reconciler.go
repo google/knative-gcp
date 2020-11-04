@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
+
 	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
@@ -153,10 +155,10 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 		Annotations: resources.GetAnnotations(annotations, resourceGroup),
 	}
 
-	if v, present := pubsubable.GetObjectMeta().GetAnnotations()[inteventsv1.LoggingE2ETestAnnotation]; present {
+	if v, present := pubsubable.GetObjectMeta().GetAnnotations()[testloggingutil.LoggingE2ETestAnnotation]; present {
 		// This is added purely for the TestCloudLogging E2E tests, which verify that the log line
 		// is written if this annotation is present.
-		args.Annotations[inteventsv1.LoggingE2ETestAnnotation] = v
+		args.Annotations[testloggingutil.LoggingE2ETestAnnotation] = v
 	}
 
 	newPS := resources.MakePullSubscription(args)

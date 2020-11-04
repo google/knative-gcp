@@ -20,11 +20,9 @@ import (
 	"context"
 	"flag"
 	"log"
-	"os"
-
-	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 
 	. "github.com/google/knative-gcp/pkg/pubsub/publisher"
+	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
 	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
@@ -63,11 +61,9 @@ func main() {
 		log.Fatalf("Unable to create logger: %v", err)
 	}
 
-	if v := os.Getenv(v1.LoggingE2ETestEnvVarName); v != "" {
-		// This is added purely for the TestCloudLogging E2E tests, which verify that the log line
-		// is written if this annotation is present.
-		logger.Error("Adding log line for the TestCloudLogging E2E tests", zap.String(v1.LoggingE2EFieldName, v))
-	}
+	// This is added purely for the TestCloudLogging E2E tests, which verify that the log line is
+	// written based on environment variables.
+	testloggingutil.LogBasedOnEnv(logger)
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {

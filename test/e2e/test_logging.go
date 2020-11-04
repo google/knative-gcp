@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
+
 	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	sourcev1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
@@ -70,7 +72,7 @@ func CloudLoggingGCPControlPlaneTestImpl(t *testing.T, authConfig lib.AuthConfig
 			Annotations: map[string]string{
 				// This will cause the controller and webhook to write randomString to their logs,
 				// which we will check for using the Cloud Logging API below.
-				v1.LoggingE2ETestAnnotation: randomString,
+				testloggingutil.LoggingE2ETestAnnotation: randomString,
 			},
 		},
 		Spec: v1.TopicSpec{
@@ -127,7 +129,7 @@ func CloudLoggingCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConf
 			Annotations: map[string]string{
 				// This will cause the controller and webhook to write randomString to their logs,
 				// which we will check for using the Cloud Logging API below.
-				v1.LoggingE2ETestAnnotation: randomString,
+				testloggingutil.LoggingE2ETestAnnotation: randomString,
 			},
 		},
 		Spec: sourcev1.CloudPubSubSourceSpec{
@@ -191,7 +193,7 @@ func CloudLoggingTopicTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 			Annotations: map[string]string{
 				// This will cause the data plane Pod to write randomString to its logs, which we
 				// will check for using the Cloud Logging API below.
-				v1.LoggingE2ETestAnnotation: randomString,
+				testloggingutil.LoggingE2ETestAnnotation: randomString,
 			},
 		},
 		Spec: v1.TopicSpec{
@@ -272,7 +274,7 @@ func readFromCloudLogging(_ context.Context, loggingService *cloudlogging.Servic
 	filter.WriteString(fmt.Sprintf(" AND resource.labels.namespace_name=%s", ch.namespace))
 	filter.WriteString(fmt.Sprintf(" AND resource.labels.container_name=%s", ch.container))
 	// The string to search for is written as the LoggingE2EFieldName JSON field.
-	filter.WriteString(fmt.Sprintf(" AND jsonPayload.%s=\"%s\"", v1.LoggingE2EFieldName, toSearchFor))
+	filter.WriteString(fmt.Sprintf(" AND jsonPayload.%s=\"%s\"", testloggingutil.LoggingE2EFieldName, toSearchFor))
 
 	resp, err := loggingService.Entries.List(&cloudlogging.ListLogEntriesRequest{
 		Filter:  filter.String(),

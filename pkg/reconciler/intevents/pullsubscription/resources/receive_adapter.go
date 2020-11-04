@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
+
 	"go.uber.org/zap"
 
 	"knative.dev/pkg/apis"
@@ -159,14 +161,10 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 		}},
 	}
 
-	if v, present := args.PullSubscription.Annotations[intereventsv1.LoggingE2ETestAnnotation]; present {
-		// This is added purely for the TestCloudLogging E2E tests, which verify that the log line
-		// is written if this annotation is present.
-		receiveAdapterContainer.Env = append(receiveAdapterContainer.Env, corev1.EnvVar{
-			Name:  intereventsv1.LoggingE2ETestEnvVarName,
-			Value: v,
-		})
-	}
+	// This is added purely for the TestCloudLogging E2E tests, which verify that the log line is
+	// written certain annotations are present.
+	receiveAdapterContainer.Env = testloggingutil.PropagateLoggingE2ETestAnnotation(
+		args.PullSubscription.Annotations, receiveAdapterContainer.Env)
 
 	// If there is no secret to embed, return what we have.
 	if args.PullSubscription.Spec.Secret == nil {

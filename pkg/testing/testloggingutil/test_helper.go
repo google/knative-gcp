@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package testloggingutil
 
 const (
 	// LoggingE2ETestAnnotation is the annotation used by the TestCloudLogging E2E tests to verify
