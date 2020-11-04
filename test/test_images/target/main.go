@@ -35,17 +35,17 @@ func (r *receiver) Knockdown(event cloudevents.Event) bool {
 	incorrectAttributes := make(map[string]lib.PropPair)
 
 	//Check ID
-	if event.ID() != lib.E2EDummyRespEventID {
-		incorrectAttributes[lib.EventID] = lib.PropPair{Expected: lib.E2EDummyRespEventID, Received: lib.E2EDummyRespEventID}
+	if event.ID() != lib.E2ESampleRespEventID {
+		incorrectAttributes[lib.EventID] = lib.PropPair{Expected: lib.E2ESampleRespEventID, Received: lib.E2ESampleRespEventID}
 	}
 	// Check type
-	if event.Type() != lib.E2EDummyRespEventType {
-		incorrectAttributes[lib.EventType] = lib.PropPair{Expected: lib.E2EDummyRespEventType, Received: event.Type()}
+	if event.Type() != lib.E2ESampleRespEventType {
+		incorrectAttributes[lib.EventType] = lib.PropPair{Expected: lib.E2ESampleRespEventType, Received: event.Type()}
 	}
 
 	// Check source
-	if event.Source() != lib.E2EDummyRespEventSource {
-		incorrectAttributes[lib.EventSource] = lib.PropPair{Expected: lib.E2EDummyRespEventType, Received: event.Source()}
+	if event.Source() != lib.E2ESampleRespEventSource {
+		incorrectAttributes[lib.EventSource] = lib.PropPair{Expected: lib.E2ESampleRespEventType, Received: event.Source()}
 	}
 
 	if len(incorrectAttributes) == 0 {

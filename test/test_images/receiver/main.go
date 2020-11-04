@@ -76,13 +76,13 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event) (*event
 		return nil, cehttp.NewResult(http.StatusBadRequest, "Seeding failure receiver response with 400")
 	}
 
-	// Check if the received event is the dummy event sent by sender pod.
+	// Check if the received event is the sample event sent by sender pod.
 	// If it is, send back a response CloudEvent.
-	if event.ID() == lib.E2EDummyEventID {
+	if event.ID() == lib.E2ESampleEventID {
 		event = cloudevents.NewEvent(cloudevents.VersionV1)
-		event.SetID(lib.E2EDummyRespEventID)
-		event.SetType(lib.E2EDummyRespEventType)
-		event.SetSource(lib.E2EDummyRespEventSource)
+		event.SetID(lib.E2ESampleRespEventID)
+		event.SetType(lib.E2ESampleRespEventType)
+		event.SetSource(lib.E2ESampleRespEventSource)
 		event.SetData(cloudevents.ApplicationJSON, `{"source": "receiver!"}`)
 		return &event, cehttp.NewResult(http.StatusAccepted, "OK")
 	} else {

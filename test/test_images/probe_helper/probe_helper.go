@@ -493,7 +493,7 @@ type ProbeHelper struct {
 	cloudPubSubSourceTopicID string
 
 	// The pubsub client wrapped by a CloudEvents client for the CloudPubSubSource
-	// probe and used natively for the CloudAuditLogsSource probe
+	// probe and used for the CloudAuditLogsSource probe
 	pubsubClient *pubsub.Client
 
 	// The CloudEvents client responsible for forwarding events as messages to a

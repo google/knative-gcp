@@ -71,13 +71,13 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
-		map[string]interface{}{"type": lib.E2EDummyEventType})
+		map[string]interface{}{"type": lib.E2ESampleEventType})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
 	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
-		map[string]interface{}{"type": lib.E2EDummyRespEventType})
+		map[string]interface{}{"type": lib.E2ESampleRespEventType})
 	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
 
 	// Wait for ksvc, trigger ready.
@@ -103,14 +103,14 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	senderJob := resources.SenderJob(senderName, envVar)
 	client.CreateJobOrFail(senderJob)
 
-	// Check if dummy CloudEvent is sent out.
+	// Check if sample CloudEvent is sent out.
 	if done := jobDone(client, senderName); !done {
-		client.T.Error("dummy event wasn't sent to broker")
+		client.T.Error("sample event wasn't sent to broker")
 		client.T.Failed()
 	}
-	// Check if resp CloudEvent hits the target Service.
+	// Check if resp CloudEvent reaches the target Service.
 	if done := jobDone(client, targetName); !done {
-		client.T.Error("resp event didn't hit the target pod")
+		client.T.Error("resp event didn't reach the target pod")
 		client.T.Failed()
 	}
 }
@@ -131,13 +131,13 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
-		map[string]interface{}{"type": lib.E2EDummyEventType})
+		map[string]interface{}{"type": lib.E2ESampleEventType})
 	trigger := createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
 	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
-		map[string]interface{}{"type": lib.E2EDummyRespEventType})
+		map[string]interface{}{"type": lib.E2ESampleRespEventType})
 	respTrigger := createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
 
 	// Wait for ksvc, trigger ready.
@@ -157,13 +157,13 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 	}})
 	client.CreateJobOrFail(senderJob)
 
-	// Check if dummy CloudEvent is sent out.
+	// Check if sample CloudEvent is sent out.
 	if done := jobDone(client, senderName); !done {
-		client.T.Fatal("dummy event wasn't sent to broker")
+		client.T.Fatal("sample event wasn't sent to broker")
 	}
-	// Check if resp CloudEvent hits the target Service.
+	// Check if resp CloudEvent reaches the target Service.
 	if done := jobDone(client, targetName); !done {
-		client.T.Fatal("resp event didn't hit the target pod")
+		client.T.Fatal("resp event didn't reach the target pod")
 	}
 	metrics.CheckAssertions(client.T,
 		lib.BrokerMetricAssertion{
@@ -172,8 +172,8 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 			BrokerNamespace: client.Namespace,
 			StartTime:       start,
 			CountPerType: map[string]int64{
-				lib.E2EDummyEventType:     1,
-				lib.E2EDummyRespEventType: 1,
+				lib.E2ESampleEventType:     1,
+				lib.E2ESampleRespEventType: 1,
 			},
 		},
 		lib.TriggerMetricAssertion{
@@ -210,13 +210,13 @@ func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID st
 	// Create a Trigger with the Knative Service subscriber.
 	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
-		map[string]interface{}{"type": lib.E2EDummyEventType})
+		map[string]interface{}{"type": lib.E2ESampleEventType})
 	trigger := createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
 	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
 		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
-		map[string]interface{}{"type": lib.E2EDummyRespEventType})
+		map[string]interface{}{"type": lib.E2ESampleRespEventType})
 	respTrigger := createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
 
 	// Wait for ksvc, trigger ready.
@@ -236,15 +236,15 @@ func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID st
 	}})
 	client.CreateJobOrFail(senderJob)
 
-	// Check if dummy CloudEvent is sent out.
+	// Check if sample CloudEvent is sent out.
 	senderOutput := new(lib.SenderOutput)
 	if err := jobOutput(client, senderName, senderOutput); err != nil {
-		client.T.Errorf("dummy event wasn't sent to broker: %v", err)
+		client.T.Errorf("sample event wasn't sent to broker: %v", err)
 		client.T.Failed()
 	}
-	// Check if resp CloudEvent hits the target Service.
+	// Check if resp CloudEvent reaches the target Service.
 	if done := jobDone(client, targetName); !done {
-		client.T.Error("resp event didn't hit the target pod")
+		client.T.Error("resp event didn't reach the target pod")
 		client.T.Failed()
 	}
 	testTree := BrokerTestTree(client.Namespace, brokerName, trigger.Name, respTrigger.Name)
@@ -308,9 +308,9 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 		client.T.Logf("%s", err)
 	}
 
-	// Check if resp CloudEvent hits the target Service.
+	// Check if resp CloudEvent reaches the target Service.
 	if done := jobDone(client, targetName); !done {
-		client.T.Error("resp event didn't hit the target pod")
+		client.T.Error("resp event didn't reach the target pod")
 		client.T.Failed()
 	}
 }
@@ -365,9 +365,9 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 	// Add a random name file in the bucket
 	lib.AddRandomFile(ctx, client.T, bucketName, fileName, project)
 
-	// Check if resp CloudEvent hits the target Service.
+	// Check if resp CloudEvent reaches the target Service.
 	if done := jobDone(client, targetName); !done {
-		client.T.Error("resp event didn't hit the target pod")
+		client.T.Error("resp event didn't reach the target pod")
 	}
 }
 
@@ -424,9 +424,9 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 	topicName, deleteTopic := lib.MakeTopicWithNameOrDie(client.T, topicName)
 	defer deleteTopic()
 
-	// Check if resp CloudEvent hits the target Service.
+	// Check if resp CloudEvent reaches the target Service.
 	if done := jobDone(client, targetName); !done {
-		client.T.Error("resp event didn't hit the target pod")
+		client.T.Error("resp event didn't reach the target pod")
 		client.T.Failed()
 	}
 }
@@ -472,9 +472,9 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
-	// Check if resp CloudEvent hits the target Service.
+	// Check if resp CloudEvent reaches the target Service.
 	if done := jobDone(client, targetName); !done {
-		client.T.Error("resp event didn't hit the target pod")
+		client.T.Error("resp event didn't reach the target pod")
 		client.T.Failed()
 	}
 }
@@ -504,7 +504,7 @@ func createTriggerWithKServiceSubscriber(client *lib.Client,
 	brokerName, kserviceName string,
 	triggerFilter eventingtestresources.TriggerOptionV1Beta1) *eventingv1beta1.Trigger {
 	client.T.Helper()
-	// Please refer to the graph in the file to check what dummy trigger is used for.
+	// Please refer to the graph in the file to check what sample trigger is used for.
 	triggerName := "trigger-broker-" + brokerName
 	return client.Core.CreateTriggerOrFailV1Beta1(
 		triggerName,

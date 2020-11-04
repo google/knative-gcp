@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Copyright 2018 The Knative Authors
+# Copyright 2020 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ export DISABLE_MD_LINTING=1
 
 export GO111MODULE=on
 
-source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/presubmit-tests.sh
+source $(dirname $0)/../vendor/knative.dev/hack/presubmit-tests.sh
 
 # We use the default build, unit and integration test runners.
 

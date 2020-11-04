@@ -586,7 +586,7 @@ func TestProbeHelperHealth(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 	assertHealthCheckResult(t, phr.healthCheckURL, true)
 
-	// Guarantee that it has been long enough that the stale duration has been hit. This will cause
+	// Guarantee that it has been long enough that the stale duration has been reached. This will cause
 	// the health checker's result to be unhealthy.
 	time.Sleep(2 * phr.probeHelper.healthChecker.maxStaleDuration)
 	assertHealthCheckResult(t, phr.healthCheckURL, false)

@@ -146,6 +146,18 @@ func WithBrokerTopicReady(b *brokerv1beta1.Broker) {
 	b.Status.MarkTopicReady()
 }
 
+func WithBrokerTopicUnknown(reason, msg string) BrokerOption {
+	return func(b *brokerv1beta1.Broker) {
+		b.Status.MarkTopicUnknown(reason, msg)
+	}
+}
+
+func WithBrokerSubscriptionUnknown(reason, msg string) BrokerOption {
+	return func(b *brokerv1beta1.Broker) {
+		b.Status.MarkSubscriptionUnknown(reason, msg)
+	}
+}
+
 func WithBrokerClass(bc string) BrokerOption {
 	return func(b *brokerv1beta1.Broker) {
 		annotations := b.GetAnnotations()

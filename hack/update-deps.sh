@@ -15,48 +15,13 @@
 # limitations under the License.
 
 readonly ROOT_DIR=$(dirname "$0")/..
-source "${ROOT_DIR}"/vendor/knative.dev/test-infra/scripts/library.sh
+source "${ROOT_DIR}"/vendor/knative.dev/hack/library.sh
 
 set -o errexit
 set -o nounset
 set -o pipefail
 
-cd "${ROOT_DIR}"
-
-# Used to pin floating deps to a release version.
-VERSION="master"
-# The list of dependencies that we track at HEAD and periodically
-# float forward in this repository.
-FLOATING_DEPS=(
-  "knative.dev/pkg@$VERSION"
-  "knative.dev/serving@$VERSION"
-  "knative.dev/eventing@$VERSION"
-  "knative.dev/test-infra@$VERSION"
-)
-
-# Parse flags to determine any we should pass to dep.
-GO_GET=0
-while [[ $# -ne 0 ]]; do
-  parameter=$1
-  case ${parameter} in
-    --upgrade) GO_GET=1 ;;
-    *) abort "unknown option ${parameter}" ;;
-  esac
-  shift
-done
-readonly GO_GET
-
-if (( GO_GET )); then
-  go get -d ${FLOATING_DEPS[@]}
-fi
-
-# Prune modules.
-go mod tidy
-go mod vendor
-
-find vendor/ \( -name OWNERS -o -name OWNERS_ALIASES -o -name BUILD -o -name BUILD.bazel \) -delete
-
-update_licenses third_party/VENDOR-LICENSE "./..."
+go_update_deps "$@"
 
 # Patch k8s leader-election fixing graceful release
 # More information: https://github.com/kubernetes/kubernetes/pull/91942

@@ -8,8 +8,8 @@ This is the manual auth configuration for the Control Plane. Refer to the
 For both methods (Workload Identity and Kubernetes Secret), the first manual
 step is creating a
 [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
-with the appropriate permissions needed for the control plane to manage native
-GCP resources.
+with the appropriate permissions needed for the control plane to manage GCP
+resources.
 
 You need to create a new Google Cloud Service Account named `cloud-run-events`
 with the following command:

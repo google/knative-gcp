@@ -34,29 +34,6 @@ import (
 	kngcphelpers "github.com/google/knative-gcp/test/lib/helpers"
 )
 
-/*
-PubSubWithBrokerTestImpl tests the following scenario:
-
-                              5                   4
-                    ------------------   --------------------
-                    |                 | |                    |
-          1         v	      2       | v         3          |
-(Sender or Source) ---> Broker(PubSub) ---> trigger -------> Knative Service(Receiver)
-                    |
-                    |    6                   7
-                    |-------> respTrigger -------> Service(Target)
-
-Note: the number denotes the sequence of the event that flows in this test case.
-*/
-
-func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	ctx := context.Background()
-	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(ctx, client)
-	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
-	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName, false)
-}
-
 func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	ctx := context.Background()
 	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
@@ -65,35 +42,6 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.Au
 	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
 	kngcphelpers.BrokerEventTransformationTestWithPubSubSourceHelper(client, authConfig, brokerURL, brokerName)
 	// TODO(nlopezgi): assert StackDriver metrics after https://github.com/google/knative-gcp/issues/317 is resolved
-}
-
-func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	ctx := context.Background()
-	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(ctx, client)
-
-	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
-	kngcphelpers.BrokerEventTransformationTestWithStorageSourceHelper(client, authConfig, brokerURL, brokerName)
-}
-
-func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	ctx := context.Background()
-	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(ctx, client)
-
-	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
-	kngcphelpers.BrokerEventTransformationTestWithAuditLogsSourceHelper(client, authConfig, brokerURL, brokerName)
-
-}
-
-func SchedulerSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	ctx := context.Background()
-	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
-	defer lib.TearDown(ctx, client)
-
-	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
-	kngcphelpers.BrokerEventTransformationTestWithSchedulerSourceHelper(client, authConfig, brokerURL, brokerName)
-
 }
 
 func createBrokerWithPubSubChannel(client *lib.Client) (url.URL, string) {

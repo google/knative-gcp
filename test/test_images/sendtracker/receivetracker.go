@@ -56,7 +56,7 @@ type Receiver struct {
 	stateLock sync.Mutex
 	// state of the receiver
 	state int
-	// channel closed when we have hit the Done state.
+	// channel closed when we have reached the Done state.
 	fullyDone chan struct{}
 	// name of the source to accept events from
 	receiveSource string

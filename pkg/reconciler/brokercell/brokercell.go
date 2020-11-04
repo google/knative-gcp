@@ -32,7 +32,8 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	hpav2beta2listers "k8s.io/client-go/listers/autoscaling/v2beta2"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-	"knative.dev/eventing/pkg/reconciler/names"
+	"knative.dev/pkg/network"
+
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -158,7 +159,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		return err
 	}
 	bc.Status.PropagateIngressAvailability(endpoints)
-	hostName := names.ServiceHostName(endpoints.GetName(), endpoints.GetNamespace())
+	hostName := network.GetServiceHostname(endpoints.GetName(), endpoints.GetNamespace())
 	bc.Status.IngressTemplate = fmt.Sprintf("http://%s/{namespace}/{name}", hostName)
 
 	// Reconcile fanout deployment and HPA.
@@ -243,7 +244,18 @@ func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.Ingre
 			RolloutRestartTime: bc.GetAnnotations()[resources.IngressRestartTimeAnnotationKey],
 		},
 		Port: r.env.IngressPort,
+		// TODO(#1804): remove this arg when enabling the feature by default.
+		EnableIngressFilter: getIngressFilteringEnabled(bc),
 	}
+}
+
+// TODO(#1804): remove this function when enabling the feature by default.
+func getIngressFilteringEnabled(bc *intv1alpha1.BrokerCell) bool {
+	if val, ok := bc.GetAnnotations()[resources.IngressFilteringEnabledAnnotationKey]; ok {
+		return val == "true"
+	}
+
+	return false
 }
 
 func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.AutoscalingArgs {

@@ -20,6 +20,8 @@ limitations under the License.
 package tools
 
 import (
+	_ "knative.dev/hack"
+
 	_ "knative.dev/pkg/configmap/hash-gen"
 	_ "knative.dev/pkg/hack"
 

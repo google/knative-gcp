@@ -63,7 +63,7 @@ type PubSubConverter struct {
 	// conversions. For example, a GCS event will need to be
 	// converted differently than a PubSub one. The key into
 	// this map will be the adapter type. If not present,
-	// we assume it's a native PubSub message and a default
+	// we assume it's a PubSub message and a default
 	// one will be used.
 	converters map[ConverterType]converterFn
 }

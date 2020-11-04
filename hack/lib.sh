@@ -54,7 +54,7 @@ function init_control_plane_service_account() {
     echo "Service Account needed for the Control Plane '${control_plane_service_account}' already existed"
   fi
 
-  # Grant permissions to the service account for the control plane to manage native GCP resources.
+  # Grant permissions to the service account for the control plane to manage GCP resources.
   echo "Set up Service Account used by the Control Plane"
   gcloud projects add-iam-policy-binding "${project_id}" \
     --member=serviceAccount:"${control_plane_service_account}"@"${project_id}".iam.gserviceaccount.com \
