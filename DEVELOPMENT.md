@@ -44,7 +44,7 @@ follows.
 
 ## Iterating
 
-As you make changes to the code-base, there are two special cases to be aware
+As you make changes to the code-base, there are two cases to be aware
 of(If you run under macOS, you may need to upgrade your bash version on macOS
 since macOS comes with bash version 3 which is quite limiting and lack features
 need to run the following two scripts):
