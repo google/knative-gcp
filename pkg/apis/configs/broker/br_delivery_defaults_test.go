@@ -33,7 +33,7 @@ import (
 
 const (
 	clusterDefaultedNS = "cluster"
-	// customizedNS is the namespace that has special customizations in the testdata.
+	// customizedNS is the namespace that has customizations in the testdata.
 	customizedNS = "customized-ns"
 )
 
