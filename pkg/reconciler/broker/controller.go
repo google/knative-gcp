@@ -19,6 +19,7 @@ package broker
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 
 	"cloud.google.com/go/pubsub"
@@ -51,13 +52,13 @@ const (
 type Constructor injection.ControllerConstructor
 
 // NewConstructor creates a constructor to make a Broker controller.
-func NewConstructor(dataresidencyss *dataresidency.StoreSingleton) Constructor {
+func NewConstructor(brokerdeliveryss *brokerdelivery.StoreSingleton, dataresidencyss *dataresidency.StoreSingleton) Constructor {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-		return newController(ctx, cmw, dataresidencyss.Store(ctx, cmw))
+		return newController(ctx, cmw, brokerdeliveryss.Store(ctx, cmw), dataresidencyss.Store(ctx, cmw))
 	}
 }
 
-func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidency.Store) *controller.Impl {
+func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdelivery.Store, drs *dataresidency.Store) *controller.Impl {
 	brokerInformer := brokerinformer.Get(ctx)
 	bcInformer := brokercellinformer.Get(ctx)
 
@@ -91,7 +92,12 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 		dataresidencyStore: drs,
 	}
 
-	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass)
+	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass,
+		func(impl *controller.Impl) controller.Options {
+			return controller.Options{
+				ConfigStore: brds,
+			}
+		})
 
 	r.Logger.Info("Setting up event handlers")
 

@@ -19,6 +19,7 @@ package broker
 import (
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 
@@ -39,7 +40,7 @@ import (
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
 
-	c := NewConstructor(&dataresidency.StoreSingleton{})(ctx, configmap.NewStaticWatcher(
+	c := NewConstructor(&brokerdelivery.StoreSingleton{}, &dataresidency.StoreSingleton{})(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      logging.ConfigMapName(),
@@ -61,6 +62,7 @@ func TestNew(t *testing.T) {
 			},
 			Data: map[string]string{},
 		},
+		NewBrokerDeliveryConfigMapFromDeliverySpec(nil),
 		NewDataresidencyConfigMapFromRegions([]string{}),
 	))
 

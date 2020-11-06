@@ -16,5 +16,5 @@ limitations under the License.
 
 // +k8s:deepcopy-gen=package
 
-// broker holds the typed objects that define the schemas for default Broker delivery settings.
-package broker
+// brokerdelivery holds the typed objects that define the schemas for default Broker delivery settings.
+package brokerdelivery
