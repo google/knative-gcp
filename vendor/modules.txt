@@ -450,7 +450,6 @@ golang.org/x/xerrors/internal
 gomodules.xyz/jsonpatch/v2
 # google.golang.org/api v0.34.0
 ## explicit
-google.golang.org/api/container/v1beta1
 google.golang.org/api/googleapi
 google.golang.org/api/googleapi/transport
 google.golang.org/api/internal
@@ -1007,7 +1006,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.18.1-0.20201102101835-766a24c64166
+# knative.dev/eventing v0.18.1-0.20201106155108-daf0d0ffde45
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1111,7 +1110,6 @@ knative.dev/eventing/test/lib/dropevents
 knative.dev/eventing/test/lib/dropevents/dropeventsfibonacci
 knative.dev/eventing/test/lib/dropevents/dropeventsfirst
 knative.dev/eventing/test/lib/duck
-knative.dev/eventing/test/lib/nodes
 knative.dev/eventing/test/lib/recordevents
 knative.dev/eventing/test/lib/recordevents/logger_vent
 knative.dev/eventing/test/lib/recordevents/observer
@@ -1137,14 +1135,14 @@ knative.dev/eventing/test/upgrade/prober/wathola/event
 knative.dev/eventing/test/upgrade/prober/wathola/forwarder
 knative.dev/eventing/test/upgrade/prober/wathola/receiver
 knative.dev/eventing/test/upgrade/prober/wathola/sender
-# knative.dev/hack v0.0.0-20201028205534-fe80f1c8af68
+# knative.dev/hack v0.0.0-20201106190108-88f9ae4e6734
 ## explicit
 knative.dev/hack
-# knative.dev/networking v0.0.0-20201101040934-f77f64474b76
+# knative.dev/networking v0.0.0-20201103163404-b9f80f4537af
 knative.dev/networking/pkg
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
-# knative.dev/pkg v0.0.0-20201030200734-72451e0d5973
+# knative.dev/pkg v0.0.0-20201106192907-f98befda69eb
 ## explicit
 knative.dev/pkg/apiextensions/storageversion
 knative.dev/pkg/apiextensions/storageversion/cmd/migrate
@@ -1226,7 +1224,6 @@ knative.dev/pkg/test
 knative.dev/pkg/test/flags
 knative.dev/pkg/test/gcs
 knative.dev/pkg/test/ghutil
-knative.dev/pkg/test/gke
 knative.dev/pkg/test/helpers
 knative.dev/pkg/test/ingress
 knative.dev/pkg/test/logging
@@ -1243,8 +1240,6 @@ knative.dev/pkg/test/prow
 knative.dev/pkg/test/slackutil
 knative.dev/pkg/test/spoof
 knative.dev/pkg/test/zipkin
-knative.dev/pkg/testutils/clustermanager/perf-tests
-knative.dev/pkg/testutils/clustermanager/perf-tests/pkg
 knative.dev/pkg/third_party/mako/proto/quickstore_go_proto
 knative.dev/pkg/tracing
 knative.dev/pkg/tracing/config
@@ -1260,7 +1255,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.18.1-0.20201102093835-e4e3db2cf35c
+# knative.dev/serving v0.18.1-0.20201106185708-7a825b50c0bb
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
