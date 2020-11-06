@@ -16,9 +16,6 @@ require (
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/mitchellh/go-homedir v1.1.0
-	github.com/pelletier/go-toml v1.8.0
-	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/rickb777/date v1.13.0
 	github.com/stretchr/testify v1.5.1
 	github.com/wavesoftware/go-ensure v1.0.0
@@ -36,7 +33,7 @@ require (
 	knative.dev/eventing v0.18.1-0.20201106155108-daf0d0ffde45
 	knative.dev/hack v0.0.0-20201106190108-88f9ae4e6734
 	knative.dev/pkg v0.0.0-20201106192907-f98befda69eb
-	knative.dev/serving v0.18.1-0.20201106185708-7a825b50c0bb
+	knative.dev/serving v0.18.1-0.20201106222908-861357753161
 	sigs.k8s.io/yaml v1.2.0
 )
 
