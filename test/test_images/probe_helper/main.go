@@ -81,11 +81,13 @@ The Probe Helper can handle multiple different types of probes.
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 
 	"github.com/google/knative-gcp/pkg/utils"
@@ -104,33 +106,43 @@ type envConfig struct {
 	// Environment variable containing an upper bound on the duration between events emitted by the CloudSchedulerSource
 	CloudSchedulerSourcePeriod time.Duration `envconfig:"CLOUDSCHEDULERSOURCE_PERIOD" default:"90s"`
 
-	// Environment variable containing the port which listens to the probe to deliver the event
+	// Environment variable containing the port which listens to the probe to forward events
 	ProbePort int `envconfig:"PROBE_PORT" default:"8070"`
 
-	// Environment variable containing the port to receive the event from the trigger
+	// Environment variable containing the port to receive delivered events
 	ReceiverPort int `envconfig:"RECEIVER_PORT" default:"8080"`
-
-	// Environment variable containing the port to send health checks to
-	HealthCheckerPort int `envconfig:"HEALTH_CHECKER_PORT" default:"8060"`
 
 	// Environment variable containing the maximum tolerated staleness duration
 	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"5m"`
 
-	// Environment variable containing the timeout duration to wait for an event to be delivered back
-	TimeoutDuration time.Duration `envconfig:"TIMEOUT_DURATION" default:"30m"`
+	// Environment variable containing the maximum timeout duration to wait for an event to be delivered
+	MaxTimeoutDuration time.Duration `envconfig:"MAX_TIMEOUT_DURATION" default:"2m"`
 }
 
 func main() {
-	ctx := signals.NewContext()
-
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
-		logging.FromContext(ctx).Fatal("Failed to process env var", zap.Error(err))
+		panic(fmt.Sprintf("Failed to process env var: %s", err))
 	}
+
+	// Create the logger and attach it to the context
+	loggingConfig, err := logging.NewConfigFromMap(map[string]string{})
+	if err != nil {
+		// If this fails, there is no recovering.
+		panic(err)
+	}
+	sl, _ := logging.NewLoggerFromConfig(loggingConfig, "probe-helper")
+	logger := sl.Desugar()
+	defer flush(logger)
+	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
+
+	// Get the default project ID
 	projectID, err := utils.ProjectIDOrDefault("")
 	if err != nil {
 		logging.FromContext(ctx).Fatal("Failed to get the default project ID", zap.Error(err))
 	}
+
+	// Create and start the probe helper
 	ph := &ProbeHelper{
 		projectID:                  projectID,
 		brokerURL:                  env.BrokerURL,
@@ -139,11 +151,15 @@ func main() {
 		cloudPubSubSourceTopicID:   env.CloudPubSubSourceTopicID,
 		cloudStorageSourceBucketID: env.CloudStorageSourceBucketID,
 		cloudSchedulerSourcePeriod: env.CloudSchedulerSourcePeriod,
-		timeoutDuration:            env.TimeoutDuration,
+		maxTimeoutDuration:         env.MaxTimeoutDuration,
 		healthChecker: &healthChecker{
-			port:             env.HealthCheckerPort,
 			maxStaleDuration: env.MaxStaleDuration,
 		},
 	}
 	ph.run(ctx)
+}
+
+func flush(logger *zap.Logger) {
+	_ = logger.Sync()
+	metrics.FlushExporter()
 }
