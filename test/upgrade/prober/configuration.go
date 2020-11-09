@@ -24,8 +24,10 @@ import (
 	"path"
 	"runtime"
 	"text/template"
+	"time"
 
 	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/wavesoftware/go-ensure"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
@@ -36,17 +38,82 @@ import (
 )
 
 const (
-	configName       = "wathola-config"
-	configMountPoint = "/home/nonroot/.config/wathola"
-	configFilename   = "config.toml"
-	watholaEventNs   = "com.github.cardil.wathola"
-	healthEndpoint   = "/healthz"
+	defaultConfigName          = "wathola-config"
+	defaultConfigHomedirPath   = ".config/wathola"
+	defaultHomedir             = "/home/nonroot"
+	defaultConfigFilename      = "config.toml"
+	defaultWatholaEventsPrefix = "com.github.cardil.wathola"
+	defaultBrokerName          = "default"
+	defaultHealthEndpoint      = "/healthz"
+	defaultFinishedSleep       = 5 * time.Second
 )
 
-var (
-	eventTypes = []string{"step", "finished"}
-	brokerName = "default"
-)
+var eventTypes = []string{"step", "finished"}
+
+// Config represents a configuration for prober.
+type Config struct {
+	Wathola
+	Namespace     string
+	Interval      time.Duration
+	FinishedSleep time.Duration
+	Serving       ServingConfig
+	FailOnErrors  bool
+}
+
+// Wathola represents options related strictly to wathola testing tool.
+type Wathola struct {
+	ConfigMap
+	EventsTypePrefix string
+	HealthEndpoint   string
+	BrokerName       string
+}
+
+// ConfigMap represents options of wathola config toml file.
+type ConfigMap struct {
+	ConfigMapName    string
+	ConfigMountPoint string
+	ConfigFilename   string
+}
+
+// ServingConfig represents a options for serving test component (wathola-forwarder).
+type ServingConfig struct {
+	Use         bool
+	ScaleToZero bool
+}
+
+// NewConfig creates a new configuration object with default values filled in.
+// Values can be influenced by kelseyhightower/envconfig with
+// `e2e_upgrade_tests` prefix.
+func NewConfig(namespace string) *Config {
+	config := &Config{
+		Namespace:     "",
+		Interval:      Interval,
+		FinishedSleep: defaultFinishedSleep,
+		FailOnErrors:  true,
+		Serving: ServingConfig{
+			Use:         false,
+			ScaleToZero: true,
+		},
+		Wathola: Wathola{
+			ConfigMap: ConfigMap{
+				ConfigMapName:    defaultConfigName,
+				ConfigMountPoint: fmt.Sprintf("%s/%s", defaultHomedir, defaultConfigHomedirPath),
+				ConfigFilename:   defaultConfigFilename,
+			},
+			EventsTypePrefix: defaultWatholaEventsPrefix,
+			HealthEndpoint:   defaultHealthEndpoint,
+			BrokerName:       defaultBrokerName,
+		},
+	}
+
+	// False in knative eventing, but gcp broker support this
+	config.FailOnErrors = true
+
+	err := envconfig.Process("e2e_upgrade_tests", config)
+	ensure.NoError(err)
+	config.Namespace = namespace
+	return config
+}
 
 func (p *prober) deployConfiguration() {
 	p.deployBroker()
@@ -57,59 +124,68 @@ func (p *prober) deployConfiguration() {
 func (p *prober) deployBroker() {
 	// Almost all the code in this directory is from knative eventing, but we need
 	// to add this annotation to switch to gcp broker type
-	p.client.CreateBrokerV1Beta1OrFail(brokerName, func(b *eventingv1beta1.Broker) {
+	p.client.CreateBrokerV1Beta1OrFail(p.config.BrokerName, func(b *eventingv1beta1.Broker) {
 		b.SetAnnotations(map[string]string{
 			"eventing.knative.dev/broker.class": v1beta1.BrokerClass,
 		})
 	})
 }
 
-func (p *prober) fetchBrokerUrl() (*apis.URL, error) {
+func (p *prober) fetchBrokerURL() (*apis.URL, error) {
 	namespace := p.config.Namespace
-	p.log.Debugf("Fetching %s broker URL for ns %s", brokerName, namespace)
-	meta := resources.NewMetaResource(brokerName, p.config.Namespace, testlib.BrokerTypeMeta)
+	p.log.Debugf("Fetching %s broker URL for ns %s",
+		p.config.BrokerName, namespace)
+	meta := resources.NewMetaResource(
+		p.config.BrokerName, p.config.Namespace, testlib.BrokerTypeMeta,
+	)
 	err := duck.WaitForResourceReady(p.client.Dynamic, meta)
 	if err != nil {
 		return nil, err
 	}
-	broker, err := p.client.Eventing.EventingV1beta1().Brokers(namespace).Get(context.Background(), brokerName, metav1.GetOptions{})
+	broker, err := p.client.Eventing.EventingV1beta1().Brokers(namespace).Get(
+		context.Background(), p.config.BrokerName, metav1.GetOptions{},
+	)
 	if err != nil {
 		return nil, err
 	}
 	url := broker.Status.Address.URL
-	p.log.Debugf("%s broker URL for ns %s is %v", brokerName, namespace, url)
+	p.log.Debugf("%s broker URL for ns %s is %v",
+		p.config.BrokerName, namespace, url)
 	return url, nil
 }
 
 func (p *prober) deployConfigMap() {
-	name := configName
+	name := p.config.ConfigMapName
 	p.log.Infof("Deploying config map: \"%s/%s\"", p.config.Namespace, name)
-	brokerUrl, err := p.fetchBrokerUrl()
+	brokerURL, err := p.fetchBrokerURL()
 	ensure.NoError(err)
-	configData := p.compileTemplate(configFilename, brokerUrl)
-	p.client.CreateConfigMapOrFail(name, p.config.Namespace, map[string]string{configFilename: configData})
+	configData := p.compileTemplate(p.config.ConfigFilename, brokerURL)
+	p.client.CreateConfigMapOrFail(name, p.config.Namespace, map[string]string{
+		p.config.ConfigFilename: configData,
+	})
 }
 
 func (p *prober) deployTriggers() {
 	for _, eventType := range eventTypes {
 		name := fmt.Sprintf("wathola-trigger-%v", eventType)
-		fullType := fmt.Sprintf("%v.%v", watholaEventNs, eventType)
+		fullType := fmt.Sprintf("%v.%v", p.config.EventsTypePrefix, eventType)
 		subscriberOption := resources.WithSubscriberServiceRefForTriggerV1Beta1(receiverName)
 		if p.config.Serving.Use {
 			subscriberOption = resources.WithSubscriberKServiceRefForTrigger(forwarderName)
 		}
 		p.client.CreateTriggerOrFailV1Beta1(name,
-			resources.WithBrokerV1Beta1(brokerName),
+			resources.WithBrokerV1Beta1(p.config.BrokerName),
 			resources.WithAttributesTriggerFilterV1Beta1(
 				eventingv1beta1.TriggerAnyFilter,
 				fullType,
 				map[string]interface{}{},
 			),
-			subscriberOption)
+			subscriberOption,
+		)
 	}
 }
 
-func (p *prober) compileTemplate(templateName string, brokerUrl *apis.URL) string {
+func (p *prober) compileTemplate(templateName string, brokerURL fmt.Stringer) string {
 	_, filename, _, _ := runtime.Caller(0)
 	templateFilepath := path.Join(path.Dir(filename), templateName)
 	templateBytes, err := ioutil.ReadFile(templateFilepath)
@@ -119,10 +195,10 @@ func (p *prober) compileTemplate(templateName string, brokerUrl *apis.URL) strin
 	var buff bytes.Buffer
 	data := struct {
 		*Config
-		BrokerUrl string
+		BrokerURL string
 	}{
 		p.config,
-		brokerUrl.String(),
+		brokerURL.String(),
 	}
 	ensure.NoError(tmpl.Execute(&buff, data))
 	return buff.String()
