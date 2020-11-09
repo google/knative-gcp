@@ -546,7 +546,7 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 		probeListener:              probeListener,
 		receiverListener:           receiverListener,
 		cloudSchedulerSourcePeriod: time.Minute,
-		maxTimeoutDuration:         30 * time.Minute,
+		maxTimeoutDuration:         2 * time.Minute,
 		healthChecker: &healthChecker{
 			maxStaleDuration: time.Second,
 		},
