@@ -131,6 +131,11 @@ func TestAllCasesTrigger(t *testing.T) {
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchRemoveFinalizers(testNS, triggerName),
 			},
+			OtherTestData: map[string]interface{}{},
+			PostConditions: []func(*testing.T, *TableRow){
+				NoTopicsExist(),
+				NoSubscriptionsExist(),
+			},
 		},
 		{
 			// The finalization logic should be skipped since there is no finalizer string.
@@ -165,6 +170,10 @@ func TestAllCasesTrigger(t *testing.T) {
 				"pre": []PubsubAction{
 					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123", "cre-tgr_testnamespace_test-trigger_abc123"),
 				},
+			},
+			PostConditions: []func(*testing.T, *TableRow){
+				NoTopicsExist(),
+				NoSubscriptionsExist(),
 			},
 		},
 		{
