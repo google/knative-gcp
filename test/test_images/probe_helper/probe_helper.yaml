@@ -12,22 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: serving.knative.dev/v1
+kind: Service
 metadata:
-  name: probe-helper
+  name: probe-helper-receiver
   namespace: cloud-run-events-probe
-  labels:
-    app: probe-helper
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: probe-helper
   template:
     metadata:
-      labels:
-        app: probe-helper
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "1"
     spec:
       serviceAccountName: probe-helper
       containers:
@@ -46,18 +41,19 @@ spec:
               value: "8070"
             - name: RECEIVER_PORT
               value: "8080"
-            - name: TIMEOUT_DURATION
+            - name: DEFAULT_TIMEOUT_DURATION
+              value: "2m"
+            - name: MAX_TIMEOUT_DURATION
               value: "30m"
-            - name: HEALTH_CHECKER_PORT
-              value: "8060"
             - name: MAX_STALE_DURATION
               value: "5m"
           livenessProbe:
             failureThreshold: 3
             httpGet:
               path: /healthz
-              port: 8060
             initialDelaySeconds: 5
             periodSeconds: 125
             successThreshold: 1
             timeoutSeconds: 10
+          ports:
+            - containerPort: 8080
