@@ -119,17 +119,18 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 		}
 
 		// Read a custom timeout from the CloudEvent extensions up to a specified maximum.
-		timeout := ph.maxTimeoutDuration
+		timeout := ph.defaultTimeoutDuration
 		if _, ok := event.Extensions()["timeout"]; ok {
 			customTimeoutExtension := fmt.Sprint(event.Extensions()["timeout"])
-			customTimeout, err := time.ParseDuration(customTimeoutExtension)
-			if err != nil {
+			if customTimeout, err := time.ParseDuration(customTimeoutExtension); err != nil {
 				logger.Warnw("Failed to parse custom timeout extension duration", zap.String("timeout", customTimeoutExtension), zap.Error(err))
 			} else {
-				if timeout.Nanoseconds() > customTimeout.Nanoseconds() {
-					timeout = customTimeout
-				}
+				timeout = customTimeout
 			}
+		}
+		if timeout.Nanoseconds() > ph.maxTimeoutDuration.Nanoseconds() {
+			logger.Warnw("Desired timeout exceeds the maximum, clamping to maximum value", zap.Duration("timeout", timeout), zap.Duration("maximumTimeout", ph.maxTimeoutDuration))
+			timeout = ph.maxTimeoutDuration
 		}
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
@@ -484,6 +485,9 @@ type ProbeHelper struct {
 	receiverPort int
 	// If a listener is specified instead, the port is ignored
 	receiverListener net.Listener
+
+	// The default duration after which the probe helper times out after forwarding an event, if no custom timeout duration is specified
+	defaultTimeoutDuration time.Duration
 
 	// The maximum duration after which the probe helper times out after forwarding an event
 	maxTimeoutDuration time.Duration

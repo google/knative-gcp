@@ -87,7 +87,6 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 
 	"github.com/google/knative-gcp/pkg/utils"
@@ -115,8 +114,11 @@ type envConfig struct {
 	// Environment variable containing the maximum tolerated staleness duration
 	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"5m"`
 
+	// Environment variable containing the default timeout duration to wait for an event to be delivered, if no custom timeout is specified
+	DefaultTimeoutDuration time.Duration `envconfig:"DEFAULT_TIMEOUT_DURATION" default:"2m"`
+
 	// Environment variable containing the maximum timeout duration to wait for an event to be delivered
-	MaxTimeoutDuration time.Duration `envconfig:"MAX_TIMEOUT_DURATION" default:"2m"`
+	MaxTimeoutDuration time.Duration `envconfig:"MAX_TIMEOUT_DURATION" default:"30m"`
 }
 
 func main() {
@@ -131,10 +133,8 @@ func main() {
 		// If this fails, there is no recovering.
 		panic(err)
 	}
-	sl, _ := logging.NewLoggerFromConfig(loggingConfig, "probe-helper")
-	logger := sl.Desugar()
-	defer flush(logger)
-	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
+	logger, _ := logging.NewLoggerFromConfig(loggingConfig, "probe-helper")
+	ctx := logging.WithLogger(signals.NewContext(), logger)
 
 	// Get the default project ID
 	projectID, err := utils.ProjectIDOrDefault("")
@@ -151,15 +151,11 @@ func main() {
 		cloudPubSubSourceTopicID:   env.CloudPubSubSourceTopicID,
 		cloudStorageSourceBucketID: env.CloudStorageSourceBucketID,
 		cloudSchedulerSourcePeriod: env.CloudSchedulerSourcePeriod,
+		defaultTimeoutDuration:     env.DefaultTimeoutDuration,
 		maxTimeoutDuration:         env.MaxTimeoutDuration,
 		healthChecker: &healthChecker{
 			maxStaleDuration: env.MaxStaleDuration,
 		},
 	}
 	ph.run(ctx)
-}
-
-func flush(logger *zap.Logger) {
-	_ = logger.Sync()
-	metrics.FlushExporter()
 }

@@ -273,9 +273,9 @@ func withProbeSubject(subject string) probeEventOption {
 	}
 }
 
-func withProbeTimeout(timeout string) probeEventOption {
+func withProbeTimeout(timeout time.Duration) probeEventOption {
 	return func(event *cloudevents.Event) {
-		event.SetExtension("timeout", timeout)
+		event.SetExtension("timeout", timeout.String())
 	}
 }
 
@@ -462,7 +462,7 @@ func TestProbeHelper(t *testing.T) {
 		name: "Custom timeout",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("broker-e2e-delivery-probe", withProbeTimeout("0s")),
+				event:      probeEvent("broker-e2e-delivery-probe", withProbeTimeout(0)),
 				wantResult: cloudevents.ResultNACK,
 			},
 		},
@@ -546,7 +546,8 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 		probeListener:              probeListener,
 		receiverListener:           receiverListener,
 		cloudSchedulerSourcePeriod: time.Minute,
-		maxTimeoutDuration:         2 * time.Minute,
+		defaultTimeoutDuration:     2 * time.Minute,
+		maxTimeoutDuration:         30 * time.Minute,
 		healthChecker: &healthChecker{
 			maxStaleDuration: time.Second,
 		},
