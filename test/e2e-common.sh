@@ -78,12 +78,16 @@ function delete_topics_and_subscriptions() {
     subs=$(gcloud pubsub subscriptions list --format="value(name)")
     while read -r sub_name
     do
-      gcloud pubsub subscriptions delete "${sub_name}"
+      if [[ -n "${sub_name}" ]]; then
+        gcloud pubsub subscriptions delete "${sub_name}"
+      fi
     done <<<"$subs"
     topics=$(gcloud pubsub topics list --format="value(name)")
     while read -r topic_name
     do
-      gcloud pubsub topics delete "${topic_name}"
+      if [[ -n "${topic_name}" ]]; then
+        gcloud pubsub topics delete "${topic_name}"
+      fi
     done <<<"$topics"
 }
 
