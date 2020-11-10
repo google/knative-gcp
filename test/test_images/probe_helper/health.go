@@ -45,7 +45,8 @@ func (c *healthChecker) stalenessHandlerFunc(ctx context.Context) nethttp.Handle
 			logging.FromContext(ctx).Warnw("Health check failed, probe delay exceeds staleness threshold", zap.Duration("delay", delay), zap.Duration("staleness", c.maxStaleDuration))
 			w.WriteHeader(nethttp.StatusServiceUnavailable)
 			return
-		} else if delay := now.Sub(c.lastReceiverEventTimestamp.getTime()); delay > c.maxStaleDuration {
+		}
+		if delay := now.Sub(c.lastReceiverEventTimestamp.getTime()); delay > c.maxStaleDuration {
 			logging.FromContext(ctx).Warnw("Health check failed, receiver delay exceeds staleness threshold", zap.Duration("delay", delay), zap.Duration("staleness", c.maxStaleDuration))
 			w.WriteHeader(nethttp.StatusServiceUnavailable)
 			return
