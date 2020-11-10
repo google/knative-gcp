@@ -86,6 +86,7 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
+
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 

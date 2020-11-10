@@ -549,7 +549,6 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 	if ph.probeClient == nil {
 		spOpts := []cehttp.Option{
 			cloudevents.WithTarget(ph.brokerURL),
-			cloudevents.WithGetHandlerFunc(ph.healthChecker.stalenessHandlerFunc()),
 		}
 		if ph.probeListener != nil {
 			spOpts = append(spOpts, cloudevents.WithListener(ph.probeListener))
@@ -568,7 +567,9 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 
 	// create receiver client
 	if ph.receiverClient == nil {
-		rpOpts := []cehttp.Option{}
+		rpOpts := []cehttp.Option{
+			cloudevents.WithGetHandlerFunc(ph.healthChecker.stalenessHandlerFunc(ctx)),
+		}
 		if ph.probeListener != nil {
 			rpOpts = append(rpOpts, cloudevents.WithListener(ph.receiverListener))
 		} else {
