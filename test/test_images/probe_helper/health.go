@@ -14,8 +14,12 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	nethttp "net/http"
 	"time"
+
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 )
 
 // healthChecker carries timestamps of the latest handled events from the
@@ -29,18 +33,25 @@ type healthChecker struct {
 }
 
 // stalenessHandlerFunc returns the HTTP handler for probe helper health checks.
-func (c *healthChecker) stalenessHandlerFunc() nethttp.HandlerFunc {
+func (c *healthChecker) stalenessHandlerFunc(ctx context.Context) nethttp.HandlerFunc {
 	return func(w nethttp.ResponseWriter, req *nethttp.Request) {
 		if req.URL.Path != "/healthz" {
+			logging.FromContext(ctx).Warnw("Invalid health check request path", zap.String("path", req.URL.Path))
 			w.WriteHeader(nethttp.StatusNotFound)
 			return
 		}
 		now := time.Now()
-		if now.Sub(c.lastProbeEventTimestamp.getTime()) > c.maxStaleDuration ||
-			now.Sub(c.lastReceiverEventTimestamp.getTime()) > c.maxStaleDuration {
+		if delay := now.Sub(c.lastProbeEventTimestamp.getTime()); delay > c.maxStaleDuration {
+			logging.FromContext(ctx).Warnw("Health check failed, probe delay exceeds staleness threshold", zap.Duration("delay", delay), zap.Duration("staleness", c.maxStaleDuration))
 			w.WriteHeader(nethttp.StatusServiceUnavailable)
 			return
 		}
+		if delay := now.Sub(c.lastReceiverEventTimestamp.getTime()); delay > c.maxStaleDuration {
+			logging.FromContext(ctx).Warnw("Health check failed, receiver delay exceeds staleness threshold", zap.Duration("delay", delay), zap.Duration("staleness", c.maxStaleDuration))
+			w.WriteHeader(nethttp.StatusServiceUnavailable)
+			return
+		}
+		logging.FromContext(ctx).Info("Health check succeeded")
 		w.WriteHeader(nethttp.StatusOK)
 	}
 }

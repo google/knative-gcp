@@ -505,7 +505,7 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 	}
 	probePort := probeListener.Addr().(*net.TCPAddr).Port
 	probeURL := fmt.Sprintf("http://localhost:%d", probePort)
-	healthCheckerURL := fmt.Sprintf("http://localhost:%d/healthz", probePort)
+	healthCheckerURL := fmt.Sprintf("http://localhost:%d/healthz", receiverPort)
 
 	// Set up the resources for testing the CloudPubSubSource.
 	pubsubClient, closePubsub := testPubsubClient(ctx, t, testProjectID)
