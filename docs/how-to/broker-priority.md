@@ -20,7 +20,7 @@ provide configurable resource request and limit.
 
 Beside scaling and config, users are always able to set up pod priority for the
 broker components if they regard the broker components as high priority
-components and would like to further reduce its possibility to be preempted. 
+components and would like to further reduce its possibility to be preempted.
 Follow this doc to set up a Pod Priority for your broker components.
 
 ## Add PriorityClass for broker
