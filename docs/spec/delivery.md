@@ -16,9 +16,9 @@ subscription configuration member `DeadLetterPolicy`.
 The Knative dead letter policy is specified through the following parameters in
 the Knative Eventing delivery spec:
 
-- `DeadLetterSink`: We only allow URLs of the
-  form `pubsub://[dead_letter_sink_topic]` as the dead letter sink. We assume that if a topic is
-  specified, it already exists.
+- `DeadLetterSink`: We only allow URLs of the form
+  `pubsub://[dead_letter_sink_topic]` as the dead letter sink. We assume that if
+  a topic is specified, it already exists.
 - `Retry`: This is the number of delivery attempts until the event is forwarded
   to the dead letter topic. Mapped to the Pub/Sub dead letter policy's
   `MaxDeliveryAttempts`.
