@@ -45,7 +45,7 @@ const (
 	defaultWatholaEventsPrefix = "com.github.cardil.wathola"
 	defaultBrokerName          = "default"
 	defaultHealthEndpoint      = "/healthz"
-	defaultFinishedSleep       = 5 * time.Second
+	defaultFinishedSleep       = 15 * time.Second
 )
 
 var eventTypes = []string{"step", "finished"}
