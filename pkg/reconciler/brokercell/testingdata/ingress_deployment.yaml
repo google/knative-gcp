@@ -32,6 +32,11 @@ spec:
       app: cloud-run-events
       brokerCell: test-brokercell
       role: ingress
+  minReadySeconds: 60
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels: *labels
@@ -39,6 +44,7 @@ spec:
         sidecar.istio.io/inject: "true"
     spec:
       serviceAccountName: broker
+      terminationGracePeriodSeconds: 60
       containers:
       - name: ingress
         image: ingress
@@ -48,8 +54,8 @@ spec:
             path: /healthz
             port: 8080
             scheme: HTTP
-          initialDelaySeconds: 5
-          periodSeconds: 2
+          initialDelaySeconds: 15
+          periodSeconds: 15
           successThreshold: 1
           timeoutSeconds: 5
         readinessProbe:
@@ -58,7 +64,7 @@ spec:
             path: /healthz
             port: 8080
             scheme: HTTP
-          periodSeconds: 2
+          periodSeconds: 15
           successThreshold: 1
           timeoutSeconds: 5
         env:

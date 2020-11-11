@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/system"
 )
 
@@ -44,7 +45,7 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 			},
 		},
 		FailureThreshold: 3,
-		PeriodSeconds:    2,
+		PeriodSeconds:    15,
 		SuccessThreshold: 1,
 		TimeoutSeconds:   5,
 	}
@@ -57,8 +58,8 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 			},
 		},
 		FailureThreshold:    3,
-		InitialDelaySeconds: 5,
-		PeriodSeconds:       2,
+		InitialDelaySeconds: 15,
+		PeriodSeconds:       15,
 		SuccessThreshold:    1,
 		TimeoutSeconds:      5,
 	}
@@ -126,6 +127,12 @@ func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 
 // deploymentTemplate creates a template for data plane deployments.
 func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deployment {
+	annotation := map[string]string{
+		"sidecar.istio.io/inject": strconv.FormatBool(args.AllowIstioSidecar),
+	}
+	if args.RolloutRestartTime != "" {
+		annotation[RolloutRestartTimeAnnotationKey] = args.RolloutRestartTime
+	}
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.BrokerCell.Namespace,
@@ -135,12 +142,17 @@ func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deploy
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{MatchLabels: Labels(args.BrokerCell.Name, args.ComponentName)},
+			Strategy: appsv1.DeploymentStrategy{
+				RollingUpdate: &appsv1.RollingUpdateDeployment{
+					MaxSurge:       &intstr.IntOrString{IntVal: 1},
+					MaxUnavailable: &intstr.IntOrString{IntVal: 0},
+				},
+			},
+			MinReadySeconds: 60,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: Labels(args.BrokerCell.Name, args.ComponentName),
-					Annotations: map[string]string{
-						"sidecar.istio.io/inject": strconv.FormatBool(args.AllowIstioSidecar),
-					},
+					Labels:      Labels(args.BrokerCell.Name, args.ComponentName),
+					Annotations: annotation,
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: args.ServiceAccountName,
@@ -154,7 +166,8 @@ func deploymentTemplate(args Args, containers []corev1.Container) *appsv1.Deploy
 							VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "google-broker-key", Optional: &optionalSecretVolume}},
 						},
 					},
-					Containers: containers,
+					Containers:                    containers,
+					TerminationGracePeriodSeconds: ptr.Int64(60),
 				},
 			},
 		},

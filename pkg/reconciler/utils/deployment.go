@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/record"
+	"knative.dev/pkg/ptr"
 )
 
 const (
@@ -53,6 +54,10 @@ func (r *DeploymentReconciler) ReconcileDeployment(obj runtime.Object, d *appsv1
 	}
 	if err != nil {
 		return nil, err
+	}
+	// Don't reconcile on replica difference.
+	if current.Spec.Replicas != nil {
+		d.Spec.Replicas = ptr.Int32(*current.Spec.Replicas)
 	}
 	if !equality.Semantic.DeepDerivative(d.Spec, current.Spec) {
 		// Don't modify the informers copy.

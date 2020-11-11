@@ -32,13 +32,19 @@ spec:
       app: cloud-run-events
       brokerCell: test-brokercell
       role: retry
+  minReadySeconds: 60
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels: *labels
       annotations:
-        sidecar.istio.io/inject: "false"
+        sidecar.istio.io/inject: "true"
     spec:
       serviceAccountName: broker
+      terminationGracePeriodSeconds: 60
       containers:
       - name: retry
         image: retry
