@@ -63,18 +63,14 @@ function cloud_run_events_setup() {
   wait_until_pods_running cloud-run-events || return 1
 }
 
+# Get the latest release version
 latest_version() {
-  # TODO: currently we don't have the right version tag in master,
-  # we should switch back to use the above logic instead in v0.19
-  # https://github.com/google/knative-gcp/issues/1857
-
-  #local semver=$(git describe --match "v[0-9]*" --abbrev=0)
-  #local major_minor=$(echo "$semver" | cut -d. -f1-2)
+  # The latest version tag in the branch is the latest release version to test against
+  local semver=$(git describe --match "v[0-9]*" --abbrev=0)
+  local major_minor=$(echo "$semver" | cut -d. -f1-2)
 
   # Get the latest patch release for the major minor
-  #git tag -l "${major_minor}*" | sort -r --version-sort | head -n1
-
-  git tag | sort -r --version-sort | head -n1
+  git tag -l "${major_minor}*" | sort -r --version-sort | head -n1
 }
 
 # Latest release. If user does not supply this as a flag, the latest
