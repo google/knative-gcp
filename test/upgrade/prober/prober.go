@@ -27,9 +27,8 @@ import (
 )
 
 var (
-	// FIXME: Interval is set to 200 msec, as lower values will result in errors: knative/eventing#2357
-	// Interval = 10 * time.Millisecond
-	Interval = 200 * time.Millisecond
+	// Interval is the event interval of the sender pod
+	Interval = 10 * time.Millisecond
 )
 
 // Prober is the interface for a prober, which checks the result of the probes when stopped.
