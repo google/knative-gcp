@@ -82,7 +82,7 @@ func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 	container.Ports = append(container.Ports,
 		corev1.ContainerPort{
 			Name:          "http-health",
-			ContainerPort: handler.DefaultHealthCheckPort,
+			ContainerPort: handler.DefaultProbeCheckPort,
 		},
 	)
 	container.Env = append(container.Env, corev1.EnvVar{
@@ -93,7 +93,7 @@ func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 		Handler: corev1.Handler{
 			HTTPGet: &corev1.HTTPGetAction{
 				Path:   "/healthz",
-				Port:   intstr.FromInt(handler.DefaultHealthCheckPort),
+				Port:   intstr.FromInt(handler.DefaultProbeCheckPort),
 				Scheme: corev1.URISchemeHTTP,
 			},
 		},
@@ -113,14 +113,14 @@ func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 	container.Ports = append(container.Ports,
 		corev1.ContainerPort{
 			Name:          "http-health",
-			ContainerPort: handler.DefaultHealthCheckPort,
+			ContainerPort: handler.DefaultProbeCheckPort,
 		},
 	)
 	container.LivenessProbe = &corev1.Probe{
 		Handler: corev1.Handler{
 			HTTPGet: &corev1.HTTPGetAction{
 				Path:   "/healthz",
-				Port:   intstr.FromInt(handler.DefaultHealthCheckPort),
+				Port:   intstr.FromInt(handler.DefaultProbeCheckPort),
 				Scheme: corev1.URISchemeHTTP,
 			},
 		},
