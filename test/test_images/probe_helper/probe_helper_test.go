@@ -566,18 +566,18 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 func assertProbeCheckResult(t *testing.T, url string, ok bool) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		t.Fatalf("Failed to create probe check request: %v", err)
+		t.Fatal("Failed to create probe check request:", err)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		t.Logf("Failed to execute probe check: %v", err)
+		t.Log("Failed to execute probe check:", err)
 		if ok {
 			t.Errorf("probe check result ok got=%v, want=%v", !ok, ok)
 		}
 		return
 	}
 	if ok != (resp.StatusCode == http.StatusOK) {
-		t.Logf("Got probe check status code: %v", resp.StatusCode)
+		t.Log("Got probe check status code:", resp.StatusCode)
 		t.Errorf("probe check result ok got=%v, want=%v", !ok, ok)
 	}
 }
