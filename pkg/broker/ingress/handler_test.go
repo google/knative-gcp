@@ -138,7 +138,7 @@ func (m *fakeOverloadedDecoupleSink) Send(_ context.Context, _ types.NamespacedN
 func TestHandler(t *testing.T) {
 	tests := []testCase{
 		{
-			name:     "health check",
+			name:     "probe check",
 			path:     "/healthz",
 			method:   nethttp.MethodGet,
 			wantCode: nethttp.StatusOK,

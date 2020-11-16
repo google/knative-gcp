@@ -28,34 +28,34 @@ import (
 )
 
 const (
-	// DefaultHealthCheckPort is the default port for checking sync pool health.
-	DefaultHealthCheckPort = 8080
+	// DefaultProbeCheckPort is the default port for checking sync pool health.
+	DefaultProbeCheckPort = 8080
 )
 
 type SyncPool interface {
 	SyncOnce(ctx context.Context) error
 }
 
-type healthChecker struct {
+type probeChecker struct {
 	mux              sync.RWMutex
 	lastReportTime   time.Time
 	maxStaleDuration time.Duration
 	port             int
 }
 
-func (c *healthChecker) reportHealth() {
+func (c *probeChecker) reportHealth() {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	c.lastReportTime = time.Now()
 }
 
-func (c *healthChecker) lastTime() time.Time {
+func (c *probeChecker) lastTime() time.Time {
 	c.mux.RLock()
 	defer c.mux.RUnlock()
 	return c.lastReportTime
 }
 
-func (c *healthChecker) start(ctx context.Context) {
+func (c *probeChecker) start(ctx context.Context) {
 	c.reportHealth()
 	srv := &http.Server{
 		Addr:    ":" + strconv.Itoa(c.port),
@@ -63,19 +63,19 @@ func (c *healthChecker) start(ctx context.Context) {
 	}
 
 	go func() {
-		logging.FromContext(ctx).Info("Starting the sync pool health checker...")
+		logging.FromContext(ctx).Info("Starting the sync pool probe checker...")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logging.FromContext(ctx).Error("the sync pool health checker has stopped unexpectedly", zap.Error(err))
+			logging.FromContext(ctx).Error("the sync pool probe checker has stopped unexpectedly", zap.Error(err))
 		}
 	}()
 
 	<-ctx.Done()
 	if err := srv.Shutdown(ctx); err != nil {
-		logging.FromContext(ctx).Error("failed to shutdown the sync pool health checker", zap.Error(err))
+		logging.FromContext(ctx).Error("failed to shutdown the sync pool probe checker", zap.Error(err))
 	}
 }
 
-func (c *healthChecker) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (c *probeChecker) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path != "/healthz" {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -98,15 +98,15 @@ func StartSyncPool(
 	syncPool SyncPool,
 	syncSignal <-chan struct{},
 	maxStaleDuration time.Duration,
-	healthCheckPort int,
+	probeCheckPort int,
 ) (SyncPool, error) {
 
 	if err := syncPool.SyncOnce(ctx); err != nil {
 		return nil, err
 	}
-	c := &healthChecker{
+	c := &probeChecker{
 		maxStaleDuration: maxStaleDuration,
-		port:             healthCheckPort,
+		port:             probeCheckPort,
 	}
 	go c.start(ctx)
 	if syncSignal != nil {
@@ -115,7 +115,7 @@ func StartSyncPool(
 	return syncPool, nil
 }
 
-func watch(ctx context.Context, syncPool SyncPool, syncSignal <-chan struct{}, c *healthChecker) {
+func watch(ctx context.Context, syncPool SyncPool, syncSignal <-chan struct{}, c *probeChecker) {
 	for {
 		select {
 		case <-ctx.Done():

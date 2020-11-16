@@ -154,7 +154,7 @@ func main() {
 		cloudSchedulerSourcePeriod: env.CloudSchedulerSourcePeriod,
 		defaultTimeoutDuration:     env.DefaultTimeoutDuration,
 		maxTimeoutDuration:         env.MaxTimeoutDuration,
-		healthChecker: &healthChecker{
+		probeChecker: &probeChecker{
 			maxStaleDuration: env.MaxStaleDuration,
 		},
 	}
