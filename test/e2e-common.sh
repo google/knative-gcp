@@ -31,7 +31,7 @@ readonly VENDOR_EVENTING_TEST_IMAGES="vendor/knative.dev/eventing/test/test_imag
 # Constants used for authentication setup for GCP Broker if it's not running on Prow.
 readonly APP_ENGINE_REGION="us-central"
 
-readonly CONFIG_WARMUP_GCP_BROKER="test/test_configs/warmup-broker.yaml"
+export CONFIG_WARMUP_GCP_BROKER="test/test_configs/warmup-broker.yaml"
 
 # Setup Knative GCP.
 function knative_setup() {
@@ -140,24 +140,7 @@ function prow_control_plane_setup() {
     echo "Delete the controller pod in the namespace '${CONTROL_PLANE_NAMESPACE}' to refresh the created/patched secret"
     kubectl delete pod -n "${CONTROL_PLANE_NAMESPACE}" --selector role=controller
   elif [ "${auth_mode}" == "workload_identity" ]; then
-    # If the tests are run on Prow, clean up the member for roles/iam.workloadIdentityUser before running it.
-    members=$(gcloud iam service-accounts get-iam-policy \
-      --project="${PROW_PROJECT_NAME}" "${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}" \
-      --format="value(bindings.members)" \
-      --filter="bindings.role:roles/iam.workloadIdentityUser" \
-      --flatten="bindings[].members")
-    while read -r member_name
-    do
-      # Only delete the iam bindings that is related to the current boskos project.
-      if [ "$(cut -d'.' -f1 <<< "${member_name}")" == "serviceAccount:${E2E_PROJECT_ID}" ]; then
-        gcloud iam service-accounts remove-iam-policy-binding \
-          --role roles/iam.workloadIdentityUser \
-          --member "${member_name}" \
-          --project "${PROW_PROJECT_NAME}" "${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}"
-          # Add a sleep time between each get-set iam-policy-binding loop to avoid concurrency issue. Sleep time is based on the SLO.
-          sleep 10
-      fi
-    done <<< "$members"
+    cleanup_iam_policy_binding_members
     # Allow the Kubernetes service account to use Google service account.
     gcloud iam service-accounts add-iam-policy-binding \
       --role roles/iam.workloadIdentityUser \
@@ -170,6 +153,27 @@ function prow_control_plane_setup() {
   else
     echo "Invalid parameter"
   fi
+}
+
+function cleanup_iam_policy_binding_members() {
+  # If the tests are run on Prow, clean up the member for roles/iam.workloadIdentityUser before running it.
+  members=$(gcloud iam service-accounts get-iam-policy \
+    --project="${PROW_PROJECT_NAME}" "${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}" \
+    --format="value(bindings.members)" \
+    --filter="bindings.role:roles/iam.workloadIdentityUser" \
+    --flatten="bindings[].members")
+  while read -r member_name
+  do
+    # Only delete the iam bindings that is related to the current boskos project.
+    if [ "$(cut -d'.' -f1 <<< "${member_name}")" == "serviceAccount:${E2E_PROJECT_ID}" ]; then
+      gcloud iam service-accounts remove-iam-policy-binding \
+        --role roles/iam.workloadIdentityUser \
+        --member "${member_name}" \
+        --project "${PROW_PROJECT_NAME}" "${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}"
+        # Add a sleep time between each get-set iam-policy-binding loop to avoid concurrency issue. Sleep time is based on the SLO.
+        sleep 10
+    fi
+  done <<< "$members"
 }
 
 function delete_topics_and_subscriptions() {
