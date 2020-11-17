@@ -40,7 +40,9 @@ function start_knative_gcp_monitoring() {
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
   start_latest_knative_serving || return 1
-  start_latest_knative_eventing || return 1
+  #TODO: Restore the below line after https://github.com/knative/eventing/issues/3244 is fixed
+  #start_latest_knative_eventing || return 1
+  start_latest_knative_eventing || start_latest_knative_eventing || return 1
   start_knative_gcp_monitoring "$KNATIVE_GCP_MONITORING_YAML" || return 1
   cloud_run_events_setup $@ || return 1
   istio_patch || return 1
