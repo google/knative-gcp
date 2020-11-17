@@ -69,36 +69,36 @@ func TestSyncPool(t *testing.T) {
 			t.Errorf("StartSyncPool got unexpected error: %v", err)
 		}
 		syncPool.verifySyncOnceCalled(t)
-		// Make sure the health checker is up.
+		// Make sure the probe checker is up.
 		time.Sleep(500 * time.Millisecond)
 
 		ch <- struct{}{}
 		syncPool.verifySyncOnceCalled(t)
-		assertHealthCheckResult(t, p, true)
+		assertProbeCheckResult(t, p, true)
 
-		// Intentionally causing a unhealth check.
+		// Intentionally causing a failed check.
 		time.Sleep(time.Second)
-		assertHealthCheckResult(t, p, false)
+		assertProbeCheckResult(t, p, false)
 	})
 }
 
-func assertHealthCheckResult(t *testing.T, port int, ok bool) {
+func assertProbeCheckResult(t *testing.T, port int, ok bool) {
 	t.Helper()
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/healthz", port), nil)
 	if err != nil {
-		t.Fatalf("Failed to create health check request: %v", err)
+		t.Fatal("Failed to create probe check request:", err)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		t.Logf("Failed to execute health check: %v", err)
+		t.Log("Failed to execute probe check:", err)
 		if ok {
-			t.Errorf("health check result ok got=%v, want=%v", !ok, ok)
+			t.Errorf("probe check result ok got=%v, want=%v", !ok, ok)
 		}
 		return
 	}
 	if ok != (resp.StatusCode == http.StatusOK) {
-		t.Logf("Got health check status code: %v", resp.StatusCode)
-		t.Errorf("health check result ok got=%v, want=%v", !ok, ok)
+		t.Log("Got probe check status code:", resp.StatusCode)
+		t.Errorf("probe check result ok got=%v, want=%v", !ok, ok)
 	}
 }
 
