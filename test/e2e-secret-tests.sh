@@ -46,8 +46,8 @@ function export_variable() {
 
 # Setup resources common to all eventing tests.
 function test_setup() {
-  pubsub_setup || return 1
-  gcp_broker_setup || return 1
+  pubsub_setup "secret" || return 1
+  gcp_broker_setup "secret" || return 1
   storage_setup || return 1
   scheduler_setup || return 1
   echo "Sleep 2 mins to wait for all resources to setup"
@@ -73,37 +73,7 @@ function control_plane_setup() {
     gcloud iam service-accounts keys create "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}" \
       --iam-account="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
   fi
-  echo "Create the control plane secret"
-  kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${CONTROL_PLANE_SECRET_NAME}" --from-file=key.json="${CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP}"
-  echo "Delete the controller pod in the namespace '${CONTROL_PLANE_NAMESPACE}' to refresh the created/patched secret"
-  kubectl delete pod -n "${CONTROL_PLANE_NAMESPACE}" --selector role=controller
+  prow_control_plane_setup "secret"
   wait_until_pods_running "${CONTROL_PLANE_NAMESPACE}" || return 1
-}
-
-# Create resources required for Pub/Sub Admin setup.
-function pubsub_setup() {
-  # If the tests are run on Prow, clean up the topics and subscriptions before running them.
-  # See https://github.com/google/knative-gcp/issues/494
-  if (( IS_PROW )); then
-    delete_topics_and_subscriptions
-  fi
-
-  # When not running on Prow we need to set up a service account for PubSub
-  if (( ! IS_PROW )); then
-    echo "Set up ServiceAccount for Pub/Sub Admin"
-    init_pubsub_service_account "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
-    enable_monitoring "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
-    gcloud iam service-accounts keys create "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}" \
-      --iam-account="${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
-  fi
-  kubectl -n ${E2E_TEST_NAMESPACE} create secret generic "${PUBSUB_SECRET_NAME}" --from-file=key.json="${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
-}
-
-# Create resources required for GCP Broker authentication setup.
-function gcp_broker_setup() {
-  echo "Authentication setup for GCP Broker"
-  kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${GCP_BROKER_SECRET_NAME}" --from-file=key.json="${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
-
-  warmup_broker_setup
 }
 

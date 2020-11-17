@@ -48,8 +48,8 @@ function export_variable() {
 
 # Setup resources common to all eventing tests.
 function test_setup() {
-  pubsub_setup || return 1
-  gcp_broker_setup || return 1
+  pubsub_setup "workload_identity" || return 1
+  gcp_broker_setup "workload_identity" || return 1
   # Create private key that will be used in storage_setup
   create_private_key_for_pubsub_service_account || return 1
   storage_setup || return 1
@@ -72,75 +72,14 @@ function control_plane_setup() {
     gcloud iam service-accounts add-iam-policy-binding \
       --role roles/iam.workloadIdentityUser \
       --member "${MEMBER}" "${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}"
+    kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}" \
+      --namespace "${CONTROL_PLANE_NAMESPACE}"
+    # Setup default credential information for Workload Identity.
+    sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/PUBSUB-SERVICE-ACCOUNT/${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
   else
-    # If the tests are run on Prow, clean up the member for roles/iam.workloadIdentityUser before running it.
-    members=$(gcloud iam service-accounts get-iam-policy \
-      --project="${PROW_PROJECT_NAME}" "${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}" \
-      --format="value(bindings.members)" \
-      --filter="bindings.role:roles/iam.workloadIdentityUser" \
-      --flatten="bindings[].members")
-    while read -r member_name
-    do
-      # Only delete the iam bindings that is related to the current boskos project.
-      if [ "$(cut -d'.' -f1 <<< "${member_name}")" == "serviceAccount:${E2E_PROJECT_ID}" ]; then
-        gcloud iam service-accounts remove-iam-policy-binding \
-          --role roles/iam.workloadIdentityUser \
-          --member "${member_name}" \
-          --project "${PROW_PROJECT_NAME}" "${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}"
-          # Add a sleep time between each get-set iam-policy-binding loop to avoid concurrency issue. Sleep time is based on the SLO.
-          sleep 10
-      fi
-    done <<< "$members"
-    # Allow the Kubernetes service account to use Google service account.
-    gcloud iam service-accounts add-iam-policy-binding \
-      --role roles/iam.workloadIdentityUser \
-      --member "${MEMBER}" \
-      --project "${PROW_PROJECT_NAME}" "${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}"
+    prow_control_plane_setup "workload_identity"
   fi
-  kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}" \
-    --namespace "${CONTROL_PLANE_NAMESPACE}"
-  echo "Delete the controller pod in the namespace '${CONTROL_PLANE_NAMESPACE}' to refresh "
-  kubectl delete pod -n "${CONTROL_PLANE_NAMESPACE}" --selector role=controller
-  # Setup default credential information for Workload Identity.
-  gcp_auth_setup
   wait_until_pods_running "${CONTROL_PLANE_NAMESPACE}" || return 1
-}
-
-# Create resources required for Pub/Sub Admin setup.
-function pubsub_setup() {
-  # If the tests are run on Prow, clean up the topics and subscriptions before running them.
-  # See https://github.com/google/knative-gcp/issues/494
-  if (( IS_PROW )); then
-    delete_topics_and_subscriptions
-  fi
-
-  # When not running on Prow we need to set up a service account for PubSub.
-  if (( ! IS_PROW )); then
-    # Enable monitoring
-    gcloud services enable monitoring
-    echo "Set up ServiceAccount for Pub/Sub Editor"
-    init_pubsub_service_account "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
-    enable_monitoring "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
-  fi
-}
-
-# Create resources required for GCP Broker authentication setup.
-function gcp_broker_setup() {
-  echo "Authentication setup for GCP Broker"
-  if (( ! IS_PROW )); then
-    gcloud iam service-accounts add-iam-policy-binding \
-    --role roles/iam.workloadIdentityUser \
-    --member "${BROKER_MEMBER}" "${PUBSUB_SERVICE_ACCOUNT_EMAIL}"
-  else
-    gcloud iam service-accounts add-iam-policy-binding \
-      --role roles/iam.workloadIdentityUser \
-      --member "${BROKER_MEMBER}" \
-      --project "${PROW_PROJECT_NAME}" "${PUBSUB_SERVICE_ACCOUNT_EMAIL}"
-  fi
-  kubectl annotate --overwrite serviceaccount ${BROKER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account="${PUBSUB_SERVICE_ACCOUNT_EMAIL}" \
-    --namespace "${CONTROL_PLANE_NAMESPACE}"
-
-  warmup_broker_setup
 }
 
 function create_private_key_for_pubsub_service_account {
@@ -150,10 +89,6 @@ function create_private_key_for_pubsub_service_account {
   fi
 }
 
-function gcp_auth_setup() {
-  # Update config-gcp-auth to use workload identity as default credential setup.
-  sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/PUBSUB-SERVICE-ACCOUNT/${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
-}
 
 if [ "${SKIP_TESTS:-}" == "true" ]; then
   echo "**************************************"
