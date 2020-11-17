@@ -485,10 +485,10 @@ func TestProbeHelper(t *testing.T) {
 }
 
 type makeProbeHelperReturn struct {
-	probeHelper    *ProbeHelper
-	probeURL       string
-	healthCheckURL string
-	cleanup        func()
+	probeHelper   *ProbeHelper
+	probeURL      string
+	probeCheckURL string
+	cleanup       func()
 }
 
 func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) makeProbeHelperReturn {
@@ -505,7 +505,7 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 	}
 	probePort := probeListener.Addr().(*net.TCPAddr).Port
 	probeURL := fmt.Sprintf("http://localhost:%d", probePort)
-	healthCheckerURL := fmt.Sprintf("http://localhost:%d/healthz", receiverPort)
+	probeCheckURL := fmt.Sprintf("http://localhost:%d/healthz", receiverPort)
 
 	// Set up the resources for testing the CloudPubSubSource.
 	pubsubClient, closePubsub := testPubsubClient(ctx, t, testProjectID)
@@ -548,14 +548,14 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 		cloudSchedulerSourcePeriod: time.Minute,
 		defaultTimeoutDuration:     2 * time.Minute,
 		maxTimeoutDuration:         30 * time.Minute,
-		healthChecker: &healthChecker{
+		probeChecker: &probeChecker{
 			maxStaleDuration: time.Second,
 		},
 	}
 	return makeProbeHelperReturn{
-		probeHelper:    ph,
-		probeURL:       probeURL,
-		healthCheckURL: healthCheckerURL,
+		probeHelper:   ph,
+		probeURL:      probeURL,
+		probeCheckURL: probeCheckURL,
 		cleanup: func() {
 			closeStorage()
 			closePubsub()
@@ -563,22 +563,22 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 	}
 }
 
-func assertHealthCheckResult(t *testing.T, url string, ok bool) {
+func assertProbeCheckResult(t *testing.T, url string, ok bool) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		t.Fatalf("Failed to create health check request: %v", err)
+		t.Fatal("Failed to create probe check request:", err)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		t.Logf("Failed to execute health check: %v", err)
+		t.Log("Failed to execute probe check:", err)
 		if ok {
-			t.Errorf("health check result ok got=%v, want=%v", !ok, ok)
+			t.Errorf("probe check result ok got=%v, want=%v", !ok, ok)
 		}
 		return
 	}
 	if ok != (resp.StatusCode == http.StatusOK) {
-		t.Logf("Got health check status code: %v", resp.StatusCode)
-		t.Errorf("health check result ok got=%v, want=%v", !ok, ok)
+		t.Log("Got probe check status code:", resp.StatusCode)
+		t.Errorf("probe check result ok got=%v, want=%v", !ok, ok)
 	}
 }
 
@@ -600,14 +600,14 @@ func TestProbeHelperHealth(t *testing.T) {
 	phr := makeProbeHelper(ctx, t, group)
 	go phr.probeHelper.run(ctx)
 
-	// Make sure the health checker is up.
+	// Make sure the probe checker is up.
 	time.Sleep(500 * time.Millisecond)
-	assertHealthCheckResult(t, phr.healthCheckURL, true)
+	assertProbeCheckResult(t, phr.probeCheckURL, true)
 
 	// Guarantee that it has been long enough that the stale duration has been reached. This will cause
-	// the health checker's result to be unhealthy.
-	time.Sleep(2 * phr.probeHelper.healthChecker.maxStaleDuration)
-	assertHealthCheckResult(t, phr.healthCheckURL, false)
+	// the probe checker's result to be unhealthy.
+	time.Sleep(2 * phr.probeHelper.probeChecker.maxStaleDuration)
+	assertProbeCheckResult(t, phr.probeCheckURL, false)
 
 	// Cancel gracefully to avoid logger panic if parent goroutine terminates.
 	phr.cleanup()

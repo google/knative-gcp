@@ -95,7 +95,7 @@ func (ph *ProbeHelper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 		var receiverChannel chan bool
 
 		logger.Infow("Received probe request")
-		ph.healthChecker.lastProbeEventTimestamp.setNow()
+		ph.probeChecker.lastProbeEventTimestamp.setNow()
 
 		// Only proceed if the probe request is legitimate.
 		if !isValidProbeEvent(event) {
@@ -231,7 +231,7 @@ func (ph *ProbeHelper) receiveEvent(ctx context.Context) cloudEventsFunc {
 		var channelID string
 
 		logger.Infow("Received event")
-		ph.healthChecker.lastReceiverEventTimestamp.setNow()
+		ph.probeChecker.lastReceiverEventTimestamp.setNow()
 
 		switch event.Type() {
 		case BrokerE2EDeliveryProbeEventType:
@@ -495,8 +495,8 @@ type ProbeHelper struct {
 	// The map of received events to be tracked by the probe and receiver clients
 	receivedEvents *receivedEventsMap
 
-	// The health checker invoked in the liveness probe
-	healthChecker *healthChecker
+	// The probe checker invoked in the liveness probe
+	probeChecker *probeChecker
 }
 
 func (ph *ProbeHelper) run(ctx context.Context) {
@@ -506,12 +506,12 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 	// initialize the cloud scheduler event timestamp
 	ph.lastCloudSchedulerEventTimestamp.setNow()
 
-	// initialize the health checker
-	if ph.healthChecker == nil {
-		logger.Fatalw("Unspecified health checker")
+	// initialize the probe checker
+	if ph.probeChecker == nil {
+		logger.Fatalw("Unspecified probe checker")
 	}
-	ph.healthChecker.lastProbeEventTimestamp.setNow()
-	ph.healthChecker.lastReceiverEventTimestamp.setNow()
+	ph.probeChecker.lastProbeEventTimestamp.setNow()
+	ph.probeChecker.lastReceiverEventTimestamp.setNow()
 
 	// create pubsub client
 	if ph.pubsubClient == nil {
@@ -568,7 +568,7 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 	// create receiver client
 	if ph.receiverClient == nil {
 		rpOpts := []cehttp.Option{
-			cloudevents.WithGetHandlerFunc(ph.healthChecker.stalenessHandlerFunc(ctx)),
+			cloudevents.WithGetHandlerFunc(ph.probeChecker.stalenessHandlerFunc(ctx)),
 		}
 		if ph.probeListener != nil {
 			rpOpts = append(rpOpts, cloudevents.WithListener(ph.receiverListener))
