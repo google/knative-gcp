@@ -57,7 +57,6 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
      --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
      --role roles/monitoring.metricWriter
    ```
-
    and `roles/cloudtrace.agent` for tracing functionality:
 
    ```shell
@@ -68,6 +67,23 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
 
 ## Configure the Authentication Mechanism for GCP (the Data Plane)
 
+If you want to run [example](https://github.com/google/knative-gcp/tree/master/docs/examples)
+to create resources (like [CloudPubSubSource](../examples/cloudpubsubsource/README.md),
+[GloudSchedulerSource](../examples/cloudschedulersource/README.md), etc.) and make your resources'
+Data Plane work, you need to make authentication configuration in the namespace where your resources reside.
+
+Currently, we support two methods: Workload Identity and Kubernetes Secret. The
+configuration steps have been automated by the scripts below. If you wish to
+configure the auth manually, refer to
+[Manually Configure Authentication Mechanism for the Data Plane](./authentication-mechanisms-gcp.md/#authentication-mechanism-for-the-data-plane).
+
+Before applying initialization scripts, make sure:
+
+1. Your default zone is set to be the same as your current cluster. You may use
+   `gcloud container clusters describe $CLUSTER_NAME` to get zone and apply
+   `gcloud config set compute/zone $ZONE` to set it.
+1. Your gcloud `CLI` are up to date. You may use `gcloud components update` to
+   update it.
 ### Option 1: Use Workload Identity
 
 It is the recommended way to access Google Cloud services from within GKE due to
@@ -79,7 +95,9 @@ Workload Identity see
 
 1. If you install the Knative-GCP Constructs with v0.14.0 or older release,
    please use option 2.
-2. `spec.googleServiceAccount` in v0.14.0 is deprecated for security
+2. We assume that you have already [enabled Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
+   in your cluster.
+3. `spec.googleServiceAccount` in v0.14.0 is deprecated for security
    implications. It has not been promoted to v1beta1 and is expected to be
    removed from v1alpha1 in the v0.16.0 release. Instead,
    `spec.serviceAccountName` has been introduced for Workload Identity in
@@ -90,117 +108,83 @@ Plane:
 
 - **_Non-default scenario:_**
 
-  Using the Google Cloud Service Account `cre-dataplane` you just created and
-  using
-  [Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
-  in
-  [Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md)
-  to configure Workload Identity in the namespace your resources will reside.
-  (You may notice that this link is pointing to the manual Workload Identity
-  configuration in the Control Plane. Non-default scenario Workload Identity
-  configuration in the Data Plane is similar to the manual Workload Identity
-  configuration in the Control Plane)
+  Apply [init_data_plane_gke.sh](../../hack/init_data_plane_gke.sh) with parameters:
 
-  You will have a Kubernetes Service Account after the above configuration,
-  which is bound to the Google Cloud Service Account `cre-dataplane`. Remember
-  to put this Kubernetes Service Account name as the `spec.serviceAccountName`
+  ```shell
+  ./hack/init_data_plane_gke.sh [MODE] [NAMESPACE] [K8S_SERVICE_ACCOUNT] [PROJECT_ID]
+  ```
+  Parameters available:
+
+  1. `MODE`: an optional parameter to specify the mode to use, default to `default`.
+  1. `NAMESPACE`: an optional parameter to specify the namespace to use, default to `default`.
+  If the namespace does not exist, the script will create it.
+  1. `K8S_SERVICE_ACCOUNT`: an optional parameter to specify the k8s service account to use, default to `default-cre-dataplane`.
+  If the k8s service account does not exist, the script will create it.
+  1. `PROJECT_ID`: an optional parameter to specify the project to use, default to
+     `gcloud config get-value project`.
+
+  Here is an example to run this script if you want to configure non-default Workload Identity
+  in namespace `example` with Kubernetes service account `example-ksa`:
+
+  ```shell
+  ./hack/init_data_plane_gke.sh non-default example example-ksa
+  ```
+
+  After running the script, you will have a Kubernetes Service Account `example-ksa` in namespace `example`
+  which is bound to the Google Cloud Service Account `cre-dataplane` (you just created it in the last step).
+  Remember to put this Kubernetes Service Account name as the `spec.serviceAccountName`
   when you create resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
 
 - **_Default scenario:_**
 
-  Instead of manually configuring Workload Identity with
-  [Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md),
+  Instead of manually configuring Workload Identity namespace by namespace,
   you can authorize the Controller to configure Workload Identity for you.
 
-  You need to grant `iam.serviceAccountAdmin` permission of the Google Cloud
-  Service Account `cre-dataplane` you just created to the Control Plane's Google
-  Cloud Service Account `cloud-run-events` by:
+  Apply [init_data_plane_gke.sh](../../hack/init_data_plane_gke.sh) without parameters:
 
   ```shell
-  gcloud iam service-accounts add-iam-policy-binding \
-   cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com  \
-   --member=serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
-   --role roles/iam.serviceAccountAdmin
+  ./hack/init_data_plane_gke.sh
   ```
 
-  Then, modify `clusterDefaults` in ConfigMap `config-gcp-auth`.
+  After running this, every time when you create resources,
+  the Controller will create a Kubernetes service account `default-cre-dataplane` in the
+  namespace where your resources reside, and this Kubernetes service account
+  is bound to the Google Cloud Service Account `cre-dataplane` (you just created it in the last step).
+  What's more, you don't need to put this Kubernetes Service Account name as the `spec.serviceAccountName`
+  when you create resources in the
+  [example](https://github.com/google/knative-gcp/tree/master/docs/examples), the Controller will add it for you.
 
-  You can directly edit the ConfigMap by:
+  A `Condition` `WorkloadIdentityConfigured` will show up under resources'
+  `Status`, indicating the Workload Identity configuration status.
 
-  ```shell
-  kubectl edit configmap config-gcp-auth -n cloud-run-events
-  ```
-
-  and add `workloadIdentityMapping` in `clusterDefaults`:
-
-  ```shell
-  default-auth-config: |
-    clusterDefaults:
-      workloadIdentityMapping:
-        default-cre-dataplane: cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
-  ```
-
-  When updating the configuration, note that `default-auth-config` is nested
-  under `data`. If you encounter an error, you are likely attempting to modify
-  the example configuration in `_example`.
-
-  Here, `default-cre-dataplane` refers to a Kubernetes Service Account bound to
-  the Google Cloud Service Account `cre-dataplane`. Remember to put this
-  Kubernetes Service Account name as the `spec.serviceAccountName` when you
-  create resources in the
-  [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
-
-  Kubernetes Service Account `default-cre-dataplane` doesn't need to exist in a
-  specific namespace. Once it is set in the ConfigMap `config-gcp-auth`， the
-  Control Plane will create it for you and configure the corresponding Workload
-  Identity relationship between the Kubernetes Service Account
-  `default-cre-dataplane` and the Google Cloud Service Account `cre-dataplane`
-  when you create resources using the Kubernetes Service Account
-  `default-cre-dataplane`.
-
-A `Condition` `WorkloadIdentityConfigured` will show up under resources'
-`Status`, indicating the Workload Identity configuration status.  
- **_Note:_** The Controller currently doesn’t perform any access control checks,
-as a result, any user who can create a resource can get access to the Google Cloud
-Service Account which grants the `iam.serviceAccountAdmin` permission to the Controller.
-As an example, if you followed the instructions above, then any user that can make
-a Knative-GCP source or Channel (e.g. `CloudAuditLogsSource`, `CloudPubSubSource`,
-etc.) can cause the Kubernetes Service Account `default-cre-dataplane` to be created.
-If they can also create Pods in that namespace, then they can make a Pod that uses
-the Google Service Account `cre-dataplane` credentials.
+  **_Note:_** The Controller currently doesn’t perform any access control checks,
+as a result, the Controller will configure Workload Identity (using Google Service Account
+`cre-dataplane`'s credential) for any user who can create a resource.
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 
-1. Download a new JSON private key for that Service Account. **Be sure not to
-   check this key into source control!**
+Apply [init_data_plane.sh](../../hack/init_data_plane.sh) with parameters:
 
-   ```shell
-   gcloud iam service-accounts keys create cre-dataplane.json \
-   --iam-account=cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
-   ```
+```shell
+./hack/init_data_plane.sh [NAMESPACE] [SECRET] [PROJECT_ID]
+```
+Parameters available:
+1.  `NAMESPACE`: an optional parameter to specify the namespace to use, default to `default`.
+If the namespace does not exist, the script will create it.
+1.  `SECRET`: an optional parameter to specify the secret, default to `google-cloud-key`.
+If the secret does not exist, the script will create it.
+1.  `PROJECT_ID`: an optional parameter to specify the project to use, default
+    to `gcloud config get-value project`. If you want to specify the parameter
+    `PROJECT_ID` instead of using the default one.
 
-1. Create a secret on the Kubernetes cluster with the downloaded key. Remember
-   to create the secret in the namespace your resources will reside. The example
-   below does so in the `default` namespace.
+Here is an example to run this script if you want to configure authentication
+in namespace `example` with the default secret name `google-cloud-key`
 
-   ```shell
-   kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cre-dataplane.json
-   ```
+```shell
+./hack/init_data_plane.sh example
+```
 
-   `google-cloud-key` and `key.json` are default values expected by our
-   resources.
-
-## Cleaning Up
-
-1. Delete the secret
-
-   ```shell
-   kubectl --namespace default delete secret google-cloud-key
-   ```
-
-1. Delete the service account
-
-   ```shell
-   gcloud iam service-accounts delete cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
-   ```
+After running the script, you will have a Kubernetes Secret `google-cloud-key`
+in namespace `example` which stores the key exported from the Google Cloud service account
+`cre-dataplane`(you just created it in the last step).
