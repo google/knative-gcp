@@ -111,7 +111,7 @@ Plane:
   Apply [init_data_plane_gke.sh](../../hack/init_data_plane_gke.sh) with parameters:
 
   ```shell
-  ./hack/init_control_plane_gke.sh [MODE] [NAMESPACE] [K8S_SERVICE_ACCOUNT] [PROJECT_ID]
+  ./hack/init_data_plane_gke.sh [MODE] [NAMESPACE] [K8S_SERVICE_ACCOUNT] [PROJECT_ID]
   ```
   Parameters available:
 
@@ -127,7 +127,7 @@ Plane:
   in namespace `example` with Kubernetes service account `example-ksa`:
 
   ```shell
-  ./hack/init_control_plane_gke.sh non-default example example-ksa
+  ./hack/init_data_plane_gke.sh non-default example example-ksa
   ```
 
   After running the script, you will have a Kubernetes Service Account `example-ksa` in namespace `example`
@@ -141,10 +141,10 @@ Plane:
   Instead of manually configuring Workload Identity namespace by namespace,
   you can authorize the Controller to configure Workload Identity for you.
 
-  Apply [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh) without parameters:
+  Apply [init_data_plane_gke.sh](../../hack/init_data_plane_gke.sh) without parameters:
 
   ```shell
-  ./hack/init_control_plane_gke.sh
+  ./hack/init_data_plane_gke.sh
   ```
 
   After running this, every time when you create resources,
