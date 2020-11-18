@@ -71,7 +71,7 @@ func main() {
 
 	client, err := cloudevents.NewDefaultClient()
 	if err != nil {
-		log.Fatalf("Failed to create cloudevents client: %v", err)
+		log.Fatalf("Failed to create cloudevents client: %v\n", err)
 	}
 
 	ext := map[string]string{}

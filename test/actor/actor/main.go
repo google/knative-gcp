@@ -55,7 +55,7 @@ type config struct {
 	// If empty, then metrics won't be sent.
 	AggregatorAddr string `envconfig:"AGGREGATOR_ADDR"`
 
-	// ReportGap is a duration within which if there is no event recieved,
+	// ReportGap is a duration within which if there is no event received,
 	// existing metrics will be reported to the aggregator.
 	ReportGap time.Duration `envconfig:"REPORT_GAP" default:"1m"`
 }
@@ -76,7 +76,7 @@ func main() {
 
 	l, err := net.Listen("tcp", ":8080")
 	if err != nil {
-		log.Fatalf("Failed to create net listener: %v", err)
+		log.Fatalf("Failed to create net listener: %v\n", err)
 	}
 	defer l.Close()
 	if env.MaxConn > 0 {
