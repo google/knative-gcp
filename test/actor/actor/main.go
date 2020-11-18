@@ -61,8 +61,9 @@ type config struct {
 }
 
 func main() {
-	// Create a large heap allocation of 10 GiB
-	// In some cases, this helps to avoid noise.
+	// Create a large heap allocation of 10 GiB.
+	// In some cases, this helps to avoid noise from GC.
+	// It doesn't really consume 10GiB memory. See explaination at:
 	// https://blog.twitch.tv/en/2019/04/10/go-memory-ballast-how-i-learnt-to-stop-worrying-and-love-the-heap-26c2462549a2/
 	_ = make([]byte, 10<<30)
 
