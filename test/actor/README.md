@@ -40,7 +40,7 @@ The flags:
 - `-actors=2` means we want 2 replicas for each actor deployment.
 - `-elapse=2m` means we want all the `seeders` to send events for 2 minutes.
 - `-ns=new-actor-1` means we want to run the test in namespace `new-actor-1`
-- `-output=$PWD/actor-new` is the output dir for the yamls
+- `-output=$PWD/actor-new` is the absolute path of the output dir for the yamls
 - `-seeders=2` means we want 2 replicas for the seeder.
 - `-triggers=5` means we want 5 triggers each with its own actor deployment.
 

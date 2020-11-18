@@ -69,7 +69,7 @@ func main() {
 
 	var env config
 	if err := envconfig.Process("", &env); err != nil {
-		log.Fatalf("Failed to process env config: %v", err)
+		log.Fatalf("Failed to process env config: %v\n", err)
 	}
 
 	delayHosts := parseHosts(env.DelayHosts)

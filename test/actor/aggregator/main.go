@@ -62,7 +62,7 @@ func main() {
 				)
 
 				if err := ioutil.WriteFile("/dev/termination-log", []byte(tlog), 0644); err != nil {
-					log.Fatalf("Failed to write termination log: %v", err)
+					log.Fatalf("Failed to write termination log: %v\n", err)
 				}
 
 				srv.Shutdown(context.Background())
