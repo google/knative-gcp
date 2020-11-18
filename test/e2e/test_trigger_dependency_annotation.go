@@ -30,7 +30,7 @@ import (
 
 	gcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	sourcesv1beta1 "knative.dev/eventing/pkg/apis/sources/v1beta1"
-	eventingtesting "knative.dev/eventing/pkg/reconciler/testing"
+	eventingtesting "knative.dev/eventing/pkg/reconciler/testing/v1beta1"
 	testlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/recordevents"
 	eventingresources "knative.dev/eventing/test/lib/resources"
@@ -64,10 +64,10 @@ func TriggerDependencyAnnotationTestImpl(t *testing.T, authConfig lib.AuthConfig
 	)
 
 	jsonData := fmt.Sprintf(`{"msg":"Test trigger-annotation %s"}`, uuid.NewUUID())
-	pingSource := eventingtesting.NewPingSourceV1Beta1(
+	pingSource := eventingtesting.NewPingSource(
 		pingSourceName,
 		client.Namespace,
-		eventingtesting.WithPingSourceV1B1Spec(sourcesv1beta1.PingSourceSpec{
+		eventingtesting.WithPingSourceSpec(sourcesv1beta1.PingSourceSpec{
 			Schedule: schedule,
 			JsonData: jsonData,
 			SourceSpec: duckv1.SourceSpec{

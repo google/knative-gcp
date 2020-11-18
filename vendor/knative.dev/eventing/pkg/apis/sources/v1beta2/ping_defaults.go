@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,21 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v1beta2
 
 import (
 	"context"
-	"fmt"
-
-	"knative.dev/pkg/apis"
 )
 
-// ConvertTo implements apis.Convertible
-func (source *Revision) ConvertTo(_ context.Context, sink apis.Convertible) error {
-	return fmt.Errorf("v1 is the highest known version, got: %T", sink)
+const (
+	defaultSchedule = "* * * * *"
+)
+
+func (s *PingSource) SetDefaults(ctx context.Context) {
+	s.Spec.SetDefaults(ctx)
 }
 
-// ConvertFrom implements apis.Convertible
-func (sink *Revision) ConvertFrom(_ context.Context, source apis.Convertible) error {
-	return fmt.Errorf("v1 is the highest known version, got: %T", source)
+func (ss *PingSourceSpec) SetDefaults(ctx context.Context) {
+	if ss.Schedule == "" {
+		ss.Schedule = defaultSchedule
+	}
 }
