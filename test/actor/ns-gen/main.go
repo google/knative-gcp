@@ -195,8 +195,6 @@ func main() {
 	br := strings.ReplaceAll(brTemplate, "{{.namespace}}", *ns)
 	br = strings.ReplaceAll(br, "{{.brclass}}", *brClass)
 
-	// actor := strings.ReplaceAll(actorTemplate, "{{.namespace}}", *ns)
-	// actor = strings.ReplaceAll(actor, "{{.replicas}}", strconv.Itoa(*actorReplicas))
 	envs := ""
 	if *errRate > 0 {
 		env1 := strings.ReplaceAll(envTemplate, "{{.envname}}", "ERR_HOSTS")
