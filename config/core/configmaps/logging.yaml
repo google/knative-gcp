@@ -16,7 +16,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: config-logging
-  namespace: cloud-run-events
+  namespace: events-system
   labels:
     events.cloud.google.com/release: devel
   annotations:

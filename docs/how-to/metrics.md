@@ -36,11 +36,11 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 ## Enable Metrics in the `config-observability` ConfigMap
 
-Edit the `config-observability` ConfigMap under the `cloud-run-events` namespace
+Edit the `config-observability` ConfigMap under the `events-system` namespace
 in Cloud Console or with the following `kubectl` command:
 
 ```shell
-kubectl edit configmap -n cloud-run-events config-observability
+kubectl edit configmap -n events-system config-observability
 ```
 
 and add the following entries:

@@ -26,7 +26,7 @@ import (
 
 func TestLabels(t *testing.T) {
 	wantLabels := map[string]string{
-		"app":        "cloud-run-events",
+		"app":        "events-system",
 		"brokerCell": "default",
 		"role":       "fanout",
 	}
@@ -49,7 +49,7 @@ func TestName(t *testing.T) {
 func TestGetLabelSelector(t *testing.T) {
 	gotLabelSelector := GetLabelSelector("default", "fanout")
 	wantLabelSelector := labels.SelectorFromSet(map[string]string{
-		"app":        "cloud-run-events",
+		"app":        "events-system",
 		"brokerCell": "default",
 		"role":       "fanout",
 	})
