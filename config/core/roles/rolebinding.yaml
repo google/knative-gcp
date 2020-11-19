@@ -15,33 +15,33 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: cloud-run-events-controller
-  namespace: cloud-run-events
+  name: events-system-controller
+  namespace: events-system
   labels:
     events.cloud.google.com/release: devel
 subjects:
 - kind: ServiceAccount
   name: controller
-  namespace: cloud-run-events
+  namespace: events-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: cloud-run-events-controller
+  name: events-system-controller
 
 ---
 # RoleBinding for GCP broker data plane.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: cloud-run-events-broker
-  namespace: cloud-run-events
+  name: events-system-broker
+  namespace: events-system
   labels:
     events.cloud.google.com/release: devel
 subjects:
   - kind: ServiceAccount
     name: broker
-    namespace: cloud-run-events
+    namespace: events-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: cloud-run-events-broker
+  name: events-system-broker

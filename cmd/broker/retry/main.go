@@ -41,7 +41,7 @@ const (
 
 type envConfig struct {
 	PodName            string `envconfig:"POD_NAME" required:"true"`
-	TargetsConfigPath  string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
+	TargetsConfigPath  string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/events-system/broker/targets"`
 	HandlerConcurrency int    `envconfig:"HANDLER_CONCURRENCY"`
 
 	// Outstanding messages effectively limits how many connections we will create to each subscriber.

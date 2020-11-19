@@ -48,7 +48,7 @@ type AuthTypeArgs struct {
 
 const (
 	AuthenticationCheckUnknownReason = "AuthenticationCheckPending"
-	ControlPlaneNamespace            = "cloud-run-events"
+	ControlPlaneNamespace            = "events-system"
 	BrokerServiceAccountName         = "broker"
 )
 

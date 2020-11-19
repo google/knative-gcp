@@ -16,19 +16,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: webhook
-  namespace: cloud-run-events
+  namespace: events-system
   labels:
     events.cloud.google.com/release: devel
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: cloud-run-events
+      app: events-system
       role: webhook
   template:
     metadata:
       labels:
-        app: cloud-run-events
+        app: events-system
         role: webhook
         events.cloud.google.com/release: devel
       annotations:

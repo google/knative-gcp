@@ -16,7 +16,7 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: probe-helper-receiver
-  namespace: cloud-run-events-probe
+  namespace: events-system-probe
 spec:
   template:
     metadata:
@@ -30,7 +30,7 @@ spec:
           image: ko://github.com/google/knative-gcp/test/test_images/probe_helper
           env:
             - name: BROKER_CELL_INGRESS_BASE_URL
-              value: "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local"
+              value: "http://default-brokercell-ingress.events-system.svc.cluster.local"
             - name: PROBE_PORT
               value: "8070"
             - name: RECEIVER_PORT
