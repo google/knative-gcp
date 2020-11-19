@@ -139,22 +139,27 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 ## Authentication Mechanism for the Data Plane
 
-This is the manual auth configuration for the Data Plane and
-using the Google Cloud Service Account `cre-dataplane` as the credential.
-Refer to [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md) for automated scripts.
+This is the manual auth configuration for the Data Plane and using the Google
+Cloud Service Account `cre-dataplane` as the credential. Refer to
+[Installing a Service Account for the Data Plane](../install/dataplane-service-account.md)
+for automated scripts.
 
 ### Option 1: Use Workload Identity
-1. We assume that you have already [enabled Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
-in your cluster.
-1. There are two scenarios to leverage Workload Identity for resources in the Data
-Plane:
+
+1. We assume that you have already
+   [enabled Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
+   in your cluster.
+1. There are two scenarios to leverage Workload Identity for resources in the
+   Data Plane:
 
 - **_Non-default scenario:_**
 
-  Using the Google Cloud Service Account `cre-dataplane` you created in [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md)
+  Using the Google Cloud Service Account `cre-dataplane` you created in
+  [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md)
   and using
   [Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
-  in [Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md)
+  in
+  [Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md)
   to configure Workload Identity in the namespace your resources will reside.
   (You may notice that this link is pointing to the manual Workload Identity
   configuration in the Control Plane. Non-default scenario Workload Identity
@@ -174,7 +179,8 @@ Plane:
   you can authorize the Controller to configure Workload Identity for you.
 
   You need to grant `iam.serviceAccountAdmin` permission of the Google Cloud
-  Service Account `cre-dataplane` you created in [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md)
+  Service Account `cre-dataplane` you created in
+  [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md)
   to the Control Plane's Google Cloud Service Account `cloud-run-events` by:
 
   ```shell
@@ -223,20 +229,22 @@ Plane:
   A `Condition` `WorkloadIdentityConfigured` will show up under resources'
   `Status`, indicating the Workload Identity configuration status.
 
- **_Note:_** The Controller currently doesn’t perform any access control checks,
-as a result, any user who can create a resource can get access to the Google Cloud
-Service Account which grants the `iam.serviceAccountAdmin` permission to the Controller.
-As an example, if you followed the instructions above, then any user that can make
-a Knative-GCP source or Channel (e.g. `CloudAuditLogsSource`, `CloudPubSubSource`,
-etc.) can cause the Kubernetes Service Account `default-cre-dataplane` to be created.
-If they can also create Pods in that namespace, then they can make a Pod that uses
-the Google Service Account `cre-dataplane` credentials.
+  **_Note:_** The Controller currently doesn’t perform any access control
+  checks, as a result, any user who can create a resource can get access to the
+  Google Cloud Service Account which grants the `iam.serviceAccountAdmin`
+  permission to the Controller. As an example, if you followed the instructions
+  above, then any user that can make a Knative-GCP source or Channel (e.g.
+  `CloudAuditLogsSource`, `CloudPubSubSource`, etc.) can cause the Kubernetes
+  Service Account `default-cre-dataplane` to be created. If they can also create
+  Pods in that namespace, then they can make a Pod that uses the Google Service
+  Account `cre-dataplane` credentials.
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 
-1. Download a new JSON private key for the Google Cloud Service Account `cre-dataplane`
-created in [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md).
- **Be sure not to check this key into source control!**
+1. Download a new JSON private key for the Google Cloud Service Account
+   `cre-dataplane` created in
+   [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md).
+   **Be sure not to check this key into source control!**
 
    ```shell
    gcloud iam service-accounts keys create cre-dataplane.json \
@@ -253,9 +261,11 @@ created in [Installing a Service Account for the Data Plane](../install/dataplan
 
    `google-cloud-key` and `key.json` are default values expected by our
    resources.
+
 1. Cleaning Up:
+
    1. Delete the secret
 
-       ```shell
-       kubectl --namespace default delete secret google-cloud-key
-       ```
+      ```shell
+      kubectl --namespace default delete secret google-cloud-key
+      ```
