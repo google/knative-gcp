@@ -92,7 +92,7 @@ func (s *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	log.Printf("Received request with headers: %v\n", req.Header)
 
 	role := req.Header.Get("role")
-	if role == "" {
+	if role != "actor" && role != "seeder" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
