@@ -240,12 +240,12 @@ function dump_extra_cluster_state() {
       local current_output="${ARTIFACTS}/${controller_logs}/${namespace}-${pod}-${container}.txt"
       echo ">>> The dump of Namespace, Pod, Container: ${namespace}, ${pod}, ${container} is located at ${current_output}"
       echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"  >> "${current_output}"
-      kubectl logs -n $namespace "${pod}" -c "${container}" >> "${current_output}"
+      kubectl logs -n $namespace "${pod}" -c "${container}" >> "${current_output}" || true
       echo "----------------------------------------------------------"
       local previous_output="${ARTIFACTS}/${controller_logs}/previous-${namespace}-${pod}-${container}.txt"
       echo ">>> The dump of Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container} is located at ${previous_output}"
       echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"  >> "${previous_output}"
-      kubectl logs -p -n $namespace "${pod}" -c "${container}" >> "${previous_output}"
+      kubectl logs -p -n $namespace "${pod}" -c "${container}" >> "${previous_output}" || true
       echo "============================================================"
     done
   done
