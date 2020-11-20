@@ -128,7 +128,7 @@ function gcp_broker_setup() {
     echo "Invalid parameter"
   fi
 
-  warmup_broker_setup
+  warmup_broker_setup || true
 }
 
 function prow_control_plane_setup() {
