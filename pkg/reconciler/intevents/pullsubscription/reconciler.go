@@ -32,6 +32,7 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
+	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 	"github.com/google/knative-gcp/pkg/utils"
 
 	"knative.dev/pkg/apis"
@@ -309,6 +310,18 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1.PullSubsc
 		logging.FromContext(ctx).Desugar().Error("Error serializing tracing config", zap.Error(err))
 	}
 
+	authType, err := authtype.GetAuthType(ctx, r.ServiceAccountLister, nil, authtype.AuthTypeArgs{
+		Namespace:          ps.Namespace,
+		ServiceAccountName: ps.IdentitySpec().ServiceAccountName,
+		Secret:             ps.Spec.Secret,
+	})
+
+	if err != nil {
+		ps.Status.MarkDeployedUnknown(authtype.AuthenticationCheckUnknownReason, err.Error())
+		logging.FromContext(ctx).Desugar().Error("Error getting authType", zap.Error(err))
+		return err
+	}
+
 	desired := resources.MakeReceiveAdapter(ctx, &resources.ReceiveAdapterArgs{
 		Image:            r.ReceiveAdapterImage,
 		PullSubscription: ps,
@@ -319,6 +332,7 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1.PullSubsc
 		LoggingConfig:    loggingConfig,
 		MetricsConfig:    metricsConfig,
 		TracingConfig:    tracingConfig,
+		AuthType:         authType,
 	})
 
 	return f(ctx, desired, ps)

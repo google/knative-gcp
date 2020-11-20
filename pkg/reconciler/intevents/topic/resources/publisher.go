@@ -31,11 +31,12 @@ import (
 // PublisherArgs are the arguments needed to create a Topic publisher.
 // Every field is required.
 type PublisherArgs struct {
-	Image  string
-	Topic  *v1.Topic
-	Labels map[string]string
-
+	Image         string
+	Topic         *v1.Topic
+	Labels        map[string]string
 	TracingConfig string
+	// There are three types: `secret`, `workload-identity-gsa` and `workload-identity-ubermint`.
+	AuthType string
 }
 
 const (
@@ -91,10 +92,18 @@ func makePublisherPodSpec(args *PublisherArgs) *corev1.PodSpec {
 	}
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
 
-	publisherContainer.Env = append(publisherContainer.Env, corev1.EnvVar{
-		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-		Value: credsFile,
-	})
+	publisherContainer.Env = append(
+		publisherContainer.Env,
+		corev1.EnvVar{
+			Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+			Value: credsFile,
+		},
+		corev1.EnvVar{
+			Name:  "K_GCP_AUTH_TYPE",
+			Value: args.AuthType,
+		},
+	)
+
 	publisherContainer.VolumeMounts = []corev1.VolumeMount{{
 		Name:      credsVolume,
 		MountPath: credsMountPath,

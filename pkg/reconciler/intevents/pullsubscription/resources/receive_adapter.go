@@ -51,6 +51,8 @@ type ReceiveAdapterArgs struct {
 	MetricsConfig    string
 	LoggingConfig    string
 	TracingConfig    string
+	// There are three types: `secret`, `workload-identity-gsa` and `workload-identity-ubermint`.
+	AuthType string
 }
 
 const (
@@ -154,6 +156,9 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 		}, {
 			Name:  "METRICS_DOMAIN",
 			Value: metricsDomain,
+		}, {
+			Name:  "K_GCP_AUTH_TYPE",
+			Value: args.AuthType,
 		}},
 		Ports: []corev1.ContainerPort{{
 			Name:          "metrics",
