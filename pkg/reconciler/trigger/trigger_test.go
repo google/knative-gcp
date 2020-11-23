@@ -259,6 +259,7 @@ func TestAllCasesTrigger(t *testing.T) {
 					WithTriggerSetDefaults,
 					WithInitTriggerConditions,
 					WithTriggerTopicReady,
+					WithTriggerSubscriptionReady,
 				),
 			}},
 		},

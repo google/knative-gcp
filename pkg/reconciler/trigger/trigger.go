@@ -110,19 +110,20 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 		// we should clean up resources related to GCP Broker.
 		event := r.FinalizeKind(ctx, t)
 
-		// If a trigger has never pointed to a GCP broker, topic readiness shouldn't block this trigger's
-		// readiness. However, without a reliable way to tell if the trigger has previously pointed
-		// to a GCP broker FinalizeKind called above and other code could potentially change the topic
-		// readiness to UNKNOWN even when it has never pointed to a GCP broker. Always mark the topic ready
-		// here to unblock trigger readiness.
+		// If a trigger has never pointed to a GCP broker, topic/subscription readiness shouldn't block this
+		// trigger's readiness. However, without a reliable way to tell if the trigger has previously pointed
+		// to a GCP broker FinalizeKind called above and other code could potentially change the topic/subscription
+		// readiness to UNKNOWN even when it has never pointed to a GCP broker. Always mark the topic/subscription
+		// ready here to unblock trigger readiness.
 		// This code can potentially cause problems in cases where the trigger did refer to a GCP
 		// broker which got deleted and recreated with a new non GCP broker. It's necessary to do best
-		// effort GC but the topic is going to be marked ready even when GC fails. This can result in
-		// dangling topic without matching status.
+		// effort GC but the topic/subscription is going to be marked ready even when GC fails. This can result in
+		// dangling topic/subscription without matching status.
 		// This line should be deleted once the following TODO is finished.
 		// TODO(https://github.com/knative/pkg/issues/1149) Add a FilterKind to genreconciler so it will
 		// skip a trigger if it's not pointed to a gcp broker and doesn't have googlecloud finalizer string.
 		t.Status.MarkTopicReady()
+		t.Status.MarkSubscriptionReady()
 		var reconcilerEvent *pkgreconciler.ReconcilerEvent
 		switch {
 		case event == nil:
