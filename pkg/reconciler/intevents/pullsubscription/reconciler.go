@@ -315,7 +315,6 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1.PullSubsc
 		ServiceAccountName: ps.IdentitySpec().ServiceAccountName,
 		Secret:             ps.Spec.Secret,
 	})
-
 	if err != nil {
 		ps.Status.MarkDeployedUnknown(authtype.AuthenticationCheckUnknownReason, err.Error())
 		logging.FromContext(ctx).Desugar().Error("Error getting authType", zap.Error(err))

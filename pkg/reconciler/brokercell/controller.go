@@ -35,15 +35,20 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 	customresourceutil "github.com/google/knative-gcp/pkg/utils/customresource"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	configmapinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	podinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/pod"
+	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
+	serviceaccountinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
@@ -70,17 +75,21 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
+	brokercellinformer := brokercellinformer.Get(ctx)
+
 	logger := logging.FromContext(ctx)
 
 	ls := listers{
-		brokerLister:     brokerinformer.Get(ctx).Lister(),
-		hpaLister:        hpainformer.Get(ctx).Lister(),
-		triggerLister:    triggerinformer.Get(ctx).Lister(),
-		configMapLister:  configmapinformer.Get(ctx).Lister(),
-		serviceLister:    serviceinformer.Get(ctx).Lister(),
-		endpointsLister:  endpointsinformer.Get(ctx).Lister(),
-		deploymentLister: deploymentinformer.Get(ctx).Lister(),
-		podLister:        podinformer.Get(ctx).Lister(),
+		brokerLister:         brokerinformer.Get(ctx).Lister(),
+		hpaLister:            hpainformer.Get(ctx).Lister(),
+		triggerLister:        triggerinformer.Get(ctx).Lister(),
+		configMapLister:      configmapinformer.Get(ctx).Lister(),
+		secretLister:         secretinformer.Get(ctx).Lister(),
+		serviceAccountLister: serviceaccountinformer.Get(ctx).Lister(),
+		serviceLister:        serviceinformer.Get(ctx).Lister(),
+		endpointsLister:      endpointsinformer.Get(ctx).Lister(),
+		deploymentLister:     deploymentinformer.Get(ctx).Lister(),
+		podLister:            podinformer.Get(ctx).Lister(),
 	}
 
 	base := reconciler.NewBase(ctx, controllerAgentName, cmw)
@@ -100,7 +109,8 @@ func NewController(
 
 	logger.Info("Setting up event handlers.")
 
-	brokercellinformer.Get(ctx).Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
+	brokercellinformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
+	brokercellLister := brokercellinformer.Lister()
 
 	// Watch brokers and triggers to invoke configmap update immediately.
 	brokerinformer.Get(ctx).Informer().AddEventHandler(controller.HandleAll(
@@ -132,6 +142,19 @@ func NewController(
 	// 4. Watch the broker targets configmap.
 	configmapinformer.Get(ctx).Informer().AddEventHandler(handleResourceUpdate(impl))
 
+	// Watch componets which are not created by brokercell, but affect broker data plane.
+	// 1. Watch broker data plane's secret,
+	// if the filtered secret resource changes, enqueue brokercells from the same namespace.
+	secretinformer.Get(ctx).Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterWithNameAndNamespace(authtype.ControlPlaneNamespace, authtype.BrokerSecret.Name),
+		Handler:    authtype.EnqueueBrokerCell(impl, brokercellLister),
+	})
+	// 2. Watch broker data plane's k8s service account,
+	// if the filtered k8s service account resource changes, enqueue brokercells from the same namespace.
+	serviceaccountinformer.Get(ctx).Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterWithNameAndNamespace(authtype.ControlPlaneNamespace, authtype.BrokerServiceAccountName),
+		Handler:    authtype.EnqueueBrokerCell(impl, brokercellLister),
+	})
 	return impl
 }
 

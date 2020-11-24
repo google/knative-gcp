@@ -87,6 +87,10 @@ func (bs *BrokerCellStatus) MarkIngressFailed(reason, format string, args ...int
 	brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionIngress, reason, format, args...)
 }
 
+func (bs *BrokerCellStatus) MarkIngressUnknown(reason, format string, args ...interface{}) {
+	brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionIngress, reason, format, args...)
+}
+
 // PropagateFanoutAvailability uses the availability of the provided Deployment
 // to determine if BrokerCellConditionFanout should be marked as true or
 // false.

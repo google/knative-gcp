@@ -21,8 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
-
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -51,7 +49,9 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
+	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
 )
 
 const (
@@ -245,11 +245,23 @@ func (r *Reconciler) reconcilePublisher(ctx context.Context, topic *v1.Topic) (e
 		logging.FromContext(ctx).Desugar().Error("Error serializing tracing config", zap.Error(err))
 	}
 
+	authType, err := authtype.GetAuthType(ctx, r.serviceAccountLister, nil, authtype.AuthTypeArgs{
+		Namespace:          topic.Namespace,
+		ServiceAccountName: topic.IdentitySpec().ServiceAccountName,
+		Secret:             topic.Spec.Secret,
+	})
+	if err != nil {
+		topic.Status.MarkPublisherUnknown(authtype.AuthenticationCheckUnknownReason, err.Error())
+		logging.FromContext(ctx).Desugar().Error("Error getting authType", zap.Error(err))
+		return err, nil
+	}
+
 	desired := resources.MakePublisher(&resources.PublisherArgs{
 		Image:         r.publisherImage,
 		Topic:         topic,
 		Labels:        resources.GetLabels(controllerAgentName, topic.Name),
 		TracingConfig: tracingCfg,
+		AuthType:      authType,
 	})
 
 	svc := existing

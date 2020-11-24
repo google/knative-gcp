@@ -925,9 +925,10 @@ func newPublisher() *servingv1.Service {
 		reconcilertestingv1.WithTopicSetDefaults,
 	)
 	args := &resources.PublisherArgs{
-		Image:  testImage,
-		Topic:  t,
-		Labels: resources.GetLabels(controllerAgentName, topicName),
+		Image:    testImage,
+		Topic:    t,
+		Labels:   resources.GetLabels(controllerAgentName, topicName),
+		AuthType: "secret",
 	}
 	return resources.MakePublisher(args)
 }

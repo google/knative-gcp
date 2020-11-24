@@ -20,9 +20,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/knative-gcp/pkg/logging"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
+
 	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -39,9 +39,11 @@ import (
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/logging"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	reconcilerutils "github.com/google/knative-gcp/pkg/reconciler/utils"
+	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 )
 
 type envConfig struct {
@@ -55,14 +57,16 @@ type envConfig struct {
 }
 
 type listers struct {
-	brokerLister     brokerlisters.BrokerLister
-	hpaLister        hpav2beta2listers.HorizontalPodAutoscalerLister
-	triggerLister    brokerlisters.TriggerLister
-	configMapLister  corev1listers.ConfigMapLister
-	serviceLister    corev1listers.ServiceLister
-	endpointsLister  corev1listers.EndpointsLister
-	deploymentLister appsv1listers.DeploymentLister
-	podLister        corev1listers.PodLister
+	brokerLister         brokerlisters.BrokerLister
+	hpaLister            hpav2beta2listers.HorizontalPodAutoscalerLister
+	triggerLister        brokerlisters.TriggerLister
+	configMapLister      corev1listers.ConfigMapLister
+	secretLister         corev1listers.SecretLister
+	serviceAccountLister corev1listers.ServiceAccountLister
+	serviceLister        corev1listers.ServiceLister
+	endpointsLister      corev1listers.EndpointsLister
+	deploymentLister     appsv1listers.DeploymentLister
+	podLister            corev1listers.PodLister
 }
 
 // NewReconciler creates a new BrokerCell reconciler.
@@ -136,8 +140,21 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		return err
 	}
 
+	authType, err := authtype.GetAuthType(ctx, r.serviceAccountLister, r.secretLister, authtype.AuthTypeArgs{
+		Namespace:          bc.Namespace,
+		ServiceAccountName: authtype.BrokerServiceAccountName,
+		Secret:             authtype.BrokerSecret,
+	})
+	if err != nil {
+		bc.Status.MarkIngressUnknown(authtype.AuthenticationCheckUnknownReason, err.Error())
+		bc.Status.MarkFanoutUnknown(authtype.AuthenticationCheckUnknownReason, err.Error())
+		bc.Status.MarkRetryUnknown(authtype.AuthenticationCheckUnknownReason, err.Error())
+		logging.FromContext(ctx).Error("Error getting authType", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		return err
+	}
+
 	// Reconcile ingress deployment, HPA and service.
-	ingressArgs := r.makeIngressArgs(bc)
+	ingressArgs := r.makeIngressArgs(bc, authType)
 	ind, err := r.deploymentRec.ReconcileDeployment(ctx, bc, resources.MakeIngressDeployment(ingressArgs))
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to reconcile ingress deployment", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
@@ -163,7 +180,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	bc.Status.IngressTemplate = fmt.Sprintf("http://%s/{namespace}/{name}", hostName)
 
 	// Reconcile fanout deployment and HPA.
-	fd, err := r.deploymentRec.ReconcileDeployment(ctx, bc, resources.MakeFanoutDeployment(r.makeFanoutArgs(bc)))
+	fd, err := r.deploymentRec.ReconcileDeployment(ctx, bc, resources.MakeFanoutDeployment(r.makeFanoutArgs(bc, authType)))
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to reconcile fanout deployment", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkFanoutFailed("FanoutDeploymentFailed", "Failed to reconcile fanout deployment: %v", err)
@@ -179,7 +196,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	bc.Status.PropagateFanoutAvailability(fd)
 
 	// Reconcile retry deployment and HPA.
-	rd, err := r.deploymentRec.ReconcileDeployment(ctx, bc, resources.MakeRetryDeployment(r.makeRetryArgs(bc)))
+	rd, err := r.deploymentRec.ReconcileDeployment(ctx, bc, resources.MakeRetryDeployment(r.makeRetryArgs(bc, authType)))
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to reconcile retry deployment", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkRetryFailed("RetryDeploymentFailed", "Failed to reconcile retry deployment: %v", err)
@@ -228,7 +245,7 @@ func (r *Reconciler) delete(ctx context.Context, bc *intv1alpha1.BrokerCell) pkg
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellGarbageCollected", "BrokerCell garbage collected: \"%s/%s\"", bc.Namespace, bc.Name)
 }
 
-func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.IngressArgs {
+func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell, authType string) resources.IngressArgs {
 	return resources.IngressArgs{
 		Args: resources.Args{
 			ComponentName:      resources.IngressName,
@@ -242,6 +259,7 @@ func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.Ingre
 			MemoryRequest:      bc.Spec.Components.Ingress.MemoryRequest,
 			MemoryLimit:        bc.Spec.Components.Ingress.MemoryLimit,
 			RolloutRestartTime: bc.GetAnnotations()[resources.IngressRestartTimeAnnotationKey],
+			AuthType:           authType,
 		},
 		Port: r.env.IngressPort,
 		// TODO(#1804): remove this arg when enabling the feature by default.
@@ -269,7 +287,7 @@ func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.Au
 	}
 }
 
-func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell) resources.FanoutArgs {
+func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell, authType string) resources.FanoutArgs {
 	return resources.FanoutArgs{
 		Args: resources.Args{
 			ComponentName:      resources.FanoutName,
@@ -283,6 +301,7 @@ func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell) resources.Fanout
 			MemoryRequest:      bc.Spec.Components.Fanout.MemoryRequest,
 			MemoryLimit:        bc.Spec.Components.Fanout.MemoryLimit,
 			RolloutRestartTime: bc.GetAnnotations()[resources.FanoutRestartTimeAnnotationKey],
+			AuthType:           authType,
 		},
 	}
 }
@@ -298,7 +317,7 @@ func (r *Reconciler) makeFanoutHPAArgs(bc *intv1alpha1.BrokerCell) resources.Aut
 	}
 }
 
-func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell) resources.RetryArgs {
+func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell, authType string) resources.RetryArgs {
 	return resources.RetryArgs{
 		Args: resources.Args{
 			ComponentName:      resources.RetryName,
@@ -312,6 +331,7 @@ func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell) resources.RetryAr
 			MemoryRequest:      bc.Spec.Components.Retry.MemoryRequest,
 			MemoryLimit:        bc.Spec.Components.Retry.MemoryLimit,
 			RolloutRestartTime: bc.GetAnnotations()[resources.RetryRestartTimeAnnotationKey],
+			AuthType:           authType,
 		},
 	}
 }

@@ -54,6 +54,7 @@ func TestMakePublisher(t *testing.T) {
 		Topic:         topic,
 		Labels:        GetLabels("controller-name", "topic-name"),
 		TracingConfig: "TracingConfig-ABC123",
+		AuthType:      "secret",
 	})
 
 	gotb, _ := json.MarshalIndent(pub, "", "  ")
@@ -117,6 +118,10 @@ func TestMakePublisher(t *testing.T) {
               {
                 "name": "GOOGLE_APPLICATION_CREDENTIALS",
                 "value": "/var/secrets/google/eventing-secret-key"
+              },
+              {
+                "name": "K_GCP_AUTH_TYPE",
+                "value": "secret"
               }
             ],
             "resources": {},

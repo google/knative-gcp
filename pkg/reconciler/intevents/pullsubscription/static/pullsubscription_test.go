@@ -1177,6 +1177,7 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 		SubscriptionID:   testSubscriptionID,
 		SinkURI:          sinkURI,
 		TransformerURI:   transformer,
+		AuthType:         "secret",
 	}
 	ra := resources.MakeReceiveAdapter(ctx, args)
 	return ra

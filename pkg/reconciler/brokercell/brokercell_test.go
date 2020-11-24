@@ -961,14 +961,16 @@ func TestAllCases(t *testing.T) {
 		setReconcilerEnv()
 		base := reconciler.NewBase(ctx, controllerAgentName, cmw)
 		ls := listers{
-			brokerLister:     testingListers.GetBrokerLister(),
-			hpaLister:        testingListers.GetHPALister(),
-			triggerLister:    testingListers.GetTriggerLister(),
-			configMapLister:  testingListers.GetConfigMapLister(),
-			serviceLister:    testingListers.GetK8sServiceLister(),
-			endpointsLister:  testingListers.GetEndpointsLister(),
-			deploymentLister: testingListers.GetDeploymentLister(),
-			podLister:        testingListers.GetPodLister(),
+			brokerLister:         testingListers.GetBrokerLister(),
+			hpaLister:            testingListers.GetHPALister(),
+			triggerLister:        testingListers.GetTriggerLister(),
+			configMapLister:      testingListers.GetConfigMapLister(),
+			secretLister:         testingListers.GetSecretLister(),
+			serviceAccountLister: testingListers.GetServiceAccountLister(),
+			serviceLister:        testingListers.GetK8sServiceLister(),
+			endpointsLister:      testingListers.GetEndpointsLister(),
+			deploymentLister:     testingListers.GetDeploymentLister(),
+			podLister:            testingListers.GetPodLister(),
 		}
 
 		r, err := NewReconciler(base, ls)

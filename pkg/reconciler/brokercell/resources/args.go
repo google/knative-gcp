@@ -60,6 +60,7 @@ type Args struct {
 	MemoryRequest      string
 	MemoryLimit        string
 	RolloutRestartTime string
+	AuthType           string
 }
 
 // IngressArgs are the arguments to create a Broker's ingress Deployment.

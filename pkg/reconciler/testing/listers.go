@@ -158,6 +158,10 @@ func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
 	return appsv1listers.NewDeploymentLister(l.indexerFor(&appsv1.Deployment{}))
 }
 
+func (l *Listers) GetSecretLister() corev1listers.SecretLister {
+	return corev1listers.NewSecretLister(l.indexerFor(&corev1.Secret{}))
+}
+
 func (l *Listers) GetK8sServiceLister() corev1listers.ServiceLister {
 	return corev1listers.NewServiceLister(l.indexerFor(&corev1.Service{}))
 }

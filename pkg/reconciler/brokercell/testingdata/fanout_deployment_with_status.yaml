@@ -74,6 +74,8 @@ spec:
           value: config-observability
         - name: METRICS_DOMAIN
           value: knative.dev/internal/eventing
+        - name: K_GCP_AUTH_TYPE
+          value: "secret"
         - name: MAX_CONCURRENCY_PER_EVENT
           value: "100"
         volumeMounts:
