@@ -55,9 +55,9 @@ func GetAuthType(ctx context.Context, serviceAccountLister corev1listers.Service
 	// which will add IdentitySpec to BrokerCell.
 	// For AuthTypeArgs from BrokerCell.
 	if args.ServiceAccountName != "" && args.Secret != nil {
-		if authType, err := GetAuthTypeForSecret(ctx, secretLister, args); authType != "" {
+		if authType, err := GetAuthTypeForWorkloadIdentity(ctx, serviceAccountLister, args); authType != "" {
 			return authType, err
-		} else if authType, err := GetAuthTypeForWorkloadIdentity(ctx, serviceAccountLister, args); authType != "" {
+		} else if authType, err := GetAuthTypeForSecret(ctx, secretLister, args); authType != "" {
 			return authType, err
 		} else {
 			return "", fmt.Errorf("authentication is not configured, Secret doesn't present, ServiceAccountName doesn't have required annotation")
