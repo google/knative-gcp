@@ -157,13 +157,13 @@ func TestGetAuthTypeForWorkloadIdentity(t *testing.T) {
 			gotAuthType, gotError := GetAuthType(ctx, lister.GetServiceAccountLister(), lister.GetSecretLister(), tc.args)
 
 			if diff := cmp.Diff(tc.wantAuthType, gotAuthType); diff != "" {
-				t.Errorf("unexpected authType (-want, +got) = %v", diff)
+				t.Error("unexpected authType (-want, +got) = ", diff)
 			}
 			if tc.wantError != nil {
 				if gotError == nil {
 					t.Errorf("unexpected authType error (-want %v, +got %v)", tc.wantError.Error(), "")
 				} else if diff := cmp.Diff(tc.wantError.Error(), gotError.Error()); diff != "" {
-					t.Errorf("unexpected authType (-want, +got) = %v", diff)
+					t.Error("unexpected authType (-want, +got) = ", diff)
 				}
 			}
 		})
