@@ -53,7 +53,8 @@ import (
 
 var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	// For group eventing.knative.dev.
-	brokerv1beta1.SchemeGroupVersion.WithKind("Broker"): &brokerv1beta1.Broker{},
+	brokerv1beta1.SchemeGroupVersion.WithKind("Broker"):  &brokerv1beta1.Broker{},
+	brokerv1beta1.SchemeGroupVersion.WithKind("Trigger"): &brokerv1beta1.Trigger{},
 
 	// For group messaging.cloud.google.com.
 	messagingv1beta1.SchemeGroupVersion.WithKind("Channel"): &messagingv1beta1.Channel{},
