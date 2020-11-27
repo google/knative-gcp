@@ -41,14 +41,16 @@ spec:
           - "--aggregator=broker-gcp-aggregator:10000"
           - "--pace=100:10,200:20,400:30,500:60,600:60"
         env:
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
+        - name: GOGC
+          value: "off"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         resources:
           requests:
             cpu: 1000m
@@ -77,6 +79,17 @@ spec:
     - "--roles=aggregator"
       # set to the number of sender + receiver (same image that does both counts 2)
     - "--expect-records=2"
+    env:
+      - name: GOGC
+        value: "off"
+      - name: POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: POD_NAMESPACE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
     ports:
     - name: grpc
       containerPort: 10000
