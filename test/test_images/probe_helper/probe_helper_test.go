@@ -35,6 +35,7 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	grpcstatus "google.golang.org/grpc/status"
+
 	"knative.dev/pkg/logging"
 	logtest "knative.dev/pkg/logging/testing"
 
@@ -44,6 +45,8 @@ import (
 )
 
 const (
+	// the fake namespace used in the Broker E2E delivery probe
+	testNamespace = "test-namespace"
 	// the fake project ID used by the test resources
 	testProjectID = "test-project-id"
 	// the fake pubsub topic ID used in the test CloudPubSubSource
@@ -55,12 +58,12 @@ const (
 )
 
 var (
-	testStorageUploadRequest      = fmt.Sprintf("/upload/storage/v1/b/%s/o?alt=json&name=cloudstoragesource-probe-1234567890&prettyPrint=false&projection=full&uploadType=multipart", testStorageBucket)
-	testStorageRequest            = fmt.Sprintf("/b/%s/o/cloudstoragesource-probe-1234567890?alt=json&prettyPrint=false&projection=full", testStorageBucket)
-	testStorageGenerationRequest  = fmt.Sprintf("/b/%s/o/cloudstoragesource-probe-1234567890?alt=json&generation=0&prettyPrint=false", testStorageBucket)
-	testStorageCreateBody         = fmt.Sprintf(`{"bucket":"%s","name":"cloudstoragesource-probe-1234567890"}`, testStorageBucket)
+	testStorageUploadRequest      = fmt.Sprintf("/upload/storage/v1/b/%s/o?alt=json&name=1234567890&prettyPrint=false&projection=full&uploadType=multipart", testStorageBucket)
+	testStorageRequest            = fmt.Sprintf("/b/%s/o/1234567890?alt=json&prettyPrint=false&projection=full", testStorageBucket)
+	testStorageGenerationRequest  = fmt.Sprintf("/b/%s/o/1234567890?alt=json&generation=0&prettyPrint=false", testStorageBucket)
+	testStorageCreateBody         = fmt.Sprintf(`{"bucket":"%s","name":"1234567890"}`, testStorageBucket)
 	testStorageUpdateMetadataBody = fmt.Sprintf(`{"bucket":"%s","metadata":{"some-key":"Metadata updated!"}}`, testStorageBucket)
-	testStorageArchiveBody        = fmt.Sprintf(`{"bucket":"%s","name":"cloudstoragesource-probe-1234567890","storageClass":"ARCHIVE"}`, testStorageBucket)
+	testStorageArchiveBody        = fmt.Sprintf(`{"bucket":"%s","name":"1234567890","storageClass":"ARCHIVE"}`, testStorageBucket)
 )
 
 // A helper function that starts a test Broker which receives events forwarded by
@@ -71,7 +74,11 @@ func runTestBroker(ctx context.Context, group *errgroup.Group, probeReceiverURL 
 		logging.FromContext(ctx).Fatalf("Failed to get free broker port listener: %v", err)
 	}
 	brokerPort := brokerListener.Addr().(*net.TCPAddr).Port
-	bp, err := cloudevents.NewHTTP(cloudevents.WithListener(brokerListener), cloudevents.WithTarget(probeReceiverURL))
+	bp, err := cloudevents.NewHTTP(
+		cloudevents.WithListener(brokerListener),
+		cloudevents.WithTarget(probeReceiverURL),
+		cloudevents.WithPath(fmt.Sprintf("/%s/default", testNamespace)),
+	)
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test Broker: %v", err)
 	}
@@ -142,14 +149,14 @@ func runTestCloudAuditLogsSource(ctx context.Context, group *errgroup.Group, pub
 			case <-ctx.Done():
 				return nil
 			case <-ticker.C:
-				exists, err := pubsubClient.Topic("cloudauditlogssource-probe-1234567890").Exists(ctx)
+				exists, err := pubsubClient.Topic("1234567890").Exists(ctx)
 				if err != nil {
 					logging.FromContext(ctx).Warnf("Failed to determine existence of test pubsub topic: %v", err)
 				}
 				if exists && !topicCreated {
 					createTopicEvent := cloudevents.NewEvent()
 					createTopicEvent.SetID("1234567890")
-					createTopicEvent.SetSubject(schemasv1.CloudAuditLogsEventSubject("pubsub.googleapis.com", "projects/test-project-id/topics/cloudauditlogssource-probe-1234567890"))
+					createTopicEvent.SetSubject(schemasv1.CloudAuditLogsEventSubject("pubsub.googleapis.com", "projects/test-project-id/topics/1234567890"))
 					createTopicEvent.SetType(schemasv1.CloudAuditLogsLogWrittenEventType)
 					createTopicEvent.SetSource(schemasv1.CloudAuditLogsEventSource("projects/test-project-id", "activity"))
 					createTopicEvent.SetExtension("methodname", "google.pubsub.v1.Publisher.CreateTopic")
@@ -192,7 +199,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					// This request indicates the client's intent to create a new object.
 					finalizeEvent := cloudevents.NewEvent()
 					finalizeEvent.SetID("1234567890")
-					finalizeEvent.SetSubject(schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"))
+					finalizeEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					finalizeEvent.SetType(schemasv1.CloudStorageObjectFinalizedEventType)
 					finalizeEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
 					if res := c.Send(ctx, finalizeEvent); !cloudevents.IsACK(res) {
@@ -202,7 +209,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					// This request indicates the client's intent to update the object's metadata.
 					updateMetadataEvent := cloudevents.NewEvent()
 					updateMetadataEvent.SetID("1234567890")
-					updateMetadataEvent.SetSubject(schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"))
+					updateMetadataEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					updateMetadataEvent.SetType(schemasv1.CloudStorageObjectMetadataUpdatedEventType)
 					updateMetadataEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
 					if res := c.Send(ctx, updateMetadataEvent); !cloudevents.IsACK(res) {
@@ -212,7 +219,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					// This request indicates the client's intent to archive the object.
 					archivedEvent := cloudevents.NewEvent()
 					archivedEvent.SetID("1234567890")
-					archivedEvent.SetSubject(schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"))
+					archivedEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					archivedEvent.SetType(schemasv1.CloudStorageObjectArchivedEventType)
 					archivedEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
 					if res := c.Send(ctx, archivedEvent); !cloudevents.IsACK(res) {
@@ -222,7 +229,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					// This request indicates the client's intent to delete the object.
 					deletedEvent := cloudevents.NewEvent()
 					deletedEvent.SetID("1234567890")
-					deletedEvent.SetSubject(schemasv1.CloudStorageEventSubject("cloudstoragesource-probe-1234567890"))
+					deletedEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					deletedEvent.SetType(schemasv1.CloudStorageObjectDeletedEventType)
 					deletedEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
 					if res := c.Send(ctx, deletedEvent); !cloudevents.IsACK(res) {
@@ -267,23 +274,21 @@ func runTestCloudSchedulerSource(ctx context.Context, group *errgroup.Group, per
 
 type probeEventOption func(*cloudevents.Event)
 
-func withProbeSubject(subject string) probeEventOption {
+func withProbeExtension(key, value string) probeEventOption {
 	return func(event *cloudevents.Event) {
-		event.SetSubject(subject)
+		event.SetExtension(key, value)
 	}
 }
 
 func withProbeTimeout(timeout time.Duration) probeEventOption {
-	return func(event *cloudevents.Event) {
-		event.SetExtension("timeout", timeout.String())
-	}
+	return withProbeExtension("timeout", timeout.String())
 }
 
 // Creates a new CloudEvent in the shape of probe events sent to the probe helper.
 func probeEvent(name string, opts ...probeEventOption) *cloudevents.Event {
 	event := cloudevents.NewEvent()
-	event.SetID(name + "-1234567890")
-	event.SetSource("probe-helper-test")
+	event.SetID("1234567890")
+	event.SetSource("probe")
 	event.SetType(name)
 	event.SetTime(time.Now())
 	for _, opt := range opts {
@@ -362,15 +367,15 @@ func TestProbeHelper(t *testing.T) {
 		name: "Broker E2E delivery probe",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("broker-e2e-delivery-probe"),
+				event:      probeEvent("broker-e2e-delivery-probe", withProbeExtension("namespace", "test-namespace")),
 				wantResult: cloudevents.ResultACK,
 			},
 		},
 	}, {
-		name: "Unrecognized Broker E2E delivery probe subject",
+		name: "Broker E2E delivery probe missing namespace",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("broker-e2e-delivery-probe", withProbeSubject("invalid-subject")),
+				event:      probeEvent("broker-e2e-delivery-probe"),
 				wantResult: cloudevents.ResultNACK,
 			},
 		},
@@ -378,15 +383,15 @@ func TestProbeHelper(t *testing.T) {
 		name: "CloudPubSubSource probe",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("cloudpubsubsource-probe"),
+				event:      probeEvent("cloudpubsubsource-probe", withProbeExtension("topic", "cloudpubsubsource-topic")),
 				wantResult: cloudevents.ResultACK,
 			},
 		},
 	}, {
-		name: "Unrecognized CloudPubSubSource probe subject",
+		name: "CloudPubSubSource probe missing topic",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("cloudpubsubsource-probe", withProbeSubject("invalid-subject")),
+				event:      probeEvent("cloudpubsubsource-probe"),
 				wantResult: cloudevents.ResultNACK,
 			},
 		},
@@ -394,27 +399,27 @@ func TestProbeHelper(t *testing.T) {
 		name: "CloudStorageSource probe",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("cloudstoragesource-probe", withProbeSubject("create")),
+				event:      probeEvent("cloudstoragesource-probe-create", withProbeExtension("bucket", testStorageBucket)),
 				wantResult: cloudevents.ResultACK,
 			},
 			{
-				event:      probeEvent("cloudstoragesource-probe", withProbeSubject("update-metadata")),
+				event:      probeEvent("cloudstoragesource-probe-update-metadata", withProbeExtension("bucket", testStorageBucket)),
 				wantResult: cloudevents.ResultACK,
 			},
 			{
-				event:      probeEvent("cloudstoragesource-probe", withProbeSubject("archive")),
+				event:      probeEvent("cloudstoragesource-probe-archive", withProbeExtension("bucket", testStorageBucket)),
 				wantResult: cloudevents.ResultACK,
 			},
 			{
-				event:      probeEvent("cloudstoragesource-probe", withProbeSubject("delete")),
+				event:      probeEvent("cloudstoragesource-probe-delete", withProbeExtension("bucket", testStorageBucket)),
 				wantResult: cloudevents.ResultACK,
 			},
 		},
 	}, {
-		name: "Unrecognized CloudStorageSource probe subject",
+		name: "CloudStorageSource probe missing bucket",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("cloudstoragesource-probe", withProbeSubject("invalid-subject")),
+				event:      probeEvent("cloudstoragesource-probe-create"),
 				wantResult: cloudevents.ResultNACK,
 			},
 		},
@@ -427,26 +432,26 @@ func TestProbeHelper(t *testing.T) {
 			},
 		},
 	}, {
-		name: "Unrecognized CloudAuditLogsSource probe subject",
-		steps: []eventAndResult{
-			{
-				event:      probeEvent("cloudauditlogssource-probe", withProbeSubject("invalid-subject")),
-				wantResult: cloudevents.ResultNACK,
-			},
-		},
-	}, {
 		name: "CloudSchedulerSource probe",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("cloudschedulersource-probe"),
+				event:      probeEvent("cloudschedulersource-probe", withProbeExtension("period", "200ms")),
 				wantResult: cloudevents.ResultACK,
 			},
 		},
 	}, {
-		name: "Unrecognized CloudSchedulerSource probe subject",
+		name: "CloudSchedulerSource probe missing period",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("cloudschedulersource-probe", withProbeSubject("invalid-subject")),
+				event:      probeEvent("cloudschedulersource-probe"),
+				wantResult: cloudevents.ResultNACK,
+			},
+		},
+	}, {
+		name: "CloudSchedulerSource delay exceeds period",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("cloudschedulersource-probe", withProbeExtension("period", "0s")),
 				wantResult: cloudevents.ResultNACK,
 			},
 		},
@@ -462,7 +467,7 @@ func TestProbeHelper(t *testing.T) {
 		name: "Custom timeout",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("broker-e2e-delivery-probe", withProbeTimeout(0)),
+				event:      probeEvent("broker-e2e-delivery-probe", withProbeExtension("namespace", "test-namespace"), withProbeTimeout(0)),
 				wantResult: cloudevents.ResultNACK,
 			},
 		},
@@ -534,20 +539,17 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 	runTestCloudAuditLogsSource(ctx, group, pubsubClient, receiverURL)
 
 	// Run the test Broker for testing Broker E2E delivery.
-	brokerURL := runTestBroker(ctx, group, receiverURL)
+	brokerCellIngressBaseURL := runTestBroker(ctx, group, receiverURL)
 	// Create the probe helper and start a goroutine to run it.
 	ph := &ProbeHelper{
-		projectID:                  testProjectID,
-		brokerURL:                  brokerURL,
-		cloudPubSubSourceTopicID:   testTopicID,
-		pubsubClient:               pubsubClient,
-		cloudStorageSourceBucketID: testStorageBucket,
-		storageClient:              storageClient,
-		probeListener:              probeListener,
-		receiverListener:           receiverListener,
-		cloudSchedulerSourcePeriod: time.Minute,
-		defaultTimeoutDuration:     2 * time.Minute,
-		maxTimeoutDuration:         30 * time.Minute,
+		projectID:                testProjectID,
+		brokerCellIngressBaseURL: brokerCellIngressBaseURL,
+		pubsubClient:             pubsubClient,
+		storageClient:            storageClient,
+		probeListener:            probeListener,
+		receiverListener:         receiverListener,
+		defaultTimeoutDuration:   2 * time.Minute,
+		maxTimeoutDuration:       30 * time.Minute,
 		probeChecker: &probeChecker{
 			maxStaleDuration: time.Second,
 		},

@@ -17,7 +17,27 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
+
+const (
+	BrokerE2EDeliveryProbeEventType                = "broker-e2e-delivery-probe"
+	CloudPubSubSourceProbeEventType                = "cloudpubsubsource-probe"
+	CloudStorageSourceCreateProbeEventType         = "cloudstoragesource-probe-create"
+	CloudStorageSourceUpdateMetadataProbeEventType = "cloudstoragesource-probe-update-metadata"
+	CloudStorageSourceArchiveProbeEventType        = "cloudstoragesource-probe-archive"
+	CloudStorageSourceDeleteProbeEventType         = "cloudstoragesource-probe-delete"
+	CloudAuditLogsSourceProbeEventType             = "cloudauditlogssource-probe"
+	CloudSchedulerSourceProbeEventType             = "cloudschedulersource-probe"
+
+	ProbeEventTimeoutExtension = "timeout"
+
+	ProbeEventRequestHostHeader    = "Ce-RequestHost"
+	ProbeEventRequestHostExtension = "requesthost"
+)
+
+type cloudEventsFunc func(cloudevents.Event) cloudevents.Result
 
 // eventTimestamp is a synchronized wrapper around a timestamp.
 type eventTimestamp struct {

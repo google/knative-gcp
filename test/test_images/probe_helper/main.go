@@ -94,17 +94,8 @@ import (
 )
 
 type envConfig struct {
-	// Environment variable containing the sink URL (broker URL) that the event will be forwarded to by the probeHelper for the e2e delivery probe
-	BrokerURL string `envconfig:"K_SINK" default:"http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"`
-
-	// Environment variable containing the CloudPubSubSource Topic ID that the event will be forwarded to by the probeHelper for the CloudPubSubSource probe
-	CloudPubSubSourceTopicID string `envconfig:"CLOUDPUBSUBSOURCE_TOPIC_ID" default:"cloudpubsubsource-topic"`
-
-	// Environment variable containing the CloudStorageSource Bucket ID that objects will be written to by the probeHelper for the CloudStorageSource probe
-	CloudStorageSourceBucketID string `envconfig:"CLOUDSTORAGESOURCE_BUCKET_ID" default:"cloudstoragesource-bucket"`
-
-	// Environment variable containing an upper bound on the duration between events emitted by the CloudSchedulerSource
-	CloudSchedulerSourcePeriod time.Duration `envconfig:"CLOUDSCHEDULERSOURCE_PERIOD" default:"90s"`
+	// Environment variable containing the base URL for the brokercell ingress, used in the broker e2e delivery probe
+	BrokerCellIngressBaseURL string `envconfig:"BROKER_CELL_INGRESS_BASE_URL" default:"http://default-brokercell-ingress.cloud-run-events.svc.cluster.local"`
 
 	// Environment variable containing the port which listens to the probe to forward events
 	ProbePort int `envconfig:"PROBE_PORT" default:"8070"`
@@ -145,15 +136,12 @@ func main() {
 
 	// Create and start the probe helper
 	ph := &ProbeHelper{
-		projectID:                  projectID,
-		brokerURL:                  env.BrokerURL,
-		probePort:                  env.ProbePort,
-		receiverPort:               env.ReceiverPort,
-		cloudPubSubSourceTopicID:   env.CloudPubSubSourceTopicID,
-		cloudStorageSourceBucketID: env.CloudStorageSourceBucketID,
-		cloudSchedulerSourcePeriod: env.CloudSchedulerSourcePeriod,
-		defaultTimeoutDuration:     env.DefaultTimeoutDuration,
-		maxTimeoutDuration:         env.MaxTimeoutDuration,
+		projectID:                projectID,
+		brokerCellIngressBaseURL: env.BrokerCellIngressBaseURL,
+		probePort:                env.ProbePort,
+		receiverPort:             env.ReceiverPort,
+		defaultTimeoutDuration:   env.DefaultTimeoutDuration,
+		maxTimeoutDuration:       env.MaxTimeoutDuration,
 		probeChecker: &probeChecker{
 			maxStaleDuration: env.MaxStaleDuration,
 		},

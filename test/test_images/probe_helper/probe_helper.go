@@ -15,10 +15,9 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
-	"strings"
+	"net/http"
 	"time"
 
 	"cloud.google.com/go/pubsub"
@@ -33,406 +32,143 @@ import (
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
-// The following constants define the admissible metadata of CloudEvent probe requests.
-const (
-	BrokerE2EDeliveryProbeEventType    = "broker-e2e-delivery-probe"
-	CloudPubSubSourceProbeEventType    = "cloudpubsubsource-probe"
-	CloudStorageSourceProbeEventType   = "cloudstoragesource-probe"
-	CloudAuditLogsSourceProbeEventType = "cloudauditlogssource-probe"
-	CloudSchedulerSourceProbeEventType = "cloudschedulersource-probe"
+type probeConstructor func(*ProbeHelper, cloudevents.Event) (ProbeInterface, error)
 
-	CloudStorageSourceProbeCreateSubject         = "create"
-	CloudStorageSourceProbeUpdateMetadataSubject = "update-metadata"
-	CloudStorageSourceProbeArchiveSubject        = "archive"
-	CloudStorageSourceProbeDeleteSubject         = "delete"
-)
-
-type cloudEventsFunc func(cloudevents.Event) cloudevents.Result
-
-// isValidProbeEvent checks whether or not the input event has the formatting
-// expected of a legitimate probe request.
-func isValidProbeEvent(event cloudevents.Event) bool {
-	eventType := event.Type()
-	eventSubject := event.Subject()
-	if eventType == BrokerE2EDeliveryProbeEventType && eventSubject == "" {
-		return true
-	}
-	if eventType == CloudPubSubSourceProbeEventType && eventSubject == "" {
-		return true
-	}
-	if eventType == CloudStorageSourceProbeEventType &&
-		(eventSubject == CloudStorageSourceProbeCreateSubject ||
-			eventSubject == CloudStorageSourceProbeUpdateMetadataSubject ||
-			eventSubject == CloudStorageSourceProbeArchiveSubject ||
-			eventSubject == CloudStorageSourceProbeDeleteSubject) {
-		return true
-	}
-	if eventType == CloudAuditLogsSourceProbeEventType && eventSubject == "" {
-		return true
-	}
-	if eventType == CloudSchedulerSourceProbeEventType && eventSubject == "" {
-		return true
-	}
-	return false
+var forwardProbeConstructors = map[string]probeConstructor{
+	"broker-e2e-delivery-probe":                BrokerE2EDeliveryForwardProbeConstructor,
+	"cloudpubsubsource-probe":                  CloudPubSubSourceForwardProbeConstructor,
+	"cloudstoragesource-probe-create":          CloudStorageSourceCreateForwardProbeConstructor,
+	"cloudstoragesource-probe-update-metadata": CloudStorageSourceUpdateMetadataForwardProbeConstructor,
+	"cloudstoragesource-probe-archive":         CloudStorageSourceArchiveForwardProbeConstructor,
+	"cloudstoragesource-probe-delete":          CloudStorageSourceDeleteForwardProbeConstructor,
+	"cloudauditlogssource-probe":               CloudAuditLogsSourceForwardProbeConstructor,
+	"cloudschedulersource-probe":               CloudSchedulerSourceForwardProbeConstructor,
 }
 
-// forwardFromProbe returns the event handler which is executed upon reception
-// of a CloudEvent through the probePort or probeListener. This function waits
-// on a channel to detect the end-to-end asynchronous delivery of an event.
+var receiveProbeConstructors = map[string]probeConstructor{
+	"broker-e2e-delivery-probe":                          BrokerE2EDeliveryReceiveProbeConstructor,
+	schemasv1.CloudPubSubMessagePublishedEventType:       CloudPubSubSourceReceiveProbeConstructor,
+	schemasv1.CloudStorageObjectFinalizedEventType:       CloudStorageSourceReceiveProbeConstructor,
+	schemasv1.CloudStorageObjectMetadataUpdatedEventType: CloudStorageSourceReceiveProbeConstructor,
+	schemasv1.CloudStorageObjectArchivedEventType:        CloudStorageSourceReceiveProbeConstructor,
+	schemasv1.CloudStorageObjectDeletedEventType:         CloudStorageSourceReceiveProbeConstructor,
+	schemasv1.CloudAuditLogsLogWrittenEventType:          CloudAuditLogsSourceReceiveProbeConstructor,
+	schemasv1.CloudSchedulerJobExecutedEventType:         CloudSchedulerSourceReceiveProbeConstructor,
+}
+
+func WithProbeTimeout(ctx context.Context, event cloudevents.Event, defaultTimeout time.Duration, maxTimeout time.Duration) (context.Context, context.CancelFunc) {
+	timeout := defaultTimeout
+	if _, ok := event.Extensions()[ProbeEventTimeoutExtension]; ok {
+		customTimeoutExtension := fmt.Sprint(event.Extensions()[ProbeEventTimeoutExtension])
+		if customTimeout, err := time.ParseDuration(customTimeoutExtension); err != nil {
+			logging.FromContext(ctx).Warnw("Failed to parse custom timeout extension duration", zap.String("timeout", customTimeoutExtension), zap.Error(err))
+		} else {
+			timeout = customTimeout
+		}
+	}
+	if timeout.Nanoseconds() > maxTimeout.Nanoseconds() {
+		logging.FromContext(ctx).Warnw("Desired timeout exceeds the maximum, clamping to maximum value", zap.Duration("timeout", timeout), zap.Duration("maximumTimeout", maxTimeout))
+		timeout = maxTimeout
+	}
+	return context.WithTimeout(ctx, timeout)
+}
+
+func WithProbeEventLoggingContext(ctx context.Context, event cloudevents.Event) context.Context {
+	logger := logging.FromContext(ctx)
+	logger = logger.With(zap.Any("event", map[string]interface{}{
+		"id":          event.ID(),
+		"source":      event.Source(),
+		"specversion": event.SpecVersion(),
+		"type":        event.Type(),
+		"extensions":  event.Extensions(),
+	}))
+	return logging.WithLogger(ctx, logger)
+}
+
+func (ph *ProbeHelper) probeObjectFromEvent(event cloudevents.Event, ctrs map[string]probeConstructor) (ProbeInterface, error) {
+	ctr, ok := ctrs[event.Type()]
+	if !ok {
+		return nil, fmt.Errorf("unrecognized probe event type: %s", event.Type())
+	}
+	probe, err := ctr(ph, event)
+	if err != nil {
+		return nil, err
+	}
+	return probe, nil
+}
+
 func (ph *ProbeHelper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 	return func(event cloudevents.Event) cloudevents.Result {
 		// Attach important metadata about the event to the logging context.
-		logger := logging.FromContext(ctx)
-		logger = logger.With(zap.Any("event", map[string]interface{}{
-			"id":      event.ID(),
-			"type":    event.Type(),
-			"subject": event.Subject(),
-			"source":  event.Source(),
-		}))
+		ctx := WithProbeEventLoggingContext(ctx, event)
+		logging.FromContext(ctx).Infow("Received probe request")
 
-		var channelID string
-		var err error
-		var receiverChannel chan bool
-
-		logger.Infow("Received probe request")
-		ph.probeChecker.lastProbeEventTimestamp.setNow()
-
-		// Only proceed if the probe request is legitimate.
-		if !isValidProbeEvent(event) {
-			logger.Warnw("Probe forwarding failed, unrecognized probe event type and/or subject")
+		// Construct the probe object based on the event type
+		pr, err := ph.probeObjectFromEvent(event, forwardProbeConstructors)
+		if err != nil {
+			logging.FromContext(ctx).Warnw("Probe forwarding failed", zap.Error(err))
 			return cloudevents.ResultNACK
 		}
 
-		// The CloudSchedulerSource probe is not channel-based.
-		if event.Type() != CloudSchedulerSourceProbeEventType {
-			// Create channel on which to wait for event to be received once forwarded.
-			channelID = event.ID()
-			if event.Subject() != "" {
-				channelID = channelID + "-" + event.Subject()
-			}
-			receiverChannel, err = ph.receivedEvents.createReceiverChannel(channelID)
-			if err != nil {
-				logger.Warnw("Probe forwarding failed, could not create receiver channel", zap.String("channelID", channelID), zap.Error(err))
-				return cloudevents.ResultNACK
-			}
-			defer ph.receivedEvents.deleteReceiverChannel(channelID)
-		}
-
-		// Read a custom timeout from the CloudEvent extensions up to a specified maximum.
-		timeout := ph.defaultTimeoutDuration
-		if _, ok := event.Extensions()["timeout"]; ok {
-			customTimeoutExtension := fmt.Sprint(event.Extensions()["timeout"])
-			if customTimeout, err := time.ParseDuration(customTimeoutExtension); err != nil {
-				logger.Warnw("Failed to parse custom timeout extension duration", zap.String("timeout", customTimeoutExtension), zap.Error(err))
-			} else {
-				timeout = customTimeout
-			}
-		}
-		if timeout.Nanoseconds() > ph.maxTimeoutDuration.Nanoseconds() {
-			logger.Warnw("Desired timeout exceeds the maximum, clamping to maximum value", zap.Duration("timeout", timeout), zap.Duration("maximumTimeout", ph.maxTimeoutDuration))
-			timeout = ph.maxTimeoutDuration
-		}
-		ctx, cancel := context.WithTimeout(ctx, timeout)
+		// Add timeout to the context
+		ctx, cancel := WithProbeTimeout(ctx, event, ph.defaultTimeoutDuration, ph.maxTimeoutDuration)
 		defer cancel()
 
-		switch event.Type() {
-		case BrokerE2EDeliveryProbeEventType:
-			// The probe client forwards the event to the broker.
-			if res := ph.probeClient.Send(ctx, event); !cloudevents.IsACK(res) {
-				logger.Warnw("Probe forwarding failed, could not send event to broker", zap.String("brokerURL", ph.brokerURL), zap.Any("result", res))
+		// Create the receiver channel if desired
+		var receiverChannel chan bool
+		if ShouldWaitOnReceiver(pr) {
+			receiverChannel, err = ph.receivedEvents.createReceiverChannel(pr.ChannelID())
+			if err != nil {
+				logging.FromContext(ctx).Warnw("Probe forwarding failed, could not create receiver channel", zap.String("channelID", pr.ChannelID()), zap.Error(err))
 				return cloudevents.ResultNACK
 			}
-		case CloudPubSubSourceProbeEventType:
-			// The pubsub client forwards the event as a message to a pubsub topic.
-			if res := ph.cePubsubClient.Send(ctx, event); !cloudevents.IsACK(res) {
-				logger.Warnw("Probe forwarding failed, could not send event to pubsub topic", zap.String("topic", ph.cloudPubSubSourceTopicID), zap.Any("result", res))
-				return cloudevents.ResultNACK
-			}
-		case CloudStorageSourceProbeEventType:
-			obj := ph.bucket.Object(event.ID())
-			switch event.Subject() {
-			case CloudStorageSourceProbeCreateSubject:
-				// The storage client writes an object named as the event ID.
-				if err := obj.NewWriter(ctx).Close(); err != nil {
-					logger.Warnw("Probe forwarding failed, error closing storage writer for object finalizing", zap.Any("object", obj), zap.Error(err))
-					return cloudevents.ResultNACK
-				}
-			case CloudStorageSourceProbeUpdateMetadataSubject:
-				// The storage client updates the object metadata.
-				objectAttrs := storage.ObjectAttrsToUpdate{
-					Metadata: map[string]string{
-						"some-key": "Metadata updated!",
-					},
-				}
-				if _, err := obj.Update(ctx, objectAttrs); err != nil {
-					logger.Warnw("Probe forwarding failed, error updating metadata for object", zap.Any("object", obj), zap.Error(err))
-					return cloudevents.ResultNACK
-				}
-			case CloudStorageSourceProbeArchiveSubject:
-				// The storage client updates the object's storage class to ARCHIVE.
-				w := obj.NewWriter(ctx)
-				w.ObjectAttrs.StorageClass = "ARCHIVE"
-				if err := w.Close(); err != nil {
-					logger.Warnw("Probe forwarding failed, error closing storage writer for object archiving", zap.Any("object", obj), zap.Error(err))
-					return cloudevents.ResultNACK
-				}
-			case CloudStorageSourceProbeDeleteSubject:
-				// Deleting a specific version of an object deletes it forever.
-				objectAttrs, err := obj.Attrs(ctx)
-				if err != nil {
-					logger.Warnw("Probe forwarding failed, error getting attributes for object", zap.Any("object", obj), zap.Error(err))
-					return cloudevents.ResultNACK
-				}
-				if err := obj.Generation(objectAttrs.Generation).Delete(ctx); err != nil {
-					logger.Warnw("Probe forwarding failed, error deleting object", zap.Any("object", obj), zap.Error(err))
-					return cloudevents.ResultNACK
-				}
-			}
-		case CloudAuditLogsSourceProbeEventType:
-			// Create a pubsub topic with the given ID.
-			if _, err := ph.pubsubClient.CreateTopic(ctx, event.ID()); err != nil {
-				logger.Warnw("Probe forwarding failed, error creating pubsub topic", zap.String("topic", event.ID()), zap.Error(err))
-				return cloudevents.ResultNACK
-			}
-		case CloudSchedulerSourceProbeEventType:
-			// Fail if the delay since the last scheduled tick is greater than the desired period.
-			if delay := time.Now().Sub(ph.lastCloudSchedulerEventTimestamp.getTime()); delay > ph.cloudSchedulerSourcePeriod {
-				logger.Warnw("Probe failed, delay between CloudSchedulerSource ticks exceeds period", zap.Duration("delay", delay), zap.Duration("period", ph.cloudSchedulerSourcePeriod))
-				return cloudevents.ResultNACK
-			}
-			return cloudevents.ResultACK
+			defer ph.receivedEvents.deleteReceiverChannel(pr.ChannelID())
 		}
 
-		select {
-		case <-receiverChannel:
-			return cloudevents.ResultACK
-		case <-ctx.Done():
-			logger.Warnw("Timed out on probe waiting for the receiver channel", zap.String("channelID", channelID))
+		// Forward the probe event
+		if err := pr.Handle(ctx); err != nil {
+			logging.FromContext(ctx).Warnw("Probe forwarding failed", zap.Error(err))
 			return cloudevents.ResultNACK
 		}
+
+		// Wait on the receiver channel if desired
+		if ShouldWaitOnReceiver(pr) {
+			select {
+			case <-receiverChannel:
+				return cloudevents.ResultACK
+			case <-ctx.Done():
+				logging.FromContext(ctx).Warnw("Timed out on probe waiting for the receiver channel", zap.String("channelID", pr.ChannelID()))
+				return cloudevents.ResultNACK
+			}
+		}
+		return cloudevents.ResultACK
 	}
 }
 
-// receiveEvent returns the event handler which is executed upon reception of a
-// CloudEvent through receiverPort or receiverListener. This function closes the
-// channel on which the associated forwardFromProbe handler is waiting, signaling
-// complete end-to-end delivery of an event.
 func (ph *ProbeHelper) receiveEvent(ctx context.Context) cloudEventsFunc {
 	return func(event cloudevents.Event) cloudevents.Result {
 		// Attach important metadata about the event to the logging context.
-		logger := logging.FromContext(ctx)
-		logger = logger.With(zap.Any("event", map[string]interface{}{
-			"id":      event.ID(),
-			"type":    event.Type(),
-			"subject": event.Subject(),
-			"source":  event.Source(),
-		}))
+		ctx := WithProbeEventLoggingContext(ctx, event)
+		logging.FromContext(ctx).Infow("Received event")
 
-		var channelID string
-
-		logger.Infow("Received event")
-		ph.probeChecker.lastReceiverEventTimestamp.setNow()
-
-		switch event.Type() {
-		case BrokerE2EDeliveryProbeEventType:
-			// The event is received as sent.
-			//
-			// Example:
-			//   Context Attributes,
-			//     specversion: 1.0
-			//     type: broker-e2e-delivery-probe
-			//     source: probe
-			//     id: broker-e2e-delivery-probe-5950a1f1-f128-4c8e-bcdd-a2c96b4e5b78
-			//     time: 2020-09-14T18:49:01.455945852Z
-			//     datacontenttype: application/json
-			//   Extensions,
-			//     knativearrivaltime: 2020-09-14T18:49:01.455947424Z
-			//     traceparent: 00-82b13494f5bcddc7b3007a7cd7668267-64e23f1193ceb1b7-00
-			//   Data,
-			//     { ... }
-			channelID = event.ID()
-		case schemasv1.CloudPubSubMessagePublishedEventType:
-			// The original event is wrapped into a pubsub Message by the CloudEvents
-			// pubsub sender client, and encoded as data in a CloudEvent by the CloudPubSubSource.
-			//
-			// Example:
-			//   Context Attributes,
-			//     specversion: 1.0
-			//     type: google.cloud.pubsub.topic.v1.messagePublished
-			//     source: //pubsub.googleapis.com/projects/project-id/topics/cloudpubsubsource-topic
-			//     id: 1529309436535525
-			//     time: 2020-09-14T17:06:46.363Z
-			//     datacontenttype: application/json
-			//   Data,
-			//     {
-			//       "subscription": "cre-src_cloud-run-events-probe_cloudpubsubsource_02f88763-1df6-4944-883f-010ebac27dd2",
-			//       "message": {
-			//         "messageId": "1529309436535525",
-			//         "data": "eydtc2cnOidQcm9iZSBDbG91ZCBSdW4gRXZlbnRzISd9",
-			//         "attributes": {
-			//           "Content-Type": "application/json",
-			//           "ce-id": "cloudpubsubsource-probe-294119a9-98e2-44ec-a2b2-28a98cf40eee",
-			//           "ce-source": "probe",
-			//           "ce-specversion": "1.0",
-			//           "ce-type": "cloudpubsubsource-probe"
-			//         },
-			//         "publishTime": "2020-09-14T17:06:46.363Z"
-			//       }
-			//     }
-			msgData := schemasv1.PushMessage{}
-			if err := json.Unmarshal(event.Data(), &msgData); err != nil {
-				logger.Warnw("Error unmarshalling Pub/Sub message from event data", zap.ByteString("data", event.Data()), zap.Error(err))
-				return cloudevents.ResultACK
-			}
-			var ok bool
-			if channelID, ok = msgData.Message.Attributes["ce-id"]; !ok {
-				logger.Warnw("Failed to read probe event ID from Pub/Sub message attributes", zap.ByteString("data", event.Data()), zap.Any("message", msgData.Message))
-				return cloudevents.ResultACK
-			}
-		case schemasv1.CloudStorageObjectFinalizedEventType:
-			// The original event is written as an identifiable object to a bucket.
-			//
-			// Example:
-			//   Context Attributes,
-			//     specversion: 1.0
-			//     type: google.cloud.storage.object.v1.finalized
-			//     source: //storage.googleapis.com/projects/_/buckets/cloudstoragesource-bucket
-			//     subject: objects/cloudstoragesource-probe-fc2638d1-fcae-4889-9fa1-14a08cb05fc4
-			//     id: 1529343217463053
-			//     time: 2020-09-14T17:18:40.984Z
-			//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto
-			//     datacontenttype: application/json
-			//   Data,
-			//     { ... }
-			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
-				logger.Warnw("Error extracting probe event ID from Cloud Storage event subject", zap.Error(err))
-				return cloudevents.ResultACK
-			}
-			channelID = channelID + "-" + CloudStorageSourceProbeCreateSubject
-		case schemasv1.CloudStorageObjectMetadataUpdatedEventType:
-			// The original event is written as an identifiable object to a bucket.
-			//
-			// Example:
-			//   Context Attributes,
-			//     specversion: 1.0
-			//     type: google.cloud.storage.object.v1.metadataUpdated
-			//     source: //storage.googleapis.com/projects/_/buckets/cloudstoragesource-bucket
-			//     subject: objects/cloudstoragesource-probe-fc2638d1-fcae-4889-9fa1-14a08cb05fc4
-			//     id: 1529343267626759
-			//     time: 2020-09-14T17:18:42.296Z
-			//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto
-			//     datacontenttype: application/json
-			//   Data,
-			//     { ... }
-			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
-				logger.Warnw("Error extracting probe event ID from Cloud Storage event subject", zap.Error(err))
-				return cloudevents.ResultACK
-			}
-			channelID = channelID + "-" + CloudStorageSourceProbeUpdateMetadataSubject
-		case schemasv1.CloudStorageObjectArchivedEventType:
-			// The original event is written as an identifiable object to a bucket.
-			//
-			// Example:
-			//   Context Attributes,
-			//     specversion: 1.0
-			//     type: google.cloud.storage.object.v1.archived
-			//     source: //storage.googleapis.com/projects/_/buckets/cloudstoragesource-bucket
-			//     subject: objects/cloudstoragesource-probe-fc2638d1-fcae-4889-9fa1-14a08cb05fc4
-			//     id: 1529346856916356
-			//     time: 2020-09-14T17:18:43.872Z
-			//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto
-			//     datacontenttype: application/json
-			//   Data,
-			//     { ... }
-			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
-				logger.Warnw("Error extracting probe event ID from Cloud Storage event subject", zap.Error(err))
-				return cloudevents.ResultACK
-			}
-			channelID = channelID + "-" + CloudStorageSourceProbeArchiveSubject
-		case schemasv1.CloudStorageObjectDeletedEventType:
-			// The original event is written as an identifiable object to a bucket.
-			//
-			// Example:
-			//   Context Attributes,
-			//     specversion: 1.0
-			//     type: google.cloud.storage.object.v1.deleted
-			//     source: //storage.googleapis.com/projects/_/buckets/cloudstoragesource-bucket
-			//     subject: objects/cloudstoragesource-probe-fc2638d1-fcae-4889-9fa1-14a08cb05fc4
-			//     id: 1529347481207133
-			//     time: 2020-09-14T17:18:45.146Z
-			//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto
-			//     datacontenttype: application/json
-			//   Data,
-			//     { ... }
-			if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
-				logger.Warnw("Error extracting probe event ID from Cloud Storage event subject", zap.Error(err))
-				return cloudevents.ResultACK
-			}
-			channelID = channelID + "-" + CloudStorageSourceProbeDeleteSubject
-		case schemasv1.CloudAuditLogsLogWrittenEventType:
-			// The logged event type is held in the methodname extension. For creation
-			// of pubsub topics, the topic ID can be extracted from the event subject.
-			if _, ok := event.Extensions()["methodname"]; !ok {
-				logger.Warnw("Failed to read Cloud AuditLogs event, missing methodname extension", zap.Any("extensions", event.Extensions()))
-				return cloudevents.ResultACK
-			}
-			sepSub := strings.Split(event.Subject(), "/")
-			if len(sepSub) != 5 || sepSub[0] != "pubsub.googleapis.com" || sepSub[1] != "projects" || sepSub[2] != ph.projectID || sepSub[3] != "topics" {
-				logger.Warnw("Failed to read Cloud AuditLogs event, unexpected event subject")
-				return cloudevents.ResultACK
-			}
-			methodname := fmt.Sprint(event.Extensions()["methodname"])
-			if methodname == "google.pubsub.v1.Publisher.CreateTopic" {
-				// Example:
-				//   Context Attributes,
-				//     specversion: 1.0
-				//     type: google.cloud.audit.log.v1.written
-				//     source: //cloudaudit.googleapis.com/projects/project-id/logs/activity
-				//     subject: pubsub.googleapis.com/projects/project-id/topics/cloudauditlogssource-probe-914e5946-5e27-4bde-a455-7cfbae1c8539
-				//     id: d2ad1359483fc13c8056c430545fd217
-				//     time: 2020-09-14T18:44:18.636961725Z
-				//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/audit/v1/data.proto
-				//     datacontenttype: application/json
-				//   Extensions,
-				//     methodname: google.pubsub.v1.Publisher.CreateTopic
-				//     resourcename: projects/project-id/topics/cloudauditlogssource-probe-914e5946-5e27-4bde-a455-7cfbae1c8539
-				//     servicename: pubsub.googleapis.com
-				//   Data,
-				//     { ... }
-				channelID = sepSub[4]
-			} else {
-				logger.Warnw("Failed to read Cloud AuditLogs event, unrecognized methodname extension", zap.String("methodname", methodname))
-				return cloudevents.ResultACK
-			}
-		case schemasv1.CloudSchedulerJobExecutedEventType:
-			// Refresh the last received event timestamp from the CloudSchedulerSource.
-			//
-			// Example:
-			//   Context Attributes,
-			//     specversion: 1.0
-			//     type: google.cloud.scheduler.job.v1.executed
-			//     source: //cloudscheduler.googleapis.com/projects/project-id/locations/location/jobs/cre-scheduler-9af24c86-8ba9-4688-80d0-e527678a6a63
-			//     id: 1533039115503825
-			//     time: 2020-09-15T20:12:00.14Z
-			//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/scheduler/v1/data.proto
-			//     datacontenttype: application/json
-			//   Data,
-			//     { ... }
-			ph.lastCloudSchedulerEventTimestamp.setNow()
-			return cloudevents.ResultACK
-		default:
-			logger.Warnw("Unrecognized event type")
-			return cloudevents.ResultACK
+		// Construct the probe object based on the event type
+		pr, err := ph.probeObjectFromEvent(event, receiveProbeConstructors)
+		if err != nil {
+			logging.FromContext(ctx).Warnw("Probe receiver failed", zap.Error(err))
+			return cloudevents.ResultNACK
 		}
 
-		ph.receivedEvents.RLock()
-		defer ph.receivedEvents.RUnlock()
-		receiver, ok := ph.receivedEvents.channels[channelID]
-		if !ok {
-			logger.Warnw("This event is not received by the probe receiver client", zap.String("channelID", channelID))
-			return cloudevents.ResultACK
+		// Close the associated receiver channel if desired
+		if pr != nil && ShouldWaitOnReceiver(pr) {
+			ph.receivedEvents.RLock()
+			defer ph.receivedEvents.RUnlock()
+			receiverChannel, ok := ph.receivedEvents.channels[pr.ChannelID()]
+			if !ok {
+				logging.FromContext(ctx).Warnw("This event is not received by the probe receiver client", zap.String("channelID", pr.ChannelID()))
+				return cloudevents.ResultACK
+			}
+			receiverChannel <- true
 		}
-		receiver <- true
 		return cloudevents.ResultACK
 	}
 }
@@ -441,17 +177,14 @@ type ProbeHelper struct {
 	// The project ID
 	projectID string
 
-	// The URL endpoint for the Broker ingress
-	brokerURL string
+	// The base URL for the BrokerCell Ingress used in the broker delivery probe
+	brokerCellIngressBaseURL string
 
-	// The client responsible for handling probe requests and forwarding events to the Broker
-	probeClient cloudevents.Client
+	// The client responsible for handling forward probe requests
+	ceForwardClient cloudevents.Client
 
-	// The client responsible for receiving events from sources
-	receiverClient cloudevents.Client
-
-	// The topic ID used in the CloudPubSubSource
-	cloudPubSubSourceTopicID string
+	// The client responsible for receiving events
+	ceReceiveClient cloudevents.Client
 
 	// The pubsub client wrapped by a CloudEvents client for the CloudPubSubSource
 	// probe and used for the CloudAuditLogsSource probe
@@ -461,20 +194,14 @@ type ProbeHelper struct {
 	// topic for the CloudPubSubSource probe.
 	cePubsubClient cloudevents.Client
 
-	// The bucket ID used in the CloudStorageSource
-	cloudStorageSourceBucketID string
-
 	// The storage client used in the CloudStorageSource
 	storageClient *storage.Client
 
 	// Handle for the bucket used in the CloudStorageSource probe
 	bucket *storage.BucketHandle
 
-	// The tolerated period between observed CloudSchedulerSource tickets
-	cloudSchedulerSourcePeriod time.Duration
-
 	// Timestamp of the last observed tick from the CloudSchedulerSource
-	lastCloudSchedulerEventTimestamp eventTimestamp
+	lastSchedulerEventTimestamp *eventTimestamp
 
 	// The port through which the probe helper receives probe requests
 	probePort int
@@ -504,7 +231,8 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 	logger := logging.FromContext(ctx)
 
 	// initialize the cloud scheduler event timestamp
-	ph.lastCloudSchedulerEventTimestamp.setNow()
+	ph.lastSchedulerEventTimestamp = &eventTimestamp{}
+	ph.lastSchedulerEventTimestamp.setNow()
 
 	// initialize the probe checker
 	if ph.probeChecker == nil {
@@ -523,8 +251,7 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 	if ph.cePubsubClient == nil {
 		pst, err := cepubsub.New(ctx,
 			cepubsub.WithClient(ph.pubsubClient),
-			cepubsub.WithProjectID(ph.projectID),
-			cepubsub.WithTopicID(ph.cloudPubSubSourceTopicID))
+			cepubsub.WithProjectID(ph.projectID))
 		if err != nil {
 			logger.Fatalw("Failed to create pubsub transport", zap.Error(err))
 		}
@@ -541,15 +268,10 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 			logger.Fatalw("Failed to create cloud storage client", zap.Error(err))
 		}
 	}
-	if ph.bucket == nil {
-		ph.bucket = ph.storageClient.Bucket(ph.cloudStorageSourceBucketID)
-	}
 
 	// create sender client
-	if ph.probeClient == nil {
-		spOpts := []cehttp.Option{
-			cloudevents.WithTarget(ph.brokerURL),
-		}
+	if ph.ceForwardClient == nil {
+		spOpts := []cehttp.Option{}
 		if ph.probeListener != nil {
 			spOpts = append(spOpts, cloudevents.WithListener(ph.probeListener))
 		} else {
@@ -559,16 +281,22 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 		if err != nil {
 			logger.Fatalw("Failed to create sender transport", zap.Error(err))
 		}
-		ph.probeClient, err = cloudevents.NewClient(sp)
+		ph.ceForwardClient, err = cloudevents.NewClient(sp)
 		if err != nil {
 			logger.Fatalw("Failed to create sender client", zap.Error(err))
 		}
 	}
 
 	// create receiver client
-	if ph.receiverClient == nil {
+	if ph.ceReceiveClient == nil {
 		rpOpts := []cehttp.Option{
 			cloudevents.WithGetHandlerFunc(ph.probeChecker.stalenessHandlerFunc(ctx)),
+			cloudevents.WithMiddleware(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+					req.Header.Set(ProbeEventRequestHostHeader, req.Host)
+					next.ServeHTTP(rw, req)
+				})
+			}),
 		}
 		if ph.probeListener != nil {
 			rpOpts = append(rpOpts, cloudevents.WithListener(ph.receiverListener))
@@ -579,7 +307,7 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 		if err != nil {
 			logger.Fatalw("Failed to create receiver transport", zap.Error(err))
 		}
-		ph.receiverClient, err = cloudevents.NewClient(rp)
+		ph.ceReceiveClient, err = cloudevents.NewClient(rp)
 		if err != nil {
 			logger.Fatalw("Failed to create receiver client", zap.Error(err))
 		}
@@ -593,10 +321,10 @@ func (ph *ProbeHelper) run(ctx context.Context) {
 	}
 
 	// start a goroutine to receive the event from probe and forward it appropriately
-	logger.Infow("Starting Probe Helper server...")
-	go ph.probeClient.StartReceiver(ctx, ph.forwardFromProbe(ctx))
+	logger.Infow("Starting event forwarder client...")
+	go ph.ceForwardClient.StartReceiver(ctx, ph.forwardFromProbe(ctx))
 
 	// Receive the event and return the result back to the probe
-	logger.Infow("Starting event receiver...")
-	ph.receiverClient.StartReceiver(ctx, ph.receiveEvent(ctx))
+	logger.Infow("Starting event receiver client...")
+	ph.ceReceiveClient.StartReceiver(ctx, ph.receiveEvent(ctx))
 }
