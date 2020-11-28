@@ -27,9 +27,9 @@ import (
 	"github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 )
 
-// EnqueuePullSubscriptions returns an event handler for resources which are not created/owned by pullsubscription.
+// EnqueuePullSubscription returns an event handler for resources which are not created/owned by pullsubscription.
 // It is used for serviceAccountInformer.
-func EnqueuePullSubscriptions(impl *controller.Impl, pullSubscriptionLister listers.PullSubscriptionLister) cache.ResourceEventHandler {
+func EnqueuePullSubscription(impl *controller.Impl, pullSubscriptionLister listers.PullSubscriptionLister) cache.ResourceEventHandler {
 	return controller.HandleAll(func(obj interface{}) {
 		object, err := kmeta.DeletionHandlingAccessor(obj)
 		if err != nil {

@@ -23,7 +23,7 @@ import (
 
 type SecretOption func(*corev1.Secret)
 
-// NewSecret creates a Secret
+// NewSecret creates a Secret.
 func NewSecret(name, namespace string, so ...SecretOption) *corev1.Secret {
 	sa := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

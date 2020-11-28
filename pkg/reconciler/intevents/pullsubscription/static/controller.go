@@ -132,7 +132,7 @@ func newController(
 	})
 
 	// Watch k8s service account, if a k8s service account resource changes, enqueue qualified pullsubscriptions from the same namespace.
-	serviceAccountInformer.Informer().AddEventHandler(authtype.EnqueuePullSubscriptions(impl, pullSubscriptionLister))
+	serviceAccountInformer.Informer().AddEventHandler(authtype.EnqueuePullSubscription(impl, pullSubscriptionLister))
 
 	r.UriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 	r.ReconcileDataPlaneFn = r.ReconcileDeployment
