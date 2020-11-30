@@ -101,7 +101,7 @@ func TestGetAuthTypeForSources(t *testing.T) {
 			args:         serviceAccountArgs,
 			wantAuthType: "",
 			wantError: fmt.Errorf("using Workload Identity for authentication configuration: " +
-				"the Kubernetes Service Account " + serviceAccountName + " doesn't have the required annotation"),
+				"the Kubernetes Service Account " + serviceAccountName + " does not have the required annotation"),
 		},
 		{
 			name: "successfully get authType for secret (not in broker namespace)",
@@ -155,7 +155,7 @@ func TestGetAuthTypeForBrokerCell(t *testing.T) {
 			args:         brokerArgs,
 			wantAuthType: "",
 			wantError: fmt.Errorf("authentication is not configured, " +
-				"when checking Kubernetes Service Account broker, got error: the Kubernetes Service Account broker doesn't have the required annotation, " +
+				"when checking Kubernetes Service Account broker, got error: the Kubernetes Service Account broker does not have the required annotation, " +
 				"when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key"),
 		},
 		{

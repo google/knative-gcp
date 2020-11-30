@@ -409,7 +409,7 @@ func TestMarkBrokerCellStatus(t *testing.T) {
 						t.Errorf("unexpected condition status for %v: want %v, got %v", test.wantType, test.wantCondition, cd.Status)
 					}
 				}
-				t.Errorf("didn't see the expected condition: %v", test.wantType)
+				t.Error("didn't see the expected condition: ", test.wantType)
 			}
 		})
 	}
