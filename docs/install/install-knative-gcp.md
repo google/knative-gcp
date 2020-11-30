@@ -79,26 +79,25 @@ ko apply -f ./config
 1. Pick a knative-gcp release version:
 
    ```shell
-   export KGCP_VERSION=v0.15.0
+   export KGCP_VERSION=v0.19.0
    ```
 
-1. First install the CRDs by running the `kubectl apply` command with the
-   `--selector` flag. This prevents race conditions during the install, which
+1. First install the CRDs by running the `kubectl apply` for `cloud-run-events-pre-install-jobs.yaml`.
+This prevents race conditions during the installation, which
    cause intermittent errors:
 
    ```shell
-   kubectl apply --selector messaging.cloud.google.com/crd-install=true \
-   --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
-   kubectl apply --selector events.cloud.google.com/crd-install=true \
-   --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
+   kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events-pre-install-jobs.yaml
    ```
 
-1. To complete the install run the `kubectl apply` command again, this time
-   without the `--selector` flags:
+1. To complete the installation, run the `kubectl apply` for `cloud-run-events.yaml`:
 
    ```shell
    kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    ```
+**Notes:** For different releases, the installation files may be different (e.g. some old releases don't have `cloud-run-events-pre-install-jobs.yaml`).
+Above commands are just for the general case. For one specific release, to make sure it contains all those files,
+please check the assets under the [release tag]((https://github.com/google/knative-gcp/releases)) before applying the above commands.
 
 ## Configure the Authentication Mechanism for GCP (the Control Plane)
 
