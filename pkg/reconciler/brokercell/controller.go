@@ -75,7 +75,7 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
-	brokerCellinformer := brokercellinformer.Get(ctx)
+	brokerCellInformer := brokercellinformer.Get(ctx)
 
 	logger := logging.FromContext(ctx)
 
@@ -109,8 +109,8 @@ func NewController(
 
 	logger.Info("Setting up event handlers.")
 
-	brokerCellinformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
-	brokerCellLister := brokerCellinformer.Lister()
+	brokerCellInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
+	brokerCellLister := brokerCellInformer.Lister()
 
 	// Watch brokers and triggers to invoke configmap update immediately.
 	brokerinformer.Get(ctx).Informer().AddEventHandler(controller.HandleAll(

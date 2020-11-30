@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -336,7 +337,7 @@ func TestMarkBrokerCellStatus(t *testing.T) {
 		wantType      apis.ConditionType
 		wantCondition corev1.ConditionStatus
 	}{{
-		name: "mark ingressReady unknown",
+		name: fmt.Sprintf("mark %s unknown", string(BrokerCellConditionIngress)),
 		s: func() *BrokerCellStatus {
 			s := &BrokerCell{}
 			s.Status.InitializeConditions()
@@ -346,7 +347,7 @@ func TestMarkBrokerCellStatus(t *testing.T) {
 		wantType:      BrokerCellConditionIngress,
 		wantCondition: corev1.ConditionUnknown,
 	}, {}, {
-		name: "mark ingressReady false",
+		name: fmt.Sprintf("mark %s false", string(BrokerCellConditionIngress)),
 		s: func() *BrokerCellStatus {
 			s := &BrokerCell{}
 			s.Status.InitializeConditions()
@@ -356,7 +357,7 @@ func TestMarkBrokerCellStatus(t *testing.T) {
 		wantType:      BrokerCellConditionIngress,
 		wantCondition: corev1.ConditionFalse,
 	}, {
-		name: "mark fanoutReady unknown",
+		name: fmt.Sprintf("mark %s unknown", string(BrokerCellConditionFanout)),
 		s: func() *BrokerCellStatus {
 			s := &BrokerCell{}
 			s.Status.InitializeConditions()
@@ -366,7 +367,7 @@ func TestMarkBrokerCellStatus(t *testing.T) {
 		wantType:      BrokerCellConditionFanout,
 		wantCondition: corev1.ConditionUnknown,
 	}, {
-		name: "mark fanoutReady false",
+		name: fmt.Sprintf("mark %s false", string(BrokerCellConditionFanout)),
 		s: func() *BrokerCellStatus {
 			s := &BrokerCell{}
 			s.Status.InitializeConditions()
@@ -376,7 +377,7 @@ func TestMarkBrokerCellStatus(t *testing.T) {
 		wantType:      BrokerCellConditionFanout,
 		wantCondition: corev1.ConditionFalse,
 	}, {
-		name: "mark retryReady unknown",
+		name: fmt.Sprintf("mark %s unknown", string(BrokerCellConditionRetry)),
 		s: func() *BrokerCellStatus {
 			s := &BrokerCell{}
 			s.Status.InitializeConditions()
@@ -386,7 +387,7 @@ func TestMarkBrokerCellStatus(t *testing.T) {
 		wantType:      BrokerCellConditionRetry,
 		wantCondition: corev1.ConditionUnknown,
 	}, {
-		name: "mark retryReady false",
+		name: fmt.Sprintf("mark %s false", string(BrokerCellConditionRetry)),
 		s: func() *BrokerCellStatus {
 			s := &BrokerCell{}
 			s.Status.InitializeConditions()

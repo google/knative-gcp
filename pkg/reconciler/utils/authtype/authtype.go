@@ -37,12 +37,16 @@ type AuthTypeArgs struct {
 }
 
 const (
-	AuthenticationCheckUnknownReason           = "AuthenticationCheckPending"
-	ControlPlaneNamespace                      = "cloud-run-events"
-	BrokerServiceAccountName                   = "broker"
-	Secret                           AuthTypes = "secret"
-	WorkloadIdentityGSA              AuthTypes = "workload-identity-gsa"
-	WorkloadIdentity                 AuthTypes = "workload-identity"
+	AuthenticationCheckUnknownReason = "AuthenticationCheckPending"
+	ControlPlaneNamespace            = "cloud-run-events"
+	BrokerServiceAccountName         = "broker"
+	// Secret option is referring to authentication configuration for secret.
+	// https://cloud.google.com/kubernetes-engine/docs/tutorials/authenticating-to-cloud-platform#importing_credentials_as_a_secret
+	Secret AuthTypes = "secret"
+	// WorkloadIdentityGSA option is referring to authentication configuration for Workload Identity using GSA
+	// https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity
+	WorkloadIdentityGSA AuthTypes = "workload-identity-gsa"
+	WorkloadIdentity    AuthTypes = "workload-identity"
 )
 
 var BrokerSecret = &corev1.SecretKeySelector{
@@ -52,6 +56,7 @@ var BrokerSecret = &corev1.SecretKeySelector{
 	Key: "key.json",
 }
 
+// GetAuthTypeForBrokerCell will get authType for BrokerCell.
 func GetAuthTypeForBrokerCell(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister,
 	secretLister corev1listers.SecretLister, args AuthTypeArgs) (AuthTypes, error) {
 	// For AuthTypeArgs from BrokerCell, ServiceAccountName and Secret will be both presented.
@@ -71,6 +76,7 @@ func GetAuthTypeForBrokerCell(ctx context.Context, serviceAccountLister corev1li
 	}
 }
 
+// GetAuthTypeForSources will get authType for Sources.
 func GetAuthTypeForSources(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister, args AuthTypeArgs) (AuthTypes, error) {
 	// For AuthTypeArgs from Sources, either ServiceAccountName or Secret will be empty,
 	// because of the IdentitySpec validation from Webhook.

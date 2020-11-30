@@ -29,6 +29,7 @@ import (
 	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 )
 
 func TestMakePublisher(t *testing.T) {
@@ -54,7 +55,7 @@ func TestMakePublisher(t *testing.T) {
 		Topic:         topic,
 		Labels:        GetLabels("controller-name", "topic-name"),
 		TracingConfig: "TracingConfig-ABC123",
-		AuthType:      "secret",
+		AuthType:      authtype.Secret,
 	})
 
 	gotb, _ := json.MarshalIndent(pub, "", "  ")

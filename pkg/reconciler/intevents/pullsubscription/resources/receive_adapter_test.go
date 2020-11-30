@@ -27,6 +27,7 @@ import (
 	intereventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -72,7 +73,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 		LoggingConfig:  "LoggingConfig-ABC123",
 		MetricsConfig:  "MetricsConfig-ABC123",
 		TracingConfig:  "TracingConfig-ABC123",
-		AuthType:       "secret",
+		AuthType:       authtype.Secret,
 	})
 
 	one := int32(1)
@@ -241,7 +242,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 		LoggingConfig:  "LoggingConfig-ABC123",
 		MetricsConfig:  "MetricsConfig-ABC123",
 		TracingConfig:  "TracingConfig-ABC123",
-		AuthType:       "secret",
+		AuthType:       authtype.Secret,
 	})
 
 	one := int32(1)
@@ -414,7 +415,7 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 		LoggingConfig:  "LoggingConfig-ABC123",
 		MetricsConfig:  "MetricsConfig-ABC123",
 		TracingConfig:  "TracingConfig-ABC123",
-		AuthType:       "workload-identity-gsa",
+		AuthType:       authtype.WorkloadIdentityGSA,
 	})
 
 	one := int32(1)
@@ -510,7 +511,7 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 							Value: metricsDomain,
 						}, {
 							Name:  "K_GCP_AUTH_TYPE",
-							Value: "workload-identity-gsa",
+							Value: string(authtype.WorkloadIdentityGSA),
 						}},
 						Ports: []corev1.ContainerPort{{
 							Name:          "metrics",
