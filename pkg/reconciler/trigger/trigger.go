@@ -98,6 +98,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 		return err
 	}
 
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Error(fmt.Sprintf("Trigger %s/%s has no broker %s", t.Namespace, t.Name, t.Spec.Broker))
+		t.Status.MarkBrokerFailed("BrokerDoesNotExist", "Broker %s does not exist", t.Spec.Broker)
+	}
+
 	// If the broker has been or is being deleted, we clean up resources created by this controller
 	// for the given trigger.
 	if apierrs.IsNotFound(err) || !b.GetDeletionTimestamp().IsZero() {
