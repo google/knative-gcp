@@ -218,7 +218,7 @@ func containerTemplate(args Args) corev1.Container {
 				Value: "knative.dev/internal/eventing",
 			}, {
 				Name:  "K_GCP_AUTH_TYPE",
-				Value: args.AuthType,
+				Value: string(args.AuthType),
 			},
 		},
 		Ports: []corev1.ContainerPort{

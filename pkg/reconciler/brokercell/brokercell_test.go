@@ -96,7 +96,7 @@ var (
 	configmapUpdateFailedEvent    = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update configmaps")
 	configmapCreatedEvent         = Eventf(corev1.EventTypeNormal, "ConfigMapCreated", "Created configmap testnamespace/test-brokercell-brokercell-broker-targets")
 	configmapUpdatedEvent         = Eventf(corev1.EventTypeNormal, "ConfigMapUpdated", "Updated configmap testnamespace/test-brokercell-brokercell-broker-targets")
-	authTypeEvent                 = Eventf(corev1.EventTypeWarning, "InternalError", "authentication is not configured, Secret doesn't present, ServiceAccountName doesn't have required annotation")
+	authTypeEvent                 = Eventf(corev1.EventTypeWarning, "InternalError", "authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key")
 )
 
 func init() {
@@ -176,9 +176,9 @@ func TestAllCases(t *testing.T) {
 				Object: NewBrokerCell(brokerCellName, authtype.ControlPlaneNamespace,
 					WithInitBrokerCellConditions,
 					WithTargetsCofigReady(),
-					WithBrokerCellIngressUnknown(authtype.AuthenticationCheckUnknownReason, `authentication is not configured, Secret doesn't present, ServiceAccountName doesn't have required annotation`),
-					WithBrokerCellFanoutUnknown(authtype.AuthenticationCheckUnknownReason, `authentication is not configured, Secret doesn't present, ServiceAccountName doesn't have required annotation`),
-					WithBrokerCellRetryUnknown(authtype.AuthenticationCheckUnknownReason, `authentication is not configured, Secret doesn't present, ServiceAccountName doesn't have required annotation`),
+					WithBrokerCellIngressUnknown(authtype.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
+					WithBrokerCellFanoutUnknown(authtype.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
+					WithBrokerCellRetryUnknown(authtype.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
 					WithBrokerCellSetDefaults,
 				),
 			}},

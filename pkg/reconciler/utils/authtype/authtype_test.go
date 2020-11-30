@@ -65,13 +65,13 @@ var (
 	}
 )
 
-func TestGetAuthTypeForWorkloadIdentity(t *testing.T) {
+func TestGetAuthTypeForSources(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
 		name         string
 		objects      []runtime.Object
 		args         AuthTypeArgs
-		wantAuthType string
+		wantAuthType AuthTypes
 		wantError    error
 	}{
 		{
@@ -82,7 +82,7 @@ func TestGetAuthTypeForWorkloadIdentity(t *testing.T) {
 				),
 			},
 			args:         serviceAccountArgs,
-			wantAuthType: "workload-identity-gsa",
+			wantAuthType: WorkloadIdentityGSA,
 			wantError:    nil,
 		},
 		{
@@ -90,18 +90,18 @@ func TestGetAuthTypeForWorkloadIdentity(t *testing.T) {
 			objects:      []runtime.Object{},
 			args:         serviceAccountArgs,
 			wantAuthType: "",
-			wantError: fmt.Errorf("using Workload Identity for authentication configuration, " +
+			wantError: fmt.Errorf("using Workload Identity for authentication configuration: " +
 				"can't find Kubernetes Service Account " + serviceAccountName),
 		},
 		{
-			name: "error get authType, service account doesn't have required annotation",
+			name: "error get authType, service account does not have required annotation",
 			objects: []runtime.Object{
 				pkgtesting.NewServiceAccount(serviceAccountName, testNS),
 			},
 			args:         serviceAccountArgs,
 			wantAuthType: "",
-			wantError: fmt.Errorf("using Workload Identity for authentication configuration, " +
-				"Kubernetes Service Account " + serviceAccountName + " doesn't have the required annotation"),
+			wantError: fmt.Errorf("using Workload Identity for authentication configuration: " +
+				"the Kubernetes Service Account " + serviceAccountName + " doesn't have the required annotation"),
 		},
 		{
 			name: "successfully get authType for secret (not in broker namespace)",
@@ -109,39 +109,7 @@ func TestGetAuthTypeForWorkloadIdentity(t *testing.T) {
 				pkgtesting.NewSecret(secretName, testNS),
 			},
 			args:         secretArgs,
-			wantAuthType: "secret",
-			wantError:    nil,
-		},
-		{
-			name: "error get authType, secret doesn't exist in broker namespace",
-			objects: []runtime.Object{
-				pkgtesting.NewServiceAccount(brokerServiceAccountName, testBrokerNS),
-			},
-			args:         brokerArgs,
-			wantAuthType: "",
-			wantError: fmt.Errorf("authentication is not configured, " +
-				"Secret doesn't present, ServiceAccountName doesn't have required annotation"),
-		},
-		{
-			name: "error get authType, secret doesn't have required key in broker namespace",
-			objects: []runtime.Object{
-				pkgtesting.NewSecret(brokerSecretName, testBrokerNS),
-			},
-			args:         brokerArgs,
-			wantAuthType: "secret",
-			wantError: fmt.Errorf("using Secret for authentication configuration, " +
-				"Kubernests Secret " + brokerSecretName + " doesn't have required key key.json"),
-		},
-		{
-			name: "successfully get authType in broker namespace",
-			objects: []runtime.Object{
-				pkgtesting.NewSecret(brokerSecretName, testBrokerNS,
-					pkgtesting.WithData(map[string][]byte{
-						"key.json": make([]byte, 5, 5),
-					})),
-			},
-			args:         brokerArgs,
-			wantAuthType: "secret",
+			wantAuthType: Secret,
 			wantError:    nil,
 		},
 	}
@@ -154,7 +122,76 @@ func TestGetAuthTypeForWorkloadIdentity(t *testing.T) {
 
 			lister := pkgtesting.NewListers(tc.objects)
 
-			gotAuthType, gotError := GetAuthType(ctx, lister.GetServiceAccountLister(), lister.GetSecretLister(), tc.args)
+			gotAuthType, gotError := GetAuthTypeForSources(ctx, lister.GetServiceAccountLister(), tc.args)
+
+			if diff := cmp.Diff(tc.wantAuthType, gotAuthType); diff != "" {
+				t.Error("unexpected authType (-want, +got) = ", diff)
+			}
+			if tc.wantError != nil {
+				if gotError == nil {
+					t.Errorf("unexpected authType error (-want %v, +got %v)", tc.wantError.Error(), "")
+				} else if diff := cmp.Diff(tc.wantError.Error(), gotError.Error()); diff != "" {
+					t.Error("unexpected authType (-want, +got) = ", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestGetAuthTypeForBrokerCell(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name         string
+		objects      []runtime.Object
+		args         AuthTypeArgs
+		wantAuthType AuthTypes
+		wantError    error
+	}{
+		{
+			name: "error get authType, secret doesn't exist in broker namespace",
+			objects: []runtime.Object{
+				pkgtesting.NewServiceAccount(brokerServiceAccountName, testBrokerNS),
+			},
+			args:         brokerArgs,
+			wantAuthType: "",
+			wantError: fmt.Errorf("authentication is not configured, " +
+				"when checking Kubernetes Service Account broker, got error: the Kubernetes Service Account broker doesn't have the required annotation, " +
+				"when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key"),
+		},
+		{
+			name: "error get authType, secret does not have required key in broker namespace",
+			objects: []runtime.Object{
+				pkgtesting.NewSecret(brokerSecretName, testBrokerNS),
+			},
+			args:         brokerArgs,
+			wantAuthType: "",
+			wantError: fmt.Errorf("authentication is not configured, " +
+				"when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, " +
+				"when checking Kubernetes Secret google-broker-key, got error: the Kubernetes Secret google-broker-key does not have required key key.json"),
+		},
+		{
+			name: "successfully get authType in broker namespace",
+			objects: []runtime.Object{
+				pkgtesting.NewSecret(brokerSecretName, testBrokerNS,
+					pkgtesting.WithData(map[string][]byte{
+						"key.json": make([]byte, 5, 5),
+					})),
+			},
+			args:         brokerArgs,
+			wantAuthType: Secret,
+			wantError:    nil,
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			lister := pkgtesting.NewListers(tc.objects)
+
+			gotAuthType, gotError := GetAuthTypeForBrokerCell(ctx, lister.GetServiceAccountLister(), lister.GetSecretLister(), tc.args)
 
 			if diff := cmp.Diff(tc.wantAuthType, gotAuthType); diff != "" {
 				t.Error("unexpected authType (-want, +got) = ", diff)

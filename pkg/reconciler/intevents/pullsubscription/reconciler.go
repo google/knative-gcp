@@ -310,7 +310,7 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1.PullSubsc
 		logging.FromContext(ctx).Desugar().Error("Error serializing tracing config", zap.Error(err))
 	}
 
-	authType, err := authtype.GetAuthType(ctx, r.ServiceAccountLister, nil, authtype.AuthTypeArgs{
+	authType, err := authtype.GetAuthTypeForSources(ctx, r.ServiceAccountLister, authtype.AuthTypeArgs{
 		Namespace:          ps.Namespace,
 		ServiceAccountName: ps.IdentitySpec().ServiceAccountName,
 		Secret:             ps.Spec.Secret,

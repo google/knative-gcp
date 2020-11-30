@@ -245,7 +245,7 @@ func (r *Reconciler) reconcilePublisher(ctx context.Context, topic *v1.Topic) (e
 		logging.FromContext(ctx).Desugar().Error("Error serializing tracing config", zap.Error(err))
 	}
 
-	authType, err := authtype.GetAuthType(ctx, r.serviceAccountLister, nil, authtype.AuthTypeArgs{
+	authType, err := authtype.GetAuthTypeForSources(ctx, r.serviceAccountLister, authtype.AuthTypeArgs{
 		Namespace:          topic.Namespace,
 		ServiceAccountName: topic.IdentitySpec().ServiceAccountName,
 		Secret:             topic.Spec.Secret,

@@ -18,6 +18,7 @@ package authtype
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -27,10 +28,21 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 )
 
+type AuthTypes string
+
+type AuthTypeArgs struct {
+	Namespace          string
+	ServiceAccountName string
+	Secret             *corev1.SecretKeySelector
+}
+
 const (
-	AuthenticationCheckUnknownReason = "AuthenticationCheckPending"
-	ControlPlaneNamespace            = "cloud-run-events"
-	BrokerServiceAccountName         = "broker"
+	AuthenticationCheckUnknownReason           = "AuthenticationCheckPending"
+	ControlPlaneNamespace                      = "cloud-run-events"
+	BrokerServiceAccountName                   = "broker"
+	Secret                           AuthTypes = "secret"
+	WorkloadIdentityGSA              AuthTypes = "workload-identity-gsa"
+	WorkloadIdentity                 AuthTypes = "workload-identity"
 )
 
 var BrokerSecret = &corev1.SecretKeySelector{
@@ -40,76 +52,82 @@ var BrokerSecret = &corev1.SecretKeySelector{
 	Key: "key.json",
 }
 
-type AuthTypeArgs struct {
-	Namespace          string
-	ServiceAccountName string
-	Secret             *corev1.SecretKeySelector
-}
-
-func GetAuthType(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister,
-	secretLister corev1listers.SecretLister, args AuthTypeArgs) (string, error) {
-	// For AuthTypeArgs from Sources, either ServiceAccountName or Secret will be empty,
-	// because of the IdentitySpec validation from Webhook.
+func GetAuthTypeForBrokerCell(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister,
+	secretLister corev1listers.SecretLister, args AuthTypeArgs) (AuthTypes, error) {
 	// For AuthTypeArgs from BrokerCell, ServiceAccountName and Secret will be both presented.
 	// We need to revisit this function after https://github.com/google/knative-gcp/issues/1888 lands,
 	// which will add IdentitySpec to BrokerCell.
 	// For AuthTypeArgs from BrokerCell.
-	if args.ServiceAccountName != "" && args.Secret != nil {
-		if authType, err := GetAuthTypeForWorkloadIdentity(ctx, serviceAccountLister, args); authType != "" {
-			return authType, err
-		} else if authType, err := GetAuthTypeForSecret(ctx, secretLister, args); authType != "" {
-			return authType, err
-		} else {
-			return "", fmt.Errorf("authentication is not configured, Secret doesn't present, ServiceAccountName doesn't have required annotation")
-		}
+	authTypeForWorkloadIdentity, workloadIdentityErr := getAuthTypeForWorkloadIdentity(ctx, serviceAccountLister, args)
+	authTypeForSecret, secretErr := getAuthTypeForSecret(ctx, secretLister, args)
+	if authTypeForWorkloadIdentity != "" {
+		return authTypeForWorkloadIdentity, nil
+	} else if authTypeForSecret != "" {
+		return authTypeForSecret, nil
+	} else {
+		workloadIdentityError := fmt.Errorf("when checking Kubernetes Service Account %s, got error: %w", args.ServiceAccountName, workloadIdentityErr)
+		secretError := fmt.Errorf("when checking Kubernetes Secret %s, got error: %w", args.Secret.Name, secretErr)
+		return "", fmt.Errorf("authentication is not configured, %s, %s", workloadIdentityError.Error(), secretError.Error())
 	}
+}
+
+func GetAuthTypeForSources(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister, args AuthTypeArgs) (AuthTypes, error) {
+	// For AuthTypeArgs from Sources, either ServiceAccountName or Secret will be empty,
+	// because of the IdentitySpec validation from Webhook.
 
 	// For AuthTypeArgs from Sources which has serviceAccountName.
 	if args.ServiceAccountName != "" {
-		return GetAuthTypeForWorkloadIdentity(ctx, serviceAccountLister, args)
+		authType, err := getAuthTypeForWorkloadIdentity(ctx, serviceAccountLister, args)
+		if err != nil {
+			return authType, fmt.Errorf("using Workload Identity for authentication configuration: %w", err)
+		}
+		return authType, nil
 	}
 
 	// For AuthTypeArgs from Sources which has secret.
 	if args.Secret != nil {
-		return GetAuthTypeForSecret(ctx, secretLister, args)
+		// Sources' secrets are not further checked.
+		// In most cases, sources don't live in the control plane's namespace,
+		// and the controller doesn't have the permission to check their secrets.
+		return Secret, nil
 	}
 
-	return "", fmt.Errorf("invalid AuthTypeArgs, neither ServiceAccountName nor Secret are provided")
+	return "", errors.New("invalid AuthTypeArgs, neither ServiceAccountName nor Secret are provided")
 }
 
-func GetAuthTypeForWorkloadIdentity(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister, args AuthTypeArgs) (string, error) {
+func getAuthTypeForWorkloadIdentity(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister,
+	args AuthTypeArgs) (AuthTypes, error) {
 	kServiceAccount, err := serviceAccountLister.ServiceAccounts(args.Namespace).Get(args.ServiceAccountName)
 	if err != nil {
 		if apierrs.IsNotFound(err) {
-			return "", fmt.Errorf("using Workload Identity for authentication configuration, " +
-				"can't find Kubernetes Service Account " + args.ServiceAccountName)
+			return "", fmt.Errorf("can't find Kubernetes Service Account %s",
+				args.ServiceAccountName)
 		}
-		return "workload-identity", fmt.Errorf("error getting Kubernests Service Account: %s", err.Error())
+		return "", fmt.Errorf("error getting Kubernetes Service Account: %w", err)
 	} else if kServiceAccount.Annotations[resources.WorkloadIdentityKey] != "" {
-		return "workload-identity-gsa", nil
+		return WorkloadIdentityGSA, nil
 	}
-	// Once workload-identity-ubermint lands, we should also include the annotation check for it.
-	return "", fmt.Errorf("using Workload Identity for authentication configuration, " +
-		"Kubernetes Service Account " + args.ServiceAccountName + " doesn't have the required annotation")
+	// Once workload-identity new gen lands, we should also include the annotation check for it.
+	return "", fmt.Errorf("the Kubernetes Service Account %s does not have the required annotation", args.ServiceAccountName)
 }
 
-func GetAuthTypeForSecret(ctx context.Context, secretLister corev1listers.SecretLister, args AuthTypeArgs) (string, error) {
+func getAuthTypeForSecret(ctx context.Context, secretLister corev1listers.SecretLister, args AuthTypeArgs) (AuthTypes, error) {
 	// Controller doesn't have the permission to check the existence of a secret in namespaces
 	// other than the control plane's namespace.
 	if args.Namespace != ControlPlaneNamespace {
-		return "secret", nil
+		return Secret, nil
 	}
 	// If current namespace is control plane's namespace, check the existence of the secret and its key.
 	secret, err := secretLister.Secrets(args.Namespace).Get(args.Secret.Name)
 	if err != nil {
 		if apierrs.IsNotFound(err) {
-			return "", fmt.Errorf("using Secret for authentication configuration, " +
-				"can't find Kubernests Secret " + args.Secret.Name)
+			return "", fmt.Errorf("can't find Kubernetes Secret %v",
+				args.Secret.Name)
 		}
-		return "secret", fmt.Errorf("error getting Kubernests Secret: %s", err.Error())
+		return "", fmt.Errorf("error getting Kubernetes Secret: %w", err)
 	} else if secret.Data[args.Secret.Key] == nil {
-		return "secret", fmt.Errorf("using Secret for authentication configuration, " +
-			"Kubernests Secret " + args.Secret.Name + " doesn't have required key " + args.Secret.Key)
+		return "", fmt.Errorf("the Kubernetes Secret %s does not have required key %s",
+			args.Secret.Name, args.Secret.Key)
 	}
-	return "secret", nil
+	return Secret, nil
 }

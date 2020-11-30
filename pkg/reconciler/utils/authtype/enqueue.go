@@ -40,7 +40,7 @@ func EnqueuePullSubscription(impl *controller.Impl, pullSubscriptionLister liste
 		if err != nil {
 			return
 		}
-		// Convert pullsubscriptions  with qualified serviceAccountName into namespace/name strings, and pass them to EnqueueKey.
+		// Convert pullsubscriptions with qualified serviceAccountName into namespace/name strings, and pass them to EnqueueKey.
 		for _, ps := range psList {
 			if ps.Spec.ServiceAccountName == object.GetName() {
 				impl.EnqueueKey(types.NamespacedName{Namespace: object.GetNamespace(), Name: ps.Name})

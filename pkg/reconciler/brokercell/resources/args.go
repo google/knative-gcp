@@ -22,6 +22,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 )
 
 const (
@@ -60,7 +61,7 @@ type Args struct {
 	MemoryRequest      string
 	MemoryLimit        string
 	RolloutRestartTime string
-	AuthType           string
+	AuthType           authtype.AuthTypes
 }
 
 // IngressArgs are the arguments to create a Broker's ingress Deployment.

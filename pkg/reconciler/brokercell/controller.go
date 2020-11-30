@@ -75,7 +75,7 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
-	brokercellinformer := brokercellinformer.Get(ctx)
+	brokerCellinformer := brokercellinformer.Get(ctx)
 
 	logger := logging.FromContext(ctx)
 
@@ -109,8 +109,8 @@ func NewController(
 
 	logger.Info("Setting up event handlers.")
 
-	brokercellinformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
-	brokercellLister := brokercellinformer.Lister()
+	brokerCellinformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
+	brokerCellLister := brokerCellinformer.Lister()
 
 	// Watch brokers and triggers to invoke configmap update immediately.
 	brokerinformer.Get(ctx).Informer().AddEventHandler(controller.HandleAll(
@@ -146,14 +146,14 @@ func NewController(
 	// 1. Watch broker data plane's secret,
 	// if the filtered secret resource changes, enqueue brokercells from the same namespace.
 	secretinformer.Get(ctx).Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(authtype.ControlPlaneNamespace, authtype.BrokerSecret.Name),
-		Handler:    authtype.EnqueueBrokerCell(impl, brokercellLister),
+		FilterFunc: filterWithNamespace(authtype.ControlPlaneNamespace),
+		Handler:    authtype.EnqueueBrokerCell(impl, brokerCellLister),
 	})
 	// 2. Watch broker data plane's k8s service account,
 	// if the filtered k8s service account resource changes, enqueue brokercells from the same namespace.
 	serviceaccountinformer.Get(ctx).Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(authtype.ControlPlaneNamespace, authtype.BrokerServiceAccountName),
-		Handler:    authtype.EnqueueBrokerCell(impl, brokercellLister),
+		FilterFunc: filterWithNamespace(authtype.ControlPlaneNamespace),
+		Handler:    authtype.EnqueueBrokerCell(impl, brokerCellLister),
 	})
 	return impl
 }
@@ -180,5 +180,15 @@ func reportLatency(ctx context.Context, resourceObj metav1.ObjectMetaAccessor, l
 		}
 	} else {
 		logging.FromContext(ctx).Error("Failed to retrieve the resource update time", zap.Error(err))
+	}
+}
+
+// filterWithNamespace filters object based on a namespace.
+func filterWithNamespace(namespace string) func(obj interface{}) bool {
+	return func(obj interface{}) bool {
+		if object, ok := obj.(metav1.Object); ok {
+			return namespace == object.GetNamespace()
+		}
+		return false
 	}
 }

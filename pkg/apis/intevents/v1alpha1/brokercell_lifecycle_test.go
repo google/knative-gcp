@@ -402,11 +402,14 @@ func TestMarkBrokerCellStatus(t *testing.T) {
 			if test.wantType != "" {
 				gotConditionStatus := test.s.Status
 				for _, cd := range gotConditionStatus.Conditions {
-					if cd.Type == test.wantType &&
-						cd.Status != test.wantCondition {
+					if cd.Type == test.wantType {
+						if cd.Status == test.wantCondition {
+							return
+						}
 						t.Errorf("unexpected condition status for %v: want %v, got %v", test.wantType, test.wantCondition, cd.Status)
 					}
 				}
+				t.Errorf("didn't see the expected condition: %v", test.wantType)
 			}
 		})
 	}

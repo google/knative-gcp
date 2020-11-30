@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
 
 	"go.uber.org/zap"
@@ -51,8 +52,8 @@ type ReceiveAdapterArgs struct {
 	MetricsConfig    string
 	LoggingConfig    string
 	TracingConfig    string
-	// There are three types: `secret`, `workload-identity-gsa` and `workload-identity-ubermint`.
-	AuthType string
+	// There are three types: `secret`, `workload-identity-gsa` and `workload-identity`.
+	AuthType authtype.AuthTypes
 }
 
 const (
@@ -158,7 +159,7 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 			Value: metricsDomain,
 		}, {
 			Name:  "K_GCP_AUTH_TYPE",
-			Value: args.AuthType,
+			Value: string(args.AuthType),
 		}},
 		Ports: []corev1.ContainerPort{{
 			Name:          "metrics",
