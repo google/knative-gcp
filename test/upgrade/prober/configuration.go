@@ -26,7 +26,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/wavesoftware/go-ensure"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +45,14 @@ const (
 	defaultBrokerName          = "default"
 	defaultHealthEndpoint      = "/healthz"
 	defaultFinishedSleep       = 40 * time.Second
+
+	Silence DuplicateAction = "silence"
+	Warn    DuplicateAction = "warn"
+	Error   DuplicateAction = "error"
 )
+
+// DuplicateAction is the action to take in case of duplicated events
+type DuplicateAction string
 
 var eventTypes = []string{"step", "finished"}
 
@@ -58,6 +64,7 @@ type Config struct {
 	FinishedSleep time.Duration
 	Serving       ServingConfig
 	FailOnErrors  bool
+	OnDuplicate   DuplicateAction
 }
 
 // Wathola represents options related strictly to wathola testing tool.
@@ -90,6 +97,7 @@ func NewConfig(namespace string) *Config {
 		Interval:      Interval,
 		FinishedSleep: defaultFinishedSleep,
 		FailOnErrors:  true,
+		OnDuplicate:   Warn,
 		Serving: ServingConfig{
 			Use:         false,
 			ScaleToZero: true,

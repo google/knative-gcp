@@ -15,6 +15,7 @@
 # limitations under the License.
 
 # Include after hack/library.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../vendor/knative.dev/hack/e2e-tests.sh"
 
 # Set and export SYSTEM_NAMESPACE where Knative Eventing is installed for pkg/system.
 readonly SYSTEM_NAMESPACE="knative-eventing"
