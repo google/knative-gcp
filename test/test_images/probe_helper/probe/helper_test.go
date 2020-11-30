@@ -62,13 +62,13 @@ const (
 )
 
 var (
-	testStorageUploadRequest      = fmt.Sprintf("/upload/storage/v1/b/%s/o?alt=json&name=1234567890&prettyPrint=false&projection=full&uploadType=multipart", testStorageBucket)
-	testStorageRequest            = fmt.Sprintf("/b/%s/o/1234567890?alt=json&prettyPrint=false&projection=full", testStorageBucket)
-	testStorageGenerationRequest  = fmt.Sprintf("/b/%s/o/1234567890?alt=json&generation=0&prettyPrint=false", testStorageBucket)
-	testStorageCreateBody         = fmt.Sprintf(`{"bucket":"%s","name":"1234567890"}`, testStorageBucket)
-	testStorageUpdateMetadataBody = fmt.Sprintf(`{"bucket":"%s","metadata":{"some-key":"Metadata updated!"}}`, testStorageBucket)
-	testStorageArchiveBody        = fmt.Sprintf(`{"bucket":"%s","name":"1234567890","storageClass":"ARCHIVE"}`, testStorageBucket)
-	testRequestHost               = fmt.Sprintf("probe-helper-external-receiver.%s.svc.cluster.local", testNamespace)
+	testStorageUploadRequest      = "/upload/storage/v1/b/cloudstoragesource-bucket/o?alt=json&name=1234567890&prettyPrint=false&projection=full&uploadType=multipart"
+	testStorageRequest            = "/b/cloudstoragesource-bucket/o/1234567890?alt=json&prettyPrint=false&projection=full"
+	testStorageGenerationRequest  = "/b/cloudstoragesource-bucket/o/1234567890?alt=json&generation=0&prettyPrint=false"
+	testStorageCreateBody         = `{"bucket":"cloudstoragesource-bucket","name":"1234567890"}`
+	testStorageUpdateMetadataBody = `{"bucket":"cloudstoragesource-bucket","metadata":{"some-key":"Metadata updated!"}}`
+	testStorageArchiveBody        = `{"bucket":"cloudstoragesource-bucket","name":"1234567890","storageClass":"ARCHIVE"}`
+	testRequestHost               = "probe-helper-external-receiver.test-namespace.svc.cluster.local"
 )
 
 // A helper function that starts a test Broker which receives events forwarded by
@@ -368,11 +368,11 @@ func TestProbeHelper(t *testing.T) {
 	// Create a testing client from which to send probe events to the probe helper.
 	p, err := cloudevents.NewHTTP(cloudevents.WithTarget(phr.probeURL))
 	if err != nil {
-		t.Fatalf("Failed to create HTTP protocol of the testing client: %s", err.Error())
+		t.Fatal("Failed to create HTTP protocol of the testing client:" + err.Error())
 	}
 	c, err := cloudevents.NewClient(p)
 	if err != nil {
-		t.Fatalf("Failed to create testing client: %s", err.Error())
+		t.Fatal("Failed to create testing client:" + err.Error())
 	}
 
 	cases := []struct {
