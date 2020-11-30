@@ -73,19 +73,19 @@ func EnqueueTopic(impl *controller.Impl, topicLister listers.TopicLister) cache.
 
 // EnqueueBrokerCell returns an event handler for resources which are not created/owned by brokercell.
 // It is used for serviceAccountInformer and secretinformer.
-func EnqueueBrokerCell(impl *controller.Impl, brokercellLister v1alpha1.BrokerCellLister) cache.ResourceEventHandler {
+func EnqueueBrokerCell(impl *controller.Impl, brokerCellLister v1alpha1.BrokerCellLister) cache.ResourceEventHandler {
 	return controller.HandleAll(func(obj interface{}) {
 		object, err := kmeta.DeletionHandlingAccessor(obj)
 		if err != nil {
 			return
 		}
 		// Get brokercells which are in the same namespace as the object.
-		brokercellList, err := brokercellLister.BrokerCells(object.GetNamespace()).List(labels.Everything())
+		brokerCellList, err := brokerCellLister.BrokerCells(object.GetNamespace()).List(labels.Everything())
 		if err != nil {
 			return
 		}
 		// Convert brokercells into namespace/name strings, and pass them to EnqueueKey.
-		for _, bc := range brokercellList {
+		for _, bc := range brokerCellList {
 			impl.EnqueueKey(types.NamespacedName{Namespace: object.GetNamespace(), Name: bc.Name})
 		}
 	})

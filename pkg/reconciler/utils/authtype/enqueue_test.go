@@ -231,14 +231,14 @@ func TestEnqueueBrokerCells(t *testing.T) {
 			serviceaccountInformer := serviceaccountinfomer.Get(ctx)
 			// Get brokercell lister from tc.objects.
 			lister := gcptesting.NewListers(tc.objects)
-			brokercellLister := lister.GetBrokerCellLister()
+			brokerCellLister := lister.GetBrokerCellLister()
 			// Create a fake controller implementation.
 			logger := logging.FromContext(ctx).Sugar()
 			r := newFakeReconciler()
 			impl := controller.NewImplFull(r, controller.ControllerOptions{WorkQueueName: "test-brokercell-queue", Logger: logger})
 
 			// Configure event handler for serviceaccount informer.
-			serviceaccountInformer.Informer().AddEventHandler(EnqueueBrokerCell(impl, brokercellLister))
+			serviceaccountInformer.Informer().AddEventHandler(EnqueueBrokerCell(impl, brokerCellLister))
 
 			// Put object into store to simulate the process of
 			// reflector syncing a newly changed object into the local Store.
