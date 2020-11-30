@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package probe
 
 import (
 	"context"
@@ -23,43 +23,47 @@ import (
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 )
 
-// Probe event goes here
 const (
+	// CloudPubSubSourceProbeEventType is the CloudEvent type of forward
+	// CloudPubSubSource probes.
+	CloudPubSubSourceProbeEventType = "cloudpubsubsource-probe"
+
 	topicExtension = "topic"
 )
 
+// CloudPubSubSourceForwardProbe is the probe handler for forward probe requests
+// in the CloudPubSubSource probe.
 type CloudPubSubSourceForwardProbe struct {
-	ProbeInterface
+	Handler
 	event          cloudevents.Event
 	channelID      string
 	topic          string
 	cePubsubClient cloudevents.Client
 }
 
-func CloudPubSubSourceForwardProbeConstructor(ph *ProbeHelper, event cloudevents.Event) (ProbeInterface, error) {
-	//requestHost, ok := event.Extensions()[ProbeEventRequestHostExtension]
-	//if !ok {
-	//	return nil, fmt.Errorf("Failed to read '%s' extension", ProbeEventRequestHostExtension)
-	//}
+// CloudPubSubSourceForwardProbeConstructor builds a new CloudPubSubSource forward
+// probe handler from a given CloudEvent.
+func CloudPubSubSourceForwardProbeConstructor(ph *Helper, event cloudevents.Event, requestHost string) (Handler, error) {
 	topic, ok := event.Extensions()[topicExtension]
 	if !ok {
 		return nil, fmt.Errorf("CloudPubSubSource probe event has no '%s' extension", topicExtension)
 	}
 	probe := &CloudPubSubSourceForwardProbe{
 		event:          event,
-		channelID:      event.ID(),
+		channelID:      fmt.Sprintf("%s/%s", requestHost, event.ID()),
 		topic:          fmt.Sprint(topic),
-		cePubsubClient: ph.cePubsubClient,
+		cePubsubClient: ph.CePubsubClient,
 	}
 	return probe, nil
 }
 
+// ChannelID returns the unique channel ID for a given probe request.
 func (p CloudPubSubSourceForwardProbe) ChannelID() string {
 	return p.channelID
 }
 
+// Handle forwards a given CloudEvent as a message to a Pub/Sub topic.
 func (p CloudPubSubSourceForwardProbe) Handle(ctx context.Context) error {
-	// The pubsub client forwards the event as a message to a pubsub topic.
 	ctx = cecontext.WithTopic(ctx, p.topic)
 	if res := p.cePubsubClient.Send(ctx, p.event); !cloudevents.IsACK(res) {
 		return fmt.Errorf("Failed sending event to topic %s, got result %s", p.topic, res)
@@ -67,13 +71,16 @@ func (p CloudPubSubSourceForwardProbe) Handle(ctx context.Context) error {
 	return nil
 }
 
-// Receiver event goes here
+// CloudPubSubSourceReceiveProbe is the probe handler for receiver probe requests
+// in the CloudPubSubSource probe.
 type CloudPubSubSourceReceiveProbe struct {
-	ProbeInterface
+	Handler
 	channelID string
 }
 
-func CloudPubSubSourceReceiveProbeConstructor(ph *ProbeHelper, event cloudevents.Event) (ProbeInterface, error) {
+// CloudPubSubSourceReceiveProbeConstructor builds a new CloudPubSubSource receiver
+// probe handler from a given CloudEvent.
+func CloudPubSubSourceReceiveProbeConstructor(ph *Helper, event cloudevents.Event, requestHost string) (Handler, error) {
 	// The original event is wrapped into a pubsub Message by the CloudEvents
 	// pubsub sender client, and encoded as data in a CloudEvent by the CloudPubSubSource.
 	//
@@ -93,7 +100,7 @@ func CloudPubSubSourceReceiveProbeConstructor(ph *ProbeHelper, event cloudevents
 	//         "data": "eydtc2cnOidQcm9iZSBDbG91ZCBSdW4gRXZlbnRzISd9",
 	//         "attributes": {
 	//           "Content-Type": "application/json",
-	//           "ce-id": "294119a9-98e2-44ec-a2b2-28a98cf40eee",
+	//           "ce-id": "cloudpubsubsource-probe-294119a9-98e2-44ec-a2b2-28a98cf40eee",
 	//           "ce-source": "probe",
 	//           "ce-specversion": "1.0",
 	//           "ce-type": "cloudpubsubsource-probe"
@@ -105,15 +112,16 @@ func CloudPubSubSourceReceiveProbeConstructor(ph *ProbeHelper, event cloudevents
 	if err := json.Unmarshal(event.Data(), &msgData); err != nil {
 		return nil, fmt.Errorf("Error unmarshalling Pub/Sub message from event data: %v", err)
 	}
-	channelID, ok := msgData.Message.Attributes["ce-id"]
+	eventID, ok := msgData.Message.Attributes["ce-id"]
 	if !ok {
 		return nil, fmt.Errorf("Failed to read probe event ID from Pub/Sub message attributes")
 	}
 	return &CloudPubSubSourceReceiveProbe{
-		channelID: channelID,
+		channelID: fmt.Sprintf("%s/%s", requestHost, eventID),
 	}, nil
 }
 
+// ChannelID returns the unique channel ID for a given probe request.
 func (p CloudPubSubSourceReceiveProbe) ChannelID() string {
 	return p.channelID
 }

@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package utils
 
 import (
 	"context"
@@ -22,18 +22,18 @@ import (
 	"knative.dev/pkg/logging"
 )
 
-// probeChecker carries timestamps of the latest handled events from the
+// ProbeChecker carries timestamps of the latest handled events from the
 // forwarder and receiver, as well as the longest tolerated staleness time.
 // The probeChecker is expected to declare the probe helper as unhealthy if
 // the probe helper is unable to handle either sort of event.
-type probeChecker struct {
-	lastProbeEventTimestamp    eventTimestamp
-	lastReceiverEventTimestamp eventTimestamp
-	maxStaleDuration           time.Duration
+type ProbeChecker struct {
+	LastForwardEventTime  SyncTime
+	LastReceiverEventTime SyncTime
+	MaxStaleDuration      time.Duration
 }
 
 // stalenessHandlerFunc returns the HTTP handler for probe helper probe checks.
-func (c *probeChecker) stalenessHandlerFunc(ctx context.Context) nethttp.HandlerFunc {
+func (c *ProbeChecker) StalenessHandlerFunc(ctx context.Context) nethttp.HandlerFunc {
 	return func(w nethttp.ResponseWriter, req *nethttp.Request) {
 		if req.URL.Path != "/healthz" {
 			logging.FromContext(ctx).Warnw("Invalid probe check request path", zap.String("path", req.URL.Path))
@@ -41,13 +41,13 @@ func (c *probeChecker) stalenessHandlerFunc(ctx context.Context) nethttp.Handler
 			return
 		}
 		now := time.Now()
-		if delay := now.Sub(c.lastProbeEventTimestamp.getTime()); delay > c.maxStaleDuration {
-			logging.FromContext(ctx).Warnw("probe check failed, probe delay exceeds staleness threshold", zap.Duration("delay", delay), zap.Duration("staleness", c.maxStaleDuration))
+		if delay := now.Sub(c.LastForwardEventTime.Get()); delay > c.MaxStaleDuration {
+			logging.FromContext(ctx).Warnw("probe check failed, forward probe delay exceeds staleness threshold", zap.Duration("delay", delay), zap.Duration("staleness", c.MaxStaleDuration))
 			w.WriteHeader(nethttp.StatusServiceUnavailable)
 			return
 		}
-		if delay := now.Sub(c.lastReceiverEventTimestamp.getTime()); delay > c.maxStaleDuration {
-			logging.FromContext(ctx).Warnw("probe check failed, receiver delay exceeds staleness threshold", zap.Duration("delay", delay), zap.Duration("staleness", c.maxStaleDuration))
+		if delay := now.Sub(c.LastReceiverEventTime.Get()); delay > c.MaxStaleDuration {
+			logging.FromContext(ctx).Warnw("probe check failed, receiver delay exceeds staleness threshold", zap.Duration("delay", delay), zap.Duration("staleness", c.MaxStaleDuration))
 			w.WriteHeader(nethttp.StatusServiceUnavailable)
 			return
 		}

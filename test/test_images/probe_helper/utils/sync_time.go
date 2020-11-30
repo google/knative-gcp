@@ -11,17 +11,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package utils
 
 import (
-	"context"
+	"sync"
+	"time"
 )
 
-type ProbeInterface interface {
-	ChannelID() string
-	Handle(context.Context) error
+// SyncTime is a synchronized wrapper around a time.
+type SyncTime struct {
+	sync.RWMutex
+	time time.Time
 }
 
-func ShouldWaitOnReceiver(p ProbeInterface) bool {
-	return p.ChannelID() != ""
+// SetNow sets the desired timestamp to the current time.
+func (t *SyncTime) SetNow() {
+	t.Lock()
+	defer t.Unlock()
+	t.time = time.Now()
+}
+
+// Get gets the timestamp's time.
+func (t *SyncTime) Get() time.Time {
+	t.RLock()
+	defer t.RUnlock()
+	return t.time
 }

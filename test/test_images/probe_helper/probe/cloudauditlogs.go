@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package probe
 
 import (
 	"context"
@@ -22,83 +22,93 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
 
-// Probe event goes here
+const (
+	// CloudAuditLogsSourceProbeEventType is the CloudEvent type of forward
+	// CloudAuditLogsSource probes.
+	CloudAuditLogsSourceProbeEventType = "cloudauditlogssource-probe"
+)
+
+// CloudAuditLogsSourceForwardProbe is the probe handler for forward probe requests
+// in the CloudAuditLogsSource probe.
 type CloudAuditLogsSourceForwardProbe struct {
-	ProbeInterface
-	event        cloudevents.Event
+	Handler
+	topic        string
 	channelID    string
 	pubsubClient *pubsub.Client
 }
 
-func CloudAuditLogsSourceForwardProbeConstructor(ph *ProbeHelper, event cloudevents.Event) (ProbeInterface, error) {
-	//requestHost, ok := event.Extensions()[ProbeEventRequestHostExtension]
-	//if !ok {
-	//	return nil, fmt.Errorf("Failed to read '%s' extension", ProbeEventRequestHostExtension)
-	//}
+// CloudAuditLogsSourceForwardProbeConstructor builds a new CloudAuditLogsSource forward
+// probe handler from a given CloudEvent.
+func CloudAuditLogsSourceForwardProbeConstructor(ph *Helper, event cloudevents.Event, requestHost string) (Handler, error) {
 	probe := &CloudAuditLogsSourceForwardProbe{
-		event:        event,
-		channelID:    event.ID(),
-		pubsubClient: ph.pubsubClient,
+		topic:        event.ID(),
+		channelID:    fmt.Sprintf("%s/%s", requestHost, event.ID()),
+		pubsubClient: ph.PubsubClient,
 	}
 	return probe, nil
 }
 
+// ChannelID returns the unique channel ID for a given probe request.
 func (p CloudAuditLogsSourceForwardProbe) ChannelID() string {
 	return p.channelID
 }
 
+// Handle creates a Pub/Sub topic with a name as given in the probe request.
 func (p CloudAuditLogsSourceForwardProbe) Handle(ctx context.Context) error {
-	// Create a pubsub topic with the given ID.
-	if _, err := p.pubsubClient.CreateTopic(ctx, p.event.ID()); err != nil {
-		return fmt.Errorf("Failed to create pubsub topic '%s': %v", p.event.ID(), err)
+	if _, err := p.pubsubClient.CreateTopic(ctx, p.topic); err != nil {
+		return fmt.Errorf("Failed to create pubsub topic '%s': %v", p.topic, err)
 	}
 	return nil
 }
 
-// Receiver event goes here
+// CloudAuditLogsSourceReceiveProbe is the probe handler for receiver probe requests
+// in the CloudAuditLogsSource probe.
 type CloudAuditLogsSourceReceiveProbe struct {
-	ProbeInterface
+	Handler
 	channelID string
 }
 
-func CloudAuditLogsSourceReceiveProbeConstructor(ph *ProbeHelper, event cloudevents.Event) (ProbeInterface, error) {
+// CloudAuditLogsSourceReceiveProbeConstructor builds a new CloudAuditLogsSource receiver
+// probe handler from a given CloudEvent.
+func CloudAuditLogsSourceReceiveProbeConstructor(ph *Helper, event cloudevents.Event, requestHost string) (Handler, error) {
 	// The logged event type is held in the methodname extension. For creation
 	// of pubsub topics, the topic ID can be extracted from the event subject.
 	if _, ok := event.Extensions()["methodname"]; !ok {
 		return nil, fmt.Errorf("Failed to read Cloud AuditLogs event, missing 'methodname' extension")
 	}
 	sepSub := strings.Split(event.Subject(), "/")
-	if len(sepSub) != 5 || sepSub[0] != "pubsub.googleapis.com" || sepSub[1] != "projects" || sepSub[2] != ph.projectID || sepSub[3] != "topics" {
+	if len(sepSub) != 5 || sepSub[0] != "pubsub.googleapis.com" || sepSub[1] != "projects" || sepSub[2] != ph.ProjectID || sepSub[3] != "topics" {
 		return nil, fmt.Errorf("Failed to read Cloud AuditLogs event, unexpected event subject")
 	}
 	methodname := fmt.Sprint(event.Extensions()["methodname"])
-	var channelID string
+	var eventID string
 	if methodname == "google.pubsub.v1.Publisher.CreateTopic" {
 		// Example:
 		//   Context Attributes,
 		//     specversion: 1.0
 		//     type: google.cloud.audit.log.v1.written
 		//     source: //cloudaudit.googleapis.com/projects/project-id/logs/activity
-		//     subject: pubsub.googleapis.com/projects/project-id/topics/914e5946-5e27-4bde-a455-7cfbae1c8539
+		//     subject: pubsub.googleapis.com/projects/project-id/topics/cloudauditlogssource-probe-914e5946-5e27-4bde-a455-7cfbae1c8539
 		//     id: d2ad1359483fc13c8056c430545fd217
 		//     time: 2020-09-14T18:44:18.636961725Z
 		//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/audit/v1/data.proto
 		//     datacontenttype: application/json
 		//   Extensions,
 		//     methodname: google.pubsub.v1.Publisher.CreateTopic
-		//     resourcename: projects/project-id/topics/914e5946-5e27-4bde-a455-7cfbae1c8539
+		//     resourcename: projects/project-id/topics/cloudauditlogssource-probe-914e5946-5e27-4bde-a455-7cfbae1c8539
 		//     servicename: pubsub.googleapis.com
 		//   Data,
 		//     { ... }
-		channelID = sepSub[4]
+		eventID = sepSub[4]
 	} else {
 		return nil, fmt.Errorf("Failed to read Cloud AuditLogs event, unrecognized 'methodname' extension: %s", methodname)
 	}
 	return &CloudAuditLogsSourceReceiveProbe{
-		channelID: channelID,
+		channelID: fmt.Sprintf("%s/%s", requestHost, eventID),
 	}, nil
 }
 
+// ChannelID returns the unique channel ID for a given probe request.
 func (p CloudAuditLogsSourceReceiveProbe) ChannelID() string {
 	return p.channelID
 }

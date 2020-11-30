@@ -56,7 +56,7 @@ The Probe Helper can handle multiple different types of probes.
 		 the object, and waits to be notified that the object has been archived by a
 		 CloudStorageSource.
 	4. The Probe Helper receives an event with the same ID as in step 1, deletes
-		 the object, and waits to tbe notified that the object has been deleted by a
+		 the object, and waits to be notified that the object has been deleted by a
 		 CloudStorageSource.
 
 4. CloudSchedulerSource Probe
@@ -66,10 +66,10 @@ The Probe Helper can handle multiple different types of probes.
 		on an existing CloudSchedulerSource which sinks an event to the Probe Helper
 		receiver every minute.
 
-		The Probe Helper receives an event of type `cloudschedulersource-probe`,
-		and examines the time since the last tick observed from the CloudSchedulerSource.
-		If this duration is greater than 1 minute, the probe fails, and otherwise,
-		the probe succeeds.
+		The Probe Helper receives an event of type `cloudschedulersource-probe`, and
+		waits to observe the next matching tick from a Cloud Scheduler job. The probe fails
+		if the wait times out, so the probe timeout should be tuned according to the
+		job period.
 
 5. CloudAuditLogsSource Probe
 
@@ -90,7 +90,9 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 
-	"github.com/google/knative-gcp/pkg/utils"
+	pkgutils "github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/test/test_images/probe_helper/probe"
+	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
 )
 
 type envConfig struct {
@@ -129,22 +131,22 @@ func main() {
 	ctx := logging.WithLogger(signals.NewContext(), logger)
 
 	// Get the default project ID
-	projectID, err := utils.ProjectIDOrDefault("")
+	projectID, err := pkgutils.ProjectIDOrDefault("")
 	if err != nil {
 		logging.FromContext(ctx).Fatal("Failed to get the default project ID", zap.Error(err))
 	}
 
 	// Create and start the probe helper
-	ph := &ProbeHelper{
-		projectID:                projectID,
-		brokerCellIngressBaseURL: env.BrokerCellIngressBaseURL,
-		probePort:                env.ProbePort,
-		receiverPort:             env.ReceiverPort,
-		defaultTimeoutDuration:   env.DefaultTimeoutDuration,
-		maxTimeoutDuration:       env.MaxTimeoutDuration,
-		probeChecker: &probeChecker{
-			maxStaleDuration: env.MaxStaleDuration,
+	ph := &probe.Helper{
+		ProjectID:                projectID,
+		BrokerCellIngressBaseURL: env.BrokerCellIngressBaseURL,
+		ProbePort:                env.ProbePort,
+		ReceiverPort:             env.ReceiverPort,
+		DefaultTimeoutDuration:   env.DefaultTimeoutDuration,
+		MaxTimeoutDuration:       env.MaxTimeoutDuration,
+		ProbeChecker: &utils.ProbeChecker{
+			MaxStaleDuration: env.MaxStaleDuration,
 		},
 	}
-	ph.run(ctx)
+	ph.Run(ctx)
 }
