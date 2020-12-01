@@ -43,7 +43,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	reconcilerutils "github.com/google/knative-gcp/pkg/reconciler/utils"
-	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 )
 
 type envConfig struct {
@@ -140,15 +140,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		return err
 	}
 
-	authType, err := authtype.GetAuthTypeForBrokerCell(ctx, r.serviceAccountLister, r.secretLister, authtype.AuthTypeArgs{
+	authType, err := authcheck.GetAuthTypeForBrokerCell(ctx, r.serviceAccountLister, r.secretLister, authcheck.AuthTypeArgs{
 		Namespace:          bc.Namespace,
-		ServiceAccountName: authtype.BrokerServiceAccountName,
-		Secret:             authtype.BrokerSecret,
+		ServiceAccountName: authcheck.BrokerServiceAccountName,
+		Secret:             authcheck.BrokerSecret,
 	})
 	if err != nil {
-		bc.Status.MarkIngressUnknown(authtype.AuthenticationCheckUnknownReason, err.Error())
-		bc.Status.MarkFanoutUnknown(authtype.AuthenticationCheckUnknownReason, err.Error())
-		bc.Status.MarkRetryUnknown(authtype.AuthenticationCheckUnknownReason, err.Error())
+		bc.Status.MarkIngressUnknown(authcheck.AuthenticationCheckUnknownReason, err.Error())
+		bc.Status.MarkFanoutUnknown(authcheck.AuthenticationCheckUnknownReason, err.Error())
+		bc.Status.MarkRetryUnknown(authcheck.AuthenticationCheckUnknownReason, err.Error())
 		logging.FromContext(ctx).Error("Error getting authType", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		return err
 	}
@@ -245,7 +245,7 @@ func (r *Reconciler) delete(ctx context.Context, bc *intv1alpha1.BrokerCell) pkg
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellGarbageCollected", "BrokerCell garbage collected: \"%s/%s\"", bc.Namespace, bc.Name)
 }
 
-func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell, authType authtype.AuthTypes) resources.IngressArgs {
+func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell, authType authcheck.AuthTypes) resources.IngressArgs {
 	return resources.IngressArgs{
 		Args: resources.Args{
 			ComponentName:      resources.IngressName,
@@ -287,7 +287,7 @@ func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.Au
 	}
 }
 
-func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell, authType authtype.AuthTypes) resources.FanoutArgs {
+func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell, authType authcheck.AuthTypes) resources.FanoutArgs {
 	return resources.FanoutArgs{
 		Args: resources.Args{
 			ComponentName:      resources.FanoutName,
@@ -317,7 +317,7 @@ func (r *Reconciler) makeFanoutHPAArgs(bc *intv1alpha1.BrokerCell) resources.Aut
 	}
 }
 
-func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell, authType authtype.AuthTypes) resources.RetryArgs {
+func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell, authType authcheck.AuthTypes) resources.RetryArgs {
 	return resources.RetryArgs{
 		Args: resources.Args{
 			ComponentName:      resources.RetryName,

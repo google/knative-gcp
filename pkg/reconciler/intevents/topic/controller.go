@@ -30,19 +30,19 @@ import (
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"cloud.google.com/go/pubsub"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
+	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
+
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/topic"
+	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
-	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
-
-	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/topic"
-	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
-	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
-	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 )
 
 const (
@@ -116,7 +116,7 @@ func newController(
 	})
 
 	// Watch k8s service account, if a k8s service account resource changes, enqueue qualified topics from the same namespace.
-	serviceAccountInformer.Informer().AddEventHandler(authtype.EnqueueTopic(impl, topicLister))
+	serviceAccountInformer.Informer().AddEventHandler(authcheck.EnqueueTopic(impl, topicLister))
 
 	cmw.Watch(tracingconfig.ConfigName, r.UpdateFromTracingConfigMap)
 

@@ -43,7 +43,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/testingdata"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 )
 
 const (
@@ -55,7 +55,7 @@ const (
 
 var (
 	testKey     = fmt.Sprintf("%s/%s", testNS, brokerCellName)
-	testKeyAuth = fmt.Sprintf("%s/%s", authtype.ControlPlaneNamespace, brokerCellName)
+	testKeyAuth = fmt.Sprintf("%s/%s", authcheck.ControlPlaneNamespace, brokerCellName)
 
 	creatorAnnotation       = map[string]string{"internal.events.cloud.google.com/creator": "googlecloud"}
 	restartedTimeAnnotation = map[string]string{
@@ -169,16 +169,16 @@ func TestAllCases(t *testing.T) {
 			Name: "authType error",
 			Key:  testKeyAuth,
 			Objects: []runtime.Object{
-				NewBrokerCell(brokerCellName, authtype.ControlPlaneNamespace, WithBrokerCellSetDefaults),
-				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, authtype.ControlPlaneNamespace, WithBrokerCellSetDefaults)),
+				NewBrokerCell(brokerCellName, authcheck.ControlPlaneNamespace, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, authcheck.ControlPlaneNamespace, WithBrokerCellSetDefaults)),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewBrokerCell(brokerCellName, authtype.ControlPlaneNamespace,
+				Object: NewBrokerCell(brokerCellName, authcheck.ControlPlaneNamespace,
 					WithInitBrokerCellConditions,
 					WithTargetsCofigReady(),
-					WithBrokerCellIngressUnknown(authtype.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
-					WithBrokerCellFanoutUnknown(authtype.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
-					WithBrokerCellRetryUnknown(authtype.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
+					WithBrokerCellIngressUnknown(authcheck.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
+					WithBrokerCellFanoutUnknown(authcheck.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
+					WithBrokerCellRetryUnknown(authcheck.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
 					WithBrokerCellSetDefaults,
 				),
 			}},

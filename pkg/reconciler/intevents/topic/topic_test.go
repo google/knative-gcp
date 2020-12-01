@@ -26,8 +26,9 @@ import (
 	"cloud.google.com/go/pubsub/pstest"
 
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
-	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
+
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -929,7 +930,7 @@ func newPublisher() *servingv1.Service {
 		Image:    testImage,
 		Topic:    t,
 		Labels:   resources.GetLabels(controllerAgentName, topicName),
-		AuthType: authtype.Secret,
+		AuthType: authcheck.Secret,
 	}
 	return resources.MakePublisher(args)
 }

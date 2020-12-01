@@ -38,7 +38,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
-	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	eventingduck "knative.dev/eventing/pkg/duck"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
@@ -131,7 +131,7 @@ func newController(
 	})
 
 	// Watch k8s service account, if a k8s service account resource changes, enqueue qualified pullsubscriptions from the same namespace.
-	serviceAccountInformer.Informer().AddEventHandler(authtype.EnqueuePullSubscription(impl, pullSubscriptionLister))
+	serviceAccountInformer.Informer().AddEventHandler(authcheck.EnqueuePullSubscription(impl, pullSubscriptionLister))
 
 	r.UriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 	r.ReconcileDataPlaneFn = r.ReconcileScaledObject

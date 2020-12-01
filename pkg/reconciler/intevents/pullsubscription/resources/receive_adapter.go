@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	"go.uber.org/zap"
 
@@ -53,7 +53,7 @@ type ReceiveAdapterArgs struct {
 	LoggingConfig    string
 	TracingConfig    string
 	// There are three types: `secret`, `workload-identity-gsa` and `workload-identity`.
-	AuthType authtype.AuthTypes
+	AuthType authcheck.AuthTypes
 }
 
 const (

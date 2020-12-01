@@ -19,8 +19,8 @@ package resources
 import (
 	"fmt"
 
-	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +38,7 @@ type PublisherArgs struct {
 	Labels        map[string]string
 	TracingConfig string
 	// There are three types: `secret`, `workload-identity-gsa` and `workload-identity`.
-	AuthType authtype.AuthTypes
+	AuthType authcheck.AuthTypes
 }
 
 const (

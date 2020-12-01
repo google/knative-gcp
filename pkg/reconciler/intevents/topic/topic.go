@@ -32,6 +32,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
@@ -49,7 +50,6 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic/resources"
-	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
 	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
 )
@@ -245,13 +245,13 @@ func (r *Reconciler) reconcilePublisher(ctx context.Context, topic *v1.Topic) (e
 		logging.FromContext(ctx).Desugar().Error("Error serializing tracing config", zap.Error(err))
 	}
 
-	authType, err := authtype.GetAuthTypeForSources(ctx, r.serviceAccountLister, authtype.AuthTypeArgs{
+	authType, err := authcheck.GetAuthTypeForSources(ctx, r.serviceAccountLister, authcheck.AuthTypeArgs{
 		Namespace:          topic.Namespace,
 		ServiceAccountName: topic.IdentitySpec().ServiceAccountName,
 		Secret:             topic.Spec.Secret,
 	})
 	if err != nil {
-		topic.Status.MarkPublisherUnknown(authtype.AuthenticationCheckUnknownReason, err.Error())
+		topic.Status.MarkPublisherUnknown(authcheck.AuthenticationCheckUnknownReason, err.Error())
 		logging.FromContext(ctx).Desugar().Error("Error getting authType", zap.Error(err))
 		return err, nil
 	}

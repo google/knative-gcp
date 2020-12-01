@@ -32,8 +32,8 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
-	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
 	"github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -310,13 +310,13 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1.PullSubsc
 		logging.FromContext(ctx).Desugar().Error("Error serializing tracing config", zap.Error(err))
 	}
 
-	authType, err := authtype.GetAuthTypeForSources(ctx, r.ServiceAccountLister, authtype.AuthTypeArgs{
+	authType, err := authcheck.GetAuthTypeForSources(ctx, r.ServiceAccountLister, authcheck.AuthTypeArgs{
 		Namespace:          ps.Namespace,
 		ServiceAccountName: ps.IdentitySpec().ServiceAccountName,
 		Secret:             ps.Spec.Secret,
 	})
 	if err != nil {
-		ps.Status.MarkDeployedUnknown(authtype.AuthenticationCheckUnknownReason, err.Error())
+		ps.Status.MarkDeployedUnknown(authcheck.AuthenticationCheckUnknownReason, err.Error())
 		logging.FromContext(ctx).Desugar().Error("Error getting authType", zap.Error(err))
 		return err
 	}

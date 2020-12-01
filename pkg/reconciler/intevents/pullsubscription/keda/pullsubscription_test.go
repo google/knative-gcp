@@ -24,8 +24,9 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
+
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
-	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -1110,7 +1111,7 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 		SubscriptionID:   testSubscriptionID,
 		SinkURI:          sinkURI,
 		TransformerURI:   transformer,
-		AuthType:         authtype.Secret,
+		AuthType:         authcheck.Secret,
 	}
 	return resources.MakeReceiveAdapter(ctx, args)
 }

@@ -35,7 +35,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
-	"github.com/google/knative-gcp/pkg/reconciler/utils/authtype"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 	customresourceutil "github.com/google/knative-gcp/pkg/utils/customresource"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -146,14 +146,14 @@ func NewController(
 	// 1. Watch broker data plane's secret,
 	// if the filtered secret resource changes, enqueue brokercells from the same namespace.
 	secretinformer.Get(ctx).Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: filterWithNamespace(authtype.ControlPlaneNamespace),
-		Handler:    authtype.EnqueueBrokerCell(impl, brokerCellLister),
+		FilterFunc: filterWithNamespace(authcheck.ControlPlaneNamespace),
+		Handler:    authcheck.EnqueueBrokerCell(impl, brokerCellLister),
 	})
 	// 2. Watch broker data plane's k8s service account,
 	// if the filtered k8s service account resource changes, enqueue brokercells from the same namespace.
 	serviceaccountinformer.Get(ctx).Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: filterWithNamespace(authtype.ControlPlaneNamespace),
-		Handler:    authtype.EnqueueBrokerCell(impl, brokerCellLister),
+		FilterFunc: filterWithNamespace(authcheck.ControlPlaneNamespace),
+		Handler:    authcheck.EnqueueBrokerCell(impl, brokerCellLister),
 	})
 	return impl
 }
