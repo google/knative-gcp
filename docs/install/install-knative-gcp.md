@@ -100,7 +100,7 @@ cause intermittent errors:
    ```shell
    kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    ```
-   
+
 ## Configure the Authentication Mechanism for GCP (the Control Plane)
 
 Currently, we support two methods: Workload Identity and Kubernetes Secret. The
