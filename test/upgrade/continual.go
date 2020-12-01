@@ -1,5 +1,6 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2020 Google LLC
+Original code: Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +19,7 @@ package upgrade
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/knative-gcp/test/upgrade/prober"
 	testlib "knative.dev/eventing/test/lib"
@@ -33,6 +35,9 @@ func ContinualTest() pkgupgrade.BackgroundOperation {
 			// setup
 			client = testlib.Setup(c.T, false)
 			config := prober.NewConfig(client.Namespace)
+			// overwrite configuration
+			config.FailOnErrors = true
+			config.Interval = 10 * time.Millisecond
 			probe = prober.RunEventProber(ctx, c.Log, client, config)
 		},
 		func(c pkgupgrade.Context) {
