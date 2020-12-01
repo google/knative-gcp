@@ -29,42 +29,25 @@ const (
 	CloudSchedulerSourceProbeEventType = "cloudschedulersource-probe"
 )
 
-// CloudSchedulerSourceForwardProbe is the probe handler for forward probe requests
-// in the CloudSchedulerSource probe.
-type CloudSchedulerSourceForwardProbe struct {
-	Handler
-	channelID string
-}
+// CloudSchedulerSourceProbe is the probe handler for probe requests in the
+// CloudSchedulerSource probe.
+type CloudSchedulerSourceProbe struct{}
 
-// CloudSchedulerSourceForwardProbeConstructor builds a new CloudSchedulerSource forward
-// probe handler from a given CloudEvent.
-func CloudSchedulerSourceForwardProbeConstructor(ph *Helper, event cloudevents.Event, requestHost string) (Handler, error) {
-	probe := &CloudSchedulerSourceForwardProbe{
-		channelID: fmt.Sprintf("%s/cloudschedulersource-probe", requestHost),
+var cloudSchedulerSourceProbe Handler = &CloudSchedulerSourceProbe{}
+
+func (p *CloudSchedulerSourceProbe) Forward(ctx context.Context, ph *Helper, event cloudevents.Event) error {
+	// Get the receiver channel
+	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], "cloudschedulersource-probe")
+	receiverChannel, cleanupFunc, err := CreateReceiverChannel(ctx, ph, channelID)
+	if err != nil {
+		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
-	return probe, nil
+	defer cleanupFunc()
+
+	return WaitOnReceiverChannel(ctx, receiverChannel)
 }
 
-// ChannelID returns the unique channel ID for a given probe request.
-func (p CloudSchedulerSourceForwardProbe) ChannelID() string {
-	return p.channelID
-}
-
-// Handle for the CloudSchedulerSourceForwardProbe does nothing.
-func (p CloudSchedulerSourceForwardProbe) Handle(ctx context.Context) error {
-	return nil
-}
-
-// CloudSchedulerSourceReceiveProbe is the probe handler for receiver probe requests
-// in the CloudSchedulerSource probe.
-type CloudSchedulerSourceReceiveProbe struct {
-	Handler
-	channelID string
-}
-
-// CloudSchedulerSourceReceiveProbeConstructor builds a new CloudSchedulerSource receiver
-// probe handler from a given CloudEvent.
-func CloudSchedulerSourceReceiveProbeConstructor(ph *Helper, event cloudevents.Event, requestHost string) (Handler, error) {
+func (p *CloudSchedulerSourceProbe) Receive(ctx context.Context, ph *Helper, event cloudevents.Event) error {
 	// Recover the waiting receiver channel ID for the forward CloudSchedulerSource probe.
 	//
 	// Example:
@@ -78,12 +61,6 @@ func CloudSchedulerSourceReceiveProbeConstructor(ph *Helper, event cloudevents.E
 	//     datacontenttype: application/json
 	//   Data,
 	//     { ... }
-	return &CloudAuditLogsSourceForwardProbe{
-		channelID: fmt.Sprintf("%s/cloudschedulersource-probe", requestHost),
-	}, nil
-}
-
-// ChannelID returns the unique channel ID for a given probe request.
-func (p CloudSchedulerSourceReceiveProbe) ChannelID() string {
-	return p.channelID
+	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], "cloudschedulersource-probe")
+	return CloseReceiverChannel(ctx, ph, channelID)
 }

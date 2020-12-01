@@ -34,56 +34,35 @@ const (
 	topicExtension = "topic"
 )
 
-// CloudPubSubSourceForwardProbe is the probe handler for forward probe requests
-// in the CloudPubSubSource probe.
-type CloudPubSubSourceForwardProbe struct {
-	Handler
-	event          cloudevents.Event
-	channelID      string
-	topic          string
-	cePubsubClient cloudevents.Client
-}
+// CloudPubSubSourceProbe is the probe handler for probe requests in the
+// CloudPubSubSource probe.
+type CloudPubSubSourceProbe struct{}
 
-// CloudPubSubSourceForwardProbeConstructor builds a new CloudPubSubSource forward
-// probe handler from a given CloudEvent.
-func CloudPubSubSourceForwardProbeConstructor(ph *Helper, event cloudevents.Event, requestHost string) (Handler, error) {
+var cloudPubSubSourceProbe Handler = &CloudPubSubSourceProbe{}
+
+func (p *CloudPubSubSourceProbe) Forward(ctx context.Context, ph *Helper, event cloudevents.Event) error {
+	// Get the receiver channel
+	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], event.ID())
+	receiverChannel, cleanupFunc, err := CreateReceiverChannel(ctx, ph, channelID)
+	if err != nil {
+		return fmt.Errorf("Failed to create receiver channel: %v", err)
+	}
+	defer cleanupFunc()
+
+	// The probe publishes the event as a message to a given Pub/Sub topic.
 	topic, ok := event.Extensions()[topicExtension]
 	if !ok {
-		return nil, fmt.Errorf("CloudPubSubSource probe event has no '%s' extension", topicExtension)
+		return fmt.Errorf("CloudPubSubSource probe event has no '%s' extension", topicExtension)
 	}
-	probe := &CloudPubSubSourceForwardProbe{
-		event:          event,
-		channelID:      fmt.Sprintf("%s/%s", requestHost, event.ID()),
-		topic:          fmt.Sprint(topic),
-		cePubsubClient: ph.CePubsubClient,
+	ctx = cecontext.WithTopic(ctx, fmt.Sprint(topic))
+	if res := ph.CePubsubClient.Send(ctx, event); !cloudevents.IsACK(res) {
+		return fmt.Errorf("Failed sending event to topic %s, got result %s", topic, res)
 	}
-	return probe, nil
+
+	return WaitOnReceiverChannel(ctx, receiverChannel)
 }
 
-// ChannelID returns the unique channel ID for a given probe request.
-func (p CloudPubSubSourceForwardProbe) ChannelID() string {
-	return p.channelID
-}
-
-// Handle forwards a given CloudEvent as a message to a Pub/Sub topic.
-func (p CloudPubSubSourceForwardProbe) Handle(ctx context.Context) error {
-	ctx = cecontext.WithTopic(ctx, p.topic)
-	if res := p.cePubsubClient.Send(ctx, p.event); !cloudevents.IsACK(res) {
-		return fmt.Errorf("Failed sending event to topic %s, got result %s", p.topic, res)
-	}
-	return nil
-}
-
-// CloudPubSubSourceReceiveProbe is the probe handler for receiver probe requests
-// in the CloudPubSubSource probe.
-type CloudPubSubSourceReceiveProbe struct {
-	Handler
-	channelID string
-}
-
-// CloudPubSubSourceReceiveProbeConstructor builds a new CloudPubSubSource receiver
-// probe handler from a given CloudEvent.
-func CloudPubSubSourceReceiveProbeConstructor(ph *Helper, event cloudevents.Event, requestHost string) (Handler, error) {
+func (p *CloudPubSubSourceProbe) Receive(ctx context.Context, ph *Helper, event cloudevents.Event) error {
 	// The original event is wrapped into a pubsub Message by the CloudEvents
 	// pubsub sender client, and encoded as data in a CloudEvent by the CloudPubSubSource.
 	//
@@ -113,18 +92,12 @@ func CloudPubSubSourceReceiveProbeConstructor(ph *Helper, event cloudevents.Even
 	//     }
 	msgData := schemasv1.PushMessage{}
 	if err := json.Unmarshal(event.Data(), &msgData); err != nil {
-		return nil, fmt.Errorf("Error unmarshalling Pub/Sub message from event data: %v", err)
+		return fmt.Errorf("Error unmarshalling Pub/Sub message from event data: %v", err)
 	}
 	eventID, ok := msgData.Message.Attributes["ce-id"]
 	if !ok {
-		return nil, fmt.Errorf("Failed to read probe event ID from Pub/Sub message attributes")
+		return fmt.Errorf("Failed to read probe event ID from Pub/Sub message attributes")
 	}
-	return &CloudPubSubSourceReceiveProbe{
-		channelID: fmt.Sprintf("%s/%s", requestHost, eventID),
-	}, nil
-}
-
-// ChannelID returns the unique channel ID for a given probe request.
-func (p CloudPubSubSourceReceiveProbe) ChannelID() string {
-	return p.channelID
+	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], eventID)
+	return CloseReceiverChannel(ctx, ph, channelID)
 }

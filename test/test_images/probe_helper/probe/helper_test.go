@@ -68,7 +68,7 @@ var (
 	testStorageCreateBody         = `{"bucket":"cloudstoragesource-bucket","name":"1234567890"}`
 	testStorageUpdateMetadataBody = `{"bucket":"cloudstoragesource-bucket","metadata":{"some-key":"Metadata updated!"}}`
 	testStorageArchiveBody        = `{"bucket":"cloudstoragesource-bucket","name":"1234567890","storageClass":"ARCHIVE"}`
-	testRequestHost               = "probe-helper-external-receiver.test-namespace.svc.cluster.local"
+	testTargetService             = "probe-helper-external-receiver.test-namespace.svc.cluster.local"
 )
 
 // A helper function that starts a test Broker which receives events forwarded by
@@ -93,7 +93,7 @@ func runTestBroker(ctx context.Context, group *errgroup.Group, probeReceiverURL 
 	}
 	group.Go(func() error {
 		bc.StartReceiver(ctx, func(event cloudevents.Event) {
-			event.SetExtension("requesthost", testRequestHost)
+			event.SetExtension("targetservice", testTargetService)
 			if res := bc.Send(ctx, event); !cloudevents.IsACK(res) {
 				logging.FromContext(ctx).Warnf("Failed to send CloudEvent from the test Broker: %v", res)
 			}
@@ -118,7 +118,7 @@ func runTestCloudPubSubSource(ctx context.Context, group *errgroup.Group, sub *p
 	}
 	msgHandler := func(ctx context.Context, msg *pubsub.Message) {
 		event, err := converter.Convert(ctx, msg, converters.CloudPubSub)
-		event.SetExtension("requesthost", testRequestHost)
+		event.SetExtension("targetservice", testTargetService)
 		if err != nil {
 			logging.FromContext(ctx).Warnf("Could not convert message to CloudEvent: %v", err)
 		}
@@ -167,7 +167,7 @@ func runTestCloudAuditLogsSource(ctx context.Context, group *errgroup.Group, pub
 					createTopicEvent.SetType(schemasv1.CloudAuditLogsLogWrittenEventType)
 					createTopicEvent.SetSource(schemasv1.CloudAuditLogsEventSource("projects/test-project-id", "activity"))
 					createTopicEvent.SetExtension("methodname", "google.pubsub.v1.Publisher.CreateTopic")
-					createTopicEvent.SetExtension("requesthost", testRequestHost)
+					createTopicEvent.SetExtension("targetservice", testTargetService)
 					if res := c.Send(ctx, createTopicEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send topic created CloudEvent from the test CloudAuditLogsSource: %v", res)
 					}
@@ -203,7 +203,6 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 				body := string(bodyBytes)
 				method := req.Method
 				url := req.URL.String()
-				logging.FromContext(ctx).Info(method, url, body)
 				if method == "POST" && url == testStorageUploadRequest && strings.Contains(body, testStorageCreateBody) {
 					// This request indicates the client's intent to create a new object.
 					finalizeEvent := cloudevents.NewEvent()
@@ -211,7 +210,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					finalizeEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					finalizeEvent.SetType(schemasv1.CloudStorageObjectFinalizedEventType)
 					finalizeEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					finalizeEvent.SetExtension("requesthost", testRequestHost)
+					finalizeEvent.SetExtension("targetservice", testTargetService)
 					if res := c.Send(ctx, finalizeEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object finalized CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -222,7 +221,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					updateMetadataEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					updateMetadataEvent.SetType(schemasv1.CloudStorageObjectMetadataUpdatedEventType)
 					updateMetadataEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					updateMetadataEvent.SetExtension("requesthost", testRequestHost)
+					updateMetadataEvent.SetExtension("targetservice", testTargetService)
 					if res := c.Send(ctx, updateMetadataEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object metadata updated CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -233,7 +232,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					archivedEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					archivedEvent.SetType(schemasv1.CloudStorageObjectArchivedEventType)
 					archivedEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					archivedEvent.SetExtension("requesthost", testRequestHost)
+					archivedEvent.SetExtension("targetservice", testTargetService)
 					if res := c.Send(ctx, archivedEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object archived CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -244,7 +243,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					deletedEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					deletedEvent.SetType(schemasv1.CloudStorageObjectDeletedEventType)
 					deletedEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					deletedEvent.SetExtension("requesthost", testRequestHost)
+					deletedEvent.SetExtension("targetservice", testTargetService)
 					if res := c.Send(ctx, deletedEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object deleted CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -277,7 +276,7 @@ func runTestCloudSchedulerSource(ctx context.Context, group *errgroup.Group, per
 				executedEvent.SetID("1234567890")
 				executedEvent.SetType(schemasv1.CloudSchedulerJobExecutedEventType)
 				executedEvent.SetSource(schemasv1.CloudSchedulerEventSource("test-cloud-scheduler-source"))
-				executedEvent.SetExtension("requesthost", testRequestHost)
+				executedEvent.SetExtension("targetservice", testTargetService)
 				if res := c.Send(ctx, executedEvent); !cloudevents.IsACK(res) {
 					logging.FromContext(ctx).Warnf("Failed to send job executed CloudEvent from the test CloudSchedulerSource: %v", res)
 				}
@@ -305,7 +304,7 @@ func probeEvent(name string, opts ...probeEventOption) *cloudevents.Event {
 	event.SetSource("probe")
 	event.SetType(name)
 	event.SetTime(time.Now())
-	event.SetExtension("requesthost", testRequestHost)
+	event.SetExtension("targetservice", testTargetService)
 	for _, opt := range opts {
 		opt(&event)
 	}
@@ -358,7 +357,7 @@ func TestProbeHelper(t *testing.T) {
 	ctx = WithProjectKey(ctx, testProjectID)
 	ctx = WithTopicKey(ctx, testTopicID)
 	ctx = WithSubscriptionKey(ctx, testSubscriptionID)
-	ctx = cloudevents.ContextWithRetriesConstantBackoff(ctx, 100*time.Millisecond, 30)
+	//ctx = cloudevents.ContextWithRetriesConstantBackoff(ctx, 100*time.Millisecond, 30)
 	group, ctx := errgroup.WithContext(ctx)
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -382,6 +381,14 @@ func TestProbeHelper(t *testing.T) {
 		name: "Broker E2E delivery probe",
 		steps: []eventAndResult{
 			{
+				event:      probeEvent("broker-e2e-delivery-probe", withProbeExtension("namespace", testNamespace), withProbeExtension("broker", "default")),
+				wantResult: cloudevents.ResultACK,
+			},
+		},
+	}, {
+		name: "Broker E2E delivery probe default broker",
+		steps: []eventAndResult{
+			{
 				event:      probeEvent("broker-e2e-delivery-probe", withProbeExtension("namespace", testNamespace)),
 				wantResult: cloudevents.ResultACK,
 			},
@@ -391,6 +398,14 @@ func TestProbeHelper(t *testing.T) {
 		steps: []eventAndResult{
 			{
 				event:      probeEvent("broker-e2e-delivery-probe"),
+				wantResult: cloudevents.ResultNACK,
+			},
+		},
+	}, {
+		name: "Broker E2E delivery probe wrong broker name",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("broker-e2e-delivery-probe", withProbeExtension("namespace", testNamespace), withProbeExtension("broker", "wrongbroker")),
 				wantResult: cloudevents.ResultNACK,
 			},
 		},

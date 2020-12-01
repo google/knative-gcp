@@ -37,33 +37,31 @@ import (
 )
 
 const (
-	probeEventTimeoutExtension     = "timeout"
-	probeEventRequestHostExtension = "requesthost"
-	probeEventRequestHostHeader    = "Ce-RequestHost"
+	probeEventTimeoutExtension       = "timeout"
+	probeEventTargetServiceExtension = "targetservice"
+	probeEventTargetServiceHeader    = "Ce-TargetService"
 )
 
-type probeConstructor func(*Helper, cloudevents.Event, string) (Handler, error)
-
-var forwardProbeConstructors = map[string]probeConstructor{
-	BrokerE2EDeliveryProbeEventType:                BrokerE2EDeliveryForwardProbeConstructor,
-	CloudPubSubSourceProbeEventType:                CloudPubSubSourceForwardProbeConstructor,
-	CloudStorageSourceCreateProbeEventType:         CloudStorageSourceCreateForwardProbeConstructor,
-	CloudStorageSourceUpdateMetadataProbeEventType: CloudStorageSourceUpdateMetadataForwardProbeConstructor,
-	CloudStorageSourceArchiveProbeEventType:        CloudStorageSourceArchiveForwardProbeConstructor,
-	CloudStorageSourceDeleteProbeEventType:         CloudStorageSourceDeleteForwardProbeConstructor,
-	CloudAuditLogsSourceProbeEventType:             CloudAuditLogsSourceForwardProbeConstructor,
-	CloudSchedulerSourceProbeEventType:             CloudSchedulerSourceForwardProbeConstructor,
+var forwardProbeHandlers = map[string]Handler{
+	BrokerE2EDeliveryProbeEventType:                brokerE2EDeliveryProbe,
+	CloudPubSubSourceProbeEventType:                cloudPubSubSourceProbe,
+	CloudStorageSourceCreateProbeEventType:         cloudStorageSourceCreateProbe,
+	CloudStorageSourceUpdateMetadataProbeEventType: cloudStorageSourceUpdateMetadataProbe,
+	CloudStorageSourceArchiveProbeEventType:        cloudStorageSourceArchiveProbe,
+	CloudStorageSourceDeleteProbeEventType:         cloudStorageSourceDeleteProbe,
+	CloudAuditLogsSourceProbeEventType:             cloudAuditLogsSourceProbe,
+	CloudSchedulerSourceProbeEventType:             cloudSchedulerSourceProbe,
 }
 
-var receiveProbeConstructors = map[string]probeConstructor{
-	BrokerE2EDeliveryProbeEventType:                      BrokerE2EDeliveryReceiveProbeConstructor,
-	schemasv1.CloudPubSubMessagePublishedEventType:       CloudPubSubSourceReceiveProbeConstructor,
-	schemasv1.CloudStorageObjectFinalizedEventType:       CloudStorageSourceReceiveProbeConstructor,
-	schemasv1.CloudStorageObjectMetadataUpdatedEventType: CloudStorageSourceReceiveProbeConstructor,
-	schemasv1.CloudStorageObjectArchivedEventType:        CloudStorageSourceReceiveProbeConstructor,
-	schemasv1.CloudStorageObjectDeletedEventType:         CloudStorageSourceReceiveProbeConstructor,
-	schemasv1.CloudAuditLogsLogWrittenEventType:          CloudAuditLogsSourceReceiveProbeConstructor,
-	schemasv1.CloudSchedulerJobExecutedEventType:         CloudSchedulerSourceReceiveProbeConstructor,
+var receiveProbeHandlers = map[string]Handler{
+	BrokerE2EDeliveryProbeEventType:                      brokerE2EDeliveryProbe,
+	schemasv1.CloudPubSubMessagePublishedEventType:       cloudPubSubSourceProbe,
+	schemasv1.CloudStorageObjectFinalizedEventType:       cloudStorageSourceCreateProbe,
+	schemasv1.CloudStorageObjectMetadataUpdatedEventType: cloudStorageSourceUpdateMetadataProbe,
+	schemasv1.CloudStorageObjectArchivedEventType:        cloudStorageSourceArchiveProbe,
+	schemasv1.CloudStorageObjectDeletedEventType:         cloudStorageSourceDeleteProbe,
+	schemasv1.CloudAuditLogsLogWrittenEventType:          cloudAuditLogsSourceProbe,
+	schemasv1.CloudSchedulerJobExecutedEventType:         cloudSchedulerSourceProbe,
 }
 
 // WithProbeTimeout returns a context with a timeout specified from the 'timeout'
@@ -100,35 +98,6 @@ func WithProbeEventLoggingContext(ctx context.Context, event cloudevents.Event) 
 	return logging.WithLogger(ctx, logger)
 }
 
-// probeHandlerFromEvent creates a probe Handler object from a given CloudEvent
-// and a map of admissible Handler constructors. The probe event type should correspond
-// to a key in the probeConstructor map.
-func (ph *Helper) probeHandlerFromEvent(event cloudevents.Event, ctrs map[string]probeConstructor) (Handler, error) {
-	requestHost, ok := event.Extensions()[probeEventRequestHostExtension]
-	if !ok {
-		return nil, fmt.Errorf("could not read probe event extension '%s'", probeEventRequestHostExtension)
-	}
-	ctr, ok := ctrs[event.Type()]
-	if !ok {
-		return nil, fmt.Errorf("unrecognized probe event type: %s", event.Type())
-	}
-	probe, err := ctr(ph, event, fmt.Sprint(requestHost))
-	if err != nil {
-		return nil, err
-	}
-	return probe, nil
-}
-
-// forwardProbeHandlerFromEvent creates a probe Handler object from a forward probe request.
-func (ph *Helper) forwardProbeHandlerFromEvent(event cloudevents.Event) (Handler, error) {
-	return ph.probeHandlerFromEvent(event, forwardProbeConstructors)
-}
-
-// receiveProbeHandlerFromEvent creates a probe Handler object from a receiver probe request.
-func (ph *Helper) receiveProbeHandlerFromEvent(event cloudevents.Event) (Handler, error) {
-	return ph.probeHandlerFromEvent(event, receiveProbeConstructors)
-}
-
 type cloudEventsFunc func(cloudevents.Event) cloudevents.Result
 
 // forwardFromProbe is the base forward probe request handler which is called
@@ -143,10 +112,16 @@ func (ph *Helper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 		// Refresh the forward probe liveness time
 		ph.ProbeChecker.LastForwardEventTime.SetNow()
 
-		// Construct the probe handler object based on the event type
-		pr, err := ph.forwardProbeHandlerFromEvent(event)
-		if err != nil {
-			logging.FromContext(ctx).Warnw("Probe forwarding failed", zap.Error(err))
+		// Retrieve the probe handler based on the event type
+		pr, ok := forwardProbeHandlers[event.Type()]
+		if !ok {
+			logging.FromContext(ctx).Warnw("Probe forwarding failed, unrecognized forward probe type")
+			return cloudevents.ResultNACK
+		}
+
+		// Ensure there is a targetservice CloudEvent extension
+		if _, ok := event.Extensions()[probeEventTargetServiceExtension]; !ok {
+			logging.FromContext(ctx).Warnf("Probe forwarding failed, forward probe event missing '%s' extension", probeEventTargetServiceExtension)
 			return cloudevents.ResultNACK
 		}
 
@@ -154,32 +129,10 @@ func (ph *Helper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 		ctx, cancel := WithProbeTimeout(ctx, event, ph.DefaultTimeoutDuration, ph.MaxTimeoutDuration)
 		defer cancel()
 
-		// Create the receiver channel if desired
-		var receiverChannel chan bool
-		if ShouldWaitOnReceiver(pr) {
-			receiverChannel, err = ph.ReceivedEvents.CreateReceiverChannel(pr.ChannelID())
-			if err != nil {
-				logging.FromContext(ctx).Warnw("Probe forwarding failed, could not create receiver channel", zap.String("channelID", pr.ChannelID()), zap.Error(err))
-				return cloudevents.ResultNACK
-			}
-			defer ph.ReceivedEvents.DeleteReceiverChannel(pr.ChannelID())
-		}
-
-		// Forward the probe event
-		if err := pr.Handle(ctx); err != nil {
+		// Forward the probe event. This call is likely to be blocking.
+		if err := pr.Forward(ctx, ph, event); err != nil {
 			logging.FromContext(ctx).Warnw("Probe forwarding failed", zap.Error(err))
 			return cloudevents.ResultNACK
-		}
-
-		// Wait on the receiver channel if desired
-		if ShouldWaitOnReceiver(pr) {
-			select {
-			case <-receiverChannel:
-				return cloudevents.ResultACK
-			case <-ctx.Done():
-				logging.FromContext(ctx).Warnw("Timed out on probe waiting for the receiver channel", zap.String("channelID", pr.ChannelID()))
-				return cloudevents.ResultNACK
-			}
 		}
 		return cloudevents.ResultACK
 	}
@@ -197,23 +150,23 @@ func (ph *Helper) receiveEvent(ctx context.Context) cloudEventsFunc {
 		// Refresh the receiver probe liveness time
 		ph.ProbeChecker.LastReceiverEventTime.SetNow()
 
-		// Construct the probe handler object based on the event type
-		pr, err := ph.receiveProbeHandlerFromEvent(event)
-		if err != nil {
-			logging.FromContext(ctx).Warnw("Probe receiver failed", zap.Error(err))
+		// Retrieve the probe handler based on the event type
+		pr, ok := receiveProbeHandlers[event.Type()]
+		if !ok {
+			logging.FromContext(ctx).Warnw("Probe receiver failed, unrecognized receive probe type")
 			return cloudevents.ResultNACK
 		}
 
-		// Close the associated receiver channel if desired
-		if pr != nil && ShouldWaitOnReceiver(pr) {
-			ph.ReceivedEvents.RLock()
-			defer ph.ReceivedEvents.RUnlock()
-			receiverChannel, ok := ph.ReceivedEvents.Channels[pr.ChannelID()]
-			if !ok {
-				logging.FromContext(ctx).Warnw("This event is not received by the probe receiver client", zap.String("channelID", pr.ChannelID()))
-				return cloudevents.ResultNACK
-			}
-			receiverChannel <- true
+		// Ensure there is a targetservice CloudEvent extension
+		if _, ok := event.Extensions()[probeEventTargetServiceExtension]; !ok {
+			logging.FromContext(ctx).Warnf("Probe receiver failed, receiver probe event missing '%s' extension", probeEventTargetServiceExtension)
+			return cloudevents.ResultNACK
+		}
+
+		// Receive the probe event
+		if err := pr.Receive(ctx, ph, event); err != nil {
+			logging.FromContext(ctx).Warnw("Probe receiver failed", zap.Error(err))
+			return cloudevents.ResultNACK
 		}
 		return cloudevents.ResultACK
 	}
@@ -283,8 +236,8 @@ func (ph *Helper) Run(ctx context.Context) {
 			cloudevents.WithGetHandlerFunc(ph.ProbeChecker.StalenessHandlerFunc(ctx)),
 			cloudevents.WithMiddleware(func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-					if req.Header.Get(probeEventRequestHostHeader) == "" {
-						req.Header.Set(probeEventRequestHostHeader, req.Host)
+					if req.Header.Get(probeEventTargetServiceHeader) == "" {
+						req.Header.Set(probeEventTargetServiceHeader, req.Host)
 					}
 					next.ServeHTTP(rw, req)
 				})

@@ -25,63 +25,49 @@ import (
 )
 
 const (
-	// BrokerE2EDeliveryProbeEventType is the CloudEvent type of forward broker e2e
+	// BrokerE2EDeliveryProbeEventType is the CloudEvent type of broker e2e
 	// delivery probes.
 	BrokerE2EDeliveryProbeEventType = "broker-e2e-delivery-probe"
 
+	brokerExtension    = "broker"
 	namespaceExtension = "namespace"
 )
 
-// BrokerE2EDeliveryForwardProbe is the probe handler for forward probe requests
-// in the broker e2e delivery probe.
-type BrokerE2EDeliveryForwardProbe struct {
-	Handler
-	event     cloudevents.Event
-	channelID string
-	target    string
-	ceClient  cloudevents.Client
-}
+// BrokerE2EDeliveryProbe is the probe handler for probe requests in the broker
+// e2e delivery probe.
+type BrokerE2EDeliveryProbe struct{}
 
-// BrokerE2EDeliveryForwardProbeConstructor builds a new broker e2e delivery forward
-// probe handler from a given CloudEvent.
-func BrokerE2EDeliveryForwardProbeConstructor(ph *Helper, event cloudevents.Event, requestHost string) (Handler, error) {
+var brokerE2EDeliveryProbe Handler = &BrokerE2EDeliveryProbe{}
+
+func (p *BrokerE2EDeliveryProbe) Forward(ctx context.Context, ph *Helper, event cloudevents.Event) error {
 	namespace, ok := event.Extensions()[namespaceExtension]
 	if !ok {
-		return nil, fmt.Errorf("Broker e2e delivery probe event has no '%s' extension", namespaceExtension)
+		return fmt.Errorf("Broker e2e delivery probe event has no '%s' extension", namespaceExtension)
 	}
-	probe := &BrokerE2EDeliveryForwardProbe{
-		event:     event,
-		channelID: fmt.Sprintf("%s/%s", requestHost, event.ID()),
-		target:    fmt.Sprintf("%s/%s/default", ph.BrokerCellIngressBaseURL, namespace),
-		ceClient:  ph.CeForwardClient,
+	broker, ok := event.Extensions()[brokerExtension]
+	if !ok {
+		broker = "default"
 	}
-	return probe, nil
-}
 
-// ChannelID returns the unique channel ID for a given probe request.
-func (p BrokerE2EDeliveryForwardProbe) ChannelID() string {
-	return p.channelID
-}
-
-// Handle sends an event to the broker named 'default' in a given namespace.
-func (p BrokerE2EDeliveryForwardProbe) Handle(ctx context.Context) error {
-	ctx = cecontext.WithTarget(ctx, p.target)
-	if res := p.ceClient.Send(ctx, p.event); !cloudevents.IsACK(res) {
-		return fmt.Errorf("Could not send event to broker target '%s', got result %s", p.target, res)
+	// Get the receiver channel
+	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], event.ID())
+	receiverChannel, cleanupFunc, err := CreateReceiverChannel(ctx, ph, channelID)
+	if err != nil {
+		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
-	return nil
+	defer cleanupFunc()
+
+	// The probe sends the event to a given broker in a given namespace.
+	target := fmt.Sprintf("%s/%s/%s", ph.BrokerCellIngressBaseURL, namespace, broker)
+	ctx = cecontext.WithTarget(ctx, target)
+	if res := ph.CeForwardClient.Send(ctx, event); !cloudevents.IsACK(res) {
+		return fmt.Errorf("Could not send event to broker target '%s', got result %s", target, res)
+	}
+
+	return WaitOnReceiverChannel(ctx, receiverChannel)
 }
 
-// BrokerE2EDeliveryReceiveProbe is the probe handler for receiver probe requests
-// in the broker e2e delivery probe.
-type BrokerE2EDeliveryReceiveProbe struct {
-	Handler
-	channelID string
-}
-
-// BrokerE2EDeliveryReceiveProbeConstructor builds a new broker e2e delivery receiver
-// probe handler from a given CloudEvent.
-func BrokerE2EDeliveryReceiveProbeConstructor(ph *Helper, event cloudevents.Event, requestHost string) (Handler, error) {
+func (p *BrokerE2EDeliveryProbe) Receive(ctx context.Context, ph *Helper, event cloudevents.Event) error {
 	// The event is received as sent.
 	//
 	// Example:
@@ -97,12 +83,6 @@ func BrokerE2EDeliveryReceiveProbeConstructor(ph *Helper, event cloudevents.Even
 	//     traceparent: 00-82b13494f5bcddc7b3007a7cd7668267-64e23f1193ceb1b7-00
 	//   Data,
 	//     { ... }
-	return &BrokerE2EDeliveryReceiveProbe{
-		channelID: fmt.Sprintf("%s/%s", requestHost, event.ID()),
-	}, nil
-}
-
-// ChannelID returns the unique channel ID for a given probe request.
-func (p BrokerE2EDeliveryReceiveProbe) ChannelID() string {
-	return p.channelID
+	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], event.ID())
+	return CloseReceiverChannel(ctx, ph, channelID)
 }
