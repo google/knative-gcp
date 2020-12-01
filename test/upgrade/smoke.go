@@ -20,17 +20,29 @@ import (
 	"testing"
 
 	"knative.dev/eventing/test/lib"
+	"knative.dev/hack/shell"
 )
 
 var channelTestRunner lib.ComponentsTestRunner
 
 func runSmokeTest(t *testing.T) {
-	/*helpers.SingleEventForChannelTestHelper(
-		context.Background(),
-		t,
-		cloudevents.EncodingBinary,
-		helpers.SubscriptionV1beta1,
-		"",
-		channelTestRunner,
-	)*/
+	loc, err := shell.NewProjectLocation("../..")
+	if err != nil {
+		t.Fatal("Failed to get project location ", err)
+	}
+	funcName := "go_test_e2e"
+	exec := shell.NewExecutor(shell.ExecutorConfig{
+		ProjectLocation: loc,
+	})
+	fn := shell.Function{
+		Script: shell.Script{
+			Label:      funcName,
+			ScriptPath: "test/e2e-secret-tests.sh",
+		},
+		FunctionName: funcName,
+	}
+	args := []string{"-tags=e2e", "-timeout=30m", "./test/e2e", "-run=^TestSmokeGCPBroker"}
+	if err := exec.RunFunction(fn, args...); err != nil {
+		t.Errorf("Function %v failed: %v\n", funcName, err)
+	}
 }
