@@ -19,8 +19,8 @@ package upgrade
 import (
 	"context"
 
+	"github.com/google/knative-gcp/test/upgrade/prober"
 	testlib "knative.dev/eventing/test/lib"
-	"knative.dev/eventing/test/upgrade/prober"
 	pkgupgrade "knative.dev/pkg/test/upgrade"
 )
 

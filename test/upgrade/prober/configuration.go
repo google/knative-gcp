@@ -26,6 +26,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/wavesoftware/go-ensure"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
