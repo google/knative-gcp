@@ -1,0 +1,9 @@
+rules:
+  - name: healthcheck
+    terms:
+      - healthcheck
+      - health-check
+    alternatives:
+      - probecheck
+      - probe-check
+      - check
