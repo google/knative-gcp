@@ -1,5 +1,6 @@
 /*
 Copyright 2020 The Knative Authors
+Modified work Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +15,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package receiver
+package upgrade
 
-// Thrown holds different error types.
-type Thrown struct {
-	Duplicated []string `json:"duplicated"`
-	Missing    []string `json:"missing"`
-	Unexpected []string `json:"unexpected"`
-}
+import (
+	pkgupgrade "knative.dev/pkg/test/upgrade"
+)
 
-// Report represents state as JSON
-type Report struct {
-	State  string `json:"state"`
-	Events int    `json:"events"`
-	Thrown Thrown `json:"thrown"`
+func PostUpgradeTest() pkgupgrade.Operation {
+	return pkgupgrade.NewOperation("EventingPostUpgradeTest", func(c pkgupgrade.Context) {
+		runSmokeTest(c.T)
+	})
 }

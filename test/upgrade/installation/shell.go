@@ -1,6 +1,6 @@
 /*
 Copyright 2020 The Knative Authors
-
+Modified work Copyright 2020 Google LLC
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -14,18 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package receiver
+package installation
 
-// Thrown holds different error types.
-type Thrown struct {
-	Duplicated []string `json:"duplicated"`
-	Missing    []string `json:"missing"`
-	Unexpected []string `json:"unexpected"`
-}
+import (
+	"knative.dev/hack/shell"
+)
 
-// Report represents state as JSON
-type Report struct {
-	State  string `json:"state"`
-	Events int    `json:"events"`
-	Thrown Thrown `json:"thrown"`
+func callShellFunction(funcName string) error {
+	loc, err := shell.NewProjectLocation("../../..")
+	if err != nil {
+		return err
+	}
+	exec := shell.NewExecutor(shell.ExecutorConfig{
+		ProjectLocation: loc,
+	})
+	fn := shell.Function{
+		Script: shell.Script{
+			Label:      funcName,
+			ScriptPath: "test/lib.sh",
+		},
+		FunctionName: funcName,
+	}
+	return exec.RunFunction(fn)
 }

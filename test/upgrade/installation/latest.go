@@ -1,6 +1,6 @@
 /*
 Copyright 2020 The Knative Authors
-
+Modified work Copyright 2020 Google LLC
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -14,18 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package receiver
+package installation
 
-// Thrown holds different error types.
-type Thrown struct {
-	Duplicated []string `json:"duplicated"`
-	Missing    []string `json:"missing"`
-	Unexpected []string `json:"unexpected"`
-}
+import (
+	pkgupgrade "knative.dev/pkg/test/upgrade"
+)
 
-// Report represents state as JSON
-type Report struct {
-	State  string `json:"state"`
-	Events int    `json:"events"`
-	Thrown Thrown `json:"thrown"`
+func LatestStable() pkgupgrade.Operation {
+	return pkgupgrade.NewOperation("EventingLatestRelease", func(c pkgupgrade.Context) {
+		ops := []string{
+			"install_cloud_run_events_from_latest_release",
+		}
+		for _, shellfunc := range ops {
+			c.Log.Info("Running shell function: ", shellfunc)
+			err := callShellFunction(shellfunc)
+			if err != nil {
+				c.T.Error(err)
+				return
+			}
+		}
+	})
 }

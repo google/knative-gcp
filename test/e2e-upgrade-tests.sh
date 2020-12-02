@@ -19,10 +19,10 @@
 
 # Script entry point.
 
-source $(dirname "$0")/e2e-secret-tests.sh
+export GO111MODULE=on
 
-readonly PROBER_READY_FILE="/tmp/prober-ready"
-readonly PROBER_PIPE_FILE="/tmp/prober-signal"
+# shellcheck disable=SC1090
+source "$(dirname "${BASH_SOURCE[0]}")/e2e-secret-tests.sh"
 
 # Overrides
 
@@ -46,36 +46,10 @@ initialize $@
 
 TIMEOUT=${TIMEOUT:-30m}
 
-header "Running preupgrade tests"
-
-# knative eventing invokes test in go, but e2e test in knative gcp requires non trivial
-# setup, so it is easier to run it directly.
-go_test_e2e -tags=e2e -timeout="${TIMEOUT}" ./test/e2e -run=^TestSmokeGCPBroker || fail_test
-
-header "Starting prober test"
-rm -fv ${PROBER_READY_FILE}
-go_test_e2e -tags=probe -timeout="${TIMEOUT}" ./test/upgrade --pipefile="${PROBER_PIPE_FILE}" --readyfile="${PROBER_READY_FILE}" &
-PROBER_PID=$!
-echo "Prober PID is ${PROBER_PID}"
-
-wait_for_file ${PROBER_READY_FILE} || fail_test
-
-header "Performing upgrade to HEAD"
-install_cloud_run_events_from_head || fail_test 'Installing HEAD version failed'
-
-header "Running postupgrade tests"
-go_test_e2e -tags=e2e -timeout="${TIMEOUT}" ./test/e2e -run=^TestSmokeGCPBroker || fail_test
-
-header "Performing downgrade to latest release"
-install_cloud_run_events_from_latest_release || fail_test 'Installing latest release of Knative Eventing failed'
-
-header "Running postdowngrade tests"
-go_test_e2e -tags=e2e -timeout="${TIMEOUT}" ./test/e2e -run=^TestSmokeGCPBroker || fail_test
-
-# The prober is blocking on ${PROBER_PIPE_FILE} to know when it should exit.
-echo "done" > ${PROBER_PIPE_FILE}
-
-header "Waiting for prober test"
-wait ${PROBER_PID} || fail_test "Prober failed"
+go_test_e2e \
+  -tags=upgrade \
+  -timeout="${TIMEOUT}" \
+  ./test/upgrade \
+  || fail_test
 
 success

@@ -13,13 +13,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-source $(dirname "$0")/../vendor/knative.dev/hack/e2e-tests.sh
 
-source $(dirname "$0")/lib.sh
+source $(dirname "${BASH_SOURCE[0]}")/lib.sh
 
-source $(dirname "$0")/../hack/lib.sh
+source $(dirname "${BASH_SOURCE[0]}")/../hack/lib.sh
 
-source $(dirname "$0")/e2e-common.sh
+source $(dirname "${BASH_SOURCE[0]}")/e2e-common.sh
 
 readonly BROKER_SERVICE_ACCOUNT="broker"
 readonly PROW_SERVICE_ACCOUNT_EMAIL=$(gcloud config get-value core/account)

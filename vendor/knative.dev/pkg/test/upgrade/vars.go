@@ -1,5 +1,6 @@
 /*
  * Copyright 2020 The Knative Authors
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,23 +16,17 @@
 
 package upgrade
 
-import (
-	"os"
-	"testing"
+import "time"
 
-	"knative.dev/eventing/test"
-	testlib "knative.dev/eventing/test/lib"
-)
+var (
+	// DefaultWaitTime holds a default value for WaitForStopEventConfiguration
+	// when used within a NewBackgroundVerification function.
+	DefaultWaitTime = 20 * time.Millisecond
 
-var setup = testlib.Setup
-var tearDown = testlib.TearDown
-var channelTestRunner testlib.ComponentsTestRunner
-
-func TestMain(m *testing.M) {
-	test.InitializeEventingFlags()
-	channelTestRunner = testlib.ComponentsTestRunner{
-		ComponentFeatureMap: testlib.ChannelFeatureMap,
-		ComponentsToTest:    test.EventingFlags.Channels,
+	// DefaultOnWait is a implementation that will be called by default for each
+	// wait performed by WaitForStopEvent when used within
+	// NewBackgroundVerification function.
+	DefaultOnWait = func(bc BackgroundContext, self WaitForStopEventConfiguration) {
+		// do nothing by default
 	}
-	os.Exit(m.Run())
-}
+)

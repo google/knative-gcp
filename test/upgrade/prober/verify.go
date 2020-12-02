@@ -1,5 +1,6 @@
 /*
  * Copyright 2020 The Knative Authors
+ * Modified work Copyright 2020 Google LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/wavesoftware/go-ensure"
@@ -48,13 +48,19 @@ func (p *prober) Verify(ctx context.Context) ([]error, int) {
 	p.log.Infof("Fetched receiver report. Events propagated: %v. "+
 		"State: %v", report.Events, report.State)
 	if report.State == "active" {
-		panic(errors.New("report fetched to early, receiver is in active state"))
+		panic(errors.New("report fetched too early, receiver is in active state"))
 	}
 	errs := make([]error, 0)
-	for _, t := range report.Thrown {
-		if strings.Contains(t, "should be received only once") {
+	for _, t := range report.Thrown.Missing {
+		errs = append(errs, errors.New(t))
+	}
+	for _, t := range report.Thrown.Unexpected {
+		errs = append(errs, errors.New(t))
+	}
+	for _, t := range report.Thrown.Duplicated {
+		if p.config.OnDuplicate == Warn {
 			p.log.Warn("Duplicate events: ", t)
-		} else {
+		} else if p.config.OnDuplicate == Error {
 			errs = append(errs, errors.New(t))
 		}
 	}
@@ -100,7 +106,11 @@ func (p *prober) fetchExecution(ctx context.Context) *fetcher.Execution {
 		Report: &receiver.Report{
 			State:  "failure",
 			Events: 0,
-			Thrown: []string{"Report wasn't fetched"},
+			Thrown: receiver.Thrown{
+				Unexpected: []string{"Report wasn't fetched"},
+				Missing:    []string{"Report wasn't fetched"},
+				Duplicated: []string{"Report wasn't fetched"},
+			},
 		},
 	}
 	err = json.Unmarshal(bytes, ex)

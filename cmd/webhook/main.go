@@ -33,7 +33,6 @@ import (
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/eventing/pkg/logconfig"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
@@ -261,7 +260,7 @@ func newConversionController(ctx context.Context, cmw configmap.Watcher, brokerd
 func main() {
 	// Set up a signal context with our webhook options
 	ctx := webhook.WithOptions(signals.NewContext(), webhook.Options{
-		ServiceName: logconfig.WebhookName(),
+		ServiceName: webhook.NameFromEnv(),
 		Port:        8443,
 		// SecretName must match the name of the Secret created in the configuration.
 		SecretName: "webhook-certs",
@@ -271,7 +270,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	sharedmain.WebhookMainWithContext(ctx, logconfig.WebhookName(), controllers...)
+	sharedmain.WebhookMainWithContext(ctx, webhook.NameFromEnv(), controllers...)
 }
 
 func Controllers(
