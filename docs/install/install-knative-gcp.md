@@ -82,20 +82,23 @@ ko apply -f ./config
    export KGCP_VERSION=v0.19.0
    ```
 
-1. First install the pre-install job by running the `kubectl apply` for `cloud-run-events-pre-install-jobs.yaml`.
-Skip this step if you are installing a release before v0.18.0.
+1. First install the pre-install job by running the `kubectl apply` for
+   `cloud-run-events-pre-install-jobs.yaml`. Skip this step if you are
+   installing a release before v0.18.0.
    ```shell
    kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events-pre-install-jobs.yaml
    ```
-1. Install the CRDs by running the `kubectl apply` for `cloud-run-events.yaml` with selector. This prevents race conditions during the installation, which
-cause intermittent errors:
+1. Install the CRDs by running the `kubectl apply` for `cloud-run-events.yaml`
+   with selector. This prevents race conditions during the installation, which
+   cause intermittent errors:
 
    ```shell
    kubectl apply --selector events.cloud.google.com/crd-install=true \
    --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    ```
 
-1. To complete the installation, run the `kubectl apply` again for `cloud-run-events.yaml` without selector:
+1. To complete the installation, run the `kubectl apply` again for
+   `cloud-run-events.yaml` without selector:
 
    ```shell
    kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
