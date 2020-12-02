@@ -32,8 +32,8 @@ const envKey = "GOOGLE_APPLICATION_CREDENTIALS"
 // - When using workload identity, credential file doesn't exist as the volume
 // mount is optional.
 func MustExistOrUnsetEnv() {
-	dummypath := os.Getenv(envKey)
-	if _, err := os.Stat(dummypath); os.IsNotExist(err) {
+	whiltelist := os.Getenv(envKey)
+	if _, err := os.Stat(whiltelist); os.IsNotExist(err) {
 		os.Unsetenv(envKey)
 	}
 }
