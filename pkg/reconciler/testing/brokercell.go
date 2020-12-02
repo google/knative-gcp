@@ -92,6 +92,12 @@ func WithBrokerCellIngressFailed(reason, msg string) BrokerCellOption {
 	}
 }
 
+func WithBrokerCellIngressUnknown(reason, msg string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.MarkIngressUnknown(reason, msg)
+	}
+}
+
 func WithBrokerCellIngressAvailable() BrokerCellOption {
 	return func(bc *intv1alpha1.BrokerCell) {
 		bc.Status.PropagateIngressAvailability(v1alpha1.TestHelper.AvailableEndpoints())

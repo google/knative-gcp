@@ -75,6 +75,8 @@ spec:
               value: config-observability
             - name: METRICS_DOMAIN
               value: knative.dev/internal/eventing
+            - name: K_GCP_AUTH_TYPE
+              value: "secret"
           volumeMounts:
             - name: broker-config
               mountPath: /var/run/cloud-run-events/broker

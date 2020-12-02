@@ -216,6 +216,9 @@ func containerTemplate(args Args) corev1.Container {
 				// Used for StackDriver only.
 				Name:  "METRICS_DOMAIN",
 				Value: "knative.dev/internal/eventing",
+			}, {
+				Name:  "K_GCP_AUTH_TYPE",
+				Value: string(args.AuthType),
 			},
 		},
 		Ports: []corev1.ContainerPort{

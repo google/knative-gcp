@@ -30,18 +30,19 @@ import (
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"cloud.google.com/go/pubsub"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
+	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
+
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/topic"
+	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
-
-	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/topic"
-	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
-	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
-	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 )
 
 const (
@@ -89,14 +90,17 @@ func newController(
 		Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 	}
 
+	topicLister := topicInformer.Lister()
+
 	r := &Reconciler{
-		PubSubBase:         pubsubBase,
-		Identity:           identity.NewIdentity(ctx, ipm, gcpas),
-		dataresidencyStore: dataresidencyStore,
-		topicLister:        topicInformer.Lister(),
-		serviceLister:      serviceInformer.Lister(),
-		publisherImage:     env.Publisher,
-		createClientFn:     pubsub.NewClient,
+		PubSubBase:           pubsubBase,
+		Identity:             identity.NewIdentity(ctx, ipm, gcpas),
+		dataresidencyStore:   dataresidencyStore,
+		topicLister:          topicLister,
+		serviceLister:        serviceInformer.Lister(),
+		serviceAccountLister: serviceAccountInformer.Lister(),
+		publisherImage:       env.Publisher,
+		createClientFn:       pubsub.NewClient,
 	}
 
 	impl := topicreconciler.NewImpl(ctx, r)
@@ -111,10 +115,8 @@ func newController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(topicGK),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
+	// Watch k8s service account, if a k8s service account resource changes, enqueue qualified topics from the same namespace.
+	serviceAccountInformer.Informer().AddEventHandler(authcheck.EnqueueTopic(impl, topicLister))
 
 	cmw.Watch(tracingconfig.ConfigName, r.UpdateFromTracingConfigMap)
 

@@ -21,12 +21,14 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	"github.com/google/knative-gcp/pkg/apis/intevents"
 	intereventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -72,6 +74,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 		LoggingConfig:  "LoggingConfig-ABC123",
 		MetricsConfig:  "MetricsConfig-ABC123",
 		TracingConfig:  "TracingConfig-ABC123",
+		AuthType:       authcheck.Secret,
 	})
 
 	one := int32(1)
@@ -163,6 +166,9 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 							Name:  "METRICS_DOMAIN",
 							Value: metricsDomain,
 						}, {
+							Name:  "K_GCP_AUTH_TYPE",
+							Value: "secret",
+						}, {
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/var/secrets/google/eventing-secret-key",
 						}, {
@@ -237,6 +243,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 		LoggingConfig:  "LoggingConfig-ABC123",
 		MetricsConfig:  "MetricsConfig-ABC123",
 		TracingConfig:  "TracingConfig-ABC123",
+		AuthType:       authcheck.Secret,
 	})
 
 	one := int32(1)
@@ -330,6 +337,9 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 							Name:  "METRICS_DOMAIN",
 							Value: metricsDomain,
 						}, {
+							Name:  "K_GCP_AUTH_TYPE",
+							Value: "secret",
+						}, {
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/var/secrets/google/eventing-secret-key",
 						}, {
@@ -406,6 +416,7 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 		LoggingConfig:  "LoggingConfig-ABC123",
 		MetricsConfig:  "MetricsConfig-ABC123",
 		TracingConfig:  "TracingConfig-ABC123",
+		AuthType:       authcheck.WorkloadIdentityGSA,
 	})
 
 	one := int32(1)
@@ -499,6 +510,9 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 						}, {
 							Name:  "METRICS_DOMAIN",
 							Value: metricsDomain,
+						}, {
+							Name:  "K_GCP_AUTH_TYPE",
+							Value: string(authcheck.WorkloadIdentityGSA),
 						}},
 						Ports: []corev1.ContainerPort{{
 							Name:          "metrics",

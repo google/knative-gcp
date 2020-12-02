@@ -82,6 +82,8 @@ spec:
           value: config-observability
         - name: METRICS_DOMAIN
           value: knative.dev/internal/eventing
+        - name: K_GCP_AUTH_TYPE
+          value: "secret"
         - name: PORT
           value: "8080"
         # TODO(1804): remove this env variable when the feature is enabled by default.

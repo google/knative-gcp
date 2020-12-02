@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	"go.uber.org/zap"
 
@@ -51,6 +52,8 @@ type ReceiveAdapterArgs struct {
 	MetricsConfig    string
 	LoggingConfig    string
 	TracingConfig    string
+	// There are three types: `secret`, `workload-identity-gsa` and `workload-identity`.
+	AuthType authcheck.AuthType
 }
 
 const (
@@ -154,6 +157,9 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 		}, {
 			Name:  "METRICS_DOMAIN",
 			Value: metricsDomain,
+		}, {
+			Name:  "K_GCP_AUTH_TYPE",
+			Value: string(args.AuthType),
 		}},
 		Ports: []corev1.ContainerPort{{
 			Name:          "metrics",

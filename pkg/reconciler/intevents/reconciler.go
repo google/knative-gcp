@@ -22,12 +22,6 @@ import (
 
 	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
 
-	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
-	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
-	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
-	duck "github.com/google/knative-gcp/pkg/duck/v1"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/intevents/resources"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -37,6 +31,13 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
+
+	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
+	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
+	duck "github.com/google/knative-gcp/pkg/duck/v1"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents/resources"
 )
 
 const (

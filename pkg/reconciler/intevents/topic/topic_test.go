@@ -27,6 +27,8 @@ import (
 
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
+
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -925,9 +927,10 @@ func newPublisher() *servingv1.Service {
 		reconcilertestingv1.WithTopicSetDefaults,
 	)
 	args := &resources.PublisherArgs{
-		Image:  testImage,
-		Topic:  t,
-		Labels: resources.GetLabels(controllerAgentName, topicName),
+		Image:    testImage,
+		Topic:    t,
+		Labels:   resources.GetLabels(controllerAgentName, topicName),
+		AuthType: authcheck.Secret,
 	}
 	return resources.MakePublisher(args)
 }

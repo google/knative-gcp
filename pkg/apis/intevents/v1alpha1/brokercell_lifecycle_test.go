@@ -328,3 +328,89 @@ func TestBrokerCellConditionStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestMarkBrokerCellStatus(t *testing.T) {
+	tests := []struct {
+		name          string
+		s             *BrokerCellStatus
+		wantType      apis.ConditionType
+		wantCondition corev1.ConditionStatus
+	}{{
+		name: "mark IngressReady unknown",
+		s: func() *BrokerCellStatus {
+			s := &BrokerCell{}
+			s.Status.InitializeConditions()
+			s.Status.MarkIngressUnknown("test", "the status of ingressReady is unknown")
+			return &s.Status
+		}(),
+		wantType:      BrokerCellConditionIngress,
+		wantCondition: corev1.ConditionUnknown,
+	}, {}, {
+		name: "mark IngressReady false",
+		s: func() *BrokerCellStatus {
+			s := &BrokerCell{}
+			s.Status.InitializeConditions()
+			s.Status.MarkIngressFailed("test", "the status of ingressReady is false")
+			return &s.Status
+		}(),
+		wantType:      BrokerCellConditionIngress,
+		wantCondition: corev1.ConditionFalse,
+	}, {
+		name: "mark FanoutReady unknown",
+		s: func() *BrokerCellStatus {
+			s := &BrokerCell{}
+			s.Status.InitializeConditions()
+			s.Status.MarkFanoutUnknown("test", "the status of fanoutReady is unknown")
+			return &s.Status
+		}(),
+		wantType:      BrokerCellConditionFanout,
+		wantCondition: corev1.ConditionUnknown,
+	}, {
+		name: "mark FanoutReady false",
+		s: func() *BrokerCellStatus {
+			s := &BrokerCell{}
+			s.Status.InitializeConditions()
+			s.Status.MarkFanoutFailed("test", "the status of fanoutReady is false")
+			return &s.Status
+		}(),
+		wantType:      BrokerCellConditionFanout,
+		wantCondition: corev1.ConditionFalse,
+	}, {
+		name: "mark RetryReady unknown",
+		s: func() *BrokerCellStatus {
+			s := &BrokerCell{}
+			s.Status.InitializeConditions()
+			s.Status.MarkRetryUnknown("test", "the status of retryReady is unknown")
+			return &s.Status
+		}(),
+		wantType:      BrokerCellConditionRetry,
+		wantCondition: corev1.ConditionUnknown,
+	}, {
+		name: "mark RetryReady false",
+		s: func() *BrokerCellStatus {
+			s := &BrokerCell{}
+			s.Status.InitializeConditions()
+			s.Status.MarkRetryFailed("test", "the status of retryReady is false")
+			return &s.Status
+		}(),
+		wantType:      BrokerCellConditionRetry,
+		wantCondition: corev1.ConditionFalse,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.wantType != "" {
+				gotConditionStatus := test.s.Status
+				for _, cd := range gotConditionStatus.Conditions {
+					if cd.Type == test.wantType {
+						if cd.Status == test.wantCondition {
+							return
+						}
+						t.Errorf("unexpected condition status for %v: want %v, got %v", test.wantType, test.wantCondition, cd.Status)
+					}
+				}
+				t.Error("didn't see the expected condition: ", test.wantType)
+			}
+		})
+	}
+}

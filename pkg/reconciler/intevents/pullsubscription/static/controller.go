@@ -19,23 +19,12 @@ package static
 import (
 	"context"
 
-	"knative.dev/pkg/injection"
-
 	"cloud.google.com/go/pubsub"
-	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/duck"
-	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/pullsubscription"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
-	"github.com/google/knative-gcp/pkg/reconciler/intevents"
-	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/injection"
 
-	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
@@ -45,6 +34,17 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 	tracingconfig "knative.dev/pkg/tracing/config"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+	"github.com/google/knative-gcp/pkg/apis/duck"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/pullsubscription"
+	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
+	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 )
 
 const (
@@ -65,7 +65,7 @@ type envConfig struct {
 
 type Constructor injection.ControllerConstructor
 
-// NewConstructor creates a constructor to make a static CloudBuildSource controller.
+// NewConstructor creates a constructor to make a static pullsubscription controller.
 func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
 		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
@@ -93,12 +93,15 @@ func newController(
 		Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 	}
 
+	pullSubscriptionLister := pullSubscriptionInformer.Lister()
+
 	r := &Reconciler{
 		Base: &psreconciler.Base{
 			PubSubBase:             pubsubBase,
 			Identity:               identity.NewIdentity(ctx, ipm, gcpas),
 			DeploymentLister:       deploymentInformer.Lister(),
-			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
+			ServiceAccountLister:   serviceAccountInformer.Lister(),
+			PullSubscriptionLister: pullSubscriptionLister,
 			ReceiveAdapterImage:    env.ReceiveAdapter,
 			CreateClientFn:         pubsub.NewClient,
 			ControllerAgentName:    controllerAgentName,
@@ -127,10 +130,8 @@ func newController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(v1.Kind("PullSubscription")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
+	// Watch k8s service account, if a k8s service account resource changes, enqueue qualified pullsubscriptions from the same namespace.
+	serviceAccountInformer.Informer().AddEventHandler(authcheck.EnqueuePullSubscription(impl, pullSubscriptionLister))
 
 	r.UriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 	r.ReconcileDataPlaneFn = r.ReconcileDeployment

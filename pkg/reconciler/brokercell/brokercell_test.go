@@ -28,13 +28,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
-
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	. "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/proto"
+
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
@@ -42,8 +43,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/testingdata"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-
-	"google.golang.org/protobuf/proto"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 )
 
 const (
@@ -54,7 +54,8 @@ const (
 )
 
 var (
-	testKey = fmt.Sprintf("%s/%s", testNS, brokerCellName)
+	testKey     = fmt.Sprintf("%s/%s", testNS, brokerCellName)
+	testKeyAuth = fmt.Sprintf("%s/%s", authcheck.ControlPlaneNamespace, brokerCellName)
 
 	creatorAnnotation       = map[string]string{"internal.events.cloud.google.com/creator": "googlecloud"}
 	restartedTimeAnnotation = map[string]string{
@@ -95,6 +96,7 @@ var (
 	configmapUpdateFailedEvent    = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update configmaps")
 	configmapCreatedEvent         = Eventf(corev1.EventTypeNormal, "ConfigMapCreated", "Created configmap testnamespace/test-brokercell-brokercell-broker-targets")
 	configmapUpdatedEvent         = Eventf(corev1.EventTypeNormal, "ConfigMapUpdated", "Updated configmap testnamespace/test-brokercell-brokercell-broker-targets")
+	authTypeEvent                 = Eventf(corev1.EventTypeWarning, "InternalError", "authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key")
 )
 
 func init() {
@@ -162,6 +164,26 @@ func TestAllCases(t *testing.T) {
 				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
 				NewBroker("broker", testNS, WithBrokerSetDefaults))}},
 			WantErr: true,
+		},
+		{
+			Name: "authType error",
+			Key:  testKeyAuth,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, authcheck.ControlPlaneNamespace, WithBrokerCellSetDefaults),
+				testingdata.EmptyConfig(t, NewBrokerCell(brokerCellName, authcheck.ControlPlaneNamespace, WithBrokerCellSetDefaults)),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBrokerCell(brokerCellName, authcheck.ControlPlaneNamespace,
+					WithInitBrokerCellConditions,
+					WithTargetsCofigReady(),
+					WithBrokerCellIngressUnknown(authcheck.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
+					WithBrokerCellFanoutUnknown(authcheck.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
+					WithBrokerCellRetryUnknown(authcheck.AuthenticationCheckUnknownReason, `authentication is not configured, when checking Kubernetes Service Account broker, got error: can't find Kubernetes Service Account broker, when checking Kubernetes Secret google-broker-key, got error: can't find Kubernetes Secret google-broker-key`),
+					WithBrokerCellSetDefaults,
+				),
+			}},
+			WantEvents: []string{authTypeEvent},
+			WantErr:    true,
 		},
 		{
 			Name: "Ingress Deployment.Create error",
@@ -961,14 +983,16 @@ func TestAllCases(t *testing.T) {
 		setReconcilerEnv()
 		base := reconciler.NewBase(ctx, controllerAgentName, cmw)
 		ls := listers{
-			brokerLister:     testingListers.GetBrokerLister(),
-			hpaLister:        testingListers.GetHPALister(),
-			triggerLister:    testingListers.GetTriggerLister(),
-			configMapLister:  testingListers.GetConfigMapLister(),
-			serviceLister:    testingListers.GetK8sServiceLister(),
-			endpointsLister:  testingListers.GetEndpointsLister(),
-			deploymentLister: testingListers.GetDeploymentLister(),
-			podLister:        testingListers.GetPodLister(),
+			brokerLister:         testingListers.GetBrokerLister(),
+			hpaLister:            testingListers.GetHPALister(),
+			triggerLister:        testingListers.GetTriggerLister(),
+			configMapLister:      testingListers.GetConfigMapLister(),
+			secretLister:         testingListers.GetSecretLister(),
+			serviceAccountLister: testingListers.GetServiceAccountLister(),
+			serviceLister:        testingListers.GetK8sServiceLister(),
+			endpointsLister:      testingListers.GetEndpointsLister(),
+			deploymentLister:     testingListers.GetDeploymentLister(),
+			podLister:            testingListers.GetPodLister(),
 		}
 
 		r, err := NewReconciler(base, ls)

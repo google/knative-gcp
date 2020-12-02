@@ -100,6 +100,12 @@ func WithTopicSpec(spec v1.TopicSpec) TopicOption {
 	}
 }
 
+func WithTopicServiceAccountName(serviceAccountName string) TopicOption {
+	return func(t *v1.Topic) {
+		t.Spec.ServiceAccountName = serviceAccountName
+	}
+}
+
 func WithTopicPublisherDeployed(t *v1.Topic) {
 	t.Status.MarkPublisherDeployed()
 }

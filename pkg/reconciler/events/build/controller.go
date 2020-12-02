@@ -89,5 +89,10 @@ func newController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
+	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(v1.Kind("CloudBuildSource")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
 	return impl
 }

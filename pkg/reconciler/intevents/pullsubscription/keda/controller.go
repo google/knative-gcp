@@ -26,9 +26,10 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/kelseyhightower/envconfig"
+
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1/resource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1/pullsubscription"
 	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
@@ -37,7 +38,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
-	"github.com/kelseyhightower/envconfig"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	eventingduck "knative.dev/eventing/pkg/duck"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
@@ -97,12 +98,15 @@ func newController(
 		Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 	}
 
+	pullSubscriptionLister := pullSubscriptionInformer.Lister()
+
 	r := &Reconciler{
 		Base: &psreconciler.Base{
 			PubSubBase:             pubsubBase,
 			Identity:               identity.NewIdentity(ctx, ipm, gcpas),
 			DeploymentLister:       deploymentInformer.Lister(),
-			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
+			ServiceAccountLister:   serviceAccountInformer.Lister(),
+			PullSubscriptionLister: pullSubscriptionLister,
 			ReceiveAdapterImage:    env.ReceiveAdapter,
 			CreateClientFn:         pubsub.NewClient,
 			ControllerAgentName:    controllerAgentName,
@@ -126,10 +130,8 @@ func newController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(v1.Kind("PullSubscription")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
+	// Watch k8s service account, if a k8s service account resource changes, enqueue qualified pullsubscriptions from the same namespace.
+	serviceAccountInformer.Informer().AddEventHandler(authcheck.EnqueuePullSubscription(impl, pullSubscriptionLister))
 
 	r.UriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 	r.ReconcileDataPlaneFn = r.ReconcileScaledObject
