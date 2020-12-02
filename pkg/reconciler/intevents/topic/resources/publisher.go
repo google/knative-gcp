@@ -38,7 +38,7 @@ type PublisherArgs struct {
 	Labels        map[string]string
 	TracingConfig string
 	// There are three types: `secret`, `workload-identity-gsa` and `workload-identity`.
-	AuthType authcheck.AuthTypes
+	AuthType authcheck.AuthType
 }
 
 const (

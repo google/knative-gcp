@@ -71,7 +71,7 @@ func TestGetAuthTypeForSources(t *testing.T) {
 		name         string
 		objects      []runtime.Object
 		args         AuthTypeArgs
-		wantAuthType AuthTypes
+		wantAuthType AuthType
 		wantError    error
 	}{
 		{
@@ -144,7 +144,7 @@ func TestGetAuthTypeForBrokerCell(t *testing.T) {
 		name         string
 		objects      []runtime.Object
 		args         AuthTypeArgs
-		wantAuthType AuthTypes
+		wantAuthType AuthType
 		wantError    error
 	}{
 		{

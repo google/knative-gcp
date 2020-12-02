@@ -28,7 +28,17 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 )
 
-type AuthTypes string
+type AuthType string
+
+const (
+	// Secret option is referring to authentication configuration for secret.
+	// https://cloud.google.com/kubernetes-engine/docs/tutorials/authenticating-to-cloud-platform#importing_credentials_as_a_secret
+	Secret AuthType = "secret"
+	// WorkloadIdentityGSA option is referring to authentication configuration for Workload Identity using GSA
+	// https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity
+	WorkloadIdentityGSA AuthType = "workload-identity-gsa"
+	WorkloadIdentity    AuthType = "workload-identity"
+)
 
 type AuthTypeArgs struct {
 	Namespace          string
@@ -40,13 +50,6 @@ const (
 	AuthenticationCheckUnknownReason = "AuthenticationCheckPending"
 	ControlPlaneNamespace            = "cloud-run-events"
 	BrokerServiceAccountName         = "broker"
-	// Secret option is referring to authentication configuration for secret.
-	// https://cloud.google.com/kubernetes-engine/docs/tutorials/authenticating-to-cloud-platform#importing_credentials_as_a_secret
-	Secret AuthTypes = "secret"
-	// WorkloadIdentityGSA option is referring to authentication configuration for Workload Identity using GSA
-	// https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity
-	WorkloadIdentityGSA AuthTypes = "workload-identity-gsa"
-	WorkloadIdentity    AuthTypes = "workload-identity"
 )
 
 var BrokerSecret = &corev1.SecretKeySelector{
@@ -58,26 +61,27 @@ var BrokerSecret = &corev1.SecretKeySelector{
 
 // GetAuthTypeForBrokerCell will get authType for BrokerCell.
 func GetAuthTypeForBrokerCell(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister,
-	secretLister corev1listers.SecretLister, args AuthTypeArgs) (AuthTypes, error) {
+	secretLister corev1listers.SecretLister, args AuthTypeArgs) (AuthType, error) {
 	// For AuthTypeArgs from BrokerCell, ServiceAccountName and Secret will be both presented.
 	// We need to revisit this function after https://github.com/google/knative-gcp/issues/1888 lands,
 	// which will add IdentitySpec to BrokerCell.
 	// For AuthTypeArgs from BrokerCell.
 	authTypeForWorkloadIdentity, workloadIdentityErr := getAuthTypeForWorkloadIdentity(ctx, serviceAccountLister, args)
-	authTypeForSecret, secretErr := getAuthTypeForSecret(ctx, secretLister, args)
-	if authTypeForWorkloadIdentity != "" {
+	if workloadIdentityErr == nil {
 		return authTypeForWorkloadIdentity, nil
-	} else if authTypeForSecret != "" {
-		return authTypeForSecret, nil
-	} else {
-		workloadIdentityError := fmt.Errorf("when checking Kubernetes Service Account %s, got error: %w", args.ServiceAccountName, workloadIdentityErr)
-		secretError := fmt.Errorf("when checking Kubernetes Secret %s, got error: %w", args.Secret.Name, secretErr)
-		return "", fmt.Errorf("authentication is not configured, %s, %s", workloadIdentityError.Error(), secretError.Error())
 	}
+	authTypeForSecret, secretErr := getAuthTypeForSecret(ctx, secretLister, args)
+	if secretErr == nil {
+		return authTypeForSecret, nil
+	}
+
+	workloadIdentityError := fmt.Errorf("when checking Kubernetes Service Account %s, got error: %w", args.ServiceAccountName, workloadIdentityErr)
+	secretError := fmt.Errorf("when checking Kubernetes Secret %s, got error: %w", args.Secret.Name, secretErr)
+	return "", fmt.Errorf("authentication is not configured, %s, %s", workloadIdentityError.Error(), secretError.Error())
 }
 
 // GetAuthTypeForSources will get authType for Sources.
-func GetAuthTypeForSources(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister, args AuthTypeArgs) (AuthTypes, error) {
+func GetAuthTypeForSources(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister, args AuthTypeArgs) (AuthType, error) {
 	// For AuthTypeArgs from Sources, either ServiceAccountName or Secret will be empty,
 	// because of the IdentitySpec validation from Webhook.
 
@@ -85,7 +89,7 @@ func GetAuthTypeForSources(ctx context.Context, serviceAccountLister corev1liste
 	if args.ServiceAccountName != "" {
 		authType, err := getAuthTypeForWorkloadIdentity(ctx, serviceAccountLister, args)
 		if err != nil {
-			return authType, fmt.Errorf("using Workload Identity for authentication configuration: %w", err)
+			return "", fmt.Errorf("using Workload Identity for authentication configuration: %w", err)
 		}
 		return authType, nil
 	}
@@ -102,7 +106,7 @@ func GetAuthTypeForSources(ctx context.Context, serviceAccountLister corev1liste
 }
 
 func getAuthTypeForWorkloadIdentity(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister,
-	args AuthTypeArgs) (AuthTypes, error) {
+	args AuthTypeArgs) (AuthType, error) {
 	kServiceAccount, err := serviceAccountLister.ServiceAccounts(args.Namespace).Get(args.ServiceAccountName)
 	if err != nil {
 		if apierrs.IsNotFound(err) {
@@ -117,7 +121,7 @@ func getAuthTypeForWorkloadIdentity(ctx context.Context, serviceAccountLister co
 	return "", fmt.Errorf("the Kubernetes Service Account %s does not have the required annotation", args.ServiceAccountName)
 }
 
-func getAuthTypeForSecret(ctx context.Context, secretLister corev1listers.SecretLister, args AuthTypeArgs) (AuthTypes, error) {
+func getAuthTypeForSecret(ctx context.Context, secretLister corev1listers.SecretLister, args AuthTypeArgs) (AuthType, error) {
 	// Controller doesn't have the permission to check the existence of a secret in namespaces
 	// other than the control plane's namespace.
 	if args.Namespace != ControlPlaneNamespace {

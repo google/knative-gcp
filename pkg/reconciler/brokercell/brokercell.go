@@ -245,7 +245,7 @@ func (r *Reconciler) delete(ctx context.Context, bc *intv1alpha1.BrokerCell) pkg
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellGarbageCollected", "BrokerCell garbage collected: \"%s/%s\"", bc.Namespace, bc.Name)
 }
 
-func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell, authType authcheck.AuthTypes) resources.IngressArgs {
+func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell, authType authcheck.AuthType) resources.IngressArgs {
 	return resources.IngressArgs{
 		Args: resources.Args{
 			ComponentName:      resources.IngressName,
@@ -287,7 +287,7 @@ func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.Au
 	}
 }
 
-func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell, authType authcheck.AuthTypes) resources.FanoutArgs {
+func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell, authType authcheck.AuthType) resources.FanoutArgs {
 	return resources.FanoutArgs{
 		Args: resources.Args{
 			ComponentName:      resources.FanoutName,
@@ -317,7 +317,7 @@ func (r *Reconciler) makeFanoutHPAArgs(bc *intv1alpha1.BrokerCell) resources.Aut
 	}
 }
 
-func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell, authType authcheck.AuthTypes) resources.RetryArgs {
+func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell, authType authcheck.AuthType) resources.RetryArgs {
 	return resources.RetryArgs{
 		Args: resources.Args{
 			ComponentName:      resources.RetryName,

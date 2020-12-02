@@ -53,7 +53,7 @@ type ReceiveAdapterArgs struct {
 	LoggingConfig    string
 	TracingConfig    string
 	// There are three types: `secret`, `workload-identity-gsa` and `workload-identity`.
-	AuthType authcheck.AuthTypes
+	AuthType authcheck.AuthType
 }
 
 const (
