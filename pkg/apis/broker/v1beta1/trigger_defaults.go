@@ -20,8 +20,16 @@ import (
 	"context"
 )
 
+const (
+	knativeServingV1ApiVersion       = "serving.knative.dev/v1"
+	knativeServingV1Alpha1ApiVersion = "serving.knative.dev/v1alpha1"
+)
+
 // SetDefaults sets the default field values for a Trigger.
 func (t *Trigger) SetDefaults(ctx context.Context) {
-	// The Google Cloud Broker doesn't have any custom defaults. The
-	// eventing webhook will add the usual defaults.
+	// This upgrades the `ApiVersion` of the knative serving subscriber form v1alpha1 to v1, this is intended to
+	// help users who are lagging in their transition to knative serving v1.
+	if t.Spec.Subscriber.Ref != nil && t.Spec.Subscriber.Ref.APIVersion == knativeServingV1Alpha1ApiVersion {
+		t.Spec.Subscriber.Ref.APIVersion = knativeServingV1ApiVersion
+	}
 }
