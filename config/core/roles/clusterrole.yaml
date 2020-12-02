@@ -119,7 +119,6 @@ rules:
     - ""
   resources:
     - configmaps
-    - secrets
     - endpoints
   verbs: &readOnly
     - get
