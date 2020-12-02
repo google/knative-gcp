@@ -1,0 +1,50 @@
+rules:
+  - name: native
+    terms:
+      - "native"
+    alternatives:
+      - ""
+      - "built-in"
+      - "platform-specific"
+
+  - name: primitive
+    terms:
+      - "primitive"
+    alternatives:
+      - "basic"
+
+  - name: redline
+    terms:
+      - "redline"
+      - "red line"
+    alternatives:
+      - "priority line"
+
+  - name: blindspot
+    terms:
+      - "blind spot"
+    alternatives:
+      - "missed area"
+
+  - name: crazy
+    terms:
+      - "crazy"
+      - "insane"
+    alternatives:
+      - "unexpected"
+      - "complex"
+
+  - name: hit
+    terms:
+      - "hit"
+    alternatives:
+      - "reach"
+
+  - name: healthcheck
+    terms:
+      - "healthcheck"
+      - "health-check"
+      - "health check"
+    alternatives:
+      - "check"
+      - "probe check"
