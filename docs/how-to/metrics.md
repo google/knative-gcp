@@ -1,5 +1,11 @@
 # Accessing Metrics in Stackdriver
-
+native
+premitive
+redlines
+blind spot
+crazy
+hit
+health check
 ## Enable the Metrics API
 
 In cloud console, navigate to
