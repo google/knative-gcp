@@ -60,11 +60,11 @@ var (
 	probeEventTargetPathHeader = "Ce-" + strings.Title(probeEventTargetPathExtension)
 )
 
-// WithProbeTimeout returns a context with a timeout specified from the 'timeout'
+// withProbeTimeout returns a context with a timeout specified from the 'timeout'
 // extension of a given CloudEvent, defaulting to a certain value if not specified,
 // and capped to a maximum.
-func WithProbeTimeout(ctx context.Context, event cloudevents.Event, defaultTimeout time.Duration, maxTimeout time.Duration) (context.Context, context.CancelFunc) {
-	timeout := defaultTimeout
+func (ph *Helper) withProbeTimeout(ctx context.Context, event cloudevents.Event) (context.Context, context.CancelFunc) {
+	timeout := ph.DefaultTimeoutDuration
 	if _, ok := event.Extensions()[probeEventTimeoutExtension]; ok {
 		customTimeoutExtension := fmt.Sprint(event.Extensions()[probeEventTimeoutExtension])
 		if customTimeout, err := time.ParseDuration(customTimeoutExtension); err != nil {
@@ -73,16 +73,16 @@ func WithProbeTimeout(ctx context.Context, event cloudevents.Event, defaultTimeo
 			timeout = customTimeout
 		}
 	}
-	if timeout.Nanoseconds() > maxTimeout.Nanoseconds() {
-		logging.FromContext(ctx).Warnw("Desired timeout exceeds the maximum, clamping to maximum value", zap.Duration("timeout", timeout), zap.Duration("maximumTimeout", maxTimeout))
-		timeout = maxTimeout
+	if timeout.Nanoseconds() > ph.MaxTimeoutDuration.Nanoseconds() {
+		logging.FromContext(ctx).Warnw("Desired timeout exceeds the maximum, clamping to maximum value", zap.Duration("timeout", timeout), zap.Duration("maximumTimeout", ph.MaxTimeoutDuration))
+		timeout = ph.MaxTimeoutDuration
 	}
 	return context.WithTimeout(ctx, timeout)
 }
 
-// WithProbeEventLoggingContext attaches a logger to the context which contains
+// withProbeEventLoggingContext attaches a logger to the context which contains
 // useful information about probe requests.
-func WithProbeEventLoggingContext(ctx context.Context, event cloudevents.Event) context.Context {
+func withProbeEventLoggingContext(ctx context.Context, event cloudevents.Event) context.Context {
 	logger := logging.FromContext(ctx)
 	logger = logger.With(zap.Any("event", map[string]interface{}{
 		"id":          event.ID(),
@@ -102,7 +102,7 @@ type cloudEventsFunc func(cloudevents.Event) cloudevents.Result
 func (ph *Helper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 	return func(event cloudevents.Event) cloudevents.Result {
 		// Attach important metadata about the event to the logging context.
-		ctx := WithProbeEventLoggingContext(ctx, event)
+		ctx := withProbeEventLoggingContext(ctx, event)
 		logging.FromContext(ctx).Infow("Received probe request")
 
 		// Refresh the forward probe liveness time
@@ -122,7 +122,7 @@ func (ph *Helper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 		}
 
 		// Add timeout to the context
-		ctx, cancel := WithProbeTimeout(ctx, event, ph.DefaultTimeoutDuration, ph.MaxTimeoutDuration)
+		ctx, cancel := ph.withProbeTimeout(ctx, event)
 		defer cancel()
 
 		// Forward the probe event. This call is likely to be blocking.
@@ -140,7 +140,7 @@ func (ph *Helper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 func (ph *Helper) receiveEvent(ctx context.Context) cloudEventsFunc {
 	return func(event cloudevents.Event) cloudevents.Result {
 		// Attach important metadata about the event to the logging context.
-		ctx := WithProbeEventLoggingContext(ctx, event)
+		ctx := withProbeEventLoggingContext(ctx, event)
 		logging.FromContext(ctx).Infow("Received event")
 
 		// Refresh the receiver probe liveness time
