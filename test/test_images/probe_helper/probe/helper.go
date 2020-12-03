@@ -57,7 +57,7 @@ const (
 )
 
 var (
-	probeEventTargetPathHeader = fmt.Sprintf("Ce-%s", strings.Title(probeEventTargetPathExtension))
+	probeEventTargetPathHeader = "Ce-" + strings.Title(probeEventTargetPathExtension)
 )
 
 // WithProbeTimeout returns a context with a timeout specified from the 'timeout'
