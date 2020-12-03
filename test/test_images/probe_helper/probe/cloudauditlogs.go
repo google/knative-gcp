@@ -20,10 +20,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 
 	"cloud.google.com/go/pubsub"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
 )
 
 const (
@@ -43,13 +43,14 @@ type CloudAuditLogsSourceProbe struct {
 	pubsubClient *pubsub.Client
 
 	// The map of received events to be tracked by the forwarder and receiver
-	receivedEvents sync.Map
+	receivedEvents utils.SyncReceivedEvents
 }
 
 // Forward publishes creates a Pub/Sub topic in order to generate a Cloud Audit Logs notification event.
 func (p *CloudAuditLogsSourceProbe) Forward(ctx context.Context, event cloudevents.Event) error {
-	// Get the receiver channel
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
+	// Create the receiver channel
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
@@ -61,7 +62,7 @@ func (p *CloudAuditLogsSourceProbe) Forward(ctx context.Context, event cloudeven
 		return fmt.Errorf("Failed to create pubsub topic '%s': %v", topic, err)
 	}
 
-	return WaitOnReceiverChannel(ctx, receiverChannel)
+	return p.receivedEvents.WaitOnReceiverChannel(ctx, channelID)
 }
 
 // Receive closes the receiver channel associated with a Cloud Audit Logs notification event.
@@ -98,5 +99,6 @@ func (p *CloudAuditLogsSourceProbe) Receive(ctx context.Context, event cloudeven
 	} else {
 		return fmt.Errorf("Failed to read Cloud AuditLogs event, unrecognized 'methodname' extension: %s", methodname)
 	}
-	return SignalReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), eventID))
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), eventID)
+	return p.receivedEvents.SignalReceiverChannel(channelID)
 }

@@ -357,7 +357,7 @@ func TestProbeHelper(t *testing.T) {
 	ctx = WithProjectKey(ctx, testProjectID)
 	ctx = WithTopicKey(ctx, testTopicID)
 	ctx = WithSubscriptionKey(ctx, testSubscriptionID)
-	//ctx = cloudevents.ContextWithRetriesConstantBackoff(ctx, 100*time.Millisecond, 30)
+	ctx = cloudevents.ContextWithRetriesConstantBackoff(ctx, 100*time.Millisecond, 30)
 	group, ctx := errgroup.WithContext(ctx)
 	ctx, cancel := context.WithCancel(ctx)
 

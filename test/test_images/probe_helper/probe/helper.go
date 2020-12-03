@@ -173,12 +173,21 @@ func (ph *Helper) initializeHandlers() {
 	brokerE2EDeliveryProbe := &BrokerE2EDeliveryProbe{
 		brokerCellIngressBaseURL: ph.BrokerCellIngressBaseURL,
 		client:                   ph.CeForwardClient,
+		receivedEvents: utils.SyncReceivedEvents{
+			Channels: map[string]chan bool{},
+		},
 	}
 	cloudPubSubSourceProbe := &CloudPubSubSourceProbe{
 		cePubsubClient: ph.CePubsubClient,
+		receivedEvents: utils.SyncReceivedEvents{
+			Channels: map[string]chan bool{},
+		},
 	}
 	cloudStorageSourceProbe := &CloudStorageSourceProbe{
 		storageClient: ph.StorageClient,
+		receivedEvents: utils.SyncReceivedEvents{
+			Channels: map[string]chan bool{},
+		},
 	}
 	cloudStorageSourceCreateProbe := &CloudStorageSourceCreateProbe{
 		CloudStorageSourceProbe: cloudStorageSourceProbe,
@@ -195,9 +204,16 @@ func (ph *Helper) initializeHandlers() {
 	cloudAuditLogsSourceProbe := &CloudAuditLogsSourceProbe{
 		projectID:    ph.ProjectID,
 		pubsubClient: ph.PubsubClient,
+		receivedEvents: utils.SyncReceivedEvents{
+			Channels: map[string]chan bool{},
+		},
 	}
 	// The liveness checker should share the scheduler event times with the CloudSchedulerSource probe Handler.
-	cloudSchedulerSourceProbe := &CloudSchedulerSourceProbe{}
+	cloudSchedulerSourceProbe := &CloudSchedulerSourceProbe{
+		SchedulerEventTimes: utils.SyncTimesMap{
+			Times: map[string]time.Time{},
+		},
+	}
 	ph.LivenessChecker.SchedulerEventTimes = &cloudSchedulerSourceProbe.SchedulerEventTimes
 
 	// Set the forward and receiver probe handlers now that they are initialized.

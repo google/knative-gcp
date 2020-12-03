@@ -40,3 +40,9 @@ func (t *SyncTime) Get() time.Time {
 	defer t.RUnlock()
 	return t.time
 }
+
+// SyncTimesMap is a synchronized wrapped around a map of times.
+type SyncTimesMap struct {
+	sync.RWMutex
+	Times map[string]time.Time
+}

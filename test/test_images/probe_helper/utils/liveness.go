@@ -19,7 +19,6 @@ package utils
 import (
 	"context"
 	nethttp "net/http"
-	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -44,22 +43,19 @@ type LivenessChecker struct {
 	SchedulerStaleDuration time.Duration
 
 	// SchedulerEventTimes is the map of latest ticks observed by the CloudSchedulerSource probe.
-	SchedulerEventTimes *sync.Map
+	SchedulerEventTimes *SyncTimesMap
 }
 
 func (c *LivenessChecker) cleanupStaleSchedulerTimes(ctx context.Context) {
-	c.SchedulerEventTimes.Range(func(key interface{}, value interface{}) bool {
-		schedulerTime, ok := value.(time.Time)
-		if !ok {
-			logging.FromContext(ctx).Warnw("Failed to assert scheduler event timestamp and time.Time", zap.Any("timestampID", key), zap.Any("schedulerTime", value))
-			return true
-		}
+	c.SchedulerEventTimes.Lock()
+	defer c.SchedulerEventTimes.Unlock()
+
+	for timestampID, schedulerTime := range c.SchedulerEventTimes.Times {
 		if delay := time.Now().Sub(schedulerTime); delay.Nanoseconds() > c.SchedulerStaleDuration.Nanoseconds() {
-			logging.FromContext(ctx).Infow("Deleting stale scheduler time", zap.Any("timestampID", key), zap.Duration("delay", delay))
-			c.SchedulerEventTimes.Delete(key)
+			logging.FromContext(ctx).Infow("Deleting stale scheduler time", zap.String("timestampID", timestampID), zap.Duration("delay", delay))
+			delete(c.SchedulerEventTimes.Times, timestampID)
 		}
-		return true
-	})
+	}
 }
 
 // LivenessHandlerFunc returns the HTTP handler for probe helper liveness checks.

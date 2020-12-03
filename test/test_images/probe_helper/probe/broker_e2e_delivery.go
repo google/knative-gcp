@@ -19,10 +19,10 @@ package probe
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
+	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
 )
 
 const (
@@ -44,7 +44,7 @@ type BrokerE2EDeliveryProbe struct {
 	client cloudevents.Client
 
 	// The map of received events to be tracked by the forwarder and receiver
-	receivedEvents sync.Map
+	receivedEvents utils.SyncReceivedEvents
 }
 
 // Forward sends an event to a given broker in a given namespace.
@@ -58,8 +58,9 @@ func (p *BrokerE2EDeliveryProbe) Forward(ctx context.Context, event cloudevents.
 		broker = "default"
 	}
 
-	// Get the receiver channel
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
+	// Create the receiver channel
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
@@ -72,7 +73,7 @@ func (p *BrokerE2EDeliveryProbe) Forward(ctx context.Context, event cloudevents.
 		return fmt.Errorf("Could not send event to broker target '%s', got result %s", target, res)
 	}
 
-	return WaitOnReceiverChannel(ctx, receiverChannel)
+	return p.receivedEvents.WaitOnReceiverChannel(ctx, channelID)
 }
 
 // Receive closes the receiver channel associated with a particular event.
@@ -92,5 +93,6 @@ func (p *BrokerE2EDeliveryProbe) Receive(ctx context.Context, event cloudevents.
 	//     traceparent: 00-82b13494f5bcddc7b3007a7cd7668267-64e23f1193ceb1b7-00
 	//   Data,
 	//     { ... }
-	return SignalReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	return p.receivedEvents.SignalReceiverChannel(channelID)
 }

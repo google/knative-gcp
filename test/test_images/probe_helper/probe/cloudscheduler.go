@@ -19,10 +19,10 @@ package probe
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 // CloudSchedulerSource probe.
 type CloudSchedulerSourceProbe struct {
 	// The map of times of observed ticks in the CloudSchedulerSource probe
-	SchedulerEventTimes sync.Map
+	SchedulerEventTimes utils.SyncTimesMap
 }
 
 // Forward tests the delay between the current time and the latest recorded Cloud
@@ -52,16 +52,15 @@ func (p *CloudSchedulerSourceProbe) Forward(ctx context.Context, event cloudeven
 		return fmt.Errorf("failed to parse CloudSchedulerSource probe period and time.Duration: " + fmt.Sprint(period))
 	}
 
+	p.SchedulerEventTimes.RLock()
+	defer p.SchedulerEventTimes.RUnlock()
+
 	timestampID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), "cloudschedulersource-probe")
-	data, ok := p.SchedulerEventTimes.Load(timestampID)
+	schedulerTime, ok := p.SchedulerEventTimes.Times[timestampID]
 	if !ok {
 		return fmt.Errorf("no scheduler tick observed")
 	}
-	tick, ok := data.(time.Time)
-	if !ok {
-		return fmt.Errorf("scheduler timestamp failed type assertion")
-	}
-	if delay := time.Now().Sub(tick); delay.Nanoseconds() > periodDuration.Nanoseconds() {
+	if delay := time.Now().Sub(schedulerTime); delay.Nanoseconds() > periodDuration.Nanoseconds() {
 		return fmt.Errorf("scheduler probe delay %s exceeds period %s", delay, periodDuration)
 	}
 	return nil
@@ -82,7 +81,10 @@ func (p *CloudSchedulerSourceProbe) Receive(ctx context.Context, event cloudeven
 	//     datacontenttype: application/json
 	//   Data,
 	//     { ... }
+	p.SchedulerEventTimes.Lock()
+	defer p.SchedulerEventTimes.Unlock()
+
 	timestampID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), "cloudschedulersource-probe")
-	p.SchedulerEventTimes.Store(timestampID, time.Now())
+	p.SchedulerEventTimes.Times[timestampID] = time.Now()
 	return nil
 }

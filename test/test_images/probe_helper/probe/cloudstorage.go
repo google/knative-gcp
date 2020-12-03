@@ -19,11 +19,11 @@ package probe
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"cloud.google.com/go/storage"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
 )
 
 const (
@@ -56,7 +56,7 @@ type CloudStorageSourceProbe struct {
 	storageClient *storage.Client
 
 	// The map of received events to be tracked by the forwarder and receiver
-	receivedEvents sync.Map
+	receivedEvents utils.SyncReceivedEvents
 }
 
 // CloudStorageSourceCreateProbe is the probe handler for probe requests
@@ -86,8 +86,9 @@ type CloudStorageSourceDeleteProbe struct {
 // Forward writes an object to Cloud Storage in order to generate a notification
 // event.
 func (p *CloudStorageSourceCreateProbe) Forward(ctx context.Context, event cloudevents.Event) error {
-	// Get the receiver channel
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
+	// Create the receiver channel
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
@@ -104,14 +105,15 @@ func (p *CloudStorageSourceCreateProbe) Forward(ctx context.Context, event cloud
 		return fmt.Errorf("Failed to close storage writer for object finalizing: %v", err)
 	}
 
-	return WaitOnReceiverChannel(ctx, receiverChannel)
+	return p.receivedEvents.WaitOnReceiverChannel(ctx, channelID)
 }
 
 // Forward modifies a Cloud Storage object's metadata in order to generate a
 // notification event.
 func (p *CloudStorageSourceUpdateMetadataProbe) Forward(ctx context.Context, event cloudevents.Event) error {
-	// Get the receiver channel
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
+	// Create the receiver channel
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
@@ -133,13 +135,14 @@ func (p *CloudStorageSourceUpdateMetadataProbe) Forward(ctx context.Context, eve
 		return fmt.Errorf("Failed to update object metadata: %v", err)
 	}
 
-	return WaitOnReceiverChannel(ctx, receiverChannel)
+	return p.receivedEvents.WaitOnReceiverChannel(ctx, channelID)
 }
 
 // Forward archives a Cloud Storage object in order to generate a notification event.
 func (p *CloudStorageSourceArchiveProbe) Forward(ctx context.Context, event cloudevents.Event) error {
-	// Get the receiver channel
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
+	// Create the receiver channel
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
@@ -158,13 +161,14 @@ func (p *CloudStorageSourceArchiveProbe) Forward(ctx context.Context, event clou
 		return fmt.Errorf("Failed to close storage writer for object finalizing: %v", err)
 	}
 
-	return WaitOnReceiverChannel(ctx, receiverChannel)
+	return p.receivedEvents.WaitOnReceiverChannel(ctx, channelID)
 }
 
 // Forward deletes a Cloud Storage object in order to generate a notification event.
 func (p *CloudStorageSourceDeleteProbe) Forward(ctx context.Context, event cloudevents.Event) error {
-	// Get the receiver channel
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
+	// Create the receiver channel
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
@@ -185,7 +189,7 @@ func (p *CloudStorageSourceDeleteProbe) Forward(ctx context.Context, event cloud
 		return fmt.Errorf("Failed to delete object: %v", err)
 	}
 
-	return WaitOnReceiverChannel(ctx, receiverChannel)
+	return p.receivedEvents.WaitOnReceiverChannel(ctx, channelID)
 }
 
 // Receive closes the receiver channel associated with the Cloud Storage notification event.
@@ -222,5 +226,6 @@ func (p *CloudStorageSourceProbe) Receive(ctx context.Context, event cloudevents
 		return fmt.Errorf("Unrecognized Cloud Storage event type: %s", event.Type())
 	}
 	eventID = fmt.Sprintf("%s-%s", forwardType, eventID)
-	return SignalReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), eventID))
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), eventID)
+	return p.receivedEvents.SignalReceiverChannel(channelID)
 }
