@@ -23,12 +23,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
-	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
+	"github.com/google/knative-gcp/pkg/injection/namespacedsecret"
 	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
@@ -64,7 +64,7 @@ func NewController(
 ) *controller.Impl {
 
 	deploymentInformer := deployment.Get(ctx)
-	secretInformer := secret.Get(ctx)
+	secretInformer := namespacedsecret.Get(ctx)
 
 	r := &Reconciler{
 		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),

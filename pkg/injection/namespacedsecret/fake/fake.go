@@ -14,26 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package deployment
+package fake
 
 import (
-	"testing"
+	context "context"
 
-	"knative.dev/pkg/configmap"
-	. "knative.dev/pkg/reconciler/testing"
-
-	// Fake injection informers
-	_ "github.com/google/knative-gcp/pkg/injection/namespacedsecret/fake"
-	_ "github.com/google/knative-gcp/pkg/reconciler/testing"
-	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
+	fake "github.com/google/knative-gcp/pkg/injection/namespacedfactory/fake"
+	"github.com/google/knative-gcp/pkg/injection/namespacedsecret"
+	controller "knative.dev/pkg/controller"
+	injection "knative.dev/pkg/injection"
 )
 
-func TestNew(t *testing.T) {
-	ctx, _ := SetupFakeContext(t)
+var Get = namespacedsecret.Get
 
-	c := NewConstructor()(ctx, configmap.NewStaticWatcher())
+func init() {
+	injection.Fake.RegisterInformer(withInformer)
+}
 
-	if c == nil {
-		t.Fatal("Expected NewController to return a non-nil value")
-	}
+func withInformer(ctx context.Context) (context.Context, controller.Informer) {
+	f := fake.Get(ctx)
+	inf := f.Core().V1().Secrets()
+	return context.WithValue(ctx, namespacedsecret.Key{}, inf), inf.Informer()
 }
