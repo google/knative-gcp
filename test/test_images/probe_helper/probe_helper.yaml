@@ -12,6 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Source of messages from a Cloud Scheduler job. This is used for the CloudSchedulerSource probe.
+apiVersion: events.cloud.google.com/v1beta1
+kind: CloudSchedulerSource
+metadata:
+  name: cloudschedulersource
+  namespace: cloud-run-events-probe
+spec:
+  # The location of a Cloud Scheduler source should be the same as the location
+  # of its project's App Engine instance.
+  location: "us-central1"
+  data: "CloudSchedulerSource probe data!"
+  schedule: "* * * * *"
+  sink:
+    uri: http://probe-helper-receiver-np.cloud-run-events-probe.svc.cluster.local/cloud-run-events-probe
+  secret:
+    name: google-cloud-key
+    key: key.json
+
+---
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
@@ -39,8 +58,10 @@ spec:
               value: "2m"
             - name: MAX_TIMEOUT_DURATION
               value: "30m"
-            - name: MAX_STALE_DURATION
+            - name: LIVENESS_STALE_DURATION
               value: "5m"
+            - name: SCHEDULER_STALE_DURATION
+              value: "3m"
           livenessProbe:
             failureThreshold: 3
             httpGet:
@@ -51,3 +72,20 @@ spec:
             timeoutSeconds: 10
           ports:
             - containerPort: 8080
+
+---
+# A NodePort service used to be able to target the probe helper receiver endpoint
+# from the probe-helper-external-receiver service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: probe-helper-receiver-np
+  namespace: cloud-run-events-probe
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+  type: NodePort
+  selector:
+    serving.knative.dev/service: probe-helper-receiver

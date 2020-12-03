@@ -68,7 +68,7 @@ var (
 	testStorageCreateBody         = `{"bucket":"cloudstoragesource-bucket","name":"1234567890"}`
 	testStorageUpdateMetadataBody = `{"bucket":"cloudstoragesource-bucket","metadata":{"some-key":"Metadata updated!"}}`
 	testStorageArchiveBody        = `{"bucket":"cloudstoragesource-bucket","name":"1234567890","storageClass":"ARCHIVE"}`
-	testTargetService             = "probe-helper-external-receiver.test-namespace.svc.cluster.local"
+	testTargetPath                = "/test-namespace"
 )
 
 // A helper function that starts a test Broker which receives events forwarded by
@@ -93,7 +93,7 @@ func runTestBroker(ctx context.Context, group *errgroup.Group, probeReceiverURL 
 	}
 	group.Go(func() error {
 		bc.StartReceiver(ctx, func(event cloudevents.Event) {
-			event.SetExtension("targetservice", testTargetService)
+			event.SetExtension("targetpath", testTargetPath)
 			if res := bc.Send(ctx, event); !cloudevents.IsACK(res) {
 				logging.FromContext(ctx).Warnf("Failed to send CloudEvent from the test Broker: %v", res)
 			}
@@ -118,7 +118,7 @@ func runTestCloudPubSubSource(ctx context.Context, group *errgroup.Group, sub *p
 	}
 	msgHandler := func(ctx context.Context, msg *pubsub.Message) {
 		event, err := converter.Convert(ctx, msg, converters.CloudPubSub)
-		event.SetExtension("targetservice", testTargetService)
+		event.SetExtension("targetpath", testTargetPath)
 		if err != nil {
 			logging.FromContext(ctx).Warnf("Could not convert message to CloudEvent: %v", err)
 		}
@@ -167,7 +167,7 @@ func runTestCloudAuditLogsSource(ctx context.Context, group *errgroup.Group, pub
 					createTopicEvent.SetType(schemasv1.CloudAuditLogsLogWrittenEventType)
 					createTopicEvent.SetSource(schemasv1.CloudAuditLogsEventSource("projects/test-project-id", "activity"))
 					createTopicEvent.SetExtension("methodname", "google.pubsub.v1.Publisher.CreateTopic")
-					createTopicEvent.SetExtension("targetservice", testTargetService)
+					createTopicEvent.SetExtension("targetpath", testTargetPath)
 					if res := c.Send(ctx, createTopicEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send topic created CloudEvent from the test CloudAuditLogsSource: %v", res)
 					}
@@ -210,7 +210,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					finalizeEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					finalizeEvent.SetType(schemasv1.CloudStorageObjectFinalizedEventType)
 					finalizeEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					finalizeEvent.SetExtension("targetservice", testTargetService)
+					finalizeEvent.SetExtension("targetpath", testTargetPath)
 					if res := c.Send(ctx, finalizeEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object finalized CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -221,7 +221,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					updateMetadataEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					updateMetadataEvent.SetType(schemasv1.CloudStorageObjectMetadataUpdatedEventType)
 					updateMetadataEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					updateMetadataEvent.SetExtension("targetservice", testTargetService)
+					updateMetadataEvent.SetExtension("targetpath", testTargetPath)
 					if res := c.Send(ctx, updateMetadataEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object metadata updated CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -232,7 +232,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					archivedEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					archivedEvent.SetType(schemasv1.CloudStorageObjectArchivedEventType)
 					archivedEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					archivedEvent.SetExtension("targetservice", testTargetService)
+					archivedEvent.SetExtension("targetpath", testTargetPath)
 					if res := c.Send(ctx, archivedEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object archived CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -243,7 +243,7 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					deletedEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					deletedEvent.SetType(schemasv1.CloudStorageObjectDeletedEventType)
 					deletedEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					deletedEvent.SetExtension("targetservice", testTargetService)
+					deletedEvent.SetExtension("targetpath", testTargetPath)
 					if res := c.Send(ctx, deletedEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object deleted CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -276,7 +276,7 @@ func runTestCloudSchedulerSource(ctx context.Context, group *errgroup.Group, per
 				executedEvent.SetID("1234567890")
 				executedEvent.SetType(schemasv1.CloudSchedulerJobExecutedEventType)
 				executedEvent.SetSource(schemasv1.CloudSchedulerEventSource("test-cloud-scheduler-source"))
-				executedEvent.SetExtension("targetservice", testTargetService)
+				executedEvent.SetExtension("targetpath", testTargetPath)
 				if res := c.Send(ctx, executedEvent); !cloudevents.IsACK(res) {
 					logging.FromContext(ctx).Warnf("Failed to send job executed CloudEvent from the test CloudSchedulerSource: %v", res)
 				}
@@ -304,7 +304,7 @@ func probeEvent(name string, opts ...probeEventOption) *cloudevents.Event {
 	event.SetSource("probe")
 	event.SetType(name)
 	event.SetTime(time.Now())
-	event.SetExtension("targetservice", testTargetService)
+	event.SetExtension("targetpath", testTargetPath)
 	for _, opt := range opts {
 		opt(&event)
 	}
@@ -465,15 +465,15 @@ func TestProbeHelper(t *testing.T) {
 		name: "CloudSchedulerSource probe",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("cloudschedulersource-probe", withProbeExtension("timeout", "200ms")),
+				event:      probeEvent("cloudschedulersource-probe", withProbeExtension("period", "200ms")),
 				wantResult: cloudevents.ResultACK,
 			},
 		},
 	}, {
-		name: "CloudSchedulerSource delay exceeds timeout",
+		name: "CloudSchedulerSource delay exceeds period",
 		steps: []eventAndResult{
 			{
-				event:      probeEvent("cloudschedulersource-probe", withProbeExtension("timeout", "10ms")),
+				event:      probeEvent("cloudschedulersource-probe", withProbeExtension("period", "0s")),
 				wantResult: cloudevents.ResultNACK,
 			},
 		},
@@ -512,10 +512,10 @@ func TestProbeHelper(t *testing.T) {
 }
 
 type makeProbeHelperReturn struct {
-	probeHelper   *Helper
-	probeURL      string
-	probeCheckURL string
-	cleanup       func()
+	probeHelper      *Helper
+	probeURL         string
+	livenessCheckURL string
+	cleanup          func()
 }
 
 func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) makeProbeHelperReturn {
@@ -532,7 +532,7 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 	}
 	probePort := probeListener.Addr().(*net.TCPAddr).Port
 	probeURL := fmt.Sprintf("http://localhost:%d", probePort)
-	probeCheckURL := fmt.Sprintf("http://localhost:%d/healthz", receiverPort)
+	livenessCheckURL := fmt.Sprintf("http://localhost:%d/healthz", receiverPort)
 
 	// Set up the resources for testing the CloudPubSubSource.
 	pubsubClient, closePubsub := testPubsubClient(ctx, t, testProjectID)
@@ -562,7 +562,7 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 
 	// Run the test Broker for testing Broker E2E delivery.
 	brokerCellIngressBaseURL := runTestBroker(ctx, group, receiverURL)
-	// Create the probe helper and start a goroutine to run it.
+	// Create the probe helper and initialize it.
 	ph := &Helper{
 		ProjectID:                testProjectID,
 		BrokerCellIngressBaseURL: brokerCellIngressBaseURL,
@@ -572,14 +572,15 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 		ReceiverListener:         receiverListener,
 		DefaultTimeoutDuration:   2 * time.Minute,
 		MaxTimeoutDuration:       30 * time.Minute,
-		ProbeChecker: &utils.ProbeChecker{
-			MaxStaleDuration: time.Second,
+		LivenessChecker: &utils.LivenessChecker{
+			LivenessStaleDuration: time.Second,
 		},
 	}
+	ph.Initialize(ctx)
 	return makeProbeHelperReturn{
-		probeHelper:   ph,
-		probeURL:      probeURL,
-		probeCheckURL: probeCheckURL,
+		probeHelper:      ph,
+		probeURL:         probeURL,
+		livenessCheckURL: livenessCheckURL,
 		cleanup: func() {
 			closeStorage()
 			closePubsub()
@@ -587,22 +588,22 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 	}
 }
 
-func assertProbeCheckResult(t *testing.T, url string, ok bool) {
+func assertLivenessCheckResult(t *testing.T, url string, ok bool) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		t.Fatal("Failed to create probe check request:", err)
+		t.Fatal("Failed to create liveness check request:", err)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		t.Log("Failed to execute probe check:", err)
+		t.Log("Failed to execute liveness check:", err)
 		if ok {
-			t.Errorf("probe check result ok got=%v, want=%v", !ok, ok)
+			t.Errorf("liveness check result ok got=%v, want=%v", !ok, ok)
 		}
 		return
 	}
 	if ok != (resp.StatusCode == http.StatusOK) {
-		t.Log("Got probe check status code:", resp.StatusCode)
-		t.Errorf("probe check result ok got=%v, want=%v", !ok, ok)
+		t.Log("Got liveness check status code:", resp.StatusCode)
+		t.Errorf("liveness check result ok got=%v, want=%v", !ok, ok)
 	}
 }
 
@@ -615,7 +616,7 @@ func GetFreePortListener() (net.Listener, error) {
 	return net.ListenTCP("tcp", addr)
 }
 
-func TestProbeHelperHealth(t *testing.T) {
+func TestProbeHelperLiveness(t *testing.T) {
 	ctx := logtest.TestContextWithLogger(t)
 	group, ctx := errgroup.WithContext(ctx)
 	ctx, cancel := context.WithCancel(ctx)
@@ -624,14 +625,14 @@ func TestProbeHelperHealth(t *testing.T) {
 	phr := makeProbeHelper(ctx, t, group)
 	go phr.probeHelper.Run(ctx)
 
-	// Make sure the probe checker is up.
+	// Make sure the liveness checker is up.
 	time.Sleep(500 * time.Millisecond)
-	assertProbeCheckResult(t, phr.probeCheckURL, true)
+	assertLivenessCheckResult(t, phr.livenessCheckURL, true)
 
 	// Guarantee that it has been long enough that the stale duration has been reached. This will cause
-	// the probe checker's result to be unhealthy.
-	time.Sleep(2 * phr.probeHelper.ProbeChecker.MaxStaleDuration)
-	assertProbeCheckResult(t, phr.probeCheckURL, false)
+	// the liveness checker to fail.
+	time.Sleep(2 * phr.probeHelper.LivenessChecker.LivenessStaleDuration)
+	assertLivenessCheckResult(t, phr.livenessCheckURL, false)
 
 	// Cancel gracefully to avoid logger panic if parent goroutine terminates.
 	phr.cleanup()

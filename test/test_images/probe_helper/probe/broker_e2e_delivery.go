@@ -19,6 +19,7 @@ package probe
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
@@ -35,11 +36,19 @@ const (
 
 // BrokerE2EDeliveryProbe is the probe handler for probe requests in the broker
 // e2e delivery probe.
-type BrokerE2EDeliveryProbe struct{}
+type BrokerE2EDeliveryProbe struct {
+	// The base URL for the BrokerCell Ingress
+	brokerCellIngressBaseURL string
 
-var brokerE2EDeliveryProbe Handler = &BrokerE2EDeliveryProbe{}
+	// The client responsible for sending events to the BrokerCell Ingress
+	client cloudevents.Client
 
-func (p *BrokerE2EDeliveryProbe) Forward(ctx context.Context, ph *Helper, event cloudevents.Event) error {
+	// The map of received events to be tracked by the forwarder and receiver
+	receivedEvents sync.Map
+}
+
+// Forward sends an event to a given broker in a given namespace.
+func (p *BrokerE2EDeliveryProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	namespace, ok := event.Extensions()[namespaceExtension]
 	if !ok {
 		return fmt.Errorf("Broker e2e delivery probe event has no '%s' extension", namespaceExtension)
@@ -50,24 +59,24 @@ func (p *BrokerE2EDeliveryProbe) Forward(ctx context.Context, ph *Helper, event 
 	}
 
 	// Get the receiver channel
-	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], event.ID())
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(ctx, ph, channelID)
+	receiverChannel, cleanupFunc, err := CreateReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
 	defer cleanupFunc()
 
 	// The probe sends the event to a given broker in a given namespace.
-	target := fmt.Sprintf("%s/%s/%s", ph.BrokerCellIngressBaseURL, namespace, broker)
+	target := fmt.Sprintf("%s/%s/%s", p.brokerCellIngressBaseURL, namespace, broker)
 	ctx = cecontext.WithTarget(ctx, target)
-	if res := ph.CeForwardClient.Send(ctx, event); !cloudevents.IsACK(res) {
+	if res := p.client.Send(ctx, event); !cloudevents.IsACK(res) {
 		return fmt.Errorf("Could not send event to broker target '%s', got result %s", target, res)
 	}
 
 	return WaitOnReceiverChannel(ctx, receiverChannel)
 }
 
-func (p *BrokerE2EDeliveryProbe) Receive(ctx context.Context, ph *Helper, event cloudevents.Event) error {
+// Receive closes the receiver channel associated with a particular event.
+func (p *BrokerE2EDeliveryProbe) Receive(ctx context.Context, event cloudevents.Event) error {
 	// The event is received as sent.
 	//
 	// Example:
@@ -83,6 +92,5 @@ func (p *BrokerE2EDeliveryProbe) Receive(ctx context.Context, ph *Helper, event 
 	//     traceparent: 00-82b13494f5bcddc7b3007a7cd7668267-64e23f1193ceb1b7-00
 	//   Data,
 	//     { ... }
-	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], event.ID())
-	return CloseReceiverChannel(ctx, ph, channelID)
+	return SignalReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
 }

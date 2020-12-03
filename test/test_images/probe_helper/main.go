@@ -108,8 +108,11 @@ type envConfig struct {
 	// Environment variable containing the port to receive delivered events
 	ReceiverPort int `envconfig:"RECEIVER_PORT" default:"8080"`
 
-	// Environment variable containing the maximum tolerated staleness duration
-	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"5m"`
+	// Environment variable containing the maximum tolerated staleness duration for events processed by the forward and receiver clients
+	LivenessStaleDuration time.Duration `envconfig:"LIVENESS_STALE_DURATION" default:"5m"`
+
+	// Environment variable containing the maximum tolerated staleness duration for Cloud Scheduler job ticks before they are discarded
+	SchedulerStaleDuration time.Duration `envconfig:"SCHEDULER_STALE_DURATION" default:"3m"`
 
 	// Environment variable containing the default timeout duration to wait for an event to be delivered, if no custom timeout is specified
 	DefaultTimeoutDuration time.Duration `envconfig:"DEFAULT_TIMEOUT_DURATION" default:"2m"`
@@ -147,9 +150,11 @@ func main() {
 		ReceiverPort:             env.ReceiverPort,
 		DefaultTimeoutDuration:   env.DefaultTimeoutDuration,
 		MaxTimeoutDuration:       env.MaxTimeoutDuration,
-		ProbeChecker: &utils.ProbeChecker{
-			MaxStaleDuration: env.MaxStaleDuration,
+		LivenessChecker: &utils.LivenessChecker{
+			LivenessStaleDuration:  env.LivenessStaleDuration,
+			SchedulerStaleDuration: env.SchedulerStaleDuration,
 		},
 	}
+	ph.Initialize(ctx)
 	ph.Run(ctx)
 }

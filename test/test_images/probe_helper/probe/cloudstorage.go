@@ -19,6 +19,7 @@ package probe
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"cloud.google.com/go/storage"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -42,10 +43,21 @@ const (
 	// CloudStorageSource delete probes.
 	CloudStorageSourceDeleteProbeEventType = "cloudstoragesource-probe-delete"
 
+	// bucketExtension is the CloudEvent extension in which want the probe to
+	// manipulate Cloud Storage objects.
 	bucketExtension = "bucket"
 )
 
-type CloudStorageSourceProbe struct{}
+// CloudStorageSourceProbe is the base probe type for probe requests in the
+// CloudStorageSource probes. Since all of the CloudStorageSource probes share
+// the same Receive logic, they all inherit it from this object.
+type CloudStorageSourceProbe struct {
+	// The storage client used in the CloudStorageSource
+	storageClient *storage.Client
+
+	// The map of received events to be tracked by the forwarder and receiver
+	receivedEvents sync.Map
+}
 
 // CloudStorageSourceCreateProbe is the probe handler for probe requests
 // in the CloudStorageSource create probe.
@@ -53,30 +65,29 @@ type CloudStorageSourceCreateProbe struct {
 	*CloudStorageSourceProbe
 }
 
-var cloudStorageSourceCreateProbe Handler = &CloudStorageSourceCreateProbe{}
-
+// CloudStorageSourceUpdateMetadataProbe is the probe handler for probe requests
+// in the CloudStorageSource update-metadata probe.
 type CloudStorageSourceUpdateMetadataProbe struct {
 	*CloudStorageSourceProbe
 }
 
-var cloudStorageSourceUpdateMetadataProbe Handler = &CloudStorageSourceUpdateMetadataProbe{}
-
+// CloudStorageSourceArchiveProbe is the probe handler for probe requests in the
+// CloudStorageSource archive probe.
 type CloudStorageSourceArchiveProbe struct {
 	*CloudStorageSourceProbe
 }
 
-var cloudStorageSourceArchiveProbe Handler = &CloudStorageSourceArchiveProbe{}
-
+// CloudStorageSourceDeleteProbe is the probe handler for probe requests in the
+// CloudStorageSource delete probe.
 type CloudStorageSourceDeleteProbe struct {
 	*CloudStorageSourceProbe
 }
 
-var cloudStorageSourceDeleteProbe Handler = &CloudStorageSourceDeleteProbe{}
-
-func (p *CloudStorageSourceCreateProbe) Forward(ctx context.Context, ph *Helper, event cloudevents.Event) error {
+// Forward writes an object to Cloud Storage in order to generate a notification
+// event.
+func (p *CloudStorageSourceCreateProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	// Get the receiver channel
-	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], event.ID())
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(ctx, ph, channelID)
+	receiverChannel, cleanupFunc, err := CreateReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
@@ -87,7 +98,7 @@ func (p *CloudStorageSourceCreateProbe) Forward(ctx context.Context, ph *Helper,
 	if !ok {
 		return fmt.Errorf("CloudStorageSource probe event has no '%s' extension", bucketExtension)
 	}
-	bucketHandle := ph.StorageClient.Bucket(fmt.Sprint(bucket))
+	bucketHandle := p.storageClient.Bucket(fmt.Sprint(bucket))
 	obj := bucketHandle.Object(event.ID()[len(event.Type())+1:])
 	if err := obj.NewWriter(ctx).Close(); err != nil {
 		return fmt.Errorf("Failed to close storage writer for object finalizing: %v", err)
@@ -96,20 +107,22 @@ func (p *CloudStorageSourceCreateProbe) Forward(ctx context.Context, ph *Helper,
 	return WaitOnReceiverChannel(ctx, receiverChannel)
 }
 
-func (p *CloudStorageSourceUpdateMetadataProbe) Forward(ctx context.Context, ph *Helper, event cloudevents.Event) error {
+// Forward modifies a Cloud Storage object's metadata in order to generate a
+// notification event.
+func (p *CloudStorageSourceUpdateMetadataProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	// Get the receiver channel
-	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], event.ID())
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(ctx, ph, channelID)
+	receiverChannel, cleanupFunc, err := CreateReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
 	defer cleanupFunc()
 
+	// The probe modifies an object's metadata.
 	bucket, ok := event.Extensions()[bucketExtension]
 	if !ok {
 		return fmt.Errorf("CloudStorageSource probe event has no '%s' extension", bucketExtension)
 	}
-	bucketHandle := ph.StorageClient.Bucket(fmt.Sprint(bucket))
+	bucketHandle := p.storageClient.Bucket(fmt.Sprint(bucket))
 	obj := bucketHandle.Object(event.ID()[len(event.Type())+1:])
 	objectAttrs := storage.ObjectAttrsToUpdate{
 		Metadata: map[string]string{
@@ -123,22 +136,22 @@ func (p *CloudStorageSourceUpdateMetadataProbe) Forward(ctx context.Context, ph 
 	return WaitOnReceiverChannel(ctx, receiverChannel)
 }
 
-func (p *CloudStorageSourceArchiveProbe) Forward(ctx context.Context, ph *Helper, event cloudevents.Event) error {
+// Forward archives a Cloud Storage object in order to generate a notification event.
+func (p *CloudStorageSourceArchiveProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	// Get the receiver channel
-	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], event.ID())
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(ctx, ph, channelID)
+	receiverChannel, cleanupFunc, err := CreateReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
 	defer cleanupFunc()
 
+	// The storage client updates the object's storage class to ARCHIVE.
 	bucket, ok := event.Extensions()[bucketExtension]
 	if !ok {
 		return fmt.Errorf("CloudStorageSource probe event has no '%s' extension", bucketExtension)
 	}
-	bucketHandle := ph.StorageClient.Bucket(fmt.Sprint(bucket))
+	bucketHandle := p.storageClient.Bucket(fmt.Sprint(bucket))
 	obj := bucketHandle.Object(event.ID()[len(event.Type())+1:])
-	// The storage client updates the object's storage class to ARCHIVE.
 	w := obj.NewWriter(ctx)
 	w.ObjectAttrs.StorageClass = "ARCHIVE"
 	if err := w.Close(); err != nil {
@@ -148,22 +161,22 @@ func (p *CloudStorageSourceArchiveProbe) Forward(ctx context.Context, ph *Helper
 	return WaitOnReceiverChannel(ctx, receiverChannel)
 }
 
-func (p *CloudStorageSourceDeleteProbe) Forward(ctx context.Context, ph *Helper, event cloudevents.Event) error {
+// Forward deletes a Cloud Storage object in order to generate a notification event.
+func (p *CloudStorageSourceDeleteProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	// Get the receiver channel
-	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], event.ID())
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(ctx, ph, channelID)
+	receiverChannel, cleanupFunc, err := CreateReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID()))
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
 	}
 	defer cleanupFunc()
 
+	// Deleting a specific version of an object deletes it forever.
 	bucket, ok := event.Extensions()[bucketExtension]
 	if !ok {
 		return fmt.Errorf("CloudStorageSource probe event has no '%s' extension", bucketExtension)
 	}
-	bucketHandle := ph.StorageClient.Bucket(fmt.Sprint(bucket))
+	bucketHandle := p.storageClient.Bucket(fmt.Sprint(bucket))
 	obj := bucketHandle.Object(event.ID()[len(event.Type())+1:])
-	// Deleting a specific version of an object deletes it forever.
 	objectAttrs, err := obj.Attrs(ctx)
 	if err != nil {
 		return fmt.Errorf("Failed to get object attributes: %v", err)
@@ -175,7 +188,8 @@ func (p *CloudStorageSourceDeleteProbe) Forward(ctx context.Context, ph *Helper,
 	return WaitOnReceiverChannel(ctx, receiverChannel)
 }
 
-func (p *CloudStorageSourceProbe) Receive(ctx context.Context, ph *Helper, event cloudevents.Event) error {
+// Receive closes the receiver channel associated with the Cloud Storage notification event.
+func (p *CloudStorageSourceProbe) Receive(ctx context.Context, event cloudevents.Event) error {
 	// The original event is written as an identifiable object to a bucket.
 	//
 	// Example:
@@ -183,15 +197,15 @@ func (p *CloudStorageSourceProbe) Receive(ctx context.Context, ph *Helper, event
 	//     specversion: 1.0
 	//     type: google.cloud.storage.object.v1.finalized
 	//     source: //storage.googleapis.com/projects/_/buckets/cloudstoragesource-bucket
-	//     subject: objects/cloudstoragesource-probe-fc2638d1-fcae-4889-9fa1-14a08cb05fc4
+	//     subject: objects/cloudstoragesource-probe-create-fc2638d1-fcae-4889-9fa1-14a08cb05fc4
 	//     id: 1529343217463053
 	//     time: 2020-09-14T17:18:40.984Z
 	//     dataschema: https://raw.githubusercontent.com/googleapis/google-cloudevents/master/proto/google/events/cloud/storage/v1/data.proto
 	//     datacontenttype: application/json
 	//   Data,
 	//     { ... }
-	var channelID string
-	if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &channelID); err != nil {
+	var eventID string
+	if _, err := fmt.Sscanf(event.Subject(), "objects/%s", &eventID); err != nil {
 		return fmt.Errorf("Failed to extract probe event ID from Cloud Storage event subject: %v", err)
 	}
 	var forwardType string
@@ -207,6 +221,6 @@ func (p *CloudStorageSourceProbe) Receive(ctx context.Context, ph *Helper, event
 	default:
 		return fmt.Errorf("Unrecognized Cloud Storage event type: %s", event.Type())
 	}
-	channelID = fmt.Sprintf("%s/%s-%s", event.Extensions()[probeEventTargetServiceExtension], forwardType, channelID)
-	return CloseReceiverChannel(ctx, ph, channelID)
+	eventID = fmt.Sprintf("%s-%s", forwardType, eventID)
+	return SignalReceiverChannel(&p.receivedEvents, channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), eventID))
 }

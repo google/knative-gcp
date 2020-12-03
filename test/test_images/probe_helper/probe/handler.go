@@ -19,6 +19,7 @@ package probe
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
@@ -28,9 +29,9 @@ import (
 The following steps should be taken when implementing a new type of probe.
 
 1. Define a static probe handler which implements the Handler interface.
-2. Declare a singleton Handler object of this kind.
-3. Add the mapping between forward probe type and the object from step 2 to the forwardProbeHandlers map in probe/helper.go
-4. Add the mapping between receiver probe type and the object from step 2 to the receiveProbeHandlers map in probe/helper.go
+2. Declare a singleton Handler object of this kind in the probe helper initializerHandlers method.
+3. Add the mapping between forward probe type and the object from step 2 to the forwardProbeHandlers map in probe/helper.go.
+4. Add the mapping between receiver probe type and the object from step 2 to the receiveProbeHandlers map in probe/helper.go.
 
 */
 
@@ -38,39 +39,53 @@ The following steps should be taken when implementing a new type of probe.
 type Handler interface {
 	// Forward is the handler function which is called for probe requests which come
 	// from PROBE_PORT.
-	Forward(context.Context, *Helper, cloudevents.Event) error
+	Forward(context.Context, cloudevents.Event) error
 	// Receive is the handler function which is called for probe requests which come
 	// from RECEIVER_PORT.
-	Receive(context.Context, *Helper, cloudevents.Event) error
+	Receive(context.Context, cloudevents.Event) error
 }
 
-func CreateReceiverChannel(ctx context.Context, ph *Helper, channelID string) (chan bool, func(), error) {
-	receiverChannel, err := ph.ReceivedEvents.CreateReceiverChannel(channelID)
-	if err != nil {
-		return nil, nil, err
+func channelID(namespace, eventID string) string {
+	return fmt.Sprintf("%s/%s", namespace, eventID)
+}
+
+// CreateReceiverChannel creates a receiver channel at a given index in a map
+// of receiver channels.
+func CreateReceiverChannel(receivedEvents *sync.Map, channelID string) (chan bool, func(), error) {
+	if _, ok := receivedEvents.Load(channelID); ok {
+		return nil, nil, fmt.Errorf("receiver channel already exists for key:" + channelID)
 	}
+	receiverChannel := make(chan bool, 1)
+	receivedEvents.Store(channelID, receiverChannel)
 	cleanupFunc := func() {
-		ph.ReceivedEvents.DeleteReceiverChannel(channelID)
+		close(receiverChannel)
+		receivedEvents.Delete(channelID)
 	}
 	return receiverChannel, cleanupFunc, nil
 }
 
-func CloseReceiverChannel(ctx context.Context, ph *Helper, channelID string) error {
-	ph.ReceivedEvents.RLock()
-	defer ph.ReceivedEvents.RUnlock()
-	receiverChannel, ok := ph.ReceivedEvents.Channels[channelID]
+// SignalReceiverChannel sends a closing signal to a receiver channel at a given
+// index in a map of receiver channels.
+func SignalReceiverChannel(receivedEvents *sync.Map, channelID string) error {
+	data, ok := receivedEvents.Load(channelID)
 	if !ok {
-		return fmt.Errorf("failed to close non-existent receiver channel:" + channelID)
+		return fmt.Errorf("failed to signal non-existent receiver channel:" + channelID)
+	}
+	receiverChannel, ok := data.(chan bool)
+	if !ok {
+		return fmt.Errorf("receiver channel failed type assertion:" + channelID)
 	}
 	receiverChannel <- true
 	return nil
 }
 
+// WaitOnReceiverChannel waits on a given channel until it receives something or
+// until the context expires.
 func WaitOnReceiverChannel(ctx context.Context, receiverChannel chan bool) error {
 	select {
 	case <-receiverChannel:
 		return nil
 	case <-ctx.Done():
-		return fmt.Errorf("Timed out on probe waiting for the receiver channel")
+		return fmt.Errorf("timed out waiting for receiver channel")
 	}
 }

@@ -19,6 +19,8 @@ package probe
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
@@ -27,27 +29,46 @@ const (
 	// CloudSchedulerSourceProbeEventType is the CloudEvent type of forward
 	// CloudSchedulerSource probes.
 	CloudSchedulerSourceProbeEventType = "cloudschedulersource-probe"
+
+	periodExtension = "period"
 )
 
 // CloudSchedulerSourceProbe is the probe handler for probe requests in the
 // CloudSchedulerSource probe.
-type CloudSchedulerSourceProbe struct{}
-
-var cloudSchedulerSourceProbe Handler = &CloudSchedulerSourceProbe{}
-
-func (p *CloudSchedulerSourceProbe) Forward(ctx context.Context, ph *Helper, event cloudevents.Event) error {
-	// Get the receiver channel
-	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], "cloudschedulersource-probe")
-	receiverChannel, cleanupFunc, err := CreateReceiverChannel(ctx, ph, channelID)
-	if err != nil {
-		return fmt.Errorf("Failed to create receiver channel: %v", err)
-	}
-	defer cleanupFunc()
-
-	return WaitOnReceiverChannel(ctx, receiverChannel)
+type CloudSchedulerSourceProbe struct {
+	// The map of times of observed ticks in the CloudSchedulerSource probe
+	SchedulerEventTimes sync.Map
 }
 
-func (p *CloudSchedulerSourceProbe) Receive(ctx context.Context, ph *Helper, event cloudevents.Event) error {
+// Forward tests the delay between the current time and the latest recorded Cloud
+// Scheduler tick in a given scope.
+func (p *CloudSchedulerSourceProbe) Forward(ctx context.Context, event cloudevents.Event) error {
+	period, ok := event.Extensions()[periodExtension]
+	if !ok {
+		return fmt.Errorf("CloudSchedulerProbe event has no '%s' extension", namespaceExtension)
+	}
+	periodDuration, err := time.ParseDuration(fmt.Sprint(period))
+	if err != nil {
+		return fmt.Errorf("failed to parse CloudSchedulerSource probe period and time.Duration: " + fmt.Sprint(period))
+	}
+
+	timestampID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), "cloudschedulersource-probe")
+	data, ok := p.SchedulerEventTimes.Load(timestampID)
+	if !ok {
+		return fmt.Errorf("no scheduler tick observed")
+	}
+	tick, ok := data.(time.Time)
+	if !ok {
+		return fmt.Errorf("scheduler timestamp failed type assertion")
+	}
+	if delay := time.Now().Sub(tick); delay.Nanoseconds() > periodDuration.Nanoseconds() {
+		return fmt.Errorf("scheduler probe delay %s exceeds period %s", delay, periodDuration)
+	}
+	return nil
+}
+
+// Receive refreshes the latest timestamp for a Cloud Scheduler tick in a given scope.
+func (p *CloudSchedulerSourceProbe) Receive(ctx context.Context, event cloudevents.Event) error {
 	// Recover the waiting receiver channel ID for the forward CloudSchedulerSource probe.
 	//
 	// Example:
@@ -61,6 +82,7 @@ func (p *CloudSchedulerSourceProbe) Receive(ctx context.Context, ph *Helper, eve
 	//     datacontenttype: application/json
 	//   Data,
 	//     { ... }
-	channelID := fmt.Sprintf("%s/%s", event.Extensions()[probeEventTargetServiceExtension], "cloudschedulersource-probe")
-	return CloseReceiverChannel(ctx, ph, channelID)
+	timestampID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), "cloudschedulersource-probe")
+	p.SchedulerEventTimes.Store(timestampID, time.Now())
+	return nil
 }
