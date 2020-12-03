@@ -87,9 +87,8 @@ The Probe Helper can handle multiple different types of probes.
 		receiver every minute.
 
 		The Probe Helper receives an event of type `cloudschedulersource-probe`, and
-		waits to observe the next matching tick from a Cloud Scheduler job. The probe fails
-		if the wait times out, so the probe timeout should be tuned according to the
-		job period.
+		compares the delay between the current time and the last observed Cloud Scheduler
+		tick. The probe fails if the delay exceeds a threshold.
 
 5. CloudAuditLogsSource Probe
 
