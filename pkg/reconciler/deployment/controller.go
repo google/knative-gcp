@@ -26,9 +26,9 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
+	systemnamespacesecretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
-	"github.com/google/knative-gcp/pkg/injection/namespacedsecret"
 	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
@@ -64,7 +64,7 @@ func NewController(
 ) *controller.Impl {
 
 	deploymentInformer := deployment.Get(ctx)
-	secretInformer := namespacedsecret.Get(ctx)
+	secretInformer := systemnamespacesecretinformer.Get(ctx)
 
 	r := &Reconciler{
 		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
