@@ -1,15 +1,34 @@
 /*
 Copyright 2020 Google LLC
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+
     http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
+
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/signals"
+
+	pkgutils "github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/test/test_images/probe_helper/probe"
+)
 
 /*
 
@@ -56,7 +75,7 @@ The Probe Helper can handle multiple different types of probes.
 		 the object, and waits to be notified that the object has been archived by a
 		 CloudStorageSource.
 	4. The Probe Helper receives an event with the same ID as in step 1, deletes
-		 the object, and waits to tbe notified that the object has been deleted by a
+		 the object, and waits to be notified that the object has been deleted by a
 		 CloudStorageSource.
 
 4. CloudSchedulerSource Probe
@@ -66,10 +85,9 @@ The Probe Helper can handle multiple different types of probes.
 		on an existing CloudSchedulerSource which sinks an event to the Probe Helper
 		receiver every minute.
 
-		The Probe Helper receives an event of type `cloudschedulersource-probe`,
-		and examines the time since the last tick observed from the CloudSchedulerSource.
-		If this duration is greater than 1 minute, the probe fails, and otherwise,
-		the probe succeeds.
+		The Probe Helper receives an event of type `cloudschedulersource-probe`, and
+		compares the delay between the current time and the last observed Cloud Scheduler
+		tick. The probe fails if the delay exceeds a threshold.
 
 5. CloudAuditLogsSource Probe
 
@@ -78,33 +96,9 @@ The Probe Helper can handle multiple different types of probes.
 
 */
 
-package main
-
-import (
-	"fmt"
-	"time"
-
-	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
-
-	"knative.dev/pkg/logging"
-	"knative.dev/pkg/signals"
-
-	"github.com/google/knative-gcp/pkg/utils"
-)
-
 type envConfig struct {
-	// Environment variable containing the sink URL (broker URL) that the event will be forwarded to by the probeHelper for the e2e delivery probe
-	BrokerURL string `envconfig:"K_SINK" default:"http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"`
-
-	// Environment variable containing the CloudPubSubSource Topic ID that the event will be forwarded to by the probeHelper for the CloudPubSubSource probe
-	CloudPubSubSourceTopicID string `envconfig:"CLOUDPUBSUBSOURCE_TOPIC_ID" default:"cloudpubsubsource-topic"`
-
-	// Environment variable containing the CloudStorageSource Bucket ID that objects will be written to by the probeHelper for the CloudStorageSource probe
-	CloudStorageSourceBucketID string `envconfig:"CLOUDSTORAGESOURCE_BUCKET_ID" default:"cloudstoragesource-bucket"`
-
-	// Environment variable containing an upper bound on the duration between events emitted by the CloudSchedulerSource
-	CloudSchedulerSourcePeriod time.Duration `envconfig:"CLOUDSCHEDULERSOURCE_PERIOD" default:"90s"`
+	// Environment variable containing the base URL for the brokercell ingress, used in the broker e2e delivery probe
+	BrokerCellIngressBaseURL string `envconfig:"BROKER_CELL_INGRESS_BASE_URL" default:"http://default-brokercell-ingress.cloud-run-events.svc.cluster.local"`
 
 	// Environment variable containing the port which listens to the probe to forward events
 	ProbePort int `envconfig:"PROBE_PORT" default:"8070"`
@@ -112,8 +106,11 @@ type envConfig struct {
 	// Environment variable containing the port to receive delivered events
 	ReceiverPort int `envconfig:"RECEIVER_PORT" default:"8080"`
 
-	// Environment variable containing the maximum tolerated staleness duration
-	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"5m"`
+	// Environment variable containing the maximum tolerated staleness duration for events processed by the forward and receiver clients
+	LivenessStaleDuration time.Duration `envconfig:"LIVENESS_STALE_DURATION" default:"5m"`
+
+	// Environment variable containing the maximum tolerated staleness duration for Cloud Scheduler job ticks before they are discarded
+	SchedulerStaleDuration time.Duration `envconfig:"SCHEDULER_STALE_DURATION" default:"3m"`
 
 	// Environment variable containing the default timeout duration to wait for an event to be delivered, if no custom timeout is specified
 	DefaultTimeoutDuration time.Duration `envconfig:"DEFAULT_TIMEOUT_DURATION" default:"2m"`
@@ -138,25 +135,22 @@ func main() {
 	ctx := logging.WithLogger(signals.NewContext(), logger)
 
 	// Get the default project ID
-	projectID, err := utils.ProjectIDOrDefault("")
+	projectID, err := pkgutils.ProjectIDOrDefault("")
 	if err != nil {
 		logging.FromContext(ctx).Fatal("Failed to get the default project ID", zap.Error(err))
 	}
 
 	// Create and start the probe helper
-	ph := &ProbeHelper{
-		projectID:                  projectID,
-		brokerURL:                  env.BrokerURL,
-		probePort:                  env.ProbePort,
-		receiverPort:               env.ReceiverPort,
-		cloudPubSubSourceTopicID:   env.CloudPubSubSourceTopicID,
-		cloudStorageSourceBucketID: env.CloudStorageSourceBucketID,
-		cloudSchedulerSourcePeriod: env.CloudSchedulerSourcePeriod,
-		defaultTimeoutDuration:     env.DefaultTimeoutDuration,
-		maxTimeoutDuration:         env.MaxTimeoutDuration,
-		probeChecker: &probeChecker{
-			maxStaleDuration: env.MaxStaleDuration,
-		},
+	ph := &probe.Helper{
+		ProjectID:                projectID,
+		BrokerCellIngressBaseURL: env.BrokerCellIngressBaseURL,
+		ProbePort:                env.ProbePort,
+		ReceiverPort:             env.ReceiverPort,
+		DefaultTimeoutDuration:   env.DefaultTimeoutDuration,
+		MaxTimeoutDuration:       env.MaxTimeoutDuration,
+		LivenessStaleDuration:    env.LivenessStaleDuration,
+		SchedulerStaleDuration:   env.SchedulerStaleDuration,
 	}
-	ph.run(ctx)
+	ph.Initialize(ctx)
+	ph.Run(ctx)
 }

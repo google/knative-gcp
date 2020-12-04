@@ -29,14 +29,8 @@ spec:
         - name: probe-helper
           image: ko://github.com/google/knative-gcp/test/test_images/probe_helper
           env:
-            - name: K_SINK
-              value: "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-probe/default"
-            - name: CLOUDPUBSUBSOURCE_TOPIC_ID
-              value: "cloudpubsubsource-topic"
-            - name: CLOUDSTORAGESOURCE_BUCKET_ID
-              value: "cloudstoragesource-bucket"
-            - name: CLOUDSCHEDULERSOURCE_PERIOD
-              value: "90s"
+            - name: BROKER_CELL_INGRESS_BASE_URL
+              value: "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local"
             - name: PROBE_PORT
               value: "8070"
             - name: RECEIVER_PORT
@@ -45,8 +39,10 @@ spec:
               value: "2m"
             - name: MAX_TIMEOUT_DURATION
               value: "30m"
-            - name: MAX_STALE_DURATION
+            - name: LIVENESS_STALE_DURATION
               value: "5m"
+            - name: SCHEDULER_STALE_DURATION
+              value: "3m"
           livenessProbe:
             failureThreshold: 3
             httpGet:
