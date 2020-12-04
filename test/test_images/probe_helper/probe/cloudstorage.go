@@ -226,6 +226,6 @@ func (p *CloudStorageSourceProbe) Receive(ctx context.Context, event cloudevents
 		return fmt.Errorf("Unrecognized Cloud Storage event type: %s", event.Type())
 	}
 	eventID = fmt.Sprintf("%s-%s", forwardType, eventID)
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), eventID)
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension]), eventID)
 	return p.receivedEvents.SignalReceiverChannel(channelID)
 }

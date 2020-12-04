@@ -84,7 +84,7 @@ func (p *CloudSchedulerSourceProbe) Receive(ctx context.Context, event cloudeven
 	p.SchedulerEventTimes.Lock()
 	defer p.SchedulerEventTimes.Unlock()
 
-	timestampID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), "cloudschedulersource-probe")
+	timestampID := channelID(fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension]), "cloudschedulersource-probe")
 	p.SchedulerEventTimes.Times[timestampID] = time.Now()
 	return nil
 }

@@ -68,7 +68,7 @@ var (
 	testStorageCreateBody         = `{"bucket":"cloudstoragesource-bucket","name":"1234567890"}`
 	testStorageUpdateMetadataBody = `{"bucket":"cloudstoragesource-bucket","metadata":{"some-key":"Metadata updated!"}}`
 	testStorageArchiveBody        = `{"bucket":"cloudstoragesource-bucket","name":"1234567890","storageClass":"ARCHIVE"}`
-	testTargetPath                = "/test-namespace"
+	testTargetReceiverPath        = "test-namespace"
 )
 
 // A helper function that starts a test Broker which receives events forwarded by
@@ -93,7 +93,6 @@ func runTestBroker(ctx context.Context, group *errgroup.Group, probeReceiverURL 
 	}
 	group.Go(func() error {
 		bc.StartReceiver(ctx, func(event cloudevents.Event) {
-			event.SetExtension("targetpath", testTargetPath)
 			if res := bc.Send(ctx, event); !cloudevents.IsACK(res) {
 				logging.FromContext(ctx).Warnf("Failed to send CloudEvent from the test Broker: %v", res)
 			}
@@ -118,7 +117,6 @@ func runTestCloudPubSubSource(ctx context.Context, group *errgroup.Group, sub *p
 	}
 	msgHandler := func(ctx context.Context, msg *pubsub.Message) {
 		event, err := converter.Convert(ctx, msg, converters.CloudPubSub)
-		event.SetExtension("targetpath", testTargetPath)
 		if err != nil {
 			logging.FromContext(ctx).Warnf("Could not convert message to CloudEvent: %v", err)
 		}
@@ -167,7 +165,6 @@ func runTestCloudAuditLogsSource(ctx context.Context, group *errgroup.Group, pub
 					createTopicEvent.SetType(schemasv1.CloudAuditLogsLogWrittenEventType)
 					createTopicEvent.SetSource(schemasv1.CloudAuditLogsEventSource("projects/test-project-id", "activity"))
 					createTopicEvent.SetExtension("methodname", "google.pubsub.v1.Publisher.CreateTopic")
-					createTopicEvent.SetExtension("targetpath", testTargetPath)
 					if res := c.Send(ctx, createTopicEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send topic created CloudEvent from the test CloudAuditLogsSource: %v", res)
 					}
@@ -210,7 +207,6 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					finalizeEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					finalizeEvent.SetType(schemasv1.CloudStorageObjectFinalizedEventType)
 					finalizeEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					finalizeEvent.SetExtension("targetpath", testTargetPath)
 					if res := c.Send(ctx, finalizeEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object finalized CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -221,7 +217,6 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					updateMetadataEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					updateMetadataEvent.SetType(schemasv1.CloudStorageObjectMetadataUpdatedEventType)
 					updateMetadataEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					updateMetadataEvent.SetExtension("targetpath", testTargetPath)
 					if res := c.Send(ctx, updateMetadataEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object metadata updated CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -232,7 +227,6 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					archivedEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					archivedEvent.SetType(schemasv1.CloudStorageObjectArchivedEventType)
 					archivedEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					archivedEvent.SetExtension("targetpath", testTargetPath)
 					if res := c.Send(ctx, archivedEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object archived CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -243,7 +237,6 @@ func runTestCloudStorageSource(ctx context.Context, group *errgroup.Group, gotRe
 					deletedEvent.SetSubject(schemasv1.CloudStorageEventSubject("1234567890"))
 					deletedEvent.SetType(schemasv1.CloudStorageObjectDeletedEventType)
 					deletedEvent.SetSource(schemasv1.CloudStorageEventSource(testStorageBucket))
-					deletedEvent.SetExtension("targetpath", testTargetPath)
 					if res := c.Send(ctx, deletedEvent); !cloudevents.IsACK(res) {
 						logging.FromContext(ctx).Warnf("Failed to send object deleted CloudEvent from the test CloudStorageSource: %v", res)
 					}
@@ -276,7 +269,6 @@ func runTestCloudSchedulerSource(ctx context.Context, group *errgroup.Group, per
 				executedEvent.SetID("1234567890")
 				executedEvent.SetType(schemasv1.CloudSchedulerJobExecutedEventType)
 				executedEvent.SetSource(schemasv1.CloudSchedulerEventSource("test-cloud-scheduler-source"))
-				executedEvent.SetExtension("targetpath", testTargetPath)
 				if res := c.Send(ctx, executedEvent); !cloudevents.IsACK(res) {
 					logging.FromContext(ctx).Warnf("Failed to send job executed CloudEvent from the test CloudSchedulerSource: %v", res)
 				}
@@ -304,7 +296,7 @@ func probeEvent(name string, opts ...probeEventOption) *cloudevents.Event {
 	event.SetSource("probe")
 	event.SetType(name)
 	event.SetTime(time.Now())
-	event.SetExtension("targetpath", testTargetPath)
+	event.SetExtension("targetpath", "/"+testTargetReceiverPath)
 	for _, opt := range opts {
 		opt(&event)
 	}
@@ -525,7 +517,7 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 		t.Fatalf("Failed to get free receiver port listener: %v", err)
 	}
 	receiverPort := receiverListener.Addr().(*net.TCPAddr).Port
-	receiverURL := fmt.Sprintf("http://localhost:%d", receiverPort)
+	receiverURL := fmt.Sprintf("http://localhost:%d/%s", receiverPort, testTargetReceiverPath)
 	probeListener, err := GetFreePortListener()
 	if err != nil {
 		t.Fatalf("Failed to get free probe port listener: %v", err)
@@ -573,7 +565,8 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 		DefaultTimeoutDuration:   2 * time.Minute,
 		MaxTimeoutDuration:       30 * time.Minute,
 		LivenessChecker: &utils.LivenessChecker{
-			LivenessStaleDuration: time.Second,
+			LivenessStaleDuration:  time.Second,
+			SchedulerStaleDuration: time.Second,
 		},
 	}
 	ph.Initialize(ctx)

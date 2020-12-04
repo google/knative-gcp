@@ -105,6 +105,6 @@ func (p *CloudPubSubSourceProbe) Receive(ctx context.Context, event cloudevents.
 	if !ok {
 		return fmt.Errorf("Failed to read probe event ID from Pub/Sub message attributes")
 	}
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), eventID)
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension]), eventID)
 	return p.receivedEvents.SignalReceiverChannel(channelID)
 }

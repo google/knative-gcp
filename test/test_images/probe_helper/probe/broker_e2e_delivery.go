@@ -93,6 +93,6 @@ func (p *BrokerE2EDeliveryProbe) Receive(ctx context.Context, event cloudevents.
 	//     traceparent: 00-82b13494f5bcddc7b3007a7cd7668267-64e23f1193ceb1b7-00
 	//   Data,
 	//     { ... }
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension]), event.ID())
 	return p.receivedEvents.SignalReceiverChannel(channelID)
 }
