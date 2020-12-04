@@ -45,7 +45,6 @@ import (
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
 )
 
 const (
@@ -564,10 +563,8 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 		ReceiverListener:         receiverListener,
 		DefaultTimeoutDuration:   2 * time.Minute,
 		MaxTimeoutDuration:       30 * time.Minute,
-		LivenessChecker: &utils.LivenessChecker{
-			LivenessStaleDuration:  time.Second,
-			SchedulerStaleDuration: time.Second,
-		},
+		LivenessStaleDuration:    time.Second,
+		SchedulerStaleDuration:   time.Second,
 	}
 	ph.Initialize(ctx)
 	return makeProbeHelperReturn{
@@ -624,7 +621,7 @@ func TestProbeHelperLiveness(t *testing.T) {
 
 	// Guarantee that it has been long enough that the stale duration has been reached. This will cause
 	// the liveness checker to fail.
-	time.Sleep(2 * phr.probeHelper.LivenessChecker.LivenessStaleDuration)
+	time.Sleep(2 * phr.probeHelper.LivenessStaleDuration)
 	assertLivenessCheckResult(t, phr.livenessCheckURL, false)
 
 	// Cancel gracefully to avoid logger panic if parent goroutine terminates.

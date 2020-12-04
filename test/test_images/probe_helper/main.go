@@ -28,7 +28,6 @@ import (
 
 	pkgutils "github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/test/test_images/probe_helper/probe"
-	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
 )
 
 /*
@@ -149,10 +148,8 @@ func main() {
 		ReceiverPort:             env.ReceiverPort,
 		DefaultTimeoutDuration:   env.DefaultTimeoutDuration,
 		MaxTimeoutDuration:       env.MaxTimeoutDuration,
-		LivenessChecker: &utils.LivenessChecker{
-			LivenessStaleDuration:  env.LivenessStaleDuration,
-			SchedulerStaleDuration: env.SchedulerStaleDuration,
-		},
+		LivenessStaleDuration:    env.LivenessStaleDuration,
+		SchedulerStaleDuration:   env.SchedulerStaleDuration,
 	}
 	ph.Initialize(ctx)
 	ph.Run(ctx)

@@ -108,7 +108,7 @@ func (ph *Helper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 		logging.FromContext(ctx).Infow("Received probe request")
 
 		// Refresh the forward probe liveness time
-		ph.LivenessChecker.LastForwardEventTime.SetNow()
+		ph.lastForwardEventTime.SetNow()
 
 		// Retrieve the probe handler based on the event type
 		pr, ok := ph.forwardProbeHandlers[event.Type()]
@@ -146,7 +146,7 @@ func (ph *Helper) receiveEvent(ctx context.Context) cloudEventsFunc {
 		logging.FromContext(ctx).Infow("Received event")
 
 		// Refresh the receiver probe liveness time
-		ph.LivenessChecker.LastReceiverEventTime.SetNow()
+		ph.lastReceiverEventTime.SetNow()
 
 		// Retrieve the probe handler based on the event type
 		pr, ok := ph.receiveProbeHandlers[event.Type()]
@@ -167,6 +167,24 @@ func (ph *Helper) receiveEvent(ctx context.Context) cloudEventsFunc {
 			return cloudevents.ResultNACK
 		}
 		return cloudevents.ResultACK
+	}
+}
+
+// CheckLastEventTimes returns an actionFunc which checks the delay between the
+// current time and last processed event times from the forward and receiver
+// clients. This handler is used by the liveness checker to declare the liveness
+// status of the probe helper.
+func (ph *Helper) CheckLastEventTimes() func(context.Context) error {
+	return func(ctx context.Context) error {
+		// If either of the forward or receiver clients are not processing events, something is wrong
+		now := time.Now()
+		if delay := now.Sub(ph.lastForwardEventTime.Get()); delay > ph.LivenessStaleDuration {
+			return fmt.Errorf("forward delay %s exceeds staleness threshold %s", delay, ph.LivenessStaleDuration)
+		}
+		if delay := now.Sub(ph.lastReceiverEventTime.Get()); delay > ph.LivenessStaleDuration {
+			return fmt.Errorf("receiver delay %s exceeds staleness threshold %s", delay, ph.LivenessStaleDuration)
+		}
+		return nil
 	}
 }
 
@@ -212,11 +230,11 @@ func (ph *Helper) initializeHandlers() {
 	}
 	// The liveness checker should share the scheduler event times with the CloudSchedulerSource probe Handler.
 	cloudSchedulerSourceProbe := &CloudSchedulerSourceProbe{
-		SchedulerEventTimes: utils.SyncTimesMap{
+		EventTimes: utils.SyncTimesMap{
 			Times: map[string]time.Time{},
 		},
 	}
-	ph.LivenessChecker.SchedulerEventTimes = &cloudSchedulerSourceProbe.SchedulerEventTimes
+	ph.livenessChecker.AddActionFunc(cloudSchedulerSourceProbe.CleanupStaleSchedulerTimes())
 
 	// Set the forward and receiver probe handlers now that they are initialized.
 	ph.forwardProbeHandlers = map[string]Handler{
@@ -249,11 +267,9 @@ func (ph *Helper) Initialize(ctx context.Context) {
 	logger := logging.FromContext(ctx)
 
 	// initialize the liveness checker
-	if ph.LivenessChecker == nil {
-		logger.Fatalw("Unspecified liveness checker")
-	}
-	ph.LivenessChecker.LastForwardEventTime.SetNow()
-	ph.LivenessChecker.LastReceiverEventTime.SetNow()
+	ph.lastForwardEventTime.SetNow()
+	ph.lastReceiverEventTime.SetNow()
+	ph.livenessChecker.AddActionFunc(ph.CheckLastEventTimes())
 
 	// create pubsub client
 	if ph.PubsubClient == nil {
@@ -305,7 +321,7 @@ func (ph *Helper) Initialize(ctx context.Context) {
 	if ph.CeReceiveClient == nil {
 		rpOpts := []cehttp.Option{
 			// The liveness probe uses GET requests on the containerPort.
-			cloudevents.WithGetHandlerFunc(ph.LivenessChecker.LivenessHandlerFunc(ctx)),
+			cloudevents.WithGetHandlerFunc(ph.livenessChecker.LivenessHandlerFunc(ctx)),
 			// Inject the receiverpath header into each received CloudEvent.
 			cloudevents.WithMiddleware(func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -392,11 +408,23 @@ type Helper struct {
 	MaxTimeoutDuration time.Duration
 
 	// The liveness checker invoked in the liveness probe
-	LivenessChecker *utils.LivenessChecker
+	livenessChecker utils.LivenessChecker
+
+	// LivenessStaleDuration represents the tolerated staleness of events processed by the forward and receiver clients in the liveness probe.
+	LivenessStaleDuration time.Duration
+
+	// SchedulerStaleDuration represents the tolerated staleness of ticks observed by the CloudSchedulerSource probe.
+	SchedulerStaleDuration time.Duration
 
 	// The map from forward probe event types to Handler objects.
 	forwardProbeHandlers map[string]Handler
 
 	// The map from receiver probe event types to Handler objects.
 	receiveProbeHandlers map[string]Handler
+
+	// lastForwardEventTime is the timestamp of the last event processed by the forward client.
+	lastForwardEventTime utils.SyncTime
+
+	// lastReceiverEventTime is the timestamp of the last event processed by the receiver client.
+	lastReceiverEventTime utils.SyncTime
 }

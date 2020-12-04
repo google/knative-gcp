@@ -23,6 +23,8 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 )
 
 const (
@@ -37,7 +39,11 @@ const (
 // CloudSchedulerSource probe.
 type CloudSchedulerSourceProbe struct {
 	// The map of times of observed ticks in the CloudSchedulerSource probe
-	SchedulerEventTimes utils.SyncTimesMap
+	EventTimes utils.SyncTimesMap
+
+	// StaleDuration is the duration after which entries in the EventTimes map are
+	// considered stale and should be cleaned up in the liveness probe.
+	StaleDuration time.Duration
 }
 
 // Forward tests the delay between the current time and the latest recorded Cloud
@@ -52,11 +58,11 @@ func (p *CloudSchedulerSourceProbe) Forward(ctx context.Context, event cloudeven
 		return fmt.Errorf("failed to parse CloudSchedulerSource probe period and time.Duration: " + fmt.Sprint(period))
 	}
 
-	p.SchedulerEventTimes.RLock()
-	defer p.SchedulerEventTimes.RUnlock()
+	p.EventTimes.RLock()
+	defer p.EventTimes.RUnlock()
 
 	timestampID := fmt.Sprint(event.Extensions()[probeEventTargetPathExtension])
-	schedulerTime, ok := p.SchedulerEventTimes.Times[timestampID]
+	schedulerTime, ok := p.EventTimes.Times[timestampID]
 	if !ok {
 		return fmt.Errorf("no scheduler tick observed")
 	}
@@ -81,10 +87,27 @@ func (p *CloudSchedulerSourceProbe) Receive(ctx context.Context, event cloudeven
 	//     datacontenttype: application/json
 	//   Data,
 	//     { ... }
-	p.SchedulerEventTimes.Lock()
-	defer p.SchedulerEventTimes.Unlock()
+	p.EventTimes.Lock()
+	defer p.EventTimes.Unlock()
 
 	timestampID := fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension])
-	p.SchedulerEventTimes.Times[timestampID] = time.Now()
+	p.EventTimes.Times[timestampID] = time.Now()
 	return nil
+}
+
+// CleanupStaleSchedulerTimes returns a handler which loops through each scheduler
+// event time and clears the stale entries from the EventTimes map.
+func (p *CloudSchedulerSourceProbe) CleanupStaleSchedulerTimes() func(context.Context) error {
+	return func(ctx context.Context) error {
+		p.EventTimes.Lock()
+		defer p.EventTimes.Unlock()
+
+		for timestampID, schedulerTime := range p.EventTimes.Times {
+			if delay := time.Now().Sub(schedulerTime); delay.Nanoseconds() > p.StaleDuration.Nanoseconds() {
+				logging.FromContext(ctx).Infow("Deleting stale scheduler time", zap.String("timestampID", timestampID), zap.Duration("delay", delay))
+				delete(p.EventTimes.Times, timestampID)
+			}
+		}
+		return nil
+	}
 }
