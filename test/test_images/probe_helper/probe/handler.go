@@ -44,6 +44,6 @@ type Handler interface {
 	Receive(context.Context, cloudevents.Event) error
 }
 
-func channelID(namespace, eventID string) string {
-	return fmt.Sprintf("%s/%s", namespace, eventID)
+func channelID(prefix, eventID string) string {
+	return fmt.Sprintf("%s/%s", prefix, eventID)
 }
