@@ -20,6 +20,7 @@ import (
 	"context"
 	nethttp "net/http"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 )
@@ -49,15 +50,15 @@ func (c *LivenessChecker) LivenessHandlerFunc(ctx context.Context) nethttp.Handl
 			return
 		}
 		// Apply every actionFunc, do not interrupt when encountering an error
-		success := true
+		var totalErr error
 		for _, f := range c.actionFuncs {
 			if err := f(ctx); err != nil {
-				logging.FromContext(ctx).Infow("Liveness check failed", zap.Error(err))
-				success = false
+				totalErr = multierr.Append(totalErr, err)
 			}
 		}
-		if !success {
+		if totalErr != nil {
 			// If any error was encountered, declare liveness failed
+			logging.FromContext(ctx).Infow("Liveness check failed", zap.Error(totalErr))
 			w.WriteHeader(nethttp.StatusServiceUnavailable)
 			return
 		}
