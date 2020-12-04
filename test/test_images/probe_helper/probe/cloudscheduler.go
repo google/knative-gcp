@@ -55,7 +55,7 @@ func (p *CloudSchedulerSourceProbe) Forward(ctx context.Context, event cloudeven
 	p.SchedulerEventTimes.RLock()
 	defer p.SchedulerEventTimes.RUnlock()
 
-	timestampID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), "cloudschedulersource-probe")
+	timestampID := fmt.Sprint(event.Extensions()[probeEventTargetPathExtension])
 	schedulerTime, ok := p.SchedulerEventTimes.Times[timestampID]
 	if !ok {
 		return fmt.Errorf("no scheduler tick observed")
@@ -84,7 +84,7 @@ func (p *CloudSchedulerSourceProbe) Receive(ctx context.Context, event cloudeven
 	p.SchedulerEventTimes.Lock()
 	defer p.SchedulerEventTimes.Unlock()
 
-	timestampID := channelID(fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension]), "cloudschedulersource-probe")
+	timestampID := fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension])
 	p.SchedulerEventTimes.Times[timestampID] = time.Now()
 	return nil
 }
