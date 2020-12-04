@@ -35,9 +35,9 @@ import (
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/pod/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/service/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake"
+	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 
 	// Fake injection informers
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker/fake"

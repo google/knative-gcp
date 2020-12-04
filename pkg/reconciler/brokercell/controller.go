@@ -46,12 +46,12 @@ import (
 	configmapinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	podinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/pod"
-	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	serviceaccountinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
+	systemnamespacesecretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 	"knative.dev/pkg/system"
 )
 
@@ -84,7 +84,7 @@ func NewController(
 		hpaLister:            hpainformer.Get(ctx).Lister(),
 		triggerLister:        triggerinformer.Get(ctx).Lister(),
 		configMapLister:      configmapinformer.Get(ctx).Lister(),
-		secretLister:         secretinformer.Get(ctx).Lister(),
+		secretLister:         systemnamespacesecretinformer.Get(ctx).Lister(),
 		serviceAccountLister: serviceaccountinformer.Get(ctx).Lister(),
 		serviceLister:        serviceinformer.Get(ctx).Lister(),
 		endpointsLister:      endpointsinformer.Get(ctx).Lister(),
@@ -145,7 +145,7 @@ func NewController(
 	// Watch componets which are not created by brokercell, but affect broker data plane.
 	// 1. Watch broker data plane's secret,
 	// if the filtered secret resource changes, enqueue brokercells from the same namespace.
-	secretinformer.Get(ctx).Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	systemnamespacesecretinformer.Get(ctx).Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: filterWithNamespace(authcheck.ControlPlaneNamespace),
 		Handler:    authcheck.EnqueueBrokerCell(impl, brokerCellLister),
 	})
