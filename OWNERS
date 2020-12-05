@@ -1,10 +1,8 @@
 approvers:
 - grantr
 - Harwayne
-- capri-xiyue
 - ian-mi
 - yolocs
-- ericlem
 - liu-cong
 - grac3gao
 - nlopezgi
@@ -23,13 +21,10 @@ approvers:
 reviewers:
 - grantr
 - Harwayne
-- capri-xiyue
 - ian-mi
 - yolocs
-- ericlem
 - liu-cong
 # Add reviewers below
-- bskaplan
 - grac3gao
 - nlopezgi
 - tommyreddad
