@@ -1,7 +1,7 @@
 #############################################
 ### The following is for Cloud Run Events ###
 # Cloud Run Events Controller endpoint
-- job_name: cloud-run-events-controller
+- job_name: events-system-controller
   scrape_interval: 3s
   scrape_timeout: 3s
   kubernetes_sd_configs:
@@ -17,7 +17,7 @@
   - source_labels: [__meta_kubernetes_pod_name]
     target_label: pod
 # Cloud Run Events Webhook endpoint
-- job_name: cloud-run-events-webhook
+- job_name: events-system-webhook
   scrape_interval: 3s
   scrape_timeout: 3s
   kubernetes_sd_configs:
@@ -44,7 +44,7 @@
   # Scrape only the the targets matching the following metadata
   - source_labels: [__meta_kubernetes_pod_label_events_cloud_run_controller, __meta_kubernetes_pod_container_port_name]
     action: keep
-    regex: cloud-run-events-pubsub-pullsubscription-controller;metrics
+    regex: events-system-pubsub-pullsubscription-controller;metrics
   # Rename metadata labels to be reader friendly
   - source_labels: [__meta_kubernetes_namespace]
     target_label: namespace
@@ -60,7 +60,7 @@
   # Scrape only the the targets matching the following metadata
   - source_labels: [__meta_kubernetes_pod_label_events_cloud_run_controller, __meta_kubernetes_pod_container_port_name]
     action: keep
-    regex: cloud-run-events-pubsub-topic-controller;metrics
+    regex: events-system-pubsub-topic-controller;metrics
   # Rename metadata labels to be reader friendly
   - source_labels: [__meta_kubernetes_namespace]
     target_label: namespace

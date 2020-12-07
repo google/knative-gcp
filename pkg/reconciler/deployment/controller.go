@@ -38,9 +38,9 @@ const (
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "cloud-run-events-deployment-controller"
+	controllerAgentName = "events-system-deployment-controller"
 
-	namespace      = "cloud-run-events"
+	namespace      = "events-system"
 	secretName     = duck.DefaultSecretName
 	deploymentName = "controller"
 	envKey         = "GOOGLE_APPLICATION_CREDENTIALS"
@@ -57,7 +57,7 @@ func NewConstructor() Constructor {
 
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events.
-// When the secret `google-cloud-key` of namespace `cloud-run-events` gets updated, we will enqueue the deployment `controller` of namespace `cloud-run-events`.
+// When the secret `google-cloud-key` of namespace `events-system` gets updated, we will enqueue the deployment `controller` of namespace `events-system`.
 func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,

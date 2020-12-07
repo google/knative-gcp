@@ -98,7 +98,7 @@ The Probe Helper can handle multiple different types of probes.
 
 type envConfig struct {
 	// Environment variable containing the base URL for the brokercell ingress, used in the broker e2e delivery probe
-	BrokerCellIngressBaseURL string `envconfig:"BROKER_CELL_INGRESS_BASE_URL" default:"http://default-brokercell-ingress.cloud-run-events.svc.cluster.local"`
+	BrokerCellIngressBaseURL string `envconfig:"BROKER_CELL_INGRESS_BASE_URL" default:"http://default-brokercell-ingress.events-system.svc.cluster.local"`
 
 	// Environment variable containing the port which listens to the probe to forward events
 	ProbePort int `envconfig:"PROBE_PORT" default:"8070"`

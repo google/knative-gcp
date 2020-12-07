@@ -16,7 +16,7 @@ apiVersion: eventing.knative.dev/v1beta1
 kind: Trigger
 metadata:
   name: hello-display
-  namespace: cloud-run-events-example
+  namespace: events-system-example
 spec:
   broker: test-broker
   subscriber:

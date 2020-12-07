@@ -16,7 +16,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: config-br-delivery
-  namespace: cloud-run-events
+  namespace: events-system
 data:
   default-br-delivery-config: |
     clusterDefaults:

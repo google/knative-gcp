@@ -102,7 +102,7 @@ func Labels(brokerCellName, componentName string) map[string]string {
 
 func CommonLabels(brokerCellName string) map[string]string {
 	return map[string]string{
-		"app":              "cloud-run-events",
+		"app":              "events-system",
 		BrokerCellLabelKey: brokerCellName,
 	}
 }

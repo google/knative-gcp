@@ -85,7 +85,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
    resources will reside. If you are configuring Authentication Mechanism for
    the Control Plane, you can skip this step, and directly use Kubernetes
    Service Account `controller` which is already in the Control Plane namespace
-   `cloud-run-events`
+   `events-system`
 
    ```shell
    kubectl create serviceaccount ksa-name -n ksa-namespace
@@ -103,7 +103,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
    ```
 
    If you are configuring Authentication Mechanism for the Control Plane, you
-   can replace `ksa-namespace` with `cloud-run-events`, `ksa-name` with
+   can replace `ksa-namespace` with `events-system`, `ksa-name` with
    `controller`, and `gsa-name` with `cloud-run-events`
 
 1. Annotate the Kubernetes Service Account `ksa-name`.
@@ -114,7 +114,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
    ```
 
    If you are configuring Authentication Mechanism for the Control Plane, you
-   can replace `ksa-namespace` with `cloud-run-events`, `ksa-name` with
+   can replace `ksa-namespace` with `events-system`, `ksa-name` with
    `controller`, and `gsa-name` with `cloud-run-events`
 
 ### Option 2: Kubernetes Secrets
@@ -127,11 +127,11 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
    --iam-account=cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com
    ```
 
-1. Create a Secret on the Kubernetes cluster in the `cloud-run-events` namespace
+1. Create a Secret on the Kubernetes cluster in the `events-system` namespace
    with the downloaded key:
 
    ```shell
-   kubectl --namespace cloud-run-events create secret generic google-cloud-key --from-file=key.json=cloud-run-events.json
+   kubectl --namespace events-system create secret generic google-cloud-key --from-file=key.json=cloud-run-events.json
    ```
 
    Note that `google-cloud-key` and `key.json` are default values expected by
@@ -195,7 +195,7 @@ for automated scripts.
   You can directly edit the ConfigMap by:
 
   ```shell
-  kubectl edit configmap config-gcp-auth -n cloud-run-events
+  kubectl edit configmap config-gcp-auth -n events-system
   ```
 
   and add `workloadIdentityMapping` in `clusterDefaults`:
