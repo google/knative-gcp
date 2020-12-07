@@ -554,19 +554,15 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 	// Run the test Broker for testing Broker E2E delivery.
 	brokerCellIngressBaseURL := runTestBroker(ctx, group, receiverURL)
 	// Create the probe helper and initialize it.
-	ph := &Helper{
-		ProjectID:                testProjectID,
-		BrokerCellIngressBaseURL: brokerCellIngressBaseURL,
-		PubsubClient:             pubsubClient,
-		StorageClient:            storageClient,
-		ProbeListener:            probeListener,
-		ReceiverListener:         receiverListener,
-		DefaultTimeoutDuration:   2 * time.Minute,
-		MaxTimeoutDuration:       30 * time.Minute,
-		LivenessStaleDuration:    time.Second,
-		SchedulerStaleDuration:   time.Second,
+	env := EnvConfig{
+		LivenessStaleDuration:  time.Second,
+		DefaultTimeoutDuration: 2 * time.Minute,
+		MaxTimeoutDuration:     30 * time.Minute,
 	}
-	ph.Initialize(ctx)
+	ph, err := InitializeTestProbeHelper(ctx, brokerCellIngressBaseURL, testProjectID, time.Second, env, probeListener, receiverListener, storageClient, pubsubClient)
+	if err != nil {
+		t.Fatalf("Failed to create probe helper: %v", err)
+	}
 	return makeProbeHelperReturn{
 		probeHelper:      ph,
 		probeURL:         probeURL,
@@ -621,7 +617,7 @@ func TestProbeHelperLiveness(t *testing.T) {
 
 	// Guarantee that it has been long enough that the stale duration has been reached. This will cause
 	// the liveness checker to fail.
-	time.Sleep(2 * phr.probeHelper.LivenessStaleDuration)
+	time.Sleep(2 * phr.probeHelper.env.LivenessStaleDuration)
 	assertLivenessCheckResult(t, phr.livenessCheckURL, false)
 
 	// Cancel gracefully to avoid logger panic if parent goroutine terminates.

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package probe
+package handlers
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
 )
 
@@ -32,24 +33,32 @@ const (
 	CloudAuditLogsSourceProbeEventType = "cloudauditlogssource-probe"
 )
 
+func NewCloudAuditLogsSourceProbe(projectID clients.ProjectID, pubsubClient *pubsub.Client) *CloudAuditLogsSourceProbe {
+	return &CloudAuditLogsSourceProbe{
+		projectID:      projectID,
+		pubsubClient:   pubsubClient,
+		receivedEvents: utils.NewSyncReceivedEvents(),
+	}
+}
+
 // CloudAuditLogsSourceProbe is the probe handler for probe requests in the
 // CloudAuditLogsSource probe.
 type CloudAuditLogsSourceProbe struct {
 	// The project ID
-	projectID string
+	projectID clients.ProjectID
 
 	// The pubsub client wrapped by a CloudEvents client for the CloudPubSubSource
 	// probe and used for the CloudAuditLogsSource probe
 	pubsubClient *pubsub.Client
 
 	// The map of received events to be tracked by the forwarder and receiver
-	receivedEvents utils.SyncReceivedEvents
+	receivedEvents *utils.SyncReceivedEvents
 }
 
 // Forward publishes creates a Pub/Sub topic in order to generate a Cloud Audit Logs notification event.
 func (p *CloudAuditLogsSourceProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	// Create the receiver channel
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventTargetPathExtension]), event.ID())
 	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
@@ -73,7 +82,7 @@ func (p *CloudAuditLogsSourceProbe) Receive(ctx context.Context, event cloudeven
 		return fmt.Errorf("Failed to read Cloud AuditLogs event, missing 'methodname' extension")
 	}
 	sepSub := strings.Split(event.Subject(), "/")
-	if len(sepSub) != 5 || sepSub[0] != "pubsub.googleapis.com" || sepSub[1] != "projects" || sepSub[2] != p.projectID || sepSub[3] != "topics" {
+	if len(sepSub) != 5 || sepSub[0] != "pubsub.googleapis.com" || sepSub[1] != "projects" || sepSub[2] != string(p.projectID) || sepSub[3] != "topics" {
 		return fmt.Errorf("Failed to read Cloud AuditLogs event, unexpected event subject")
 	}
 	methodname := fmt.Sprint(event.Extensions()["methodname"])
@@ -99,6 +108,6 @@ func (p *CloudAuditLogsSourceProbe) Receive(ctx context.Context, event cloudeven
 	} else {
 		return fmt.Errorf("Failed to read Cloud AuditLogs event, unrecognized 'methodname' extension: %s", methodname)
 	}
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension]), eventID)
+	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventReceiverPathExtension]), eventID)
 	return p.receivedEvents.SignalReceiverChannel(channelID)
 }

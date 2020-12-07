@@ -22,6 +22,12 @@ import (
 	"sync"
 )
 
+func NewSyncReceivedEvents() *SyncReceivedEvents {
+	return &SyncReceivedEvents{
+		Channels: map[string]chan bool{},
+	}
+}
+
 // SyncReceivedEvents is a synchronized wrapped around a map of channels.
 type SyncReceivedEvents struct {
 	sync.RWMutex

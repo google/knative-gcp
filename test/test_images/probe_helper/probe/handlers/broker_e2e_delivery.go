@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package probe
+package handlers
 
 import (
 	"context"
@@ -34,6 +34,14 @@ const (
 	namespaceExtension = "namespace"
 )
 
+func NewBrokerE2EDeliveryProbe(brokerCellIngressBaseURL string, client CeForwardClient) *BrokerE2EDeliveryProbe {
+	return &BrokerE2EDeliveryProbe{
+		brokerCellIngressBaseURL: brokerCellIngressBaseURL,
+		client:                   client,
+		receivedEvents:           utils.NewSyncReceivedEvents(),
+	}
+}
+
 // BrokerE2EDeliveryProbe is the probe handler for probe requests in the broker
 // e2e delivery probe.
 type BrokerE2EDeliveryProbe struct {
@@ -41,10 +49,10 @@ type BrokerE2EDeliveryProbe struct {
 	brokerCellIngressBaseURL string
 
 	// The client responsible for sending events to the BrokerCell Ingress
-	client cloudevents.Client
+	client CeForwardClient
 
 	// The map of received events to be tracked by the forwarder and receiver
-	receivedEvents utils.SyncReceivedEvents
+	receivedEvents *utils.SyncReceivedEvents
 }
 
 // Forward sends an event to a given broker in a given namespace.
@@ -59,7 +67,7 @@ func (p *BrokerE2EDeliveryProbe) Forward(ctx context.Context, event cloudevents.
 	}
 
 	// Create the receiver channel
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventTargetPathExtension]), event.ID())
 	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
@@ -93,6 +101,6 @@ func (p *BrokerE2EDeliveryProbe) Receive(ctx context.Context, event cloudevents.
 	//     traceparent: 00-82b13494f5bcddc7b3007a7cd7668267-64e23f1193ceb1b7-00
 	//   Data,
 	//     { ... }
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension]), event.ID())
+	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventReceiverPathExtension]), event.ID())
 	return p.receivedEvents.SignalReceiverChannel(channelID)
 }

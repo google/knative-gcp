@@ -25,19 +25,19 @@ import (
 	"knative.dev/pkg/logging"
 )
 
-// actionFunc represents a function which is called during a liveness probe. If
+// ActionFunc represents a function which is called during a liveness probe. If
 // it returns a non-nil error, the probe is considered unsuccessful.
-type actionFunc func(context.Context) error
+type ActionFunc func(context.Context) error
 
-// LivenessChecker executes each of the actionFuncs upon each liveness probe.
+// LivenessChecker executes each of the ActionFuncs upon each liveness probe.
 type LivenessChecker struct {
-	actionFuncs []actionFunc
+	ActionFuncs []ActionFunc
 }
 
-// AddActionFunc appends an actionFunc to the list of functions to be called
+// AddActionFunc appends an ActionFunc to the list of functions to be called
 // by the liveness checker during each liveness probe.
-func (c *LivenessChecker) AddActionFunc(f actionFunc) {
-	c.actionFuncs = append(c.actionFuncs, f)
+func (c *LivenessChecker) AddActionFunc(f ActionFunc) {
+	c.ActionFuncs = append(c.ActionFuncs, f)
 }
 
 // LivenessHandlerFunc returns the HTTP handler for probe helper liveness checks.
@@ -49,9 +49,9 @@ func (c *LivenessChecker) LivenessHandlerFunc(ctx context.Context) nethttp.Handl
 			w.WriteHeader(nethttp.StatusNotFound)
 			return
 		}
-		// Apply every actionFunc, do not interrupt when encountering an error
+		// Apply every ActionFunc, do not interrupt when encountering an error
 		var totalErr error
-		for _, f := range c.actionFuncs {
+		for _, f := range c.ActionFuncs {
 			if err := f(ctx); err != nil {
 				totalErr = multierr.Append(totalErr, err)
 			}
