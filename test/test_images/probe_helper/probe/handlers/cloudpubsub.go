@@ -97,7 +97,7 @@ func (p *CloudPubSubSourceProbe) Receive(ctx context.Context, event cloudevents.
 	//         "messageId": "1529309436535525",
 	//         "data": "eydtc2cnOidQcm9iZSBDbG91ZCBSdW4gRXZlbnRzISd9",
 	//         "attributes": {
-	//           "Content-EventTypeProbe": "application/json",
+	//           "Content-Type": "application/json",
 	//           "ce-id": "cloudpubsubsource-probe-294119a9-98e2-44ec-a2b2-28a98cf40eee",
 	//           "ce-source": "probe",
 	//           "ce-specversion": "1.0",

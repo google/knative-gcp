@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/google/knative-gcp/pkg/utils/clients"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -28,6 +27,7 @@ import (
 	"knative.dev/pkg/signals"
 
 	pkgutils "github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/test/test_images/probe_helper/probe"
 )
 

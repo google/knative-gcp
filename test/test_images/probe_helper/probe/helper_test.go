@@ -561,7 +561,7 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 	}
 	ph, err := InitializeTestProbeHelper(ctx, brokerCellIngressBaseURL, testProjectID, time.Second, env, probeListener, receiverListener, storageClient, pubsubClient)
 	if err != nil {
-		t.Fatalf("Failed to create probe helper: %v", err)
+		t.Fatal("Failed to create probe helper:", err)
 	}
 	return makeProbeHelperReturn{
 		probeHelper:      ph,
