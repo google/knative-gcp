@@ -6,6 +6,9 @@ rules:
       - ""
       - "built-in"
       - "platform-specific"
+     options:
+       # Only trigger violations when terms are surrounded by ASCII word boundaries.
+       word_boundary: true
 
   - name: primitive
     terms:
