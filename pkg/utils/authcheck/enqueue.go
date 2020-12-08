@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package authcheck provides utilities to check authentication configuration for data plane resources.
+// enqueue.go contains customized EventHandlers to enqueue resources for authentication check.
 package authcheck
 
 import (

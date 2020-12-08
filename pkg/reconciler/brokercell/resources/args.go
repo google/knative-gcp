@@ -19,6 +19,7 @@ package resources
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/labels"
 	"knative.dev/pkg/kmeta"
 
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -110,4 +111,9 @@ func CommonLabels(brokerCellName string) map[string]string {
 // Name creates a name for the component (ingress/fanout/retry).
 func Name(brokerCellName, componentName string) string {
 	return kmeta.ChildName(fmt.Sprintf("%s-brokercell-", brokerCellName), componentName)
+}
+
+// GetLabelSelector get a label selector with brokercell's common labels.
+func GetLabelSelector(brokerCellName, componentName string) labels.Selector {
+	return labels.SelectorFromSet(Labels(brokerCellName, componentName))
 }

@@ -21,21 +21,26 @@ import (
 	"flag"
 	"log"
 
+	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"knative.dev/pkg/tracing"
+
 	. "github.com/google/knative-gcp/pkg/pubsub/publisher"
 	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
 	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 	"github.com/google/knative-gcp/pkg/utils/clients"
-	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"knative.dev/pkg/tracing"
 )
 
 type envConfig struct {
 	// Environment variable containing the port for the publisher.
 	Port int `envconfig:"PORT" default:"8080"`
+
+	// Environment variable containing the authType, which represents the authentication configuration mode the Pod is using.
+	AuthType authcheck.AuthType `envconfig:"K_GCP_AUTH_TYPE" default:""`
 
 	// Topic is the environment variable containing the PubSub Topic being
 	// subscribed to's name. In the form that is unique within the project.
@@ -95,6 +100,7 @@ func main() {
 		clients.Port(env.Port),
 		clients.ProjectID(projectID),
 		TopicID(topicID),
+		env.AuthType,
 	)
 
 	if err != nil {

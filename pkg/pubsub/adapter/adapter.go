@@ -27,15 +27,17 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/extensions"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+	"go.opencensus.io/trace"
+	"k8s.io/apimachinery/pkg/types"
+	kntracing "knative.dev/eventing/pkg/tracing"
+
 	"github.com/google/knative-gcp/pkg/apis/messaging"
 	"github.com/google/knative-gcp/pkg/logging"
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/tracing"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 	"github.com/google/knative-gcp/pkg/utils/clients"
-	"go.opencensus.io/trace"
-	"k8s.io/apimachinery/pkg/types"
-	kntracing "knative.dev/eventing/pkg/tracing"
 )
 
 // AdapterArgs has a bundle of arguments needed to create an Adapter.
@@ -55,6 +57,9 @@ type AdapterArgs struct {
 
 	// ConverterType use to select which converter to use.
 	ConverterType converters.ConverterType
+
+	// AuthType is the authentication configuration mode the Pod uses.
+	AuthType authcheck.AuthType
 }
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
@@ -123,6 +128,9 @@ func (a *Adapter) Start(ctx context.Context) error {
 	ctx = WithTopicKey(ctx, a.args.TopicID)
 	ctx = WithSubscriptionKey(ctx, a.subscription.ID())
 
+	// Initialize probe checker to run authentication check.
+	pc := authcheck.NewProbeChecker(logging.FromContext(ctx), a.args.AuthType)
+	go pc.Start(ctx)
 	return a.subscription.Receive(ctx, a.receive)
 }
 

@@ -22,6 +22,7 @@ import (
 	"context"
 
 	"github.com/google/knative-gcp/pkg/pubsub/publisher"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 
 	"github.com/google/wire"
@@ -32,6 +33,7 @@ func InitializePublisher(
 	port clients.Port,
 	projectID clients.ProjectID,
 	topicID publisher.TopicID,
+	authType authcheck.AuthType,
 ) (*publisher.Publisher, error) {
 	panic(wire.Build(
 		publisher.PublisherSet,

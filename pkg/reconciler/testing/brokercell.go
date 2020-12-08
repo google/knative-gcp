@@ -100,7 +100,7 @@ func WithBrokerCellIngressUnknown(reason, msg string) BrokerCellOption {
 
 func WithBrokerCellIngressAvailable() BrokerCellOption {
 	return func(bc *intv1alpha1.BrokerCell) {
-		bc.Status.PropagateIngressAvailability(v1alpha1.TestHelper.AvailableEndpoints())
+		bc.Status.PropagateIngressAvailability(v1alpha1.TestHelper.AvailableEndpoints(), v1alpha1.TestHelper.AvailableDeployment())
 	}
 }
 

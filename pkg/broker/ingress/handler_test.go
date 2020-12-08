@@ -415,7 +415,7 @@ func runIngressHandlerBenchmark(b *testing.B, eventSize int, targetCounts int) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	h := NewHandler(ctx, nil, decouple, statsReporter)
+	h := NewHandler(ctx, nil, decouple, statsReporter, "")
 
 	if _, err := psClient.CreateTopic(ctx, topicID); err != nil {
 		b.Fatal(err)
@@ -523,7 +523,7 @@ func createAndStartIngress(ctx context.Context, t testing.TB, psSrv *pstest.Serv
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := NewHandler(ctx, receiver, decouple, statsReporter)
+	h := NewHandler(ctx, receiver, decouple, statsReporter, "")
 
 	errCh := make(chan error, 1)
 	go func() {

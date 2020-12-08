@@ -42,7 +42,7 @@ func TestSyncPool(t *testing.T) {
 			t.Fatalf("failed to get random free port: %v", err)
 		}
 
-		_, gotErr := StartSyncPool(ctx, syncPool, make(chan struct{}), 30*time.Second, p)
+		_, gotErr := StartSyncPool(ctx, syncPool, make(chan struct{}), 30*time.Second, p, "")
 		if gotErr == nil {
 			t.Error("StartSyncPool got unexpected result")
 		}
@@ -65,7 +65,7 @@ func TestSyncPool(t *testing.T) {
 		}
 
 		ch := make(chan struct{})
-		if _, err := StartSyncPool(ctx, syncPool, ch, time.Second, p); err != nil {
+		if _, err := StartSyncPool(ctx, syncPool, ch, time.Second, p, ""); err != nil {
 			t.Errorf("StartSyncPool got unexpected error: %v", err)
 		}
 		syncPool.verifySyncOnceCalled(t)
@@ -74,17 +74,16 @@ func TestSyncPool(t *testing.T) {
 
 		ch <- struct{}{}
 		syncPool.verifySyncOnceCalled(t)
-		assertProbeCheckResult(t, p, true)
-
-		// Intentionally causing a failed check.
-		time.Sleep(time.Second)
-		assertProbeCheckResult(t, p, false)
+		// False because authentication check will fail.
+		assertProbeCheckResult(t, p, false, "healthz")
+		// False because path is not healthz.
+		assertProbeCheckResult(t, p, false, "empty")
 	})
 }
 
-func assertProbeCheckResult(t *testing.T, port int, ok bool) {
+func assertProbeCheckResult(t *testing.T, port int, ok bool, path string) {
 	t.Helper()
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/healthz", port), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/%s", port, path), nil)
 	if err != nil {
 		t.Fatal("Failed to create probe check request:", err)
 	}

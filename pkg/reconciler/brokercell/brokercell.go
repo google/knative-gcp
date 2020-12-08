@@ -175,7 +175,17 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		bc.Status.MarkIngressFailed("IngressServiceFailed", "Failed to reconcile ingress service: %v", err)
 		return err
 	}
-	bc.Status.PropagateIngressAvailability(endpoints)
+	// If deployment has replicaUnavailable error, it potentially has authentication configuration issues.
+	if replicaUnavailable := bc.Status.PropagateIngressAvailability(endpoints, ind); replicaUnavailable {
+		podList, err := authcheck.GetPodList(ctx, resources.GetLabelSelector(bc.Name, resources.IngressName), r.KubeClientSet, bc.Namespace)
+		if err != nil {
+			logging.FromContext(ctx).Error("Failed to propagate authentication check message from ingress component", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+			return err
+		}
+		if authenticationCheckMessage := authcheck.GetTerminationLogFromPodList(podList); authenticationCheckMessage != "" {
+			bc.Status.MarkIngressUnknown(authcheck.AuthenticationCheckUnknownReason, authenticationCheckMessage)
+		}
+	}
 	hostName := network.GetServiceHostname(endpoints.GetName(), endpoints.GetNamespace())
 	bc.Status.IngressTemplate = fmt.Sprintf("http://%s/{namespace}/{name}", hostName)
 
@@ -193,8 +203,17 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		bc.Status.MarkFanoutFailed("HorizontalPodAutoscalerFailed", "Failed to reconcile fanout HorizontalPodAutoscaler: %v", err)
 		return err
 	}
-	bc.Status.PropagateFanoutAvailability(fd)
-
+	// If deployment has replicaUnavailable error, it potentially has authentication configuration issues.
+	if replicaUnavailable := bc.Status.PropagateFanoutAvailability(fd); replicaUnavailable {
+		podList, err := authcheck.GetPodList(ctx, resources.GetLabelSelector(bc.Name, resources.FanoutName), r.KubeClientSet, bc.Namespace)
+		if err != nil {
+			logging.FromContext(ctx).Error("Failed to propagate authentication check message from fanout component", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+			return err
+		}
+		if authenticationCheckMessage := authcheck.GetTerminationLogFromPodList(podList); authenticationCheckMessage != "" {
+			bc.Status.MarkFanoutUnknown(authcheck.AuthenticationCheckUnknownReason, authenticationCheckMessage)
+		}
+	}
 	// Reconcile retry deployment and HPA.
 	rd, err := r.deploymentRec.ReconcileDeployment(ctx, bc, resources.MakeRetryDeployment(r.makeRetryArgs(bc, authType)))
 	if err != nil {
@@ -209,7 +228,17 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		bc.Status.MarkRetryFailed("HorizontalPodAutoscalerFailed", "Failed to reconcile retry HorizontalPodAutoscaler: %v", err)
 		return err
 	}
-	bc.Status.PropagateRetryAvailability(rd)
+	// If deployment has replicaUnavailable error, it potentially has authentication configuration issues.
+	if replicaUnavailable := bc.Status.PropagateRetryAvailability(rd); replicaUnavailable {
+		podList, err := authcheck.GetPodList(ctx, resources.GetLabelSelector(bc.Name, resources.RetryName), r.KubeClientSet, bc.Namespace)
+		if err != nil {
+			logging.FromContext(ctx).Error("Failed to propagate authentication check message from retry component", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+			return err
+		}
+		if authenticationCheckMessage := authcheck.GetTerminationLogFromPodList(podList); authenticationCheckMessage != "" {
+			bc.Status.MarkRetryUnknown(authcheck.AuthenticationCheckUnknownReason, authenticationCheckMessage)
+		}
+	}
 
 	bc.Status.ObservedGeneration = bc.Generation
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellReconciled", "BrokerCell reconciled: \"%s/%s\"", bc.Namespace, bc.Name)

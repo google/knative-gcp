@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
 	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
@@ -164,7 +166,24 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 		Ports: []corev1.ContainerPort{{
 			Name:          "metrics",
 			ContainerPort: 9090,
+		}, {
+			Name:          "http",
+			ContainerPort: authcheck.DefaultProbeCheckPort,
 		}},
+		LivenessProbe: &corev1.Probe{
+			Handler: corev1.Handler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path:   "/healthz",
+					Port:   intstr.FromInt(authcheck.DefaultProbeCheckPort),
+					Scheme: corev1.URISchemeHTTP,
+				},
+			},
+			FailureThreshold:    3,
+			PeriodSeconds:       15,
+			InitialDelaySeconds: 5,
+			SuccessThreshold:    1,
+			TimeoutSeconds:      5,
+		},
 	}
 
 	// This is added purely for the TestCloudLogging E2E tests, which verify that the log line is

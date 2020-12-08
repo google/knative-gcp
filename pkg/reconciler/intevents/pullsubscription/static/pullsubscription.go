@@ -24,6 +24,9 @@ import (
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
+	psresources "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
+
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,7 +61,18 @@ func (r *Reconciler) ReconcileDeployment(ctx context.Context, ra *appsv1.Deploym
 		}
 	}
 
-	src.Status.PropagateDeploymentAvailability(existing)
+	// If deployment has replicaUnavailable error, it potentially has authentication configuration issues.
+	if replicaUnavailable := src.Status.PropagateDeploymentAvailability(existing); replicaUnavailable {
+		podList, err := authcheck.GetPodList(ctx, psresources.GetLabelSelector(r.ControllerAgentName, src.Name), r.KubeClientSet, src.Namespace)
+		if err != nil {
+			logging.FromContext(ctx).Error("Error propagating authentication check message", zap.Error(err))
+			return err
+		}
+		if authenticationCheckMessage := authcheck.GetTerminationLogFromPodList(podList); authenticationCheckMessage != "" {
+			src.Status.MarkDeployedUnknown(authcheck.AuthenticationCheckUnknownReason, authenticationCheckMessage)
+		}
+	}
+
 	return nil
 }
 

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
@@ -125,6 +126,20 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 								corev1.ResourceCPU:    resource.MustParse("400m"),
 							},
 						},
+						LivenessProbe: &corev1.Probe{
+							Handler: corev1.Handler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path:   "/healthz",
+									Port:   intstr.FromInt(authcheck.DefaultProbeCheckPort),
+									Scheme: corev1.URISchemeHTTP,
+								},
+							},
+							FailureThreshold:    3,
+							PeriodSeconds:       15,
+							InitialDelaySeconds: 5,
+							SuccessThreshold:    1,
+							TimeoutSeconds:      5,
+						},
 						Env: []corev1.EnvVar{{
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
@@ -179,7 +194,9 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 							Name:      credsVolume,
 							MountPath: credsMountPath,
 						}},
-						Ports: []corev1.ContainerPort{{Name: "metrics", ContainerPort: 9090}},
+						Ports: []corev1.ContainerPort{
+							{Name: "metrics", ContainerPort: 9090},
+							{Name: "http", ContainerPort: 8080}},
 					}},
 					Volumes: []corev1.Volume{{
 						Name: credsVolume,
@@ -294,6 +311,20 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 								corev1.ResourceCPU:    resource.MustParse("400m"),
 							},
 						},
+						LivenessProbe: &corev1.Probe{
+							Handler: corev1.Handler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path:   "/healthz",
+									Port:   intstr.FromInt(authcheck.DefaultProbeCheckPort),
+									Scheme: corev1.URISchemeHTTP,
+								},
+							},
+							FailureThreshold:    3,
+							PeriodSeconds:       15,
+							InitialDelaySeconds: 5,
+							SuccessThreshold:    1,
+							TimeoutSeconds:      5,
+						},
 						Env: []corev1.EnvVar{{
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
@@ -350,10 +381,9 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 							Name:      credsVolume,
 							MountPath: credsMountPath,
 						}},
-						Ports: []corev1.ContainerPort{{
-							Name:          "metrics",
-							ContainerPort: 9090,
-						}},
+						Ports: []corev1.ContainerPort{
+							{Name: "metrics", ContainerPort: 9090},
+							{Name: "http", ContainerPort: 8080}},
 					}},
 					Volumes: []corev1.Volume{{
 						Name: credsVolume,
@@ -468,6 +498,20 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 								corev1.ResourceCPU:    resource.MustParse("400m"),
 							},
 						},
+						LivenessProbe: &corev1.Probe{
+							Handler: corev1.Handler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path:   "/healthz",
+									Port:   intstr.FromInt(authcheck.DefaultProbeCheckPort),
+									Scheme: corev1.URISchemeHTTP,
+								},
+							},
+							FailureThreshold:    3,
+							PeriodSeconds:       15,
+							InitialDelaySeconds: 5,
+							SuccessThreshold:    1,
+							TimeoutSeconds:      5,
+						},
 						Env: []corev1.EnvVar{{
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
@@ -514,10 +558,9 @@ func TestMakeReceiveAdapterWithServiceAccount(t *testing.T) {
 							Name:  "K_GCP_AUTH_TYPE",
 							Value: string(authcheck.WorkloadIdentityGSA),
 						}},
-						Ports: []corev1.ContainerPort{{
-							Name:          "metrics",
-							ContainerPort: 9090,
-						}},
+						Ports: []corev1.ContainerPort{
+							{Name: "metrics", ContainerPort: 9090},
+							{Name: "http", ContainerPort: 8080}},
 					}},
 				},
 			},

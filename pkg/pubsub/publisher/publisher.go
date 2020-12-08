@@ -28,6 +28,8 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/logging"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
+
 	"go.uber.org/zap"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
@@ -60,14 +62,18 @@ type Publisher struct {
 	topic *pubsub.Topic
 
 	logger *zap.Logger
+	// AuthType is the authentication configuration mode the Pod uses.
+	authType authcheck.AuthType
 }
 
 // NewPublisher creates a new publisher.
-func NewPublisher(ctx context.Context, inbound HttpMessageReceiver, topic *pubsub.Topic) *Publisher {
+func NewPublisher(ctx context.Context, inbound HttpMessageReceiver, topic *pubsub.Topic, authType authcheck.AuthType) *Publisher {
 	return &Publisher{
 		inbound: inbound,
 		topic:   topic,
 		logger:  logging.FromContext(ctx),
+		// AuthType is the authentication configuration mode the Pod uses.
+		authType: authType,
 	}
 }
 

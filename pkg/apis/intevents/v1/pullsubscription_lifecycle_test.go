@@ -69,6 +69,22 @@ var (
 			},
 		},
 	}
+
+	replicaUnavailableDeployment = &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-deployment",
+		},
+		Status: appsv1.DeploymentStatus{
+			Conditions: []appsv1.DeploymentCondition{
+				{
+					Type:    appsv1.DeploymentAvailable,
+					Status:  corev1.ConditionFalse,
+					Reason:  "MinimumReplicasUnavailable",
+					Message: "False Status",
+				},
+			},
+		},
+	}
 )
 
 func TestPullSubscriptionStatusIsReady(t *testing.T) {
@@ -504,5 +520,14 @@ func TestPullSubscriptionStatusGetCondition(t *testing.T) {
 				t.Errorf("unexpected condition (-want, +got) = %v", diff)
 			}
 		})
+	}
+}
+
+func TestPropagateDeploymentAvailability(t *testing.T) {
+	s := &PullSubscriptionStatus{}
+	got := s.PropagateDeploymentAvailability(replicaUnavailableDeployment)
+	want := true
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Error("unexpected condition (-want, +got) =", diff)
 	}
 }

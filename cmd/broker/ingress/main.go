@@ -20,6 +20,7 @@ import (
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
 
@@ -30,6 +31,9 @@ import (
 type envConfig struct {
 	PodName string `envconfig:"POD_NAME" required:"true"`
 	Port    int    `envconfig:"PORT" default:"8080"`
+
+	// Environment variable containing the authType, which represents the authentication configuration mode the Pod is using.
+	AuthType authcheck.AuthType `envconfig:"K_GCP_AUTH_TYPE" default:""`
 
 	// Default 300Mi.
 	PublishBufferedByteLimit int `envconfig:"PUBLISH_BUFFERED_BYTES_LIMIT" default:"314572800"`
@@ -66,6 +70,7 @@ func main() {
 		metrics.PodName(env.PodName),
 		metrics.ContainerName(component),
 		publishSetting(logger.Desugar(), env),
+		env.AuthType,
 	)
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))
