@@ -90,7 +90,15 @@ EXTERNAL_INFORMER_PKG="k8s.io/client-go/informers" \
   --go-header-file "${REPO_ROOT_DIR}"/hack/boilerplate/boilerplate.go.txt
 
 go install github.com/google/wire/cmd/wire
-go generate "${REPO_ROOT_DIR}"/...
+"${GOPATH}"/bin/wire gen \
+  --header_file="${REPO_ROOT_DIR}"/hack/boilerplate/boilerplate.go.txt \
+  "${REPO_ROOT_DIR}"/cmd/broker/fanout \
+  "${REPO_ROOT_DIR}"/cmd/broker/ingress \
+  "${REPO_ROOT_DIR}"/cmd/broker/retry \
+  "${REPO_ROOT_DIR}"/cmd/controller \
+  "${REPO_ROOT_DIR}"/cmd/pubsub/publisher \
+  "${REPO_ROOT_DIR}"/cmd/pubsub/receive_adapter \
+  "${REPO_ROOT_DIR}"/pkg/broker/handler
 
 # Make sure our dependencies are up-to-date
 "${REPO_ROOT_DIR}"/hack/update-deps.sh
