@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package probe
+package handlers
 
 import (
 	"context"
@@ -27,15 +27,15 @@ import (
 
 The following steps should be taken when implementing a new type of probe.
 
-1. Define a static probe handler which implements the Handler interface.
-2. Declare a singleton Handler object of this kind in the probe helper initializerHandlers method.
-3. Add the mapping between forward probe type and the object from step 2 to the forwardProbeHandlers map in initializerHandlers.
-4. Add the mapping between receiver probe type and the object from step 2 to the receiveProbeHandlers map in initializerHandlers.
+1. Define a static probe handler which implements the Interface interface.
+2. Declare a singleton Interface object of this kind in the probe helper initializerHandlers method.
+3. Add the mapping between forward probe type and the object from step 2 to the forward map in EventTypeProbe.
+4. Add the mapping between receiver probe type and the object from step 2 to the receive map in EventTypeProbe.
 
 */
 
-// Handler is the interface which static probe objects should implement.
-type Handler interface {
+// Interface is the interface which static probe objects should implement.
+type Interface interface {
 	// Forward is the handler function which is called for probe requests which come
 	// from PROBE_PORT.
 	Forward(context.Context, cloudevents.Event) error
@@ -47,3 +47,6 @@ type Handler interface {
 func channelID(prefix, eventID string) string {
 	return fmt.Sprintf("%s/%s", prefix, eventID)
 }
+
+type CeForwardClient cloudevents.Client
+type CeReceiveClient cloudevents.Client

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package probe
+package handlers
 
 import (
 	"context"
@@ -34,6 +34,15 @@ const (
 
 	periodExtension = "period"
 )
+
+func NewCloudSchedulerSourceProbe(staleDuration time.Duration) *CloudSchedulerSourceProbe {
+	return &CloudSchedulerSourceProbe{
+		EventTimes: utils.SyncTimesMap{
+			Times: map[string]time.Time{},
+		},
+		StaleDuration: staleDuration,
+	}
+}
 
 // CloudSchedulerSourceProbe is the probe handler for probe requests in the
 // CloudSchedulerSource probe.
@@ -61,7 +70,7 @@ func (p *CloudSchedulerSourceProbe) Forward(ctx context.Context, event cloudeven
 	p.EventTimes.RLock()
 	defer p.EventTimes.RUnlock()
 
-	timestampID := fmt.Sprint(event.Extensions()[probeEventTargetPathExtension])
+	timestampID := fmt.Sprint(event.Extensions()[utils.ProbeEventTargetPathExtension])
 	schedulerTime, ok := p.EventTimes.Times[timestampID]
 	if !ok {
 		return fmt.Errorf("no scheduler tick observed")
@@ -90,14 +99,14 @@ func (p *CloudSchedulerSourceProbe) Receive(ctx context.Context, event cloudeven
 	p.EventTimes.Lock()
 	defer p.EventTimes.Unlock()
 
-	timestampID := fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension])
+	timestampID := fmt.Sprint(event.Extensions()[utils.ProbeEventReceiverPathExtension])
 	p.EventTimes.Times[timestampID] = time.Now()
 	return nil
 }
 
 // CleanupStaleSchedulerTimes returns a handler which loops through each scheduler
 // event time and clears the stale entries from the EventTimes map.
-func (p *CloudSchedulerSourceProbe) CleanupStaleSchedulerTimes() func(context.Context) error {
+func (p *CloudSchedulerSourceProbe) CleanupStaleSchedulerTimes() utils.ActionFunc {
 	return func(ctx context.Context) error {
 		p.EventTimes.Lock()
 		defer p.EventTimes.Unlock()

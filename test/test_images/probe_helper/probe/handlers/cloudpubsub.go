@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package probe
+package handlers
 
 import (
 	"context"
@@ -35,20 +35,29 @@ const (
 	topicExtension = "topic"
 )
 
+func NewCloudPubSubSourceProbe(cePubsubClient CePubSubClient) *CloudPubSubSourceProbe {
+	return &CloudPubSubSourceProbe{
+		cePubsubClient: cePubsubClient,
+		receivedEvents: utils.NewSyncReceivedEvents(),
+	}
+}
+
+type CePubSubClient cloudevents.Client
+
 // CloudPubSubSourceProbe is the probe handler for probe requests in the
 // CloudPubSubSource probe.
 type CloudPubSubSourceProbe struct {
 	// The CloudEvents client responsible for forwarding events as messages to a topic.
-	cePubsubClient cloudevents.Client
+	cePubsubClient CePubSubClient
 
 	// The map of received events to be tracked by the forwarder and receiver
-	receivedEvents utils.SyncReceivedEvents
+	receivedEvents *utils.SyncReceivedEvents
 }
 
 // Forward publishes to Pub/Sub in order to generate a notification event.
 func (p *CloudPubSubSourceProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	// Create the receiver channel
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventTargetPathExtension]), event.ID())
 	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
@@ -105,6 +114,6 @@ func (p *CloudPubSubSourceProbe) Receive(ctx context.Context, event cloudevents.
 	if !ok {
 		return fmt.Errorf("Failed to read probe event ID from Pub/Sub message attributes")
 	}
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension]), eventID)
+	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventReceiverPathExtension]), eventID)
 	return p.receivedEvents.SignalReceiverChannel(channelID)
 }

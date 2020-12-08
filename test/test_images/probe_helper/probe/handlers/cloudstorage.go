@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package probe
+package handlers
 
 import (
 	"context"
@@ -48,6 +48,13 @@ const (
 	bucketExtension = "bucket"
 )
 
+func NewCloudStorageSourceProbe(storageClient *storage.Client) *CloudStorageSourceProbe {
+	return &CloudStorageSourceProbe{
+		storageClient:  storageClient,
+		receivedEvents: utils.NewSyncReceivedEvents(),
+	}
+}
+
 // CloudStorageSourceProbe is the base probe type for probe requests in the
 // CloudStorageSource probes. Since all of the CloudStorageSource probes share
 // the same Receive logic, they all inherit it from this object.
@@ -56,7 +63,7 @@ type CloudStorageSourceProbe struct {
 	storageClient *storage.Client
 
 	// The map of received events to be tracked by the forwarder and receiver
-	receivedEvents utils.SyncReceivedEvents
+	receivedEvents *utils.SyncReceivedEvents
 }
 
 // CloudStorageSourceCreateProbe is the probe handler for probe requests
@@ -87,7 +94,7 @@ type CloudStorageSourceDeleteProbe struct {
 // event.
 func (p *CloudStorageSourceCreateProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	// Create the receiver channel
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventTargetPathExtension]), event.ID())
 	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
@@ -112,7 +119,7 @@ func (p *CloudStorageSourceCreateProbe) Forward(ctx context.Context, event cloud
 // notification event.
 func (p *CloudStorageSourceUpdateMetadataProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	// Create the receiver channel
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventTargetPathExtension]), event.ID())
 	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
@@ -141,7 +148,7 @@ func (p *CloudStorageSourceUpdateMetadataProbe) Forward(ctx context.Context, eve
 // Forward archives a Cloud Storage object in order to generate a notification event.
 func (p *CloudStorageSourceArchiveProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	// Create the receiver channel
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventTargetPathExtension]), event.ID())
 	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
@@ -167,7 +174,7 @@ func (p *CloudStorageSourceArchiveProbe) Forward(ctx context.Context, event clou
 // Forward deletes a Cloud Storage object in order to generate a notification event.
 func (p *CloudStorageSourceDeleteProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	// Create the receiver channel
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventTargetPathExtension]), event.ID())
+	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventTargetPathExtension]), event.ID())
 	cleanupFunc, err := p.receivedEvents.CreateReceiverChannel(channelID)
 	if err != nil {
 		return fmt.Errorf("Failed to create receiver channel: %v", err)
@@ -226,6 +233,6 @@ func (p *CloudStorageSourceProbe) Receive(ctx context.Context, event cloudevents
 		return fmt.Errorf("Unrecognized Cloud Storage event type: %s", event.Type())
 	}
 	eventID = fmt.Sprintf("%s-%s", forwardType, eventID)
-	channelID := channelID(fmt.Sprint(event.Extensions()[probeEventReceiverPathExtension]), eventID)
+	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventReceiverPathExtension]), eventID)
 	return p.receivedEvents.SignalReceiverChannel(channelID)
 }
