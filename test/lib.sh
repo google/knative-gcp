@@ -40,13 +40,22 @@ function start_knative_gcp_monitoring() {
 
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
+  before_installing_knative_gcp || return 1
+  cloud_run_events_setup $@ || return 1
+  after_installing_knative_gcp || return 1
+}
+
+# Install components required before installing knative-gcp.
+function before_installing_knative_gcp() {
   start_latest_knative_serving || return 1
   # Try reapply eventing yaml again if config-imc-event-dispatcher failed to start
   # TODO: Restore the below line after https://github.com/knative/eventing/issues/3244 is fixed
   #start_latest_knative_eventing || return 1
   start_latest_knative_eventing || start_latest_knative_eventing || return 1
   start_knative_gcp_monitoring "$KNATIVE_GCP_MONITORING_YAML" || return 1
-  cloud_run_events_setup $@ || return 1
+}
+
+function after_installing_knative_gcp() {
   istio_patch || return 1
   knative_eventing_config_tracing || return 1
 }
@@ -86,17 +95,22 @@ function start_knative_gcp_from_latest_release() {
     "${url}/${yaml}" || return 1
 }
 
-# The install_cloud_run_events* functions are used for installing a different version
-# of cloud run events, so it does not reinstall iostio related work
-function install_cloud_run_events() {
+function install_cloud_run_events_nocheck_pods_running() {
   local kne_config
   kne_config="${1:-${CLOUD_RUN_EVENTS_CONFIG}}"
   subheader "Installing Cloud Run Events from: ${kne_config}"
   if [ -d "${kne_config}" ]; then
+    # Install the latest Cloud Run Events in the current cluster.
     ko apply --strict -f ${kne_config} || return 1
   else
     kubectl apply -f $kne_config || return 1
   fi
+}
+
+# The install_cloud_run_events* functions are used for installing a different version
+# of cloud run events, so it does not reinstall iostio related work
+function install_cloud_run_events() {
+  install_cloud_run_events_nocheck_pods_running
   wait_until_pods_running events-system || return 1
 }
 
