@@ -48,14 +48,14 @@ Workload Identity see
     gcloud iam service-accounts add-iam-policy-binding \
      --role roles/iam.workloadIdentityUser \
      --member serviceAccount:$PROJECT_ID.svc.id.goog[cloud-run-events/broker] \
-     cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
+     events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com
     ```
 
 1.  Annotate the `broker` Kubernetes Service Account with
-    `iam.gke.io/gcp-service-account=cre-dataplane@PROJECT_ID.iam.gserviceaccount.com`
+    `iam.gke.io/gcp-service-account=events-sources-gsa@PROJECT_ID.iam.gserviceaccount.com`
 
     ```shell
-    kubectl --namespace cloud-run-events  annotate serviceaccount broker iam.gke.io/gcp-service-account=cre-dataplane@${PROJECT_ID}.iam.gserviceaccount.com
+    kubectl --namespace cloud-run-events  annotate serviceaccount broker iam.gke.io/gcp-service-account=events-sources-gsa@${PROJECT_ID}.iam.gserviceaccount.com
     ```
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
@@ -65,7 +65,7 @@ Workload Identity see
 
    ```shell
    gcloud iam service-accounts keys create cre-dataplane.json \
-   --iam-account=cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
+     --iam-account=events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com
    ```
 
 1. Create a secret on the Kubernetes cluster with the downloaded key.

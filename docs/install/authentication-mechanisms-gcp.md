@@ -11,11 +11,11 @@ step is creating a
 with the appropriate permissions needed for the control plane to manage GCP
 resources.
 
-You need to create a new Google Cloud Service Account named `cloud-run-events`
+You need to create a new Google Cloud Service Account named `events-controller-gsa`
 with the following command:
 
 ```shell
-gcloud iam service-accounts create cloud-run-events
+gcloud iam service-accounts create events-controller-gsa
 ```
 
 Then, give that Google Cloud Service Account permissions on your project. The
@@ -42,7 +42,7 @@ in case you want your Google Cloud Service Account to manage multiple projects.
 
 ```shell
 gcloud projects add-iam-policy-binding $PROJECT_ID \
---member=serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
+--member=serviceAccount:events-controller-gsa@$PROJECT_ID.iam.gserviceaccount.com \
 --role roles/owner
 ```
 
@@ -104,7 +104,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
    If you are configuring Authentication Mechanism for the Control Plane, you
    can replace `ksa-namespace` with `cloud-run-events`, `ksa-name` with
-   `controller`, and `gsa-name` with `cloud-run-events`
+   `controller`, and `gsa-name` with `events-controller-gsa`
 
 1. Annotate the Kubernetes Service Account `ksa-name`.
 
@@ -115,7 +115,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
    If you are configuring Authentication Mechanism for the Control Plane, you
    can replace `ksa-namespace` with `cloud-run-events`, `ksa-name` with
-   `controller`, and `gsa-name` with `cloud-run-events`
+   `controller`, and `gsa-name` with `events-controller-gsa`
 
 ### Option 2: Kubernetes Secrets
 
@@ -124,7 +124,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
    ```shell
    gcloud iam service-accounts keys create cloud-run-events.json \
-   --iam-account=cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com
+     --iam-account=events-controller-gsa@$PROJECT_ID.iam.gserviceaccount.com
    ```
 
 1. Create a Secret on the Kubernetes cluster in the `cloud-run-events` namespace
@@ -140,7 +140,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ## Authentication Mechanism for the Data Plane
 
 This is the manual auth configuration for the Data Plane and using the Google
-Cloud Service Account `cre-dataplane` as the credential. Refer to
+Cloud Service Account `events-sources-gsa` as the credential. Refer to
 [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md)
 for automated scripts.
 
@@ -154,7 +154,7 @@ for automated scripts.
 
 - **_Non-default scenario:_**
 
-  Using the Google Cloud Service Account `cre-dataplane` you created in
+  Using the Google Cloud Service Account `events-sources-gsa` you created in
   [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md)
   and using
   [Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
@@ -167,7 +167,7 @@ for automated scripts.
   configuration in the Control Plane)
 
   You will have a Kubernetes Service Account after the above configuration,
-  which is bound to the Google Cloud Service Account `cre-dataplane`. Remember
+  which is bound to the Google Cloud Service Account `events-sources-gsa`. Remember
   to put this Kubernetes Service Account name as the `spec.serviceAccountName`
   when you create resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
@@ -179,14 +179,14 @@ for automated scripts.
   you can authorize the Controller to configure Workload Identity for you.
 
   You need to grant `iam.serviceAccountAdmin` permission of the Google Cloud
-  Service Account `cre-dataplane` you created in
+  Service Account `events-sources-gsa` you created in
   [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md)
-  to the Control Plane's Google Cloud Service Account `cloud-run-events` by:
+  to the Control Plane's Google Cloud Service Account `events-controller-gsa` by:
 
   ```shell
   gcloud iam service-accounts add-iam-policy-binding \
-   cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com  \
-   --member=serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
+   events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com  \
+   --member=serviceAccount:events-controller-gsa@$PROJECT_ID.iam.gserviceaccount.com \
    --role roles/iam.serviceAccountAdmin
   ```
 
@@ -205,7 +205,7 @@ for automated scripts.
     clusterDefaults:
       workloadIdentityMapping:
         serviceAccountName: default-cre-dataplane
-        default-cre-dataplane: cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
+        default-cre-dataplane: events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com
   ```
 
   When updating the configuration, note that `default-auth-config` is nested
@@ -213,7 +213,7 @@ for automated scripts.
   the example configuration in `_example`.
 
   Here, `default-cre-dataplane` refers to a Kubernetes Service Account bound to
-  the Google Cloud Service Account `cre-dataplane`. Remember to put this
+  the Google Cloud Service Account `events-sources-gsa`. Remember to put this
   Kubernetes Service Account name as the `spec.serviceAccountName` when you
   create resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
@@ -222,7 +222,7 @@ for automated scripts.
   specific namespace. Once it is set in the ConfigMap `config-gcp-auth`, the
   Control Plane will create it for you and configure the corresponding Workload
   Identity relationship between the Kubernetes Service Account
-  `default-cre-dataplane` and the Google Cloud Service Account `cre-dataplane`
+  `default-cre-dataplane` and the Google Cloud Service Account `events-sources-gsa`
   when you create resources using the Kubernetes Service Account
   `default-cre-dataplane`.
 
@@ -237,18 +237,18 @@ for automated scripts.
   `CloudAuditLogsSource`, `CloudPubSubSource`, etc.) can cause the Kubernetes
   Service Account `default-cre-dataplane` to be created. If they can also create
   Pods in that namespace, then they can make a Pod that uses the Google Service
-  Account `cre-dataplane` credentials.
+  Account `events-sources-gsa` credentials.
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 
 1. Download a new JSON private key for the Google Cloud Service Account
-   `cre-dataplane` created in
+   `events-sources-gsa` created in
    [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md).
    **Be sure not to check this key into source control!**
 
    ```shell
    gcloud iam service-accounts keys create cre-dataplane.json \
-   --iam-account=cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
+     --iam-account=events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com
    ```
 
 1. Create a secret on the Kubernetes cluster with the downloaded key. Remember

@@ -66,7 +66,7 @@ There are two ways to set up authentication mechanism.
     the Google SDK clients.
     ```
     cred_file=$(pwd)/cre-dataplane.json
-    gcloud iam service-accounts keys create ${cred_file} --iam-account=cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
+    gcloud iam service-accounts keys create ${cred_file} --iam-account=events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com
     export GOOGLE_APPLICATION_CREDENTIALS=${cred_file}
     ```
 1.  [Install GCP Broker](../../docs/install/install-gcp-broker.md).
