@@ -20,8 +20,11 @@ limitations under the License.
 package lib
 
 import (
+	"io"
 	"os"
 	"testing"
+
+	"knative.dev/hack/shell"
 )
 
 // GetEnvOrFail gets the specified environment variable. If the variable is not set, then the test exits with an error.
@@ -31,4 +34,29 @@ func GetEnvOrFail(t *testing.T, key string) string {
 		t.Fatalf("Environment variable %q not set", key)
 	}
 	return value
+}
+
+func CallShellFunctionAndGetStdout(funcName, scriptNameWithPath, projectLocation string, out io.Writer) error {
+	loc, err := shell.NewProjectLocation(projectLocation)
+	if err != nil {
+		return err
+	}
+	exec := shell.NewExecutor(shell.ExecutorConfig{
+		ProjectLocation: loc,
+		Streams: shell.Streams{
+			Out: out,
+		},
+	})
+	fn := shell.Function{
+		Script: shell.Script{
+			Label:      funcName,
+			ScriptPath: scriptNameWithPath,
+		},
+		FunctionName: funcName,
+	}
+	return exec.RunFunction(fn)
+}
+
+func CallShellFunction(funcName, scriptNameWithPath, projectLocation string) error {
+	return CallShellFunctionAndGetStdout(funcName, scriptNameWithPath, projectLocation, nil)
 }
