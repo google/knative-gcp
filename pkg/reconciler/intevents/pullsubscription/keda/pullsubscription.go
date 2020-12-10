@@ -91,7 +91,7 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 	}
 
 	// If deployment has replicaUnavailable error, it potentially has authentication configuration issues.
-	if replicaUnavailable := src.Status.PropagateDeploymentAvailability(existing); replicaUnavailable {
+	if replicaAvailable := src.Status.PropagateDeploymentAvailability(existing); !replicaAvailable {
 		podList, err := authcheck.GetPodList(ctx, psresources.GetLabelSelector(r.ControllerAgentName, src.Name), r.KubeClientSet, src.Namespace)
 		if err != nil {
 			logging.FromContext(ctx).Error("Error propagating authentication check message", zap.Error(err))

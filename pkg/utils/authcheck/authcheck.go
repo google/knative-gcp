@@ -25,56 +25,42 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	nethttp "net/http"
 
-	"go.uber.org/zap"
 	"golang.org/x/oauth2/google"
+
+	authcheckclient "github.com/google/knative-gcp/pkg/gclient/authcheck"
 )
 
 const (
-	// Resource is used as the path to get the default token from metadata server.
+	// resource is used as the path to get the default token from metadata server.
 	// In workload-identity-gsa mode, this path will return a token if
 	// corresponding k8s service account and google service account establish a correct relationship.
 	resource = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"
-	// Scope is used as the scope to get token from default credential.
+	// scope is used as the scope to get token from default credential.
 	scope = "https://www.googleapis.com/auth/cloud-platform"
+	// authMessage is the key words to determine if a termination log is about authentication.
+	authMessage = "checking authentication"
 )
 
 // AuthenticationCheck performs the authentication check running in the Pod.
-func AuthenticationCheck(ctx context.Context, logger *zap.Logger, authType AuthType, response nethttp.ResponseWriter) {
+func AuthenticationCheck(ctx context.Context, authType AuthType, client authcheckclient.Client) error {
 	var err error
-	if authType == Secret {
+	switch authType {
+	case Secret:
 		err = AuthenticationCheckForSecret(ctx)
-	} else if authType == WorkloadIdentityGSA {
-		err = AuthenticationCheckForWorkloadIdentityGSA(resource)
-	} else {
-		logger.Error(fmt.Sprint("unknown auth type: ", authType))
-		response.WriteHeader(nethttp.StatusUnauthorized)
-		return
+	case WorkloadIdentityGSA:
+		err = AuthenticationCheckForWorkloadIdentityGSA(resource, client)
+	case WorkloadIdentity:
+		// Skip authentication check running in Pods which use new generation of Workload Identity.
+		return nil
+	default:
+		return fmt.Errorf("unknown auth type: %s", authType)
 	}
 
 	if err != nil {
-		// Transfer the error into a string message, otherwise, marshalling error may return nil unexpectedly.
-		message := fmt.Sprintf("using %s mode, when checking authentication, get error: %s", authType, err.Error())
-		b, err := json.Marshal(map[string]interface{}{
-			"error": message,
-		})
-		if err != nil {
-			logger.Error(fmt.Sprint("error marshalling the message: ", message), zap.Error(err))
-			response.WriteHeader(nethttp.StatusUnauthorized)
-			return
-		}
-		errs := ioutil.WriteFile("/dev/termination-log", b, 0644)
-		if errs != nil {
-			logger.Error(fmt.Sprintf("error writing the message: %s into termination log", message), zap.Error(err))
-			response.WriteHeader(nethttp.StatusUnauthorized)
-			return
-		}
-		logger.Info(message)
-		response.WriteHeader(nethttp.StatusUnauthorized)
-		return
+		return writeTerminationLog(err, authType)
 	}
-	response.WriteHeader(nethttp.StatusOK)
+	return nil
 }
 
 // AuthenticationCheckForSecret performs the authentication check for Pod in secret mode.
@@ -94,13 +80,13 @@ func AuthenticationCheckForSecret(ctx context.Context) error {
 }
 
 // AuthenticationCheckForWorkloadIdentityGSA performs the authentication check for Pod in workload-identity-gsa mode.
-func AuthenticationCheckForWorkloadIdentityGSA(resource string) error {
+func AuthenticationCheckForWorkloadIdentityGSA(resource string, client authcheckclient.Client) error {
 	req, err := http.NewRequest(http.MethodGet, resource, nil)
 	if err != nil {
 		return fmt.Errorf("error setting up the http request: %w", err)
 	}
 	req.Header.Set("Metadata-Flavor", "Google")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("error getting the http response: %w", err)
 	}
@@ -111,4 +97,20 @@ func AuthenticationCheckForWorkloadIdentityGSA(resource string) error {
 			"probably due to corresponding k8s service account and google service account do not establish a correct relationship")
 	}
 	return nil
+}
+
+func writeTerminationLog(inputErr error, authType AuthType) error {
+	// Transfer the error into a string message, otherwise, marshalling error may return nil unexpectedly.
+	message := fmt.Sprintf("%s, pod uses %s mode, get error: %s", authMessage, authType, inputErr.Error())
+	b, err := json.Marshal(map[string]interface{}{
+		"error": message,
+	})
+	if err != nil {
+		return fmt.Errorf("error marshalling the message: %s", message)
+	}
+	err = ioutil.WriteFile("/dev/termination-log", b, 0644)
+	if err != nil {
+		return fmt.Errorf("error writing the message into termination log, message: %s", message)
+	}
+	return inputErr
 }

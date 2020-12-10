@@ -25,6 +25,9 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+
+	authchecktesting "github.com/google/knative-gcp/pkg/gclient/authcheck/testing"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 )
 
 func TestSyncPool(t *testing.T) {
@@ -42,7 +45,7 @@ func TestSyncPool(t *testing.T) {
 			t.Fatalf("failed to get random free port: %v", err)
 		}
 
-		_, gotErr := StartSyncPool(ctx, syncPool, make(chan struct{}), 30*time.Second, p, "")
+		_, gotErr := StartSyncPool(ctx, syncPool, make(chan struct{}), 30*time.Second, p, authcheck.WorkloadIdentityGSA, authchecktesting.NewFakeAuthCheckClient(http.StatusAccepted))
 		if gotErr == nil {
 			t.Error("StartSyncPool got unexpected result")
 		}
@@ -65,7 +68,7 @@ func TestSyncPool(t *testing.T) {
 		}
 
 		ch := make(chan struct{})
-		if _, err := StartSyncPool(ctx, syncPool, ch, time.Second, p, ""); err != nil {
+		if _, err := StartSyncPool(ctx, syncPool, ch, time.Second, p, authcheck.WorkloadIdentityGSA, authchecktesting.NewFakeAuthCheckClient(http.StatusAccepted)); err != nil {
 			t.Errorf("StartSyncPool got unexpected error: %v", err)
 		}
 		syncPool.verifySyncOnceCalled(t)
@@ -74,10 +77,13 @@ func TestSyncPool(t *testing.T) {
 
 		ch <- struct{}{}
 		syncPool.verifySyncOnceCalled(t)
-		// False because authentication check will fail.
-		assertProbeCheckResult(t, p, false, "healthz")
+		assertProbeCheckResult(t, p, true, "healthz")
 		// False because path is not healthz.
 		assertProbeCheckResult(t, p, false, "empty")
+
+		time.Sleep(time.Second)
+		// False because it exceeds StaleDuration.
+		assertProbeCheckResult(t, p, false, "healthz")
 	})
 }
 

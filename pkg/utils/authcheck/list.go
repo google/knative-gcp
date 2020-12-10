@@ -31,7 +31,7 @@ import (
 	"knative.dev/pkg/logging"
 )
 
-// GetPodList get a list of Pod in a certain namespace with certain label selector.
+// GetPodList get a list of Pods in a certain namespace with certain label selector.
 func GetPodList(ctx context.Context, ls labels.Selector, kubeClientSet kubernetes.Interface, namespace string) (*corev1.PodList, error) {
 	pl, err := kubeClientSet.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: ls.String(),
@@ -47,7 +47,8 @@ func GetPodList(ctx context.Context, ls labels.Selector, kubeClientSet kubernete
 	return pl, nil
 }
 
-// GetTerminationLogFromPodList get termination log from Pod.
+// GetTerminationLogFromPodList gets the termination log from Pods that failed due to authentication check errors.
+// It returns the first authentication termination log from any Pods in the list.
 func GetTerminationLogFromPodList(pl *corev1.PodList) string {
 	for _, pod := range pl.Items {
 		for _, cs := range pod.Status.ContainerStatuses {
@@ -62,5 +63,5 @@ func GetTerminationLogFromPodList(pl *corev1.PodList) string {
 }
 
 func isAuthMessage(message string) bool {
-	return strings.Contains(message, "checking authentication")
+	return strings.Contains(message, authMessage)
 }

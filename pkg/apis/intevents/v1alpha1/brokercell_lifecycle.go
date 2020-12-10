@@ -77,11 +77,11 @@ func (bs *BrokerCellStatus) InitializeConditions() {
 // PropagateIngressAvailability uses the availability of the provided Endpoints
 // to determine if BrokerCellConditionIngress should be marked as true or
 // false.
-// For authentication check purpose, this method will return true  if a false condition
+// For authentication check purpose, this method will return false if a false condition
 // is caused by deployment's replicaset unavailable.
 // ReplicaSet unavailable is a sign for potential authentication problems.
 func (bs *BrokerCellStatus) PropagateIngressAvailability(ep *corev1.Endpoints, ind *appsv1.Deployment) bool {
-	replicaUnavailable := false
+	replicaAvailable := true
 	if duck.EndpointsAreAvailable(ep) {
 		brokerCellCondSet.Manage(bs).MarkTrue(BrokerCellConditionIngress)
 	} else {
@@ -89,14 +89,14 @@ func (bs *BrokerCellStatus) PropagateIngressAvailability(ep *corev1.Endpoints, i
 			if cond.Type == appsv1.DeploymentAvailable {
 				if cond.Status == corev1.ConditionFalse {
 					if cond.Reason == replicaUnavailableReason {
-						replicaUnavailable = true
+						replicaAvailable = false
 					}
 				}
 			}
 		}
 		brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionIngress, "EndpointsUnavailable", "Endpoints %q is unavailable.", ep.Name)
 	}
-	return replicaUnavailable
+	return replicaAvailable
 }
 
 func (bs *BrokerCellStatus) MarkIngressFailed(reason, format string, args ...interface{}) {
@@ -110,12 +110,12 @@ func (bs *BrokerCellStatus) MarkIngressUnknown(reason, format string, args ...in
 // PropagateFanoutAvailability uses the availability of the provided Deployment
 // to determine if BrokerCellConditionFanout should be marked as true or
 // false.
-// For authentication check purpose, this method will return true  if a false condition
+// For authentication check purpose, this method will return false if a false condition
 // is caused by deployment's replicaset unavailable.
 // ReplicaSet unavailable is a sign for potential authentication problems.
 func (bs *BrokerCellStatus) PropagateFanoutAvailability(d *appsv1.Deployment) bool {
 	deploymentAvailableFound := false
-	replicaUnavailable := false
+	replicaAvailable := true
 	for _, cond := range d.Status.Conditions {
 		if cond.Type == appsv1.DeploymentAvailable {
 			deploymentAvailableFound = true
@@ -123,7 +123,7 @@ func (bs *BrokerCellStatus) PropagateFanoutAvailability(d *appsv1.Deployment) bo
 				brokerCellCondSet.Manage(bs).MarkTrue(BrokerCellConditionFanout)
 			} else if cond.Status == corev1.ConditionFalse {
 				if cond.Reason == replicaUnavailableReason {
-					replicaUnavailable = true
+					replicaAvailable = false
 				}
 				brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionFanout, cond.Reason, cond.Message)
 			} else if cond.Status == corev1.ConditionUnknown {
@@ -134,7 +134,7 @@ func (bs *BrokerCellStatus) PropagateFanoutAvailability(d *appsv1.Deployment) bo
 	if !deploymentAvailableFound {
 		brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionFanout, "DeploymentUnavailable", "Deployment %q is unavailable.", d.Name)
 	}
-	return replicaUnavailable
+	return replicaAvailable
 }
 
 func (bs *BrokerCellStatus) MarkFanoutFailed(reason, format string, args ...interface{}) {
@@ -153,7 +153,7 @@ func (bs *BrokerCellStatus) MarkFanoutUnknown(reason, format string, args ...int
 // ReplicaSet unavailable is a sign for potential authentication problems.
 func (bs *BrokerCellStatus) PropagateRetryAvailability(d *appsv1.Deployment) bool {
 	deploymentAvailableFound := false
-	replicaUnavailable := false
+	replicaAvailable := true
 	for _, cond := range d.Status.Conditions {
 		if cond.Type == appsv1.DeploymentAvailable {
 			deploymentAvailableFound = true
@@ -161,7 +161,7 @@ func (bs *BrokerCellStatus) PropagateRetryAvailability(d *appsv1.Deployment) boo
 				brokerCellCondSet.Manage(bs).MarkTrue(BrokerCellConditionRetry)
 			} else if cond.Status == corev1.ConditionFalse {
 				if cond.Reason == replicaUnavailableReason {
-					replicaUnavailable = true
+					replicaAvailable = false
 				}
 				brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionRetry, cond.Reason, cond.Message)
 			} else if cond.Status == corev1.ConditionUnknown {
@@ -172,7 +172,7 @@ func (bs *BrokerCellStatus) PropagateRetryAvailability(d *appsv1.Deployment) boo
 	if !deploymentAvailableFound {
 		brokerCellCondSet.Manage(bs).MarkUnknown(BrokerCellConditionRetry, "DeploymentUnavailable", "Deployment %q is unavailable.", d.Name)
 	}
-	return replicaUnavailable
+	return replicaAvailable
 }
 
 func (bs *BrokerCellStatus) MarkRetryFailed(reason, format string, args ...interface{}) {

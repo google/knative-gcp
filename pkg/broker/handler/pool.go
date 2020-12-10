@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	authcheckclient "github.com/google/knative-gcp/pkg/gclient/authcheck"
 	"github.com/google/knative-gcp/pkg/logging"
 	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
@@ -44,6 +45,7 @@ type probeChecker struct {
 	lastReportTime   time.Time
 	maxStaleDuration time.Duration
 	port             int
+	authCheckClient  authcheckclient.Client
 	authType         authcheck.AuthType
 }
 
@@ -85,7 +87,11 @@ func (c *probeChecker) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	// Perform Authentication check.
-	authcheck.AuthenticationCheck(req.Context(), c.logger, c.authType, w)
+	if err := authcheck.AuthenticationCheck(req.Context(), c.authType, c.authCheckClient); err != nil {
+		c.logger.Error("authentication check failed", zap.Error(err))
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	// Zero maxStaleDuration means infinite.
 	if c.maxStaleDuration == 0 {
@@ -106,6 +112,7 @@ func StartSyncPool(
 	maxStaleDuration time.Duration,
 	probeCheckPort int,
 	authType authcheck.AuthType,
+	authCheckClient authcheckclient.Client,
 ) (SyncPool, error) {
 
 	if err := syncPool.SyncOnce(ctx); err != nil {
@@ -116,6 +123,7 @@ func StartSyncPool(
 		maxStaleDuration: maxStaleDuration,
 		port:             probeCheckPort,
 		authType:         authType,
+		authCheckClient:  authCheckClient,
 	}
 	go c.start(ctx)
 	if syncSignal != nil {

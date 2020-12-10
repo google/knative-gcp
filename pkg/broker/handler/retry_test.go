@@ -18,6 +18,7 @@ package handler
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	handlertesting "github.com/google/knative-gcp/pkg/broker/handler/testing"
+	authchecktesting "github.com/google/knative-gcp/pkg/gclient/authcheck/testing"
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 
 	_ "knative.dev/pkg/metrics/testing"
@@ -61,7 +63,7 @@ func TestRetryWatchAndSync(t *testing.T) {
 	}
 
 	t.Run("start sync pool creates no handler", func(t *testing.T) {
-		_, err = StartSyncPool(ctx, syncPool, signal, time.Minute, p, "")
+		_, err = StartSyncPool(ctx, syncPool, signal, time.Minute, p, "", authchecktesting.NewFakeAuthCheckClient(http.StatusAccepted))
 		if err != nil {
 			t.Errorf("unexpected error from starting sync pool: %v", err)
 		}
@@ -157,7 +159,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		t.Fatalf("failed to get random free port: %v", err)
 	}
 
-	if _, err := StartSyncPool(ctx, syncPool, signal, time.Minute, p, ""); err != nil {
+	if _, err := StartSyncPool(ctx, syncPool, signal, time.Minute, p, "", authchecktesting.NewFakeAuthCheckClient(http.StatusAccepted)); err != nil {
 		t.Errorf("unexpected error from starting sync pool: %v", err)
 	}
 

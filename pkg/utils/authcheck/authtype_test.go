@@ -86,7 +86,18 @@ func TestGetAuthTypeForSources(t *testing.T) {
 			wantError:    nil,
 		},
 		{
-			name: "error get authType, invalid service account",
+			name: "successfully get authType for workload identity, with old style project id",
+			objects: []runtime.Object{
+				pkgtesting.NewServiceAccount(serviceAccountName, testNS,
+					pkgtesting.WithServiceAccountAnnotation("longname@project-example.example.com.iam.gserviceaccount.com"),
+				),
+			},
+			args:         serviceAccountArgs,
+			wantAuthType: WorkloadIdentityGSA,
+			wantError:    nil,
+		},
+		{
+			name: "error get authType, invalid service account without a email-like format",
 			objects: []runtime.Object{
 				pkgtesting.NewServiceAccount(serviceAccountName, testNS,
 					pkgtesting.WithServiceAccountAnnotation("name"),
@@ -94,8 +105,32 @@ func TestGetAuthTypeForSources(t *testing.T) {
 			},
 			args:         serviceAccountArgs,
 			wantAuthType: "",
-			wantError: fmt.Errorf("using Workload Identity for authentication configuration: the annotation iam.gke.io/gcp-service-account "+
-				"of Kubernetes Service Account %s does not contain a valid Google Service Account", serviceAccountName),
+			wantError: fmt.Errorf("using Workload Identity for authentication configuration: name is not a valid Google Service Account " +
+				"as the value of Kubernetes Service Account test-ksa for annotation iam.gke.io/gcp-service-account"),
+		},
+		{
+			name: "error get authType, invalid service account with a email-like format but without project id",
+			objects: []runtime.Object{
+				pkgtesting.NewServiceAccount(serviceAccountName, testNS,
+					pkgtesting.WithServiceAccountAnnotation("name@.iam.gserviceaccount.com"),
+				),
+			},
+			args:         serviceAccountArgs,
+			wantAuthType: "",
+			wantError: fmt.Errorf("using Workload Identity for authentication configuration: name@.iam.gserviceaccount.com is not a valid Google Service Account " +
+				"as the value of Kubernetes Service Account test-ksa for annotation iam.gke.io/gcp-service-account"),
+		},
+		{
+			name: "error get authType, invalid service account with a email-like format but name is too short",
+			objects: []runtime.Object{
+				pkgtesting.NewServiceAccount(serviceAccountName, testNS,
+					pkgtesting.WithServiceAccountAnnotation("name@project-id.iam.gserviceaccount.com"),
+				),
+			},
+			args:         serviceAccountArgs,
+			wantAuthType: "",
+			wantError: fmt.Errorf("using Workload Identity for authentication configuration: name@project-id.iam.gserviceaccount.com is not a valid Google Service Account " +
+				"as the value of Kubernetes Service Account test-ksa for annotation iam.gke.io/gcp-service-account"),
 		},
 		{
 			name:         "error get authType, service account doesn't exist",

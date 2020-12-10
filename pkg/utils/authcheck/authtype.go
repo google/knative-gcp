@@ -57,7 +57,12 @@ const (
 
 var (
 	// Regex for a valid google service account email.
-	emailRegexp = regexp.MustCompile(`^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}\.iam\.gserviceaccount.com$`)
+	// The format of google service account email is service-account-name@project-id.iam.gserviceaccount.com
+	// Service account name must be between 6 and 30 characters (inclusive),
+	// must begin with a lowercase letter, and consist of lowercase alphanumeric characters that can be separated by hyphens.
+	// Project IDs must start with a lowercase letter and can have lowercase ASCII letters, digits or hyphens,
+	// must be between 6 and 30 characters. Some older project may have dot as well, like project-example.example.com
+	emailRegexp = regexp.MustCompile(`^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.*\.iam\.gserviceaccount\.com$`)
 
 	BrokerSecret = &corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{Name: "google-broker-key"},
@@ -123,15 +128,8 @@ func getAuthTypeForWorkloadIdentity(ctx context.Context, serviceAccountLister co
 	} else if email := kServiceAccount.Annotations[resources.WorkloadIdentityKey]; email != "" {
 		// Check if email is a valid google service account email.
 		if match := emailRegexp.FindStringSubmatch(email); len(match) == 0 {
-			// The format of google service account email is service-account-name@project-id.iam.gserviceaccount.com
-
-			// Service account name must be between 6 and 30 characters (inclusive),
-			// must begin with a lowercase letter, and consist of lowercase alphanumeric characters that can be separated by hyphens.
-
-			// Project IDs must start with a lowercase letter and can have lowercase ASCII letters, digits or hyphens,
-			// must be between 6 and 30 characters.
-			return "", fmt.Errorf("the annotation %s of Kubernetes Service Account %s does not contain a valid Google Service Account",
-				resources.WorkloadIdentityKey, args.ServiceAccountName)
+			return "", fmt.Errorf("%s is not a valid Google Service Account as the value of Kubernetes Service Account %s for annotation %s",
+				email, args.ServiceAccountName, resources.WorkloadIdentityKey)
 		}
 		return WorkloadIdentityGSA, nil
 	}

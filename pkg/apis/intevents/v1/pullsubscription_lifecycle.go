@@ -95,12 +95,12 @@ func (s *PullSubscriptionStatus) MarkDeployedUnknown(reason, messageFormat strin
 
 // PropagateDeploymentAvailability uses the availability of the provided Deployment to determine if
 // PullSubscriptionConditionDeployed should be marked as true or false.
-// For authentication check purpose, this method will return true  if a false condition
+// For authentication check purpose, this method will return false if a false condition
 // is caused by deployment's replicaset unavailable.
 // ReplicaSet unavailable is a sign for potential authentication problems.
 func (s *PullSubscriptionStatus) PropagateDeploymentAvailability(d *appsv1.Deployment) bool {
 	deploymentAvailableFound := false
-	replicaUnavailable := false
+	replicaAvailable := true
 	for _, cond := range d.Status.Conditions {
 		if cond.Type == appsv1.DeploymentAvailable {
 			deploymentAvailableFound = true
@@ -108,7 +108,7 @@ func (s *PullSubscriptionStatus) PropagateDeploymentAvailability(d *appsv1.Deplo
 				pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionDeployed)
 			} else if cond.Status == corev1.ConditionFalse {
 				if cond.Reason == replicaUnavailableReason {
-					replicaUnavailable = true
+					replicaAvailable = false
 				}
 				pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionDeployed, cond.Reason, cond.Message)
 			} else if cond.Status == corev1.ConditionUnknown {
@@ -119,5 +119,5 @@ func (s *PullSubscriptionStatus) PropagateDeploymentAvailability(d *appsv1.Deplo
 	if !deploymentAvailableFound {
 		pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionDeployed, "DeploymentUnavailable", "Deployment %q is unavailable.", d.Name)
 	}
-	return replicaUnavailable
+	return replicaAvailable
 }
