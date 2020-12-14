@@ -47,6 +47,7 @@ import (
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic/resources"
@@ -89,6 +90,10 @@ type Reconciler struct {
 
 // Check that our Reconciler implements Interface.
 var _ topicreconciler.Interface = (*Reconciler)(nil)
+
+// defaultMetadataClientCreator is a create function to get a default metadata client. This can be
+// swapped during testing.
+var defaultMetadataClientCreator func() metadataClient.Client = metadataClient.NewDefaultMetadataClient
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1.Topic) reconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("topic", topic)))
@@ -166,13 +171,12 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1.Topic) error 
 			return fmt.Errorf("Topic %q does not exist and the topic policy doesn't allow creation", topic.Spec.Topic)
 		} else {
 			topicConfig := &pubsub.TopicConfig{}
-			if r.dataresidencyStore != nil {
-				if dataresidencyCfg := r.dataresidencyStore.Load(); dataresidencyCfg != nil {
-					if dataresidencyCfg.DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig) {
-						r.Logger.Debugw("Updated Topic Config AllowedPersistenceRegions for topic reconciler", zap.Any("topicConfig", *topicConfig))
-					}
-				}
+			if updated, err := r.dataresidencyStore.ComputeAllowedPersistenceRegions(topicConfig, defaultMetadataClientCreator); err != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to update topic config: ", zap.Error(err))
+			} else if updated {
+				logging.FromContext(ctx).Desugar().Debug("Updated Topic Config AllowedPersistenceRegions for topic reconciler", zap.Any("topicConfig", *topicConfig))
 			}
+
 			// Create a new topic with the given name.
 			t, err = client.CreateTopicWithConfig(ctx, topic.Spec.Topic, topicConfig)
 			if err != nil {

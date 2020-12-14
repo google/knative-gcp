@@ -22,8 +22,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
-
 	"cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/multierr"
@@ -32,8 +30,10 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
@@ -64,6 +64,10 @@ type Reconciler struct {
 // Check that Reconciler implements Interface
 var _ brokerreconciler.Interface = (*Reconciler)(nil)
 var _ brokerreconciler.Finalizer = (*Reconciler)(nil)
+
+// defaultMetadataClientCreator is a create function to get a default metadata client. This can be
+// swapped during testing.
+var defaultMetadataClientCreator func() metadataClient.Client = metadataClient.NewDefaultMetadataClient
 
 var brokerGVK = brokerv1beta1.SchemeGroupVersion.WithKind("Broker")
 
@@ -141,12 +145,10 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	// Check if topic exists, and if not, create it.
 	topicID := resources.GenerateDecouplingTopicName(b)
 	topicConfig := &pubsub.TopicConfig{Labels: labels}
-	if r.dataresidencyStore != nil {
-		if dataresidencyConfig := r.dataresidencyStore.Load(); dataresidencyConfig != nil {
-			if dataresidencyConfig.DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig) {
-				logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Broker", zap.Any("topicConfig", *topicConfig))
-			}
-		}
+	if updated, err := r.dataresidencyStore.ComputeAllowedPersistenceRegions(topicConfig, defaultMetadataClientCreator); err != nil {
+		logger.Error("Failed to update topic config: ", zap.Error(err))
+	} else if updated {
+		logger.Debug("Updated Topic Config AllowedPersistenceRegions for Broker", zap.Any("topicConfig", *topicConfig))
 	}
 	topic, err := pubsubReconciler.ReconcileTopic(ctx, topicID, topicConfig, b, &b.Status)
 	if err != nil {

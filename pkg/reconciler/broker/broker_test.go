@@ -43,6 +43,8 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
@@ -305,6 +307,9 @@ func TestAllCases(t *testing.T) {
 		},
 		PostConditions: []func(*testing.T, *TableRow){
 			TopicExistsWithConfig("cre-bkr_testnamespace_test-broker_abc123", &pubsub.TopicConfig{
+				MessageStoragePolicy: pubsub.MessageStoragePolicy{
+					AllowedPersistenceRegions: []string{"us-central1"},
+				},
 				Labels: map[string]string{
 					"broker_class": "googlecloud", "name": "test-broker", "namespace": "testnamespace", "resource": "brokers",
 				},
@@ -469,6 +474,9 @@ func TestAllCases(t *testing.T) {
 			// maxTime=0 is used to inject error
 			createPubsubClientFn = GetFailedTestClientCreateFunc(srv.Addr, maxTime.(int))
 			testPSClient = nil
+		}
+		defaultMetadataClientCreator = func() metadataClient.Client {
+			return testingMetadataClient.NewTestClient(testingMetadataClient.TestClientData{})
 		}
 
 		ctx = addressable.WithDuck(ctx)
