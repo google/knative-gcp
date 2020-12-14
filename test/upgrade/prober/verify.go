@@ -89,7 +89,7 @@ func replayLogs(log *zap.SugaredLogger, exec *fetcher.Execution) {
 		case "warning":
 			logFunc = log.Warn
 		}
-		logFunc("Reply of fetcher log: ", entry.Datetime, " ", entry.Message)
+		logFunc("Replay of fetcher log: ", entry.Datetime, " ", entry.Message)
 	}
 }
 
