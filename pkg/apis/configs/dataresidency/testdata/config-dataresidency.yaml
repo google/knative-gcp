@@ -20,6 +20,7 @@ metadata:
 data:
   default-dataresidency-config: |
     clusterDefaults:
+      messagestoragepolicy.global: false
       messagestoragepolicy.allowedpersistenceregions: []
   _example: |
     ################################
@@ -46,6 +47,8 @@ data:
       # clusterDefaults are the defaults to apply to every namespace in the
       # cluster
       clusterDefaults:
+        # messagestoragepolicy.global will set to the Org Policy
+        messagestoragepolicy.global: false
         # messagestoragepolicy.allowedpersistenceregions field specifies
         # all the allowed regions for data residency. The default or an empty value will
         # mean no data residency requirement.

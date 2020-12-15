@@ -46,8 +46,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
@@ -405,9 +403,6 @@ func TestAllCasesTrigger(t *testing.T) {
 						DeadLetterTopic:     "projects/test-project-id/topics/test-dead-letter-topic-id",
 					}),
 				TopicExistsWithConfig("cre-tgr_testnamespace_test-trigger_abc123", &pubsub.TopicConfig{
-					MessageStoragePolicy: pubsub.MessageStoragePolicy{
-						AllowedPersistenceRegions: []string{"us-central1"},
-					},
 					Labels: map[string]string{
 						"name": "test-trigger", "namespace": "testnamespace", "resource": "triggers",
 					},
@@ -602,9 +597,6 @@ func TestAllCasesTrigger(t *testing.T) {
 						DeadLetterTopic:     "projects/test-project-id/topics/test-dead-letter-topic-id",
 					}),
 				TopicExistsWithConfig("cre-tgr_testnamespace_test-trigger_abc123", &pubsub.TopicConfig{
-					MessageStoragePolicy: pubsub.MessageStoragePolicy{
-						AllowedPersistenceRegions: []string{"us-central1"},
-					},
 					Labels: map[string]string{
 						"name": "test-trigger", "namespace": "testnamespace", "resource": "triggers",
 					},
@@ -694,9 +686,6 @@ func TestAllCasesTrigger(t *testing.T) {
 			// maxTime=0 is used to inject error
 			createPubsubClientFn = GetFailedTestClientCreateFunc(srv.Addr, maxTime.(int))
 			testPSClient = nil
-		}
-		defaultMetadataClientCreator = func() metadataClient.Client {
-			return testingMetadataClient.NewTestClient(testingMetadataClient.TestClientData{})
 		}
 
 		ctx = addressable.WithDuck(ctx)

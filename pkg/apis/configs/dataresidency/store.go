@@ -19,9 +19,6 @@ package dataresidency
 import (
 	"context"
 
-	"cloud.google.com/go/pubsub"
-	"github.com/google/knative-gcp/pkg/gclient/metadata"
-	"github.com/google/knative-gcp/pkg/utils"
 	"knative.dev/pkg/configmap"
 )
 
@@ -92,28 +89,4 @@ func (s *Store) Load() *Config {
 	return &Config{
 		DataResidencyDefaults: s.UntypedLoad(ConfigMapName()).(*Defaults).DeepCopy(),
 	}
-}
-
-// ComputeAllowedPersistenceRegions computes the final message storage policy in
-// topicConfig. When the store is nil, default to the cluster zone
-func (s *Store) ComputeAllowedPersistenceRegions(topicConfig *pubsub.TopicConfig, metadataClientCreator func() metadata.Client) (bool, error) {
-	if s != nil {
-		if cfg := s.Load(); cfg != nil {
-			return cfg.DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig), nil
-		}
-	} else {
-		// defualt to cluster zone
-		zone, err := metadataClientCreator().Zone()
-		if err != nil {
-			return false, err
-		}
-		region, err := utils.ZoneToRegion(zone)
-		if err != nil {
-			return false, err
-		}
-		topicConfig.MessageStoragePolicy.AllowedPersistenceRegions = []string{region}
-		return true, nil
-
-	}
-	return false, nil
 }

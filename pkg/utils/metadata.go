@@ -88,3 +88,25 @@ func ZoneToRegion(zone string) (string, error) {
 	// but let's be strict here
 	return "", fmt.Errorf("zone %s is not valid", zone)
 }
+
+// ClusterRegion returns the region of the cluster
+func ClusterRegion(clusterRegion string, clientCreator func() metadataClient.Client) (string, error) {
+	if clusterRegion != "" {
+		return clusterRegion, nil
+	}
+	zone, err := clientCreator().Zone()
+	if err != nil {
+		return "", err
+	}
+	return ZoneToRegion(zone)
+}
+
+// ClusterRegionGetter is a handler that gets cluster region
+type ClusterRegionGetter func() (string, error)
+
+// NewClusterRegionGetter returns CluterRegionGetter in production code
+func NewClusterRegionGetter() ClusterRegionGetter {
+	return func() (string, error) {
+		return ClusterRegion("", defaultMetadataClientCreator)
+	}
+}

@@ -39,7 +39,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
@@ -63,9 +62,8 @@ var (
 	// defaulting fails.
 	defaultBackoffDelay  = "PT1S"
 	defaultBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
-	// defaultMetadataClientCreator is a create function to get a default metadata client. This can be
-	// swapped during testing.
-	defaultMetadataClientCreator func() metadataClient.Client = metadataClient.NewDefaultMetadataClient
+	// clusterRegionGetter is a function that can get the cluster region
+	clusterRegionGetter = utils.NewClusterRegionGetter()
 )
 
 // Reconciler implements controller.Reconciler for Trigger resources.
@@ -247,10 +245,12 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	// Check if topic exists, and if not, create it.
 	topicID := resources.GenerateRetryTopicName(trig)
 	topicConfig := &pubsub.TopicConfig{Labels: labels}
-	if updated, err := r.dataresidencyStore.ComputeAllowedPersistenceRegions(topicConfig, defaultMetadataClientCreator); err != nil {
-		logger.Error("Failed to update topic config: ", zap.Error(err))
-	} else if updated {
-		logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Trigger", zap.Any("topicConfig", *topicConfig))
+	if r.dataresidencyStore != nil {
+		if updated, err := r.dataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, clusterRegionGetter); err != nil {
+			logger.Error("Failed to update topic config: ", zap.Error(err))
+		} else if updated {
+			logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Trigger", zap.Any("topicConfig", *topicConfig))
+		}
 	}
 	topic, err := pubsubReconciler.ReconcileTopic(ctx, topicID, topicConfig, trig, &trig.Status)
 	if err != nil {

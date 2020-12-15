@@ -51,8 +51,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	pubsubv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic/resources"
@@ -564,11 +562,7 @@ func TestAllCases(t *testing.T) {
 		}},
 		OtherTestData: map[string]interface{}{},
 		PostConditions: []func(*testing.T, *TableRow){
-			TopicExistsWithConfig(testTopicID, &pubsub.TopicConfig{
-				MessageStoragePolicy: pubsub.MessageStoragePolicy{
-					AllowedPersistenceRegions: []string{"us-central1"},
-				},
-			}),
+			TopicExistsWithConfig(testTopicID, &pubsub.TopicConfig{}),
 		},
 	}, {
 		Name: "topic successfully reconciles and reuses existing publisher",
@@ -819,9 +813,6 @@ func TestAllCases(t *testing.T) {
 			}
 		} else {
 			createClientFn = GetTestClientCreateFunc(srv.Addr)
-		}
-		defaultMetadataClientCreator = func() metadataClient.Client {
-			return testingMetadataClient.NewTestClient(testingMetadataClient.TestClientData{})
 		}
 		pubsubBase := &intevents.PubSubBase{
 			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),

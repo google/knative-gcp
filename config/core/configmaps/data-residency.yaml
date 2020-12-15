@@ -18,10 +18,11 @@ metadata:
   name: config-dataresidency
   namespace: cloud-run-events
   annotations:
-    knative.dev/example-checksum: "809e8f92"
+    knative.dev/example-checksum: "f9aa8a13"
 data:
   default-dataresidency-config: |
     clusterDefaults:
+      messagestoragepolicy.global: false
       messagestoragepolicy.allowedpersistenceregions: []
   _example: |
     ################################
@@ -40,14 +41,16 @@ data:
     # to actually change the configuration.
 
     # default-dataresidency-config is the configuration for determining the default
-    # data residency to apply to all objects that require data residency.
-    # This is expected to be Channels and Sources and Brokers.
+    # data residency to apply to all objects that require data residency but,
+    # do not specify it. This is expected to be Channels and Sources.
     #
     # We only support cluster scoped now
     default-dataresidency-config: |
       # clusterDefaults are the defaults to apply to every namespace in the
       # cluster
       clusterDefaults:
+        # messagestoragepolicy.global will set to the Org Policy
+        messagestoragepolicy.global: false
         # messagestoragepolicy.allowedpersistenceregions field specifies
         # all the allowed regions for data residency. The default or an empty value will
         # mean no data residency requirement.
