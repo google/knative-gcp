@@ -3,7 +3,7 @@ module github.com/google/knative-gcp
 go 1.14
 
 require (
-	cloud.google.com/go v0.66.0
+	cloud.google.com/go v0.72.0
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
 	cloud.google.com/go/pubsub v1.8.0
 	cloud.google.com/go/storage v1.10.0
@@ -11,7 +11,7 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.3.1
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.4.3
-	github.com/google/go-cmp v0.5.2
+	github.com/google/go-cmp v0.5.4
 	github.com/google/uuid v1.1.2
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
@@ -22,19 +22,19 @@ require (
 	go.opencensus.io v0.22.5
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
-	google.golang.org/api v0.34.0
-	google.golang.org/genproto v0.0.0-20200929141702-51c3e5b607fe
-	google.golang.org/grpc v1.33.1
+	golang.org/x/net v0.0.0-20201209123823-ac852fbbde11
+	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
+	google.golang.org/api v0.36.0
+	google.golang.org/genproto v0.0.0-20201211151036-40ec1c210f7a
+	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0
 	k8s.io/api v0.18.12
 	k8s.io/apimachinery v0.18.12
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.19.1-0.20201214054043-ece174166d56
-	knative.dev/hack v0.0.0-20201201234937-fddbf732e450
-	knative.dev/pkg v0.0.0-20201210165642-80c1131539da
-	knative.dev/serving v0.19.1-0.20201214043642-6b15a4913378
+	knative.dev/eventing v0.19.1-0.20201215082544-1e06e5ce4c64
+	knative.dev/hack v0.0.0-20201214230143-4ed1ecb8db24
+	knative.dev/pkg v0.0.0-20201215101243-af53027cbd91
+	knative.dev/serving v0.19.1-0.20201215115043-21bd10dccbcf
 	sigs.k8s.io/yaml v1.2.0
 )
 
