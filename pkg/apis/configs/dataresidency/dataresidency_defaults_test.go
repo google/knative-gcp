@@ -73,7 +73,9 @@ func TestComputeAllowedPersistenceRegions(t *testing.T) {
 		topicConfigRegions []string
 		dsRegions          []string
 		expectedRegions    []string
+		global             bool
 		err                bool
+		updated            bool
 	}{
 		{
 			ns:                 "subset",
@@ -81,6 +83,7 @@ func TestComputeAllowedPersistenceRegions(t *testing.T) {
 			dsRegions:          []string{"us-west1"},
 			expectedRegions:    []string{"us-west1"},
 			err:                true,
+			updated:            false,
 		},
 		{
 			ns:                 "conflict",
@@ -88,6 +91,7 @@ func TestComputeAllowedPersistenceRegions(t *testing.T) {
 			dsRegions:          []string{"us-west1"},
 			expectedRegions:    []string{"us-west1"},
 			err:                true,
+			updated:            false,
 		},
 		{
 			ns:                 "topic-nil",
@@ -95,6 +99,7 @@ func TestComputeAllowedPersistenceRegions(t *testing.T) {
 			dsRegions:          []string{"us-west1"},
 			expectedRegions:    []string{"us-west1"},
 			err:                false,
+			updated:            true,
 		},
 		{
 			ns:                 "topic-nil-ds-empty",
@@ -102,6 +107,7 @@ func TestComputeAllowedPersistenceRegions(t *testing.T) {
 			dsRegions:          []string{},
 			expectedRegions:    []string{clusterRegion},
 			err:                false,
+			updated:            true,
 		},
 		{
 			ns:                 "topic-nil-ds-empty",
@@ -109,6 +115,16 @@ func TestComputeAllowedPersistenceRegions(t *testing.T) {
 			dsRegions:          nil,
 			expectedRegions:    []string{clusterRegion},
 			err:                true,
+			updated:            true,
+		},
+		{
+			ns:                 "topic-nil-ds-global",
+			global:             true,
+			topicConfigRegions: nil,
+			dsRegions:          nil,
+			expectedRegions:    nil,
+			err:                false,
+			updated:            false,
 		},
 	}
 	clusterRegionGetter := func() (string, error) {
@@ -118,14 +134,18 @@ func TestComputeAllowedPersistenceRegions(t *testing.T) {
 		t.Run(tc.ns, func(t *testing.T) {
 			defaults := &Defaults{}
 			defaults.ClusterDefaults.AllowedPersistenceRegions = tc.dsRegions
+			defaults.ClusterDefaults.Global = tc.global
 			topicConfig := &pubsub.TopicConfig{}
 			topicConfig.MessageStoragePolicy.AllowedPersistenceRegions = tc.topicConfigRegions
-			_, err := defaults.ComputeAllowedPersistenceRegions(topicConfig, clusterRegionGetter)
+			updated, err := defaults.ComputeAllowedPersistenceRegions(topicConfig, clusterRegionGetter)
 			if err != nil {
 				if !tc.err {
 					t.Error("Unexpected error: ", err)
 				}
 				return
+			}
+			if updated != tc.updated {
+				t.Errorf("Unexpected updated value, expected: %v, got %v", tc.updated, updated)
 			}
 			if diff := cmp.Diff(tc.expectedRegions, topicConfig.MessageStoragePolicy.AllowedPersistenceRegions); diff != "" {
 				t.Errorf("Unexpected value (-want +got): %s", diff)
