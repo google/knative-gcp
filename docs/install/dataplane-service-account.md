@@ -46,7 +46,7 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
    the broker data plane (e.g. `events-broker-gsa`):
 
    ```shell
-   gcloud iam service-accounts create events-sources-gsa
+   gcloud iam service-accounts create events-broker-gsa
    ```
 
 1. Give that Service Account the necessary permissions on your project.
@@ -82,6 +82,20 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
 
    The same set of permissions should also be assigned to the broker data plane
    account `events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com`.
+
+   ```shell
+   gcloud projects add-iam-policy-binding $PROJECT_ID \
+     --member=serviceAccount:events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com \
+     --role roles/pubsub.editor
+
+   gcloud projects add-iam-policy-binding $PROJECT_ID \
+     --member=serviceAccount:events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com \
+     --role roles/monitoring.metricWriter
+
+   gcloud projects add-iam-policy-binding $PROJECT_ID \
+     --member=serviceAccount:events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com \
+     --role roles/cloudtrace.agent
+   ```
 
 ## Configure the Authentication Mechanism for GCP (the Data Plane)
 

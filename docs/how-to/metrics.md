@@ -28,6 +28,12 @@ be expanded to include sources. To enable metrics for sources, the source GSA
 (e.g `events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com`) will also require
 the `monitoring.metricWriter` role.
 
+```shell
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member=serviceAccount:events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com \
+  --role roles/monitoring.metricWriter
+```
+
 ## Enable Metrics in the `config-observability` ConfigMap
 
 Edit the `config-observability` ConfigMap under the `cloud-run-events` namespace
