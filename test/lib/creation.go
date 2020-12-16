@@ -18,6 +18,7 @@ package lib
 
 import (
 	"context"
+
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 
 	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
