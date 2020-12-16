@@ -206,27 +206,27 @@ broker data plane named `events-broker-gsa`. Follow
   default-auth-config: |
     clusterDefaults:
       workloadIdentityMapping:
-        serviceAccountName: default-cre-dataplane
-        default-cre-dataplane: events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com
+        serviceAccountName: sources
+        sources: events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com
   ```
 
   When updating the configuration, note that `default-auth-config` is nested
   under `data`. If you encounter an error, you are likely attempting to modify
   the example configuration in `_example`.
 
-  Here, `default-cre-dataplane` refers to a Kubernetes Service Account bound to
+  Here, `sources` refers to a Kubernetes Service Account bound to
   the Google Cloud Service Account `events-sources-gsa`. Remember to put this
   Kubernetes Service Account name as the `spec.serviceAccountName` when you
   create resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
 
-  Kubernetes Service Account `default-cre-dataplane` doesn't need to exist in a
+  Kubernetes Service Account `sources` doesn't need to exist in a
   specific namespace. Once it is set in the ConfigMap `config-gcp-auth`, the
   Control Plane will create it for you and configure the corresponding Workload
   Identity relationship between the Kubernetes Service Account
-  `default-cre-dataplane` and the Google Cloud Service Account `events-sources-gsa`
+  `sources` and the Google Cloud Service Account `events-sources-gsa`
   when you create resources using the Kubernetes Service Account
-  `default-cre-dataplane`.
+  `sources`.
 
   A `Condition` `WorkloadIdentityConfigured` will show up under resources'
   `Status`, indicating the Workload Identity configuration status.
@@ -237,7 +237,7 @@ broker data plane named `events-broker-gsa`. Follow
   permission to the Controller. As an example, if you followed the instructions
   above, then any user that can make a Knative-GCP source or Channel (e.g.
   `CloudAuditLogsSource`, `CloudPubSubSource`, etc.) can cause the Kubernetes
-  Service Account `default-cre-dataplane` to be created. If they can also create
+  Service Account `sources` to be created. If they can also create
   Pods in that namespace, then they can make a Pod that uses the Google Service
   Account `events-sources-gsa` credentials.
 

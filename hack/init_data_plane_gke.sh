@@ -17,7 +17,7 @@
 # Usage: ./init_data_plane_gke.sh [MODE] [NAMESPACE] [K8S_SERVICE_ACCOUNT] [PROJECT_ID]
 #  [MODE] is an optional parameter to specify the mode to use, default to `default`.
 #  [NAMESPACE] is an optional parameter to specify the namespace to use, default to `default`. If the namespace does not exist, the script will create it.
-#  [K8S_SERVICE_ACCOUNT] is an optional parameter to specify the k8s service account to use, default to `default-cre-dataplane`. If the k8s service account does not exist, the script will create it.
+#  [K8S_SERVICE_ACCOUNT] is an optional parameter to specify the k8s service account to use, default to `sources`. If the k8s service account does not exist, the script will create it.
 #  [PROJECT_ID] is an optional parameter to specify the project to use, default to `gcloud config get-value project`.
 #  If user wants to specify PROJECT_ID, user also need to specify MODE, NAMESPACE and K8S_SERVICE_ACCOUNT.
 # The script always uses the same data plane Google service account called events-sources-gsa and control plane Google service account called events-controller-gsa.
@@ -31,7 +31,7 @@ DATA_PLANE_SERVICE_ACCOUNT="events-sources-gsa"
 
 DEFAULT_MODE="default"
 DEFAULT_NAMESPACE="default"
-DEFAULT_K8S_SERVICE_ACCOUNT="default-cre-dataplane"
+DEFAULT_K8S_SERVICE_ACCOUNT="sources"
 
 echo "Start configuring workload identity..."
 

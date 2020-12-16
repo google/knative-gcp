@@ -163,7 +163,7 @@ Plane:
   1. `NAMESPACE`: an optional parameter to specify the namespace to use, default
      to `default`. If the namespace does not exist, the script will create it.
   1. `K8S_SERVICE_ACCOUNT`: an optional parameter to specify the k8s service
-     account to use, default to `default-cre-dataplane`. If the k8s service
+     account to use, default to `sources`. If the k8s service
      account does not exist, the script will create it.
   1. `PROJECT_ID`: an optional parameter to specify the project to use, default
      to `gcloud config get-value project`.
@@ -196,7 +196,7 @@ Plane:
   ```
 
   After running this, every time when you create resources, the Controller will
-  create a Kubernetes service account `default-cre-dataplane` in the namespace
+  create a Kubernetes service account `sources` in the namespace
   where your resources reside, and this Kubernetes service account is bound to
   the Google Cloud Service Account `events-sources-gsa` (you just created it in the
   last step). What's more, you don't need to put this Kubernetes Service Account
