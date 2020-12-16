@@ -54,7 +54,7 @@ Object Notifications for when a new object is added to Google Cloud Storage
         ```
       - Option 2: Use `curl` to fetch the email:
         ```shell
-        export GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=./cre-dataplane.json \
+        export GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=./events-sources-key.json \
           gcloud auth application-default print-access-token\`" \
           "https://www.googleapis.com/storage/v1/projects/$PROJECT_ID/serviceAccount" \
           | grep email_address | cut -d '"' -f 4`

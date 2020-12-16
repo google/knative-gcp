@@ -28,11 +28,25 @@ In general, we would just need permissions to receive messages
 (`roles/pubsub.subscriber`). However, in the case of the `Channel`, we would
 also need the ability to publish messages (`roles/pubsub.publisher`).
 
-1. Create a new Service Account named `cre-dataplane` with the following
-   command:
+1. Create a new Google Cloud Service Account (GSA) named `events-sources-gsa`
+   with the following command:
 
    ```shell
-   gcloud iam service-accounts create cre-dataplane
+   gcloud iam service-accounts create events-sources-gsa
+   ```
+
+   Depending on the use case, you may want to have a single GSA for all the
+   sources, like the example above, or setup multiple similar service accounts.
+   If you are setting up multiple GSAs you can follow the same set of steps, but
+   take note to configure authentication only for the namespaces that are
+   intended for each account.
+
+   Additionally, while it is possible to use the same GSA for both the broker
+   and the sources, we recommend creating a dedicated Google Service Account for
+   the broker data plane (e.g. `events-broker-gsa`):
+
+   ```shell
+   gcloud iam service-accounts create events-broker-gsa
    ```
 
 1. Give that Service Account the necessary permissions on your project.
@@ -44,7 +58,7 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
 
    ```shell
    gcloud projects add-iam-policy-binding $PROJECT_ID \
-     --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
+     --member=serviceAccount:events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com \
      --role roles/pubsub.editor
    ```
 
@@ -54,7 +68,7 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
 
    ```shell
    gcloud projects add-iam-policy-binding $PROJECT_ID \
-     --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
+     --member=serviceAccount:events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com \
      --role roles/monitoring.metricWriter
    ```
 
@@ -62,11 +76,32 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
 
    ```shell
    gcloud projects add-iam-policy-binding $PROJECT_ID \
-     --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
+     --member=serviceAccount:events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com \
+     --role roles/cloudtrace.agent
+   ```
+
+   The same set of permissions should also be assigned to the broker data plane
+   account `events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com`.
+
+   ```shell
+   gcloud projects add-iam-policy-binding $PROJECT_ID \
+     --member=serviceAccount:events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com \
+     --role roles/pubsub.editor
+
+   gcloud projects add-iam-policy-binding $PROJECT_ID \
+     --member=serviceAccount:events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com \
+     --role roles/monitoring.metricWriter
+
+   gcloud projects add-iam-policy-binding $PROJECT_ID \
+     --member=serviceAccount:events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com \
      --role roles/cloudtrace.agent
    ```
 
 ## Configure the Authentication Mechanism for GCP (the Data Plane)
+
+For the broker data plane configuration using `events-broker-gsa` follow the
+instructions in
+[Authentication Setup for GCP Broker](install-gcp-broker.md#authentication-setup-for-gcp-broker).
 
 If you want to run
 [example](https://github.com/google/knative-gcp/tree/master/docs/examples) to
@@ -128,7 +163,7 @@ Plane:
   1. `NAMESPACE`: an optional parameter to specify the namespace to use, default
      to `default`. If the namespace does not exist, the script will create it.
   1. `K8S_SERVICE_ACCOUNT`: an optional parameter to specify the k8s service
-     account to use, default to `default-cre-dataplane`. If the k8s service
+     account to use, default to `sources`. If the k8s service
      account does not exist, the script will create it.
   1. `PROJECT_ID`: an optional parameter to specify the project to use, default
      to `gcloud config get-value project`.
@@ -143,7 +178,7 @@ Plane:
 
   After running the script, you will have a Kubernetes Service Account
   `example-ksa` in namespace `example` which is bound to the Google Cloud
-  Service Account `cre-dataplane` (you just created it in the last step).
+  Service Account `events-sources-gsa` (you just created it in the last step).
   Remember to put this Kubernetes Service Account name as the
   `spec.serviceAccountName` when you create resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
@@ -161,9 +196,9 @@ Plane:
   ```
 
   After running this, every time when you create resources, the Controller will
-  create a Kubernetes service account `default-cre-dataplane` in the namespace
+  create a Kubernetes service account `sources` in the namespace
   where your resources reside, and this Kubernetes service account is bound to
-  the Google Cloud Service Account `cre-dataplane` (you just created it in the
+  the Google Cloud Service Account `events-sources-gsa` (you just created it in the
   last step). What's more, you don't need to put this Kubernetes Service Account
   name as the `spec.serviceAccountName` when you create resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples),
@@ -174,7 +209,7 @@ Plane:
 
   **_Note:_** The Controller currently doesn’t perform any access control
   checks, as a result, the Controller will configure Workload Identity (using
-  Google Service Account `cre-dataplane`'s credential) for any user who can
+  Google Service Account `events-sources-gsa`'s credential) for any user who can
   create a resource.
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
@@ -204,4 +239,4 @@ namespace `example` with the default secret name `google-cloud-key`
 
 After running the script, you will have a Kubernetes Secret `google-cloud-key`
 in namespace `example` which stores the key exported from the Google Cloud
-service account `cre-dataplane`(you just created it in the last step).
+service account `events-sources-gsa`(you just created it in the last step).

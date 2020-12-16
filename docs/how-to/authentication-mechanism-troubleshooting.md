@@ -133,13 +133,13 @@ kubectl describe cloudauditlogssource test -n default
 
 **_To solve this issue_**, you can:
 
-- Check the Google Cloud Service Account `cloud-run-events` for the Control
+- Check the Google Cloud Service Account `events-controller-gsa` for the Control
   Plane has all required permissions.
 - Check authentication configuration is correct for the Control Plane.
 
   - If you are using Workload Identity for the Control Plane, refer
     [here](../install/authentication-mechanisms-gcp.md/#workload-identity) to
-    check the Google Cloud Service Account `cloud-run-events`, and the
+    check the Google Cloud Service Account `events-controller-gsa`, and the
     Kubernetes Service Account `controller` in namespace `cloud-run-events`.
   - If you are using Kubernetes Secret for the Control Plane, refer
     [here](../install/authentication-mechanisms-gcp.md/#kubernetes-secrets) to
@@ -147,8 +147,8 @@ kubectl describe cloudauditlogssource test -n default
     `cloud-run-events`.
 
 **_Note:_** For Kubernetes Secret, if the JSON private key no longer exists
-under your Google Cloud Service Account `cloud-run-events`. Then, even the
-Google Cloud Service Account `cloud-run-events` has all required permissions,
+under your Google Cloud Service Account `events-controller-gsa`. Then, even the
+Google Cloud Service Account `events-controller-gsa` has all required permissions,
 and the corresponding Kubernetes Secret `google-cloud-key` is in namespace
 `cloud-run-events`, you still get permission related error. To such case, you
 have to re-download the JSON private key and re-create the Kubernetes Secret,
@@ -280,13 +280,13 @@ kubectl get deployment -n default
   ***
   **_To solve this issue_**, you can:
 
-* Check the Google Cloud Service Account `cre-dataplane` for the Data Plane has
+* Check the Google Cloud Service Account `events-sources-gsa` for the Data Plane has
   all required permissions.
 * Check authentication configuration is correct for this resource instance.
 
   - If you are using Workload Identity for this resource instance, refer
     [here](../install/authentication-mechanisms-gcp.md/#workload-identity) to
-    check the Google Cloud Service Account `cre-dataplane`, and the Kubernetes
+    check the Google Cloud Service Account `events-sources-gsa`, and the Kubernetes
     Service Account in the namespace where this resource instance resides.
   - If you are using Kubernetes Secrets for this resource instance, refer
     [here](../install/authentication-mechanisms-gcp.md/#kubernetes-secrets) to
@@ -318,12 +318,12 @@ kubectl describe resource-kind resource-instance-name -n resource-instance-names
   type: Ready
   status: "False"
   message: 'rpc error: code = PermissionDenied desc = Permission iam.serviceAccounts.setIamPolicy
-    is required to perform this operation on service account projects/-/serviceAccounts/cre-dataplane@PROJECT_ID.iam.gserviceaccount.com.'
+    is required to perform this operation on service account projects/-/serviceAccounts/events-sources-gsa@PROJECT_ID.iam.gserviceaccount.com.'
   reason: WorkloadIdentityFailed
   ```
   it is most likely that you didn't grant `iam.serviceAccountAdmin` permission
   of the Google Cloud Service Account to the Control Plane's Google Cloud
-  Service Account `cloud-run-events`, refer to
+  Service Account `events-controller-gsa`, refer to
   [default scenario](../install/dataplane-service-account.md/#option-1-use-workload-identity)
   to grant permission.
 - If the `Condition` `Ready` has concurrency related error message like this:

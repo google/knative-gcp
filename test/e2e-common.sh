@@ -20,7 +20,7 @@
 which gcloud &> /dev/null || gcloud() { echo "[ignore-gcloud $*]" 1>&2; }
 
 # Constants used for creating ServiceAccount for the Control Plane if it's not running on Prow.
-readonly CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW="cloud-run-events"
+readonly CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW="events-controller-gsa"
 
 # Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
 readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW="cre-pubsub"

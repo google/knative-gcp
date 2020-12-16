@@ -7,19 +7,30 @@ In cloud console, navigate to
 Enable the monitoring metrics API and add your project to a workspace (or create
 a new workspace).
 
-## Add the Monitoring Metric Writer Role to the Dataplane Service Account
+## Add the Monitoring Metric Writer Role to the Data Plane Service Account
 
-Determine the Google Service Account your data plane is running as. If you
-followed [Install Knative-GCP](../install/install-knative-gcp.md) or
+Determine the Google Service Account your broker data plane is running as. If
+you followed [Install Knative-GCP](../install/install-knative-gcp.md) or
 [Create a Service Account for the Data Plane](../install/dataplane-service-account.md),
 then the Google Service Account will be named
-`cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com`. The following command uses
-that name. If the Google Service Account you are using is different, then
+`events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com`. The following command
+uses that name. If the Google Service Account you are using is different, then
 replace it before running the command.
 
 ```shell
 gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
+  --member=serviceAccount:events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com \
+  --role roles/monitoring.metricWriter
+```
+
+We currently provide metrics only for the GCP Broker, but this option will soon
+be expanded to include sources. To enable metrics for sources, the source GSA
+(e.g `events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com`) will also require
+the `monitoring.metricWriter` role.
+
+```shell
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member=serviceAccount:events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com \
   --role roles/monitoring.metricWriter
 ```
 

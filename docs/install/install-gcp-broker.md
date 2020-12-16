@@ -18,6 +18,9 @@ reducing hops and Pub/Sub message consumption.
 1. [Install Knative-GCP](./install-knative-gcp.md).
 
 2. [Create a Service Account for the Data Plane](./dataplane-service-account.md#create-a-google-cloud-service-account-to-interact-with-pubsub).
+   We recommend creating a dedicated Google Service Account for the broker data
+   plane (e.g. `events-broker-gsa`), but it is also possible to use the same
+   GSA for both the broker and the sources.
 
 ## Authentication Setup for GCP Broker
 
@@ -39,23 +42,24 @@ Workload Identity see
     [configure authentication mechanism](authentication-mechanisms-gcp.md) using
     the Workload Identity option.
 
-1.  Bind the `broker` Kubernetes Service Account with Google Cloud Service
-    Account, this will add `role/iam.workloadIdentityUser` to the Google Cloud
-    Service Account. The scope of this role is only for this specific Google
-    Cloud Service Account. It is equivalent to this command:
+1.  Bind the `broker` Kubernetes Service Account with the `events-broker-gsa`
+    Google Cloud Service Account, this will add `role/iam.workloadIdentityUser`
+    to the Google Cloud Service Account. The scope of this role is only for this
+    specific Google Cloud Service Account. It is equivalent to this command:
 
     ```shell
     gcloud iam service-accounts add-iam-policy-binding \
-     --role roles/iam.workloadIdentityUser \
-     --member serviceAccount:$PROJECT_ID.svc.id.goog[cloud-run-events/broker] \
-     cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
+      --role roles/iam.workloadIdentityUser \
+      --member serviceAccount:$PROJECT_ID.svc.id.goog[cloud-run-events/broker] \
+      events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com
     ```
 
 1.  Annotate the `broker` Kubernetes Service Account with
-    `iam.gke.io/gcp-service-account=cre-dataplane@PROJECT_ID.iam.gserviceaccount.com`
+    `iam.gke.io/gcp-service-account=events-broker-gsa@PROJECT_ID.iam.gserviceaccount.com`
 
     ```shell
-    kubectl --namespace cloud-run-events  annotate serviceaccount broker iam.gke.io/gcp-service-account=cre-dataplane@${PROJECT_ID}.iam.gserviceaccount.com
+    kubectl --namespace cloud-run-events annotate serviceaccount broker \
+      iam.gke.io/gcp-service-account=events-broker-gsa@${PROJECT_ID}.iam.gserviceaccount.com
     ```
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
@@ -64,14 +68,15 @@ Workload Identity see
    check this key into source control!**
 
    ```shell
-   gcloud iam service-accounts keys create cre-dataplane.json \
-   --iam-account=cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com
+   gcloud iam service-accounts keys create events-broker-key.json \
+     --iam-account=events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com
    ```
 
 1. Create a secret on the Kubernetes cluster with the downloaded key.
 
    ```shell
-   kubectl --namespace cloud-run-events create secret generic google-broker-key --from-file=key.json=cre-dataplane.json
+   kubectl --namespace cloud-run-events create secret generic \
+     google-broker-key --from-file=key.json=events-broker-key.json
    ```
 
    `google-broker-key` and `key.json` are default values expected by our

@@ -16,7 +16,7 @@
 
 # Usage: ./init_control_plane.sh
 #  [PROJECT_ID] is an optional parameter to specify the project to use, default to `gcloud config get-value project`.
-# The script always uses the same service account called cloud-run-events.
+# The script always uses the same service account called events-controller-gsa.
 set -o errexit
 set -o nounset
 set -euo pipefail

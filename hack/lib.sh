@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-readonly CONTROL_PLANE_SERVICE_ACCOUNT="cloud-run-events"
+readonly CONTROL_PLANE_SERVICE_ACCOUNT="events-controller-gsa"
 readonly CONTROL_PLANE_NAMESPACE="cloud-run-events"
 
 readonly PUBSUB_SERVICE_ACCOUNT="cre-pubsub"

@@ -19,14 +19,14 @@
 #  [SECRET] is an optional parameter to specify the secret, default to `google-cloud-key`. If the secret does not exist, the script will create it.
 #  [PROJECT_ID] is an optional parameter to specify the project to use, default to `gcloud config get-value project`.
 #  If user wants to specify PROJECT_ID, user also need to specify NAMESPACE, SECRET.
-# The script always uses the same data plane google service account called cre-dataplane.
+# The script always uses the same data plane google service account called events-sources-gsa.
 set -o errexit
 set -o nounset
 set -euo pipefail
 
 source $(dirname "$0")/lib.sh
 
-DATA_PLANE_SERVICE_ACCOUNT="cre-dataplane"
+DATA_PLANE_SERVICE_ACCOUNT="events-sources-gsa"
 DATA_PLANE_SERVICE_ACCOUNT_KEY_TEMP="$(mktemp)"
 DEFAULT_NAMESPACE="default"
 

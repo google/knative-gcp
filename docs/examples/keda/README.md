@@ -55,7 +55,7 @@ the `CloudPubSubSource` scalable. Note that you could do this for any of the
 
    ```shell
    gcloud projects add-iam-policy-binding $PROJECT_ID \
-     --member=serviceAccount:cre-dataplane@$PROJECT_ID.iam.gserviceaccount.com \
+     --member=serviceAccount:events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com \
      --role roles/monitoring.viewer
    ```
 
