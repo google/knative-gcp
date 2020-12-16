@@ -80,7 +80,7 @@ func TestAuthenticationCheck(t *testing.T) {
 
 			defer server.Close()
 
-			authCheck := &DefaultAuthenticationCheck{
+			authCheck := &defaultAuthenticationCheck{
 				authType: tc.authType,
 				client:   server.Client(),
 				url:      server.URL,

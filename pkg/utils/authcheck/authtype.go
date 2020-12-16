@@ -127,7 +127,7 @@ func getAuthTypeForWorkloadIdentity(ctx context.Context, serviceAccountLister co
 		return "", fmt.Errorf("error getting Kubernetes Service Account: %w", err)
 	} else if email := kServiceAccount.Annotations[resources.WorkloadIdentityKey]; email != "" {
 		// Check if email is a valid google service account email.
-		if match := emailRegexp.FindStringSubmatch(email); len(match) == 0 {
+		if match := emailRegexp.FindString(email); match == "" {
 			return "", fmt.Errorf("%s is not a valid Google Service Account as the value of Kubernetes Service Account %s for annotation %s",
 				email, args.ServiceAccountName, resources.WorkloadIdentityKey)
 		}

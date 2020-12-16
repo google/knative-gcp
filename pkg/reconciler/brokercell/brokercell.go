@@ -179,7 +179,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	if replicaAvailable := bc.Status.PropagateIngressAvailability(endpoints, ind); !replicaAvailable {
 		podList, err := authcheck.GetPodList(ctx, resources.GetLabelSelector(bc.Name, resources.IngressName), r.KubeClientSet, bc.Namespace)
 		if err != nil {
-			logging.FromContext(ctx).Error("Failed to propagate authentication check message from ingress component", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+			logging.FromContext(ctx).Error("Failed to propagate authentication check message from ingress component", zap.Error(err))
 			return err
 		}
 		if authenticationCheckMessage := authcheck.GetTerminationLogFromPodList(podList); authenticationCheckMessage != "" {
@@ -207,7 +207,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	if replicaAvailable := bc.Status.PropagateFanoutAvailability(fd); !replicaAvailable {
 		podList, err := authcheck.GetPodList(ctx, resources.GetLabelSelector(bc.Name, resources.FanoutName), r.KubeClientSet, bc.Namespace)
 		if err != nil {
-			logging.FromContext(ctx).Error("Failed to propagate authentication check message from fanout component", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+			logging.FromContext(ctx).Error("Failed to propagate authentication check message from fanout component", zap.Error(err))
 			return err
 		}
 		if authenticationCheckMessage := authcheck.GetTerminationLogFromPodList(podList); authenticationCheckMessage != "" {
@@ -232,7 +232,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	if replicaAvailable := bc.Status.PropagateRetryAvailability(rd); !replicaAvailable {
 		podList, err := authcheck.GetPodList(ctx, resources.GetLabelSelector(bc.Name, resources.RetryName), r.KubeClientSet, bc.Namespace)
 		if err != nil {
-			logging.FromContext(ctx).Error("Failed to propagate authentication check message from retry component", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+			logging.FromContext(ctx).Error("Failed to propagate authentication check message from retry component", zap.Error(err))
 			return err
 		}
 		if authenticationCheckMessage := authcheck.GetTerminationLogFromPodList(podList); authenticationCheckMessage != "" {

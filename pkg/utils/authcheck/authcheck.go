@@ -44,14 +44,14 @@ type AuthenticationCheck interface {
 	Check(ctx context.Context) error
 }
 
-type DefaultAuthenticationCheck struct {
+type defaultAuthenticationCheck struct {
 	authType AuthType
 	client   *http.Client
 	url      string
 }
 
 func NewDefault(authType AuthType) AuthenticationCheck {
-	return &DefaultAuthenticationCheck{
+	return &defaultAuthenticationCheck{
 		authType: authType,
 		client:   http.DefaultClient,
 		url:      resource,
@@ -59,7 +59,7 @@ func NewDefault(authType AuthType) AuthenticationCheck {
 }
 
 // AuthenticationCheck performs the authentication check running in the Pod.
-func (ac *DefaultAuthenticationCheck) Check(ctx context.Context) error {
+func (ac *defaultAuthenticationCheck) Check(ctx context.Context) error {
 	var err error
 	switch ac.authType {
 	case Secret:
@@ -109,8 +109,9 @@ func AuthenticationCheckForWorkloadIdentityGSA(resource string, client *http.Cli
 	defer resp.Body.Close()
 	// Check if we can successfully get the token.
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
-		return errors.New("the Pod is not fully authenticated, " +
-			"probably due to corresponding k8s service account and google service account do not establish a correct relationship")
+		return fmt.Errorf("the Pod is not fully authenticated, "+
+			"probably due to corresponding k8s service account and google service account do not establish a correct relationship, "+
+			"request returns status code: %d", resp.StatusCode)
 	}
 	return nil
 }

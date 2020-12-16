@@ -20,16 +20,12 @@ package authcheck
 
 import (
 	"context"
-	"errors"
 )
 
 type FakeAuthenticationCheck struct {
-	NoError bool
+	Err error
 }
 
 func (ac *FakeAuthenticationCheck) Check(ctx context.Context) error {
-	if ac.NoError {
-		return nil
-	}
-	return errors.New("induced error")
+	return ac.Err
 }

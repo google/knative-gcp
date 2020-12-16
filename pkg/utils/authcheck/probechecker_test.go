@@ -18,6 +18,7 @@ package authcheck
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -30,17 +31,17 @@ import (
 func TestProbeCheckResult(t *testing.T) {
 	testCases := []struct {
 		name           string
-		noError        bool
+		err            error
 		wantStatusCode int
 	}{
 		{
 			name:           "probe check got a failure result",
-			noError:        false,
+			err:            errors.New("induced error"),
 			wantStatusCode: http.StatusInternalServerError,
 		},
 		{
 			name:           "probe check got a success result",
-			noError:        true,
+			err:            nil,
 			wantStatusCode: http.StatusOK,
 		},
 	}
@@ -51,22 +52,16 @@ func TestProbeCheckResult(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			// Get a free port.
-			addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+			port, err := getFreePort()
 			if err != nil {
-				t.Fatal("Failed to resolve TCP address:", err)
+				t.Fatal(err)
 			}
-			l, err := net.ListenTCP("tcp", addr)
-			if err != nil {
-				t.Fatal("Failed to listen TCP:", err)
-			}
-			l.Close()
-			port := l.Addr().(*net.TCPAddr).Port
 
 			logger := logging.FromContext(ctx)
 			probeChecker := ProbeChecker{
 				logger:    logger,
 				port:      port,
-				authCheck: &FakeAuthenticationCheck{NoError: tc.noError},
+				authCheck: &FakeAuthenticationCheck{Err: tc.err},
 			}
 			go probeChecker.Start(ctx)
 
@@ -89,4 +84,17 @@ func TestProbeCheckResult(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, fmt.Errorf("failed to resolve TCP address: %w", err)
+	}
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, fmt.Errorf("failed to listen TCP: %w", err)
+	}
+	l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }

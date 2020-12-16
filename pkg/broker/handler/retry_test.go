@@ -62,7 +62,7 @@ func TestRetryWatchAndSync(t *testing.T) {
 	}
 
 	t.Run("start sync pool creates no handler", func(t *testing.T) {
-		_, err = StartSyncPool(ctx, syncPool, signal, time.Minute, p, &authcheck.FakeAuthenticationCheck{NoError: true})
+		_, err = StartSyncPool(ctx, syncPool, signal, time.Minute, p, &authcheck.FakeAuthenticationCheck{})
 		if err != nil {
 			t.Errorf("unexpected error from starting sync pool: %v", err)
 		}
@@ -158,7 +158,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		t.Fatalf("failed to get random free port: %v", err)
 	}
 
-	if _, err := StartSyncPool(ctx, syncPool, signal, time.Minute, p, &authcheck.FakeAuthenticationCheck{NoError: true}); err != nil {
+	if _, err := StartSyncPool(ctx, syncPool, signal, time.Minute, p, &authcheck.FakeAuthenticationCheck{}); err != nil {
 		t.Errorf("unexpected error from starting sync pool: %v", err)
 	}
 
