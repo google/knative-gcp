@@ -41,7 +41,6 @@ func TestProbeCheckResult(t *testing.T) {
 		},
 		{
 			name:           "probe check got a success result",
-			err:            nil,
 			wantStatusCode: http.StatusOK,
 		},
 	}
@@ -52,10 +51,7 @@ func TestProbeCheckResult(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			// Get a free port.
-			port, err := getFreePort()
-			if err != nil {
-				t.Fatal(err)
-			}
+			port := getFreePort(t)
 
 			logger := logging.FromContext(ctx)
 			probeChecker := ProbeChecker{
@@ -86,15 +82,15 @@ func TestProbeCheckResult(t *testing.T) {
 	}
 }
 
-func getFreePort() (int, error) {
+func getFreePort(t *testing.T) int {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
-		return 0, fmt.Errorf("failed to resolve TCP address: %w", err)
+		t.Fatal("Failed to resolve TCP address:", err)
 	}
 	l, err := net.ListenTCP("tcp", addr)
 	if err != nil {
-		return 0, fmt.Errorf("failed to listen TCP: %w", err)
+		t.Fatal("failed to listen TCP:", err)
 	}
 	l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
+	return l.Addr().(*net.TCPAddr).Port
 }
