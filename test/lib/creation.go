@@ -18,10 +18,10 @@ package lib
 
 import (
 	"context"
+	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 
 	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
-	knativegcptestresources "github.com/google/knative-gcp/test/lib/resources"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -216,10 +216,10 @@ func (c *Client) CreateSchedulerV1beta1OrFail(scheduler *eventsv1beta1.CloudSche
 }
 
 // CreateGCPBrokerV1Beta1OrFail will create a GCP Broker or fail the test if there is an error.
-func (c *Client) CreateGCPBrokerV1Beta1OrFail(name string, options ...knativegcptestresources.BrokerV1Beta1Option) *v1beta1.Broker {
+func (c *Client) CreateGCPBrokerV1Beta1OrFail(name string, options ...reconcilertesting.BrokerOption) *v1beta1.Broker {
 	ctx := context.Background()
 	namespace := c.Namespace
-	broker := knativegcptestresources.BrokerV1Beta1(name, options...)
+	broker := reconcilertesting.NewBroker(name, namespace, options...)
 	brokers := c.KnativeGCP.EventingV1beta1().Brokers(namespace)
 	c.T.Logf("Creating broker %s", name)
 	// update broker with the new reference
