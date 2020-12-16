@@ -137,12 +137,14 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
    Note that `google-cloud-key` and `key.json` are default values expected by
    our control plane.
 
-## Authentication Mechanism for the Data Plane
+## Authentication Mechanism for the Sources Data Plane
 
-This is the manual auth configuration for the Data Plane and using the Google
-Cloud Service Account `events-sources-gsa` as the credential. Refer to
+This is the manual auth configuration for the sources data plane using the
+Google Cloud Service Account `events-sources-gsa` as the credential. Refer to
 [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md)
-for automated scripts.
+for automated scripts. We recommend using a distinct service account for the
+broker data plane named `events-broker-gsa`. Follow
+[Installing GCP Broker](install-gcp-broker.md) to set up the broker.
 
 ### Option 1: Use Workload Identity
 
