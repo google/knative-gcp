@@ -439,7 +439,7 @@ func TestPropagateDeploymentAvailability(t *testing.T) {
 		s := &BrokerCellStatus{}
 		got := s.PropagateIngressAvailability(&corev1.Endpoints{}, replicaUnavailableDeployment)
 		want := false
-		if diff := cmp.Diff(got, want); diff != "" {
+		if diff := cmp.Diff(want, got); diff != "" {
 			t.Error("unexpected condition (-want, +got) =", diff)
 		}
 	})
@@ -448,7 +448,7 @@ func TestPropagateDeploymentAvailability(t *testing.T) {
 		s := &BrokerCellStatus{}
 		got := s.PropagateFanoutAvailability(replicaUnavailableDeployment)
 		want := false
-		if diff := cmp.Diff(got, want); diff != "" {
+		if diff := cmp.Diff(want, got); diff != "" {
 			t.Error("unexpected condition (-want, +got) =", diff)
 		}
 	})
@@ -457,7 +457,7 @@ func TestPropagateDeploymentAvailability(t *testing.T) {
 		s := &BrokerCellStatus{}
 		got := s.PropagateRetryAvailability(replicaUnavailableDeployment)
 		want := false
-		if diff := cmp.Diff(got, want); diff != "" {
+		if diff := cmp.Diff(want, got); diff != "" {
 			t.Error("unexpected condition (-want, +got) =", diff)
 		}
 	})

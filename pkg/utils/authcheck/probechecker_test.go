@@ -18,6 +18,7 @@ package authcheck
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -26,24 +27,23 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	authchecktesting "github.com/google/knative-gcp/pkg/gclient/authcheck/testing"
 	"github.com/google/knative-gcp/pkg/logging"
 )
 
 func TestProbeCheckResult(t *testing.T) {
 	testCases := []struct {
 		name           string
-		inputStatus    int
+		noError        bool
 		wantStatusCode int
 	}{
 		{
 			name:           "probe check got a failure result",
-			inputStatus:    http.StatusBadRequest,
-			wantStatusCode: http.StatusUnauthorized,
+			noError:        false,
+			wantStatusCode: http.StatusInternalServerError,
 		},
 		{
 			name:           "probe check got a success result",
-			inputStatus:    http.StatusAccepted,
+			noError:        true,
 			wantStatusCode: http.StatusOK,
 		},
 	}
@@ -66,10 +66,9 @@ func TestProbeCheckResult(t *testing.T) {
 
 			logger := logging.FromContext(ctx)
 			probeChecker := ProbeChecker{
-				logger:          logger,
-				port:            port,
-				authType:        WorkloadIdentityGSA,
-				authCheckClient: authchecktesting.NewFakeAuthCheckClient(tc.inputStatus),
+				logger:    logger,
+				port:      port,
+				authCheck: NewFakeAuthenticationCheck("", tc.noError),
 			}
 			go probeChecker.Start(ctx)
 
@@ -93,4 +92,23 @@ func TestProbeCheckResult(t *testing.T) {
 			cancel()
 		})
 	}
+}
+
+type FakeAuthenticationCheck struct {
+	authType AuthType
+	noError  bool
+}
+
+func NewFakeAuthenticationCheck(authType AuthType, noError bool) AuthenticationCheck {
+	return &FakeAuthenticationCheck{
+		authType: authType,
+		noError:  noError,
+	}
+}
+
+func (ac *FakeAuthenticationCheck) Check(ctx context.Context) error {
+	if ac.noError {
+		return nil
+	}
+	return errors.New("induced error")
 }

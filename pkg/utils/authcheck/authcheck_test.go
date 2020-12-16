@@ -19,12 +19,11 @@ package authcheck
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-
-	authchecktesting "github.com/google/knative-gcp/pkg/gclient/authcheck/testing"
 )
 
 func TestAuthenticationCheck(t *testing.T) {
@@ -36,32 +35,28 @@ func TestAuthenticationCheck(t *testing.T) {
 		setEnv     bool
 	}{
 		{
-			name:       "authentication check failed, using empty authType",
-			authType:   "empty",
-			statusCode: http.StatusUnauthorized,
-			wantError:  true,
-			setEnv:     false,
+			name:      "authentication check failed, using empty authType",
+			authType:  "empty",
+			wantError: true,
+			setEnv:    false,
 		},
 		{
-			name:       "authentication check failed, using secret authType",
-			authType:   Secret,
-			statusCode: http.StatusUnauthorized,
-			wantError:  true,
-			setEnv:     true,
+			name:      "authentication check failed, using secret authType",
+			authType:  Secret,
+			wantError: true,
+			setEnv:    true,
 		},
 		{
-			name:       "authentication check failed, using workload-identity-gsa authType",
-			authType:   WorkloadIdentityGSA,
-			statusCode: http.StatusUnauthorized,
-			wantError:  true,
-			setEnv:     true,
+			name:      "authentication check failed, using workload-identity-gsa authType",
+			authType:  WorkloadIdentityGSA,
+			wantError: true,
+			setEnv:    true,
 		},
 		{
-			name:       "authentication check succeeded",
-			authType:   WorkloadIdentityGSA,
-			statusCode: http.StatusOK,
-			wantError:  false,
-			setEnv:     true,
+			name:      "authentication check succeeded, using workload-identity-gsa authType",
+			authType:  WorkloadIdentityGSA,
+			wantError: false,
+			setEnv:    true,
 		},
 	}
 	for _, tc := range testCases {
@@ -75,10 +70,26 @@ func TestAuthenticationCheck(t *testing.T) {
 				os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "empty")
 			}
 
-			err := AuthenticationCheck(ctx, tc.authType, authchecktesting.NewFakeAuthCheckClient(tc.statusCode))
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				if tc.wantError {
+					rw.WriteHeader(http.StatusServiceUnavailable)
+				} else {
+					rw.WriteHeader(http.StatusOK)
+				}
+			}))
+
+			defer server.Close()
+
+			authCheck := &DefaultAuthenticationCheck{
+				authType: tc.authType,
+				client:   server.Client(),
+				url:      server.URL,
+			}
+
+			err := authCheck.Check(ctx)
 
 			if diff := cmp.Diff(tc.wantError, err != nil); diff != "" {
-				t.Error("unexpected error (-want, +got) = ", err)
+				t.Error("unexpected error (-want, +got) = ", diff)
 			}
 		})
 	}

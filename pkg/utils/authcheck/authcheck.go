@@ -27,8 +27,6 @@ import (
 	"net/http"
 
 	"golang.org/x/oauth2/google"
-
-	authcheckclient "github.com/google/knative-gcp/pkg/gclient/authcheck"
 )
 
 const (
@@ -42,23 +40,41 @@ const (
 	authMessage = "checking authentication"
 )
 
+type AuthenticationCheck interface {
+	Check(ctx context.Context) error
+}
+
+type DefaultAuthenticationCheck struct {
+	authType AuthType
+	client   *http.Client
+	url      string
+}
+
+func NewDefaultAuthenticationCheck(authType AuthType) AuthenticationCheck {
+	return &DefaultAuthenticationCheck{
+		authType: authType,
+		client:   http.DefaultClient,
+		url:      resource,
+	}
+}
+
 // AuthenticationCheck performs the authentication check running in the Pod.
-func AuthenticationCheck(ctx context.Context, authType AuthType, client authcheckclient.Client) error {
+func (ac *DefaultAuthenticationCheck) Check(ctx context.Context) error {
 	var err error
-	switch authType {
+	switch ac.authType {
 	case Secret:
 		err = AuthenticationCheckForSecret(ctx)
 	case WorkloadIdentityGSA:
-		err = AuthenticationCheckForWorkloadIdentityGSA(resource, client)
+		err = AuthenticationCheckForWorkloadIdentityGSA(ac.url, ac.client)
 	case WorkloadIdentity:
 		// Skip authentication check running in Pods which use new generation of Workload Identity.
 		return nil
 	default:
-		return fmt.Errorf("unknown auth type: %s", authType)
+		return fmt.Errorf("unknown auth type: %s", ac.authType)
 	}
 
 	if err != nil {
-		return writeTerminationLog(err, authType)
+		return writeTerminationLog(err, ac.authType)
 	}
 	return nil
 }
@@ -80,7 +96,7 @@ func AuthenticationCheckForSecret(ctx context.Context) error {
 }
 
 // AuthenticationCheckForWorkloadIdentityGSA performs the authentication check for Pod in workload-identity-gsa mode.
-func AuthenticationCheckForWorkloadIdentityGSA(resource string, client authcheckclient.Client) error {
+func AuthenticationCheckForWorkloadIdentityGSA(resource string, client *http.Client) error {
 	req, err := http.NewRequest(http.MethodGet, resource, nil)
 	if err != nil {
 		return fmt.Errorf("error setting up the http request: %w", err)

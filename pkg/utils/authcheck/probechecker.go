@@ -24,27 +24,23 @@ import (
 	"strconv"
 
 	"go.uber.org/zap"
-
-	authcheckclient "github.com/google/knative-gcp/pkg/gclient/authcheck"
 )
 
 // DefaultProbeCheckPort is the default port for checking sync pool health.
 const DefaultProbeCheckPort = 8080
 
 type ProbeChecker struct {
-	logger          *zap.Logger
-	port            int
-	authType        AuthType
-	authCheckClient authcheckclient.Client
+	logger    *zap.Logger
+	port      int
+	authCheck AuthenticationCheck
 }
 
 // NewProbeChecker returns ProbeChecker with default probe checker port.
 func NewProbeChecker(logger *zap.Logger, authType AuthType) ProbeChecker {
 	return ProbeChecker{
-		logger:          logger,
-		port:            DefaultProbeCheckPort,
-		authType:        authType,
-		authCheckClient: authcheckclient.NewAuthCheckClient(),
+		logger:    logger,
+		port:      DefaultProbeCheckPort,
+		authCheck: NewDefaultAuthenticationCheck(authType),
 	}
 }
 
@@ -72,9 +68,9 @@ func (pc *ProbeChecker) Start(ctx context.Context) {
 func (pc *ProbeChecker) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path == "/healthz" {
 		// Perform Authentication check.
-		if err := AuthenticationCheck(req.Context(), pc.authType, pc.authCheckClient); err != nil {
+		if err := pc.authCheck.Check(req.Context()); err != nil {
 			pc.logger.Error("authentication check failed", zap.Error(err))
-			w.WriteHeader(http.StatusUnauthorized)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		w.WriteHeader(http.StatusOK)

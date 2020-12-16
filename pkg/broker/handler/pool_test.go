@@ -18,6 +18,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -26,7 +27,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	authchecktesting "github.com/google/knative-gcp/pkg/gclient/authcheck/testing"
 	"github.com/google/knative-gcp/pkg/utils/authcheck"
 )
 
@@ -45,7 +45,7 @@ func TestSyncPool(t *testing.T) {
 			t.Fatalf("failed to get random free port: %v", err)
 		}
 
-		_, gotErr := StartSyncPool(ctx, syncPool, make(chan struct{}), 30*time.Second, p, authcheck.WorkloadIdentityGSA, authchecktesting.NewFakeAuthCheckClient(http.StatusAccepted))
+		_, gotErr := StartSyncPool(ctx, syncPool, make(chan struct{}), 30*time.Second, p, NewFakeAuthenticationCheck(authcheck.WorkloadIdentity, true))
 		if gotErr == nil {
 			t.Error("StartSyncPool got unexpected result")
 		}
@@ -68,7 +68,7 @@ func TestSyncPool(t *testing.T) {
 		}
 
 		ch := make(chan struct{})
-		if _, err := StartSyncPool(ctx, syncPool, ch, time.Second, p, authcheck.WorkloadIdentityGSA, authchecktesting.NewFakeAuthCheckClient(http.StatusAccepted)); err != nil {
+		if _, err := StartSyncPool(ctx, syncPool, ch, time.Second, p, NewFakeAuthenticationCheck(authcheck.WorkloadIdentity, true)); err != nil {
 			t.Errorf("StartSyncPool got unexpected error: %v", err)
 		}
 		syncPool.verifySyncOnceCalled(t)
@@ -142,4 +142,23 @@ func GetFreePort() (int, error) {
 	}
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+type FakeAuthenticationCheck struct {
+	authType authcheck.AuthType
+	noError  bool
+}
+
+func NewFakeAuthenticationCheck(authType authcheck.AuthType, noError bool) authcheck.AuthenticationCheck {
+	return &FakeAuthenticationCheck{
+		authType: authType,
+		noError:  noError,
+	}
+}
+
+func (ac *FakeAuthenticationCheck) Check(ctx context.Context) error {
+	if ac.noError {
+		return nil
+	}
+	return errors.New("induced error")
 }

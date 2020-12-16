@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"flag"
-	"net/http"
 	"time"
 
 	"cloud.google.com/go/pubsub"
@@ -102,7 +101,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
 	}
-	if _, err := handler.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, handler.DefaultProbeCheckPort, env.AuthType, http.DefaultClient); err != nil {
+	if _, err := handler.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, handler.DefaultProbeCheckPort, authcheck.NewDefaultAuthenticationCheck(env.AuthType)); err != nil {
 		logger.Fatal("Failed to start retry sync pool", zap.Error(err))
 	}
 

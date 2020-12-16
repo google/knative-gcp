@@ -527,7 +527,7 @@ func TestPropagateDeploymentAvailability(t *testing.T) {
 	s := &PullSubscriptionStatus{}
 	got := s.PropagateDeploymentAvailability(replicaUnavailableDeployment)
 	want := false
-	if diff := cmp.Diff(got, want); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Error("unexpected condition (-want, +got) =", diff)
 	}
 }
