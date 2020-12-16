@@ -50,7 +50,7 @@ type DefaultAuthenticationCheck struct {
 	url      string
 }
 
-func NewDefaultAuthenticationCheck(authType AuthType) AuthenticationCheck {
+func NewDefault(authType AuthType) AuthenticationCheck {
 	return &DefaultAuthenticationCheck{
 		authType: authType,
 		client:   http.DefaultClient,

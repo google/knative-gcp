@@ -101,7 +101,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
 	}
-	if _, err := handler.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, handler.DefaultProbeCheckPort, authcheck.NewDefaultAuthenticationCheck(env.AuthType)); err != nil {
+	if _, err := handler.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, handler.DefaultProbeCheckPort, authcheck.NewDefault(env.AuthType)); err != nil {
 		logger.Fatal("Failed to start retry sync pool", zap.Error(err))
 	}
 

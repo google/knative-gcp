@@ -62,12 +62,12 @@ func TestAuthenticationCheck(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
 			if tc.setEnv {
 				os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "empty")
+				defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 			}
 
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {

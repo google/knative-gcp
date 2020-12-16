@@ -40,7 +40,7 @@ func NewProbeChecker(logger *zap.Logger, authType AuthType) ProbeChecker {
 	return ProbeChecker{
 		logger:    logger,
 		port:      DefaultProbeCheckPort,
-		authCheck: NewDefaultAuthenticationCheck(authType),
+		authCheck: NewDefault(authType),
 	}
 }
 

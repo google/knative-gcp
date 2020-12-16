@@ -18,14 +18,11 @@ package authcheck
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"testing"
 	"time"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/google/knative-gcp/pkg/logging"
 )
@@ -52,6 +49,7 @@ func TestProbeCheckResult(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 			// Get a free port.
 			addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 			if err != nil {
@@ -68,7 +66,7 @@ func TestProbeCheckResult(t *testing.T) {
 			probeChecker := ProbeChecker{
 				logger:    logger,
 				port:      port,
-				authCheck: NewFakeAuthenticationCheck("", tc.noError),
+				authCheck: &FakeAuthenticationCheck{NoError: tc.noError},
 			}
 			go probeChecker.Start(ctx)
 
@@ -86,29 +84,9 @@ func TestProbeCheckResult(t *testing.T) {
 				t.Fatal("Failed to execute probe check:", err)
 				return
 			}
-			if diff := cmp.Diff(resp.StatusCode, tc.wantStatusCode); diff != "" {
-				t.Error("unexpected probe check result (-want, +got) = ", diff)
+			if tc.wantStatusCode != resp.StatusCode {
+				t.Errorf("unexpected probe check status code want %d, got %d)", tc.wantStatusCode, resp.StatusCode)
 			}
-			cancel()
 		})
 	}
-}
-
-type FakeAuthenticationCheck struct {
-	authType AuthType
-	noError  bool
-}
-
-func NewFakeAuthenticationCheck(authType AuthType, noError bool) AuthenticationCheck {
-	return &FakeAuthenticationCheck{
-		authType: authType,
-		noError:  noError,
-	}
-}
-
-func (ac *FakeAuthenticationCheck) Check(ctx context.Context) error {
-	if ac.noError {
-		return nil
-	}
-	return errors.New("induced error")
 }
