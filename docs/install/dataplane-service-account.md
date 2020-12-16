@@ -28,8 +28,22 @@ In general, we would just need permissions to receive messages
 (`roles/pubsub.subscriber`). However, in the case of the `Channel`, we would
 also need the ability to publish messages (`roles/pubsub.publisher`).
 
-1. Create a new Service Account named `events-sources-gsa` with the following
-   command:
+1. Create a new Google Cloud Service Account (GSA) named `events-sources-gsa`
+   with the following command:
+
+   ```shell
+   gcloud iam service-accounts create events-sources-gsa
+   ```
+
+   Depending on the use case, you may want to have a single GSA for all the
+   sources, like the example above, or setup multiple similar service accounts.
+   If you are setting up multiple GSAs you can follow the same set of steps, but
+   take note to configure authentication only for the namespaces that are
+   intended for each account.
+
+   Additionally, while it is possible to use the same GSA for both the broker
+   and the sources, we recommend creating a dedicated Google Service Account for
+   the broker data plane (e.g. `events-broker-gsa`):
 
    ```shell
    gcloud iam service-accounts create events-sources-gsa
@@ -66,7 +80,14 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
      --role roles/cloudtrace.agent
    ```
 
+   The same set of permissions should also be assigned to the broker data plane
+   account `events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com`.
+
 ## Configure the Authentication Mechanism for GCP (the Data Plane)
+
+For the broker data plane configuration using `events-broker-gsa` follow the
+instructions in
+[Authentication Setup for GCP Broker](install-gcp-broker.md#authentication-setup-for-gcp-broker).
 
 If you want to run
 [example](https://github.com/google/knative-gcp/tree/master/docs/examples) to
