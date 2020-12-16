@@ -17,7 +17,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: addressable-resolver
+  name: events-system-addressable-resolver
   labels:
     events.cloud.google.com/release: devel
 aggregationRule:
@@ -31,7 +31,7 @@ rules: []
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: service-addressable-resolver
+  name: events-system-service-addressable-resolver
   labels:
     events.cloud.google.com/release: devel
     duck.knative.dev/addressable: "true"
