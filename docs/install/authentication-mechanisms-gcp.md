@@ -249,7 +249,7 @@ broker data plane named `events-broker-gsa`. Follow
    **Be sure not to check this key into source control!**
 
    ```shell
-   gcloud iam service-accounts keys create cre-dataplane.json \
+   gcloud iam service-accounts keys create events-sources-key.json \
      --iam-account=events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com
    ```
 
@@ -258,7 +258,7 @@ broker data plane named `events-broker-gsa`. Follow
    below does so in the `default` namespace.
 
    ```shell
-   kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cre-dataplane.json
+   kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=events-sources-key.json
    ```
 
    `google-cloud-key` and `key.json` are default values expected by our

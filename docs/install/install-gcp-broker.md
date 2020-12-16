@@ -68,7 +68,7 @@ Workload Identity see
    check this key into source control!**
 
    ```shell
-   gcloud iam service-accounts keys create cre-dataplane.json \
+   gcloud iam service-accounts keys create events-broker-key.json \
      --iam-account=events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com
    ```
 
@@ -76,7 +76,7 @@ Workload Identity see
 
    ```shell
    kubectl --namespace cloud-run-events create secret generic \
-     google-broker-key --from-file=key.json=cre-dataplane.json
+     google-broker-key --from-file=key.json=events-broker-key.json
    ```
 
    `google-broker-key` and `key.json` are default values expected by our

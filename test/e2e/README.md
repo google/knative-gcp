@@ -65,7 +65,7 @@ There are two ways to set up authentication mechanism.
     This is used by some tests(e.g., `TestSmokePullSubscription`) to authorize
     the Google SDK clients.
     ```
-    cred_file=$(pwd)/cre-dataplane.json
+    cred_file=$(pwd)/events-sources-key.json
     gcloud iam service-accounts keys create ${cred_file} --iam-account=events-sources-gsa@$PROJECT_ID.iam.gserviceaccount.com
     export GOOGLE_APPLICATION_CREDENTIALS=${cred_file}
     ```
