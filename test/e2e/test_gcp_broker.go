@@ -18,13 +18,13 @@ package e2e
 
 import (
 	"context"
-	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"net/url"
 	"testing"
 	"time"
 
 	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	knativegcptestresources "github.com/google/knative-gcp/test/lib/resources"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
