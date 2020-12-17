@@ -11,8 +11,8 @@ step is creating a
 with the appropriate permissions needed for the control plane to manage GCP
 resources.
 
-You need to create a new Google Cloud Service Account named `events-controller-gsa`
-with the following command:
+You need to create a new Google Cloud Service Account named
+`events-controller-gsa` with the following command:
 
 ```shell
 gcloud iam service-accounts create events-controller-gsa
@@ -169,9 +169,9 @@ broker data plane named `events-broker-gsa`. Follow
   configuration in the Control Plane)
 
   You will have a Kubernetes Service Account after the above configuration,
-  which is bound to the Google Cloud Service Account `events-sources-gsa`. Remember
-  to put this Kubernetes Service Account name as the `spec.serviceAccountName`
-  when you create resources in the
+  which is bound to the Google Cloud Service Account `events-sources-gsa`.
+  Remember to put this Kubernetes Service Account name as the
+  `spec.serviceAccountName` when you create resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
 
 - **_Default scenario:_**
@@ -183,7 +183,8 @@ broker data plane named `events-broker-gsa`. Follow
   You need to grant `iam.serviceAccountAdmin` permission of the Google Cloud
   Service Account `events-sources-gsa` you created in
   [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md)
-  to the Control Plane's Google Cloud Service Account `events-controller-gsa` by:
+  to the Control Plane's Google Cloud Service Account `events-controller-gsa`
+  by:
 
   ```shell
   gcloud iam service-accounts add-iam-policy-binding \
@@ -214,19 +215,18 @@ broker data plane named `events-broker-gsa`. Follow
   under `data`. If you encounter an error, you are likely attempting to modify
   the example configuration in `_example`.
 
-  Here, `sources` refers to a Kubernetes Service Account bound to
-  the Google Cloud Service Account `events-sources-gsa`. Remember to put this
-  Kubernetes Service Account name as the `spec.serviceAccountName` when you
-  create resources in the
+  Here, `sources` refers to a Kubernetes Service Account bound to the Google
+  Cloud Service Account `events-sources-gsa`. Remember to put this Kubernetes
+  Service Account name as the `spec.serviceAccountName` when you create
+  resources in the
   [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
 
-  Kubernetes Service Account `sources` doesn't need to exist in a
-  specific namespace. Once it is set in the ConfigMap `config-gcp-auth`, the
-  Control Plane will create it for you and configure the corresponding Workload
-  Identity relationship between the Kubernetes Service Account
-  `sources` and the Google Cloud Service Account `events-sources-gsa`
-  when you create resources using the Kubernetes Service Account
-  `sources`.
+  Kubernetes Service Account `sources` doesn't need to exist in a specific
+  namespace. Once it is set in the ConfigMap `config-gcp-auth`, the Control
+  Plane will create it for you and configure the corresponding Workload Identity
+  relationship between the Kubernetes Service Account `sources` and the Google
+  Cloud Service Account `events-sources-gsa` when you create resources using the
+  Kubernetes Service Account `sources`.
 
   A `Condition` `WorkloadIdentityConfigured` will show up under resources'
   `Status`, indicating the Workload Identity configuration status.
@@ -237,9 +237,9 @@ broker data plane named `events-broker-gsa`. Follow
   permission to the Controller. As an example, if you followed the instructions
   above, then any user that can make a Knative-GCP source or Channel (e.g.
   `CloudAuditLogsSource`, `CloudPubSubSource`, etc.) can cause the Kubernetes
-  Service Account `sources` to be created. If they can also create
-  Pods in that namespace, then they can make a Pod that uses the Google Service
-  Account `events-sources-gsa` credentials.
+  Service Account `sources` to be created. If they can also create Pods in that
+  namespace, then they can make a Pod that uses the Google Service Account
+  `events-sources-gsa` credentials.
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 

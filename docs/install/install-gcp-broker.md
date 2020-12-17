@@ -19,8 +19,8 @@ reducing hops and Pub/Sub message consumption.
 
 2. [Create a Service Account for the Data Plane](./dataplane-service-account.md#create-a-google-cloud-service-account-to-interact-with-pubsub).
    We recommend creating a dedicated Google Service Account for the broker data
-   plane (e.g. `events-broker-gsa`), but it is also possible to use the same
-   GSA for both the broker and the sources.
+   plane (e.g. `events-broker-gsa`), but it is also possible to use the same GSA
+   for both the broker and the sources.
 
 ## Authentication Setup for GCP Broker
 
