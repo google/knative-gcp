@@ -148,11 +148,11 @@ kubectl describe cloudauditlogssource test -n default
 
 **_Note:_** For Kubernetes Secret, if the JSON private key no longer exists
 under your Google Cloud Service Account `events-controller-gsa`. Then, even the
-Google Cloud Service Account `events-controller-gsa` has all required permissions,
-and the corresponding Kubernetes Secret `google-cloud-key` is in namespace
-`cloud-run-events`, you still get permission related error. To such case, you
-have to re-download the JSON private key and re-create the Kubernetes Secret,
-refer
+Google Cloud Service Account `events-controller-gsa` has all required
+permissions, and the corresponding Kubernetes Secret `google-cloud-key` is in
+namespace `cloud-run-events`, you still get permission related error. To such
+case, you have to re-download the JSON private key and re-create the Kubernetes
+Secret, refer
 [here](../install/authentication-mechanisms-gcp.md/#option-2-kubernetes-secrets)
 for instructions.
 
@@ -280,14 +280,15 @@ kubectl get deployment -n default
   ***
   **_To solve this issue_**, you can:
 
-* Check the Google Cloud Service Account `events-sources-gsa` for the Data Plane has
-  all required permissions.
+* Check the Google Cloud Service Account `events-sources-gsa` for the Data Plane
+  has all required permissions.
 * Check authentication configuration is correct for this resource instance.
 
   - If you are using Workload Identity for this resource instance, refer
     [here](../install/authentication-mechanisms-gcp.md/#workload-identity) to
-    check the Google Cloud Service Account `events-sources-gsa`, and the Kubernetes
-    Service Account in the namespace where this resource instance resides.
+    check the Google Cloud Service Account `events-sources-gsa`, and the
+    Kubernetes Service Account in the namespace where this resource instance
+    resides.
   - If you are using Kubernetes Secrets for this resource instance, refer
     [here](../install/authentication-mechanisms-gcp.md/#kubernetes-secrets) to
     check the Kubernetes Secret in namespace where this resource instance
