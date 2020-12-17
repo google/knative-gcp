@@ -35,6 +35,7 @@ spec:
         sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: webhook
+      enableServiceLinks: false
       containers:
         - name: webhook
           terminationMessagePolicy: FallbackToLogsOnError
