@@ -25,6 +25,9 @@ import (
 	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/keda/resources"
+	psresources "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
+
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -87,7 +90,17 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 		}
 	}
 
-	src.Status.PropagateDeploymentAvailability(existing)
+	// If deployment has replicaUnavailable error, it potentially has authentication configuration issues.
+	if replicaAvailable := src.Status.PropagateDeploymentAvailability(existing); !replicaAvailable {
+		podList, err := authcheck.GetPodList(ctx, psresources.GetLabelSelector(r.ControllerAgentName, src.Name), r.KubeClientSet, src.Namespace)
+		if err != nil {
+			logging.FromContext(ctx).Error("Error propagating authentication check message", zap.Error(err))
+			return err
+		}
+		if authenticationCheckMessage := authcheck.GetTerminationLogFromPodList(podList); authenticationCheckMessage != "" {
+			src.Status.MarkDeployedUnknown(authcheck.AuthenticationCheckUnknownReason, authenticationCheckMessage)
+		}
+	}
 
 	// Now we reconcile the ScaledObject.
 	gvr, _ := meta.UnsafeGuessKindToResource(resources.ScaledObjectGVK)

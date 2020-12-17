@@ -30,6 +30,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	handlertesting "github.com/google/knative-gcp/pkg/broker/handler/testing"
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	_ "knative.dev/pkg/metrics/testing"
 )
@@ -62,7 +63,7 @@ func TestFanoutWatchAndSync(t *testing.T) {
 	}
 
 	t.Run("start sync pool creates no handler", func(t *testing.T) {
-		_, err = StartSyncPool(ctx, syncPool, signal, time.Minute, p)
+		_, err = StartSyncPool(ctx, syncPool, signal, time.Minute, p, &authcheck.FakeAuthenticationCheck{})
 		if err != nil {
 			t.Errorf("unexpected error from starting sync pool: %v", err)
 		}
@@ -155,7 +156,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		t.Fatalf("failed to get random free port: %v", err)
 	}
 
-	if _, err := StartSyncPool(ctx, syncPool, signal, time.Minute, p); err != nil {
+	if _, err := StartSyncPool(ctx, syncPool, signal, time.Minute, p, &authcheck.FakeAuthenticationCheck{}); err != nil {
 		t.Errorf("unexpected error from starting sync pool: %v", err)
 	}
 

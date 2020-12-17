@@ -29,6 +29,7 @@ import (
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
 )
@@ -43,6 +44,9 @@ type envConfig struct {
 	PodName            string `envconfig:"POD_NAME" required:"true"`
 	TargetsConfigPath  string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
 	HandlerConcurrency int    `envconfig:"HANDLER_CONCURRENCY"`
+
+	// Environment variable containing the authType, which represents the authentication configuration mode the Pod is using.
+	AuthType authcheck.AuthType `envconfig:"K_GCP_AUTH_TYPE" default:""`
 
 	// Outstanding messages effectively limits how many connections we will create to each subscriber.
 	// If such connections are long, it will consume a lot of memory (aggregated) without limiting.
@@ -97,7 +101,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
 	}
-	if _, err := handler.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, handler.DefaultProbeCheckPort); err != nil {
+	if _, err := handler.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, handler.DefaultProbeCheckPort, authcheck.NewDefault(env.AuthType)); err != nil {
 		logger.Fatal("Failed to start retry sync pool", zap.Error(err))
 	}
 

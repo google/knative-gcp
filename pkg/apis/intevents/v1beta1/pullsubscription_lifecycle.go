@@ -22,6 +22,8 @@ import (
 	"knative.dev/pkg/apis"
 )
 
+const replicaUnavailableReason = "MinimumReplicasUnavailable"
+
 // GetCondition returns the condition currently associated with the given type, or nil.
 func (s *PullSubscriptionStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return pullSubscriptionCondSet.Manage(s).GetCondition(t)
@@ -85,14 +87,21 @@ func (s *PullSubscriptionStatus) MarkNoSubscription(reason, messageFormat string
 
 // PropagateDeploymentAvailability uses the availability of the provided Deployment to determine if
 // PullSubscriptionConditionDeployed should be marked as true or false.
-func (s *PullSubscriptionStatus) PropagateDeploymentAvailability(d *appsv1.Deployment) {
+// For authentication check purpose, this method will return false if a false condition
+// is caused by deployment's replicaset unavailable.
+// ReplicaSet unavailable is a sign for potential authentication problems.
+func (s *PullSubscriptionStatus) PropagateDeploymentAvailability(d *appsv1.Deployment) bool {
 	deploymentAvailableFound := false
+	replicaAvailable := true
 	for _, cond := range d.Status.Conditions {
 		if cond.Type == appsv1.DeploymentAvailable {
 			deploymentAvailableFound = true
 			if cond.Status == corev1.ConditionTrue {
 				pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionDeployed)
 			} else if cond.Status == corev1.ConditionFalse {
+				if cond.Reason == replicaUnavailableReason {
+					replicaAvailable = false
+				}
 				pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionDeployed, cond.Reason, cond.Message)
 			} else if cond.Status == corev1.ConditionUnknown {
 				pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionDeployed, cond.Reason, cond.Message)
@@ -102,4 +111,5 @@ func (s *PullSubscriptionStatus) PropagateDeploymentAvailability(d *appsv1.Deplo
 	if !deploymentAvailableFound {
 		pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionDeployed, "DeploymentUnavailable", "Deployment %q is unavailable.", d.Name)
 	}
+	return replicaAvailable
 }

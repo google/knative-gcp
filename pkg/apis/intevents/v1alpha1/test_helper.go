@@ -88,7 +88,7 @@ func (t testHelper) UnknownDeployment() *appsv1.Deployment {
 
 func (t testHelper) ReadyBrokerCellStatus() *BrokerCellStatus {
 	bs := &BrokerCellStatus{}
-	bs.PropagateIngressAvailability(t.AvailableEndpoints())
+	bs.PropagateIngressAvailability(t.AvailableEndpoints(), t.AvailableDeployment())
 	bs.SetIngressTemplate("http://localhost")
 	bs.PropagateFanoutAvailability(t.AvailableDeployment())
 	bs.PropagateRetryAvailability(t.AvailableDeployment())

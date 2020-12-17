@@ -23,8 +23,27 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+)
+
+var (
+	replicaUnavailableDeployment = &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-deployment",
+		},
+		Status: appsv1.DeploymentStatus{
+			Conditions: []appsv1.DeploymentCondition{
+				{
+					Type:    appsv1.DeploymentAvailable,
+					Status:  corev1.ConditionFalse,
+					Reason:  "MinimumReplicasUnavailable",
+					Message: "False Status",
+				},
+			},
+		},
+	}
 )
 
 var (
@@ -296,9 +315,9 @@ func TestBrokerCellConditionStatus(t *testing.T) {
 				bs.PropagateFanoutAvailability(&appsv1.Deployment{})
 			}
 			if test.ingressStatus != nil {
-				bs.PropagateIngressAvailability(test.ingressStatus)
+				bs.PropagateIngressAvailability(test.ingressStatus, &appsv1.Deployment{})
 			} else {
-				bs.PropagateIngressAvailability(&corev1.Endpoints{})
+				bs.PropagateIngressAvailability(&corev1.Endpoints{}, &appsv1.Deployment{})
 			}
 			if test.retryStatus != nil {
 				bs.PropagateRetryAvailability(test.retryStatus)
@@ -413,4 +432,33 @@ func TestMarkBrokerCellStatus(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPropagateDeploymentAvailability(t *testing.T) {
+	t.Run("propagate ingress availability", func(t *testing.T) {
+		s := &BrokerCellStatus{}
+		got := s.PropagateIngressAvailability(&corev1.Endpoints{}, replicaUnavailableDeployment)
+		want := false
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error("unexpected condition (-want, +got) =", diff)
+		}
+	})
+
+	t.Run("propagate fanout availability", func(t *testing.T) {
+		s := &BrokerCellStatus{}
+		got := s.PropagateFanoutAvailability(replicaUnavailableDeployment)
+		want := false
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error("unexpected condition (-want, +got) =", diff)
+		}
+	})
+
+	t.Run("propagate retry availability", func(t *testing.T) {
+		s := &BrokerCellStatus{}
+		got := s.PropagateRetryAvailability(replicaUnavailableDeployment)
+		want := false
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error("unexpected condition (-want, +got) =", diff)
+		}
+	})
 }

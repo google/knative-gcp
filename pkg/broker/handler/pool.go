@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"github.com/google/knative-gcp/pkg/logging"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
+
 	"go.uber.org/zap"
 )
 
@@ -37,10 +39,12 @@ type SyncPool interface {
 }
 
 type probeChecker struct {
+	logger           *zap.Logger
 	mux              sync.RWMutex
 	lastReportTime   time.Time
 	maxStaleDuration time.Duration
 	port             int
+	authCheck        authcheck.AuthenticationCheck
 }
 
 func (c *probeChecker) reportHealth() {
@@ -80,6 +84,13 @@ func (c *probeChecker) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	// Perform Authentication check.
+	if err := c.authCheck.Check(req.Context()); err != nil {
+		c.logger.Error("authentication check failed", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	// Zero maxStaleDuration means infinite.
 	if c.maxStaleDuration == 0 {
 		w.WriteHeader(http.StatusOK)
@@ -89,7 +100,6 @@ func (c *probeChecker) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 // StartSyncPool starts the sync pool.
@@ -99,14 +109,17 @@ func StartSyncPool(
 	syncSignal <-chan struct{},
 	maxStaleDuration time.Duration,
 	probeCheckPort int,
+	authCheck authcheck.AuthenticationCheck,
 ) (SyncPool, error) {
 
 	if err := syncPool.SyncOnce(ctx); err != nil {
 		return nil, err
 	}
 	c := &probeChecker{
+		logger:           logging.FromContext(ctx),
 		maxStaleDuration: maxStaleDuration,
 		port:             probeCheckPort,
+		authCheck:        authCheck,
 	}
 	go c.start(ctx)
 	if syncSignal != nil {

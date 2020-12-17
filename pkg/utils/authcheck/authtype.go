@@ -14,12 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package authcheck provides utilities to check authentication configuration for data plane resources.
+// File authtype contains functions to differentiate authentication mode.
 package authcheck
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -52,12 +55,20 @@ const (
 	BrokerServiceAccountName         = "broker"
 )
 
-var BrokerSecret = &corev1.SecretKeySelector{
-	LocalObjectReference: corev1.LocalObjectReference{
-		Name: "google-broker-key",
-	},
-	Key: "key.json",
-}
+var (
+	// Regex for a valid google service account email.
+	// The format of google service account email is service-account-name@project-id.iam.gserviceaccount.com
+	// Service account name must be between 6 and 30 characters (inclusive),
+	// must begin with a lowercase letter, and consist of lowercase alphanumeric characters that can be separated by hyphens.
+	// Project IDs must start with a lowercase letter and can have lowercase ASCII letters, digits or hyphens,
+	// must be between 6 and 30 characters. Some older project may have dot as well, like project-example.example.com
+	emailRegexp = regexp.MustCompile(`^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.*\.iam\.gserviceaccount\.com$`)
+
+	BrokerSecret = &corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{Name: "google-broker-key"},
+		Key:                  "key.json",
+	}
+)
 
 // GetAuthTypeForBrokerCell will get authType for BrokerCell.
 func GetAuthTypeForBrokerCell(ctx context.Context, serviceAccountLister corev1listers.ServiceAccountLister,
@@ -114,7 +125,12 @@ func getAuthTypeForWorkloadIdentity(ctx context.Context, serviceAccountLister co
 				args.ServiceAccountName)
 		}
 		return "", fmt.Errorf("error getting Kubernetes Service Account: %w", err)
-	} else if kServiceAccount.Annotations[resources.WorkloadIdentityKey] != "" {
+	} else if email := kServiceAccount.Annotations[resources.WorkloadIdentityKey]; email != "" {
+		// Check if email is a valid google service account email.
+		if match := emailRegexp.FindString(email); match == "" {
+			return "", fmt.Errorf("%s is not a valid Google Service Account as the value of Kubernetes Service Account %s for annotation %s",
+				email, args.ServiceAccountName, resources.WorkloadIdentityKey)
+		}
 		return WorkloadIdentityGSA, nil
 	}
 	// Once workload-identity new gen lands, we should also include the annotation check for it.

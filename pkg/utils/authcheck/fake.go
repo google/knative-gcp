@@ -1,7 +1,5 @@
-// +build wireinject
-
 /*
-Copyright 2020 Google LLC.
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,26 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+// Package authcheck provides utilities to check authentication configuration for data plane resources.
+// File authcheck contains functions to run customized checks inside of a Pod.
+package authcheck
 
 import (
 	"context"
-
-	"github.com/google/knative-gcp/pkg/pubsub/publisher"
-	"github.com/google/knative-gcp/pkg/utils/authcheck"
-	"github.com/google/knative-gcp/pkg/utils/clients"
-
-	"github.com/google/wire"
 )
 
-func InitializePublisher(
-	ctx context.Context,
-	port clients.Port,
-	projectID clients.ProjectID,
-	topicID publisher.TopicID,
-	authType authcheck.AuthType,
-) (*publisher.Publisher, error) {
-	panic(wire.Build(
-		publisher.PublisherSet,
-	))
+type FakeAuthenticationCheck struct {
+	Err error
+}
+
+func (ac *FakeAuthenticationCheck) Check(ctx context.Context) error {
+	return ac.Err
 }

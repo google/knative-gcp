@@ -27,6 +27,7 @@ import (
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
 
@@ -44,6 +45,9 @@ type envConfig struct {
 	TargetsConfigPath      string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
 	HandlerConcurrency     int    `envconfig:"HANDLER_CONCURRENCY"`
 	MaxConcurrencyPerEvent int    `envconfig:"MAX_CONCURRENCY_PER_EVENT"`
+
+	// Environment variable containing the authType, which represents the authentication configuration mode the Pod is using.
+	AuthType authcheck.AuthType `envconfig:"K_GCP_AUTH_TYPE" default:""`
 
 	// MaxStaleDuration is the max duration of the handler pool without being synced.
 	// With the internal pool resync period being 15s, it requires at least 4
@@ -99,7 +103,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to create fanout sync pool", zap.Error(err))
 	}
-	if _, err := handler.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, handler.DefaultProbeCheckPort); err != nil {
+	if _, err := handler.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, handler.DefaultProbeCheckPort, authcheck.NewDefault(env.AuthType)); err != nil {
 		logger.Fatalw("Failed to start fanout sync pool", zap.Error(err))
 	}
 
