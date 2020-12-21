@@ -257,6 +257,7 @@ github.com/konsorten/go-windows-terminal-sequences
 github.com/lightstep/tracecontext.go/traceparent
 github.com/lightstep/tracecontext.go/tracestate
 # github.com/mailru/easyjson v0.7.1-0.20191009090205-6c0755d89d1e
+github.com/mailru/easyjson
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
@@ -322,8 +323,8 @@ github.com/spf13/pflag
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# github.com/tsenart/vegeta v12.7.1-0.20190725001342-b5f4fca92137+incompatible
-github.com/tsenart/vegeta/lib
+# github.com/tsenart/vegeta/v12 v12.8.4
+github.com/tsenart/vegeta/v12/lib
 # github.com/wavesoftware/go-ensure v1.0.0
 ## explicit
 github.com/wavesoftware/go-ensure
@@ -1009,7 +1010,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.19.1-0.20201216183558-f3468d1c9954
+# knative.dev/eventing v0.19.1-0.20201217221202-9643baffd747
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1149,11 +1150,11 @@ knative.dev/eventing/test/upgrade/prober/wathola/sender
 ## explicit
 knative.dev/hack
 knative.dev/hack/shell
-# knative.dev/networking v0.0.0-20201215172457-b175a8d66f91
+# knative.dev/networking v0.0.0-20201218160702-9c60344e49e5
 knative.dev/networking/pkg
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
-# knative.dev/pkg v0.0.0-20201217014702-b0c121fb667f
+# knative.dev/pkg v0.0.0-20201218185703-e41409af6cff
 ## explicit
 knative.dev/pkg/apiextensions/storageversion
 knative.dev/pkg/apiextensions/storageversion/cmd/migrate
@@ -1267,7 +1268,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.19.1-0.20201217040602-ad41e27d9583
+# knative.dev/serving v0.19.1-0.20201221025004-9332de8f044e
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
