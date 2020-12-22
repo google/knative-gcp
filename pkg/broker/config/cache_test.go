@@ -138,18 +138,18 @@ func TestCachedTargetsRange(t *testing.T) {
 	})
 
 	t.Run("get individual broker", func(t *testing.T) {
-		gotGcpCellAddressable, ok := targets.GetBroker("ns", "non-existing")
+		gotGcpCellAddressable, ok := targets.GetGCPAddressableByKey(BrokerKey("ns", "non-existing"))
 		if ok {
 			t.Error("get non-existing broker got ok=true, want ok=false")
 		}
-		gotGcpCellAddressable, ok = targets.GetBroker(b1.Namespace, b1.Name)
+		gotGcpCellAddressable, ok = targets.GetGCPAddressableByKey(BrokerKey(b1.Namespace, b1.Name))
 		if !ok {
 			t.Error("get existing broker got ok=false, want ok=true")
 		}
 		if !proto.Equal(b1, gotGcpCellAddressable) {
 			t.Errorf("get existing broker got=%+v, want=%+v", gotGcpCellAddressable, b1)
 		}
-		gotGcpCellAddressable, ok = targets.GetBroker(b2.Namespace, b2.Name)
+		gotGcpCellAddressable, ok = targets.GetGCPAddressableByKey(BrokerKey(b2.Namespace, b2.Name))
 		if !ok {
 			t.Error("get existing broker got ok=false, want ok=true")
 		}
@@ -464,7 +464,7 @@ func TestGetGcpCellAddressableOrTarget(t *testing.T) {
 
 	t.Run("get broker", func(t *testing.T) {
 		wantGcpCellAddressable := b1
-		gotGcpCellAddressable, _ := targets.GetBroker(b1.Namespace, b1.Name)
+		gotGcpCellAddressable, _ := targets.GetGCPAddressableByKey(BrokerKey(b1.Namespace, b1.Name))
 		if diff := cmp.Diff(wantGcpCellAddressable, gotGcpCellAddressable, protocmp.Transform()); diff != "" {
 			t.Errorf("GetGcpCellAddressable (-want,+got): %v", diff)
 		}

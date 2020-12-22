@@ -29,9 +29,6 @@ type ReadonlyTargets interface {
 	// GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 	// Do not modify the returned Target copy.
 	GetTargetByKey(key string) (*Target, bool)
-	// GetBroker returns a broker and its targets if it exists.
-	// Do not modify the returned Broker copy.
-	GetBroker(namespace, name string) (*GcpCellAddressable, bool)
 	// GetBroker by its key (namespace/name).
 	GetGCPAddressableByKey(key string) (*GcpCellAddressable, bool)
 	// RangeGCPCellAddressables ranges over all the GCPCellAddressages.

@@ -186,7 +186,7 @@ func TestMutateBroker(t *testing.T) {
 			// no matter what changes have been made.
 			m.Delete()
 		})
-		if _, ok := targets.GetBroker("ns", "broker"); ok {
+		if _, ok := targets.GetGCPAddressableByKey(config.BrokerKey("ns", "broker")); ok {
 			t.Error("GetBroker got ok=true, want ok=false")
 		}
 	})
@@ -201,7 +201,7 @@ func TestMutateBroker(t *testing.T) {
 
 func assertBroker(t *testing.T, want *config.GcpCellAddressable, namespace, name string, targets config.Targets) {
 	t.Helper()
-	got, ok := targets.GetBroker(namespace, name)
+	got, ok := targets.GetGCPAddressableByKey(config.BrokerKey(namespace, name))
 	if !ok {
 		t.Error("GetBroker got ok=false, want ok=true")
 	}

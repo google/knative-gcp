@@ -60,7 +60,7 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 // GetTarget returns a target.
 // Do not modify the returned Target copy.
 func (ct *CachedTargets) GetTarget(namespace, brokerName, targetName string) (*Target, bool) {
-	Broker, ok := ct.GetBroker(namespace, brokerName)
+	Broker, ok := ct.GetGCPAddressableByKey(BrokerKey(namespace, brokerName))
 	if !ok {
 		return nil, false
 	}
@@ -73,12 +73,6 @@ func (ct *CachedTargets) GetTarget(namespace, brokerName, targetName string) (*T
 func (ct *CachedTargets) GetTargetByKey(key string) (*Target, bool) {
 	namespace, brokerName, targetName := SplitTriggerKey(key)
 	return ct.GetTarget(namespace, brokerName, targetName)
-}
-
-// GetBroker returns a broker and its targets if it exists.
-// Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBroker(namespace, name string) (*GcpCellAddressable, bool) {
-	return ct.GetGCPAddressableByKey(BrokerKey(namespace, name))
 }
 
 // GetBrokerByKey returns a broker and its targets if it exists.
