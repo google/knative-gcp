@@ -35,7 +35,7 @@ require (
 	knative.dev/eventing v0.19.1-0.20201217221202-9643baffd747
 	knative.dev/hack v0.0.0-20201214230143-4ed1ecb8db24
 	knative.dev/pkg v0.0.0-20201218185703-e41409af6cff
-	knative.dev/serving v0.19.1-0.20201221025004-9332de8f044e
+	knative.dev/serving v0.19.1-0.20201222024603-a552782a89f6
 	sigs.k8s.io/yaml v1.2.0
 )
 

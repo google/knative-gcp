@@ -1268,7 +1268,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.19.1-0.20201221025004-9332de8f044e
+# knative.dev/serving v0.19.1-0.20201222024603-a552782a89f6
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
