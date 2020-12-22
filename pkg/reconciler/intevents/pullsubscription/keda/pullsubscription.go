@@ -91,6 +91,7 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 	}
 
 	// If deployment has replicaUnavailable error, it potentially has authentication configuration issues.
+	// If deployment has authentication configuration issues, directly return the status and stop reconciling the ScaledObject.
 	if replicaAvailable := src.Status.PropagateDeploymentAvailability(existing); !replicaAvailable {
 		podList, err := authcheck.GetPodList(ctx, psresources.GetLabelSelector(r.ControllerAgentName, src.Name), r.KubeClientSet, src.Namespace)
 		if err != nil {
@@ -114,6 +115,7 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 		if authenticationCheckMessage := authcheck.GetTerminationLogFromPodList(podList); authenticationCheckMessage != "" {
 			src.Status.MarkDeployedUnknown(authcheck.AuthenticationCheckUnknownReason, authenticationCheckMessage)
 		}
+		return nil
 	}
 
 	// Now we reconcile the ScaledObject.

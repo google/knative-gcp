@@ -24,14 +24,13 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
+	"google.golang.org/grpc/codes"
 
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	v1 "k8s.io/api/apps/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -1112,6 +1111,173 @@ func TestAllCases(t *testing.T) {
 			OnlySubscriptions(testSubscriptionID),
 		},
 	}, {
+		Name: "propagate availability adapter with termination log message",
+		Objects: []runtime.Object{
+			reconcilertestingv1.NewPullSubscription(sourceName, testNS,
+				reconcilertestingv1.WithPullSubscriptionUID(sourceUID),
+				reconcilertestingv1.WithPullSubscriptionObjectMetaGeneration(generation),
+				reconcilertestingv1.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
+				}),
+				reconcilertestingv1.WithPullSubscriptionSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithPullSubscriptionTransformer(transformerGVK, transformerName),
+				reconcilertestingv1.WithPullSubscriptionSetDefaults,
+			),
+			newSink(),
+			newTransformer(),
+			newSecret(),
+			newMinimumReplicasUnavailableAdapter(context.Background(), "old"+testImage, nil),
+			&corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod-1",
+					Namespace: testNS,
+					Labels:    resources.GetLabels(controllerAgentName, sourceName),
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{{
+						LastTerminationState: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								Message: "checking authentication",
+							},
+						}}},
+				},
+			},
+		},
+		OtherTestData: map[string]interface{}{
+			"pre": []PubsubAction{
+				Topic(testTopicID),
+			},
+		},
+		Key: testNS + "/" + sourceName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, "PullSubscriptionReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, sourceName),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			ActionImpl: clientgotesting.ActionImpl{
+				Namespace: testNS,
+				Verb:      "update",
+				Resource:  receiveAdapterGVR(),
+			},
+			Object: newMinimumReplicasUnavailableAdapter(context.Background(), testImage, transformerURI),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: reconcilertestingv1.NewPullSubscription(sourceName, testNS,
+				reconcilertestingv1.WithPullSubscriptionUID(sourceUID),
+				reconcilertestingv1.WithPullSubscriptionObjectMetaGeneration(generation),
+				reconcilertestingv1.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
+				}),
+				reconcilertestingv1.WithInitPullSubscriptionConditions,
+				reconcilertestingv1.WithPullSubscriptionProjectID(testProject),
+				reconcilertestingv1.WithPullSubscriptionSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithPullSubscriptionTransformer(transformerGVK, transformerName),
+				reconcilertestingv1.WithPullSubscriptionMarkSubscribed(testSubscriptionID),
+				reconcilertestingv1.WithPullSubscriptionMarkDeployedUnknown("AuthenticationCheckPending", "checking authentication"),
+				reconcilertestingv1.WithPullSubscriptionMarkSink(sinkURI),
+				reconcilertestingv1.WithPullSubscriptionMarkTransformer(transformerURI),
+				reconcilertestingv1.WithPullSubscriptionStatusObservedGeneration(generation),
+				reconcilertestingv1.WithPullSubscriptionSetDefaults,
+			),
+		}},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlySubscriptions(testSubscriptionID),
+		},
+	}, {
+		Name: "propagate availability adapter with mount failure message",
+		Objects: []runtime.Object{
+			reconcilertestingv1.NewPullSubscription(sourceName, testNS,
+				reconcilertestingv1.WithPullSubscriptionUID(sourceUID),
+				reconcilertestingv1.WithPullSubscriptionObjectMetaGeneration(generation),
+				reconcilertestingv1.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
+				}),
+				reconcilertestingv1.WithPullSubscriptionSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithPullSubscriptionTransformer(transformerGVK, transformerName),
+				reconcilertestingv1.WithPullSubscriptionSetDefaults,
+			),
+			newSink(),
+			newTransformer(),
+			newSecret(),
+			newMinimumReplicasUnavailableAdapter(context.Background(), "old"+testImage, nil),
+			&corev1.Event{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "event-1",
+					Namespace: testNS,
+				},
+				Message: "couldn't find key testing-key in Secret testnamespace/testing-secret",
+			},
+			&corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod-1",
+					Namespace: testNS,
+					Labels:    resources.GetLabels(controllerAgentName, sourceName),
+				},
+			},
+		},
+		OtherTestData: map[string]interface{}{
+			"pre": []PubsubAction{
+				Topic(testTopicID),
+			},
+		},
+		Key: testNS + "/" + sourceName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, "PullSubscriptionReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, sourceName),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			ActionImpl: clientgotesting.ActionImpl{
+				Namespace: testNS,
+				Verb:      "update",
+				Resource:  receiveAdapterGVR(),
+			},
+			Object: newMinimumReplicasUnavailableAdapter(context.Background(), testImage, transformerURI),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: reconcilertestingv1.NewPullSubscription(sourceName, testNS,
+				reconcilertestingv1.WithPullSubscriptionUID(sourceUID),
+				reconcilertestingv1.WithPullSubscriptionObjectMetaGeneration(generation),
+				reconcilertestingv1.WithPullSubscriptionSpec(pubsubv1.PullSubscriptionSpec{
+					PubSubSpec: gcpduckv1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
+				}),
+				reconcilertestingv1.WithInitPullSubscriptionConditions,
+				reconcilertestingv1.WithPullSubscriptionProjectID(testProject),
+				reconcilertestingv1.WithPullSubscriptionSink(sinkGVK, sinkName),
+				reconcilertestingv1.WithPullSubscriptionTransformer(transformerGVK, transformerName),
+				reconcilertestingv1.WithPullSubscriptionMarkSubscribed(testSubscriptionID),
+				reconcilertestingv1.WithPullSubscriptionMarkDeployedUnknown("AuthenticationCheckPending", "couldn't find key testing-key in Secret testnamespace/testing-secret"),
+				reconcilertestingv1.WithPullSubscriptionMarkSink(sinkURI),
+				reconcilertestingv1.WithPullSubscriptionMarkTransformer(transformerURI),
+				reconcilertestingv1.WithPullSubscriptionStatusObservedGeneration(generation),
+				reconcilertestingv1.WithPullSubscriptionSetDefaults,
+			),
+		}},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlySubscriptions(testSubscriptionID),
+		},
+	}, {
 		Name: "deleting - failed to delete subscription",
 		Objects: []runtime.Object{
 			reconcilertestingv1.NewPullSubscription(sourceName, testNS,
@@ -1256,6 +1422,14 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 	}
 	ra := resources.MakeReceiveAdapter(ctx, args)
 	return ra
+}
+
+// newMinimumReplicasUnavailableAdapter is the adapter based on static configuration.
+func newMinimumReplicasUnavailableAdapter(ctx context.Context, image string, transformer *apis.URL) runtime.Object {
+	obj := newReceiveAdapter(ctx, image, transformer)
+	ra := obj.(*v1.Deployment)
+	WithDeploymentMinimumReplicasUnavailable()(ra)
+	return obj
 }
 
 func newAvailableReceiveAdapter(ctx context.Context, image string, transformer *apis.URL) runtime.Object {

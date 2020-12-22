@@ -49,7 +49,7 @@ func GetPodList(ctx context.Context, ls labels.Selector, kubeClientSet kubernete
 	return pl, nil
 }
 
-// GetEventList get a list of k8s event in a certain namespace with certain label selector.
+// GetEventList get a list of k8s event in a certain namespace with certain field selector related to Pod.
 func GetEventList(ctx context.Context, kubeClientSet kubernetes.Interface, pod, namespace string) (*corev1.EventList, error) {
 	pl, err := kubeClientSet.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
 		TypeMeta: metav1.TypeMeta{
@@ -65,6 +65,8 @@ func GetEventList(ctx context.Context, kubeClientSet kubernetes.Interface, pod, 
 	return pl, nil
 }
 
+// GetMountFailureMessageFromEventList gets the k8s events message that related to secret errors.
+// It returns the first relevant k8s event message from any Event in the list.
 func GetMountFailureMessageFromEventList(el *corev1.EventList, secret *corev1.SecretKeySelector) string {
 	for _, event := range el.Items {
 		if isWarningMessage(event.Message, event.Namespace, secret) {
