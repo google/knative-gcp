@@ -68,11 +68,26 @@ func (r *Reconciler) ReconcileDeployment(ctx context.Context, ra *appsv1.Deploym
 			logging.FromContext(ctx).Error("Error propagating authentication check message", zap.Error(err))
 			return err
 		}
+		// If source is in secret mode, we need to check if the secret is absent.
+		if src.Spec.Secret != nil {
+			logging.FromContext(ctx).Error("Start to get pod list", zap.Error(err))
+			for _, pod := range podList.Items {
+				eventList, err := authcheck.GetEventList(ctx, r.KubeClientSet, pod.Name, src.Namespace)
+				logging.FromContext(ctx).Error("Start to get event list", zap.Error(err))
+				if err != nil {
+					logging.FromContext(ctx).Error("Error propagating authentication check message", zap.Error(err))
+					return err
+				}
+				if authenticationCheckMessage := authcheck.GetMountFailureMessageFromEventList(eventList, src.Spec.Secret); authenticationCheckMessage != "" {
+					src.Status.MarkDeployedUnknown(authcheck.AuthenticationCheckUnknownReason, authenticationCheckMessage)
+					return nil
+				}
+			}
+		}
 		if authenticationCheckMessage := authcheck.GetTerminationLogFromPodList(podList); authenticationCheckMessage != "" {
 			src.Status.MarkDeployedUnknown(authcheck.AuthenticationCheckUnknownReason, authenticationCheckMessage)
 		}
 	}
-
 	return nil
 }
 
