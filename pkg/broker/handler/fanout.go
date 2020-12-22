@@ -125,7 +125,7 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 	}
 
 	p.pool.Range(func(key, value interface{}) bool {
-		if _, ok := p.targets.GetBrokerByKey(key.(string)); !ok {
+		if _, ok := p.targets.GetGCPAddressableByKey(key.(string)); !ok {
 			value.(*fanoutHandlerCache).Stop()
 			p.pool.Delete(key)
 		}

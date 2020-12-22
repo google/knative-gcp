@@ -129,7 +129,7 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey string) *config.GcpCellAddressable {
 	t.Helper()
 
-	b, ok := h.Targets.GetBrokerByKey(brokerKey)
+	b, ok := h.Targets.GetGCPAddressableByKey(brokerKey)
 	if !ok {
 		t.Fatalf("broker with key %q doesn't exist", brokerKey)
 	}
@@ -163,7 +163,7 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey string
 		bm.SetState(config.State_READY)
 	})
 
-	b, ok = h.Targets.GetBrokerByKey(brokerKey)
+	b, ok = h.Targets.GetGCPAddressableByKey(brokerKey)
 	if !ok {
 		t.Fatalf("failed to save test broker: %s", brokerKey)
 	}
@@ -186,7 +186,7 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey string
 func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, brokerKey string) {
 	t.Helper()
 
-	b, ok := h.Targets.GetBrokerByKey(brokerKey)
+	b, ok := h.Targets.GetGCPAddressableByKey(brokerKey)
 	if !ok {
 		// The broker is no longer exists.
 		return
@@ -216,7 +216,7 @@ func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, brokerKey strin
 func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey string, filters map[string]string) *config.Target {
 	t.Helper()
 	tn := "tr-" + uuid.New().String()
-	b, ok := h.Targets.GetBrokerByKey(brokerKey)
+	b, ok := h.Targets.GetGCPAddressableByKey(brokerKey)
 	if !ok {
 		t.Fatalf("broker with key %q doesn't exist", brokerKey)
 	}
@@ -316,7 +316,7 @@ func (h *Helper) DeleteTarget(ctx context.Context, t *testing.T, targetKey strin
 // SendEventToDecoupleQueue sends the given event to the decouple queue of the given broker.
 func (h *Helper) SendEventToDecoupleQueue(ctx context.Context, t *testing.T, brokerKey string, event *event.Event) {
 	t.Helper()
-	b, ok := h.Targets.GetBrokerByKey(brokerKey)
+	b, ok := h.Targets.GetGCPAddressableByKey(brokerKey)
 	if !ok {
 		t.Fatalf("broker with key %q doesn't exist", brokerKey)
 	}

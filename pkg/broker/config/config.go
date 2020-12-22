@@ -26,9 +26,6 @@ type ReadonlyTargets interface {
 	// RangeAllTargets ranges over all targets.
 	// Do not modify the given Target copy.
 	RangeAllTargets(func(*Target) bool)
-	// GetTarget returns a target.
-	// Do not modify the returned Target copy.
-	GetTarget(namespace, brokerName, targetName string) (*Target, bool)
 	// GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 	// Do not modify the returned Target copy.
 	GetTargetByKey(key string) (*Target, bool)
@@ -36,7 +33,7 @@ type ReadonlyTargets interface {
 	// Do not modify the returned Broker copy.
 	GetBroker(namespace, name string) (*GcpCellAddressable, bool)
 	// GetBroker by its key (namespace/name).
-	GetBrokerByKey(key string) (*GcpCellAddressable, bool)
+	GetGCPAddressableByKey(key string) (*GcpCellAddressable, bool)
 	// RangeGCPCellAddressables ranges over all the GCPCellAddressages.
 	// Do not modify the given GcpCellAddressable copy.
 	RangeGCPCellAddressables(func(addressable *GcpCellAddressable) bool)
@@ -79,6 +76,17 @@ type Targets interface {
 	// MutateBroker mutates a broker by namespace and name.
 	// If the broker doesn't exist, it will be added (unless Delete() is called).
 	MutateBroker(namespace, name string, mutate func(BrokerMutation))
+}
+
+type GCPCellAddressableKey struct {
+	Namespace string
+	Name      string
+	Type      GcpCellAddressableType
+}
+
+type TargetKey struct {
+	GCPCellAddressableKey GCPCellAddressableKey
+	Name                  string
 }
 
 // BrokerKey returns the key of a broker.

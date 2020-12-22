@@ -25,6 +25,12 @@ enum State {
   READY = 1;
 }
 
+enum GcpCellAddressableType {
+  // BROKER is the default for backwards compatibility from before the enum existed.
+  BROKER = 0;
+  CHANNEL = 1;
+}
+
 // A pubsub "queue".
 message Queue {
   string topic = 1;

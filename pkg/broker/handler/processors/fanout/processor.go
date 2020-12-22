@@ -57,7 +57,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	if err != nil {
 		return err
 	}
-	broker, ok := p.Targets.GetBrokerByKey(bk)
+	broker, ok := p.Targets.GetGCPAddressableByKey(bk)
 	if !ok {
 		// If the broker no longer exists, then there is nothing to process.
 		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.String("broker", bk))

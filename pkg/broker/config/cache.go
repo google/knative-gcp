@@ -78,12 +78,12 @@ func (ct *CachedTargets) GetTargetByKey(key string) (*Target, bool) {
 // GetBroker returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
 func (ct *CachedTargets) GetBroker(namespace, name string) (*GcpCellAddressable, bool) {
-	return ct.GetBrokerByKey(BrokerKey(namespace, name))
+	return ct.GetGCPAddressableByKey(BrokerKey(namespace, name))
 }
 
 // GetBrokerByKey returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBrokerByKey(key string) (*GcpCellAddressable, bool) {
+func (ct *CachedTargets) GetGCPAddressableByKey(key string) (*GcpCellAddressable, bool) {
 	val := ct.Load()
 	if val == nil || val.GcpCellAddressables == nil {
 		return nil, false
