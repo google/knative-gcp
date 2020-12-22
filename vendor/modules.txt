@@ -1321,5 +1321,4 @@ sigs.k8s.io/yaml
 # github.com/robfig/cron/v3 => github.com/robfig/cron/v3 v3.0.0
 # gomodules.xyz/jsonpatch/v2 => gomodules.xyz/jsonpatch/v2 v2.0.1
 # gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
-# honnef.co/go/tools => honnef.co/go/tools v0.0.1-2019.2.3
 # sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
