@@ -132,7 +132,7 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 		return true
 	})
 
-	p.targets.RangeBrokers(func(b *config.GcpCellAddressable) bool {
+	p.targets.RangeGCPCellAddressables(func(b *config.GcpCellAddressable) bool {
 		if value, ok := p.pool.Load(b.Key()); ok {
 			// Skip if we don't need to renew the handler.
 			if !value.(*fanoutHandlerCache).shouldRenew(b) {

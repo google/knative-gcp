@@ -94,7 +94,7 @@ func (ct *CachedTargets) GetBrokerByKey(key string) (*GcpCellAddressable, bool) 
 
 // RangeBrokers ranges over all brokers.
 // Do not modify the given Broker copy.
-func (ct *CachedTargets) RangeBrokers(f func(addressable *GcpCellAddressable) bool) {
+func (ct *CachedTargets) RangeGCPCellAddressables(f func(addressable *GcpCellAddressable) bool) {
 	val := ct.Load()
 	if val == nil {
 		return

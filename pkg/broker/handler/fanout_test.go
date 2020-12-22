@@ -405,7 +405,7 @@ func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 		return true
 	})
 
-	targets.RangeBrokers(func(b *config.GcpCellAddressable) bool {
+	targets.RangeGCPCellAddressables(func(b *config.GcpCellAddressable) bool {
 		if b.State == config.State_READY {
 			wantHandlers[b.Key()] = true
 		}

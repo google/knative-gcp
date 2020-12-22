@@ -128,7 +128,7 @@ func TestCachedTargetsRange(t *testing.T) {
 
 	t.Run("range brokers", func(t *testing.T) {
 		gotGcpCellAddressables := make(map[string]*GcpCellAddressable)
-		targets.RangeBrokers(func(b *GcpCellAddressable) bool {
+		targets.RangeGCPCellAddressables(func(b *GcpCellAddressable) bool {
 			gotGcpCellAddressables[b.Key()] = b
 			return true
 		})

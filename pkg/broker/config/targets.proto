@@ -68,6 +68,8 @@ message Target {
   // The namespace of the object.
   string namespace = 3;
 
+  reserved "broker";
+
   // The broker name that the trigger is referencing.
   string gcp_cell_addressable_name = 4;
 
@@ -86,6 +88,7 @@ message Target {
 
 // TargetsConfig is the collection of all Targets.
 message TargetsConfig {
+  reserved "brokers";
   // Keyed by broker namespace/name.
   map<string, GcpCellAddressable> gcp_cell_addressables = 1;
 }

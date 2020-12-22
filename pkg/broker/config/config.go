@@ -37,9 +37,9 @@ type ReadonlyTargets interface {
 	GetBroker(namespace, name string) (*GcpCellAddressable, bool)
 	// GetBroker by its key (namespace/name).
 	GetBrokerByKey(key string) (*GcpCellAddressable, bool)
-	// RangeBrokers ranges over all brokers.
-	// Do not modify the given Broker copy.
-	RangeBrokers(func(addressable *GcpCellAddressable) bool)
+	// RangeGCPCellAddressables ranges over all the GCPCellAddressages.
+	// Do not modify the given GcpCellAddressable copy.
+	RangeGCPCellAddressables(func(addressable *GcpCellAddressable) bool)
 	// Bytes serializes all the targets.
 	Bytes() ([]byte, error)
 	// String returns the text format of all the targets.
