@@ -18,7 +18,7 @@ metadata:
   name: config-dataresidency
   namespace: cloud-run-events
   annotations:
-    knative.dev/example-checksum: "16b18753"
+    knative.dev/example-checksum: "3c0011c5"
 data:
   default-dataresidency-config: |
     clusterDefaults:
@@ -48,7 +48,10 @@ data:
       # clusterDefaults are the defaults to apply to every namespace in the
       # cluster
       clusterDefaults:
-        # messagestoragepolicy.global will set to the Org Policy
+        # messagestoragepolicy.global determines whether Global PubSub Topics are allowed.
+        # If set to false, then the PubSub Topic will be regional, based on the region the
+        # GKE cluster is running in. If set to true, then the PubSub Topic is allowed to be
+        # Global, as long as messagestoragepolicy.allowedpersistenceregions is empty and no GCP Org Policy forbids it.
         messagestoragepolicy.global: false
         # messagestoragepolicy.allowedpersistenceregions field specifies
         # all the allowed regions for data residency. The default or an empty value will

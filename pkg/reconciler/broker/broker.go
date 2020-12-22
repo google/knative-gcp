@@ -143,7 +143,6 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	// Check if topic exists, and if not, create it.
 	topicID := resources.GenerateDecouplingTopicName(b)
 	topicConfig := &pubsub.TopicConfig{Labels: labels}
-	fmt.Printf("Calling compute\n")
 	if r.dataresidencyStore != nil {
 		if updated, err := r.dataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, clusterRegionGetter); err != nil {
 			logger.Error("Failed to update topic config: ", zap.Error(err))
