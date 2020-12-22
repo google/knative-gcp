@@ -180,7 +180,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, t *brokerv1beta1.Trigger)
 }
 
 func (r *Reconciler) resolveSubscriber(ctx context.Context, t *brokerv1beta1.Trigger, b *brokerv1beta1.Broker) error {
-	if t.Spec.Subscriber.Ref != nil {
+	if t.Spec.Subscriber.Ref != nil && t.Spec.Subscriber.Ref.Namespace == "" {
 		// To call URIFromDestination(dest apisv1alpha1.Destination, parent interface{}), dest.Ref must have a Namespace
 		// We will use the Namespace of Trigger as the Namespace of dest.Ref
 		t.Spec.Subscriber.Ref.Namespace = t.GetNamespace()
