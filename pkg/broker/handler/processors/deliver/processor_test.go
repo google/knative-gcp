@@ -125,8 +125,8 @@ func TestDeliverSuccess(t *testing.T) {
 			ingressSvr := httptest.NewServer(ingressClient)
 			defer ingressSvr.Close()
 
-			broker := &config.Broker{Namespace: "ns", Name: "broker"}
-			target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
+			broker := &config.GcpCellAddressable{Namespace: "ns", Name: "broker"}
+			target := &config.Target{Namespace: "ns", Name: "target", GcpCellAddressableName: "broker", Address: targetSvr.URL}
 			testTargets := memory.NewEmptyTargets()
 			testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
 				bm.SetAddress(ingressSvr.URL)
@@ -293,12 +293,12 @@ func TestDeliverFailure(t *testing.T) {
 				t.Fatalf("failed to create cloudevents client: %v", err)
 			}
 
-			broker := &config.Broker{Namespace: "ns", Name: "broker"}
+			broker := &config.GcpCellAddressable{Namespace: "ns", Name: "broker"}
 			target := &config.Target{
-				Namespace: "ns",
-				Name:      "target",
-				Broker:    "broker",
-				Address:   targetSvr.URL,
+				Namespace:              "ns",
+				Name:                   "target",
+				GcpCellAddressableName: "broker",
+				Address:                targetSvr.URL,
 				RetryQueue: &config.Queue{
 					Topic: "test-retry-topic",
 				},
@@ -474,8 +474,8 @@ func benchmarkNoReply(b *testing.B, httpClient *http.Client, targetAddress strin
 
 	sampleEvent := kgcptesting.NewTestEvent(b, eventSize)
 
-	broker := &config.Broker{Namespace: "ns", Name: "broker"}
-	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
+	broker := &config.GcpCellAddressable{Namespace: "ns", Name: "broker"}
+	target := &config.Target{Namespace: "ns", Name: "target", GcpCellAddressableName: "broker", Address: targetAddress}
 	testTargets := memory.NewEmptyTargets()
 	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
 		bm.UpsertTargets(target)
@@ -514,8 +514,8 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, eventSize int, make
 
 	httpClient, targetAddress := makeTarget(b, &sampleReply)
 
-	broker := &config.Broker{Namespace: "ns", Name: "broker"}
-	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
+	broker := &config.GcpCellAddressable{Namespace: "ns", Name: "broker"}
+	target := &config.Target{Namespace: "ns", Name: "target", GcpCellAddressableName: "broker", Address: targetAddress}
 	testTargets := memory.NewEmptyTargets()
 	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
 		bm.SetAddress(ingressAddress)
@@ -593,13 +593,13 @@ func benchmarkRetry(b *testing.B, httpClient *http.Client, targetAddress string,
 
 	sampleEvent := kgcptesting.NewTestEvent(b, eventSize)
 
-	broker := &config.Broker{Namespace: "ns", Name: "broker"}
+	broker := &config.GcpCellAddressable{Namespace: "ns", Name: "broker"}
 	target := &config.Target{
-		Namespace:  "ns",
-		Name:       "target",
-		Broker:     "broker",
-		Address:    targetAddress,
-		RetryQueue: &config.Queue{Topic: "test-retry-topic"},
+		Namespace:              "ns",
+		Name:                   "target",
+		GcpCellAddressableName: "broker",
+		Address:                targetAddress,
+		RetryQueue:             &config.Queue{Topic: "test-retry-topic"},
 	}
 	testTargets := memory.NewEmptyTargets()
 	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {

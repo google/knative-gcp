@@ -145,7 +145,7 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 }
 
 // deliver delivers msg to target and sends the target's reply to the broker ingress.
-func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *config.Broker, msg binding.Message, hops int32) error {
+func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *config.GcpCellAddressable, msg binding.Message, hops int32) error {
 	startTime := time.Now()
 	// Remove hops from forwarded event.
 	resp, err := p.sendMsg(ctx, target.Address, msg, transformer.DeleteExtension(eventutil.HopsAttribute))

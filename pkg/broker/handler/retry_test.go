@@ -82,7 +82,7 @@ func TestRetryWatchAndSync(t *testing.T) {
 		assertRetryHandlers(t, syncPool, helper.Targets)
 	})
 
-	bs := make([]*config.Broker, 0, 4)
+	bs := make([]*config.GcpCellAddressable, 0, 4)
 
 	t.Run("adding some brokers with their targets", func(t *testing.T) {
 		// Add some brokers with their targets.
@@ -271,7 +271,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		// Target t1 and t2 original don't have filter attributes,
 		// update t1 filter attributes, and keep t2 filter attributes nil.
 		t1.FilterAttributes = map[string]string{"subject": "foo"}
-		helper.Targets.MutateBroker(t1.Namespace, t1.Broker, func(bm config.BrokerMutation) {
+		helper.Targets.MutateBroker(t1.Namespace, t1.GcpCellAddressableName, func(bm config.BrokerMutation) {
 			bm.UpsertTargets(t1)
 		})
 

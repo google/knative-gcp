@@ -31,15 +31,15 @@ import (
 )
 
 func testConfigMap(names []string, namespace string) *corev1.ConfigMap {
-	brokerMap := make(map[string]*config.Broker)
+	brokerMap := make(map[string]*config.GcpCellAddressable)
 	for _, name := range names {
-		brokerMap[fmt.Sprintf("%s/%s", namespace, name)] = &config.Broker{
+		brokerMap[fmt.Sprintf("%s/%s", namespace, name)] = &config.GcpCellAddressable{
 			Name:      name,
 			Namespace: namespace,
 		}
 	}
 	targets := &config.TargetsConfig{
-		Brokers: brokerMap,
+		GcpCellAddressables: brokerMap,
 	}
 	targetsBytes, _ := proto.Marshal(targets)
 	return &corev1.ConfigMap{

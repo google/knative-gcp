@@ -34,12 +34,12 @@ type ReadonlyTargets interface {
 	GetTargetByKey(key string) (*Target, bool)
 	// GetBroker returns a broker and its targets if it exists.
 	// Do not modify the returned Broker copy.
-	GetBroker(namespace, name string) (*Broker, bool)
+	GetBroker(namespace, name string) (*GcpCellAddressable, bool)
 	// GetBroker by its key (namespace/name).
-	GetBrokerByKey(key string) (*Broker, bool)
+	GetBrokerByKey(key string) (*GcpCellAddressable, bool)
 	// RangeBrokers ranges over all brokers.
 	// Do not modify the given Broker copy.
-	RangeBrokers(func(*Broker) bool)
+	RangeBrokers(func(addressable *GcpCellAddressable) bool)
 	// Bytes serializes all the targets.
 	Bytes() ([]byte, error)
 	// String returns the text format of all the targets.
@@ -99,10 +99,10 @@ func SplitTriggerKey(key string) (string, string, string) {
 
 // Key returns the target key.
 func (t *Target) Key() string {
-	return TriggerKey(t.Namespace, t.Broker, t.Name)
+	return TriggerKey(t.Namespace, t.GcpCellAddressableName, t.Name)
 }
 
 // Key returns the broker key.
-func (b *Broker) Key() string {
+func (b *GcpCellAddressable) Key() string {
 	return BrokerKey(b.Namespace, b.Name)
 }

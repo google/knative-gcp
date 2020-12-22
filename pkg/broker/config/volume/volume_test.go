@@ -28,7 +28,7 @@ import (
 
 func TestSyncConfigFromFile(t *testing.T) {
 	data := &config.TargetsConfig{
-		Brokers: map[string]*config.Broker{
+		GcpCellAddressables: map[string]*config.GcpCellAddressable{
 			"ns1/broker1": {
 				Id:        "b-uid-1",
 				Address:   "broker1.ns1.example.com",
@@ -134,7 +134,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 		t.Errorf("initial targets got=%+v, want=%+v", gotTargets, data)
 	}
 
-	data.Brokers["ns1/broker1"].Targets["name1"] = &config.Target{
+	data.GcpCellAddressables["ns1/broker1"].Targets["name1"] = &config.Target{
 		Id:               "uid-1",
 		Name:             "name1",
 		Namespace:        "ns1",
@@ -145,7 +145,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 		},
 		State: config.State_UNKNOWN,
 	}
-	data.Brokers["ns2/broker2"].Targets["name3"] = &config.Target{
+	data.GcpCellAddressables["ns2/broker2"].Targets["name3"] = &config.Target{
 		Id:               "uid-3",
 		Name:             "name3",
 		Namespace:        "ns2",
@@ -157,7 +157,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 		State: config.State_READY,
 	}
 
-	delete(data.Brokers["ns2/broker2"].Targets, "name4")
+	delete(data.GcpCellAddressables["ns2/broker2"].Targets, "name4")
 	b, _ = proto.Marshal(data)
 	atomicWriteFile(t, tmp.Name(), b)
 

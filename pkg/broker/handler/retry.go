@@ -154,7 +154,7 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 		}
 
 		// Deliver processor needs the broker in the context for reply.
-		ctx = handlerctx.WithBrokerKey(ctx, config.BrokerKey(t.Namespace, t.Broker))
+		ctx = handlerctx.WithBrokerKey(ctx, config.BrokerKey(t.Namespace, t.GcpCellAddressableName))
 		ctx = handlerctx.WithTargetKey(ctx, t.Key())
 		// Start the handler with target in context.
 		hc.Start(ctx, func(err error) {

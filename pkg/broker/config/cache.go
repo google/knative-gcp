@@ -48,7 +48,7 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 	if val == nil {
 		return
 	}
-	for _, b := range val.Brokers {
+	for _, b := range val.GcpCellAddressables {
 		for _, t := range b.Targets {
 			if c := f(t); !c {
 				return
@@ -77,29 +77,29 @@ func (ct *CachedTargets) GetTargetByKey(key string) (*Target, bool) {
 
 // GetBroker returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBroker(namespace, name string) (*Broker, bool) {
+func (ct *CachedTargets) GetBroker(namespace, name string) (*GcpCellAddressable, bool) {
 	return ct.GetBrokerByKey(BrokerKey(namespace, name))
 }
 
 // GetBrokerByKey returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBrokerByKey(key string) (*Broker, bool) {
+func (ct *CachedTargets) GetBrokerByKey(key string) (*GcpCellAddressable, bool) {
 	val := ct.Load()
-	if val == nil || val.Brokers == nil {
+	if val == nil || val.GcpCellAddressables == nil {
 		return nil, false
 	}
-	b, ok := val.Brokers[key]
+	b, ok := val.GcpCellAddressables[key]
 	return b, ok
 }
 
 // RangeBrokers ranges over all brokers.
 // Do not modify the given Broker copy.
-func (ct *CachedTargets) RangeBrokers(f func(*Broker) bool) {
+func (ct *CachedTargets) RangeBrokers(f func(addressable *GcpCellAddressable) bool) {
 	val := ct.Load()
 	if val == nil {
 		return
 	}
-	for _, b := range val.Brokers {
+	for _, b := range val.GcpCellAddressables {
 		if c := f(b); !c {
 			break
 		}

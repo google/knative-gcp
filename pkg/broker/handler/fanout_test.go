@@ -81,7 +81,7 @@ func TestFanoutWatchAndSync(t *testing.T) {
 		assertFanoutHandlers(t, syncPool, helper.Targets)
 	})
 
-	bs := make([]*config.Broker, 0, 4)
+	bs := make([]*config.GcpCellAddressable, 0, 4)
 
 	t.Run("adding new brokers creates new handlers", func(t *testing.T) {
 		// First add some brokers.
@@ -405,7 +405,7 @@ func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 		return true
 	})
 
-	targets.RangeBrokers(func(b *config.Broker) bool {
+	targets.RangeBrokers(func(b *config.GcpCellAddressable) bool {
 		if b.State == config.State_READY {
 			wantHandlers[b.Key()] = true
 		}
@@ -429,6 +429,6 @@ func trigger(target *config.Target) reportertest.Trigger {
 	return reportertest.Trigger{
 		Namespace: target.Namespace,
 		Trigger:   target.Name,
-		Broker:    target.Broker,
+		Broker:    target.GcpCellAddressableName,
 	}
 }

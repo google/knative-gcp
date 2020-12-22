@@ -184,7 +184,8 @@ func AddTargetTags(ctx context.Context, target *config.Target) (context.Context,
 		Labels: map[string]string{
 			metricskey.LabelNamespaceName: target.GetNamespace(),
 			metricskey.LabelTriggerName:   target.GetName(),
-			metricskey.LabelBrokerName:    target.GetBroker(),
+			// TODO make sure this is actually a broker...
+			metricskey.LabelBrokerName: target.GetGcpCellAddressableName(),
 		},
 	})
 	return tag.New(ctx, tag.Insert(TriggerFilterTypeKey, filterTypeValue(target.FilterAttributes["type"])))

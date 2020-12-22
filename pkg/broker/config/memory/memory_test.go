@@ -25,7 +25,7 @@ import (
 
 func TestNewEmptyTargets(t *testing.T) {
 	v := NewEmptyTargets()
-	wantTargets := &config.TargetsConfig{Brokers: make(map[string]*config.Broker)}
+	wantTargets := &config.TargetsConfig{GcpCellAddressables: make(map[string]*config.GcpCellAddressable)}
 	gotTargets := v.(*memoryTargets).Load()
 	if !proto.Equal(wantTargets, gotTargets) {
 		t.Errorf("NewEmptyTargets have targets got=%+v, want=%+v", gotTargets, wantTargets)
@@ -35,15 +35,15 @@ func TestNewEmptyTargets(t *testing.T) {
 func TestUpsertTargetsWithNamespaceBrokerEnforced(t *testing.T) {
 	v := NewEmptyTargets()
 	wantTarget := &config.Target{
-		Name:      "target",
-		Namespace: "ns",
-		Broker:    "broker",
+		Name:                   "target",
+		Namespace:              "ns",
+		GcpCellAddressableName: "broker",
 	}
 	v.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
 		bm.UpsertTargets(&config.Target{
-			Name:      "target",
-			Namespace: "other-namespace",
-			Broker:    "other-broker",
+			Name:                   "target",
+			Namespace:              "other-namespace",
+			GcpCellAddressableName: "other-broker",
 		})
 	})
 
@@ -62,7 +62,7 @@ func TestMutateBroker(t *testing.T) {
 	val := &config.TargetsConfig{}
 	targets := NewTargets(val)
 
-	wantBroker := &config.Broker{
+	wantBroker := &config.GcpCellAddressable{
 		Id:        "b-uid",
 		Address:   "broker.example.com",
 		Name:      "broker",
@@ -94,9 +94,9 @@ func TestMutateBroker(t *testing.T) {
 	})
 
 	t1 := &config.Target{
-		Id:      "uid-1",
-		Address: "consumer1.example.com",
-		Broker:  "broker",
+		Id:                     "uid-1",
+		Address:                "consumer1.example.com",
+		GcpCellAddressableName: "broker",
 		FilterAttributes: map[string]string{
 			"app": "foo",
 		},
@@ -108,9 +108,9 @@ func TestMutateBroker(t *testing.T) {
 		},
 	}
 	t2 := &config.Target{
-		Id:      "uid-2",
-		Address: "consumer2.example.com",
-		Broker:  "broker",
+		Id:                     "uid-2",
+		Address:                "consumer2.example.com",
+		GcpCellAddressableName: "broker",
 		FilterAttributes: map[string]string{
 			"app": "bar",
 		},
@@ -122,9 +122,9 @@ func TestMutateBroker(t *testing.T) {
 		},
 	}
 	t3 := &config.Target{
-		Id:      "uid-3",
-		Address: "consumer3.example.com",
-		Broker:  "broker",
+		Id:                     "uid-3",
+		Address:                "consumer3.example.com",
+		GcpCellAddressableName: "broker",
 		FilterAttributes: map[string]string{
 			"app": "zzz",
 		},
@@ -199,7 +199,7 @@ func TestMutateBroker(t *testing.T) {
 	})
 }
 
-func assertBroker(t *testing.T, want *config.Broker, namespace, name string, targets config.Targets) {
+func assertBroker(t *testing.T, want *config.GcpCellAddressable, namespace, name string, targets config.Targets) {
 	t.Helper()
 	got, ok := targets.GetBroker(namespace, name)
 	if !ok {

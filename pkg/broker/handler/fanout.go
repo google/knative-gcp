@@ -59,12 +59,12 @@ type FanoutPool struct {
 
 type fanoutHandlerCache struct {
 	Handler
-	b *config.Broker
+	b *config.GcpCellAddressable
 }
 
 // If somehow the existing handler's setting has deviated from the current broker config,
 // we need to renew the handler.
-func (hc *fanoutHandlerCache) shouldRenew(b *config.Broker) bool {
+func (hc *fanoutHandlerCache) shouldRenew(b *config.GcpCellAddressable) bool {
 	if !hc.IsAlive() {
 		return true
 	}
@@ -132,7 +132,7 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 		return true
 	})
 
-	p.targets.RangeBrokers(func(b *config.Broker) bool {
+	p.targets.RangeBrokers(func(b *config.GcpCellAddressable) bool {
 		if value, ok := p.pool.Load(b.Key()); ok {
 			// Skip if we don't need to renew the handler.
 			if !value.(*fanoutHandlerCache).shouldRenew(b) {

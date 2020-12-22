@@ -46,11 +46,11 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 			filterAttributes = t.Spec.Filter.Attributes
 		}
 		target := &config.Target{
-			Id:        string(t.UID),
-			Name:      t.Name,
-			Namespace: t.Namespace,
-			Broker:    broker.Name,
-			Address:   t.Status.SubscriberURI.String(),
+			Id:                     string(t.UID),
+			Name:                   t.Name,
+			Namespace:              t.Namespace,
+			GcpCellAddressableName: broker.Name,
+			Address:                t.Status.SubscriberURI.String(),
 			RetryQueue: &config.Queue{
 				Topic:        brokerresources.GenerateRetryTopicName(t),
 				Subscription: brokerresources.GenerateRetrySubscriptionName(t),
@@ -71,7 +71,7 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 	if broker.Status.GetCondition(brokerv1beta1.BrokerConditionTopic).IsTrue() && broker.Status.GetCondition(brokerv1beta1.BrokerConditionSubscription).IsTrue() {
 		brokerQueueState = config.State_READY
 	}
-	brokerConfig := &config.Broker{
+	brokerConfig := &config.GcpCellAddressable{
 		Id:        string(broker.UID),
 		Name:      broker.Name,
 		Namespace: broker.Namespace,
@@ -85,7 +85,7 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 		State:   state,
 	}
 	bt := &config.TargetsConfig{
-		Brokers: map[string]*config.Broker{
+		GcpCellAddressables: map[string]*config.GcpCellAddressable{
 			brokerConfig.Key(): brokerConfig,
 		},
 	}

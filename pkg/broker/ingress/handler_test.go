@@ -75,7 +75,7 @@ const (
 var brokerTargets = map[string]*config.Target{"target": {}}
 
 var brokerConfig = &config.TargetsConfig{
-	Brokers: map[string]*config.Broker{
+	GcpCellAddressables: map[string]*config.GcpCellAddressable{
 		"ns1/broker1": {
 			Id:            "b-uid-1",
 			Name:          "broker1",
@@ -460,13 +460,13 @@ func setBrokerConfigTargets(targetCounts int) {
 
 	targets["matching_target"] = &config.Target{}
 
-	for _, cfg := range brokerConfig.Brokers {
+	for _, cfg := range brokerConfig.GcpCellAddressables {
 		cfg.Targets = targets
 	}
 }
 
 func restoreBrokerConfigTargets() {
-	for _, cfg := range brokerConfig.Brokers {
+	for _, cfg := range brokerConfig.GcpCellAddressables {
 		cfg.Targets = brokerTargets
 	}
 }

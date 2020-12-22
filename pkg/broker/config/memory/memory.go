@@ -24,7 +24,7 @@ import (
 )
 
 type brokerMutation struct {
-	b      *config.Broker
+	b      *config.GcpCellAddressable
 	delete bool
 }
 
@@ -59,7 +59,7 @@ func (m *brokerMutation) UpsertTargets(targets ...*config.Target) config.BrokerM
 	}
 	for _, t := range targets {
 		t.Namespace = m.b.Namespace
-		t.Broker = m.b.Name
+		t.GcpCellAddressableName = m.b.Name
 		m.b.Targets[t.Name] = t
 	}
 	return m
@@ -76,7 +76,7 @@ func (m *brokerMutation) DeleteTargets(targets ...*config.Target) config.BrokerM
 func (m *brokerMutation) Delete() {
 	// Calling delete will "reset" the broker under mutation instantly.
 	m.delete = true
-	m.b = &config.Broker{Name: m.b.Name, Namespace: m.b.Namespace}
+	m.b = &config.GcpCellAddressable{Name: m.b.Name, Namespace: m.b.Namespace}
 }
 
 type memoryTargets struct {
@@ -88,7 +88,7 @@ var _ config.Targets = (*memoryTargets)(nil)
 
 // NewEmptyTargets returns an empty mutable Targets in memory.
 func NewEmptyTargets() config.Targets {
-	return NewTargets(&config.TargetsConfig{Brokers: make(map[string]*config.Broker)})
+	return NewTargets(&config.TargetsConfig{GcpCellAddressables: make(map[string]*config.GcpCellAddressable)})
 }
 
 // NewTargets returns a new mutable Targets in memory.
@@ -106,7 +106,7 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
-	b := &config.Broker{Name: name, Namespace: namespace}
+	b := &config.GcpCellAddressable{Name: name, Namespace: namespace}
 	var newVal *config.TargetsConfig
 	val := m.Load()
 	if val != nil {
@@ -117,8 +117,8 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 		newVal = &config.TargetsConfig{}
 	}
 
-	if newVal.Brokers != nil {
-		if existing, ok := newVal.Brokers[config.BrokerKey(namespace, name)]; ok {
+	if newVal.GcpCellAddressables != nil {
+		if existing, ok := newVal.GcpCellAddressables[config.BrokerKey(namespace, name)]; ok {
 			b = existing
 		}
 	}
@@ -128,12 +128,12 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 	mutate(mutation)
 
 	if mutation.delete {
-		delete(newVal.Brokers, config.BrokerKey(namespace, name))
+		delete(newVal.GcpCellAddressables, config.BrokerKey(namespace, name))
 	} else {
-		if newVal.Brokers == nil {
-			newVal.Brokers = make(map[string]*config.Broker)
+		if newVal.GcpCellAddressables == nil {
+			newVal.GcpCellAddressables = make(map[string]*config.GcpCellAddressable)
 		}
-		newVal.Brokers[config.BrokerKey(namespace, name)] = mutation.b
+		newVal.GcpCellAddressables[config.BrokerKey(namespace, name)] = mutation.b
 	}
 
 	// Update the atomic value to be the copy.

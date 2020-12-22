@@ -313,10 +313,10 @@ func TestFilterProcessor(t *testing.T) {
 
 func newTestTargets(filter map[string]string) (context.Context, config.Targets) {
 	testTarget := &config.Target{
-		Name:             "target",
-		Broker:           "broker",
-		Namespace:        "ns",
-		FilterAttributes: filter,
+		Name:                   "target",
+		GcpCellAddressableName: "broker",
+		Namespace:              "ns",
+		FilterAttributes:       filter,
 	}
 	testTargets := memory.NewEmptyTargets()
 	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {

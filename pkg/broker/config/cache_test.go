@@ -69,7 +69,7 @@ func TestCachedTargetsRange(t *testing.T) {
 		},
 		State: State_UNKNOWN,
 	}
-	b1 := &Broker{
+	b1 := &GcpCellAddressable{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
 		Name:      "broker1",
@@ -84,7 +84,7 @@ func TestCachedTargetsRange(t *testing.T) {
 			"name2": t2,
 		},
 	}
-	b2 := &Broker{
+	b2 := &GcpCellAddressable{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
 		Name:      "broker2",
@@ -100,7 +100,7 @@ func TestCachedTargetsRange(t *testing.T) {
 		},
 	}
 	val := &TargetsConfig{
-		Brokers: map[string]*Broker{
+		GcpCellAddressables: map[string]*GcpCellAddressable{
 			"ns1/broker1": b1,
 			"ns2/broker2": b2,
 		},
@@ -127,34 +127,34 @@ func TestCachedTargetsRange(t *testing.T) {
 	})
 
 	t.Run("range brokers", func(t *testing.T) {
-		gotBrokers := make(map[string]*Broker)
-		targets.RangeBrokers(func(b *Broker) bool {
-			gotBrokers[b.Key()] = b
+		gotGcpCellAddressables := make(map[string]*GcpCellAddressable)
+		targets.RangeBrokers(func(b *GcpCellAddressable) bool {
+			gotGcpCellAddressables[b.Key()] = b
 			return true
 		})
-		if diff := cmp.Diff(val.Brokers, gotBrokers, protocmp.Transform()); diff != "" {
-			t.Errorf("RangeBrokers (-want,+got): %v", diff)
+		if diff := cmp.Diff(val.GcpCellAddressables, gotGcpCellAddressables, protocmp.Transform()); diff != "" {
+			t.Errorf("RangeGcpCellAddressables (-want,+got): %v", diff)
 		}
 	})
 
 	t.Run("get individual broker", func(t *testing.T) {
-		gotBroker, ok := targets.GetBroker("ns", "non-existing")
+		gotGcpCellAddressable, ok := targets.GetBroker("ns", "non-existing")
 		if ok {
 			t.Error("get non-existing broker got ok=true, want ok=false")
 		}
-		gotBroker, ok = targets.GetBroker(b1.Namespace, b1.Name)
+		gotGcpCellAddressable, ok = targets.GetBroker(b1.Namespace, b1.Name)
 		if !ok {
 			t.Error("get existing broker got ok=false, want ok=true")
 		}
-		if !proto.Equal(b1, gotBroker) {
-			t.Errorf("get existing broker got=%+v, want=%+v", gotBroker, b1)
+		if !proto.Equal(b1, gotGcpCellAddressable) {
+			t.Errorf("get existing broker got=%+v, want=%+v", gotGcpCellAddressable, b1)
 		}
-		gotBroker, ok = targets.GetBroker(b2.Namespace, b2.Name)
+		gotGcpCellAddressable, ok = targets.GetBroker(b2.Namespace, b2.Name)
 		if !ok {
 			t.Error("get existing broker got ok=false, want ok=true")
 		}
-		if !proto.Equal(b2, gotBroker) {
-			t.Errorf("get existing broker got=%+v, want=%+v", gotBroker, b1)
+		if !proto.Equal(b2, gotGcpCellAddressable) {
+			t.Errorf("get existing broker got=%+v, want=%+v", gotGcpCellAddressable, b1)
 		}
 	})
 }
@@ -204,7 +204,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 		},
 		State: State_UNKNOWN,
 	}
-	b1 := &Broker{
+	b1 := &GcpCellAddressable{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
 		Name:      "broker1",
@@ -219,7 +219,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 			"name2": t2,
 		},
 	}
-	b2 := &Broker{
+	b2 := &GcpCellAddressable{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
 		Name:      "broker2",
@@ -235,7 +235,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 		},
 	}
 	val := &TargetsConfig{
-		Brokers: map[string]*Broker{
+		GcpCellAddressables: map[string]*GcpCellAddressable{
 			"ns1/broker1": b1,
 			"ns2/broker2": b2,
 		},
@@ -317,7 +317,7 @@ func TestCachedTargetsString(t *testing.T) {
 		},
 		State: State_UNKNOWN,
 	}
-	b1 := &Broker{
+	b1 := &GcpCellAddressable{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
 		Name:      "broker1",
@@ -332,7 +332,7 @@ func TestCachedTargetsString(t *testing.T) {
 			"name2": t2,
 		},
 	}
-	b2 := &Broker{
+	b2 := &GcpCellAddressable{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
 		Name:      "broker2",
@@ -348,7 +348,7 @@ func TestCachedTargetsString(t *testing.T) {
 		},
 	}
 	val := &TargetsConfig{
-		Brokers: map[string]*Broker{
+		GcpCellAddressables: map[string]*GcpCellAddressable{
 			"ns1/broker1": b1,
 			"ns2/broker2": b2,
 		},
@@ -373,13 +373,13 @@ func TestCachedTargetsString(t *testing.T) {
 	}
 }
 
-func TestGetBrokerOrTarget(t *testing.T) {
+func TestGetGcpCellAddressableOrTarget(t *testing.T) {
 	t1 := &Target{
-		Id:               "uid-1",
-		Name:             "name1",
-		Namespace:        "ns1",
-		Broker:           "broker1",
-		FilterAttributes: map[string]string{"app": "foo"},
+		Id:                     "uid-1",
+		Name:                   "name1",
+		Namespace:              "ns1",
+		GcpCellAddressableName: "broker1",
+		FilterAttributes:       map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
 			Topic:        "abc",
 			Subscription: "abc-sub",
@@ -387,11 +387,11 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		State: State_READY,
 	}
 	t2 := &Target{
-		Id:               "uid-2",
-		Name:             "name2",
-		Namespace:        "ns1",
-		Broker:           "broker1",
-		FilterAttributes: map[string]string{"app": "bar"},
+		Id:                     "uid-2",
+		Name:                   "name2",
+		Namespace:              "ns1",
+		GcpCellAddressableName: "broker1",
+		FilterAttributes:       map[string]string{"app": "bar"},
 		RetryQueue: &Queue{
 			Topic:        "def",
 			Subscription: "def-sub",
@@ -399,11 +399,11 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		State: State_READY,
 	}
 	t3 := &Target{
-		Id:               "uid-3",
-		Name:             "name3",
-		Namespace:        "ns2",
-		Broker:           "broker2",
-		FilterAttributes: map[string]string{"app": "foo"},
+		Id:                     "uid-3",
+		Name:                   "name3",
+		Namespace:              "ns2",
+		GcpCellAddressableName: "broker2",
+		FilterAttributes:       map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
 			Topic:        "ghi",
 			Subscription: "ghi-sub",
@@ -411,18 +411,18 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		State: State_UNKNOWN,
 	}
 	t4 := &Target{
-		Id:               "uid-4",
-		Name:             "name4",
-		Namespace:        "ns2",
-		Broker:           "broker2",
-		FilterAttributes: map[string]string{"app": "bar"},
+		Id:                     "uid-4",
+		Name:                   "name4",
+		Namespace:              "ns2",
+		GcpCellAddressableName: "broker2",
+		FilterAttributes:       map[string]string{"app": "bar"},
 		RetryQueue: &Queue{
 			Topic:        "jkl",
 			Subscription: "jkl-sub",
 		},
 		State: State_UNKNOWN,
 	}
-	b1 := &Broker{
+	b1 := &GcpCellAddressable{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
 		Name:      "broker1",
@@ -437,7 +437,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 			"name2": t2,
 		},
 	}
-	b2 := &Broker{
+	b2 := &GcpCellAddressable{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
 		Name:      "broker2",
@@ -453,7 +453,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		},
 	}
 	val := &TargetsConfig{
-		Brokers: map[string]*Broker{
+		GcpCellAddressables: map[string]*GcpCellAddressable{
 			"ns1/broker1": b1,
 			"ns2/broker2": b2,
 		},
@@ -463,10 +463,10 @@ func TestGetBrokerOrTarget(t *testing.T) {
 	targets.Store(val)
 
 	t.Run("get broker", func(t *testing.T) {
-		wantBroker := b1
-		gotBroker, _ := targets.GetBroker(b1.Namespace, b1.Name)
-		if diff := cmp.Diff(wantBroker, gotBroker, protocmp.Transform()); diff != "" {
-			t.Errorf("GetBroker (-want,+got): %v", diff)
+		wantGcpCellAddressable := b1
+		gotGcpCellAddressable, _ := targets.GetBroker(b1.Namespace, b1.Name)
+		if diff := cmp.Diff(wantGcpCellAddressable, gotGcpCellAddressable, protocmp.Transform()); diff != "" {
+			t.Errorf("GetGcpCellAddressable (-want,+got): %v", diff)
 		}
 	})
 

@@ -116,7 +116,7 @@ func NewHelper(ctx context.Context, projectID string) (*Helper, error) {
 // The following test resources will also be created.
 // 1. The broker decouple topic and subscription.
 // 2. The broker ingress server.
-func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace string) *config.Broker {
+func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace string) *config.GcpCellAddressable {
 	t.Helper()
 
 	// Create an empty broker config.
@@ -126,7 +126,7 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 }
 
 // RenewBroker generates new test resources for an existing broker.
-func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey string) *config.Broker {
+func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey string) *config.GcpCellAddressable {
 	t.Helper()
 
 	b, ok := h.Targets.GetBrokerByKey(brokerKey)
@@ -222,11 +222,11 @@ func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey str
 	}
 
 	testTarget := &config.Target{
-		Name:             tn,
-		Namespace:        b.Namespace,
-		Broker:           b.Name,
-		FilterAttributes: filters,
-		State:            config.State_READY,
+		Name:                   tn,
+		Namespace:              b.Namespace,
+		GcpCellAddressableName: b.Name,
+		FilterAttributes:       filters,
+		State:                  config.State_READY,
 	}
 
 	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
@@ -269,7 +269,7 @@ func (h *Helper) RenewTarget(ctx context.Context, t *testing.T, targetKey string
 	}
 	target.Address = targetSvr.URL
 
-	h.Targets.MutateBroker(target.Namespace, target.Broker, func(bm config.BrokerMutation) {
+	h.Targets.MutateBroker(target.Namespace, target.GcpCellAddressableName, func(bm config.BrokerMutation) {
 		bm.UpsertTargets(target)
 	})
 
@@ -308,7 +308,7 @@ func (h *Helper) DeleteTarget(ctx context.Context, t *testing.T, targetKey strin
 		delete(h.consumers, targetKey)
 	}
 
-	h.Targets.MutateBroker(target.Namespace, target.Broker, func(bm config.BrokerMutation) {
+	h.Targets.MutateBroker(target.Namespace, target.GcpCellAddressableName, func(bm config.BrokerMutation) {
 		bm.DeleteTargets(target)
 	})
 }
