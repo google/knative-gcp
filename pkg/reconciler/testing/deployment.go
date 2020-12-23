@@ -94,3 +94,16 @@ func WithDeploymentAvailable() DeploymentOption {
 		}
 	}
 }
+
+// WithDeploymentMinimumReplicasUnavailable marks the Deployment as unavailable for minimal replica unavailable.
+func WithDeploymentMinimumReplicasUnavailable() DeploymentOption {
+	return func(d *appsv1.Deployment) {
+		d.Status.Conditions = []appsv1.DeploymentCondition{
+			{
+				Type:   appsv1.DeploymentAvailable,
+				Status: corev1.ConditionFalse,
+				Reason: "MinimumReplicasUnavailable",
+			},
+		}
+	}
+}

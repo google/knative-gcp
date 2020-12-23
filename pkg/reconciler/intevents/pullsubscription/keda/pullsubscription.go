@@ -91,15 +91,31 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 	}
 
 	// If deployment has replicaUnavailable error, it potentially has authentication configuration issues.
+	// If deployment has authentication configuration issues, directly return the status and stop reconciling the ScaledObject.
 	if replicaAvailable := src.Status.PropagateDeploymentAvailability(existing); !replicaAvailable {
 		podList, err := authcheck.GetPodList(ctx, psresources.GetLabelSelector(r.ControllerAgentName, src.Name), r.KubeClientSet, src.Namespace)
 		if err != nil {
 			logging.FromContext(ctx).Error("Error propagating authentication check message", zap.Error(err))
 			return err
 		}
+		// If source is in secret mode, we need to check if the secret is absent.
+		if src.Spec.Secret != nil {
+			for _, pod := range podList.Items {
+				eventList, err := authcheck.GetEventList(ctx, r.KubeClientSet, pod.Name, src.Namespace)
+				if err != nil {
+					logging.FromContext(ctx).Error("Error propagating authentication check message", zap.Error(err))
+					return err
+				}
+				if authenticationCheckMessage := authcheck.GetMountFailureMessageFromEventList(eventList, src.Spec.Secret); authenticationCheckMessage != "" {
+					src.Status.MarkDeployedUnknown(authcheck.AuthenticationCheckUnknownReason, authenticationCheckMessage)
+					return nil
+				}
+			}
+		}
 		if authenticationCheckMessage := authcheck.GetTerminationLogFromPodList(podList); authenticationCheckMessage != "" {
 			src.Status.MarkDeployedUnknown(authcheck.AuthenticationCheckUnknownReason, authenticationCheckMessage)
 		}
+		return nil
 	}
 
 	// Now we reconcile the ScaledObject.
