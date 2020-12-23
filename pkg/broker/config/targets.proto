@@ -94,6 +94,9 @@ message Target {
 
   // The target state.
   State state = 8;
+
+  // The resolved reply URI of this target.
+  string reply_address = 10;
 }
 
 // TargetsConfig is the collection of all Targets.

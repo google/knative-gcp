@@ -200,7 +200,7 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 		}, "event reply received")
 	}
 
-	if hops <= 0 {
+	if target.GcpCellAddressableType == config.GcpCellAddressableType_BROKER && hops <= 0 {
 		e, err := binding.ToEvent(ctx, respMsg)
 		if err != nil {
 			logging.FromContext(ctx).Error("failed to convert response message to event",
@@ -226,8 +226,25 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 		return nil
 	}
 
-	// Attach the previous hops for the reply.
-	replyResp, err := p.sendMsg(ctx, broker.Address, respMsg, eventutil.SetRemainingHopsTransformer(hops))
+	var transformers []binding.Transformer
+	if target.GcpCellAddressableType == config.GcpCellAddressableType_BROKER {
+		// Hops only exist for the Broker. Nothing else uses them.
+		// Attach the previous hops for the reply.
+		transformers = append(transformers, eventutil.SetRemainingHopsTransformer(hops))
+	}
+
+	replyAddress := target.ReplyAddress
+	if replyAddress == "" && target.GcpCellAddressableType == config.GcpCellAddressableType_BROKER {
+		// During the switch over from Broker only to all GCP Cell Addressables, there will be a
+		// short period of time for the reconciler to write in all the reply_addresses into the
+		// config. So, we will add a special case for it here.
+		// TODO Remove after 0.22.0.
+		replyAddress = broker.Address
+	}
+	if replyAddress == "" {
+		return nil
+	}
+	replyResp, err := p.sendMsg(ctx, replyAddress, respMsg, transformers...)
 	if err != nil {
 		return err
 	}
