@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
+
 	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/labels"
@@ -40,6 +42,31 @@ const (
 )
 
 func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.BrokerCell) error {
+	// Start with a fresh config and add into it. This approach is straightforward and reliable,
+	// however not efficient if there are too many triggers/subscriptions. If performance becomes
+	// an issue, we can consider maintaining 2 queues for updated brokers and triggers, and only
+	// update the config for updated triggers/subscriptions.
+	targets := memory.NewEmptyTargets()
+
+	err := r.addBrokersAndTriggersToTargets(ctx, bc, targets)
+	if err != nil {
+		return fmt.Errorf("unable to add Broker and Triggers to targets: %w", err)
+	}
+	err = r.addChannelsToTargets(ctx, bc, targets)
+	if err != nil {
+		return fmt.Errorf("unable to add Channels to targets: %w", err)
+	}
+
+	if err := r.updateTargetsConfig(ctx, bc, targets); err != nil {
+		logging.FromContext(ctx).Error("Failed to update broker targets configmap", zap.Error(err))
+		bc.Status.MarkTargetsConfigFailed(configFailed, "failed to update configmap: %v", err)
+		return err
+	}
+	bc.Status.MarkTargetsConfigReady()
+	return nil
+}
+
+func (r *Reconciler) addBrokersAndTriggersToTargets(ctx context.Context, bc *intv1alpha1.BrokerCell, targets config.Targets) error {
 	// TODO(#866) Only select brokers that point to this brokercell by label selector once the
 	// webhook assigns the brokercell label, i.e.,
 	// r.brokerLister.List(labels.SelectorFromSet(map[string]string{"brokercell":bc.Name, "brokercellns":bc.Namespace}))
@@ -49,10 +76,6 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.Broker
 		bc.Status.MarkTargetsConfigFailed(configFailed, "failed to list brokers: %v", err)
 		return err
 	}
-	// Start with a fresh config and add brokers/triggers into it. This approach is straightforward and reliable,
-	// however not efficient if there are too many triggers. If performance becomes an issue, we can consider
-	// maintaining 2 queues for updated brokers and triggers, and only update the config for updated brokers/triggers.
-	brokerTargets := memory.NewEmptyTargets()
 	for _, broker := range brokers {
 		// Filter by `eventing.knative.dev/broker: <name>` here
 		// to get only the triggers for this broker. The trigger webhook will
@@ -63,19 +86,29 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.Broker
 			bc.Status.MarkTargetsConfigFailed(configFailed, "failed to list triggers for broker %v: %v", broker.Name, err)
 			return err
 		}
-		r.addToConfig(ctx, broker, triggers, brokerTargets)
+		addBrokerAndTriggersToConfig(ctx, broker, triggers, targets)
 	}
-	if err := r.updateTargetsConfig(ctx, bc, brokerTargets); err != nil {
-		logging.FromContext(ctx).Error("Failed to update broker targets configmap", zap.Error(err))
-		bc.Status.MarkTargetsConfigFailed(configFailed, "failed to update configmap: %v", err)
+	return nil
+}
+
+func (r *Reconciler) addChannelsToTargets(ctx context.Context, bc *intv1alpha1.BrokerCell, targets config.Targets) error {
+	// TODO(#866) Only select Channels that point to this brokercell by label selector once the
+	// webhook assigns the brokercell label, i.e.,
+	// r.brokerLister.List(labels.SelectorFromSet(map[string]string{"brokercell":bc.Name, "brokercellns":bc.Namespace}))
+	channels, err := r.channelLister.List(labels.Everything())
+	if err != nil {
+		logging.FromContext(ctx).Error("Failed to list Channels", zap.Error(err))
+		bc.Status.MarkTargetsConfigFailed(configFailed, "failed to list channels: %v", err)
 		return err
 	}
-	bc.Status.MarkTargetsConfigReady()
+	for _, channel := range channels {
+		addChannelToConfig(ctx, channel, targets)
+	}
 	return nil
 }
 
 // addToConfig reconstructs the data entry for the given broker and add it to targets-config.
-func (r *Reconciler) addToConfig(ctx context.Context, b *brokerv1beta1.Broker, triggers []*brokerv1beta1.Trigger, brokerTargets config.Targets) {
+func addBrokerAndTriggersToConfig(_ context.Context, b *brokerv1beta1.Broker, triggers []*brokerv1beta1.Trigger, brokerTargets config.Targets) {
 	// TODO Maybe get rid of GCPCellAddressableMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we always
 	//  delete or update the entire broker entry and we don't need partial updates per trigger.
 	// The code can be simplified to r.targetsConfig.Upsert(brokerConfigEntry)
@@ -111,6 +144,8 @@ func (r *Reconciler) addToConfig(ctx context.Context, b *brokerv1beta1.Broker, t
 					Name:                   t.Name,
 					Namespace:              t.Namespace,
 					GcpCellAddressableName: b.Name,
+					GcpCellAddressableType: config.GcpCellAddressableType_BROKER,
+					ReplyAddress:           b.Status.Address.URL.String(),
 					Address:                t.Status.SubscriberURI.String(),
 					RetryQueue: &config.Queue{
 						Topic:        brokerresources.GenerateRetryTopicName(t),
@@ -129,6 +164,61 @@ func (r *Reconciler) addToConfig(ctx context.Context, b *brokerv1beta1.Broker, t
 				}
 				m.UpsertTargets(target)
 			}
+		}
+	})
+}
+
+// addToConfig reconstructs the data entry for the given broker and add it to targets-config.
+func addChannelToConfig(_ context.Context, c *v1beta1.Channel, targets config.Targets) {
+	// TODO Maybe get rid of GCPCellAddressableMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we always
+	//  delete or update the entire broker entry and we don't need partial updates per trigger.
+	// The code can be simplified to r.targetsConfig.Upsert(brokerConfigEntry)
+	targets.MutateGCPCellAddressable(config.KeyFromChannel(c), func(m config.GCPCellAddressableMutation) {
+		// First delete the Channel entry.
+		m.Delete()
+
+		/*
+			TODO Add this logic for Channels, it currently only exists for Brokers.
+			brokerQueueState := config.State_UNKNOWN
+			// Set broker decouple queue to be ready only when both the topic and pull subscription are ready.
+			// PubSub will drop messages published to a topic if there is no subscription.
+			if c.Status.GetCondition(brokerv1beta1.BrokerConditionTopic).IsTrue() && c.Status.GetCondition(brokerv1beta1.BrokerConditionSubscription).IsTrue() {
+				brokerQueueState = config.State_READY
+			}
+		*/
+
+		// Then reconstruct the broker entry and insert it
+		m.SetID(string(c.UID))
+		m.SetAddress(c.Status.Address.URL.String())
+		m.SetDecoupleQueue(&config.Queue{
+			Topic:        brokerresources.GenerateChannelDecouplingTopicName(c),
+			Subscription: brokerresources.GenerateChannelDecouplingSubscriptionName(c),
+			// TODO Part of the TODO above, use brokerQueueState here, rather than immediately ready.
+			State: config.State_READY,
+		})
+		if c.Status.IsReady() {
+			m.SetState(config.State_READY)
+		} else {
+			m.SetState(config.State_UNKNOWN)
+		}
+
+		for _, s := range c.Spec.SubscribableSpec.Subscribers {
+			target := &config.Target{
+				Id: string(s.UID),
+				// TODO name and namespace?
+				GcpCellAddressableType: config.GcpCellAddressableType_CHANNEL,
+				GcpCellAddressableName: c.Name,
+				Address:                s.SubscriberURI.String(),
+				ReplyAddress:           s.ReplyURI.String(),
+				RetryQueue: &config.Queue{
+					Topic:        brokerresources.GenerateSubscriberRetryTopicName(c, s),
+					Subscription: brokerresources.GenerateSubscriberRetrySubscriptionName(c, s),
+				},
+				// TODO(#939) May need to use "data plane readiness" for trigger in stead of the
+				//  overall status, see https://github.com/google/knative-gcp/issues/939#issuecomment-644337937
+				State: config.State_READY,
+			}
+			m.UpsertTargets(target)
 		}
 	})
 }

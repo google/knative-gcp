@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
+
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/trace"
@@ -188,6 +190,14 @@ func KeyFromBroker(b *brokerv1beta1.Broker) GCPCellAddressableKey {
 		addressableType: GcpCellAddressableType_BROKER,
 		namespace:       b.Namespace,
 		name:            b.Name,
+	}
+}
+
+func KeyFromChannel(c *v1beta1.Channel) GCPCellAddressableKey {
+	return GCPCellAddressableKey{
+		addressableType: GcpCellAddressableType_CHANNEL,
+		namespace:       c.Namespace,
+		name:            c.Name,
 	}
 }
 

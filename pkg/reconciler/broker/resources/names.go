@@ -18,7 +18,9 @@ package resources
 
 import (
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"github.com/google/knative-gcp/pkg/utils/naming"
+	duckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 )
 
 // For reference, the minimum number of characters available for a name
@@ -59,4 +61,32 @@ func GenerateRetryTopicName(t *brokerv1beta1.Trigger) string {
 // PubSub, the Trigger name is truncated to fit.
 func GenerateRetrySubscriptionName(t *brokerv1beta1.Trigger) string {
 	return naming.TruncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, t.UID)
+}
+
+// GenerateDecouplingTopicName generates a deterministic topic name for a
+// Broker. If the topic name would be longer than allowed by PubSub, the
+// Broker name is truncated to fit.
+func GenerateChannelDecouplingTopicName(c *v1beta1.Channel) string {
+	return naming.TruncatedPubsubResourceName("cre-ch", c.Namespace, c.Name, c.UID)
+}
+
+// GenerateDecouplingSubscriptionName generates a deterministic subscription
+// name for a Broker. If the subscription name would be longer than allowed by
+// PubSub, the Broker name is truncated to fit.
+func GenerateChannelDecouplingSubscriptionName(c *v1beta1.Channel) string {
+	return naming.TruncatedPubsubResourceName("cre-ch", c.Namespace, c.Name, c.UID)
+}
+
+// GenerateRetryTopicName generates a deterministic topic name for a Trigger.
+// If the topic name would be longer than allowed by PubSub, the Trigger name is
+// truncated to fit.
+func GenerateSubscriberRetryTopicName(c *v1beta1.Channel, s duckv1beta1.SubscriberSpec) string {
+	return naming.TruncatedPubsubResourceName("cre-sub", c.Namespace, c.Name, s.UID)
+}
+
+// GenerateRetrySubscriptionName generates a deterministic subscription name
+// for a Trigger. If the subscription name would be longer than allowed by
+// PubSub, the Trigger name is truncated to fit.
+func GenerateSubscriberRetrySubscriptionName(c *v1beta1.Channel, s duckv1beta1.SubscriberSpec) string {
+	return naming.TruncatedPubsubResourceName("cre-sub", c.Namespace, c.Name, s.UID)
 }
