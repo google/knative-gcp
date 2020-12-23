@@ -129,7 +129,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	t.Run("range brokers", func(t *testing.T) {
 		gotGcpCellAddressables := make(map[string]*GcpCellAddressable)
 		targets.RangeGCPCellAddressables(func(b *GcpCellAddressable) bool {
-			gotGcpCellAddressables[b.Key()] = b
+			gotGcpCellAddressables[b.Key().PersistenceString()] = b
 			return true
 		})
 		if diff := cmp.Diff(val.GcpCellAddressables, gotGcpCellAddressables, protocmp.Transform()); diff != "" {
@@ -357,18 +357,18 @@ func TestCachedTargetsString(t *testing.T) {
 	targets := &CachedTargets{}
 	targets.Store(val)
 
-	gotStr := targets.String()
+	gotStr := targets.DebugString()
 	wantStr := val.String()
 	if gotStr != wantStr {
 		t.Errorf("BaseTargets.String() got=%s, want=%s", gotStr, wantStr)
 	}
 
 	// Test EqualsString
-	if !targets.EqualsString(wantStr) {
+	if !targets.EqualsDebugString(wantStr) {
 		t.Error("BaseTargets.EqualsString() got=false, want=true")
 	}
 
-	if targets.EqualsString("random") {
+	if targets.EqualsDebugString("random") {
 		t.Error("CachedTargets.EqualsString() with random string got=true, want=false")
 	}
 }

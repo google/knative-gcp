@@ -28,22 +28,22 @@ type ReadonlyTargets interface {
 	RangeAllTargets(func(*Target) bool)
 	// GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 	// Do not modify the returned Target copy.
-	GetTargetByKey(key string) (*Target, bool)
+	GetTargetByKey(key TargetKey) (*Target, bool)
 	// GetBroker by its key (namespace/name).
-	GetGCPAddressableByKey(key string) (*GcpCellAddressable, bool)
+	GetGCPAddressableByKey(key GCPCellAddressableKey) (*GcpCellAddressable, bool)
 	// RangeGCPCellAddressables ranges over all the GCPCellAddressages.
 	// Do not modify the given GcpCellAddressable copy.
 	RangeGCPCellAddressables(func(addressable *GcpCellAddressable) bool)
 	// Bytes serializes all the targets.
 	Bytes() ([]byte, error)
 	// String returns the text format of all the targets.
-	String() string
+	DebugString() string
 	// EqualsBytes checks if the current targets config equals the given
 	// targets config in bytes.
 	EqualsBytes([]byte) bool
 	// EqualsString checks if the current targets config equals the given
 	// targets config in string.
-	EqualsString(string) bool
+	EqualsDebugString(string) bool
 }
 
 // BrokerMutation provides functions to mutate a Broker.
@@ -81,33 +81,69 @@ type GCPCellAddressableKey struct {
 	Type      GcpCellAddressableType
 }
 
+func (k GCPCellAddressableKey) PersistenceString() string {
+	if k.Type == GcpCellAddressableType_BROKER {
+		// For backwards compatibility from before it could be any other type, Brokers do not embed
+		// their type into the string.
+		return k.Namespace + "/" + k.Name
+	}
+	return fmt.Sprintf("%s/%s/%s", k.Type, k.Namespace, k.Name)
+}
+
 type TargetKey struct {
-	GCPCellAddressableKey GCPCellAddressableKey
-	Name                  string
+	gcpCellAddressableKey GCPCellAddressableKey
+	name                  string
 }
 
 // BrokerKey returns the key of a broker.
-func BrokerKey(namespace, name string) string {
+func BrokerKey(namespace, name string) GCPCellAddressableKey {
+	return GCPCellAddressableKey{
+		Type:      GcpCellAddressableType_BROKER,
+		Namespace: namespace,
+		Name:      name,
+	}
+}
+
+func oldBrokerKey(namespace, name string) string {
 	return namespace + "/" + name
 }
 
 // TriggerKey returns the key of a trigger. Format is namespace/brokerName/targetName.
-func TriggerKey(namespace, broker, target string) string {
+func oldTriggerKey(namespace, broker, target string) string {
 	return fmt.Sprintf("%s/%s/%s", namespace, broker, target)
 }
 
 // SplitTriggerKey splits a trigger key into namespace, brokerName, targetName.
-func SplitTriggerKey(key string) (string, string, string) {
+func oldSplitTriggerKey(key string) (string, string, string) {
 	keys := strings.Split(key, "/")
 	return keys[0], keys[1], keys[2]
 }
 
 // Key returns the target key.
-func (t *Target) Key() string {
-	return TriggerKey(t.Namespace, t.GcpCellAddressableName, t.Name)
+func (t *Target) Key() TargetKey {
+	return TargetKey{
+		gcpCellAddressableKey: GCPCellAddressableKey{
+			Type:      t.GcpCellAddressableType,
+			Namespace: t.Namespace,
+			Name:      t.GcpCellAddressableName,
+		},
+		name: t.Name,
+	}
+}
+
+func (t *TargetKey) GCPCellAddressableKey() GCPCellAddressableKey {
+	return t.gcpCellAddressableKey
+}
+
+func (t *TargetKey) LogString() string {
+	return fmt.Sprintf("%s/%s", t.GCPCellAddressableKey().PersistenceString(), t.name)
 }
 
 // Key returns the broker key.
-func (b *GcpCellAddressable) Key() string {
-	return BrokerKey(b.Namespace, b.Name)
+func (b *GcpCellAddressable) Key() GCPCellAddressableKey {
+	return GCPCellAddressableKey{
+		Type:      b.Type,
+		Namespace: b.Namespace,
+		Name:      b.Name,
+	}
 }

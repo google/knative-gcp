@@ -47,13 +47,12 @@ func TestFanoutSuccess(t *testing.T) {
 	bk := config.BrokerKey(ns, broker)
 	wantNum := 4
 	testTargets := newTestTargets(ns, broker, wantNum)
-	wantTargets := make([]string, 0, wantNum)
+	wantTargets := make([]config.TargetKey, 0, wantNum)
 	testTargets.RangeAllTargets(func(t *config.Target) bool {
 		wantTargets = append(wantTargets, t.Key())
 		return true
 	})
-	sort.Strings(wantTargets)
-	var gotTargets []string
+	var gotTargets []config.TargetKey
 
 	next := &processors.FakeProcessor{
 		PrevEventsCh: ch,
@@ -94,9 +93,32 @@ func TestFanoutSuccess(t *testing.T) {
 	close(ch)
 
 	// Make sure the processor sets the broker and targets in the context.
-	sort.Strings(gotTargets)
-	if diff := cmp.Diff(wantTargets, gotTargets); diff != "" {
+	if diff := cmp.Diff(wantTargets, gotTargets, diffTargetKeySlice()); diff != "" {
 		t.Errorf("got target keys (-want,+got): %v", diff)
+	}
+}
+
+func diffTargetKeySlice() cmp.Option {
+	// config.TargetKey is not inherently diffable, because it has unexported fields. In addition,
+	// there is no guarantee about the order in which the keys are stored is not important. So, to
+	// make this consistently diffable, we first change from config.TargetKey to its string
+	// equivalent. Then we sort those strings. This will be done for all []config.TargetKey
+	// variables.
+	return cmp.Transformer("SortedToString", func(in []config.TargetKey) []string {
+		out := make([]string, len(in))
+		for i := range in {
+			out[i] = in[i].LogString()
+		}
+		sort.Strings(out)
+		return out
+	})
+}
+
+func lessTargetKey(targets []config.TargetKey) func(i, j int) bool {
+	return func(i, j int) bool {
+		it := targets[i]
+		jt := targets[j]
+		return it.LogString() < jt.LogString()
 	}
 }
 

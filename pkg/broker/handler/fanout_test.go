@@ -397,11 +397,11 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 
 func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 	t.Helper()
-	gotHandlers := make(map[string]bool)
-	wantHandlers := make(map[string]bool)
+	gotHandlers := make(map[config.GCPCellAddressableKey]bool)
+	wantHandlers := make(map[config.GCPCellAddressableKey]bool)
 
 	p.pool.Range(func(key, value interface{}) bool {
-		gotHandlers[key.(string)] = true
+		gotHandlers[key.(config.GCPCellAddressableKey)] = true
 		return true
 	})
 

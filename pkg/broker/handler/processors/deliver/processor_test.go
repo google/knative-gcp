@@ -68,7 +68,14 @@ func TestInvalidContext(t *testing.T) {
 		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrBrokerKeyNotPresent)
 	}
 
-	ctx := handlerctx.WithBrokerKey(context.Background(), "key")
+	key := (&config.GcpCellAddressable{
+		Type:      config.GcpCellAddressableType_BROKER,
+		Id:        "123",
+		Name:      "name",
+		Namespace: "namespace",
+		Address:   "foobar",
+	}).Key()
+	ctx := handlerctx.WithBrokerKey(context.Background(), key)
 	err = p.Process(ctx, &e)
 	if err != handlerctx.ErrTargetKeyNotPresent {
 		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrTargetKeyNotPresent)

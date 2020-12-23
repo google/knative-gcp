@@ -102,6 +102,7 @@ func NewTargets(pb *config.TargetsConfig) config.Targets {
 // If the broker doesn't exist, it will be added (unless Delete() is called).
 // This function is thread-safe.
 func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.BrokerMutation)) {
+	bk := config.BrokerKey(namespace, name)
 	// Sync writes.
 	m.mux.Lock()
 	defer m.mux.Unlock()
@@ -118,7 +119,7 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 	}
 
 	if newVal.GcpCellAddressables != nil {
-		if existing, ok := newVal.GcpCellAddressables[config.BrokerKey(namespace, name)]; ok {
+		if existing, ok := newVal.GcpCellAddressables[bk.PersistenceString()]; ok {
 			b = existing
 		}
 	}
@@ -128,12 +129,12 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 	mutate(mutation)
 
 	if mutation.delete {
-		delete(newVal.GcpCellAddressables, config.BrokerKey(namespace, name))
+		delete(newVal.GcpCellAddressables, bk.PersistenceString())
 	} else {
 		if newVal.GcpCellAddressables == nil {
 			newVal.GcpCellAddressables = make(map[string]*config.GcpCellAddressable)
 		}
-		newVal.GcpCellAddressables[config.BrokerKey(namespace, name)] = mutation.b
+		newVal.GcpCellAddressables[bk.PersistenceString()] = mutation.b
 	}
 
 	// Update the atomic value to be the copy.

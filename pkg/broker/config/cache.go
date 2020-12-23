@@ -57,32 +57,25 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 	}
 }
 
-// GetTarget returns a target.
+// GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 // Do not modify the returned Target copy.
-func (ct *CachedTargets) GetTarget(namespace, brokerName, targetName string) (*Target, bool) {
-	Broker, ok := ct.GetGCPAddressableByKey(BrokerKey(namespace, brokerName))
+func (ct *CachedTargets) GetTargetByKey(key TargetKey) (*Target, bool) {
+	ca, ok := ct.GetGCPAddressableByKey(key.gcpCellAddressableKey)
 	if !ok {
 		return nil, false
 	}
-	t, ok := Broker.Targets[targetName]
+	t, ok := ca.Targets[key.name]
 	return t, ok
-}
-
-// GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
-// Do not modify the returned Target copy.
-func (ct *CachedTargets) GetTargetByKey(key string) (*Target, bool) {
-	namespace, brokerName, targetName := SplitTriggerKey(key)
-	return ct.GetTarget(namespace, brokerName, targetName)
 }
 
 // GetBrokerByKey returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetGCPAddressableByKey(key string) (*GcpCellAddressable, bool) {
+func (ct *CachedTargets) GetGCPAddressableByKey(key GCPCellAddressableKey) (*GcpCellAddressable, bool) {
 	val := ct.Load()
 	if val == nil || val.GcpCellAddressables == nil {
 		return nil, false
 	}
-	b, ok := val.GcpCellAddressables[key]
+	b, ok := val.GcpCellAddressables[key.PersistenceString()]
 	return b, ok
 }
 
@@ -107,7 +100,7 @@ func (ct *CachedTargets) Bytes() ([]byte, error) {
 }
 
 // String returns the text format of all the targets.
-func (ct *CachedTargets) String() string {
+func (ct *CachedTargets) DebugString() string {
 	val := ct.Load()
 	return prototext.MarshalOptions{}.Format(val)
 }
@@ -125,7 +118,7 @@ func (ct *CachedTargets) EqualsBytes(b []byte) bool {
 
 // EqualsString checks if the current targets config equals the given
 // targets config in string.
-func (ct *CachedTargets) EqualsString(s string) bool {
+func (ct *CachedTargets) EqualsDebugString(s string) bool {
 	self := ct.Load()
 	var other TargetsConfig
 	if err := prototext.Unmarshal([]byte(s), &other); err != nil {

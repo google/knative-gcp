@@ -125,7 +125,7 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 	}
 
 	p.pool.Range(func(key, value interface{}) bool {
-		if _, ok := p.targets.GetGCPAddressableByKey(key.(string)); !ok {
+		if _, ok := p.targets.GetGCPAddressableByKey(key.(config.GCPCellAddressableKey)); !ok {
 			value.(*fanoutHandlerCache).Stop()
 			p.pool.Delete(key)
 		}
@@ -176,9 +176,9 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 		// Start the handler with broker key in context.
 		hc.Start(handlerctx.WithBrokerKey(ctx, b.Key()), func(err error) {
 			if err != nil {
-				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", b.Key()), zap.Error(err))
+				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", b.Key().PersistenceString()), zap.Error(err))
 			} else {
-				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", b.Key()))
+				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", b.Key().PersistenceString()))
 			}
 		})
 

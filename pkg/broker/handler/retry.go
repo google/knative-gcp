@@ -104,7 +104,7 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 
 	p.pool.Range(func(key, value interface{}) bool {
 		// Each target represents a trigger.
-		if _, ok := p.targets.GetTargetByKey(key.(string)); !ok {
+		if _, ok := p.targets.GetTargetByKey(key.(config.TargetKey)); !ok {
 			value.(*retryHandlerCache).Stop()
 			p.pool.Delete(key)
 		}
@@ -112,14 +112,15 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 	})
 
 	p.targets.RangeAllTargets(func(t *config.Target) bool {
-		if value, ok := p.pool.Load(t.Key()); ok {
+		key := t.Key()
+		if value, ok := p.pool.Load(key); ok {
 			// Skip if we don't need to renew the handler.
 			if !value.(*retryHandlerCache).shouldRenew(t) {
 				return true
 			}
 			// Stop and clean up the old handler before we start a new one.
 			value.(*retryHandlerCache).Stop()
-			p.pool.Delete(t.Key())
+			p.pool.Delete(key)
 		}
 
 		// Don't start the handler if the target is not ready.
@@ -154,19 +155,19 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 		}
 
 		// Deliver processor needs the broker in the context for reply.
-		ctx = handlerctx.WithBrokerKey(ctx, config.BrokerKey(t.Namespace, t.GcpCellAddressableName))
-		ctx = handlerctx.WithTargetKey(ctx, t.Key())
+		ctx = handlerctx.WithBrokerKey(ctx, key.GCPCellAddressableKey())
+		ctx = handlerctx.WithTargetKey(ctx, key)
 		// Start the handler with target in context.
 		hc.Start(ctx, func(err error) {
 			// We will anyway get an error because of https://github.com/cloudevents/sdk-go/issues/470
 			if err != nil {
-				logging.FromContext(ctx).Error("handler for trigger has stopped with error", zap.String("trigger", t.Key()), zap.Error(err))
+				logging.FromContext(ctx).Error("handler for trigger has stopped with error", zap.String("trigger", key.LogString()), zap.Error(err))
 			} else {
-				logging.FromContext(ctx).Info("handler for trigger has stopped", zap.String("trigger", t.Key()))
+				logging.FromContext(ctx).Info("handler for trigger has stopped", zap.String("trigger", key.LogString()))
 			}
 		})
 
-		p.pool.Store(t.Key(), hc)
+		p.pool.Store(key, hc)
 		return true
 	})
 

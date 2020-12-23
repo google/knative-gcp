@@ -18,20 +18,22 @@ package context
 
 import (
 	"context"
+
+	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
 type targetKey struct{}
 
 // WithTargetKey sets a target key in the context.
-func WithTargetKey(ctx context.Context, key string) context.Context {
+func WithTargetKey(ctx context.Context, key config.TargetKey) context.Context {
 	return context.WithValue(ctx, targetKey{}, key)
 }
 
 // GetTargetKey gets a target key from the context.
-func GetTargetKey(ctx context.Context) (string, error) {
+func GetTargetKey(ctx context.Context) (config.TargetKey, error) {
 	untyped := ctx.Value(targetKey{})
 	if untyped == nil {
-		return "", ErrTargetKeyNotPresent
+		return config.TargetKey{}, ErrTargetKeyNotPresent
 	}
-	return untyped.(string), nil
+	return untyped.(config.TargetKey), nil
 }

@@ -40,6 +40,8 @@ message Queue {
 
 // Represents a broker.
 message GcpCellAddressable {
+  GcpCellAddressableType type = 8;
+
   // The id of the object. E.g. UID of the resource.
   string id = 1;
 
@@ -78,6 +80,8 @@ message Target {
 
   // The broker name that the trigger is referencing.
   string gcp_cell_addressable_name = 4;
+
+  GcpCellAddressableType gcp_cell_addressable_type = 9;
 
   // The resolved subscriber URI of the target.
   string address = 5;

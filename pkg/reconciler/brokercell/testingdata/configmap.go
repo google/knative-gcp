@@ -86,7 +86,7 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 	}
 	bt := &config.TargetsConfig{
 		GcpCellAddressables: map[string]*config.GcpCellAddressable{
-			brokerConfig.Key(): brokerConfig,
+			brokerConfig.Key().PersistenceString(): brokerConfig,
 		},
 	}
 	brokerTargets := memory.NewTargets(bt)

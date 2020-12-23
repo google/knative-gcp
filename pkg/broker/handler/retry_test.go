@@ -323,11 +323,11 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 
 func assertRetryHandlers(t *testing.T, p *RetryPool, targets config.Targets) {
 	t.Helper()
-	gotHandlers := make(map[string]bool)
-	wantHandlers := make(map[string]bool)
+	gotHandlers := make(map[config.TargetKey]bool)
+	wantHandlers := make(map[config.TargetKey]bool)
 
 	p.pool.Range(func(key, value interface{}) bool {
-		gotHandlers[key.(string)] = true
+		gotHandlers[key.(config.TargetKey)] = true
 		return true
 	})
 
