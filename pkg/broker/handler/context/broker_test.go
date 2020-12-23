@@ -42,6 +42,6 @@ func TestBrokerKey(t *testing.T) {
 		t.Errorf("unexpected error from GetBrokerKey: %v", err)
 	}
 	if gotKey != wantKey {
-		t.Errorf("broker key from context got=%s, want=%s", gotKey, wantKey)
+		t.Errorf("broker key from context got=%v, want=%v", gotKey, wantKey)
 	}
 }

@@ -72,25 +72,25 @@ type Targets interface {
 }
 
 type GCPCellAddressableKey struct {
-	Namespace string
-	Name      string
-	Type      GcpCellAddressableType
+	addressableType GcpCellAddressableType
+	namespace       string
+	name            string
 }
 
 func (k GCPCellAddressableKey) PersistenceString() string {
-	if k.Type == GcpCellAddressableType_BROKER {
+	if k.addressableType == GcpCellAddressableType_BROKER {
 		// For backwards compatibility from when the only type was Broker, Brokers do not embed
 		// their type into the string.
-		return k.Namespace + "/" + k.Name
+		return k.namespace + "/" + k.name
 	}
-	return fmt.Sprintf("%s/%s/%s", k.Type, k.Namespace, k.Name)
+	return fmt.Sprintf("%s/%s/%s", k.addressableType, k.namespace, k.name)
 }
 
 func (k GCPCellAddressableKey) CreateEmptyGCPCellAddressable() *GcpCellAddressable {
 	return &GcpCellAddressable{
-		Type:      k.Type,
-		Namespace: k.Namespace,
-		Name:      k.Name,
+		Type:      k.addressableType,
+		Namespace: k.namespace,
+		Name:      k.name,
 	}
 }
 
@@ -102,9 +102,9 @@ type TargetKey struct {
 // BrokerKey returns the key of a broker.
 func BrokerKey(namespace, name string) GCPCellAddressableKey {
 	return GCPCellAddressableKey{
-		Type:      GcpCellAddressableType_BROKER,
-		Namespace: namespace,
-		Name:      name,
+		addressableType: GcpCellAddressableType_BROKER,
+		namespace:       namespace,
+		name:            name,
 	}
 }
 
@@ -112,9 +112,9 @@ func BrokerKey(namespace, name string) GCPCellAddressableKey {
 func (x *Target) Key() TargetKey {
 	return TargetKey{
 		gcpCellAddressableKey: GCPCellAddressableKey{
-			Type:      x.GcpCellAddressableType,
-			Namespace: x.Namespace,
-			Name:      x.GcpCellAddressableName,
+			addressableType: x.GcpCellAddressableType,
+			namespace:       x.Namespace,
+			name:            x.GcpCellAddressableName,
 		},
 		name: x.Name,
 	}
@@ -131,8 +131,8 @@ func (t *TargetKey) LogString() string {
 // Key returns the broker key.
 func (x *GcpCellAddressable) Key() GCPCellAddressableKey {
 	return GCPCellAddressableKey{
-		Type:      x.Type,
-		Namespace: x.Namespace,
-		Name:      x.Name,
+		addressableType: x.Type,
+		namespace:       x.Namespace,
+		name:            x.Name,
 	}
 }

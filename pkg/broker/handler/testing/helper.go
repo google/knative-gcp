@@ -131,7 +131,7 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey config
 
 	b, ok := h.Targets.GetGCPAddressableByKey(brokerKey)
 	if !ok {
-		t.Fatalf("broker with key %q doesn't exist", brokerKey)
+		t.Fatalf("broker with key %v doesn't exist", brokerKey)
 	}
 
 	rid := uuid.New().String()
@@ -165,7 +165,7 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey config
 
 	b, ok = h.Targets.GetGCPAddressableByKey(brokerKey)
 	if !ok {
-		t.Fatalf("failed to save test broker: %s", brokerKey)
+		t.Fatalf("failed to save test broker: %v", brokerKey)
 	}
 
 	// Clean up existing ingress server if any.
@@ -222,7 +222,7 @@ func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey con
 	tn := "tr-" + uuid.New().String()
 	b, ok := h.Targets.GetGCPAddressableByKey(brokerKey)
 	if !ok {
-		t.Fatalf("broker with key %q doesn't exist", brokerKey)
+		t.Fatalf("broker with key %v doesn't exist", brokerKey)
 	}
 
 	testTarget := &config.Target{
@@ -244,7 +244,7 @@ func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey con
 func (h *Helper) RenewTarget(ctx context.Context, t *testing.T, targetKey config.TargetKey) *config.Target {
 	target, ok := h.Targets.GetTargetByKey(targetKey)
 	if !ok {
-		t.Fatalf("target with key %q doesn't exist", targetKey)
+		t.Fatalf("target with key %v doesn't exist", targetKey)
 	}
 
 	rid := uuid.New().String()
@@ -322,12 +322,12 @@ func (h *Helper) SendEventToDecoupleQueue(ctx context.Context, t *testing.T, bro
 	t.Helper()
 	b, ok := h.Targets.GetGCPAddressableByKey(brokerKey)
 	if !ok {
-		t.Fatalf("broker with key %q doesn't exist", brokerKey)
+		t.Fatalf("broker with key %v doesn't exist", brokerKey)
 	}
 
 	ctx = cecontext.WithTopic(ctx, b.DecoupleQueue.Topic)
 	if err := h.CePubsub.Send(ctx, binding.ToMessage(event)); err != nil {
-		t.Fatalf("failed to seed event to broker (key=%q) decouple queue: %v", brokerKey, err)
+		t.Fatalf("failed to seed event to broker (key=%v) decouple queue: %v", brokerKey, err)
 	}
 }
 
@@ -336,12 +336,12 @@ func (h *Helper) SendEventToRetryQueue(ctx context.Context, t *testing.T, target
 	t.Helper()
 	target, ok := h.Targets.GetTargetByKey(targetKey)
 	if !ok {
-		t.Fatalf("target with key %q doesn't exist", targetKey)
+		t.Fatalf("target with key %v doesn't exist", targetKey)
 	}
 
 	ctx = cecontext.WithTopic(ctx, target.RetryQueue.Topic)
 	if err := h.CePubsub.Send(ctx, binding.ToMessage(event)); err != nil {
-		t.Fatalf("failed to seed event to target (key=%q) retry queue: %v", targetKey, err)
+		t.Fatalf("failed to seed event to target (key=%v) retry queue: %v", targetKey, err)
 	}
 }
 
@@ -353,13 +353,13 @@ func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T,
 
 	bIng, ok := h.ingresses[brokerKey]
 	if !ok {
-		t.Fatalf("broker with key %q doesn't exist", brokerKey)
+		t.Fatalf("broker with key %v doesn't exist", brokerKey)
 	}
 
 	// On timeout or receiving an event, the defer function verifies the event in the end.
 	var gotEvent *event.Event
 	defer func() {
-		assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("broker (key=%q)", brokerKey))
+		assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("broker (key=%v)", brokerKey))
 	}()
 
 	msg, err := bIng.client.Receive(ctx)
@@ -373,7 +373,7 @@ func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T,
 	defer msg.Finish(nil)
 	gotEvent, err = binding.ToEvent(ctx, msg)
 	if err != nil {
-		t.Errorf("broker (key=%q) received invalid cloudevent: %v", brokerKey, err)
+		t.Errorf("broker (key=%v) received invalid cloudevent: %v", brokerKey, err)
 	}
 }
 
@@ -408,13 +408,13 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 
 	consumer, ok := h.consumers[targetKey]
 	if !ok {
-		t.Errorf("target with key %q doesn't exist", targetKey)
+		t.Errorf("target with key %v doesn't exist", targetKey)
 	}
 
 	// On timeout or receiving an event, the defer function verifies the event in the end.
 	var gotEvent *event.Event
 	defer func() {
-		assertEvent(t, wantEventCopy, gotEvent, fmt.Sprintf("target (key=%q)", targetKey))
+		assertEvent(t, wantEventCopy, gotEvent, fmt.Sprintf("target (key=%v)", targetKey))
 	}()
 
 	msg, respFn, err := consumer.client.Respond(ctx)
@@ -427,7 +427,7 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 	}
 	gotEvent, err = binding.ToEvent(ctx, msg)
 	if err != nil {
-		t.Errorf("target (key=%q) received invalid cloudevent: %v", targetKey, err)
+		t.Errorf("target (key=%v) received invalid cloudevent: %v", targetKey, err)
 	}
 
 	time.Sleep(delay)
@@ -437,7 +437,7 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 		replyMsg = binding.ToMessage(replyEvent)
 	}
 	if err := respFn(ctx, replyMsg, &cehttp.Result{StatusCode: statusCode}); err != nil {
-		t.Errorf("unexpected error from responding target (key=%q) event: %v", targetKey, err)
+		t.Errorf("unexpected error from responding target (key=%v) event: %v", targetKey, err)
 	}
 	msg.Finish(nil)
 }
@@ -450,13 +450,13 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 	t.Helper()
 	target, ok := h.Targets.GetTargetByKey(targetKey)
 	if !ok {
-		t.Fatalf("target with key %q doesn't exist", targetKey)
+		t.Fatalf("target with key %v doesn't exist", targetKey)
 	}
 
 	var gotEvent *event.Event
 	defer func() {
 		t.Helper()
-		assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("target (key=%q)", targetKey))
+		assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("target (key=%v)", targetKey))
 	}()
 
 	// Creates a temp pubsub client to pull the retry subscription.
@@ -483,7 +483,7 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 	msg.Finish(nil)
 	gotEvent, err = binding.ToEvent(ctx, msg)
 	if err != nil {
-		t.Errorf("target (key=%q) received invalid cloudevent: %v", targetKey, err)
+		t.Errorf("target (key=%v) received invalid cloudevent: %v", targetKey, err)
 	}
 }
 
