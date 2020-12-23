@@ -42,23 +42,23 @@ type ReadonlyTargets interface {
 	EqualsBytes([]byte) bool
 }
 
-// BrokerMutation provides functions to mutate a Broker.
-// The changes made via the BrokerMutation must be "committed" altogether.
-type BrokerMutation interface {
+// GCPCellAddressableMutation provides functions to mutate a Broker.
+// The changes made via the GCPCellAddressableMutation must be "committed" altogether.
+type GCPCellAddressableMutation interface {
 	// SetID sets the broker ID.
-	SetID(id string) BrokerMutation
+	SetID(id string) GCPCellAddressableMutation
 	// SetAddress sets the broker address.
-	SetAddress(address string) BrokerMutation
+	SetAddress(address string) GCPCellAddressableMutation
 	// SetDecoupleQueue sets the broker decouple queue.
-	SetDecoupleQueue(q *Queue) BrokerMutation
+	SetDecoupleQueue(q *Queue) GCPCellAddressableMutation
 	// SetState sets the broker state.
-	SetState(s State) BrokerMutation
+	SetState(s State) GCPCellAddressableMutation
 	// UpsertTargets upserts Targets to the broker.
 	// The targets' namespace and broker will be forced to be
 	// the same as the broker's namespace and name.
-	UpsertTargets(...*Target) BrokerMutation
+	UpsertTargets(...*Target) GCPCellAddressableMutation
 	// DeleteTargets targets deletes Targets from the broker.
-	DeleteTargets(...*Target) BrokerMutation
+	DeleteTargets(...*Target) GCPCellAddressableMutation
 	// Delete deletes the broker.
 	Delete()
 }
@@ -68,7 +68,7 @@ type Targets interface {
 	ReadonlyTargets
 	// MutateBroker mutates a broker by namespace and name.
 	// If the broker doesn't exist, it will be added (unless Delete() is called).
-	MutateBroker(namespace, name string, mutate func(BrokerMutation))
+	MutateGCPCellAddressable(key GCPCellAddressableKey, mutate func(GCPCellAddressableMutation))
 }
 
 type GCPCellAddressableKey struct {
@@ -84,6 +84,14 @@ func (k GCPCellAddressableKey) PersistenceString() string {
 		return k.Namespace + "/" + k.Name
 	}
 	return fmt.Sprintf("%s/%s/%s", k.Type, k.Namespace, k.Name)
+}
+
+func (k GCPCellAddressableKey) CreateEmptyGCPCellAddressable() *GcpCellAddressable {
+	return &GcpCellAddressable{
+		Type:      k.Type,
+		Namespace: k.Namespace,
+		Name:      k.Name,
+	}
 }
 
 type TargetKey struct {

@@ -319,7 +319,8 @@ func newTestTargets(filter map[string]string) (context.Context, config.Targets) 
 		FilterAttributes:       filter,
 	}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+	tk := testTarget.Key()
+	testTargets.MutateGCPCellAddressable(tk.GCPCellAddressableKey(), func(bm config.GCPCellAddressableMutation) {
 		bm.UpsertTargets(testTarget)
 	})
 	ctx := handlerctx.WithTargetKey(context.Background(), testTarget.Key())

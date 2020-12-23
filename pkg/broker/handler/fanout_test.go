@@ -72,7 +72,7 @@ func TestFanoutWatchAndSync(t *testing.T) {
 
 	t.Run("no handler created for not-ready broker", func(t *testing.T) {
 		b := helper.GenerateBroker(ctx, t, "ns")
-		helper.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+		helper.Targets.MutateGCPCellAddressable(b.Key(), func(bm config.GCPCellAddressableMutation) {
 			bm.SetState(config.State_UNKNOWN)
 		})
 		signal <- struct{}{}

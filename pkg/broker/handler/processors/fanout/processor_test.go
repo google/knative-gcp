@@ -46,7 +46,7 @@ func TestFanoutSuccess(t *testing.T) {
 	ns, broker := "ns", "broker"
 	bk := config.BrokerKey(ns, broker)
 	wantNum := 4
-	testTargets := newTestTargets(ns, broker, wantNum)
+	testTargets := newTestTargets(bk, wantNum)
 	wantTargets := make([]config.TargetKey, 0, wantNum)
 	testTargets.RangeAllTargets(func(t *config.Target) bool {
 		wantTargets = append(wantTargets, t.Key())
@@ -127,7 +127,7 @@ func TestFanoutPartialFailure(t *testing.T) {
 	ns, broker := "ns", "broker"
 	bk := config.BrokerKey(ns, broker)
 	wantNum := 4
-	testTargets := newTestTargets(ns, broker, wantNum)
+	testTargets := newTestTargets(bk, wantNum)
 
 	next := &processors.FakeProcessor{
 		PrevEventsCh: ch,
@@ -164,9 +164,9 @@ func TestFanoutPartialFailure(t *testing.T) {
 	close(ch)
 }
 
-func newTestTargets(ns, broker string, num int) config.ReadonlyTargets {
+func newTestTargets(key config.GCPCellAddressableKey, num int) config.ReadonlyTargets {
 	targets := memory.NewEmptyTargets()
-	targets.MutateBroker(ns, broker, func(bm config.BrokerMutation) {
+	targets.MutateGCPCellAddressable(key, func(bm config.GCPCellAddressableMutation) {
 		for i := 0; i < num; i++ {
 			bm.UpsertTargets(&config.Target{
 				Name: fmt.Sprintf("target-%d", i),

@@ -121,7 +121,7 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 
 	// Create an empty broker config.
 	bn := "br-" + uuid.New().String()
-	h.Targets.MutateBroker(namespace, bn, func(bm config.BrokerMutation) {})
+	h.Targets.MutateGCPCellAddressable(config.BrokerKey(namespace, bn), func(bm config.GCPCellAddressableMutation) {})
 	return h.RenewBroker(ctx, t, config.BrokerKey(namespace, bn))
 }
 
@@ -154,7 +154,7 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey config
 	}
 	brokerIngSvr := httptest.NewServer(ceClient)
 
-	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+	h.Targets.MutateGCPCellAddressable(brokerKey, func(bm config.GCPCellAddressableMutation) {
 		bm.SetDecoupleQueue(&config.Queue{
 			Topic:        topic,
 			Subscription: sub,
@@ -199,7 +199,7 @@ func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, brokerKey confi
 		t.Fatalf("failed to delete broker decouple topic: %v", err)
 	}
 
-	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+	h.Targets.MutateGCPCellAddressable(brokerKey, func(bm config.GCPCellAddressableMutation) {
 		bm.Delete()
 	})
 
@@ -233,7 +233,7 @@ func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey con
 		State:                  config.State_READY,
 	}
 
-	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+	h.Targets.MutateGCPCellAddressable(brokerKey, func(bm config.GCPCellAddressableMutation) {
 		bm.UpsertTargets(testTarget)
 	})
 
@@ -273,7 +273,7 @@ func (h *Helper) RenewTarget(ctx context.Context, t *testing.T, targetKey config
 	}
 	target.Address = targetSvr.URL
 
-	h.Targets.MutateBroker(target.Namespace, target.GcpCellAddressableName, func(bm config.BrokerMutation) {
+	h.Targets.MutateGCPCellAddressable(targetKey.GCPCellAddressableKey(), func(bm config.GCPCellAddressableMutation) {
 		bm.UpsertTargets(target)
 	})
 
@@ -312,7 +312,7 @@ func (h *Helper) DeleteTarget(ctx context.Context, t *testing.T, targetKey confi
 		delete(h.consumers, targetKey)
 	}
 
-	h.Targets.MutateBroker(target.Namespace, target.GcpCellAddressableName, func(bm config.BrokerMutation) {
+	h.Targets.MutateGCPCellAddressable(targetKey.GCPCellAddressableKey(), func(bm config.GCPCellAddressableMutation) {
 		bm.DeleteTargets(target)
 	})
 }

@@ -135,7 +135,7 @@ func TestDeliverSuccess(t *testing.T) {
 			broker := &config.GcpCellAddressable{Namespace: "ns", Name: "broker"}
 			target := &config.Target{Namespace: "ns", Name: "target", GcpCellAddressableName: "broker", Address: targetSvr.URL}
 			testTargets := memory.NewEmptyTargets()
-			testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+			testTargets.MutateGCPCellAddressable(broker.Key(), func(bm config.GCPCellAddressableMutation) {
 				bm.SetAddress(ingressSvr.URL)
 				bm.UpsertTargets(target)
 			})
@@ -311,7 +311,7 @@ func TestDeliverFailure(t *testing.T) {
 				},
 			}
 			testTargets := memory.NewEmptyTargets()
-			testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+			testTargets.MutateGCPCellAddressable(broker.Key(), func(bm config.GCPCellAddressableMutation) {
 				bm.UpsertTargets(target)
 			})
 			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
@@ -484,7 +484,7 @@ func benchmarkNoReply(b *testing.B, httpClient *http.Client, targetAddress strin
 	broker := &config.GcpCellAddressable{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", GcpCellAddressableName: "broker", Address: targetAddress}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+	testTargets.MutateGCPCellAddressable(broker.Key(), func(bm config.GCPCellAddressableMutation) {
 		bm.UpsertTargets(target)
 	})
 	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(b, zaptest.Level(zap.InfoLevel)).Sugar())
@@ -524,7 +524,7 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, eventSize int, make
 	broker := &config.GcpCellAddressable{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", GcpCellAddressableName: "broker", Address: targetAddress}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+	testTargets.MutateGCPCellAddressable(broker.Key(), func(bm config.GCPCellAddressableMutation) {
 		bm.SetAddress(ingressAddress)
 		bm.UpsertTargets(target)
 	})
@@ -609,7 +609,7 @@ func benchmarkRetry(b *testing.B, httpClient *http.Client, targetAddress string,
 		RetryQueue:             &config.Queue{Topic: "test-retry-topic"},
 	}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+	testTargets.MutateGCPCellAddressable(broker.Key(), func(bm config.GCPCellAddressableMutation) {
 		bm.UpsertTargets(target)
 	})
 	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
