@@ -24,15 +24,15 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
-	"google.golang.org/grpc/codes"
 
 	reconcilertestingv1 "github.com/google/knative-gcp/pkg/reconciler/testing/v1"
 	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
-	v1 "k8s.io/api/apps/v1"
+	"google.golang.org/grpc/codes"
 
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

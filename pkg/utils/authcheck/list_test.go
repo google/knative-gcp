@@ -225,7 +225,7 @@ func TestGetEventList(t *testing.T) {
 					Type: "Warning",
 				},
 			},
-			fieldSelector: getFieldSelector("pod-1"),
+			fieldSelector: podWarningFieldSelector("pod-1"),
 			wantNames: []string{
 				"event-1",
 			},
@@ -245,7 +245,7 @@ func TestGetEventList(t *testing.T) {
 					Type: "Warning",
 				},
 			},
-			fieldSelector: getFieldSelector("Pod"),
+			fieldSelector: podWarningFieldSelector("Pod"),
 			wantNames:     []string{},
 		},
 		{
@@ -263,7 +263,7 @@ func TestGetEventList(t *testing.T) {
 					Type: "Warning",
 				},
 			},
-			fieldSelector: getFieldSelector("Pod"),
+			fieldSelector: podWarningFieldSelector("Pod"),
 			wantNames:     []string{},
 		},
 	}

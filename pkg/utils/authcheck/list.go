@@ -56,7 +56,7 @@ func GetEventList(ctx context.Context, kubeClientSet kubernetes.Interface, pod, 
 			APIVersion: corev1.SchemeGroupVersion.String(),
 			Kind:       "Event",
 		},
-		FieldSelector: getFieldSelector(pod).String(),
+		FieldSelector: podWarningFieldSelector(pod).String(),
 	})
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Unable to list kubernetes event", zap.Error(err))
@@ -69,7 +69,7 @@ func GetEventList(ctx context.Context, kubeClientSet kubernetes.Interface, pod, 
 // It returns the first relevant k8s event message from any Event in the list.
 func GetMountFailureMessageFromEventList(el *corev1.EventList, secret *corev1.SecretKeySelector) string {
 	for _, event := range el.Items {
-		if isWarningMessage(event.Message, event.Namespace, secret) {
+		if isSecretFailureMessage(event.Message, event.Namespace, secret) {
 			return event.Message
 		}
 	}
@@ -95,13 +95,13 @@ func isAuthMessage(message string) bool {
 	return strings.Contains(message, authMessage)
 }
 
-// isWarningMessage checks if the message is for a specific secret's failure.
-func isWarningMessage(message, namespace string, secret *corev1.SecretKeySelector) bool {
+// isSecretFailureMessage checks if the message is for a specific secret's failure.
+func isSecretFailureMessage(message, namespace string, secret *corev1.SecretKeySelector) bool {
 	return strings.Contains(message, fmt.Sprintf(`MountVolume.SetUp failed for volume "%s"`, secret.Name)) ||
 		strings.Contains(message, fmt.Sprintf(`couldn't find key %s in Secret %s/%s`, secret.Key, namespace, secret.Name))
 }
 
-func getFieldSelector(pod string) fields.Selector {
+func podWarningFieldSelector(pod string) fields.Selector {
 	return fields.SelectorFromSet(map[string]string{
 		"involvedObject.kind": "Pod",
 		"involvedObject.name": pod,
