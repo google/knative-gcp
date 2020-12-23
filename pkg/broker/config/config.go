@@ -41,9 +41,6 @@ type ReadonlyTargets interface {
 	// EqualsBytes checks if the current targets config equals the given
 	// targets config in bytes.
 	EqualsBytes([]byte) bool
-	// EqualsString checks if the current targets config equals the given
-	// targets config in string.
-	EqualsDebugString(string) bool
 }
 
 // BrokerMutation provides functions to mutate a Broker.

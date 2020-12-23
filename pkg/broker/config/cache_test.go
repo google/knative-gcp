@@ -362,15 +362,6 @@ func TestCachedTargetsString(t *testing.T) {
 	if gotStr != wantStr {
 		t.Errorf("BaseTargets.String() got=%s, want=%s", gotStr, wantStr)
 	}
-
-	// Test EqualsString
-	if !targets.EqualsDebugString(wantStr) {
-		t.Error("BaseTargets.EqualsString() got=false, want=true")
-	}
-
-	if targets.EqualsDebugString("random") {
-		t.Error("CachedTargets.EqualsString() with random string got=true, want=false")
-	}
 }
 
 func TestGetGcpCellAddressableOrTarget(t *testing.T) {
