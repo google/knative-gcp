@@ -23,9 +23,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
-	"github.com/google/uuid"
-	"k8s.io/apimachinery/pkg/types"
-
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -36,6 +33,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/uuid"
 	logtest "knative.dev/pkg/logging/testing"
 )
 
@@ -53,7 +51,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 	brokerTargets := map[string]*config.Target{"target": {}}
 
 	type brokerTestCase struct {
-		broker  types.NamespacedName
+		broker  config.GCPCellAddressableKey
 		topic   string
 		wantErr bool
 	}
@@ -71,11 +69,8 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
-					topic: "test_topic_1",
+					broker: config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
+					topic:  "test_topic_1",
 				},
 			},
 		},
@@ -89,18 +84,12 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
-					topic: "test_topic_1",
+					broker: config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
+					topic:  "test_topic_1",
 				},
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_2",
-						Name:      "test_broker_2",
-					},
-					topic: "test_topic_2",
+					broker: config.TestOnlyBrokerKey("test_ns_2", "test_broker_2"),
+					topic:  "test_topic_2",
 				},
 			},
 		},
@@ -111,10 +100,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -129,10 +115,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -147,10 +130,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -165,10 +145,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -245,7 +222,7 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 	brokerTargets := map[string]*config.Target{"target": {}}
 
 	type brokerTestCase struct {
-		broker  types.NamespacedName
+		broker  config.GCPCellAddressableKey
 		topic   string
 		wantErr bool
 	}
@@ -263,11 +240,8 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
-					topic: "test_topic_1",
+					broker: config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
+					topic:  "test_topic_1",
 				},
 			},
 		},
@@ -281,18 +255,12 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
-					topic: "test_topic_1",
+					broker: config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
+					topic:  "test_topic_1",
 				},
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_2",
-						Name:      "test_broker_2",
-					},
-					topic: "test_topic_2",
+					broker: config.TestOnlyBrokerKey("test_ns_2", "test_broker_2"),
+					topic:  "test_topic_2",
 				},
 			},
 		},
@@ -303,10 +271,7 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -321,10 +286,7 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -339,10 +301,7 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -357,10 +316,7 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -595,12 +551,9 @@ func TestMultiTopicDecoupleSinkSendChecksFilter(t *testing.T) {
 	// Send event.
 	event := createTestEvent(uuid.New().String())
 
-	namespace := types.NamespacedName{
-		Namespace: "test_ns_1",
-		Name:      "test_broker_1",
-	}
+	key := config.TestOnlyBrokerKey("test_ns_1", "test_broker_1")
 
-	err := sink.Send(context.Background(), namespace, *event)
+	err := sink.Send(context.Background(), key, *event)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -652,12 +605,9 @@ func TestMultiTopicDecoupleSinkSendDoesNotChecksFilterWhenFeatureDisabled(t *tes
 	// Send event.
 	event := createTestEvent(uuid.New().String())
 
-	namespace := types.NamespacedName{
-		Namespace: "test_ns_1",
-		Name:      "test_broker_1",
-	}
+	key := config.TestOnlyBrokerKey("test_ns_1", "test_broker_1")
 
-	err := sink.Send(context.Background(), namespace, *event)
+	err := sink.Send(context.Background(), key, *event)
 	if err != nil {
 		t.Fatal(err)
 	}

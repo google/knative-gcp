@@ -43,8 +43,7 @@ func TestInvalidContext(t *testing.T) {
 
 func TestFanoutSuccess(t *testing.T) {
 	ch := make(chan *event.Event, 4)
-	ns, broker := "ns", "broker"
-	bk := config.BrokerKey(ns, broker)
+	bk := config.TestOnlyBrokerKey("ns", "broker")
 	wantNum := 4
 	testTargets := newTestTargets(bk, wantNum)
 	wantTargets := make([]config.TargetKey, 0, wantNum)
@@ -124,8 +123,7 @@ func lessTargetKey(targets []config.TargetKey) func(i, j int) bool {
 
 func TestFanoutPartialFailure(t *testing.T) {
 	ch := make(chan *event.Event, 4)
-	ns, broker := "ns", "broker"
-	bk := config.BrokerKey(ns, broker)
+	bk := config.TestOnlyBrokerKey("ns", "broker")
 	wantNum := 4
 	testTargets := newTestTargets(bk, wantNum)
 

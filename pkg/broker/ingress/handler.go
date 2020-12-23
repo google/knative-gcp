@@ -22,6 +22,8 @@ import (
 	nethttp "net/http"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/broker/config"
+
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
@@ -29,13 +31,11 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/wire"
-	"go.opencensus.io/resource"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"google.golang.org/api/support/bundler"
 	grpccode "google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
-	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/kncloudevents"
 	kntracing "knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/metrics/metricskey"
@@ -83,7 +83,7 @@ var HandlerSet wire.ProviderSet = wire.NewSet(
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
 type DecoupleSink interface {
 	// Send sends the event from a broker to the corresponding decoupling sink.
-	Send(ctx context.Context, broker types.NamespacedName, event cev2.Event) protocol.Result
+	Send(ctx context.Context, broker config.GCPCellAddressableKey, event cev2.Event) protocol.Result
 }
 
 // HttpMessageReceiver is an interface to listen on http requests.
@@ -143,20 +143,14 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	}
 	request.Body = nethttp.MaxBytesReader(nil, request.Body, maxRequestBodyBytes)
 
-	broker, err := ConvertPathToNamespacedName(request.URL.Path)
+	key, err := config.GCPCellAddressableKeyFromPersistenceString(request.URL.Path)
 	if err != nil {
 		logging.FromContext(ctx).Debug("Malformed request path", zap.String("path", request.URL.Path))
 		nethttp.Error(response, err.Error(), nethttp.StatusNotFound)
 		return
 	}
-	ctx = logging.With(ctx, zap.Stringer("broker", broker))
-	ctx = metricskey.WithResource(ctx, resource.Resource{
-		Type: metricskey.ResourceTypeKnativeBroker,
-		Labels: map[string]string{
-			metricskey.LabelNamespaceName: broker.Namespace,
-			metricskey.LabelBrokerName:    broker.Name,
-		},
-	})
+	ctx = logging.With(ctx, zap.String("key", key.PersistenceString()))
+	ctx = metricskey.WithResource(ctx, key.MetricsResource())
 
 	event, err := h.toEvent(ctx, request)
 	if err != nil {
@@ -172,14 +166,14 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	event.SetExtension(EventArrivalTime, cev2.Timestamp{Time: time.Now()})
 
 	span := trace.FromContext(ctx)
-	span.SetName(kntracing.BrokerMessagingDestination(broker))
+	span.SetName(key.SpanMessagingDestination())
 	if span.IsRecordingEvents() {
 		span.AddAttributes(
 			append(
 				ceclient.EventTraceAttributes(event),
 				kntracing.MessagingSystemAttribute,
 				tracing.PubSubProtocolAttribute,
-				kntracing.BrokerMessagingDestinationAttribute(broker),
+				key.SpanMessagingDestinationAttribute(),
 				kntracing.MessagingMessageIDAttribute(event.ID()),
 			)...,
 		)
@@ -187,12 +181,12 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 
 	// Optimistically set status code to StatusAccepted. It will be updated if there is an error.
 	// According to the data plane spec (https://github.com/knative/eventing/blob/master/docs/spec/data-plane.md), a
-	// non-callable SINK (which broker is) MUST respond with 202 Accepted if the request is accepted.
+	// non-callable SINK (which key is) MUST respond with 202 Accepted if the request is accepted.
 	statusCode := nethttp.StatusAccepted
 	ctx, cancel := context.WithTimeout(ctx, decoupleSinkTimeout)
 	defer cancel()
 	defer func() { h.reportMetrics(ctx, event.Type(), statusCode) }()
-	if res := h.decouple.Send(ctx, broker, *event); !cev2.IsACK(res) {
+	if res := h.decouple.Send(ctx, key, *event); !cev2.IsACK(res) {
 		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.Error(res))
 		statusCode = nethttp.StatusInternalServerError
 

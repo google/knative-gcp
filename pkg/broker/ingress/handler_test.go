@@ -48,7 +48,6 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/api/support/bundler"
 	"google.golang.org/grpc"
-	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
 	logtest "knative.dev/pkg/logging/testing"
@@ -131,7 +130,7 @@ type testCase struct {
 
 type fakeOverloadedDecoupleSink struct{}
 
-func (m *fakeOverloadedDecoupleSink) Send(_ context.Context, _ types.NamespacedName, _ cev2.Event) protocol.Result {
+func (m *fakeOverloadedDecoupleSink) Send(_ context.Context, _ config.GCPCellAddressableKey, _ cev2.Event) protocol.Result {
 	return bundler.ErrOverflow
 }
 

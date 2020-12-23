@@ -17,7 +17,17 @@ limitations under the License.
 package config
 
 import (
+	"errors"
 	"fmt"
+	"strings"
+
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"go.opencensus.io/resource"
+	"go.opencensus.io/trace"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
+	kntracing "knative.dev/eventing/pkg/tracing"
+	"knative.dev/pkg/metrics/metricskey"
 )
 
 // ReadonlyTargets provides "read" functions for brokers and targets.
@@ -86,7 +96,72 @@ func (k GCPCellAddressableKey) PersistenceString() string {
 	return fmt.Sprintf("%s/%s/%s", k.addressableType, k.namespace, k.name)
 }
 
-func (k GCPCellAddressableKey) CreateEmptyGCPCellAddressable() *GcpCellAddressable {
+func GCPCellAddressableKeyFromPersistenceString(s string) (GCPCellAddressableKey, error) {
+	pieces := strings.Split(s, "/")
+	if len(pieces) <= 2 || len(pieces) >= 5 {
+		return GCPCellAddressableKey{}, errors.New("malformed request path; expect format '/<ns>/<broker>' or '/<type>/<ns>/<name>")
+	}
+	if len(pieces) == 3 {
+		// This the backwards compatible way that Brokers were originally notated. They are in the
+		// form "/<ns>/<brokerName>".
+		ns, brokerName := pieces[1], pieces[2]
+		if err := validateNamespace(ns); err != nil {
+			return GCPCellAddressableKey{}, err
+		}
+		if err := validateName(brokerName); err != nil {
+			return GCPCellAddressableKey{}, err
+		}
+		return GCPCellAddressableKey{
+			addressableType: GcpCellAddressableType_BROKER,
+			namespace:       ns,
+			name:            brokerName,
+		}, nil
+	}
+	// len(pieces) must be 4, so this is the standard form of the persistence string,
+	// '/<type>/<ns>/<name>'.
+	ts, ns, name := pieces[1], pieces[2], pieces[3]
+	t, err := validateGCPCellAddressableTypeFromString(ts)
+	if err != nil {
+		return GCPCellAddressableKey{}, err
+	}
+	if err := validateNamespace(ns); err != nil {
+		return GCPCellAddressableKey{}, err
+	}
+	if err := validateName(name); err != nil {
+		return GCPCellAddressableKey{}, err
+	}
+	return GCPCellAddressableKey{
+		addressableType: t,
+		namespace:       ns,
+		name:            name,
+	}, nil
+}
+
+func validateNamespace(ns string) error {
+	errs := validation.IsDNS1123Label(ns)
+	if len(errs) == 0 {
+		return nil
+	}
+	return fmt.Errorf("invalid namespace %q, %v", ns, errs)
+}
+
+func validateName(name string) error {
+	errs := validation.IsDNS1123Label(name)
+	if len(errs) == 0 {
+		return nil
+	}
+	return fmt.Errorf("invalid name %q, %v", name, errs)
+}
+
+func validateGCPCellAddressableTypeFromString(s string) (GcpCellAddressableType, error) {
+	i, present := GcpCellAddressableType_value[s]
+	if !present {
+		return GcpCellAddressableType_BROKER, fmt.Errorf("unknown GCPCellAddressableType %q", s)
+	}
+	return GcpCellAddressableType(i), nil
+}
+
+func (k *GCPCellAddressableKey) CreateEmptyGCPCellAddressable() *GcpCellAddressable {
 	return &GcpCellAddressable{
 		Type:      k.addressableType,
 		Namespace: k.namespace,
@@ -100,11 +175,19 @@ type TargetKey struct {
 }
 
 // BrokerKey returns the key of a broker.
-func BrokerKey(namespace, name string) GCPCellAddressableKey {
+func TestOnlyBrokerKey(namespace, name string) GCPCellAddressableKey {
 	return GCPCellAddressableKey{
 		addressableType: GcpCellAddressableType_BROKER,
 		namespace:       namespace,
 		name:            name,
+	}
+}
+
+func KeyFromBroker(b *brokerv1beta1.Broker) GCPCellAddressableKey {
+	return GCPCellAddressableKey{
+		addressableType: GcpCellAddressableType_BROKER,
+		namespace:       b.Namespace,
+		name:            b.Name,
 	}
 }
 
@@ -135,4 +218,44 @@ func (x *GcpCellAddressable) Key() GCPCellAddressableKey {
 		namespace:       x.Namespace,
 		name:            x.Name,
 	}
+}
+
+func (k *GCPCellAddressableKey) MetricsResource() resource.Resource {
+	var t string
+	switch k.addressableType {
+	case GcpCellAddressableType_BROKER:
+		t = metricskey.ResourceTypeKnativeBroker
+	case GcpCellAddressableType_CHANNEL:
+		// TODO Replace with Channel once it exists.
+		t = metricskey.ResourceTypeKnativeBroker
+	}
+	return resource.Resource{
+		Type: t,
+		Labels: map[string]string{
+			metricskey.LabelNamespaceName: k.namespace,
+			metricskey.LabelBrokerName:    k.name,
+		},
+	}
+}
+
+func (k *GCPCellAddressableKey) SpanMessagingDestination() string {
+	switch k.addressableType {
+	case GcpCellAddressableType_BROKER:
+		return kntracing.BrokerMessagingDestination(k.namespacedName())
+	case GcpCellAddressableType_CHANNEL:
+		return fmt.Sprintf("gcpChannel:%s.%s", k.name, k.namespace)
+	}
+	// This should not be reachable...
+	return ""
+}
+
+func (k *GCPCellAddressableKey) namespacedName() types.NamespacedName {
+	return types.NamespacedName{
+		Namespace: k.namespace,
+		Name:      k.name,
+	}
+}
+
+func (k *GCPCellAddressableKey) SpanMessagingDestinationAttribute() trace.Attribute {
+	return kntracing.BrokerMessagingDestinationAttribute(k.namespacedName())
 }

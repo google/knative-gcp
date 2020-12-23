@@ -79,7 +79,7 @@ func (r *Reconciler) addToConfig(ctx context.Context, b *brokerv1beta1.Broker, t
 	// TODO Maybe get rid of GCPCellAddressableMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we always
 	//  delete or update the entire broker entry and we don't need partial updates per trigger.
 	// The code can be simplified to r.targetsConfig.Upsert(brokerConfigEntry)
-	brokerTargets.MutateGCPCellAddressable(config.BrokerKey(b.Namespace, b.Name), func(m config.GCPCellAddressableMutation) {
+	brokerTargets.MutateGCPCellAddressable(config.KeyFromBroker(b), func(m config.GCPCellAddressableMutation) {
 		// First delete the broker entry.
 		m.Delete()
 

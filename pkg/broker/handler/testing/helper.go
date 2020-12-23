@@ -121,8 +121,8 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 
 	// Create an empty broker config.
 	bn := "br-" + uuid.New().String()
-	h.Targets.MutateGCPCellAddressable(config.BrokerKey(namespace, bn), func(bm config.GCPCellAddressableMutation) {})
-	return h.RenewBroker(ctx, t, config.BrokerKey(namespace, bn))
+	h.Targets.MutateGCPCellAddressable(config.TestOnlyBrokerKey(namespace, bn), func(bm config.GCPCellAddressableMutation) {})
+	return h.RenewBroker(ctx, t, config.TestOnlyBrokerKey(namespace, bn))
 }
 
 // RenewBroker generates new test resources for an existing broker.

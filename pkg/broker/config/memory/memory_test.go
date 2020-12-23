@@ -39,7 +39,8 @@ func TestUpsertTargetsWithNamespaceBrokerEnforced(t *testing.T) {
 		Namespace:              "ns",
 		GcpCellAddressableName: "broker",
 	}
-	v.MutateGCPCellAddressable(config.BrokerKey("ns", "broker"), func(bm config.GCPCellAddressableMutation) {
+	wtk := wantTarget.Key()
+	v.MutateGCPCellAddressable(wtk.GCPCellAddressableKey(), func(bm config.GCPCellAddressableMutation) {
 		bm.UpsertTargets(&config.Target{
 			Name:                   "target",
 			Namespace:              "other-namespace",
@@ -75,22 +76,22 @@ func TestMutateBroker(t *testing.T) {
 	}
 
 	t.Run("create new broker", func(t *testing.T) {
-		targets.MutateGCPCellAddressable(config.BrokerKey("ns", "broker"), func(m config.GCPCellAddressableMutation) {
+		targets.MutateGCPCellAddressable(wantBroker.Key(), func(m config.GCPCellAddressableMutation) {
 			m.SetID("b-uid").SetAddress("broker.example.com").SetState(config.State_READY)
 			m.SetDecoupleQueue(&config.Queue{
 				Topic:        "topic",
 				Subscription: "sub",
 			})
 		})
-		assertBroker(t, wantBroker, "ns", "broker", targets)
+		assertBroker(t, wantBroker, targets)
 	})
 
 	t.Run("update broker attribute", func(t *testing.T) {
 		wantBroker.Address = "external.broker.example.com"
-		targets.MutateGCPCellAddressable(config.BrokerKey("ns", "broker"), func(m config.GCPCellAddressableMutation) {
+		targets.MutateGCPCellAddressable(wantBroker.Key(), func(m config.GCPCellAddressableMutation) {
 			m.SetAddress("external.broker.example.com")
 		})
-		assertBroker(t, wantBroker, "ns", "broker", targets)
+		assertBroker(t, wantBroker, targets)
 	})
 
 	t1 := &config.Target{
@@ -141,11 +142,11 @@ func TestMutateBroker(t *testing.T) {
 			"t1": t1,
 			"t2": t2,
 		}
-		targets.MutateGCPCellAddressable(config.BrokerKey("ns", "broker"), func(m config.GCPCellAddressableMutation) {
+		targets.MutateGCPCellAddressable(wantBroker.Key(), func(m config.GCPCellAddressableMutation) {
 			// Intentionally call insert twice to verify they can be chained.
 			m.UpsertTargets(t1).UpsertTargets(t2)
 		})
-		assertBroker(t, wantBroker, "ns", "broker", targets)
+		assertBroker(t, wantBroker, targets)
 	})
 
 	t.Run("insert and delete targets", func(t *testing.T) {
@@ -153,11 +154,11 @@ func TestMutateBroker(t *testing.T) {
 			"t1": t1,
 			"t3": t3,
 		}
-		targets.MutateGCPCellAddressable(config.BrokerKey("ns", "broker"), func(m config.GCPCellAddressableMutation) {
+		targets.MutateGCPCellAddressable(wantBroker.Key(), func(m config.GCPCellAddressableMutation) {
 			// Chain insert and delete.
 			m.UpsertTargets(t3).DeleteTargets(t2)
 		})
-		assertBroker(t, wantBroker, "ns", "broker", targets)
+		assertBroker(t, wantBroker, targets)
 	})
 
 	t.Run("delete and then change broker", func(t *testing.T) {
@@ -165,7 +166,7 @@ func TestMutateBroker(t *testing.T) {
 			"t1": t1,
 			"t2": t2,
 		}
-		targets.MutateGCPCellAddressable(config.BrokerKey("ns", "broker"), func(m config.GCPCellAddressableMutation) {
+		targets.MutateGCPCellAddressable(wantBroker.Key(), func(m config.GCPCellAddressableMutation) {
 			// Delete should "delete" the broker.
 			m.Delete()
 			// Then make some changes which should "recreate" the broker.
@@ -176,32 +177,32 @@ func TestMutateBroker(t *testing.T) {
 			})
 			m.UpsertTargets(t1, t2)
 		})
-		assertBroker(t, wantBroker, "ns", "broker", targets)
+		assertBroker(t, wantBroker, targets)
 	})
 
 	t.Run("make change then delete broker", func(t *testing.T) {
-		targets.MutateGCPCellAddressable(config.BrokerKey("ns", "broker"), func(m config.GCPCellAddressableMutation) {
+		targets.MutateGCPCellAddressable(wantBroker.Key(), func(m config.GCPCellAddressableMutation) {
 			m.UpsertTargets(t3).DeleteTargets(t2)
 			// Because we delete in the end, the broker should really be deleted
 			// no matter what changes have been made.
 			m.Delete()
 		})
-		if _, ok := targets.GetGCPAddressableByKey(config.BrokerKey("ns", "broker")); ok {
+		if _, ok := targets.GetGCPAddressableByKey(wantBroker.Key()); ok {
 			t.Error("GetBroker got ok=true, want ok=false")
 		}
 	})
 
 	t.Run("delete non-existing broker", func(t *testing.T) {
-		targets.MutateGCPCellAddressable(config.BrokerKey("ns", "non-existing"), func(m config.GCPCellAddressableMutation) {
+		targets.MutateGCPCellAddressable(config.TestOnlyBrokerKey("ns", "non-existing"), func(m config.GCPCellAddressableMutation) {
 			// Just assert it won't panic.
 			m.Delete()
 		})
 	})
 }
 
-func assertBroker(t *testing.T, want *config.GcpCellAddressable, namespace, name string, targets config.Targets) {
+func assertBroker(t *testing.T, want *config.GcpCellAddressable, targets config.Targets) {
 	t.Helper()
-	got, ok := targets.GetGCPAddressableByKey(config.BrokerKey(namespace, name))
+	got, ok := targets.GetGCPAddressableByKey(want.Key())
 	if !ok {
 		t.Error("GetBroker got ok=false, want ok=true")
 	}
