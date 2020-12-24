@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeKubeClient "k8s.io/client-go/kubernetes/fake"
@@ -103,7 +104,7 @@ func TestGetPodList(t *testing.T) {
 				}
 			}
 			if len(pl.Items) != len(tc.wantNames) {
-				t.Errorf("Diffenrent Podlist length, want %v, got %v ", len(pl.Items), len(tc.wantNames))
+				t.Errorf("Diffenrent Podlist length, want %v, got %v ", len(tc.wantNames), len(pl.Items))
 			}
 		})
 	}
@@ -198,5 +199,195 @@ func TestGetTerminationLogFromPodList(t *testing.T) {
 				t.Error("unexpected termination message (-want, +got) = ", diff)
 			}
 		})
+	}
+}
+
+func TestGetEventList(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name          string
+		objects       []runtime.Object
+		fieldSelector fields.Selector
+		wantNames     []string
+	}{
+		{
+			name: "using correct field selector to get eventlist",
+			objects: []runtime.Object{
+				&corev1.Event{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "event-1",
+						Namespace: testNS,
+					},
+					InvolvedObject: corev1.ObjectReference{
+						Kind: "Pod",
+						Name: "pod-1",
+					},
+					Type: "Warning",
+				},
+			},
+			fieldSelector: podWarningFieldSelector("pod-1"),
+			wantNames: []string{
+				"event-1",
+			},
+		},
+		{
+			name: "using incorrect field selector to get eventlist",
+			objects: []runtime.Object{
+				&corev1.Event{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "event-1",
+						Namespace: testNS,
+					},
+					InvolvedObject: corev1.ObjectReference{
+						Kind: "Non-Pod",
+						Name: "pod-1",
+					},
+					Type: "Warning",
+				},
+			},
+			fieldSelector: podWarningFieldSelector("Pod"),
+			wantNames:     []string{},
+		},
+		{
+			name: "using incorrect namespace to get eventlist",
+			objects: []runtime.Object{
+				&corev1.Event{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "event-1",
+						Namespace: "fake-namespace",
+					},
+					InvolvedObject: corev1.ObjectReference{
+						Kind: "Non-Pod",
+						Name: "pod-1",
+					},
+					Type: "Warning",
+				},
+			},
+			fieldSelector: podWarningFieldSelector("Pod"),
+			wantNames:     []string{},
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			//  Sets up the the Context and the fake informers for the tests.
+			ctx, cancel, _ := pkgtesting.SetupFakeContextWithCancel(t)
+			defer cancel()
+
+			// Form a fake Kube Client from tc.objects.
+			cs := fakeKubeClient.NewSimpleClientset(tc.objects...)
+
+			el, _ := GetEventList(ctx, cs, "pod-1", testNS)
+
+			// Field Selector doesn't apply in fake clients List. We need to filter it manually.
+			// More information: https://github.com/kubernetes/kubernetes/issues/78824.
+			el = filterField(tc.fieldSelector, el)
+
+			for _, event := range el.Items {
+				found := false
+				for _, wantName := range tc.wantNames {
+					if event.Name == wantName {
+						found = true
+					}
+					if !found {
+						t.Error("Unexpected event", event.Name)
+					}
+				}
+			}
+			if len(el.Items) != len(tc.wantNames) {
+				t.Errorf("Diffenrent Eventlist length, want %v, got %v ", len(tc.wantNames), len(el.Items))
+			}
+		})
+	}
+}
+
+func TestGetMountFailureMessageFromEventList(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name        string
+		eventlist   *corev1.EventList
+		secret      *corev1.SecretKeySelector
+		wantMessage string
+	}{
+		{
+			name: "qualified secret related message from event",
+			eventlist: &corev1.EventList{
+				Items: []corev1.Event{{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "event-1",
+						Namespace: testNS,
+					},
+					Message: `MountVolume.SetUp failed for volume "google-cloud-key"`,
+				}},
+			},
+			secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "google-cloud-key"},
+				Key:                  "key.json",
+			},
+			wantMessage: `MountVolume.SetUp failed for volume "google-cloud-key"`,
+		},
+		{
+			name: "qualified key related message from event",
+			eventlist: &corev1.EventList{
+				Items: []corev1.Event{{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "event-1",
+						Namespace: testNS,
+					},
+					Message: "couldn't find key key.json in Secret test/google-cloud-key",
+				}},
+			},
+			secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "google-cloud-key"},
+				Key:                  "key.json",
+			},
+			wantMessage: "couldn't find key key.json in Secret test/google-cloud-key",
+		},
+		{
+			name: "un-qualified message",
+			eventlist: &corev1.EventList{
+				Items: []corev1.Event{{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "event-1",
+						Namespace: testNS,
+					},
+					Message: "non",
+				}},
+			},
+			secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "google-cloud-key"},
+				Key:                  "key.json",
+			},
+			wantMessage: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			getMessage := GetMountFailureMessageFromEventList(tc.eventlist, tc.secret)
+			if diff := cmp.Diff(getMessage, tc.wantMessage); diff != "" {
+				t.Error("unexpected termination message (-want, +got) = ", diff)
+			}
+		})
+	}
+}
+
+func filterField(selector fields.Selector, eventList *corev1.EventList) *corev1.EventList {
+	list := &corev1.EventList{}
+	for _, event := range eventList.Items {
+		if selector.Matches(eventSet(event)) {
+			list.Items = append(list.Items, event)
+		}
+	}
+	return list
+}
+
+func eventSet(event corev1.Event) fields.Set {
+	return map[string]string{
+		"involvedObject.kind": event.InvolvedObject.Kind,
+		"type":                event.Type,
+		"involvedObject.name": event.InvolvedObject.Name,
 	}
 }

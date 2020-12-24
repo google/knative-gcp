@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"go.uber.org/zap"
-	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/configmap/informer"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
@@ -19,7 +19,7 @@ import (
 // configmaps. Returns an updated context with logging and function to flush telemetry which should
 // be called before exit.
 // The input context should have KubeClient injected.
-func SetupDynamicConfigOrDie(ctx context.Context, componentName string, metricNamespace string) (context.Context, *configmap.InformedWatcher, *profiling.Handler, func()) {
+func SetupDynamicConfigOrDie(ctx context.Context, componentName string, metricNamespace string) (context.Context, *informer.InformedWatcher, *profiling.Handler, func()) {
 	metrics.MemStatsOrDie(ctx)
 	// Set up our logger.
 	logger, atomicLevel := sharedmain.SetupLoggerOrDie(ctx, componentName)
@@ -42,7 +42,7 @@ func SetupDynamicConfigOrDie(ctx context.Context, componentName string, metricNa
 	return logging.WithLogger(ctx, logger), configMapWatcher, ph, func() { cancel(); flushExporters(logger) }
 }
 
-func setupTracingOrDie(configMapWatcher *configmap.InformedWatcher, logger *zap.SugaredLogger, componentName string) {
+func setupTracingOrDie(configMapWatcher *informer.InformedWatcher, logger *zap.SugaredLogger, componentName string) {
 	if err := tracing.SetupDynamicPublishing(logger, configMapWatcher, componentName, tracingconfig.ConfigName); err != nil {
 		logger.With(zap.Error(err)).Fatalf("Error reading ConfigMap %q", tracingconfig.ConfigName)
 	}

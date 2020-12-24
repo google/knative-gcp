@@ -32,6 +32,7 @@ import (
 	"go.uber.org/zap"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/configmap/informer"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection/clients/dynamicclient"
 	"knative.dev/pkg/logging"
@@ -79,7 +80,7 @@ func NewOptionsOrDie(cfg *rest.Config, logger *zap.SugaredLogger, stopCh <-chan 
 
 	runClient := clientset.NewForConfigOrDie(cfg)
 
-	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
+	configMapWatcher := informer.NewInformedWatcher(kubeClient, system.Namespace())
 
 	return Options{
 		KubeClientSet:    kubeClient,
