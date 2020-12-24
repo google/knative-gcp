@@ -211,8 +211,8 @@ func addChannelToConfig(_ context.Context, c *v1beta1.Channel, targets config.Ta
 				Address:                s.SubscriberURI.String(),
 				ReplyAddress:           s.ReplyURI.String(),
 				RetryQueue: &config.Queue{
-					Topic:        brokerresources.GenerateSubscriberRetryTopicName(c, s),
-					Subscription: brokerresources.GenerateSubscriberRetrySubscriptionName(c, s),
+					Topic:        brokerresources.GenerateSubscriberRetryTopicName(c, s.UID),
+					Subscription: brokerresources.GenerateSubscriberRetrySubscriptionName(c, s.UID),
 				},
 				// TODO(#939) May need to use "data plane readiness" for trigger in stead of the
 				//  overall status, see https://github.com/google/knative-gcp/issues/939#issuecomment-644337937

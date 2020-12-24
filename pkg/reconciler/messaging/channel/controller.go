@@ -19,6 +19,14 @@ package channel
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
+
+	"github.com/google/knative-gcp/pkg/logging"
+
+	"cloud.google.com/go/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/gcpcelladdressable"
+	"github.com/google/knative-gcp/pkg/utils"
+
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	"go.uber.org/zap"
@@ -29,12 +37,9 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1beta1/channel"
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1beta1/channel"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 )
 
 const (
@@ -49,26 +54,56 @@ const (
 type Constructor injection.ControllerConstructor
 
 // NewConstructor creates a constructor to make a Channel controller.
-func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+func NewConstructor(drs *dataresidency.StoreSingleton) Constructor {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+		return newController(ctx, cmw, drs.Store(ctx, cmw))
 	}
 }
 
 func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
-	ipm iam.IAMPolicyManager,
-	gcpas *gcpauth.Store,
+	drs *dataresidency.Store,
 ) *controller.Impl {
 	channelInformer := channelinformer.Get(ctx)
 	bcInformer := brokercellinformer.Get(ctx)
 
+	var client *pubsub.Client
+	// If there is an error, the projectID will be empty. The reconciler will retry
+	// to get the projectID during reconciliation.
+	projectID, err := utils.ProjectIDOrDefault("")
+	if err != nil {
+		logging.FromContext(ctx).Error("Failed to get project ID", zap.Error(err))
+	} else {
+		// Attempt to create a pubsub client for all worker threads to use. If this
+		// fails, pass a nil value to the Reconciler. They will attempt to
+		// create a client on reconcile.
+		if client, err = pubsub.NewClient(ctx, projectID); err != nil {
+			client = nil
+			logging.FromContext(ctx).Error("Failed to create controller-wide Pub/Sub client", zap.Error(err))
+		}
+	}
+
+	if client != nil {
+		go func() {
+			<-ctx.Done()
+			client.Close()
+		}()
+	}
+
 	r := &Reconciler{
-		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
-		Identity:         identity.NewIdentity(ctx, ipm, gcpas),
-		channelLister:    channelInformer.Lister(),
-		brokerCellLister: bcInformer.Lister(),
+		GCPCellAddressableReconciler: gcpcelladdressable.GCPCellAddressableReconciler{
+			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+			BrokerCellLister:   bcInformer.Lister(),
+			ProjectID:          projectID,
+			PubsubClient:       client,
+			DataresidencyStore: drs,
+		},
+		targetReconciler: &gcpcelladdressable.TargetReconciler{
+			ProjectID:          projectID,
+			PubsubClient:       client,
+			DataresidencyStore: drs,
+		},
 	}
 	impl := channelreconciler.NewImpl(ctx, r)
 

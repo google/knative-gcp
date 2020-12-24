@@ -6,8 +6,9 @@
 package main
 
 import (
-	"cloud.google.com/go/iam/admin/apiv1"
 	"context"
+
+	"cloud.google.com/go/iam/admin/apiv1"
 	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
@@ -54,7 +55,7 @@ func InitializeControllers(ctx context.Context) ([]injection.ControllerConstruct
 	kedaConstructor := keda.NewConstructor(iamPolicyManager, storeSingleton)
 	dataresidencyStoreSingleton := &dataresidency.StoreSingleton{}
 	topicConstructor := topic.NewConstructor(iamPolicyManager, storeSingleton, dataresidencyStoreSingleton)
-	channelConstructor := channel.NewConstructor(iamPolicyManager, storeSingleton)
+	channelConstructor := channel.NewConstructor(dataresidencyStoreSingleton)
 	triggerConstructor := trigger.NewConstructor(dataresidencyStoreSingleton)
 	brokerdeliveryStoreSingleton := &brokerdelivery.StoreSingleton{}
 	brokerConstructor := broker.NewConstructor(brokerdeliveryStoreSingleton, dataresidencyStoreSingleton)

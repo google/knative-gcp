@@ -63,12 +63,16 @@ type TargetReconciler struct {
 	DataresidencyStore *dataresidency.Store
 }
 
-type GCPCellTargetable interface {
+type GCPCellDeletingTargetable interface {
 	Object() runtime.Object
 	StatusUpdater() reconcilerutilspubsub.StatusUpdater
-	GetLabels() map[string]string
 	GetTopicID() string
 	GetSubscriptionName() string
+}
+
+type GCPCellTargetable interface {
+	GCPCellDeletingTargetable
+	GetLabels() map[string]string
 	DeliverySpec() *eventingduckv1beta1.DeliverySpec
 	SetStatusProjectID(projectID string)
 }
@@ -134,7 +138,7 @@ type gcpCellTargetableForSubscriberSpec struct {
 	status         *SubscriberStatus
 }
 
-func GCPCellTargetableFromSubscriberSpec(channel *v1beta1.Channel, subscribeSpec eventingduckv1beta1.SubscriberSpec) (GCPCellTargetable, SubscriberStatus) {
+func GCPCellTargetableFromSubscriberSpec(channel *v1beta1.Channel, subscribeSpec eventingduckv1beta1.SubscriberSpec) (GCPCellTargetable, *SubscriberStatus) {
 	status := &SubscriberStatus{}
 	return &gcpCellTargetableForSubscriberSpec{
 		subscriberSpec: &subscribeSpec,
@@ -166,11 +170,11 @@ func (s gcpCellTargetableForSubscriberSpec) GetLabels() map[string]string {
 }
 
 func (s gcpCellTargetableForSubscriberSpec) GetTopicID() string {
-	return resources.GenerateSubscriberRetryTopicName(s.channel, *s.subscriberSpec)
+	return resources.GenerateSubscriberRetryTopicName(s.channel, s.subscriberSpec.UID)
 }
 
 func (s gcpCellTargetableForSubscriberSpec) GetSubscriptionName() string {
-	return resources.GenerateSubscriberRetrySubscriptionName(s.channel, *s.subscriberSpec)
+	return resources.GenerateSubscriberRetrySubscriptionName(s.channel, s.subscriberSpec.UID)
 }
 
 func (s gcpCellTargetableForSubscriberSpec) DeliverySpec() *eventingduckv1beta1.DeliverySpec {
@@ -279,7 +283,7 @@ func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.Deliv
 	}
 }
 
-func (r *TargetReconciler) DeleteRetryTopicAndSubscription(ctx context.Context, recorder record.EventRecorder, t GCPCellTargetable) error {
+func (r *TargetReconciler) DeleteRetryTopicAndSubscription(ctx context.Context, recorder record.EventRecorder, t GCPCellDeletingTargetable) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Deleting retry topic")
 
@@ -338,10 +342,83 @@ type SubscriberStatus struct {
 
 func (s SubscriberStatus) MarkTopicFailed(reason, format string, args ...interface{}) {
 	s.topicStatus = corev1.ConditionFalse
-
+	s.topicMessage = fmt.Sprintf(format, args...)
 }
-func (s SubscriberStatus) MarkTopicUnknown(_, _ string, _ ...interface{})        {}
-func (s SubscriberStatus) MarkTopicReady()                                       {}
-func (s SubscriberStatus) MarkSubscriptionFailed(_, _ string, _ ...interface{})  {}
-func (s SubscriberStatus) MarkSubscriptionUnknown(_, _ string, _ ...interface{}) {}
-func (s SubscriberStatus) MarkSubscriptionReady()                                {}
+
+func (s SubscriberStatus) MarkTopicUnknown(_, format string, args ...interface{}) {
+	s.topicStatus = corev1.ConditionFalse
+	s.topicMessage = fmt.Sprintf(format, args...)
+}
+
+func (s SubscriberStatus) MarkTopicReady() {
+	s.topicStatus = corev1.ConditionTrue
+	s.topicMessage = ""
+}
+
+func (s SubscriberStatus) MarkSubscriptionFailed(_, format string, args ...interface{}) {
+	s.topicStatus = corev1.ConditionFalse
+	s.topicMessage = fmt.Sprintf(format, args...)
+}
+
+func (s SubscriberStatus) MarkSubscriptionUnknown(_, format string, args ...interface{}) {
+	s.subscriptionStatus = corev1.ConditionFalse
+	s.subscriptionMessage = fmt.Sprintf(format, args...)
+}
+
+func (s SubscriberStatus) MarkSubscriptionReady() {
+	s.subscriptionStatus = corev1.ConditionTrue
+	s.subscriptionMessage = ""
+}
+
+func (s SubscriberStatus) Ready() corev1.ConditionStatus {
+	if s.topicStatus == corev1.ConditionFalse || s.subscriptionStatus == corev1.ConditionFalse {
+		return corev1.ConditionFalse
+	}
+	if s.topicStatus == corev1.ConditionUnknown || s.subscriptionStatus == corev1.ConditionUnknown {
+		return corev1.ConditionUnknown
+	}
+	return corev1.ConditionTrue
+}
+
+func (s SubscriberStatus) Message() string {
+	if s.topicMessage != "" {
+		return s.topicMessage
+	}
+	if s.subscriptionMessage != "" {
+		return s.subscriptionMessage
+	}
+	return ""
+}
+
+var _ GCPCellDeletingTargetable = (*gcpCellTargetableForSubscriberStatus)(nil)
+
+type gcpCellTargetableForSubscriberStatus struct {
+	subscriberStatus *eventingduckv1beta1.SubscriberStatus
+	channel          *v1beta1.Channel
+	status           *SubscriberStatus
+}
+
+func GCPCellTargetableFromSubscriberStatus(channel *v1beta1.Channel, subscriberStatus eventingduckv1beta1.SubscriberStatus) (GCPCellDeletingTargetable, *SubscriberStatus) {
+	status := &SubscriberStatus{}
+	return &gcpCellTargetableForSubscriberStatus{
+		subscriberStatus: &subscriberStatus,
+		channel:          channel,
+		status:           status,
+	}, status
+}
+
+func (s gcpCellTargetableForSubscriberStatus) Object() runtime.Object {
+	return s.channel
+}
+
+func (s gcpCellTargetableForSubscriberStatus) StatusUpdater() reconcilerutilspubsub.StatusUpdater {
+	return s.status
+}
+
+func (s gcpCellTargetableForSubscriberStatus) GetTopicID() string {
+	return resources.GenerateSubscriberRetryTopicName(s.channel, s.subscriberStatus.UID)
+}
+
+func (s gcpCellTargetableForSubscriberStatus) GetSubscriptionName() string {
+	return resources.GenerateSubscriberRetrySubscriptionName(s.channel, s.subscriberStatus.UID)
+}

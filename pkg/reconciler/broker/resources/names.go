@@ -20,7 +20,7 @@ import (
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"github.com/google/knative-gcp/pkg/utils/naming"
-	duckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // For reference, the minimum number of characters available for a name
@@ -80,13 +80,13 @@ func GenerateChannelDecouplingSubscriptionName(c *v1beta1.Channel) string {
 // GenerateRetryTopicName generates a deterministic topic name for a Trigger.
 // If the topic name would be longer than allowed by PubSub, the Trigger name is
 // truncated to fit.
-func GenerateSubscriberRetryTopicName(c *v1beta1.Channel, s duckv1beta1.SubscriberSpec) string {
-	return naming.TruncatedPubsubResourceName("cre-sub", c.Namespace, c.Name, s.UID)
+func GenerateSubscriberRetryTopicName(c *v1beta1.Channel, subscriberUID types.UID) string {
+	return naming.TruncatedPubsubResourceName("cre-sub", c.Namespace, c.Name, subscriberUID)
 }
 
 // GenerateRetrySubscriptionName generates a deterministic subscription name
 // for a Trigger. If the subscription name would be longer than allowed by
 // PubSub, the Trigger name is truncated to fit.
-func GenerateSubscriberRetrySubscriptionName(c *v1beta1.Channel, s duckv1beta1.SubscriberSpec) string {
-	return naming.TruncatedPubsubResourceName("cre-sub", c.Namespace, c.Name, s.UID)
+func GenerateSubscriberRetrySubscriptionName(c *v1beta1.Channel, subsciberUID types.UID) string {
+	return naming.TruncatedPubsubResourceName("cre-sub", c.Namespace, c.Name, subsciberUID)
 }
