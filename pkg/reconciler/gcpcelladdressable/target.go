@@ -48,9 +48,18 @@ import (
 )
 
 const (
+	defaultMinimumBackoff = 1 * time.Second
 	// Default maximum backoff duration used in the backoff retry policy for
 	// pubsub subscriptions. 600 seconds is the longest supported time.
 	defaultMaximumBackoff = 600 * time.Second
+	// Default backoff policy settings. Should normally be configured through the
+	// br-delivery ConfigMap, but these values serve in case the intended
+	// defaulting fails.
+)
+
+var (
+	defaultBackoffDelay  = "PT1S"
+	defaultBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
 )
 
 // Reconciler implements controller.Reconciler for Trigger resources.
@@ -252,6 +261,12 @@ func (r *TargetReconciler) ReconcileRetryTopicAndSubscription(ctx context.Contex
 // getPubsubRetryPolicy gets the eventing retry policy from the Broker delivery
 // spec and translates it to a pubsub retry policy.
 func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryPolicy {
+	if spec == nil {
+		return &pubsub.RetryPolicy{
+			MinimumBackoff: defaultMinimumBackoff,
+			MaximumBackoff: defaultMaximumBackoff,
+		}
+	}
 	// The Broker delivery spec is translated to a pubsub retry policy in the
 	// manner defined in the following post:
 	// https://github.com/google/knative-gcp/issues/1392#issuecomment-655617873
@@ -273,7 +288,7 @@ func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryP
 // getPubsubDeadLetterPolicy gets the eventing dead letter policy from the
 // Broker delivery spec and translates it to a pubsub dead letter policy.
 func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) *pubsub.DeadLetterPolicy {
-	if spec.DeadLetterSink == nil {
+	if spec == nil || spec.DeadLetterSink == nil {
 		return nil
 	}
 	// Translate to the pubsub dead letter policy format.
@@ -340,7 +355,7 @@ type SubscriberStatus struct {
 	subscriptionMessage string
 }
 
-func (s SubscriberStatus) MarkTopicFailed(reason, format string, args ...interface{}) {
+func (s SubscriberStatus) MarkTopicFailed(_, format string, args ...interface{}) {
 	s.topicStatus = corev1.ConditionFalse
 	s.topicMessage = fmt.Sprintf(format, args...)
 }
