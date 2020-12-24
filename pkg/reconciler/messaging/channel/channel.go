@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/reconciler/gcpcelladdressable"
+
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -34,12 +36,68 @@ import (
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1beta1/channel"
-	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1beta1"
+	brokercelllisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/messaging/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
 )
+
+const (
+	// Name of the corev1.Events emitted from the Broker reconciliation process.
+	brokerReconciled  = "BrokerReconciled"
+	brokerFinalized   = "BrokerFinalized"
+	brokerCellCreated = "BrokerCellCreated"
+)
+
+type Reconciler struct {
+	gcpcelladdressable.GCPCellAddressableReconciler
+	targetReconciler *gcpcelladdressable.TargetReconciler
+}
+
+// Check that Reconciler implements Interface
+var _ channelreconciler.Interface = (*Reconciler)(nil)
+var _ channelreconciler.Finalizer = (*Reconciler)(nil)
+
+func (r *Reconciler) ReconcileKind(ctx context.Context, c *v1beta1.Channel) pkgreconciler.Event {
+	logger := logging.FromContext(ctx)
+	logger.Debug("Reconciling Channel", zap.Any("channel", c))
+	c.Status.InitializeConditions()
+	c.Status.ObservedGeneration = c.Generation
+
+	bcs := gcpcelladdressable.BrokerCellStatusableFromChannel(c)
+	if err := r.GCPCellAddressableReconciler.ReconcileGCPCellAddressable(ctx, bcs); err != nil {
+		logging.FromContext(ctx).Error("Problem reconciling broker", zap.Error(err))
+		return fmt.Errorf("failed to reconcile broker: %w", err)
+		//TODO instead of returning on error, update the data plane configmap with
+		// whatever info is available. or put this in a defer?
+	}
+
+	// 2. Sync all subscriptions.
+	//   a. create all subscriptions that are in spec and not in status.
+	//   b. delete all subscriptions that are in status but not in spec.
+	if err := r.syncSubscribers(ctx, channel); err != nil {
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledSubscribersFailedReason, "Reconcile Subscribers failed with: %s", err.Error())
+	}
+
+	// 3. Sync all subscriptions statuses.
+	if err := r.syncSubscribersStatus(ctx, channel); err != nil {
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledSubscribersStatusFailedReason, "Reconcile Subscribers Status failed with: %s", err.Error())
+	}
+
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, brokerReconciled, "Channel reconciled: \"%s/%s\"", c.Namespace, c.Name)
+}
+
+func (r *Reconciler) FinalizeKind(ctx context.Context, c *v1beta1.Channel) pkgreconciler.Event {
+	logger := logging.FromContext(ctx)
+	logger.Debug("Finalizing Channel", zap.Any("channel", c))
+	bcs := gcpcelladdressable.BrokerCellStatusableFromChannel(c)
+	if err := r.GCPCellAddressableReconciler.FinalizeGCPCellAddressable(ctx, bcs); err != nil {
+		return err
+	}
+
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, brokerFinalized, "Channel finalized: \"%s/%s\"", c.Namespace, c.Name)
+}
 
 const (
 	resourceGroup = "channels.messaging.cloud.google.com"
@@ -58,14 +116,14 @@ type Reconciler struct {
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
 	// listers index properties about resources
-	channelLister listers.ChannelLister
-	topicLister   inteventslisters.TopicLister
+	channelLister    listers.ChannelLister
+	brokerCellLister brokercelllisters.BrokerCellLister
 }
 
 // Check that our Reconciler implements Interface.
 var _ channelreconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1beta1.Channel) pkgreconciler.Event {
+func (r *Reconciler) ReconcileKind2(ctx context.Context, channel *v1beta1.Channel) pkgreconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("channel", channel)))
 
 	channel.Status.InitializeConditions()
@@ -101,8 +159,155 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1beta1.Channel
 
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, channel.Namespace, channel.Name)
 }
-
 func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Channel) error {
+	if channel.Status.SubscribableStatus.Subscribers == nil {
+		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)
+	}
+
+	// Determine which subscribers should be deleted by getting all subscribers in the status and
+	// removing those that are still in the spec.
+	subDeletes := make(map[types.UID]eventingduckv1beta1.SubscriberStatus, len(channel.Status.Subscribers))
+	for _, s := range channel.Status.Subscribers {
+		subDeletes[s.UID] = s
+	}
+	for _, s := range channel.Spec.Subscribers {
+		delete(subDeletes, s.UID)
+	}
+
+	// Make sure all the spec Subscribers have their retry topic and subscription.
+	for _, s := range channel.Spec.Subscribers {
+		t := gcpcelladdressable.GCPCellTargetableFromSubscriberSpec(channel, s)
+		err := r.targetReconciler.ReconcileRetryTopicAndSubscription(ctx, r.Recorder, t)
+		if err != nil {
+			return fmt.Errorf("unable to reconcile subscriber %q: %w", s.UID, err)
+		}
+	}
+
+	// Delete the no longer needed subscribers.
+	for _, s := range subDeletes {
+		t := gcpcelladdressable.GCPCellTargetableFromSubscriberSpec(channel, s)
+		err := r.targetReconciler.DeleteRetryTopicAndSubscription(ctx, r.Recorder, t)
+		if err != nil {
+			return fmt.Errorf("unable to remove subscriber %q: %w", s.UID, err)
+		}
+		for i, ss := range channel.Status.SubscribableStatus.Subscribers {
+			if ss.UID == s.UID {
+				// Remove this subscriber status by swapping len-1 with i and then popping len-1 off
+				// the slice.
+				channel.Status.SubscribableStatus.Subscribers[i] = channel.Status.SubscribableStatus.Subscribers[len(channel.Status.SubscribableStatus.Subscribers)-1]
+				channel.Status.SubscribableStatus.Subscribers = channel.Status.SubscribableStatus.Subscribers[:len(channel.Status.SubscribableStatus.Subscribers)-1]
+				break
+			}
+		}
+	}
+
+	for _, s := range subCreates {
+		genName := resources.GeneratePullSubscriptionName(s.UID)
+
+		ps := resources.MakePullSubscription(&resources.PullSubscriptionArgs{
+			Owner:              channel,
+			Name:               genName,
+			Project:            channel.Spec.Project,
+			Topic:              channel.Status.TopicID,
+			ServiceAccountName: channel.Spec.ServiceAccountName,
+			Secret:             channel.Spec.Secret,
+			Labels:             resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
+			Annotations:        resources.GetPullSubscriptionAnnotations(channel.Name, clusterName),
+			Subscriber:         s,
+		})
+		ps, err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Create(ctx, ps, metav1.CreateOptions{})
+		if apierrs.IsAlreadyExists(err) {
+			// If the pullsub already exists and is owned by the current channel, mark it for update.
+			if _, found := pullsubs[genName]; found {
+				subUpdates = append(subUpdates, s)
+			} else {
+				r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", genName)
+				return fmt.Errorf("channel %q does not own subscriber %q", channel.Name, genName)
+			}
+		} else if err != nil {
+			r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberCreateFailed", "Creating Subscriber %q failed", genName)
+			return err
+		}
+		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", genName)
+
+		channel.Status.SubscribableStatus.Subscribers = append(channel.Status.SubscribableStatus.Subscribers, eventingduckv1beta1.SubscriberStatus{
+			UID:                s.UID,
+			ObservedGeneration: s.Generation,
+		})
+		return nil // Signal a re-reconcile.
+	}
+	for _, s := range subUpdates {
+		genName := resources.GeneratePullSubscriptionName(s.UID)
+
+		ps := resources.MakePullSubscription(&resources.PullSubscriptionArgs{
+			Owner:              channel,
+			Name:               genName,
+			Project:            channel.Spec.Project,
+			Topic:              channel.Status.TopicID,
+			ServiceAccountName: channel.Spec.ServiceAccountName,
+			Secret:             channel.Spec.Secret,
+			Labels:             resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
+			Annotations:        resources.GetPullSubscriptionAnnotations(channel.Name, clusterName),
+			Subscriber:         s,
+		})
+
+		existingPs, found := pullsubs[genName]
+		if !found {
+			// PullSubscription does not exist, that's ok, create it now.
+			ps, err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Create(ctx, ps, metav1.CreateOptions{})
+			if apierrs.IsAlreadyExists(err) {
+				// If the pullsub is not owned by the current channel, this is an error.
+				r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", genName)
+				return fmt.Errorf("channel %q does not own subscriber %q", channel.Name, genName)
+			} else if err != nil {
+				r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberCreateFailed", "Creating Subscriber %q failed", genName)
+				return err
+			}
+			r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", ps.Name)
+		} else if !equality.Semantic.DeepEqual(ps.Spec, existingPs.Spec) {
+			// Don't modify the informers copy.
+			desired := existingPs.DeepCopy()
+			desired.Spec = ps.Spec
+			ps, err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+			if err != nil {
+				r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberUpdateFailed", "Updating Subscriber %q failed", genName)
+				return err
+			}
+			r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberUpdated", "Updated Subscriber %q", ps.Name)
+		}
+		for i, ss := range channel.Status.SubscribableStatus.Subscribers {
+			if ss.UID == s.UID {
+				channel.Status.SubscribableStatus.Subscribers[i].ObservedGeneration = s.Generation
+				break
+			}
+		}
+		return nil
+	}
+	for _, s := range subDeletes {
+		genName := resources.GeneratePullSubscriptionName(s.UID)
+		// TODO: we need to handle the case of a already deleted pull subscription. Perhaps move to ensure deleted method.
+		if err := r.RunClientSet.InternalV1beta1().PullSubscriptions(channel.Namespace).Delete(ctx, genName, metav1.DeleteOptions{}); err != nil {
+			logging.FromContext(ctx).Desugar().Error("unable to delete PullSubscription for Channel", zap.String("ps", genName), zap.String("channel", channel.Name), zap.Error(err))
+			r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberDeleteFailed", "Deleting Subscriber %q failed", genName)
+			return err
+		}
+		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberDeleted", "Deleted Subscriber %q", genName)
+
+		for i, ss := range channel.Status.SubscribableStatus.Subscribers {
+			if ss.UID == s.UID {
+				// Swap len-1 with i and then pop len-1 off the slice.
+				channel.Status.SubscribableStatus.Subscribers[i] = channel.Status.SubscribableStatus.Subscribers[len(channel.Status.SubscribableStatus.Subscribers)-1]
+				channel.Status.SubscribableStatus.Subscribers = channel.Status.SubscribableStatus.Subscribers[:len(channel.Status.SubscribableStatus.Subscribers)-1]
+				break
+			}
+		}
+		return nil // Signal a re-reconcile.
+	}
+
+	return nil
+}
+
+func (r *Reconciler) syncSubscribersOrig(ctx context.Context, channel *v1beta1.Channel) error {
 	if channel.Status.SubscribableStatus.Subscribers == nil {
 		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)
 	}
@@ -379,7 +584,7 @@ func (r *Reconciler) getPullSubscriptionStatus(ps *inteventsv1beta1.PullSubscrip
 	return ready, message
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, channel *v1beta1.Channel) pkgreconciler.Event {
+func (r *Reconciler) FinalizeKind2(ctx context.Context, channel *v1beta1.Channel) pkgreconciler.Event {
 	// If k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
 	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.

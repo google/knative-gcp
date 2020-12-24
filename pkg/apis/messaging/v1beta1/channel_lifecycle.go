@@ -101,3 +101,27 @@ func (cs *ChannelStatus) MarkTopicNotConfigured() {
 func (cs *ChannelStatus) MarkTopicUnknown(reason, messageFormat string, messageA ...interface{}) {
 	channelCondSet.Manage(cs).MarkUnknown(ChannelConditionTopicReady, reason, messageFormat, messageA...)
 }
+
+func (cs *ChannelStatus) MarkBrokerCellUnknown(reason, format string, args ...interface{}) {
+	channelCondSet.Manage(cs).MarkUnknown(ChannelConditionBrokerCell, reason, format, args...)
+}
+
+func (cs *ChannelStatus) MarkBrokerCellFailed(reason, format string, args ...interface{}) {
+	channelCondSet.Manage(cs).MarkFalse(ChannelConditionBrokerCell, reason, format, args...)
+}
+
+func (cs *ChannelStatus) MarkBrokerCellReady() {
+	channelCondSet.Manage(cs).MarkTrue(ChannelConditionBrokerCell)
+}
+
+func (cs *ChannelStatus) MarkSubscriptionFailed(reason, format string, args ...interface{}) {
+	channelCondSet.Manage(cs).MarkFalse(ChannelConditionSubscription, reason, format, args...)
+}
+
+func (cs *ChannelStatus) MarkSubscriptionUnknown(reason, format string, args ...interface{}) {
+	channelCondSet.Manage(cs).MarkUnknown(ChannelConditionSubscription, reason, format, args...)
+}
+
+func (cs *ChannelStatus) MarkSubscriptionReady() {
+	channelCondSet.Manage(cs).MarkTrue(ChannelConditionSubscription)
+}

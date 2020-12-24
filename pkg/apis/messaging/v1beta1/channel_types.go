@@ -84,6 +84,8 @@ type ChannelSpec struct {
 var channelCondSet = apis.NewLivingConditionSet(
 	ChannelConditionAddressable,
 	ChannelConditionTopicReady,
+	ChannelConditionSubscription,
+	ChannelConditionBrokerCell,
 )
 
 const (
@@ -97,7 +99,9 @@ const (
 
 	// ChannelConditionTopicReady has status True when the Channel has had a
 	// Pub/Sub topic created for it.
-	ChannelConditionTopicReady apis.ConditionType = "TopicReady"
+	ChannelConditionTopicReady   apis.ConditionType = "TopicReady"
+	ChannelConditionSubscription apis.ConditionType = "SubscriptionReady"
+	ChannelConditionBrokerCell   apis.ConditionType = "BrokerCellReady"
 )
 
 // ChannelStatus represents the current state of a Channel.

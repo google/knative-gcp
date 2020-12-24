@@ -19,22 +19,22 @@ package channel
 import (
 	"context"
 
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
+	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/labels"
+
 	"knative.dev/pkg/injection"
 
-	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
-	pullsubscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
-	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
 	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1beta1/channel"
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1beta1/channel"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
-	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 )
 
 const (
@@ -62,38 +62,35 @@ func newController(
 	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	channelInformer := channelinformer.Get(ctx)
-
-	topicInformer := topicinformer.Get(ctx)
-	pullSubscriptionInformer := pullsubscriptioninformer.Get(ctx)
-	serviceAccountInformer := serviceaccountinformers.Get(ctx)
+	bcInformer := brokercellinformer.Get(ctx)
 
 	r := &Reconciler{
-		Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
-		Identity:      identity.NewIdentity(ctx, ipm, gcpas),
-		channelLister: channelInformer.Lister(),
-		topicLister:   topicInformer.Lister(),
+		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
+		Identity:         identity.NewIdentity(ctx, ipm, gcpas),
+		channelLister:    channelInformer.Lister(),
+		brokerCellLister: bcInformer.Lister(),
 	}
 	impl := channelreconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
 	channelInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
-	channelGK := v1beta1.Kind("Channel")
-
-	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(channelGK),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	pullSubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(channelGK),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(channelGK),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
+	bcInformer.Informer().AddEventHandler(controller.HandleAll(
+		func(obj interface{}) {
+			if _, ok := obj.(*inteventsv1alpha1.BrokerCell); ok {
+				// TODO(#866) Only select brokers that point to this brokercell by label selector once the
+				// webhook assigns the brokercell label, i.e.,
+				// r.brokerLister.List(labels.SelectorFromSet(map[string]string{"brokercell":bc.Name, "brokercellns":bc.Namespace}))
+				channels, err := channelInformer.Lister().List(labels.Everything())
+				if err != nil {
+					r.Logger.Desugar().Error("Failed to list Channels", zap.Error(err))
+					return
+				}
+				for _, channel := range channels {
+					impl.Enqueue(channel)
+				}
+			}
+		},
+	))
 	return impl
 }

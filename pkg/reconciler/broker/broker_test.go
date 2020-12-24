@@ -440,10 +440,10 @@ func TestAllCases(t *testing.T) {
 		srv := pstest.NewServer()
 		// Insert pubsub client for PostConditions and create fixtures
 		psclient, _ := GetTestClientCreateFunc(srv.Addr)(ctx, testProject)
-		savedCreateFn := createPubsubClientFn
+		savedCreateFn := gcpcelladdressable.createPubsubClientFn
 		close := func() {
 			srv.Close()
-			createPubsubClientFn = savedCreateFn
+			gcpcelladdressable.createPubsubClientFn = savedCreateFn
 		}
 		t.Cleanup(close)
 		if testData != nil {
@@ -467,7 +467,7 @@ func TestAllCases(t *testing.T) {
 		if maxTime, ok := testData["maxPSClientCreateTime"]; ok {
 			// Overwrite the createPubsubClientFn to one that failed when called more than maxTime times.
 			// maxTime=0 is used to inject error
-			createPubsubClientFn = GetFailedTestClientCreateFunc(srv.Addr, maxTime.(int))
+			gcpcelladdressable.createPubsubClientFn = GetFailedTestClientCreateFunc(srv.Addr, maxTime.(int))
 			testPSClient = nil
 		}
 
