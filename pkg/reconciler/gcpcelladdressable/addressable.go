@@ -340,15 +340,15 @@ func (c brokerCellStatusableChannel) Key() config.GCPCellAddressableKey {
 
 func (c brokerCellStatusableChannel) MarkBrokerCellReady() {
 	// TODO Make the channel have BrokerCell statuses instead of these fake topic ones.
-	c.channel.Status.MarkTopicReady()
+	c.channel.Status.MarkBrokerCellReady()
 }
 
 func (c brokerCellStatusableChannel) MarkBrokerCellUnknown(reason, format string, args ...interface{}) {
-	c.channel.Status.MarkTopicUnknown(reason, format, args...)
+	c.channel.Status.MarkBrokerCellUnknown(reason, format, args...)
 }
 
 func (c brokerCellStatusableChannel) MarkBrokerCellFailed(reason, format string, args ...interface{}) {
-	c.channel.Status.MarkTopicFailed(reason, format, args...)
+	c.channel.Status.MarkBrokerCellFailed(reason, format, args...)
 }
 
 func (c brokerCellStatusableChannel) SetAddress(url *apis.URL) {

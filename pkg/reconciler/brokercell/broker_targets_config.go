@@ -170,6 +170,12 @@ func addBrokerAndTriggersToConfig(_ context.Context, b *brokerv1beta1.Broker, tr
 
 // addToConfig reconstructs the data entry for the given broker and add it to targets-config.
 func addChannelToConfig(_ context.Context, c *v1beta1.Channel, targets config.Targets) {
+	if c.Status.Address == nil {
+		// The address hasn't been set. The Channel reconciler will get to it. At which point the
+		// Channel will be modified, so the BrokerCell will reconcile again. For now, ignore this
+		// Channel.
+		return
+	}
 	// TODO Maybe get rid of GCPCellAddressableMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we always
 	//  delete or update the entire broker entry and we don't need partial updates per trigger.
 	// The code can be simplified to r.targetsConfig.Upsert(brokerConfigEntry)
@@ -202,10 +208,17 @@ func addChannelToConfig(_ context.Context, c *v1beta1.Channel, targets config.Ta
 			m.SetState(config.State_UNKNOWN)
 		}
 
+		if c.Spec.SubscribableSpec == nil {
+			return
+		}
 		for _, s := range c.Spec.SubscribableSpec.Subscribers {
 			target := &config.Target{
-				Id: string(s.UID),
-				// TODO name and namespace?
+				Id:        string(s.UID),
+				Namespace: c.Namespace,
+				// Name is used as a key to look up this target in the Fanout and Retry Pods. Be
+				// very careful changing it, as it might lead to event loss during upgrade (while
+				// the code is new, but the config is old).
+				Name:                   string(s.UID),
 				GcpCellAddressableType: config.GcpCellAddressableType_CHANNEL,
 				GcpCellAddressableName: c.Name,
 				Address:                s.SubscriberURI.String(),

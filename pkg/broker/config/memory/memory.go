@@ -62,6 +62,7 @@ func (m *gcpCellAddressableMutation) UpsertTargets(targets ...*config.Target) co
 	for _, t := range targets {
 		t.Namespace = m.b.Namespace
 		t.GcpCellAddressableName = m.b.Name
+		t.GcpCellAddressableType = m.b.Type
 		m.b.Targets[t.Name] = t
 	}
 	return m
@@ -78,7 +79,8 @@ func (m *gcpCellAddressableMutation) DeleteTargets(targets ...*config.Target) co
 func (m *gcpCellAddressableMutation) Delete() {
 	// Calling delete will "reset" the GCPCellAddressable under mutation instantly.
 	m.delete = true
-	m.b = &config.GcpCellAddressable{Name: m.b.Name, Namespace: m.b.Namespace}
+	k := m.b.Key()
+	m.b = k.CreateEmptyGCPCellAddressable()
 }
 
 type memoryTargets struct {

@@ -102,7 +102,10 @@ func (ct *CachedTargets) Bytes() ([]byte, error) {
 // String returns the text format of all the targets.
 func (ct *CachedTargets) DebugString() string {
 	val := ct.Load()
-	return prototext.MarshalOptions{}.Format(val)
+	return prototext.MarshalOptions{
+		Multiline: true,
+		Indent: "	",
+	}.Format(val)
 }
 
 // EqualsBytes checks if the current targets config equals the given

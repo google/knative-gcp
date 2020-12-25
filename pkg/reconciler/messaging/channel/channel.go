@@ -106,18 +106,20 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 	for _, s := range channel.Status.Subscribers {
 		subDeletes[s.UID] = s
 	}
-	for _, s := range channel.Spec.Subscribers {
-		delete(subDeletes, s.UID)
-	}
-
-	// Make sure all the spec Subscribers have their retry topic and subscription.
-	for _, s := range channel.Spec.Subscribers {
-		t, status := gcpcelladdressable.GCPCellTargetableFromSubscriberSpec(channel, s)
-		err := r.targetReconciler.ReconcileRetryTopicAndSubscription(ctx, r.Recorder, t)
-		if err != nil {
-			return fmt.Errorf("unable to reconcile subscriber %q: %w", s.UID, err)
+	if channel.Spec.SubscribableSpec != nil {
+		for _, s := range channel.Spec.SubscribableSpec.Subscribers {
+			delete(subDeletes, s.UID)
 		}
-		writeSubscriberStatus(channel, s, status)
+
+		// Make sure all the spec Subscribers have their retry topic and subscription.
+		for _, s := range channel.Spec.SubscribableSpec.Subscribers {
+			t, status := gcpcelladdressable.GCPCellTargetableFromSubscriberSpec(channel, s)
+			err := r.targetReconciler.ReconcileRetryTopicAndSubscription(ctx, r.Recorder, t)
+			if err != nil {
+				return fmt.Errorf("unable to reconcile subscriber %q: %w", s.UID, err)
+			}
+			writeSubscriberStatus(channel, s, status)
+		}
 	}
 
 	// Delete the no longer needed subscribers.
@@ -131,8 +133,8 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 		removeSubscriberStatus(channel, s)
 	}
 
-	// TODO The previous version rereconciled after just about every PullSubscription. Make sure we
-	// don't need that anymore.
+	// TODO The previous version re-reconciled after every PullSubscription. Make sure we don't need
+	// that anymore.
 
 	return nil
 }
