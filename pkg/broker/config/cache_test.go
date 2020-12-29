@@ -265,13 +265,24 @@ func TestCachedTargetsBytes(t *testing.T) {
 	}
 
 	// Test EqualsBytes
-	if !targets.EqualsBytes(wantBytes) {
+	if !equalsBytes(targets, wantBytes) {
 		t.Error("CachedTargets.EqualsBytes() got=false, want=true")
 	}
 
-	if targets.EqualsBytes([]byte("random")) {
+	if equalsBytes(targets, []byte("random")) {
 		t.Error("CachedTargets.EqualBytes() with random bytes got=true, want=false")
 	}
+}
+
+// equalsBytes checks if the current targets config equals the given
+// targets config in bytes.
+func equalsBytes(ct *CachedTargets, b []byte) bool {
+	self := ct.Load()
+	var other TargetsConfig
+	if err := proto.Unmarshal(b, &other); err != nil {
+		return false
+	}
+	return proto.Equal(self, &other)
 }
 
 func TestCachedTargetsString(t *testing.T) {

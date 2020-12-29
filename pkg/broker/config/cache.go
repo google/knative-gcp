@@ -109,14 +109,3 @@ func (ct *CachedTargets) DebugString() string {
 		Indent:    "\t",
 	}.Format(val)
 }
-
-// EqualsBytes checks if the current targets config equals the given
-// targets config in bytes.
-func (ct *CachedTargets) EqualsBytes(b []byte) bool {
-	self := ct.Load()
-	var other TargetsConfig
-	if err := proto.Unmarshal(b, &other); err != nil {
-		return false
-	}
-	return proto.Equal(self, &other)
-}

@@ -40,9 +40,6 @@ type ReadonlyTargets interface {
 	// DebugString returns the text format of all the targets. It is for _debug_ purposes only. The
 	// output format is not guaranteed to be stable and may change at any time.
 	DebugString() string
-	// EqualsBytes checks if the current targets config equals the given
-	// targets config in bytes.
-	EqualsBytes([]byte) bool
 }
 
 // BrokerMutation provides functions to mutate a Broker.
