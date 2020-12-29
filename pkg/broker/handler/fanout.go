@@ -44,7 +44,7 @@ import (
 type FanoutPool struct {
 	options *Options
 	targets config.ReadonlyTargets
-	pool    sync.Map
+	pool    *syncMapBrokerKey
 
 	// Pubsub client used to pull events from decoupling topics.
 	pubsubClient *pubsub.Client
@@ -109,6 +109,7 @@ func NewFanoutPool(
 	p := &FanoutPool{
 		targets:            targets,
 		options:            options,
+		pool:               &syncMapBrokerKey{},
 		pubsubClient:       pubsubClient,
 		deliverClient:      deliverClient,
 		deliverRetryClient: retryClient,
@@ -124,23 +125,23 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 		logging.FromContext(ctx).Error("failed to add tags to context", zap.Error(err))
 	}
 
-	p.pool.Range(func(key, value interface{}) bool {
-		if _, ok := p.targets.GetBrokerByKey(key.(string)); !ok {
-			value.(*fanoutHandlerCache).Stop()
+	p.pool.Range(func(key config.BrokerKey, value *fanoutHandlerCache) bool {
+		if _, ok := p.targets.GetBrokerByKey(&key); !ok {
+			value.Stop()
 			p.pool.Delete(key)
 		}
 		return true
 	})
 
 	p.targets.RangeBrokers(func(b *config.Broker) bool {
-		if value, ok := p.pool.Load(b.Key()); ok {
+		if value, ok := p.pool.Load(*b.Key()); ok {
 			// Skip if we don't need to renew the handler.
-			if !value.(*fanoutHandlerCache).shouldRenew(b) {
+			if !value.shouldRenew(b) {
 				return true
 			}
 			// Stop and clean up the old handler before we start a new one.
-			value.(*fanoutHandlerCache).Stop()
-			p.pool.Delete(b.Key())
+			value.Stop()
+			p.pool.Delete(*b.Key())
 		}
 
 		// Don't start the handler if broker is not ready.
@@ -176,15 +177,47 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 		// Start the handler with broker key in context.
 		hc.Start(handlerctx.WithBrokerKey(ctx, b.Key()), func(err error) {
 			if err != nil {
-				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", b.Key()), zap.Error(err))
+				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.Stringer("broker", b.Key()), zap.Error(err))
 			} else {
-				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", b.Key()))
+				logging.FromContext(ctx).Info("handler for broker has stopped", zap.Stringer("broker", b.Key()))
 			}
 		})
 
-		p.pool.Store(b.Key(), hc)
+		p.pool.Store(*b.Key(), hc)
 		return true
 	})
 
 	return nil
+}
+
+// syncMapBrokerKey is a typed version of sync.Map.
+type syncMapBrokerKey struct {
+	m sync.Map
+}
+
+func (m *syncMapBrokerKey) Store(k config.BrokerKey, v *fanoutHandlerCache) {
+	m.m.Store(k, v)
+}
+
+func (m *syncMapBrokerKey) Load(k config.BrokerKey) (*fanoutHandlerCache, bool) {
+	v, ok := m.m.Load(k)
+	if v == nil {
+		return nil, ok
+	}
+	return v.(*fanoutHandlerCache), ok
+}
+
+func (m *syncMapBrokerKey) Delete(k config.BrokerKey) {
+	m.m.Delete(k)
+}
+
+func (m *syncMapBrokerKey) Range(f func(key config.BrokerKey, value *fanoutHandlerCache) bool) {
+	wrapped := func(key interface{}, value interface{}) bool {
+		var wrappedValue *fanoutHandlerCache
+		if value != nil {
+			wrappedValue = value.(*fanoutHandlerCache)
+		}
+		return f(key.(config.BrokerKey), wrappedValue)
+	}
+	m.m.Range(wrapped)
 }

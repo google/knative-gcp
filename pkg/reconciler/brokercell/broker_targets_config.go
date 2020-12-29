@@ -75,11 +75,11 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.Broker
 }
 
 // addToConfig reconstructs the data entry for the given broker and add it to targets-config.
-func (r *Reconciler) addToConfig(ctx context.Context, b *brokerv1beta1.Broker, triggers []*brokerv1beta1.Trigger, brokerTargets config.Targets) {
+func (r *Reconciler) addToConfig(_ context.Context, b *brokerv1beta1.Broker, triggers []*brokerv1beta1.Trigger, brokerTargets config.Targets) {
 	// TODO Maybe get rid of BrokerMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we always
 	//  delete or update the entire broker entry and we don't need partial updates per trigger.
 	// The code can be simplified to r.targetsConfig.Upsert(brokerConfigEntry)
-	brokerTargets.MutateBroker(b.Namespace, b.Name, func(m config.BrokerMutation) {
+	brokerTargets.MutateBroker(config.KeyFromBroker(b), func(m config.BrokerMutation) {
 		// First delete the broker entry.
 		m.Delete()
 

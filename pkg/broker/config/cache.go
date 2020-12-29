@@ -59,24 +59,23 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 
 // GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 // Do not modify the returned Target copy.
-func (ct *CachedTargets) GetTargetByKey(key string) (*Target, bool) {
-	namespace, brokerName, targetName := SplitTriggerKey(key)
-	broker, ok := ct.GetBrokerByKey(BrokerKey(namespace, brokerName))
+func (ct *CachedTargets) GetTargetByKey(key *TargetKey) (*Target, bool) {
+	broker, ok := ct.GetBrokerByKey(key.ParentKey())
 	if !ok {
 		return nil, false
 	}
-	t, ok := broker.Targets[targetName]
+	t, ok := broker.Targets[key.name]
 	return t, ok
 }
 
 // GetBrokerByKey returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBrokerByKey(key string) (*Broker, bool) {
+func (ct *CachedTargets) GetBrokerByKey(key *BrokerKey) (*Broker, bool) {
 	val := ct.Load()
 	if val == nil || val.Brokers == nil {
 		return nil, false
 	}
-	b, ok := val.Brokers[key]
+	b, ok := val.Brokers[key.PersistenceString()]
 	return b, ok
 }
 

@@ -19,6 +19,8 @@ package context
 import (
 	"context"
 	"testing"
+
+	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
 func TestBrokerKey(t *testing.T) {
@@ -27,7 +29,7 @@ func TestBrokerKey(t *testing.T) {
 		t.Errorf("error from GetBrokerKey got=%v, want=%v", err, ErrBrokerKeyNotPresent)
 	}
 
-	wantKey := "key"
+	wantKey := config.TestOnlyBrokerKey("ns", "name")
 	ctx := WithBrokerKey(context.Background(), wantKey)
 	gotKey, err := GetBrokerKey(ctx)
 	if err != nil {

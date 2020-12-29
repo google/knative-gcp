@@ -68,7 +68,7 @@ func TestInvalidContext(t *testing.T) {
 		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrBrokerKeyNotPresent)
 	}
 
-	ctx := handlerctx.WithBrokerKey(context.Background(), "key")
+	ctx := handlerctx.WithBrokerKey(context.Background(), config.TestOnlyBrokerKey("ns", "does-not-exist"))
 	err = p.Process(ctx, &e)
 	if err != handlerctx.ErrTargetKeyNotPresent {
 		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrTargetKeyNotPresent)
@@ -128,7 +128,7 @@ func TestDeliverSuccess(t *testing.T) {
 			broker := &config.Broker{Namespace: "ns", Name: "broker"}
 			target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
 			testTargets := memory.NewEmptyTargets()
-			testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+			testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
 				bm.SetAddress(ingressSvr.URL)
 				bm.UpsertTargets(target)
 			})
@@ -304,7 +304,7 @@ func TestDeliverFailure(t *testing.T) {
 				},
 			}
 			testTargets := memory.NewEmptyTargets()
-			testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+			testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
 				bm.UpsertTargets(target)
 			})
 			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
@@ -477,7 +477,7 @@ func benchmarkNoReply(b *testing.B, httpClient *http.Client, targetAddress strin
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+	testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
 		bm.UpsertTargets(target)
 	})
 	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(b, zaptest.Level(zap.InfoLevel)).Sugar())
@@ -517,7 +517,7 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, eventSize int, make
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+	testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
 		bm.SetAddress(ingressAddress)
 		bm.UpsertTargets(target)
 	})
@@ -602,7 +602,7 @@ func benchmarkRetry(b *testing.B, httpClient *http.Client, targetAddress string,
 		RetryQueue: &config.Queue{Topic: "test-retry-topic"},
 	}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+	testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
 		bm.UpsertTargets(target)
 	})
 	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())

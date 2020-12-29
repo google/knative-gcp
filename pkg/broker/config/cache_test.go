@@ -131,7 +131,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	t.Run("range brokers", func(t *testing.T) {
 		gotBrokers := make(map[string]*Broker)
 		targets.RangeBrokers(func(b *Broker) bool {
-			gotBrokers[b.Key()] = b
+			gotBrokers[b.Key().PersistenceString()] = b
 			return true
 		})
 		if diff := cmp.Diff(val.Brokers, gotBrokers, protocmp.Transform()); diff != "" {
@@ -140,7 +140,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	})
 
 	t.Run("get individual broker", func(t *testing.T) {
-		gotBroker, ok := targets.GetBrokerByKey(BrokerKey("ns", "non-existing"))
+		gotBroker, ok := targets.GetBrokerByKey(TestOnlyBrokerKey("ns", "non-existing"))
 		if ok {
 			t.Error("get non-existing broker got ok=true, want ok=false")
 		}

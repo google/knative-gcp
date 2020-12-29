@@ -64,9 +64,9 @@ type Helper struct {
 	pubsubConn *grpc.ClientConn
 
 	// The internal map that maps each target to its fake consumer server.
-	consumers map[string]*serverCfg
+	consumers map[config.TargetKey]*serverCfg
 	// The internal map that maps each broker to its fake broker ingress server.
-	ingresses map[string]*serverCfg
+	ingresses map[config.BrokerKey]*serverCfg
 }
 
 // Close cleans up all resources.
@@ -107,8 +107,8 @@ func NewHelper(ctx context.Context, projectID string) (*Helper, error) {
 		CePubsub:     ceps,
 		pubsubConn:   conn,
 		Targets:      memory.NewEmptyTargets(),
-		consumers:    make(map[string]*serverCfg),
-		ingresses:    make(map[string]*serverCfg),
+		consumers:    make(map[config.TargetKey]*serverCfg),
+		ingresses:    make(map[config.BrokerKey]*serverCfg),
 	}, nil
 }
 
@@ -121,17 +121,17 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 
 	// Create an empty broker config.
 	bn := "br-" + uuid.New().String()
-	h.Targets.MutateBroker(namespace, bn, func(bm config.BrokerMutation) {})
-	return h.RenewBroker(ctx, t, config.BrokerKey(namespace, bn))
+	h.Targets.MutateBroker(config.TestOnlyBrokerKey(namespace, bn), func(bm config.BrokerMutation) {})
+	return h.RenewBroker(ctx, t, config.TestOnlyBrokerKey(namespace, bn))
 }
 
 // RenewBroker generates new test resources for an existing broker.
-func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey string) *config.Broker {
+func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, key *config.BrokerKey) *config.Broker {
 	t.Helper()
 
-	b, ok := h.Targets.GetBrokerByKey(brokerKey)
+	b, ok := h.Targets.GetBrokerByKey(key)
 	if !ok {
-		t.Fatalf("broker with key %q doesn't exist", brokerKey)
+		t.Fatalf("broker with key %q doesn't exist", key)
 	}
 
 	rid := uuid.New().String()
@@ -154,7 +154,7 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey string
 	}
 	brokerIngSvr := httptest.NewServer(ceClient)
 
-	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+	h.Targets.MutateBroker(key, func(bm config.BrokerMutation) {
 		bm.SetDecoupleQueue(&config.Queue{
 			Topic:        topic,
 			Subscription: sub,
@@ -163,17 +163,17 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey string
 		bm.SetState(config.State_READY)
 	})
 
-	b, ok = h.Targets.GetBrokerByKey(brokerKey)
+	b, ok = h.Targets.GetBrokerByKey(key)
 	if !ok {
-		t.Fatalf("failed to save test broker: %s", brokerKey)
+		t.Fatalf("failed to save test broker: %s", key)
 	}
 
 	// Clean up existing ingress server if any.
-	if cfg, ok := h.ingresses[b.Key()]; ok {
+	if cfg, ok := h.ingresses[*b.Key()]; ok {
 		cfg.server.Close()
 	}
 
-	h.ingresses[b.Key()] = &serverCfg{
+	h.ingresses[*b.Key()] = &serverCfg{
 		server: brokerIngSvr,
 		client: ceClient,
 	}
@@ -183,10 +183,10 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey string
 
 // DeleteBroker deletes the broker by key. It also cleans up test resources used by
 // the broker.
-func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, brokerKey string) {
+func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, key *config.BrokerKey) {
 	t.Helper()
 
-	b, ok := h.Targets.GetBrokerByKey(brokerKey)
+	b, ok := h.Targets.GetBrokerByKey(key)
 	if !ok {
 		// The broker is no longer exists.
 		return
@@ -199,13 +199,17 @@ func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, brokerKey strin
 		t.Fatalf("failed to delete broker decouple topic: %v", err)
 	}
 
-	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+	h.Targets.MutateBroker(key, func(bm config.BrokerMutation) {
 		bm.Delete()
 	})
 
-	if ing, ok := h.ingresses[brokerKey]; ok {
+	if ing, ok := h.ingresses[*key]; ok {
 		ing.server.Close()
-		delete(h.consumers, brokerKey)
+		for consumer := range h.consumers {
+			if *consumer.ParentKey() == *key {
+				delete(h.consumers, consumer)
+			}
+		}
 	}
 }
 
@@ -213,7 +217,7 @@ func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, brokerKey strin
 // The following test resources will also be created:
 // 1. The target retry topic/subscription.
 // 2. The subscriber server.
-func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey string, filters map[string]string) *config.Target {
+func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey *config.BrokerKey, filters map[string]string) *config.Target {
 	t.Helper()
 	tn := "tr-" + uuid.New().String()
 	b, ok := h.Targets.GetBrokerByKey(brokerKey)
@@ -229,7 +233,7 @@ func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey str
 		State:            config.State_READY,
 	}
 
-	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+	h.Targets.MutateBroker(brokerKey, func(bm config.BrokerMutation) {
 		bm.UpsertTargets(testTarget)
 	})
 
@@ -237,7 +241,7 @@ func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey str
 }
 
 // RenewTarget generates new test resources for a target.
-func (h *Helper) RenewTarget(ctx context.Context, t *testing.T, targetKey string) *config.Target {
+func (h *Helper) RenewTarget(ctx context.Context, t *testing.T, targetKey *config.TargetKey) *config.Target {
 	target, ok := h.Targets.GetTargetByKey(targetKey)
 	if !ok {
 		t.Fatalf("target with key %q doesn't exist", targetKey)
@@ -269,16 +273,16 @@ func (h *Helper) RenewTarget(ctx context.Context, t *testing.T, targetKey string
 	}
 	target.Address = targetSvr.URL
 
-	h.Targets.MutateBroker(target.Namespace, target.Broker, func(bm config.BrokerMutation) {
+	h.Targets.MutateBroker(target.Key().ParentKey(), func(bm config.BrokerMutation) {
 		bm.UpsertTargets(target)
 	})
 
 	// Clean up existing ingress server if any.
-	if cfg, ok := h.consumers[target.Key()]; ok {
+	if cfg, ok := h.consumers[*target.Key()]; ok {
 		cfg.server.Close()
 	}
 
-	h.consumers[target.Key()] = &serverCfg{
+	h.consumers[*target.Key()] = &serverCfg{
 		server: targetSvr,
 		client: ceClient,
 	}
@@ -287,7 +291,7 @@ func (h *Helper) RenewTarget(ctx context.Context, t *testing.T, targetKey string
 }
 
 // DeleteTarget deletes a target and test resources used by it.
-func (h *Helper) DeleteTarget(ctx context.Context, t *testing.T, targetKey string) {
+func (h *Helper) DeleteTarget(ctx context.Context, t *testing.T, targetKey *config.TargetKey) {
 	t.Helper()
 
 	target, ok := h.Targets.GetTargetByKey(targetKey)
@@ -303,18 +307,18 @@ func (h *Helper) DeleteTarget(ctx context.Context, t *testing.T, targetKey strin
 		t.Fatalf("failed to delete target retry topic: %v", err)
 	}
 
-	if consumer, ok := h.consumers[targetKey]; ok {
+	if consumer, ok := h.consumers[*targetKey]; ok {
 		consumer.server.Close()
-		delete(h.consumers, targetKey)
+		delete(h.consumers, *targetKey)
 	}
 
-	h.Targets.MutateBroker(target.Namespace, target.Broker, func(bm config.BrokerMutation) {
+	h.Targets.MutateBroker(target.Key().ParentKey(), func(bm config.BrokerMutation) {
 		bm.DeleteTargets(target)
 	})
 }
 
 // SendEventToDecoupleQueue sends the given event to the decouple queue of the given broker.
-func (h *Helper) SendEventToDecoupleQueue(ctx context.Context, t *testing.T, brokerKey string, event *event.Event) {
+func (h *Helper) SendEventToDecoupleQueue(ctx context.Context, t *testing.T, brokerKey *config.BrokerKey, event *event.Event) {
 	t.Helper()
 	b, ok := h.Targets.GetBrokerByKey(brokerKey)
 	if !ok {
@@ -328,7 +332,7 @@ func (h *Helper) SendEventToDecoupleQueue(ctx context.Context, t *testing.T, bro
 }
 
 // SendEventToRetryQueue sends the given event to the retry queue of the given target.
-func (h *Helper) SendEventToRetryQueue(ctx context.Context, t *testing.T, targetKey string, event *event.Event) {
+func (h *Helper) SendEventToRetryQueue(ctx context.Context, t *testing.T, targetKey *config.TargetKey, event *event.Event) {
 	t.Helper()
 	target, ok := h.Targets.GetTargetByKey(targetKey)
 	if !ok {
@@ -344,10 +348,10 @@ func (h *Helper) SendEventToRetryQueue(ctx context.Context, t *testing.T, target
 // VerifyNextBrokerIngressEvent verifies the next event the broker ingress receives.
 // If wantEvent is nil, then it means such an event is not expected.
 // This function is blocking and should be invoked in a separate goroutine with context timeout.
-func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T, brokerKey string, wantEvent *event.Event) {
+func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T, brokerKey *config.BrokerKey, wantEvent *event.Event) {
 	t.Helper()
 
-	bIng, ok := h.ingresses[brokerKey]
+	bIng, ok := h.ingresses[*brokerKey]
 	if !ok {
 		t.Fatalf("broker with key %q doesn't exist", brokerKey)
 	}
@@ -376,14 +380,14 @@ func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T,
 // VerifyNextTargetEvent verifies the next event the subscriber receives.
 // If wantEvent is nil, then it means such an event is not expected.
 // This function is blocking and should be invoked in a separate goroutine with context timeout.
-func (h *Helper) VerifyNextTargetEvent(ctx context.Context, t *testing.T, targetKey string, wantEvent *event.Event) {
+func (h *Helper) VerifyNextTargetEvent(ctx context.Context, t *testing.T, targetKey *config.TargetKey, wantEvent *event.Event) {
 	t.Helper()
 	h.VerifyAndRespondNextTargetEvent(ctx, t, targetKey, wantEvent, nil, http.StatusOK, 0)
 }
 
 // VerifyNextTargetEventAndDelayResp verifies the next event the subscriber receives
 // but not respond a success infinitely.
-func (h *Helper) VerifyNextTargetEventAndDelayResp(ctx context.Context, t *testing.T, targetKey string, wantEvent *event.Event, delay time.Duration) {
+func (h *Helper) VerifyNextTargetEventAndDelayResp(ctx context.Context, t *testing.T, targetKey *config.TargetKey, wantEvent *event.Event, delay time.Duration) {
 	t.Helper()
 	h.VerifyAndRespondNextTargetEvent(ctx, t, targetKey, wantEvent, nil, http.StatusOK, delay)
 }
@@ -391,7 +395,7 @@ func (h *Helper) VerifyNextTargetEventAndDelayResp(ctx context.Context, t *testi
 // VerifyAndRespondNextTargetEvent verifies the next event the subscriber receives and replies with the given parameters.
 // If wantEvent is nil, then it means such an event is not expected.
 // This function is blocking and should be invoked in a separate goroutine with context timeout.
-func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing.T, targetKey string, wantEvent, replyEvent *event.Event, statusCode int, delay time.Duration) {
+func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing.T, targetKey *config.TargetKey, wantEvent, replyEvent *event.Event, statusCode int, delay time.Duration) {
 	t.Helper()
 
 	// Subscribers should not receive any event with hops.
@@ -402,7 +406,7 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 		eventutil.DeleteRemainingHops(ctx, wantEventCopy)
 	}
 
-	consumer, ok := h.consumers[targetKey]
+	consumer, ok := h.consumers[*targetKey]
 	if !ok {
 		t.Errorf("target with key %q doesn't exist", targetKey)
 	}
@@ -442,7 +446,7 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 // Calling this function will also ack the next event.
 // If wantEvent is nil, then it means such an event is not expected.
 // This function is blocking and should be invoked in a separate goroutine with context timeout.
-func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, targetKey string, wantEvent *event.Event) {
+func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, targetKey *config.TargetKey, wantEvent *event.Event) {
 	t.Helper()
 	target, ok := h.Targets.GetTargetByKey(targetKey)
 	if !ok {

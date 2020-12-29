@@ -73,7 +73,7 @@ func TestRetryWatchAndSync(t *testing.T) {
 		b := helper.GenerateBroker(ctx, t, "ns")
 		target := helper.GenerateTarget(ctx, t, b.Key(), nil)
 		target.State = config.State_UNKNOWN
-		helper.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+		helper.Targets.MutateBroker(b.Key(), func(bm config.BrokerMutation) {
 			bm.UpsertTargets(target)
 		})
 		signal <- struct{}{}
@@ -143,9 +143,9 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
 
 	expectMetrics := reportertest.NewExpectDelivery()
-	expectMetrics.AddTrigger(t, trigger(t1), wantRetryTags(t1))
-	expectMetrics.AddTrigger(t, trigger(t2), wantRetryTags(t2))
-	expectMetrics.AddTrigger(t, trigger(t3), wantRetryTags(t3))
+	expectMetrics.AddTrigger(t, trigger(t1), wantRetryTags())
+	expectMetrics.AddTrigger(t, trigger(t2), wantRetryTags())
+	expectMetrics.AddTrigger(t, trigger(t3), wantRetryTags())
 
 	signal := make(chan struct{})
 	syncPool, err := InitializeTestRetryPool(helper.Targets, retryPod, retryContainer, helper.PubsubClient)
@@ -271,7 +271,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		// Target t1 and t2 original don't have filter attributes,
 		// update t1 filter attributes, and keep t2 filter attributes nil.
 		t1.FilterAttributes = map[string]string{"subject": "foo"}
-		helper.Targets.MutateBroker(t1.Namespace, t1.Broker, func(bm config.BrokerMutation) {
+		helper.Targets.MutateBroker(t1.Key().ParentKey(), func(bm config.BrokerMutation) {
 			bm.UpsertTargets(t1)
 		})
 
@@ -323,17 +323,17 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 
 func assertRetryHandlers(t *testing.T, p *RetryPool, targets config.Targets) {
 	t.Helper()
-	gotHandlers := make(map[string]bool)
-	wantHandlers := make(map[string]bool)
+	gotHandlers := make(map[config.TargetKey]bool)
+	wantHandlers := make(map[config.TargetKey]bool)
 
-	p.pool.Range(func(key, value interface{}) bool {
-		gotHandlers[key.(string)] = true
+	p.pool.Range(func(key config.TargetKey, _ *retryHandlerCache) bool {
+		gotHandlers[key] = true
 		return true
 	})
 
 	targets.RangeAllTargets(func(t *config.Target) bool {
 		if t.State == config.State_READY {
-			wantHandlers[t.Key()] = true
+			wantHandlers[*t.Key()] = true
 		}
 		return true
 	})
@@ -353,7 +353,7 @@ func genTestEvent(subject, t, id, source string) event.Event {
 	return e
 }
 
-func wantRetryTags(target *config.Target) map[string]string {
+func wantRetryTags() map[string]string {
 	return map[string]string{
 		"filter_type":    "any",
 		"pod_name":       retryPod,
