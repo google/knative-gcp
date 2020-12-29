@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -55,10 +54,13 @@ func (k *BrokerKey) PersistenceString() string {
 func BrokerKeyFromPersistenceString(s string) (*BrokerKey, error) {
 	pieces := strings.Split(s, "/")
 	if len(pieces) != 3 {
-		return nil, errors.New("malformed request path; expect format '/<ns>/<broker>'")
+		return nil, fmt.Errorf("malformed request path; expect format '/<ns>/<broker>', actually %q", s)
 	}
 	// Broker's persistence strings are in the form "/<ns>/<brokerName>".
-	ns, brokerName := pieces[1], pieces[2]
+	blank, ns, brokerName := pieces[0], pieces[1], pieces[2]
+	if blank != "" {
+		return nil, fmt.Errorf("malformed request path; expect format '/<ns>/<broker>', actually %q", s)
+	}
 	if err := validateNamespace(ns); err != nil {
 		return nil, err
 	}
@@ -155,7 +157,8 @@ func KeyFromBroker(b *brokerv1beta1.Broker) *BrokerKey {
 	}
 }
 
-// TestOnlyBrokerKey returns the key of a broker.
+// TestOnlyBrokerKey returns the key of a broker. This method exists to make tests that need a
+// BrokerKey, but do not need an actual Broker, easier to write.
 func TestOnlyBrokerKey(namespace, name string) *BrokerKey {
 	return &BrokerKey{
 		namespace: namespace,
