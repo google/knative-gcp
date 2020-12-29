@@ -326,8 +326,8 @@ func assertRetryHandlers(t *testing.T, p *RetryPool, targets config.Targets) {
 	gotHandlers := make(map[config.TargetKey]bool)
 	wantHandlers := make(map[config.TargetKey]bool)
 
-	p.pool.Range(func(key, value interface{}) bool {
-		gotHandlers[*key.(*config.TargetKey)] = true
+	p.pool.Range(func(key config.TargetKey, _ *retryHandlerCache) bool {
+		gotHandlers[key] = true
 		return true
 	})
 

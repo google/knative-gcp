@@ -41,7 +41,7 @@ import (
 type RetryPool struct {
 	options *Options
 	targets config.ReadonlyTargets
-	pool    sync.Map
+	pool    *syncMapTargetKey
 	// Pubsub client used to pull events from decoupling topics.
 	pubsubClient *pubsub.Client
 	// For initial events delivery. We only need a shared client.
@@ -88,6 +88,7 @@ func NewRetryPool(
 	p := &RetryPool{
 		targets:       targets,
 		options:       options,
+		pool:          &syncMapTargetKey{},
 		pubsubClient:  pubsubClient,
 		deliverClient: deliverClient,
 		statsReporter: statsReporter,
@@ -102,24 +103,24 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 		logging.FromContext(ctx).Error("failed to add tags to context", zap.Error(err))
 	}
 
-	p.pool.Range(func(key, value interface{}) bool {
+	p.pool.Range(func(key config.TargetKey, value *retryHandlerCache) bool {
 		// Each target represents a trigger.
-		if _, ok := p.targets.GetTargetByKey(key.(*config.TargetKey)); !ok {
-			value.(*retryHandlerCache).Stop()
+		if _, ok := p.targets.GetTargetByKey(&key); !ok {
+			value.Stop()
 			p.pool.Delete(key)
 		}
 		return true
 	})
 
 	p.targets.RangeAllTargets(func(t *config.Target) bool {
-		if value, ok := p.pool.Load(t.Key()); ok {
+		if value, ok := p.pool.Load(*t.Key()); ok {
 			// Skip if we don't need to renew the handler.
-			if !value.(*retryHandlerCache).shouldRenew(t) {
+			if !value.shouldRenew(t) {
 				return true
 			}
 			// Stop and clean up the old handler before we start a new one.
-			value.(*retryHandlerCache).Stop()
-			p.pool.Delete(t.Key())
+			value.Stop()
+			p.pool.Delete(*t.Key())
 		}
 
 		// Don't start the handler if the target is not ready.
@@ -166,9 +167,41 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 			}
 		})
 
-		p.pool.Store(t.Key(), hc)
+		p.pool.Store(*t.Key(), hc)
 		return true
 	})
 
 	return nil
+}
+
+// syncMapTargetKey is a typed version of sync.Map.
+type syncMapTargetKey struct {
+	m sync.Map
+}
+
+func (m *syncMapTargetKey) Store(k config.TargetKey, v *retryHandlerCache) {
+	m.m.Store(k, v)
+}
+
+func (m *syncMapTargetKey) Load(k config.TargetKey) (*retryHandlerCache, bool) {
+	v, ok := m.m.Load(k)
+	if v == nil {
+		return nil, ok
+	}
+	return v.(*retryHandlerCache), ok
+}
+
+func (m *syncMapTargetKey) Delete(k config.TargetKey) {
+	m.m.Delete(k)
+}
+
+func (m *syncMapTargetKey) Range(f func(key config.TargetKey, value *retryHandlerCache) bool) {
+	wrapped := func(key interface{}, value interface{}) bool {
+		var wrappedValue *retryHandlerCache
+		if value != nil {
+			wrappedValue = value.(*retryHandlerCache)
+		}
+		return f(key.(config.TargetKey), wrappedValue)
+	}
+	m.m.Range(wrapped)
 }

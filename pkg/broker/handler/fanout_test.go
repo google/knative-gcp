@@ -400,8 +400,8 @@ func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 	gotHandlers := make(map[config.BrokerKey]bool)
 	wantHandlers := make(map[config.BrokerKey]bool)
 
-	p.pool.Range(func(key, value interface{}) bool {
-		gotHandlers[*key.(*config.BrokerKey)] = true
+	p.pool.Range(func(key config.BrokerKey, _ *fanoutHandlerCache) bool {
+		gotHandlers[key] = true
 		return true
 	})
 
