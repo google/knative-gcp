@@ -146,11 +146,10 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 
 // deliver delivers msg to target and sends the target's reply to the broker ingress.
 func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *config.GcpCellAddressable, msg binding.Message, hops int32) error {
-	respMsg := msg
 	if target.Address != "" {
 		// Channels can have a reply address without a subscriber.
 		var err error
-		respMsg, err = p.deliverToSubscriber(ctx, target, msg, hops)
+		msg, err = p.deliverToSubscriber(ctx, target, msg, hops)
 		if err != nil {
 			return fmt.Errorf("sending event to subscriber: %w", err)
 		}
@@ -175,13 +174,12 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 		transformers = append(transformers, eventutil.SetRemainingHopsTransformer(hops))
 	}
 
-	replyResp, err := p.sendMsg(ctx, replyAddress, respMsg, transformers...)
+	replyResp, err := p.sendMsg(ctx, replyAddress, msg, transformers...)
 	if err != nil {
-		//return err
 		return fmt.Errorf("sending event to reply: %w", err)
 	}
 	if err := replyResp.Body.Close(); err != nil {
-		logging.FromContext(ctx).Warn("failed to close reply response body", zap.Error(err))
+		logging.FromContext(ctx).Warn("Failed to close reply response body", zap.Error(err))
 	}
 	return nil
 }
@@ -280,7 +278,11 @@ func (p *Processor) sendMsg(ctx context.Context, address string, msg binding.Mes
 	if err := cehttp.WriteRequest(ctx, msg, req, transformers...); err != nil {
 		return nil, err
 	}
-	return p.DeliverClient.Do(req)
+	r, err := p.DeliverClient.Do(req)
+	if err != nil {
+		logging.FromContext(ctx).Error("Error sending message", zap.String("address", address), zap.Error(err))
+	}
+	return r, err
 }
 
 func (p *Processor) sendToRetryTopic(ctx context.Context, target *config.Target, event *event.Event) error {
