@@ -25,6 +25,12 @@ enum State {
   READY = 1;
 }
 
+// CellTenantType is the type of the Cell Tenant. Currently only Brokers.
+enum CellTenantType {
+  UNKNOWN_CELL_TENANT_TYPE = 0;
+  BROKER = 1;
+}
+
 // A pubsub "queue".
 message Queue {
   string topic = 1;
@@ -33,7 +39,10 @@ message Queue {
 }
 
 // Represents a broker.
-message Broker {
+message CellTenant {
+  // The type of this CellTenant (e.g. Broker, Channel, etc.).
+  CellTenantType type = 8;
+
   // The id of the object. E.g. UID of the resource.
   string id = 1;
 
@@ -43,21 +52,22 @@ message Broker {
   // The namespace of the object.
   string namespace = 3;
 
-  // The broker address.
+  // The object's subscriber's address.
   // Will we have more than one address?
   string address = 4;
 
-  // The decouple queue for the broker.
+  // The decouple queue for the cell tenant.
   Queue decouple_queue = 5;
 
-  // All targets of the broker.
+  // All targets of the cell tenant. Key is defined by the CellTenant's type:
+  // - Broker: Key is the name of the Trigger.
   map<string, Target> targets = 6;
 
-  // The broker state.
+  // The CellTenant's state.
   State state = 7;
 }
 
-// Target defines the config schema for a broker subscription target.
+// Target defines the config schema for a CellTenant's subscription's target.
 message Target {
   // The id of the object. E.g. UID of the resource.
   string id = 1;
@@ -68,8 +78,11 @@ message Target {
   // The namespace of the object.
   string namespace = 3;
 
-  // The broker name that the trigger is referencing.
-  string broker = 4;
+  // The name of the CellTenant that this Target is associated with.
+  string cell_tenant_name = 4;
+
+  // The type of the CellTenant that this Target is associated with.
+  CellTenantType cell_tenant_type = 9;
 
   // The resolved subscriber URI of the target.
   string address = 5;
@@ -86,6 +99,7 @@ message Target {
 
 // TargetsConfig is the collection of all Targets.
 message TargetsConfig {
-  // Keybed by broker namespace/name.
-  map<string, Broker> brokers = 1;
+  // Keyed by the CellTenant's PersistenceString().
+  // Broker: "<ns>/<brokerName>"
+  map<string, CellTenant> cell_tenants = 1;
 }
