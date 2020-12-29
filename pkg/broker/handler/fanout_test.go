@@ -72,7 +72,7 @@ func TestFanoutWatchAndSync(t *testing.T) {
 
 	t.Run("no handler created for not-ready broker", func(t *testing.T) {
 		b := helper.GenerateBroker(ctx, t, "ns")
-		helper.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+		helper.Targets.MutateBroker(b.Key(), func(bm config.BrokerMutation) {
 			bm.SetState(config.State_UNKNOWN)
 		})
 		signal <- struct{}{}
@@ -138,9 +138,9 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	t2 := helper.GenerateTarget(ctx, t, b1.Key(), map[string]string{"subject": "foo"})
 	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
 	expectMetrics := reportertest.NewExpectDelivery()
-	expectMetrics.AddTrigger(t, trigger(t1), wantTags(t1))
-	expectMetrics.AddTrigger(t, trigger(t2), wantTags(t2))
-	expectMetrics.AddTrigger(t, trigger(t3), wantTags(t3))
+	expectMetrics.AddTrigger(t, trigger(t1), wantTags())
+	expectMetrics.AddTrigger(t, trigger(t2), wantTags())
+	expectMetrics.AddTrigger(t, trigger(t3), wantTags())
 
 	signal := make(chan struct{})
 	syncPool, err := InitializeTestFanoutPool(
@@ -397,17 +397,17 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 
 func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 	t.Helper()
-	gotHandlers := make(map[string]bool)
-	wantHandlers := make(map[string]bool)
+	gotHandlers := make(map[config.BrokerKey]bool)
+	wantHandlers := make(map[config.BrokerKey]bool)
 
 	p.pool.Range(func(key, value interface{}) bool {
-		gotHandlers[key.(string)] = true
+		gotHandlers[*key.(*config.BrokerKey)] = true
 		return true
 	})
 
 	targets.RangeBrokers(func(b *config.Broker) bool {
 		if b.State == config.State_READY {
-			wantHandlers[b.Key()] = true
+			wantHandlers[*b.Key()] = true
 		}
 		return true
 	})
@@ -417,7 +417,7 @@ func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 	}
 }
 
-func wantTags(target *config.Target) map[string]string {
+func wantTags() map[string]string {
 	return map[string]string{
 		"filter_type":    "any",
 		"pod_name":       fanoutPod,

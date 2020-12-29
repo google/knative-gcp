@@ -32,6 +32,22 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
 
+var (
+	// config.TargetKey is not inherently diffable, because it has unexported fields. In addition,
+	// while we don't care about the order in which the keys are stored, the diff needs a consistent
+	// ordering. So, to make this consistently diffable, we first change from config.TargetKey to
+	// its string equivalent. Then we sort those strings. This will be done for all
+	// []*config.TargetKey variables.
+	diffTargetKeySlice = cmp.Transformer("SortedToString", func(in []*config.TargetKey) []string {
+		out := make([]string, len(in))
+		for i := range in {
+			out[i] = in[i].String()
+		}
+		sort.Strings(out)
+		return out
+	})
+)
+
 func TestInvalidContext(t *testing.T) {
 	p := &Processor{}
 	e := event.New()
@@ -46,15 +62,13 @@ func TestFanoutSuccess(t *testing.T) {
 	ns, broker := "ns", "broker"
 	bk := config.TestOnlyBrokerKey(ns, broker)
 	wantNum := 4
-	testTargets := newTestTargets(ns, broker, wantNum)
-	wantTargets := make([]string, 0, wantNum)
+	testTargets := newTestTargets(bk, wantNum)
+	wantTargets := make([]*config.TargetKey, 0, wantNum)
 	testTargets.RangeAllTargets(func(t *config.Target) bool {
 		wantTargets = append(wantTargets, t.Key())
 		return true
 	})
-	sort.Strings(wantTargets)
-	var gotTargets []string
-
+	var gotTargets []*config.TargetKey
 	next := &processors.FakeProcessor{
 		PrevEventsCh: ch,
 		InterceptFunc: func(ctx context.Context, e *event.Event) *event.Event {
@@ -94,8 +108,7 @@ func TestFanoutSuccess(t *testing.T) {
 	close(ch)
 
 	// Make sure the processor sets the broker and targets in the context.
-	sort.Strings(gotTargets)
-	if diff := cmp.Diff(wantTargets, gotTargets); diff != "" {
+	if diff := cmp.Diff(wantTargets, gotTargets, diffTargetKeySlice); diff != "" {
 		t.Errorf("got target keys (-want,+got): %v", diff)
 	}
 }
@@ -105,7 +118,7 @@ func TestFanoutPartialFailure(t *testing.T) {
 	ns, broker := "ns", "broker"
 	bk := config.TestOnlyBrokerKey(ns, broker)
 	wantNum := 4
-	testTargets := newTestTargets(ns, broker, wantNum)
+	testTargets := newTestTargets(bk, wantNum)
 
 	next := &processors.FakeProcessor{
 		PrevEventsCh: ch,
@@ -142,9 +155,9 @@ func TestFanoutPartialFailure(t *testing.T) {
 	close(ch)
 }
 
-func newTestTargets(ns, broker string, num int) config.ReadonlyTargets {
+func newTestTargets(key *config.BrokerKey, num int) config.ReadonlyTargets {
 	targets := memory.NewEmptyTargets()
-	targets.MutateBroker(ns, broker, func(bm config.BrokerMutation) {
+	targets.MutateBroker(key, func(bm config.BrokerMutation) {
 		for i := 0; i < num; i++ {
 			bm.UpsertTargets(&config.Target{
 				Name: fmt.Sprintf("target-%d", i),

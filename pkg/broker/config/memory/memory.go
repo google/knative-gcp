@@ -101,12 +101,12 @@ func NewTargets(pb *config.TargetsConfig) config.Targets {
 // MutateBroker mutates a broker by namespace and name.
 // If the broker doesn't exist, it will be added (unless Delete() is called).
 // This function is thread-safe.
-func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.BrokerMutation)) {
+func (m *memoryTargets) MutateBroker(key *config.BrokerKey, mutate func(config.BrokerMutation)) {
 	// Sync writes.
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
-	b := &config.Broker{Name: name, Namespace: namespace}
+	b := key.CreateEmptyBroker()
 	var newVal *config.TargetsConfig
 	val := m.Load()
 	if val != nil {
@@ -118,7 +118,7 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 	}
 
 	if newVal.Brokers != nil {
-		if existing, ok := newVal.Brokers[config.TestOnlyBrokerKey(namespace, name)]; ok {
+		if existing, ok := newVal.Brokers[key.PersistenceString()]; ok {
 			b = existing
 		}
 	}
@@ -128,12 +128,12 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 	mutate(mutation)
 
 	if mutation.delete {
-		delete(newVal.Brokers, config.TestOnlyBrokerKey(namespace, name))
+		delete(newVal.Brokers, key.PersistenceString())
 	} else {
 		if newVal.Brokers == nil {
 			newVal.Brokers = make(map[string]*config.Broker)
 		}
-		newVal.Brokers[config.TestOnlyBrokerKey(namespace, name)] = mutation.b
+		newVal.Brokers[key.PersistenceString()] = mutation.b
 	}
 
 	// Update the atomic value to be the copy.

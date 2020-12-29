@@ -19,6 +19,8 @@ package context
 import (
 	"context"
 	"testing"
+
+	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
 func TestTargetKey(t *testing.T) {
@@ -26,8 +28,13 @@ func TestTargetKey(t *testing.T) {
 	if err != ErrTargetKeyNotPresent {
 		t.Errorf("error from GetTargetKey got=%v, want=%v", err, ErrTargetKeyNotPresent)
 	}
-
-	wantTarget := "my-target"
+	wantTarget := (&config.Target{
+		Id:        "456",
+		Name:      "my-target",
+		Namespace: "namespace",
+		Broker:    "broker-name",
+		Address:   "baz",
+	}).Key()
 	ctx := WithTargetKey(context.Background(), wantTarget)
 	gotTarget, err := GetTargetKey(ctx)
 	if gotTarget != wantTarget {

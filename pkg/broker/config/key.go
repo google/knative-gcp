@@ -17,11 +17,7 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
-
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-
-	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 // BrokerKey uniquely identifies a single Broker, at a given point in time.
@@ -30,38 +26,23 @@ type BrokerKey struct {
 	name      string
 }
 
-// Key returns the BrokerKey for this Broker.
-func (x *Broker) Key() BrokerKey {
-	return BrokerKey{
-		namespace: x.Namespace,
-		name:      x.Name,
-	}
+// PersistenceString is the string that is persisted as the key for this Broker in the protobuf. It
+// is stable and can only change if all existing usage locations are made backwards compatible,
+// supporting _both_ the old and the new format, for at least one release.
+func (k *BrokerKey) PersistenceString() string {
+	return k.namespace + "/" + k.name
 }
 
-// KeyFromBroker creates a BrokerKey from a K8s Broker object.
-func KeyFromBroker(b *brokerv1beta1.Broker) BrokerKey {
-	return BrokerKey{
-		namespace: b.Namespace,
-		name:      b.Name,
-	}
+// String creates a human readable version of this key. It is for debug purposes only. It is free to
+// change at any time.
+func (k *BrokerKey) String() string {
+	// Note that this is explicitly different than the PersistenceString, so that we don't
+	// accidentally use String(), rather than PersistenceString().
+	return k.namespace + "//" + k.name
 }
 
-func validateNamespace(ns string) error {
-	errs := validation.IsDNS1123Label(ns)
-	if len(errs) == 0 {
-		return nil
-	}
-	return fmt.Errorf("invalid namespace %q, %v", ns, errs)
-}
-
-func validateName(name string) error {
-	errs := validation.IsDNS1123Label(name)
-	if len(errs) == 0 {
-		return nil
-	}
-	return fmt.Errorf("invalid name %q, %v", name, errs)
-}
-
+// CreateEmptyBroker creates an empty Broker that corresponds to this BrokerKey. It is empty except
+// for the portions known about by the BrokerKey.
 func (k *BrokerKey) CreateEmptyBroker() *Broker {
 	return &Broker{
 		Namespace: k.namespace,
@@ -69,7 +50,55 @@ func (k *BrokerKey) CreateEmptyBroker() *Broker {
 	}
 }
 
+// Key returns the BrokerKey for this Broker.
+func (x *Broker) Key() *BrokerKey {
+	return &BrokerKey{
+		namespace: x.Namespace,
+		name:      x.Name,
+	}
+}
+
+// TargetKey uniquely identifies a single Target, at a given point in time.
+type TargetKey struct {
+	brokerKey BrokerKey
+	name      string
+}
+
+func (k *TargetKey) ParentKey() *BrokerKey {
+	return &k.brokerKey
+}
+
+// String creates a human readable version of this key. It is for debug purposes only. It is free to
+// change at any time.
+func (k *TargetKey) String() string {
+	// Note that this is explicitly different than the PersistenceString, so that we don't
+	// accidentally use String(), rather than PersistenceString().
+	return k.brokerKey.String() + "//" + k.name
+}
+
+// Key returns the TargetKey for this Target.
+func (x *Target) Key() *TargetKey {
+	return &TargetKey{
+		brokerKey: BrokerKey{
+			namespace: x.Namespace,
+			name:      x.Broker,
+		},
+		name: x.Name,
+	}
+}
+
+// KeyFromBroker creates a BrokerKey from a K8s Broker object.
+func KeyFromBroker(b *brokerv1beta1.Broker) *BrokerKey {
+	return &BrokerKey{
+		namespace: b.Namespace,
+		name:      b.Name,
+	}
+}
+
 // TestOnlyBrokerKey returns the key of a broker.
-func TestOnlyBrokerKey(namespace, name string) string {
-	return namespace + "/" + name
+func TestOnlyBrokerKey(namespace, name string) *BrokerKey {
+	return &BrokerKey{
+		namespace: namespace,
+		name:      name,
+	}
 }

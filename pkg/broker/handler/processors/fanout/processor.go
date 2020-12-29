@@ -33,7 +33,7 @@ import (
 )
 
 type fanoutResult struct {
-	targetKey string
+	targetKey *config.TargetKey
 	err       error
 }
 
@@ -60,7 +60,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	broker, ok := p.Targets.GetBrokerByKey(bk)
 	if !ok {
 		// If the broker no longer exists, then there is nothing to process.
-		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.String("broker", bk))
+		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.Stringer("broker", bk))
 		return nil
 	}
 
@@ -119,7 +119,7 @@ func (p *Processor) mergeResults(ctx context.Context, resChs []<-chan *fanoutRes
 	count := func(c <-chan *fanoutResult) {
 		for fr := range c {
 			if fr.err != nil {
-				logging.FromContext(ctx).Error("error processing event for fanout target", zap.String("target", fr.targetKey))
+				logging.FromContext(ctx).Error("error processing event for fanout target", zap.Stringer("target", fr.targetKey))
 				atomic.AddInt32(&errs, 1)
 			} else {
 				atomic.AddInt32(&passes, 1)
@@ -138,6 +138,6 @@ func (p *Processor) mergeResults(ctx context.Context, resChs []<-chan *fanoutRes
 		return fmt.Errorf("event fanout passed %d targets, failed %d targets", passes, errs)
 	}
 
-	logging.FromContext(ctx).Debug("event fanout successful", zap.String("broker", bk), zap.Int32("count", passes))
+	logging.FromContext(ctx).Debug("event fanout successful", zap.Stringer("broker", bk), zap.Int32("count", passes))
 	return nil
 }

@@ -319,7 +319,7 @@ func newTestTargets(filter map[string]string) (context.Context, config.Targets) 
 		FilterAttributes: filter,
 	}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+	testTargets.MutateBroker(testTarget.Key().ParentKey(), func(bm config.BrokerMutation) {
 		bm.UpsertTargets(testTarget)
 	})
 	ctx := handlerctx.WithTargetKey(context.Background(), testTarget.Key())

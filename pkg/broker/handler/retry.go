@@ -104,7 +104,7 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 
 	p.pool.Range(func(key, value interface{}) bool {
 		// Each target represents a trigger.
-		if _, ok := p.targets.GetTargetByKey(key.(string)); !ok {
+		if _, ok := p.targets.GetTargetByKey(key.(*config.TargetKey)); !ok {
 			value.(*retryHandlerCache).Stop()
 			p.pool.Delete(key)
 		}
@@ -160,9 +160,9 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 		hc.Start(ctx, func(err error) {
 			// We will anyway get an error because of https://github.com/cloudevents/sdk-go/issues/470
 			if err != nil {
-				logging.FromContext(ctx).Error("handler for trigger has stopped with error", zap.String("trigger", t.Key()), zap.Error(err))
+				logging.FromContext(ctx).Error("handler for trigger has stopped with error", zap.Stringer("trigger", t.Key()), zap.Error(err))
 			} else {
-				logging.FromContext(ctx).Info("handler for trigger has stopped", zap.String("trigger", t.Key()))
+				logging.FromContext(ctx).Info("handler for trigger has stopped", zap.Stringer("trigger", t.Key()))
 			}
 		})
 
