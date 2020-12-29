@@ -146,10 +146,12 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 
 // deliver delivers msg to target and sends the target's reply to the broker ingress.
 func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *config.GcpCellAddressable, msg binding.Message, hops int32) error {
+	// Channels can have a reply address without a subscriber. So default the replyMsg to the
+	// original message. If there is a subscriber, then replyMsg is overwritten.
+	replyMsg := msg
 	if target.Address != "" {
-		// Channels can have a reply address without a subscriber.
 		var err error
-		msg, err = p.deliverToSubscriber(ctx, target, msg, hops)
+		replyMsg, err = p.deliverToSubscriber(ctx, target, msg, hops)
 		if err != nil {
 			return fmt.Errorf("sending event to subscriber: %w", err)
 		}
@@ -174,7 +176,7 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 		transformers = append(transformers, eventutil.SetRemainingHopsTransformer(hops))
 	}
 
-	replyResp, err := p.sendMsg(ctx, replyAddress, msg, transformers...)
+	replyResp, err := p.sendMsg(ctx, replyAddress, replyMsg, transformers...)
 	if err != nil {
 		return fmt.Errorf("sending event to reply: %w", err)
 	}
