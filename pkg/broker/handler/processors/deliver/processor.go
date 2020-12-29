@@ -146,8 +146,50 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 
 // deliver delivers msg to target and sends the target's reply to the broker ingress.
 func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *config.GcpCellAddressable, msg binding.Message, hops int32) error {
+	respMsg := msg
+	if target.Address != "" {
+		// Channels can have a reply address without a subscriber.
+		var err error
+		respMsg, err = p.deliverToSubscriber(ctx, target, msg, hops)
+		if err != nil {
+			return fmt.Errorf("sending event to subscriber: %w", err)
+		}
+	}
+
+	replyAddress := target.ReplyAddress
+	if replyAddress == "" && target.GcpCellAddressableType == config.GcpCellAddressableType_BROKER {
+		// During the switch over from Broker only to all GCP Cell Addressables, there will be a
+		// short period of time for the reconciler to write in all the reply_addresses into the
+		// config. So, we will add a special case for it here.
+		// TODO Remove after 0.22.0.
+		replyAddress = broker.Address
+	}
+	if replyAddress == "" {
+		return nil
+	}
+
+	var transformers []binding.Transformer
+	if target.GcpCellAddressableType == config.GcpCellAddressableType_BROKER {
+		// Hops only exist for the Broker. Nothing else uses them.
+		// Attach the previous hops for the reply.
+		transformers = append(transformers, eventutil.SetRemainingHopsTransformer(hops))
+	}
+
+	replyResp, err := p.sendMsg(ctx, replyAddress, respMsg, transformers...)
+	if err != nil {
+		//return err
+		return fmt.Errorf("sending event to reply: %w", err)
+	}
+	if err := replyResp.Body.Close(); err != nil {
+		logging.FromContext(ctx).Warn("failed to close reply response body", zap.Error(err))
+	}
+	return nil
+}
+
+func (p *Processor) deliverToSubscriber(ctx context.Context, target *config.Target, msg binding.Message, hops int32) (*cehttp.Message, error) {
 	startTime := time.Now()
 	// Remove hops from forwarded event.
+
 	resp, err := p.sendMsg(ctx, target.Address, msg, transformer.DeleteExtension(eventutil.HopsAttribute))
 	if err != nil {
 		var result *url.Error
@@ -155,7 +197,7 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 			// If the delivery is cancelled because of timeout, report event dispatch time without resp status code.
 			p.StatsReporter.ReportEventDispatchTime(ctx, time.Since(startTime))
 		}
-		return err
+		return nil, err
 	}
 
 	defer func() {
@@ -173,7 +215,7 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	p.StatsReporter.ReportEventDispatchTime(cctx, time.Since(startTime))
 
 	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("event delivery failed: HTTP status code %d", resp.StatusCode)
+		return nil, fmt.Errorf("event delivery failed: HTTP status code %d", resp.StatusCode)
 	}
 
 	respMsg := cehttp.NewMessageFromHttpResponse(resp)
@@ -188,10 +230,10 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 		n, _ := respMsg.BodyReader.Read(body)
 		respMsg.BodyReader.Close()
 		if n != 0 {
-			return errors.New("Received a malformed event in reply")
+			return nil, errors.New("received a malformed event in reply")
 		}
 		// No reply.
-		return nil
+		return respMsg, nil
 	}
 
 	if span := trace.FromContext(ctx); span.IsRecordingEvents() {
@@ -203,11 +245,12 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	if target.GcpCellAddressableType == config.GcpCellAddressableType_BROKER && hops <= 0 {
 		e, err := binding.ToEvent(ctx, respMsg)
 		if err != nil {
-			logging.FromContext(ctx).Error("failed to convert response message to event",
+			logging.FromContext(ctx).Error(
+				"failed to convert response message to event, hops already exhausted",
 				zap.Error(err),
 				zap.Any("response", respMsg),
 			)
-			return nil
+			return nil, nil
 		}
 		logging.FromContext(ctx).Warn("event has exhausted allowed hops: dropping reply",
 			zap.String("target", target.Name),
@@ -223,35 +266,10 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 				"Event reply dropped due to hop limit",
 			)
 		}
-		return nil
+		return nil, nil
 	}
 
-	var transformers []binding.Transformer
-	if target.GcpCellAddressableType == config.GcpCellAddressableType_BROKER {
-		// Hops only exist for the Broker. Nothing else uses them.
-		// Attach the previous hops for the reply.
-		transformers = append(transformers, eventutil.SetRemainingHopsTransformer(hops))
-	}
-
-	replyAddress := target.ReplyAddress
-	if replyAddress == "" && target.GcpCellAddressableType == config.GcpCellAddressableType_BROKER {
-		// During the switch over from Broker only to all GCP Cell Addressables, there will be a
-		// short period of time for the reconciler to write in all the reply_addresses into the
-		// config. So, we will add a special case for it here.
-		// TODO Remove after 0.22.0.
-		replyAddress = broker.Address
-	}
-	if replyAddress == "" {
-		return nil
-	}
-	replyResp, err := p.sendMsg(ctx, replyAddress, respMsg, transformers...)
-	if err != nil {
-		return err
-	}
-	if err := replyResp.Body.Close(); err != nil {
-		logging.FromContext(ctx).Warn("failed to close reply response body", zap.Error(err))
-	}
-	return nil
+	return respMsg, err
 }
 
 func (p *Processor) sendMsg(ctx context.Context, address string, msg binding.Message, transformers ...binding.Transformer) (*http.Response, error) {
