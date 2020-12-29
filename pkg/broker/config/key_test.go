@@ -16,7 +16,9 @@ limitations under the License.
 
 package config
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestBrokerKeyPersistenceString(t *testing.T) {
 	testCases := map[string]struct {
@@ -39,6 +41,62 @@ func TestBrokerKeyPersistenceString(t *testing.T) {
 			}
 			if got == tc.key.String() {
 				t.Fatalf("Key's PersistenceString() and String() are equal, they should differ (see comment in String()): %q", got)
+			}
+		})
+	}
+}
+
+func TestBrokerKeyFromPersistenceString(t *testing.T) {
+	testCases := map[string]struct {
+		s       string
+		want    *BrokerKey
+		wantErr bool
+	}{
+		"empty": {
+			s:       "",
+			wantErr: true,
+		},
+		"too short": {
+			s:       "/foo",
+			wantErr: true,
+		},
+		"too long": {
+			s:       "/foo/bar/baz",
+			wantErr: true,
+		},
+		"no leading slash": {
+			s:       "foo/bar/baz",
+			wantErr: true,
+		},
+		"invalid namespace": {
+			s:       "/_foo/bar",
+			wantErr: true,
+		},
+		"invalid name": {
+			s:       "/foo/_bar",
+			wantErr: true,
+		},
+		"valid": {
+			s: "/my-ns/my-name",
+			want: &BrokerKey{
+				namespace: "my-ns",
+				name:      "my-name",
+			},
+		},
+	}
+
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			got, err := BrokerKeyFromPersistenceString(tc.s)
+			if errIsNil := err == nil; tc.wantErr == errIsNil {
+				t.Errorf("Unexpected error. Wanted %v, Got %v", tc.wantErr, err)
+				return
+			}
+			if wantNil, gotNil := tc.want == nil, got == nil; wantNil != gotNil {
+				t.Errorf("Unexpected BrokerKey. Wanted %v, Got %v", tc.want, got)
+			}
+			if got != nil && *got != *tc.want {
+				t.Errorf("Unexpected BrokerKey. Wanted %v, Got %v", tc.want, got)
 			}
 		})
 	}
