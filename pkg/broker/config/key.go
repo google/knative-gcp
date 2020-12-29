@@ -17,20 +17,24 @@ limitations under the License.
 package config
 
 import (
+	"errors"
+	"fmt"
+	"strings"
+
+	"go.opencensus.io/trace"
+
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"go.opencensus.io/resource"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
+	kntracing "knative.dev/eventing/pkg/tracing"
+	"knative.dev/pkg/metrics/metricskey"
 )
 
 // BrokerKey uniquely identifies a single Broker, at a given point in time.
 type BrokerKey struct {
 	namespace string
 	name      string
-}
-
-// PersistenceString is the string that is persisted as the key for this Broker in the protobuf. It
-// is stable and can only change if all existing usage locations are made backwards compatible,
-// supporting _both_ the old and the new format, for at least one release.
-func (k *BrokerKey) PersistenceString() string {
-	return k.namespace + "/" + k.name
 }
 
 // String creates a human readable version of this key. It is for debug purposes only. It is free to
@@ -41,10 +45,65 @@ func (k *BrokerKey) String() string {
 	return k.namespace + "//" + k.name
 }
 
+// PersistenceString is the string that is persisted as the key for this Broker in the protobuf. It
+// is stable and can only change if all existing usage locations are made backwards compatible,
+// supporting _both_ the old and the new format, for at least one release.
+func (k *BrokerKey) PersistenceString() string {
+	return k.namespace + "/" + k.name
+}
+
+func BrokerKeyFromPersistenceString(s string) (*BrokerKey, error) {
+	pieces := strings.Split(s, "/")
+	if len(pieces) != 3 {
+		return nil, errors.New("malformed request path; expect format '/<ns>/<broker>'")
+	}
+	// Broker's persistence strings are in the form "/<ns>/<brokerName>".
+	ns, brokerName := pieces[1], pieces[2]
+	if err := validateNamespace(ns); err != nil {
+		return nil, err
+	}
+	if err := validateBrokerName(brokerName); err != nil {
+		return nil, err
+	}
+	return &BrokerKey{
+		namespace: ns,
+		name:      brokerName,
+	}, nil
+}
+
+// MetricsResource generates the Resource object that metrics will be associated with.
+func (k *BrokerKey) MetricsResource() resource.Resource {
+	return resource.Resource{
+		Type: metricskey.ResourceTypeKnativeBroker,
+		Labels: map[string]string{
+			metricskey.LabelNamespaceName: k.namespace,
+			metricskey.LabelBrokerName:    k.name,
+		},
+	}
+}
+
 // CreateEmptyBroker creates an empty Broker that corresponds to this BrokerKey. It is empty except
 // for the portions known about by the BrokerKey.
 func (k *BrokerKey) CreateEmptyBroker() *Broker {
 	return &Broker{
+		Namespace: k.namespace,
+		Name:      k.name,
+	}
+}
+
+// SpanMessagingDestination is the Messaging Destination of requests sent to this BrokerKey.
+func (k *BrokerKey) SpanMessagingDestination() string {
+	return kntracing.BrokerMessagingDestination(k.namespacedName())
+}
+
+// SpanMessagingDestinationAttribute is the Messaging Destination attribute that should be attached
+// to the tracing Span.
+func (k *BrokerKey) SpanMessagingDestinationAttribute() trace.Attribute {
+	return kntracing.BrokerMessagingDestinationAttribute(k.namespacedName())
+}
+
+func (k *BrokerKey) namespacedName() types.NamespacedName {
+	return types.NamespacedName{
 		Namespace: k.namespace,
 		Name:      k.name,
 	}
@@ -102,4 +161,22 @@ func TestOnlyBrokerKey(namespace, name string) *BrokerKey {
 		namespace: namespace,
 		name:      name,
 	}
+}
+
+// validateNamespace validates that the given string is a valid K8s namespace.
+func validateNamespace(ns string) error {
+	errs := validation.IsDNS1123Label(ns)
+	if len(errs) == 0 {
+		return nil
+	}
+	return fmt.Errorf("invalid namespace %q, %v", ns, errs)
+}
+
+// validateBrokerName validates that the given string is a valid name for a Broker in K8s.
+func validateBrokerName(name string) error {
+	errs := validation.IsDNS1123Label(name)
+	if len(errs) == 0 {
+		return nil
+	}
+	return fmt.Errorf("invalid name %q, %v", name, errs)
 }
