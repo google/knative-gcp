@@ -47,6 +47,7 @@ import (
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic/resources"
@@ -85,13 +86,12 @@ type Reconciler struct {
 	// createClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
 	// This is needed so that we can inject a mock client for UTs purposes.
 	createClientFn reconcilerutilspubsub.CreateFn
+	// clusterRegion is the region where GKE is running
+	clusterRegion string
 }
 
 // Check that our Reconciler implements Interface.
 var _ topicreconciler.Interface = (*Reconciler)(nil)
-
-// clusterRegionGetter is a function that can get the cluster region
-var clusterRegionGetter = utils.NewClusterRegionGetter()
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1.Topic) reconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("topic", topic)))
@@ -156,6 +156,12 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1.Topic) error 
 	}
 	defer client.Close()
 
+	r.clusterRegion, err = utils.ClusterRegion(r.clusterRegion, metadataClient.NewDefaultMetadataClient)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to get cluster region: ", zap.Error(err))
+		return err
+	}
+
 	t := client.Topic(topic.Spec.Topic)
 	exists, err := t.Exists(ctx)
 	if err != nil {
@@ -170,9 +176,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1.Topic) error 
 		} else {
 			topicConfig := &pubsub.TopicConfig{}
 			if r.dataresidencyStore != nil {
-				if updated, err := r.dataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, clusterRegionGetter); err != nil {
-					logging.FromContext(ctx).Desugar().Error("Failed to update topic config: ", zap.Error(err))
-				} else if updated {
+				if r.dataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, r.clusterRegion) {
 					logging.FromContext(ctx).Desugar().Debug("Updated Topic Config AllowedPersistenceRegions for topic reconciler", zap.Any("topicConfig", *topicConfig))
 				}
 			}

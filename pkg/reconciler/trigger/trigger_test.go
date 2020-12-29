@@ -51,11 +51,12 @@ import (
 )
 
 const (
-	testNS      = "testnamespace"
-	triggerName = "test-trigger"
-	brokerName  = "test-broker"
-	testUID     = "abc123"
-	testProject = "test-project-id"
+	testNS            = "testnamespace"
+	triggerName       = "test-trigger"
+	brokerName        = "test-broker"
+	testUID           = "abc123"
+	testProject       = "test-project-id"
+	testClusterRegion = "us-east1"
 
 	subscriberURI     = "http://example.com/subscriber/"
 	subscriberKind    = "Service"
@@ -701,6 +702,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			projectID:          testProject,
 			pubsubClient:       testPSClient,
 			dataresidencyStore: drStore,
+			clusterRegion:      testClusterRegion,
 		}
 
 		return triggerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetTriggerLister(), r.Recorder, r, withAgentAndFinalizer(nil))

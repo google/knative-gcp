@@ -17,10 +17,7 @@ limitations under the License.
 package dataresidency
 
 import (
-	"fmt"
-
 	"cloud.google.com/go/pubsub"
-	"github.com/google/knative-gcp/pkg/utils"
 )
 
 // Defaults includes the default values to be populated by the Webhook.
@@ -60,28 +57,27 @@ func (d *Defaults) Global() bool {
 
 // ComputeAllowedPersistenceRegions computes the final message storage policy in
 // topicConfig. Return true if the topicConfig is updated.
-func (d *Defaults) ComputeAllowedPersistenceRegions(topicConfig *pubsub.TopicConfig, clusterRegionGetter utils.ClusterRegionGetter) (bool, error) {
+func (d *Defaults) ComputeAllowedPersistenceRegions(topicConfig *pubsub.TopicConfig, clusterRegion string) bool {
 	if topicConfig.MessageStoragePolicy.AllowedPersistenceRegions != nil {
 		// Don't try to change anything if it is not empty
-		return false, fmt.Errorf("topic config is unexpectedly set, please check the logic again")
+		return false
 	}
 	if d.Global() {
 		// Not setting means same as Org Policy
-		return false, nil
+		return false
 	}
 	// We can do subset of both in the future, but for now, we just overwrite the
 	// configuration as the relationship between region and zones are not clear to handle,
 	// eg. us-east1 vs us-east1-a. Important note: setting the AllowedPersistenceRegions
 	// to empty string slice is an error, should set it to nil for all regions.
 	allowedRegions := d.AllowedPersistenceRegions()
-	if allowedRegions == nil || len(allowedRegions) == 0 {
-		region, err := clusterRegionGetter()
-		if err != nil {
-			return false, err
-		}
-		allowedRegions = []string{region}
+	// overwrite empty allowedRegions to nil
+	if allowedRegions != nil && len(allowedRegions) == 0 {
+		allowedRegions = nil
 	}
-
+	if clusterRegion != "" && allowedRegions == nil {
+		allowedRegions = []string{clusterRegion}
+	}
 	topicConfig.MessageStoragePolicy.AllowedPersistenceRegions = allowedRegions
-	return true, nil
+	return (allowedRegions != nil)
 }

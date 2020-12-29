@@ -33,6 +33,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
@@ -58,14 +59,13 @@ type Reconciler struct {
 	pubsubClient *pubsub.Client
 
 	dataresidencyStore *dataresidency.Store
+	// clusterRegion is the region where GKE is running
+	clusterRegion string
 }
 
 // Check that Reconciler implements Interface
 var _ brokerreconciler.Interface = (*Reconciler)(nil)
 var _ brokerreconciler.Finalizer = (*Reconciler)(nil)
-
-// clusterRegionGetter is a function that can get the cluster region
-var clusterRegionGetter = utils.NewClusterRegionGetter()
 
 var brokerGVK = brokerv1beta1.SchemeGroupVersion.WithKind("Broker")
 
@@ -121,6 +121,11 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 		b.Status.MarkSubscriptionUnknown("ProjectIdNotFound", "Failed to find project id: %v", err)
 		return err
 	}
+	r.clusterRegion, err = utils.ClusterRegion(r.clusterRegion, metadataClient.NewDefaultMetadataClient)
+	if err != nil {
+		logger.Error("Failed to get cluster region: ", zap.Error(err))
+		return err
+	}
 	// Set the projectID in the status.
 	//TODO uncomment when eventing webhook allows this
 	//b.Status.ProjectID = projectID
@@ -144,9 +149,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	topicID := resources.GenerateDecouplingTopicName(b)
 	topicConfig := &pubsub.TopicConfig{Labels: labels}
 	if r.dataresidencyStore != nil {
-		if updated, err := r.dataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, clusterRegionGetter); err != nil {
-			logger.Error("Failed to update topic config: ", zap.Error(err))
-		} else if updated {
+		if r.dataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, r.clusterRegion) {
 			logger.Debug("Updated Topic Config AllowedPersistenceRegions for Broker", zap.Any("topicConfig", *topicConfig))
 		}
 	}

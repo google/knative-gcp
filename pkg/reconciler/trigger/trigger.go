@@ -39,6 +39,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
@@ -62,8 +63,6 @@ var (
 	// defaulting fails.
 	defaultBackoffDelay  = "PT1S"
 	defaultBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
-	// clusterRegionGetter is a function that can get the cluster region
-	clusterRegionGetter = utils.NewClusterRegionGetter()
 )
 
 // Reconciler implements controller.Reconciler for Trigger resources.
@@ -85,6 +84,9 @@ type Reconciler struct {
 	pubsubClient *pubsub.Client
 
 	dataresidencyStore *dataresidency.Store
+
+	// clusterRegion is the region where GKE is running
+	clusterRegion string
 }
 
 // Check that TriggerReconciler implements Interface
@@ -223,6 +225,11 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 		trig.Status.MarkSubscriptionUnknown("ProjectIdNotFound", "Failed to find project id: %v", err)
 		return err
 	}
+	r.clusterRegion, err = utils.ClusterRegion(r.clusterRegion, metadataClient.NewDefaultMetadataClient)
+	if err != nil {
+		logger.Error("Failed to get cluster region: ", zap.Error(err))
+		return err
+	}
 	// Set the projectID in the status.
 	//TODO uncomment when eventing webhook allows this
 	//trig.Status.ProjectID = projectID
@@ -246,9 +253,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	topicID := resources.GenerateRetryTopicName(trig)
 	topicConfig := &pubsub.TopicConfig{Labels: labels}
 	if r.dataresidencyStore != nil {
-		if updated, err := r.dataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, clusterRegionGetter); err != nil {
-			logger.Error("Failed to update topic config: ", zap.Error(err))
-		} else if updated {
+		if r.dataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, r.clusterRegion) {
 			logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Trigger", zap.Any("topicConfig", *topicConfig))
 		}
 	}
