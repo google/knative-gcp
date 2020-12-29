@@ -119,6 +119,14 @@ func TestComputeAllowedPersistenceRegions(t *testing.T) {
 			expectedRegions:    nil,
 			updated:            false,
 		},
+		{
+			ns:                 "ds-global-and-regions",
+			global:             true,
+			topicConfigRegions: nil,
+			dsRegions:          []string{"us-east1"},
+			expectedRegions:    []string{"us-east1"},
+			updated:            true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.ns, func(t *testing.T) {

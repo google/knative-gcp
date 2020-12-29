@@ -62,17 +62,17 @@ func (d *Defaults) ComputeAllowedPersistenceRegions(topicConfig *pubsub.TopicCon
 		// Don't try to change anything if it is not empty
 		return false
 	}
-	if d.Global() {
-		// Not setting means same as Org Policy
-		return false
-	}
 	// We can do subset of both in the future, but for now, we just overwrite the
 	// configuration as the relationship between region and zones are not clear to handle,
 	// eg. us-east1 vs us-east1-a. Important note: setting the AllowedPersistenceRegions
 	// to empty string slice is an error, should set it to nil for all regions.
 	allowedRegions := d.AllowedPersistenceRegions()
 	// overwrite empty allowedRegions to nil
-	if allowedRegions != nil && len(allowedRegions) == 0 {
+	if len(allowedRegions) == 0 {
+		if d.Global() {
+			// Not setting means same as Org Policy
+			return false
+		}
 		allowedRegions = nil
 	}
 	if clusterRegion != "" && allowedRegions == nil {
