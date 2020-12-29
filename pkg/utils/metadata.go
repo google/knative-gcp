@@ -100,21 +100,3 @@ func ClusterRegion(clusterRegion string, clientCreator func() metadataClient.Cli
 	}
 	return ZoneToRegion(zone)
 }
-
-// ClusterRegionGetter is a handler that gets cluster region
-type ClusterRegionGetter func() (string, error)
-
-// NewClusterRegionGetter returns CluterRegionGetter in production code
-func NewClusterRegionGetter() ClusterRegionGetter {
-	var clusterRegion string
-	return func() (string, error) {
-		if clusterRegion != "" {
-			return clusterRegion, nil
-		}
-		region, err := ClusterRegion("", defaultMetadataClientCreator)
-		if err == nil {
-			clusterRegion = region
-		}
-		return region, err
-	}
-}
