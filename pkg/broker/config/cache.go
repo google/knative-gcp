@@ -112,10 +112,14 @@ func (ct *CachedTargets) Bytes() ([]byte, error) {
 	return proto.Marshal(val)
 }
 
-// String returns the text format of all the targets.
-func (ct *CachedTargets) String() string {
+// DebugString returns the text format of all the targets. It is for _debug_ purposes only. The
+// output format is not guaranteed to be stable and may change at any time.
+func (ct *CachedTargets) DebugString() string {
 	val := ct.Load()
-	return prototext.MarshalOptions{}.Format(val)
+	return prototext.MarshalOptions{
+		Multiline: true,
+		Indent:    "\t",
+	}.Format(val)
 }
 
 // EqualsBytes checks if the current targets config equals the given
@@ -124,17 +128,6 @@ func (ct *CachedTargets) EqualsBytes(b []byte) bool {
 	self := ct.Load()
 	var other TargetsConfig
 	if err := proto.Unmarshal(b, &other); err != nil {
-		return false
-	}
-	return proto.Equal(self, &other)
-}
-
-// EqualsString checks if the current targets config equals the given
-// targets config in string.
-func (ct *CachedTargets) EqualsString(s string) bool {
-	self := ct.Load()
-	var other TargetsConfig
-	if err := prototext.Unmarshal([]byte(s), &other); err != nil {
 		return false
 	}
 	return proto.Equal(self, &other)
