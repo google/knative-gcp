@@ -22,7 +22,7 @@ import (
 
 func TestBrokerKey(t *testing.T) {
 	want := "namespace/broker"
-	got := BrokerKey("namespace", "broker")
+	got := TestOnlyBrokerKey("namespace", "broker")
 	if got != want {
 		t.Errorf("unexpected readiness: want %v, got %v", want, got)
 	}

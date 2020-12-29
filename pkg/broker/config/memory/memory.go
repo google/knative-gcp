@@ -118,7 +118,7 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 	}
 
 	if newVal.Brokers != nil {
-		if existing, ok := newVal.Brokers[config.BrokerKey(namespace, name)]; ok {
+		if existing, ok := newVal.Brokers[config.TestOnlyBrokerKey(namespace, name)]; ok {
 			b = existing
 		}
 	}
@@ -128,12 +128,12 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 	mutate(mutation)
 
 	if mutation.delete {
-		delete(newVal.Brokers, config.BrokerKey(namespace, name))
+		delete(newVal.Brokers, config.TestOnlyBrokerKey(namespace, name))
 	} else {
 		if newVal.Brokers == nil {
 			newVal.Brokers = make(map[string]*config.Broker)
 		}
-		newVal.Brokers[config.BrokerKey(namespace, name)] = mutation.b
+		newVal.Brokers[config.TestOnlyBrokerKey(namespace, name)] = mutation.b
 	}
 
 	// Update the atomic value to be the copy.

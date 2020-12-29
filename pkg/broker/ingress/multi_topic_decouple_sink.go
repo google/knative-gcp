@@ -175,7 +175,7 @@ func (m *multiTopicDecoupleSink) updateTopicForBroker(ctx context.Context, broke
 }
 
 func (m *multiTopicDecoupleSink) getTopicIDForBroker(ctx context.Context, broker types.NamespacedName) (string, error) {
-	brokerConfig, ok := m.brokerConfig.GetBrokerByKey(config.BrokerKey(broker.Namespace, broker.Name))
+	brokerConfig, ok := m.brokerConfig.GetBrokerByKey(config.TestOnlyBrokerKey(broker.Namespace, broker.Name))
 	if !ok {
 		// There is an propagation delay between the controller reconciles the broker config and
 		// the config being pushed to the configmap volume in the ingress pod. So sometimes we return

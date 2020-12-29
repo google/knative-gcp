@@ -61,7 +61,7 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 // Do not modify the returned Target copy.
 func (ct *CachedTargets) GetTargetByKey(key string) (*Target, bool) {
 	namespace, brokerName, targetName := SplitTriggerKey(key)
-	broker, ok := ct.GetBrokerByKey(BrokerKey(namespace, brokerName))
+	broker, ok := ct.GetBrokerByKey(TestOnlyBrokerKey(namespace, brokerName))
 	if !ok {
 		return nil, false
 	}

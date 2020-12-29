@@ -122,7 +122,7 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 	// Create an empty broker config.
 	bn := "br-" + uuid.New().String()
 	h.Targets.MutateBroker(namespace, bn, func(bm config.BrokerMutation) {})
-	return h.RenewBroker(ctx, t, config.BrokerKey(namespace, bn))
+	return h.RenewBroker(ctx, t, config.TestOnlyBrokerKey(namespace, bn))
 }
 
 // RenewBroker generates new test resources for an existing broker.

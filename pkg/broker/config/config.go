@@ -71,11 +71,6 @@ type Targets interface {
 	MutateBroker(namespace, name string, mutate func(BrokerMutation))
 }
 
-// BrokerKey returns the key of a broker.
-func BrokerKey(namespace, name string) string {
-	return namespace + "/" + name
-}
-
 // TriggerKey returns the key of a trigger. Format is namespace/brokerName/targetName.
 func TriggerKey(namespace, broker, target string) string {
 	return fmt.Sprintf("%s/%s/%s", namespace, broker, target)
@@ -90,9 +85,4 @@ func SplitTriggerKey(key string) (string, string, string) {
 // Key returns the target key.
 func (t *Target) Key() string {
 	return TriggerKey(t.Namespace, t.Broker, t.Name)
-}
-
-// Key returns the broker key.
-func (b *Broker) Key() string {
-	return BrokerKey(b.Namespace, b.Name)
 }
