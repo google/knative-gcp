@@ -19,6 +19,8 @@ package config
 import (
 	"testing"
 
+	"google.golang.org/protobuf/encoding/prototext"
+
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -357,19 +359,13 @@ func TestCachedTargetsString(t *testing.T) {
 	targets := &CachedTargets{}
 	targets.Store(val)
 
-	gotStr := targets.String()
-	wantStr := val.String()
+	gotStr := targets.DebugString()
+	wantStr := prototext.MarshalOptions{
+		Multiline: true,
+		Indent:    "\t",
+	}.Format(val)
 	if gotStr != wantStr {
 		t.Errorf("BaseTargets.String() got=%s, want=%s", gotStr, wantStr)
-	}
-
-	// Test EqualsString
-	if !targets.EqualsString(wantStr) {
-		t.Error("BaseTargets.EqualsString() got=false, want=true")
-	}
-
-	if targets.EqualsString("random") {
-		t.Error("CachedTargets.EqualsString() with random string got=true, want=false")
 	}
 }
 

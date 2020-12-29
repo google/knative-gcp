@@ -42,14 +42,12 @@ type ReadonlyTargets interface {
 	RangeBrokers(func(*Broker) bool)
 	// Bytes serializes all the targets.
 	Bytes() ([]byte, error)
-	// String returns the text format of all the targets.
-	String() string
+	// DebugString returns the text format of all the targets. It is for _debug_ purposes only. The
+	// output format is not guaranteed to be stable and may change at any time.
+	DebugString() string
 	// EqualsBytes checks if the current targets config equals the given
 	// targets config in bytes.
 	EqualsBytes([]byte) bool
-	// EqualsString checks if the current targets config equals the given
-	// targets config in string.
-	EqualsString(string) bool
 }
 
 // BrokerMutation provides functions to mutate a Broker.

@@ -140,7 +140,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context, bc *intv1alpha1.Br
 		return fmt.Errorf("error creating targets config: %w", err)
 	}
 
-	logging.FromContext(ctx).Debug("Current targets config", zap.Any("targetsConfig", brokerTargets.String()))
+	logging.FromContext(ctx).Debug("Current targets config", zap.Any("targetsConfig", brokerTargets.DebugString()))
 
 	handlerFuncs := cache.ResourceEventHandlerFuncs{
 		AddFunc:    func(obj interface{}) { r.refreshPodVolume(ctx, bc) },
