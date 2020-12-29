@@ -140,18 +140,18 @@ func TestCachedTargetsRange(t *testing.T) {
 	})
 
 	t.Run("get individual broker", func(t *testing.T) {
-		gotBroker, ok := targets.GetBroker("ns", "non-existing")
+		gotBroker, ok := targets.GetBrokerByKey(BrokerKey("ns", "non-existing"))
 		if ok {
 			t.Error("get non-existing broker got ok=true, want ok=false")
 		}
-		gotBroker, ok = targets.GetBroker(b1.Namespace, b1.Name)
+		gotBroker, ok = targets.GetBrokerByKey(b1.Key())
 		if !ok {
 			t.Error("get existing broker got ok=false, want ok=true")
 		}
 		if !proto.Equal(b1, gotBroker) {
 			t.Errorf("get existing broker got=%+v, want=%+v", gotBroker, b1)
 		}
-		gotBroker, ok = targets.GetBroker(b2.Namespace, b2.Name)
+		gotBroker, ok = targets.GetBrokerByKey(b2.Key())
 		if !ok {
 			t.Error("get existing broker got ok=false, want ok=true")
 		}
@@ -460,7 +460,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 
 	t.Run("get broker", func(t *testing.T) {
 		wantBroker := b1
-		gotBroker, _ := targets.GetBroker(b1.Namespace, b1.Name)
+		gotBroker, _ := targets.GetBrokerByKey(b1.Key())
 		if diff := cmp.Diff(wantBroker, gotBroker, protocmp.Transform()); diff != "" {
 			t.Errorf("GetBroker (-want,+got): %v", diff)
 		}
