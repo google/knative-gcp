@@ -26,16 +26,11 @@ type ReadonlyTargets interface {
 	// RangeAllTargets ranges over all targets.
 	// Do not modify the given Target copy.
 	RangeAllTargets(func(*Target) bool)
-	// GetTarget returns a target.
-	// Do not modify the returned Target copy.
-	GetTarget(namespace, brokerName, targetName string) (*Target, bool)
 	// GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 	// Do not modify the returned Target copy.
 	GetTargetByKey(key string) (*Target, bool)
-	// GetBroker returns a broker and its targets if it exists.
+	// GetBrokerByKey returns a Broker and its targets, if it exists.
 	// Do not modify the returned Broker copy.
-	GetBroker(namespace, name string) (*Broker, bool)
-	// GetBroker by its key (namespace/name).
 	GetBrokerByKey(key string) (*Broker, bool)
 	// RangeBrokers ranges over all brokers.
 	// Do not modify the given Broker copy.
@@ -45,9 +40,6 @@ type ReadonlyTargets interface {
 	// DebugString returns the text format of all the targets. It is for _debug_ purposes only. The
 	// output format is not guaranteed to be stable and may change at any time.
 	DebugString() string
-	// EqualsBytes checks if the current targets config equals the given
-	// targets config in bytes.
-	EqualsBytes([]byte) bool
 }
 
 // BrokerMutation provides functions to mutate a Broker.

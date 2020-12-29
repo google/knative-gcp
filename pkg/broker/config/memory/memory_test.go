@@ -82,7 +82,7 @@ func TestMutateBroker(t *testing.T) {
 				Subscription: "sub",
 			})
 		})
-		assertBroker(t, wantBroker, "ns", "broker", targets)
+		assertBroker(t, wantBroker, targets)
 	})
 
 	t.Run("update broker attribute", func(t *testing.T) {
@@ -90,7 +90,7 @@ func TestMutateBroker(t *testing.T) {
 		targets.MutateBroker("ns", "broker", func(m config.BrokerMutation) {
 			m.SetAddress("external.broker.example.com")
 		})
-		assertBroker(t, wantBroker, "ns", "broker", targets)
+		assertBroker(t, wantBroker, targets)
 	})
 
 	t1 := &config.Target{
@@ -145,7 +145,7 @@ func TestMutateBroker(t *testing.T) {
 			// Intentionally call insert twice to verify they can be chained.
 			m.UpsertTargets(t1).UpsertTargets(t2)
 		})
-		assertBroker(t, wantBroker, "ns", "broker", targets)
+		assertBroker(t, wantBroker, targets)
 	})
 
 	t.Run("insert and delete targets", func(t *testing.T) {
@@ -157,7 +157,7 @@ func TestMutateBroker(t *testing.T) {
 			// Chain insert and delete.
 			m.UpsertTargets(t3).DeleteTargets(t2)
 		})
-		assertBroker(t, wantBroker, "ns", "broker", targets)
+		assertBroker(t, wantBroker, targets)
 	})
 
 	t.Run("delete and then change broker", func(t *testing.T) {
@@ -176,7 +176,7 @@ func TestMutateBroker(t *testing.T) {
 			})
 			m.UpsertTargets(t1, t2)
 		})
-		assertBroker(t, wantBroker, "ns", "broker", targets)
+		assertBroker(t, wantBroker, targets)
 	})
 
 	t.Run("make change then delete broker", func(t *testing.T) {
@@ -186,7 +186,7 @@ func TestMutateBroker(t *testing.T) {
 			// no matter what changes have been made.
 			m.Delete()
 		})
-		if _, ok := targets.GetBroker("ns", "broker"); ok {
+		if _, ok := targets.GetBrokerByKey(wantBroker.Key()); ok {
 			t.Error("GetBroker got ok=true, want ok=false")
 		}
 	})
@@ -199,9 +199,9 @@ func TestMutateBroker(t *testing.T) {
 	})
 }
 
-func assertBroker(t *testing.T, want *config.Broker, namespace, name string, targets config.Targets) {
+func assertBroker(t *testing.T, want *config.Broker, targets config.Targets) {
 	t.Helper()
-	got, ok := targets.GetBroker(namespace, name)
+	got, ok := targets.GetBrokerByKey(want.Key())
 	if !ok {
 		t.Error("GetBroker got ok=false, want ok=true")
 	}

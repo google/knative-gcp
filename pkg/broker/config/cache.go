@@ -57,28 +57,16 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 	}
 }
 
-// GetTarget returns a target.
-// Do not modify the returned Target copy.
-func (ct *CachedTargets) GetTarget(namespace, brokerName, targetName string) (*Target, bool) {
-	Broker, ok := ct.GetBroker(namespace, brokerName)
-	if !ok {
-		return nil, false
-	}
-	t, ok := Broker.Targets[targetName]
-	return t, ok
-}
-
 // GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 // Do not modify the returned Target copy.
 func (ct *CachedTargets) GetTargetByKey(key string) (*Target, bool) {
 	namespace, brokerName, targetName := SplitTriggerKey(key)
-	return ct.GetTarget(namespace, brokerName, targetName)
-}
-
-// GetBroker returns a broker and its targets if it exists.
-// Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBroker(namespace, name string) (*Broker, bool) {
-	return ct.GetBrokerByKey(BrokerKey(namespace, name))
+	broker, ok := ct.GetBrokerByKey(BrokerKey(namespace, brokerName))
+	if !ok {
+		return nil, false
+	}
+	t, ok := broker.Targets[targetName]
+	return t, ok
 }
 
 // GetBrokerByKey returns a broker and its targets if it exists.
@@ -120,15 +108,4 @@ func (ct *CachedTargets) DebugString() string {
 		Multiline: true,
 		Indent:    "\t",
 	}.Format(val)
-}
-
-// EqualsBytes checks if the current targets config equals the given
-// targets config in bytes.
-func (ct *CachedTargets) EqualsBytes(b []byte) bool {
-	self := ct.Load()
-	var other TargetsConfig
-	if err := proto.Unmarshal(b, &other); err != nil {
-		return false
-	}
-	return proto.Equal(self, &other)
 }
