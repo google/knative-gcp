@@ -64,6 +64,7 @@ type TargetKey struct {
 	name      string
 }
 
+// ParentKey is the key of the parent this Target corresponds to.
 func (k *TargetKey) ParentKey() *BrokerKey {
 	return &k.brokerKey
 }
