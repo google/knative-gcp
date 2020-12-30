@@ -79,8 +79,7 @@ func TestMutateBroker(t *testing.T) {
 
 	t.Run("create new broker", func(t *testing.T) {
 		targets.MutateCellTenant(wantBroker.Key(), func(m config.CellTenantMutation) {
-			m.SetID("b-uid").SetCellTenantType(wantBroker.Type)
-			m.SetAddress("broker.example.com").SetState(config.State_READY)
+			m.SetID("b-uid").SetAddress("broker.example.com").SetState(config.State_READY)
 			m.SetDecoupleQueue(&config.Queue{
 				Topic:        "topic",
 				Subscription: "sub",
@@ -176,8 +175,7 @@ func TestMutateBroker(t *testing.T) {
 			// Delete should "delete" the broker.
 			m.Delete()
 			// Then make some changes which should "recreate" the broker.
-			m.SetID("b-uid").SetCellTenantType(wantBroker.Type)
-			m.SetAddress("external.broker.example.com").SetState(config.State_READY)
+			m.SetID("b-uid").SetAddress("external.broker.example.com").SetState(config.State_READY)
 			m.SetDecoupleQueue(&config.Queue{
 				Topic:        "topic",
 				Subscription: "sub",

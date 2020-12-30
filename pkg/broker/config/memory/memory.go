@@ -36,11 +36,6 @@ func (m *cellTenantMutation) SetID(id string) config.CellTenantMutation {
 	return m
 }
 
-func (m *cellTenantMutation) SetCellTenantType(t config.CellTenantType) config.CellTenantMutation {
-	m.b.Type = t
-	return m
-}
-
 func (m *cellTenantMutation) SetAddress(address string) config.CellTenantMutation {
 	m.delete = false
 	m.b.Address = address
@@ -110,15 +105,15 @@ func NewTargets(pb *config.TargetsConfig) config.Targets {
 	return m
 }
 
-// MutateBroker mutates a broker by namespace and name.
-// If the broker doesn't exist, it will be added (unless Delete() is called).
+// MutateCellTenant mutates a CellTenant by its key.
+// If the CellTenant doesn't exist, it will be added (unless Delete() is called).
 // This function is thread-safe.
 func (m *memoryTargets) MutateCellTenant(key *config.CellTenantKey, mutate func(config.CellTenantMutation)) {
 	// Sync writes.
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
-	b := key.CreateEmptyBroker()
+	b := key.CreateEmptyCellTenant()
 	var newVal *config.TargetsConfig
 	val := m.Load()
 	if val != nil {

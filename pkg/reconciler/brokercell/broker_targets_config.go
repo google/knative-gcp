@@ -91,7 +91,6 @@ func (r *Reconciler) addToConfig(_ context.Context, b *brokerv1beta1.Broker, tri
 		}
 		// Then reconstruct the broker entry and insert it
 		m.SetID(string(b.UID))
-		m.SetCellTenantType(config.CellTenantType_BROKER)
 		m.SetAddress(b.Status.Address.URL.String())
 		m.SetDecoupleQueue(&config.Queue{
 			Topic:        brokerresources.GenerateDecouplingTopicName(b),

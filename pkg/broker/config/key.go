@@ -30,7 +30,7 @@ import (
 	"knative.dev/pkg/metrics/metricskey"
 )
 
-// CellTenantKey uniquely identifies a single Broker, at a given point in time.
+// CellTenantKey uniquely identifies a single CellTenant, at a given point in time.
 type CellTenantKey struct {
 	cellTenantType CellTenantType
 	namespace      string
@@ -119,9 +119,9 @@ func (k *CellTenantKey) MetricsResource() resource.Resource {
 	}
 }
 
-// CreateEmptyBroker creates an empty Broker that corresponds to this CellTenantKey. It is empty except
-// for the portions known about by the CellTenantKey.
-func (k *CellTenantKey) CreateEmptyBroker() *CellTenant {
+// CreateEmptyCellTenant creates an empty CellTenant that corresponds to this CellTenantKey. It is
+// empty except for the portions known about by the CellTenantKey.
+func (k *CellTenantKey) CreateEmptyCellTenant() *CellTenant {
 	return &CellTenant{
 		Type:      k.cellTenantType,
 		Namespace: k.namespace,
@@ -227,7 +227,7 @@ func validateBrokerName(name string) error {
 func validateCellTenetTypeFromString(s string) (CellTenantType, error) {
 	i, present := CellTenantType_value[s]
 	if !present {
-		return CellTenantType_UNKNOWN_CELL_TENANT_TYPE, fmt.Errorf("unknown GCPCellAddressableType %q", s)
+		return CellTenantType_UNKNOWN_CELL_TENANT_TYPE, fmt.Errorf("unknown CellTenantType %q", s)
 	}
 	return CellTenantType(i), nil
 }

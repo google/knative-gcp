@@ -42,8 +42,6 @@ type ReadonlyTargets interface {
 type CellTenantMutation interface {
 	// SetID sets the CellTenant's ID.
 	SetID(id string) CellTenantMutation
-	// SetCellTenantType sets the CellTenant's type.
-	SetCellTenantType(t CellTenantType) CellTenantMutation
 	// SetAddress sets the CellTenant's subscriber's address.
 	SetAddress(address string) CellTenantMutation
 	// SetDecoupleQueue sets the CellTenant's decouple queue.
