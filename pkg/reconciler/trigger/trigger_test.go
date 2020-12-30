@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/reconciler/celltenant"
+
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
 	corev1 "k8s.io/api/core/v1"
@@ -665,12 +667,11 @@ func TestAllCasesTrigger(t *testing.T) {
 		srv := pstest.NewServer()
 		// Insert pubsub client for PostConditions and create fixtures
 		psclient, _ := GetTestClientCreateFunc(srv.Addr)(ctx, testProject)
-		savedCreateFn := createPubsubClientFn
-		close := func() {
+		savedCreateFn := celltenant.CreatePubsubClientFn
+		t.Cleanup(func() {
 			srv.Close()
-			createPubsubClientFn = savedCreateFn
-		}
-		t.Cleanup(close)
+			celltenant.CreatePubsubClientFn = savedCreateFn
+		})
 		var drStore *dataresidency.Store
 		if testData != nil {
 			InjectPubsubClient(testData, psclient)
@@ -693,7 +694,7 @@ func TestAllCasesTrigger(t *testing.T) {
 		if maxTime, ok := testData["maxPSClientCreateTime"]; ok {
 			// Overwrite the createPubsubClientFn to one that failed when called more than maxTime times.
 			// maxTime=0 is used to inject error
-			createPubsubClientFn = GetFailedTestClientCreateFunc(srv.Addr, maxTime.(int))
+			celltenant.CreatePubsubClientFn = GetFailedTestClientCreateFunc(srv.Addr, maxTime.(int))
 			testPSClient = nil
 		}
 
@@ -707,9 +708,11 @@ func TestAllCasesTrigger(t *testing.T) {
 			sourceTracker:      duck.NewListableTracker(ctx, source.Get, func(types.NamespacedName) {}, 0),
 			addressableTracker: duck.NewListableTracker(ctx, addressable.Get, func(types.NamespacedName) {}, 0),
 			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
-			projectID:          testProject,
-			pubsubClient:       testPSClient,
-			dataresidencyStore: drStore,
+			targetReconciler: &celltenant.TargetReconciler{
+				ProjectID:          testProject,
+				PubsubClient:       testPSClient,
+				DataresidencyStore: drStore,
+			},
 		}
 
 		return triggerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetTriggerLister(), r.Recorder, r, withAgentAndFinalizer(nil))

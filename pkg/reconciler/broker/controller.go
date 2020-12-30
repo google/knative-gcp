@@ -19,6 +19,8 @@ package broker
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/reconciler/celltenant"
+
 	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 
@@ -86,10 +88,12 @@ func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdeliv
 	}
 
 	r := &Reconciler{
-		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-		brokerCellLister:   bcInformer.Lister(),
-		pubsubClient:       client,
-		dataresidencyStore: drs,
+		CellTenantReconciler: celltenant.CellTenantReconciler{
+			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+			BrokerCellLister:   bcInformer.Lister(),
+			PubsubClient:       client,
+			DataresidencyStore: drs,
+		},
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass,
