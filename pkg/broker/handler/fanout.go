@@ -126,14 +126,14 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 	}
 
 	p.pool.Range(func(key config.CellTenantKey, value *fanoutHandlerCache) bool {
-		if _, ok := p.targets.GetBrokerByKey(&key); !ok {
+		if _, ok := p.targets.GetCellTenantByKey(&key); !ok {
 			value.Stop()
 			p.pool.Delete(key)
 		}
 		return true
 	})
 
-	p.targets.RangeBrokers(func(b *config.CellTenant) bool {
+	p.targets.RangeCellTenants(func(b *config.CellTenant) bool {
 		if value, ok := p.pool.Load(*b.Key()); ok {
 			// Skip if we don't need to renew the handler.
 			if !value.shouldRenew(b) {

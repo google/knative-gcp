@@ -134,7 +134,7 @@ func TestDeliverSuccess(t *testing.T) {
 				Address:        targetSvr.URL,
 			}
 			testTargets := memory.NewEmptyTargets()
-			testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
+			testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
 				bm.SetAddress(ingressSvr.URL)
 				bm.UpsertTargets(target)
 			})
@@ -311,7 +311,7 @@ func TestDeliverFailure(t *testing.T) {
 				},
 			}
 			testTargets := memory.NewEmptyTargets()
-			testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
+			testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
 				bm.UpsertTargets(target)
 			})
 			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
@@ -490,7 +490,7 @@ func benchmarkNoReply(b *testing.B, httpClient *http.Client, targetAddress strin
 		Address:        targetAddress,
 	}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
+	testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
 		bm.UpsertTargets(target)
 	})
 	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(b, zaptest.Level(zap.InfoLevel)).Sugar())
@@ -536,7 +536,7 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, eventSize int, make
 		Address:        targetAddress,
 	}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
+	testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
 		bm.SetAddress(ingressAddress)
 		bm.UpsertTargets(target)
 	})
@@ -622,7 +622,7 @@ func benchmarkRetry(b *testing.B, httpClient *http.Client, targetAddress string,
 		RetryQueue:     &config.Queue{Topic: "test-retry-topic"},
 	}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
+	testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
 		bm.UpsertTargets(target)
 	})
 	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())

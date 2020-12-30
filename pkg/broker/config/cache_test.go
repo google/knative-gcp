@@ -132,28 +132,28 @@ func TestCachedTargetsRange(t *testing.T) {
 
 	t.Run("range brokers", func(t *testing.T) {
 		gotBrokers := make(map[string]*CellTenant)
-		targets.RangeBrokers(func(b *CellTenant) bool {
+		targets.RangeCellTenants(func(b *CellTenant) bool {
 			gotBrokers[b.Key().PersistenceString()] = b
 			return true
 		})
 		if diff := cmp.Diff(val.CellTenants, gotBrokers, protocmp.Transform()); diff != "" {
-			t.Errorf("RangeBrokers (-want,+got): %v", diff)
+			t.Errorf("RangeCellTenants (-want,+got): %v", diff)
 		}
 	})
 
 	t.Run("get individual broker", func(t *testing.T) {
-		gotBroker, ok := targets.GetBrokerByKey(TestOnlyBrokerKey("ns", "non-existing"))
+		gotBroker, ok := targets.GetCellTenantByKey(TestOnlyBrokerKey("ns", "non-existing"))
 		if ok {
 			t.Error("get non-existing broker got ok=true, want ok=false")
 		}
-		gotBroker, ok = targets.GetBrokerByKey(b1.Key())
+		gotBroker, ok = targets.GetCellTenantByKey(b1.Key())
 		if !ok {
 			t.Error("get existing broker got ok=false, want ok=true")
 		}
 		if !proto.Equal(b1, gotBroker) {
 			t.Errorf("get existing broker got=%+v, want=%+v", gotBroker, b1)
 		}
-		gotBroker, ok = targets.GetBrokerByKey(b2.Key())
+		gotBroker, ok = targets.GetCellTenantByKey(b2.Key())
 		if !ok {
 			t.Error("get existing broker got ok=false, want ok=true")
 		}
@@ -483,7 +483,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 
 	t.Run("get broker", func(t *testing.T) {
 		wantBroker := b1
-		gotBroker, _ := targets.GetBrokerByKey(b1.Key())
+		gotBroker, _ := targets.GetCellTenantByKey(b1.Key())
 		if diff := cmp.Diff(wantBroker, gotBroker, protocmp.Transform()); diff != "" {
 			t.Errorf("GetBroker (-want,+got): %v", diff)
 		}

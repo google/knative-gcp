@@ -23,43 +23,43 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var _ config.BrokerMutation = (*brokerMutation)(nil)
+var _ config.CellTenantMutation = (*cellTenantMutation)(nil)
 
-type brokerMutation struct {
+type cellTenantMutation struct {
 	b      *config.CellTenant
 	delete bool
 }
 
-func (m *brokerMutation) SetID(id string) config.BrokerMutation {
+func (m *cellTenantMutation) SetID(id string) config.CellTenantMutation {
 	m.delete = false
 	m.b.Id = id
 	return m
 }
 
-func (m *brokerMutation) SetCellTenantType(t config.CellTenantType) config.BrokerMutation {
+func (m *cellTenantMutation) SetCellTenantType(t config.CellTenantType) config.CellTenantMutation {
 	m.b.Type = t
 	return m
 }
 
-func (m *brokerMutation) SetAddress(address string) config.BrokerMutation {
+func (m *cellTenantMutation) SetAddress(address string) config.CellTenantMutation {
 	m.delete = false
 	m.b.Address = address
 	return m
 }
 
-func (m *brokerMutation) SetDecoupleQueue(q *config.Queue) config.BrokerMutation {
+func (m *cellTenantMutation) SetDecoupleQueue(q *config.Queue) config.CellTenantMutation {
 	m.delete = false
 	m.b.DecoupleQueue = q
 	return m
 }
 
-func (m *brokerMutation) SetState(s config.State) config.BrokerMutation {
+func (m *cellTenantMutation) SetState(s config.State) config.CellTenantMutation {
 	m.delete = false
 	m.b.State = s
 	return m
 }
 
-func (m *brokerMutation) UpsertTargets(targets ...*config.Target) config.BrokerMutation {
+func (m *cellTenantMutation) UpsertTargets(targets ...*config.Target) config.CellTenantMutation {
 	m.delete = false
 	if m.b.Targets == nil {
 		m.b.Targets = make(map[string]*config.Target)
@@ -73,7 +73,7 @@ func (m *brokerMutation) UpsertTargets(targets ...*config.Target) config.BrokerM
 	return m
 }
 
-func (m *brokerMutation) DeleteTargets(targets ...*config.Target) config.BrokerMutation {
+func (m *cellTenantMutation) DeleteTargets(targets ...*config.Target) config.CellTenantMutation {
 	m.delete = false
 	for _, t := range targets {
 		delete(m.b.Targets, t.Name)
@@ -81,7 +81,7 @@ func (m *brokerMutation) DeleteTargets(targets ...*config.Target) config.BrokerM
 	return m
 }
 
-func (m *brokerMutation) Delete() {
+func (m *cellTenantMutation) Delete() {
 	// Calling delete will "reset" the broker under mutation instantly.
 	m.delete = true
 	m.b = &config.CellTenant{Name: m.b.Name, Namespace: m.b.Namespace}
@@ -109,7 +109,7 @@ func NewTargets(pb *config.TargetsConfig) config.Targets {
 // MutateBroker mutates a broker by namespace and name.
 // If the broker doesn't exist, it will be added (unless Delete() is called).
 // This function is thread-safe.
-func (m *memoryTargets) MutateBroker(key *config.CellTenantKey, mutate func(config.BrokerMutation)) {
+func (m *memoryTargets) MutateCellTenant(key *config.CellTenantKey, mutate func(config.CellTenantMutation)) {
 	// Sync writes.
 	m.mux.Lock()
 	defer m.mux.Unlock()
@@ -132,7 +132,7 @@ func (m *memoryTargets) MutateBroker(key *config.CellTenantKey, mutate func(conf
 	}
 
 	// The mutation will work on a copy of the data.
-	mutation := &brokerMutation{b: b}
+	mutation := &cellTenantMutation{b: b}
 	mutate(mutation)
 
 	if mutation.delete {

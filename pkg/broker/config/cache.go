@@ -60,7 +60,7 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 // GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 // Do not modify the returned Target copy.
 func (ct *CachedTargets) GetTargetByKey(key *TargetKey) (*Target, bool) {
-	broker, ok := ct.GetBrokerByKey(key.ParentKey())
+	broker, ok := ct.GetCellTenantByKey(key.ParentKey())
 	if !ok {
 		return nil, false
 	}
@@ -70,7 +70,7 @@ func (ct *CachedTargets) GetTargetByKey(key *TargetKey) (*Target, bool) {
 
 // GetBrokerByKey returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBrokerByKey(key *CellTenantKey) (*CellTenant, bool) {
+func (ct *CachedTargets) GetCellTenantByKey(key *CellTenantKey) (*CellTenant, bool) {
 	val := ct.Load()
 	if val == nil || val.CellTenants == nil {
 		return nil, false
@@ -81,7 +81,7 @@ func (ct *CachedTargets) GetBrokerByKey(key *CellTenantKey) (*CellTenant, bool) 
 
 // RangeBrokers ranges over all brokers.
 // Do not modify the given Broker copy.
-func (ct *CachedTargets) RangeBrokers(f func(*CellTenant) bool) {
+func (ct *CachedTargets) RangeCellTenants(f func(*CellTenant) bool) {
 	val := ct.Load()
 	if val == nil {
 		return

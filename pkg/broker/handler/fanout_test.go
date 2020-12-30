@@ -72,7 +72,7 @@ func TestFanoutWatchAndSync(t *testing.T) {
 
 	t.Run("no handler created for not-ready broker", func(t *testing.T) {
 		b := helper.GenerateBroker(ctx, t, "ns")
-		helper.Targets.MutateBroker(b.Key(), func(bm config.BrokerMutation) {
+		helper.Targets.MutateCellTenant(b.Key(), func(bm config.CellTenantMutation) {
 			bm.SetState(config.State_UNKNOWN)
 		})
 		signal <- struct{}{}
@@ -405,7 +405,7 @@ func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 		return true
 	})
 
-	targets.RangeBrokers(func(b *config.CellTenant) bool {
+	targets.RangeCellTenants(func(b *config.CellTenant) bool {
 		if b.State == config.State_READY {
 			wantHandlers[*b.Key()] = true
 		}

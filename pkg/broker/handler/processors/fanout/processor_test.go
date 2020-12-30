@@ -157,7 +157,7 @@ func TestFanoutPartialFailure(t *testing.T) {
 
 func newTestTargets(key *config.CellTenantKey, num int) config.ReadonlyTargets {
 	targets := memory.NewEmptyTargets()
-	targets.MutateBroker(key, func(bm config.BrokerMutation) {
+	targets.MutateCellTenant(key, func(bm config.CellTenantMutation) {
 		for i := 0; i < num; i++ {
 			bm.UpsertTargets(&config.Target{
 				Name: fmt.Sprintf("target-%d", i),

@@ -121,7 +121,7 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 
 	// Create an empty broker config.
 	bn := "br-" + uuid.New().String()
-	h.Targets.MutateBroker(config.TestOnlyBrokerKey(namespace, bn), func(bm config.BrokerMutation) {})
+	h.Targets.MutateCellTenant(config.TestOnlyBrokerKey(namespace, bn), func(bm config.CellTenantMutation) {})
 	return h.RenewBroker(ctx, t, config.TestOnlyBrokerKey(namespace, bn))
 }
 
@@ -129,7 +129,7 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, key *config.CellTenantKey) *config.CellTenant {
 	t.Helper()
 
-	b, ok := h.Targets.GetBrokerByKey(key)
+	b, ok := h.Targets.GetCellTenantByKey(key)
 	if !ok {
 		t.Fatalf("broker with key %q doesn't exist", key)
 	}
@@ -154,7 +154,7 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, key *config.Cell
 	}
 	brokerIngSvr := httptest.NewServer(ceClient)
 
-	h.Targets.MutateBroker(key, func(bm config.BrokerMutation) {
+	h.Targets.MutateCellTenant(key, func(bm config.CellTenantMutation) {
 		bm.SetDecoupleQueue(&config.Queue{
 			Topic:        topic,
 			Subscription: sub,
@@ -163,7 +163,7 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, key *config.Cell
 		bm.SetState(config.State_READY)
 	})
 
-	b, ok = h.Targets.GetBrokerByKey(key)
+	b, ok = h.Targets.GetCellTenantByKey(key)
 	if !ok {
 		t.Fatalf("failed to save test broker: %s", key)
 	}
@@ -186,7 +186,7 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, key *config.Cell
 func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, key *config.CellTenantKey) {
 	t.Helper()
 
-	b, ok := h.Targets.GetBrokerByKey(key)
+	b, ok := h.Targets.GetCellTenantByKey(key)
 	if !ok {
 		// The broker is no longer exists.
 		return
@@ -199,7 +199,7 @@ func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, key *config.Cel
 		t.Fatalf("failed to delete broker decouple topic: %v", err)
 	}
 
-	h.Targets.MutateBroker(key, func(bm config.BrokerMutation) {
+	h.Targets.MutateCellTenant(key, func(bm config.CellTenantMutation) {
 		bm.Delete()
 	})
 
@@ -220,7 +220,7 @@ func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, key *config.Cel
 func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey *config.CellTenantKey, filters map[string]string) *config.Target {
 	t.Helper()
 	tn := "tr-" + uuid.New().String()
-	b, ok := h.Targets.GetBrokerByKey(brokerKey)
+	b, ok := h.Targets.GetCellTenantByKey(brokerKey)
 	if !ok {
 		t.Fatalf("broker with key %q doesn't exist", brokerKey)
 	}
@@ -234,7 +234,7 @@ func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey *co
 		State:            config.State_READY,
 	}
 
-	h.Targets.MutateBroker(brokerKey, func(bm config.BrokerMutation) {
+	h.Targets.MutateCellTenant(brokerKey, func(bm config.CellTenantMutation) {
 		bm.UpsertTargets(testTarget)
 	})
 
@@ -274,7 +274,7 @@ func (h *Helper) RenewTarget(ctx context.Context, t *testing.T, targetKey *confi
 	}
 	target.Address = targetSvr.URL
 
-	h.Targets.MutateBroker(target.Key().ParentKey(), func(bm config.BrokerMutation) {
+	h.Targets.MutateCellTenant(target.Key().ParentKey(), func(bm config.CellTenantMutation) {
 		bm.UpsertTargets(target)
 	})
 
@@ -313,7 +313,7 @@ func (h *Helper) DeleteTarget(ctx context.Context, t *testing.T, targetKey *conf
 		delete(h.consumers, *targetKey)
 	}
 
-	h.Targets.MutateBroker(target.Key().ParentKey(), func(bm config.BrokerMutation) {
+	h.Targets.MutateCellTenant(target.Key().ParentKey(), func(bm config.CellTenantMutation) {
 		bm.DeleteTargets(target)
 	})
 }
@@ -321,7 +321,7 @@ func (h *Helper) DeleteTarget(ctx context.Context, t *testing.T, targetKey *conf
 // SendEventToDecoupleQueue sends the given event to the decouple queue of the given broker.
 func (h *Helper) SendEventToDecoupleQueue(ctx context.Context, t *testing.T, brokerKey *config.CellTenantKey, event *event.Event) {
 	t.Helper()
-	b, ok := h.Targets.GetBrokerByKey(brokerKey)
+	b, ok := h.Targets.GetCellTenantByKey(brokerKey)
 	if !ok {
 		t.Fatalf("broker with key %q doesn't exist", brokerKey)
 	}

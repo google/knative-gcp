@@ -40,7 +40,7 @@ func TestUpsertTargetsWithNamespaceBrokerEnforced(t *testing.T) {
 		CellTenantType: config.CellTenantType_BROKER,
 		CellTenantName: "broker",
 	}
-	v.MutateBroker(wantTarget.Key().ParentKey(), func(bm config.BrokerMutation) {
+	v.MutateCellTenant(wantTarget.Key().ParentKey(), func(bm config.CellTenantMutation) {
 		bm.UpsertTargets(&config.Target{
 			Name:           "target",
 			Namespace:      "other-namespace",
@@ -78,7 +78,7 @@ func TestMutateBroker(t *testing.T) {
 	}
 
 	t.Run("create new broker", func(t *testing.T) {
-		targets.MutateBroker(wantBroker.Key(), func(m config.BrokerMutation) {
+		targets.MutateCellTenant(wantBroker.Key(), func(m config.CellTenantMutation) {
 			m.SetID("b-uid").SetCellTenantType(wantBroker.Type)
 			m.SetAddress("broker.example.com").SetState(config.State_READY)
 			m.SetDecoupleQueue(&config.Queue{
@@ -91,7 +91,7 @@ func TestMutateBroker(t *testing.T) {
 
 	t.Run("update broker attribute", func(t *testing.T) {
 		wantBroker.Address = "external.broker.example.com"
-		targets.MutateBroker(wantBroker.Key(), func(m config.BrokerMutation) {
+		targets.MutateCellTenant(wantBroker.Key(), func(m config.CellTenantMutation) {
 			m.SetAddress("external.broker.example.com")
 		})
 		assertBroker(t, wantBroker, targets)
@@ -148,7 +148,7 @@ func TestMutateBroker(t *testing.T) {
 			"t1": t1,
 			"t2": t2,
 		}
-		targets.MutateBroker(wantBroker.Key(), func(m config.BrokerMutation) {
+		targets.MutateCellTenant(wantBroker.Key(), func(m config.CellTenantMutation) {
 			// Intentionally call insert twice to verify they can be chained.
 			m.UpsertTargets(t1).UpsertTargets(t2)
 		})
@@ -160,7 +160,7 @@ func TestMutateBroker(t *testing.T) {
 			"t1": t1,
 			"t3": t3,
 		}
-		targets.MutateBroker(wantBroker.Key(), func(m config.BrokerMutation) {
+		targets.MutateCellTenant(wantBroker.Key(), func(m config.CellTenantMutation) {
 			// Chain insert and delete.
 			m.UpsertTargets(t3).DeleteTargets(t2)
 		})
@@ -172,7 +172,7 @@ func TestMutateBroker(t *testing.T) {
 			"t1": t1,
 			"t2": t2,
 		}
-		targets.MutateBroker(wantBroker.Key(), func(m config.BrokerMutation) {
+		targets.MutateCellTenant(wantBroker.Key(), func(m config.CellTenantMutation) {
 			// Delete should "delete" the broker.
 			m.Delete()
 			// Then make some changes which should "recreate" the broker.
@@ -188,19 +188,19 @@ func TestMutateBroker(t *testing.T) {
 	})
 
 	t.Run("make change then delete broker", func(t *testing.T) {
-		targets.MutateBroker(wantBroker.Key(), func(m config.BrokerMutation) {
+		targets.MutateCellTenant(wantBroker.Key(), func(m config.CellTenantMutation) {
 			m.UpsertTargets(t3).DeleteTargets(t2)
 			// Because we delete in the end, the broker should really be deleted
 			// no matter what changes have been made.
 			m.Delete()
 		})
-		if _, ok := targets.GetBrokerByKey(wantBroker.Key()); ok {
+		if _, ok := targets.GetCellTenantByKey(wantBroker.Key()); ok {
 			t.Error("GetBroker got ok=true, want ok=false")
 		}
 	})
 
 	t.Run("delete non-existing broker", func(t *testing.T) {
-		targets.MutateBroker(wantBroker.Key(), func(m config.BrokerMutation) {
+		targets.MutateCellTenant(wantBroker.Key(), func(m config.CellTenantMutation) {
 			// Just assert it won't panic.
 			m.Delete()
 		})
@@ -209,7 +209,7 @@ func TestMutateBroker(t *testing.T) {
 
 func assertBroker(t *testing.T, want *config.CellTenant, targets config.Targets) {
 	t.Helper()
-	got, ok := targets.GetBrokerByKey(want.Key())
+	got, ok := targets.GetCellTenantByKey(want.Key())
 	if !ok {
 		t.Error("GetBroker got ok=false, want ok=true")
 	}
