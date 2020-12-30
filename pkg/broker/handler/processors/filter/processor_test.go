@@ -314,6 +314,7 @@ func TestFilterProcessor(t *testing.T) {
 func newTestTargets(filter map[string]string) (context.Context, config.Targets) {
 	testTarget := &config.Target{
 		Name:             "target",
+		CellTenantType:   config.CellTenantType_BROKER,
 		CellTenantName:   "broker",
 		Namespace:        "ns",
 		FilterAttributes: filter,

@@ -51,6 +51,7 @@ func TestReportEventDispatchTime(t *testing.T) {
 	}
 	ctx, err = AddTargetTags(ctx, &config.Target{
 		Namespace:      "testns",
+		CellTenantType: config.CellTenantType_BROKER,
 		CellTenantName: "testbroker",
 		Name:           "testtrigger",
 		FilterAttributes: map[string]string{
@@ -92,6 +93,7 @@ func TestReportEventProcessingTime(t *testing.T) {
 	}
 	ctx, err = AddTargetTags(ctx, &config.Target{
 		Namespace:      "testns",
+		CellTenantType: config.CellTenantType_BROKER,
 		CellTenantName: "testbroker",
 		Name:           "testtrigger",
 		FilterAttributes: map[string]string{
@@ -149,6 +151,7 @@ func TestMetricsWithEmptySourceAndTypeFilter(t *testing.T) {
 	}
 	ctx, err = AddTargetTags(ctx, &config.Target{
 		Namespace:      "testns",
+		CellTenantType: config.CellTenantType_BROKER,
 		CellTenantName: "testbroker",
 		Name:           "testtrigger",
 	})

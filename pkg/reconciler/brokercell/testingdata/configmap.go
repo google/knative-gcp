@@ -49,6 +49,7 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 			Id:             string(t.UID),
 			Name:           t.Name,
 			Namespace:      t.Namespace,
+			CellTenantType: config.CellTenantType_BROKER,
 			CellTenantName: broker.Name,
 			Address:        t.Status.SubscriberURI.String(),
 			RetryQueue: &config.Queue{
@@ -73,6 +74,7 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 	}
 	brokerConfig := &config.CellTenant{
 		Id:        string(broker.UID),
+		Type:      config.CellTenantType_BROKER,
 		Name:      broker.Name,
 		Namespace: broker.Namespace,
 		Address:   broker.Status.Address.URL.String(),

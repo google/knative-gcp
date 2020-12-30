@@ -32,6 +32,7 @@ func TestTargetKey(t *testing.T) {
 		Id:             "456",
 		Name:           "my-target",
 		Namespace:      "namespace",
+		CellTenantType: config.CellTenantType_BROKER,
 		CellTenantName: "broker-name",
 		Address:        "baz",
 	}).Key()

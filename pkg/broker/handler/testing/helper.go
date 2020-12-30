@@ -66,7 +66,7 @@ type Helper struct {
 	// The internal map that maps each target to its fake consumer server.
 	consumers map[config.TargetKey]*serverCfg
 	// The internal map that maps each broker to its fake broker ingress server.
-	ingresses map[config.BrokerKey]*serverCfg
+	ingresses map[config.CellTenantKey]*serverCfg
 }
 
 // Close cleans up all resources.
@@ -108,7 +108,7 @@ func NewHelper(ctx context.Context, projectID string) (*Helper, error) {
 		pubsubConn:   conn,
 		Targets:      memory.NewEmptyTargets(),
 		consumers:    make(map[config.TargetKey]*serverCfg),
-		ingresses:    make(map[config.BrokerKey]*serverCfg),
+		ingresses:    make(map[config.CellTenantKey]*serverCfg),
 	}, nil
 }
 
@@ -126,7 +126,7 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 }
 
 // RenewBroker generates new test resources for an existing broker.
-func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, key *config.BrokerKey) *config.CellTenant {
+func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, key *config.CellTenantKey) *config.CellTenant {
 	t.Helper()
 
 	b, ok := h.Targets.GetBrokerByKey(key)
@@ -183,7 +183,7 @@ func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, key *config.Brok
 
 // DeleteBroker deletes the broker by key. It also cleans up test resources used by
 // the broker.
-func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, key *config.BrokerKey) {
+func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, key *config.CellTenantKey) {
 	t.Helper()
 
 	b, ok := h.Targets.GetBrokerByKey(key)
@@ -217,7 +217,7 @@ func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, key *config.Bro
 // The following test resources will also be created:
 // 1. The target retry topic/subscription.
 // 2. The subscriber server.
-func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey *config.BrokerKey, filters map[string]string) *config.Target {
+func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey *config.CellTenantKey, filters map[string]string) *config.Target {
 	t.Helper()
 	tn := "tr-" + uuid.New().String()
 	b, ok := h.Targets.GetBrokerByKey(brokerKey)
@@ -228,6 +228,7 @@ func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey *co
 	testTarget := &config.Target{
 		Name:             tn,
 		Namespace:        b.Namespace,
+		CellTenantType:   b.Type,
 		CellTenantName:   b.Name,
 		FilterAttributes: filters,
 		State:            config.State_READY,
@@ -318,7 +319,7 @@ func (h *Helper) DeleteTarget(ctx context.Context, t *testing.T, targetKey *conf
 }
 
 // SendEventToDecoupleQueue sends the given event to the decouple queue of the given broker.
-func (h *Helper) SendEventToDecoupleQueue(ctx context.Context, t *testing.T, brokerKey *config.BrokerKey, event *event.Event) {
+func (h *Helper) SendEventToDecoupleQueue(ctx context.Context, t *testing.T, brokerKey *config.CellTenantKey, event *event.Event) {
 	t.Helper()
 	b, ok := h.Targets.GetBrokerByKey(brokerKey)
 	if !ok {
@@ -348,7 +349,7 @@ func (h *Helper) SendEventToRetryQueue(ctx context.Context, t *testing.T, target
 // VerifyNextBrokerIngressEvent verifies the next event the broker ingress receives.
 // If wantEvent is nil, then it means such an event is not expected.
 // This function is blocking and should be invoked in a separate goroutine with context timeout.
-func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T, brokerKey *config.BrokerKey, wantEvent *event.Event) {
+func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T, brokerKey *config.CellTenantKey, wantEvent *event.Event) {
 	t.Helper()
 
 	bIng, ok := h.ingresses[*brokerKey]

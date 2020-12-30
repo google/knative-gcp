@@ -48,7 +48,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 	brokerTargets := map[string]*config.Target{"target": {}}
 
 	type brokerTestCase struct {
-		broker  *config.BrokerKey
+		broker  *config.CellTenantKey
 		topic   string
 		wantErr bool
 	}
@@ -219,7 +219,7 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 	brokerTargets := map[string]*config.Target{"target": {}}
 
 	type brokerTestCase struct {
-		broker  *config.BrokerKey
+		broker  *config.CellTenantKey
 		topic   string
 		wantErr bool
 	}

@@ -70,7 +70,7 @@ func (ct *CachedTargets) GetTargetByKey(key *TargetKey) (*Target, bool) {
 
 // GetBrokerByKey returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBrokerByKey(key *BrokerKey) (*CellTenant, bool) {
+func (ct *CachedTargets) GetBrokerByKey(key *CellTenantKey) (*CellTenant, bool) {
 	val := ct.Load()
 	if val == nil || val.CellTenants == nil {
 		return nil, false

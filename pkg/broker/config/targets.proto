@@ -38,7 +38,7 @@ message Queue {
   State state = 3;
 }
 
-// Represents a broker.
+// Represents a tenant of the Cell. E.g. Broker, Channel, etc.
 message CellTenant {
   // The type of this CellTenant (e.g. Broker, Channel, etc.).
   CellTenantType type = 8;

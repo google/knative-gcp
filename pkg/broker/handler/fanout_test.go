@@ -397,10 +397,10 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 
 func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 	t.Helper()
-	gotHandlers := make(map[config.BrokerKey]bool)
-	wantHandlers := make(map[config.BrokerKey]bool)
+	gotHandlers := make(map[config.CellTenantKey]bool)
+	wantHandlers := make(map[config.CellTenantKey]bool)
 
-	p.pool.Range(func(key config.BrokerKey, _ *fanoutHandlerCache) bool {
+	p.pool.Range(func(key config.CellTenantKey, _ *fanoutHandlerCache) bool {
 		gotHandlers[key] = true
 		return true
 	})

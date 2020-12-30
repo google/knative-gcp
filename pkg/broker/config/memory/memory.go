@@ -23,6 +23,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+var _ config.BrokerMutation = (*brokerMutation)(nil)
+
 type brokerMutation struct {
 	b      *config.CellTenant
 	delete bool
@@ -31,6 +33,11 @@ type brokerMutation struct {
 func (m *brokerMutation) SetID(id string) config.BrokerMutation {
 	m.delete = false
 	m.b.Id = id
+	return m
+}
+
+func (m *brokerMutation) SetCellTenantType(t config.CellTenantType) config.BrokerMutation {
+	m.b.Type = t
 	return m
 }
 
@@ -59,6 +66,7 @@ func (m *brokerMutation) UpsertTargets(targets ...*config.Target) config.BrokerM
 	}
 	for _, t := range targets {
 		t.Namespace = m.b.Namespace
+		t.CellTenantType = m.b.Type
 		t.CellTenantName = m.b.Name
 		m.b.Targets[t.Name] = t
 	}
@@ -101,7 +109,7 @@ func NewTargets(pb *config.TargetsConfig) config.Targets {
 // MutateBroker mutates a broker by namespace and name.
 // If the broker doesn't exist, it will be added (unless Delete() is called).
 // This function is thread-safe.
-func (m *memoryTargets) MutateBroker(key *config.BrokerKey, mutate func(config.BrokerMutation)) {
+func (m *memoryTargets) MutateBroker(key *config.CellTenantKey, mutate func(config.BrokerMutation)) {
 	// Sync writes.
 	m.mux.Lock()
 	defer m.mux.Unlock()

@@ -26,7 +26,7 @@ type ReadonlyTargets interface {
 	GetTargetByKey(key *TargetKey) (*Target, bool)
 	// GetBrokerByKey returns a Broker and its targets, if it exists.
 	// Do not modify the returned Broker copy.
-	GetBrokerByKey(key *BrokerKey) (*CellTenant, bool)
+	GetBrokerByKey(key *CellTenantKey) (*CellTenant, bool)
 	// RangeBrokers ranges over all brokers.
 	// Do not modify the given Broker copy.
 	RangeBrokers(func(*CellTenant) bool)
@@ -42,6 +42,8 @@ type ReadonlyTargets interface {
 type BrokerMutation interface {
 	// SetID sets the broker ID.
 	SetID(id string) BrokerMutation
+	// SetCellTenantType sets the CellTenant's type.
+	SetCellTenantType(t CellTenantType) BrokerMutation
 	// SetAddress sets the broker address.
 	SetAddress(address string) BrokerMutation
 	// SetDecoupleQueue sets the broker decouple queue.
@@ -63,5 +65,5 @@ type Targets interface {
 	ReadonlyTargets
 	// MutateBroker mutates a broker by namespace and name.
 	// If the broker doesn't exist, it will be added (unless Delete() is called).
-	MutateBroker(key *BrokerKey, mutate func(BrokerMutation))
+	MutateBroker(key *CellTenantKey, mutate func(BrokerMutation))
 }

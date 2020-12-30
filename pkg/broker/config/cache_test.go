@@ -74,6 +74,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	b1 := &CellTenant{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
+		Type:      CellTenantType_BROKER,
 		Name:      "broker1",
 		Namespace: "ns1",
 		DecoupleQueue: &Queue{
@@ -89,6 +90,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	b2 := &CellTenant{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
+		Type:      CellTenantType_BROKER,
 		Name:      "broker2",
 		Namespace: "ns2",
 		DecoupleQueue: &Queue{
@@ -209,6 +211,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 	b1 := &CellTenant{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
+		Type:      CellTenantType_BROKER,
 		Name:      "broker1",
 		Namespace: "ns1",
 		DecoupleQueue: &Queue{
@@ -224,6 +227,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 	b2 := &CellTenant{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
+		Type:      CellTenantType_BROKER,
 		Name:      "broker2",
 		Namespace: "ns2",
 		DecoupleQueue: &Queue{
@@ -333,6 +337,7 @@ func TestCachedTargetsString(t *testing.T) {
 	b1 := &CellTenant{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
+		Type:      CellTenantType_BROKER,
 		Name:      "broker1",
 		Namespace: "ns1",
 		DecoupleQueue: &Queue{
@@ -348,6 +353,7 @@ func TestCachedTargetsString(t *testing.T) {
 	b2 := &CellTenant{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
+		Type:      CellTenantType_BROKER,
 		Name:      "broker2",
 		Namespace: "ns2",
 		DecoupleQueue: &Queue{
@@ -385,6 +391,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		Id:               "uid-1",
 		Name:             "name1",
 		Namespace:        "ns1",
+		CellTenantType:   CellTenantType_BROKER,
 		CellTenantName:   "broker1",
 		FilterAttributes: map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
@@ -397,6 +404,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		Id:               "uid-2",
 		Name:             "name2",
 		Namespace:        "ns1",
+		CellTenantType:   CellTenantType_BROKER,
 		CellTenantName:   "broker1",
 		FilterAttributes: map[string]string{"app": "bar"},
 		RetryQueue: &Queue{
@@ -409,6 +417,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		Id:               "uid-3",
 		Name:             "name3",
 		Namespace:        "ns2",
+		CellTenantType:   CellTenantType_BROKER,
 		CellTenantName:   "broker2",
 		FilterAttributes: map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
@@ -421,6 +430,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		Id:               "uid-4",
 		Name:             "name4",
 		Namespace:        "ns2",
+		CellTenantType:   CellTenantType_BROKER,
 		CellTenantName:   "broker2",
 		FilterAttributes: map[string]string{"app": "bar"},
 		RetryQueue: &Queue{
@@ -432,6 +442,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 	b1 := &CellTenant{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
+		Type:      CellTenantType_BROKER,
 		Name:      "broker1",
 		Namespace: "ns1",
 		DecoupleQueue: &Queue{
@@ -447,6 +458,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 	b2 := &CellTenant{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
+		Type:      CellTenantType_BROKER,
 		Name:      "broker2",
 		Namespace: "ns2",
 		DecoupleQueue: &Queue{

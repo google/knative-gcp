@@ -37,12 +37,14 @@ func TestUpsertTargetsWithNamespaceBrokerEnforced(t *testing.T) {
 	wantTarget := &config.Target{
 		Name:           "target",
 		Namespace:      "ns",
+		CellTenantType: config.CellTenantType_BROKER,
 		CellTenantName: "broker",
 	}
 	v.MutateBroker(wantTarget.Key().ParentKey(), func(bm config.BrokerMutation) {
 		bm.UpsertTargets(&config.Target{
 			Name:           "target",
 			Namespace:      "other-namespace",
+			CellTenantType: config.CellTenantType_BROKER,
 			CellTenantName: "other-broker",
 		})
 	})
@@ -63,6 +65,7 @@ func TestMutateBroker(t *testing.T) {
 	targets := NewTargets(val)
 
 	wantBroker := &config.CellTenant{
+		Type:      config.CellTenantType_BROKER,
 		Id:        "b-uid",
 		Address:   "broker.example.com",
 		Name:      "broker",
@@ -76,7 +79,8 @@ func TestMutateBroker(t *testing.T) {
 
 	t.Run("create new broker", func(t *testing.T) {
 		targets.MutateBroker(wantBroker.Key(), func(m config.BrokerMutation) {
-			m.SetID("b-uid").SetAddress("broker.example.com").SetState(config.State_READY)
+			m.SetID("b-uid").SetCellTenantType(wantBroker.Type)
+			m.SetAddress("broker.example.com").SetState(config.State_READY)
 			m.SetDecoupleQueue(&config.Queue{
 				Topic:        "topic",
 				Subscription: "sub",
@@ -96,6 +100,7 @@ func TestMutateBroker(t *testing.T) {
 	t1 := &config.Target{
 		Id:             "uid-1",
 		Address:        "consumer1.example.com",
+		CellTenantType: config.CellTenantType_BROKER,
 		CellTenantName: "broker",
 		FilterAttributes: map[string]string{
 			"app": "foo",
@@ -110,6 +115,7 @@ func TestMutateBroker(t *testing.T) {
 	t2 := &config.Target{
 		Id:             "uid-2",
 		Address:        "consumer2.example.com",
+		CellTenantType: config.CellTenantType_BROKER,
 		CellTenantName: "broker",
 		FilterAttributes: map[string]string{
 			"app": "bar",
@@ -124,6 +130,7 @@ func TestMutateBroker(t *testing.T) {
 	t3 := &config.Target{
 		Id:             "uid-3",
 		Address:        "consumer3.example.com",
+		CellTenantType: config.CellTenantType_BROKER,
 		CellTenantName: "broker",
 		FilterAttributes: map[string]string{
 			"app": "zzz",
@@ -169,7 +176,8 @@ func TestMutateBroker(t *testing.T) {
 			// Delete should "delete" the broker.
 			m.Delete()
 			// Then make some changes which should "recreate" the broker.
-			m.SetID("b-uid").SetAddress("external.broker.example.com").SetState(config.State_READY)
+			m.SetID("b-uid").SetCellTenantType(wantBroker.Type)
+			m.SetAddress("external.broker.example.com").SetState(config.State_READY)
 			m.SetDecoupleQueue(&config.Queue{
 				Topic:        "topic",
 				Subscription: "sub",
