@@ -116,7 +116,7 @@ func NewHelper(ctx context.Context, projectID string) (*Helper, error) {
 // The following test resources will also be created.
 // 1. The broker decouple topic and subscription.
 // 2. The broker ingress server.
-func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace string) *config.Broker {
+func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace string) *config.CellTenant {
 	t.Helper()
 
 	// Create an empty broker config.
@@ -126,7 +126,7 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 }
 
 // RenewBroker generates new test resources for an existing broker.
-func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, key *config.BrokerKey) *config.Broker {
+func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, key *config.BrokerKey) *config.CellTenant {
 	t.Helper()
 
 	b, ok := h.Targets.GetBrokerByKey(key)
@@ -228,7 +228,7 @@ func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey *co
 	testTarget := &config.Target{
 		Name:             tn,
 		Namespace:        b.Namespace,
-		Broker:           b.Name,
+		CellTenantName:   b.Name,
 		FilterAttributes: filters,
 		State:            config.State_READY,
 	}

@@ -26,10 +26,10 @@ type ReadonlyTargets interface {
 	GetTargetByKey(key *TargetKey) (*Target, bool)
 	// GetBrokerByKey returns a Broker and its targets, if it exists.
 	// Do not modify the returned Broker copy.
-	GetBrokerByKey(key *BrokerKey) (*Broker, bool)
+	GetBrokerByKey(key *BrokerKey) (*CellTenant, bool)
 	// RangeBrokers ranges over all brokers.
 	// Do not modify the given Broker copy.
-	RangeBrokers(func(*Broker) bool)
+	RangeBrokers(func(*CellTenant) bool)
 	// Bytes serializes all the targets.
 	Bytes() ([]byte, error)
 	// DebugString returns the text format of all the targets. It is for _debug_ purposes only. The

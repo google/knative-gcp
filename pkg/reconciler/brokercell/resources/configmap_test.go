@@ -31,15 +31,15 @@ import (
 )
 
 func testConfigMap(names []string, namespace string) *corev1.ConfigMap {
-	brokerMap := make(map[string]*config.Broker)
+	brokerMap := make(map[string]*config.CellTenant)
 	for _, name := range names {
-		brokerMap[fmt.Sprintf("%s/%s", namespace, name)] = &config.Broker{
+		brokerMap[fmt.Sprintf("%s/%s", namespace, name)] = &config.CellTenant{
 			Name:      name,
 			Namespace: namespace,
 		}
 	}
 	targets := &config.TargetsConfig{
-		Brokers: brokerMap,
+		CellTenants: brokerMap,
 	}
 	targetsBytes, _ := proto.Marshal(targets)
 	return &corev1.ConfigMap{

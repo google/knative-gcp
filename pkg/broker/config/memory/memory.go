@@ -24,7 +24,7 @@ import (
 )
 
 type brokerMutation struct {
-	b      *config.Broker
+	b      *config.CellTenant
 	delete bool
 }
 
@@ -59,7 +59,7 @@ func (m *brokerMutation) UpsertTargets(targets ...*config.Target) config.BrokerM
 	}
 	for _, t := range targets {
 		t.Namespace = m.b.Namespace
-		t.Broker = m.b.Name
+		t.CellTenantName = m.b.Name
 		m.b.Targets[t.Name] = t
 	}
 	return m
@@ -76,7 +76,7 @@ func (m *brokerMutation) DeleteTargets(targets ...*config.Target) config.BrokerM
 func (m *brokerMutation) Delete() {
 	// Calling delete will "reset" the broker under mutation instantly.
 	m.delete = true
-	m.b = &config.Broker{Name: m.b.Name, Namespace: m.b.Namespace}
+	m.b = &config.CellTenant{Name: m.b.Name, Namespace: m.b.Namespace}
 }
 
 type memoryTargets struct {
@@ -88,7 +88,7 @@ var _ config.Targets = (*memoryTargets)(nil)
 
 // NewEmptyTargets returns an empty mutable Targets in memory.
 func NewEmptyTargets() config.Targets {
-	return NewTargets(&config.TargetsConfig{Brokers: make(map[string]*config.Broker)})
+	return NewTargets(&config.TargetsConfig{CellTenants: make(map[string]*config.CellTenant)})
 }
 
 // NewTargets returns a new mutable Targets in memory.
@@ -117,8 +117,8 @@ func (m *memoryTargets) MutateBroker(key *config.BrokerKey, mutate func(config.B
 		newVal = &config.TargetsConfig{}
 	}
 
-	if newVal.Brokers != nil {
-		if existing, ok := newVal.Brokers[key.PersistenceString()]; ok {
+	if newVal.CellTenants != nil {
+		if existing, ok := newVal.CellTenants[key.PersistenceString()]; ok {
 			b = existing
 		}
 	}
@@ -128,12 +128,12 @@ func (m *memoryTargets) MutateBroker(key *config.BrokerKey, mutate func(config.B
 	mutate(mutation)
 
 	if mutation.delete {
-		delete(newVal.Brokers, key.PersistenceString())
+		delete(newVal.CellTenants, key.PersistenceString())
 	} else {
-		if newVal.Brokers == nil {
-			newVal.Brokers = make(map[string]*config.Broker)
+		if newVal.CellTenants == nil {
+			newVal.CellTenants = make(map[string]*config.CellTenant)
 		}
-		newVal.Brokers[key.PersistenceString()] = mutation.b
+		newVal.CellTenants[key.PersistenceString()] = mutation.b
 	}
 
 	// Update the atomic value to be the copy.

@@ -107,11 +107,11 @@ func (r *Reconciler) addToConfig(_ context.Context, b *brokerv1beta1.Broker, tri
 		for _, t := range triggers {
 			if t.Spec.Broker == b.Name {
 				target := &config.Target{
-					Id:        string(t.UID),
-					Name:      t.Name,
-					Namespace: t.Namespace,
-					Broker:    b.Name,
-					Address:   t.Status.SubscriberURI.String(),
+					Id:             string(t.UID),
+					Name:           t.Name,
+					Namespace:      t.Namespace,
+					CellTenantName: b.Name,
+					Address:        t.Status.SubscriberURI.String(),
 					RetryQueue: &config.Queue{
 						Topic:        brokerresources.GenerateRetryTopicName(t),
 						Subscription: brokerresources.GenerateRetrySubscriptionName(t),

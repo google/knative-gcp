@@ -71,7 +71,7 @@ func TestCachedTargetsRange(t *testing.T) {
 		},
 		State: State_UNKNOWN,
 	}
-	b1 := &Broker{
+	b1 := &CellTenant{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
 		Name:      "broker1",
@@ -86,7 +86,7 @@ func TestCachedTargetsRange(t *testing.T) {
 			"name2": t2,
 		},
 	}
-	b2 := &Broker{
+	b2 := &CellTenant{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
 		Name:      "broker2",
@@ -102,7 +102,7 @@ func TestCachedTargetsRange(t *testing.T) {
 		},
 	}
 	val := &TargetsConfig{
-		Brokers: map[string]*Broker{
+		CellTenants: map[string]*CellTenant{
 			"ns1/broker1": b1,
 			"ns2/broker2": b2,
 		},
@@ -129,12 +129,12 @@ func TestCachedTargetsRange(t *testing.T) {
 	})
 
 	t.Run("range brokers", func(t *testing.T) {
-		gotBrokers := make(map[string]*Broker)
-		targets.RangeBrokers(func(b *Broker) bool {
+		gotBrokers := make(map[string]*CellTenant)
+		targets.RangeBrokers(func(b *CellTenant) bool {
 			gotBrokers[b.Key().PersistenceString()] = b
 			return true
 		})
-		if diff := cmp.Diff(val.Brokers, gotBrokers, protocmp.Transform()); diff != "" {
+		if diff := cmp.Diff(val.CellTenants, gotBrokers, protocmp.Transform()); diff != "" {
 			t.Errorf("RangeBrokers (-want,+got): %v", diff)
 		}
 	})
@@ -206,7 +206,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 		},
 		State: State_UNKNOWN,
 	}
-	b1 := &Broker{
+	b1 := &CellTenant{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
 		Name:      "broker1",
@@ -221,7 +221,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 			"name2": t2,
 		},
 	}
-	b2 := &Broker{
+	b2 := &CellTenant{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
 		Name:      "broker2",
@@ -237,7 +237,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 		},
 	}
 	val := &TargetsConfig{
-		Brokers: map[string]*Broker{
+		CellTenants: map[string]*CellTenant{
 			"ns1/broker1": b1,
 			"ns2/broker2": b2,
 		},
@@ -330,7 +330,7 @@ func TestCachedTargetsString(t *testing.T) {
 		},
 		State: State_UNKNOWN,
 	}
-	b1 := &Broker{
+	b1 := &CellTenant{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
 		Name:      "broker1",
@@ -345,7 +345,7 @@ func TestCachedTargetsString(t *testing.T) {
 			"name2": t2,
 		},
 	}
-	b2 := &Broker{
+	b2 := &CellTenant{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
 		Name:      "broker2",
@@ -361,7 +361,7 @@ func TestCachedTargetsString(t *testing.T) {
 		},
 	}
 	val := &TargetsConfig{
-		Brokers: map[string]*Broker{
+		CellTenants: map[string]*CellTenant{
 			"ns1/broker1": b1,
 			"ns2/broker2": b2,
 		},
@@ -385,7 +385,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		Id:               "uid-1",
 		Name:             "name1",
 		Namespace:        "ns1",
-		Broker:           "broker1",
+		CellTenantName:   "broker1",
 		FilterAttributes: map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
 			Topic:        "abc",
@@ -397,7 +397,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		Id:               "uid-2",
 		Name:             "name2",
 		Namespace:        "ns1",
-		Broker:           "broker1",
+		CellTenantName:   "broker1",
 		FilterAttributes: map[string]string{"app": "bar"},
 		RetryQueue: &Queue{
 			Topic:        "def",
@@ -409,7 +409,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		Id:               "uid-3",
 		Name:             "name3",
 		Namespace:        "ns2",
-		Broker:           "broker2",
+		CellTenantName:   "broker2",
 		FilterAttributes: map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
 			Topic:        "ghi",
@@ -421,7 +421,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		Id:               "uid-4",
 		Name:             "name4",
 		Namespace:        "ns2",
-		Broker:           "broker2",
+		CellTenantName:   "broker2",
 		FilterAttributes: map[string]string{"app": "bar"},
 		RetryQueue: &Queue{
 			Topic:        "jkl",
@@ -429,7 +429,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		},
 		State: State_UNKNOWN,
 	}
-	b1 := &Broker{
+	b1 := &CellTenant{
 		Id:        "b-uid-1",
 		Address:   "broker1.ns1.example.com",
 		Name:      "broker1",
@@ -444,7 +444,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 			"name2": t2,
 		},
 	}
-	b2 := &Broker{
+	b2 := &CellTenant{
 		Id:        "b-uid-2",
 		Address:   "broker2.ns2.example.com",
 		Name:      "broker2",
@@ -460,7 +460,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 		},
 	}
 	val := &TargetsConfig{
-		Brokers: map[string]*Broker{
+		CellTenants: map[string]*CellTenant{
 			"ns1/broker1": b1,
 			"ns2/broker2": b2,
 		},

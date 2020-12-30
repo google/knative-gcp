@@ -82,7 +82,7 @@ func TestRetryWatchAndSync(t *testing.T) {
 		assertRetryHandlers(t, syncPool, helper.Targets)
 	})
 
-	bs := make([]*config.Broker, 0, 4)
+	bs := make([]*config.CellTenant, 0, 4)
 
 	t.Run("adding some brokers with their targets", func(t *testing.T) {
 		// Add some brokers with their targets.

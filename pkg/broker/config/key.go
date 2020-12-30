@@ -86,8 +86,8 @@ func (k *BrokerKey) MetricsResource() resource.Resource {
 
 // CreateEmptyBroker creates an empty Broker that corresponds to this BrokerKey. It is empty except
 // for the portions known about by the BrokerKey.
-func (k *BrokerKey) CreateEmptyBroker() *Broker {
-	return &Broker{
+func (k *BrokerKey) CreateEmptyBroker() *CellTenant {
+	return &CellTenant{
 		Namespace: k.namespace,
 		Name:      k.name,
 	}
@@ -112,7 +112,7 @@ func (k *BrokerKey) namespacedName() types.NamespacedName {
 }
 
 // Key returns the BrokerKey for this Broker.
-func (x *Broker) Key() *BrokerKey {
+func (x *CellTenant) Key() *BrokerKey {
 	return &BrokerKey{
 		namespace: x.Namespace,
 		name:      x.Name,
@@ -143,7 +143,7 @@ func (x *Target) Key() *TargetKey {
 	return &TargetKey{
 		brokerKey: BrokerKey{
 			namespace: x.Namespace,
-			name:      x.Broker,
+			name:      x.CellTenantName,
 		},
 		name: x.Name,
 	}

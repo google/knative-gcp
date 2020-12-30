@@ -48,7 +48,7 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 	if val == nil {
 		return
 	}
-	for _, b := range val.Brokers {
+	for _, b := range val.CellTenants {
 		for _, t := range b.Targets {
 			if c := f(t); !c {
 				return
@@ -70,23 +70,23 @@ func (ct *CachedTargets) GetTargetByKey(key *TargetKey) (*Target, bool) {
 
 // GetBrokerByKey returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBrokerByKey(key *BrokerKey) (*Broker, bool) {
+func (ct *CachedTargets) GetBrokerByKey(key *BrokerKey) (*CellTenant, bool) {
 	val := ct.Load()
-	if val == nil || val.Brokers == nil {
+	if val == nil || val.CellTenants == nil {
 		return nil, false
 	}
-	b, ok := val.Brokers[key.PersistenceString()]
+	b, ok := val.CellTenants[key.PersistenceString()]
 	return b, ok
 }
 
 // RangeBrokers ranges over all brokers.
 // Do not modify the given Broker copy.
-func (ct *CachedTargets) RangeBrokers(f func(*Broker) bool) {
+func (ct *CachedTargets) RangeBrokers(f func(*CellTenant) bool) {
 	val := ct.Load()
 	if val == nil {
 		return
 	}
-	for _, b := range val.Brokers {
+	for _, b := range val.CellTenants {
 		if c := f(b); !c {
 			break
 		}
