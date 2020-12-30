@@ -38,7 +38,22 @@ func (ct *CachedTargets) Store(t *TargetsConfig) {
 // Load atomically loads a stored TargetsConfig.
 // If there was no TargetsConfig stored, nil will be returned.
 func (ct *CachedTargets) Load() *TargetsConfig {
-	return ct.Value.Load().(*TargetsConfig)
+	tc := ct.Value.Load().(*TargetsConfig)
+
+	// To support downgrades, we need to pretend entries without a CellTenantType are actually
+	// Broker typed. That way, if the newer BrokerCell code is running, but has an older ConfigMap,
+	// it doesn't think that every CellTenant is of unknown type.
+	// TODO Remove after release 0.22.
+	for _, t := range tc.CellTenants {
+		if t.Type == CellTenantType_UNKNOWN_CELL_TENANT_TYPE {
+			t.Type = CellTenantType_BROKER
+			for _, tt := range t.Targets {
+				tt.CellTenantType = CellTenantType_BROKER
+			}
+		}
+	}
+
+	return tc
 }
 
 // RangeAllTargets ranges over all targets.
