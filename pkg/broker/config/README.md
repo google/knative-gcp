@@ -5,9 +5,9 @@ https://github.com/google/knative-gcp/issues/2017.
     - The current version is [v3.14.0](https://github.com/protocolbuffers/protobuf/releases/tag/v3.14.0).
 1. From the root of the repo, run:
     ```shell
-   protoc pkg/broker/config/targets.proto --go_out=$GOPATH/src 
+   protoc pkg/broker/config/targets.proto --go_out=$GOPATH/src
    ```
-   
+
 
 Note that I had also initially run:
 - `go get -u github.com/golang/protobuf/protoc-gen-go`
