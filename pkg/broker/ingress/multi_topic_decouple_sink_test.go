@@ -45,7 +45,9 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 	// If the broker has no targets, it will drop events at ingress without sending them
 	// to pub/sub. So we add a target with no filter to the broker to ensure events are not
 	// dropped due to ingress filtering.
-	brokerTargets := map[string]*config.Target{"target": {}}
+	brokerTargets := map[string]*config.Target{"target": {
+		CellTenantType: config.CellTenantType_BROKER,
+	}}
 
 	type brokerTestCase struct {
 		broker  *config.CellTenantKey
@@ -61,7 +63,13 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "happy path single broker",
 			brokerConfig: &config.TargetsConfig{
 				CellTenants: map[string]*config.CellTenant{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_READY}, Targets: brokerTargets},
+					"test_ns_1/test_broker_1": {
+						Type: config.CellTenantType_BROKER,
+						DecoupleQueue: &config.Queue{
+							Topic: "test_topic_1",
+							State: config.State_READY,
+						},
+						Targets: brokerTargets},
 				},
 			},
 			cases: []brokerTestCase{
@@ -75,8 +83,20 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "happy path multiple brokers",
 			brokerConfig: &config.TargetsConfig{
 				CellTenants: map[string]*config.CellTenant{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_READY}, Targets: brokerTargets},
-					"test_ns_2/test_broker_2": {DecoupleQueue: &config.Queue{Topic: "test_topic_2", State: config.State_READY}, Targets: brokerTargets},
+					"test_ns_1/test_broker_1": {
+						Type: config.CellTenantType_BROKER,
+						DecoupleQueue: &config.Queue{
+							Topic: "test_topic_1",
+							State: config.State_READY,
+						},
+						Targets: brokerTargets},
+					"test_ns_2/test_broker_2": {
+						Type: config.CellTenantType_BROKER,
+						DecoupleQueue: &config.Queue{
+							Topic: "test_topic_2",
+							State: config.State_READY,
+						},
+						Targets: brokerTargets},
 				},
 			},
 			cases: []brokerTestCase{
@@ -107,7 +127,13 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "broker is not ready",
 			brokerConfig: &config.TargetsConfig{
 				CellTenants: map[string]*config.CellTenant{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_UNKNOWN}, Targets: brokerTargets},
+					"test_ns_1/test_broker_1": {
+						Type: config.CellTenantType_BROKER,
+						DecoupleQueue: &config.Queue{
+							Topic: "test_topic_1",
+							State: config.State_UNKNOWN,
+						},
+						Targets: brokerTargets},
 				},
 			},
 			cases: []brokerTestCase{
@@ -122,7 +148,11 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "decouple queue is nil for broker",
 			brokerConfig: &config.TargetsConfig{
 				CellTenants: map[string]*config.CellTenant{
-					"test_ns_1/test_broker_1": {DecoupleQueue: nil, Targets: brokerTargets},
+					"test_ns_1/test_broker_1": {
+						Type:          config.CellTenantType_BROKER,
+						DecoupleQueue: nil,
+						Targets:       brokerTargets,
+					},
 				},
 			},
 			cases: []brokerTestCase{
@@ -137,7 +167,11 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "empty topic for broker",
 			brokerConfig: &config.TargetsConfig{
 				CellTenants: map[string]*config.CellTenant{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: ""}, Targets: brokerTargets},
+					"test_ns_1/test_broker_1": {
+						Type:          config.CellTenantType_BROKER,
+						DecoupleQueue: &config.Queue{Topic: ""},
+						Targets:       brokerTargets,
+					},
 				},
 			},
 			cases: []brokerTestCase{
@@ -216,7 +250,9 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 	// If the broker has no targets, it will drop events at ingress without sending them
 	// to pub/sub. So we add a target with no filter to the broker to ensure events are not
 	// dropped due to ingress filtering.
-	brokerTargets := map[string]*config.Target{"target": {}}
+	brokerTargets := map[string]*config.Target{"target": {
+		CellTenantType: config.CellTenantType_BROKER,
+	}}
 
 	type brokerTestCase struct {
 		broker  *config.CellTenantKey
@@ -232,7 +268,14 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			name: "happy path single broker",
 			brokerConfig: &config.TargetsConfig{
 				CellTenants: map[string]*config.CellTenant{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_READY}, Targets: brokerTargets},
+					"test_ns_1/test_broker_1": {
+						Type: config.CellTenantType_BROKER,
+						DecoupleQueue: &config.Queue{
+							Topic: "test_topic_1",
+							State: config.State_READY,
+						},
+						Targets: brokerTargets,
+					},
 				},
 			},
 			cases: []brokerTestCase{
@@ -246,8 +289,22 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			name: "happy path multiple brokers",
 			brokerConfig: &config.TargetsConfig{
 				CellTenants: map[string]*config.CellTenant{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_READY}, Targets: brokerTargets},
-					"test_ns_2/test_broker_2": {DecoupleQueue: &config.Queue{Topic: "test_topic_2", State: config.State_READY}, Targets: brokerTargets},
+					"test_ns_1/test_broker_1": {
+						Type: config.CellTenantType_BROKER,
+						DecoupleQueue: &config.Queue{
+							Topic: "test_topic_1",
+							State: config.State_READY,
+						},
+						Targets: brokerTargets,
+					},
+					"test_ns_2/test_broker_2": {
+						Type: config.CellTenantType_BROKER,
+						DecoupleQueue: &config.Queue{
+							Topic: "test_topic_2",
+							State: config.State_READY,
+						},
+						Targets: brokerTargets,
+					},
 				},
 			},
 			cases: []brokerTestCase{
@@ -278,7 +335,14 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			name: "broker is not ready",
 			brokerConfig: &config.TargetsConfig{
 				CellTenants: map[string]*config.CellTenant{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_UNKNOWN}, Targets: brokerTargets},
+					"test_ns_1/test_broker_1": {
+						Type: config.CellTenantType_BROKER,
+						DecoupleQueue: &config.Queue{
+							Topic: "test_topic_1",
+							State: config.State_UNKNOWN,
+						},
+						Targets: brokerTargets,
+					},
 				},
 			},
 			cases: []brokerTestCase{
@@ -293,7 +357,11 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			name: "decouple queue is nil for broker",
 			brokerConfig: &config.TargetsConfig{
 				CellTenants: map[string]*config.CellTenant{
-					"test_ns_1/test_broker_1": {DecoupleQueue: nil, Targets: brokerTargets},
+					"test_ns_1/test_broker_1": {
+						Type:          config.CellTenantType_BROKER,
+						DecoupleQueue: nil,
+						Targets:       brokerTargets,
+					},
 				},
 			},
 			cases: []brokerTestCase{
@@ -308,7 +376,13 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			name: "empty topic for broker",
 			brokerConfig: &config.TargetsConfig{
 				CellTenants: map[string]*config.CellTenant{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: ""}, Targets: brokerTargets},
+					"test_ns_1/test_broker_1": {
+						Type: config.CellTenantType_BROKER,
+						DecoupleQueue: &config.Queue{
+							Topic: "",
+						},
+						Targets: brokerTargets,
+					},
 				},
 			},
 			cases: []brokerTestCase{
@@ -400,7 +474,9 @@ func TestHasTrigger(t *testing.T) {
 		{
 			name: "broker with target with no filters",
 			brokerTargets: map[string]*config.Target{
-				"target_1": {},
+				"target_1": {
+					CellTenantType: config.CellTenantType_BROKER,
+				},
 			},
 			hasTrigger: true,
 		},
@@ -408,6 +484,7 @@ func TestHasTrigger(t *testing.T) {
 			name: "broker with target with matching filter",
 			brokerTargets: map[string]*config.Target{
 				"target_1": {
+					CellTenantType: config.CellTenantType_BROKER,
 					FilterAttributes: map[string]string{
 						"type":   eventType,
 						"source": "test-source",
@@ -420,6 +497,7 @@ func TestHasTrigger(t *testing.T) {
 			name: "broker with target with non-matching filter",
 			brokerTargets: map[string]*config.Target{
 				"target_1": {
+					CellTenantType: config.CellTenantType_BROKER,
 					FilterAttributes: map[string]string{
 						"type":   eventType,
 						"source": "some-random-source",
@@ -432,17 +510,20 @@ func TestHasTrigger(t *testing.T) {
 			name: "broker with multiple targets with one matching target filter",
 			brokerTargets: map[string]*config.Target{
 				"non_matching_target_1": {
+					CellTenantType: config.CellTenantType_BROKER,
 					FilterAttributes: map[string]string{
 						"type":   eventType,
 						"source": "some-random-source",
 					},
 				},
 				"non_matching_target_2": {
+					CellTenantType: config.CellTenantType_BROKER,
 					FilterAttributes: map[string]string{
 						"source": "some-random-other-source",
 					},
 				},
 				"matching_target_3": {
+					CellTenantType: config.CellTenantType_BROKER,
 					FilterAttributes: map[string]string{
 						"type": eventType,
 					},
@@ -454,17 +535,20 @@ func TestHasTrigger(t *testing.T) {
 			name: "broker with multiple targets with no matching target filters",
 			brokerTargets: map[string]*config.Target{
 				"non_matching_target_1": {
+					CellTenantType: config.CellTenantType_BROKER,
 					FilterAttributes: map[string]string{
 						"type":   eventType,
 						"source": "some-random-source",
 					},
 				},
 				"non_matching_target_2": {
+					CellTenantType: config.CellTenantType_BROKER,
 					FilterAttributes: map[string]string{
 						"source": "some-random-other-source",
 					},
 				},
 				"non_matching_target_3": {
+					CellTenantType: config.CellTenantType_BROKER,
 					FilterAttributes: map[string]string{
 						"type": eventType + "dummy",
 					},
@@ -483,6 +567,7 @@ func TestHasTrigger(t *testing.T) {
 			testBrokerConfig := &config.TargetsConfig{
 				CellTenants: map[string]*config.CellTenant{
 					"test_ns_1/test_broker_1": {
+						Type:          config.CellTenantType_BROKER,
 						DecoupleQueue: DecoupleQueue,
 						Targets:       test.brokerTargets,
 					},
@@ -526,8 +611,11 @@ func TestMultiTopicDecoupleSinkSendChecksFilter(t *testing.T) {
 	testBrokerConfig := &config.TargetsConfig{
 		CellTenants: map[string]*config.CellTenant{
 			"test_ns_1/test_broker_1": {
+				Type:          config.CellTenantType_BROKER,
 				DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_READY},
-				Targets:       map[string]*config.Target{"target_1": {}},
+				Targets: map[string]*config.Target{"target_1": {
+					CellTenantType: config.CellTenantType_BROKER,
+				}},
 			},
 		},
 	}
@@ -579,8 +667,11 @@ func TestMultiTopicDecoupleSinkSendDoesNotChecksFilterWhenFeatureDisabled(t *tes
 	testBrokerConfig := &config.TargetsConfig{
 		CellTenants: map[string]*config.CellTenant{
 			"test_ns_1/test_broker_1": {
+				Type:          config.CellTenantType_BROKER,
 				DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_READY},
-				Targets:       map[string]*config.Target{"target_1": {}},
+				Targets: map[string]*config.Target{"target_1": {
+					CellTenantType: config.CellTenantType_BROKER,
+				}},
 			},
 		},
 	}

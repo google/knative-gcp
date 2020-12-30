@@ -30,6 +30,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	t1 := &Target{
 		Id:               "uid-1",
 		Name:             "name1",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns1",
 		FilterAttributes: map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
@@ -41,6 +42,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	t2 := &Target{
 		Id:               "uid-2",
 		Name:             "name2",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns1",
 		FilterAttributes: map[string]string{"app": "bar"},
 		RetryQueue: &Queue{
@@ -52,6 +54,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	t3 := &Target{
 		Id:               "uid-3",
 		Name:             "name3",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns2",
 		FilterAttributes: map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
@@ -63,6 +66,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	t4 := &Target{
 		Id:               "uid-4",
 		Name:             "name4",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns2",
 		FilterAttributes: map[string]string{"app": "bar"},
 		RetryQueue: &Queue{
@@ -167,6 +171,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 	t1 := &Target{
 		Id:               "uid-1",
 		Name:             "name1",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns1",
 		FilterAttributes: map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
@@ -178,6 +183,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 	t2 := &Target{
 		Id:               "uid-2",
 		Name:             "name2",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns1",
 		FilterAttributes: map[string]string{"app": "bar"},
 		RetryQueue: &Queue{
@@ -189,6 +195,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 	t3 := &Target{
 		Id:               "uid-3",
 		Name:             "name3",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns2",
 		FilterAttributes: map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
@@ -200,6 +207,7 @@ func TestCachedTargetsBytes(t *testing.T) {
 	t4 := &Target{
 		Id:               "uid-4",
 		Name:             "name4",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns2",
 		FilterAttributes: map[string]string{"app": "bar"},
 		RetryQueue: &Queue{
@@ -293,6 +301,7 @@ func TestCachedTargetsString(t *testing.T) {
 	t1 := &Target{
 		Id:               "uid-1",
 		Name:             "name1",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns1",
 		FilterAttributes: map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
@@ -304,6 +313,7 @@ func TestCachedTargetsString(t *testing.T) {
 	t2 := &Target{
 		Id:               "uid-2",
 		Name:             "name2",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns1",
 		FilterAttributes: map[string]string{"app": "bar"},
 		RetryQueue: &Queue{
@@ -315,6 +325,7 @@ func TestCachedTargetsString(t *testing.T) {
 	t3 := &Target{
 		Id:               "uid-3",
 		Name:             "name3",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns2",
 		FilterAttributes: map[string]string{"app": "foo"},
 		RetryQueue: &Queue{
@@ -326,6 +337,7 @@ func TestCachedTargetsString(t *testing.T) {
 	t4 := &Target{
 		Id:               "uid-4",
 		Name:             "name4",
+		CellTenantType:   CellTenantType_BROKER,
 		Namespace:        "ns2",
 		FilterAttributes: map[string]string{"app": "bar"},
 		RetryQueue: &Queue{

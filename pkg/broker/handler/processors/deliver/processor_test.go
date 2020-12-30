@@ -125,7 +125,11 @@ func TestDeliverSuccess(t *testing.T) {
 			ingressSvr := httptest.NewServer(ingressClient)
 			defer ingressSvr.Close()
 
-			broker := &config.CellTenant{Namespace: "ns", Name: "broker"}
+			broker := &config.CellTenant{
+				Type:      config.CellTenantType_BROKER,
+				Namespace: "ns",
+				Name:      "broker",
+			}
 			target := &config.Target{
 				Namespace:      "ns",
 				Name:           "target",
@@ -299,7 +303,11 @@ func TestDeliverFailure(t *testing.T) {
 				t.Fatalf("failed to create cloudevents client: %v", err)
 			}
 
-			broker := &config.CellTenant{Namespace: "ns", Name: "broker"}
+			broker := &config.CellTenant{
+				Type:      config.CellTenantType_BROKER,
+				Namespace: "ns",
+				Name:      "broker",
+			}
 			target := &config.Target{
 				Namespace:      "ns",
 				Name:           "target",

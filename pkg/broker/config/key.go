@@ -231,3 +231,10 @@ func validateCellTenetTypeFromString(s string) (CellTenantType, error) {
 	}
 	return CellTenantType(i), nil
 }
+
+func (k *CellTenantKey) AssertNotUnknown() {
+	// DO NOT SUBMIT
+	if k.cellTenantType == CellTenantType_UNKNOWN_CELL_TENANT_TYPE {
+		panic("Unknown cellTenantType")
+	}
+}

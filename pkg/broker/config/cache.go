@@ -32,12 +32,25 @@ var _ ReadonlyTargets = (*CachedTargets)(nil)
 
 // Store atomically stores a TargetsConfig.
 func (ct *CachedTargets) Store(t *TargetsConfig) {
+	for _, ct := range t.CellTenants {
+		ct.Key().AssertNotUnknown()
+		for _, t := range ct.Targets {
+			t.Key().ParentKey().AssertNotUnknown()
+		}
+	}
 	ct.Value.Store(t)
 }
 
 // Load atomically loads a stored TargetsConfig.
 // If there was no TargetsConfig stored, nil will be returned.
 func (ct *CachedTargets) Load() *TargetsConfig {
+	a := ct.Value.Load().(*TargetsConfig)
+	for _, ct := range a.CellTenants {
+		ct.Key().AssertNotUnknown()
+		for _, t := range ct.Targets {
+			t.Key().ParentKey().AssertNotUnknown()
+		}
+	}
 	return ct.Value.Load().(*TargetsConfig)
 }
 
@@ -49,7 +62,9 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 		return
 	}
 	for _, b := range val.CellTenants {
+		b.Key().AssertNotUnknown()
 		for _, t := range b.Targets {
+			t.Key().ParentKey().AssertNotUnknown()
 			if c := f(t); !c {
 				return
 			}
@@ -60,6 +75,7 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 // GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 // Do not modify the returned Target copy.
 func (ct *CachedTargets) GetTargetByKey(key *TargetKey) (*Target, bool) {
+	key.ParentKey().AssertNotUnknown()
 	broker, ok := ct.GetCellTenantByKey(key.ParentKey())
 	if !ok {
 		return nil, false
@@ -71,6 +87,7 @@ func (ct *CachedTargets) GetTargetByKey(key *TargetKey) (*Target, bool) {
 // GetBrokerByKey returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
 func (ct *CachedTargets) GetCellTenantByKey(key *CellTenantKey) (*CellTenant, bool) {
+	key.AssertNotUnknown()
 	val := ct.Load()
 	if val == nil || val.CellTenants == nil {
 		return nil, false
@@ -87,6 +104,7 @@ func (ct *CachedTargets) RangeCellTenants(f func(*CellTenant) bool) {
 		return
 	}
 	for _, b := range val.CellTenants {
+		b.Key().AssertNotUnknown()
 		if c := f(b); !c {
 			break
 		}

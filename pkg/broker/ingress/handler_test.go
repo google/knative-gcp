@@ -71,12 +71,15 @@ const (
 )
 
 // Add a target to every broker to ensure events are sent to pub/sub.
-var brokerTargets = map[string]*config.Target{"target": {}}
+var brokerTargets = map[string]*config.Target{"target": {
+	CellTenantType: config.CellTenantType_BROKER,
+}}
 
 var brokerConfig = &config.TargetsConfig{
 	CellTenants: map[string]*config.CellTenant{
 		"ns1/broker1": {
 			Id:            "b-uid-1",
+			Type:          config.CellTenantType_BROKER,
 			Name:          "broker1",
 			Namespace:     "ns1",
 			DecoupleQueue: &config.Queue{Topic: topicID, State: config.State_READY},
@@ -84,6 +87,7 @@ var brokerConfig = &config.TargetsConfig{
 		},
 		"ns2/broker2": {
 			Id:            "b-uid-2",
+			Type:          config.CellTenantType_BROKER,
 			Name:          "broker2",
 			Namespace:     "ns2",
 			DecoupleQueue: nil,
@@ -91,6 +95,7 @@ var brokerConfig = &config.TargetsConfig{
 		},
 		"ns3/broker3": {
 			Id:            "b-uid-3",
+			Type:          config.CellTenantType_BROKER,
 			Name:          "broker3",
 			Namespace:     "ns3",
 			DecoupleQueue: &config.Queue{Topic: ""},
@@ -98,6 +103,7 @@ var brokerConfig = &config.TargetsConfig{
 		},
 		"ns4/broker4": {
 			Id:            "b-uid-4",
+			Type:          config.CellTenantType_BROKER,
 			Name:          "broker4",
 			Namespace:     "ns4",
 			DecoupleQueue: &config.Queue{Topic: "topic4", State: config.State_UNKNOWN},

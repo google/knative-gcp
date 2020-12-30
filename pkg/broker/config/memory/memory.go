@@ -68,6 +68,7 @@ func (m *cellTenantMutation) UpsertTargets(targets ...*config.Target) config.Cel
 		t.Namespace = m.b.Namespace
 		t.CellTenantType = m.b.Type
 		t.CellTenantName = m.b.Name
+		t.Key().ParentKey().AssertNotUnknown()
 		m.b.Targets[t.Name] = t
 	}
 	return m
@@ -76,6 +77,7 @@ func (m *cellTenantMutation) UpsertTargets(targets ...*config.Target) config.Cel
 func (m *cellTenantMutation) DeleteTargets(targets ...*config.Target) config.CellTenantMutation {
 	m.delete = false
 	for _, t := range targets {
+		t.Key().ParentKey().AssertNotUnknown()
 		delete(m.b.Targets, t.Name)
 	}
 	return m
@@ -84,7 +86,12 @@ func (m *cellTenantMutation) DeleteTargets(targets ...*config.Target) config.Cel
 func (m *cellTenantMutation) Delete() {
 	// Calling delete will "reset" the broker under mutation instantly.
 	m.delete = true
-	m.b = &config.CellTenant{Name: m.b.Name, Namespace: m.b.Namespace}
+	m.b = &config.CellTenant{
+		Type:      m.b.Type,
+		Name:      m.b.Name,
+		Namespace: m.b.Namespace,
+	}
+	m.b.Key().AssertNotUnknown()
 }
 
 type memoryTargets struct {
@@ -110,6 +117,7 @@ func NewTargets(pb *config.TargetsConfig) config.Targets {
 // If the broker doesn't exist, it will be added (unless Delete() is called).
 // This function is thread-safe.
 func (m *memoryTargets) MutateCellTenant(key *config.CellTenantKey, mutate func(config.CellTenantMutation)) {
+	key.AssertNotUnknown()
 	// Sync writes.
 	m.mux.Lock()
 	defer m.mux.Unlock()
@@ -130,6 +138,7 @@ func (m *memoryTargets) MutateCellTenant(key *config.CellTenantKey, mutate func(
 			b = existing
 		}
 	}
+	b.Key().AssertNotUnknown()
 
 	// The mutation will work on a copy of the data.
 	mutation := &cellTenantMutation{b: b}
