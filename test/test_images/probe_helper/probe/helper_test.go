@@ -45,6 +45,7 @@ import (
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+	sourcesv1beta1 "knative.dev/eventing/pkg/apis/sources/v1beta1"
 )
 
 const (
@@ -276,6 +277,37 @@ func runTestCloudSchedulerSource(ctx context.Context, group *errgroup.Group, per
 	})
 }
 
+// A helper function that starts a test PingSource which ticks
+// periodically and sends the appropriate event notifications to the probe
+// helper receiver.
+func runTestPingSource(ctx context.Context, group *errgroup.Group, period time.Duration, probeReceiverURL string) {
+	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test PingSource, %v", err)
+	}
+	c, err := cloudevents.NewClient(cp)
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("Failed to create the test PingSource client, %v", err)
+	}
+	ticker := time.NewTicker(period)
+	group.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-ticker.C:
+				executedEvent := cloudevents.NewEvent()
+				executedEvent.SetID("1234567890")
+				executedEvent.SetType(sourcesv1beta1.PingSourceEventType)
+				executedEvent.SetSource(sourcesv1beta1.PingSourceSource(testNamespace, "test-ping-source"))
+				if res := c.Send(ctx, executedEvent); !cloudevents.IsACK(res) {
+					logging.FromContext(ctx).Warnf("Failed to send job executed CloudEvent from the test PingSource: %v", res)
+				}
+			}
+		}
+	})
+}
+
 type probeEventOption func(*cloudevents.Event)
 
 func withProbeExtension(key, value string) probeEventOption {
@@ -469,6 +501,38 @@ func TestProbeHelper(t *testing.T) {
 			},
 		},
 	}, {
+		name: "PingSource probe",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("pingsource-probe", withProbeExtension("period", "200ms")),
+				wantResult: cloudevents.ResultACK,
+			},
+		},
+	}, {
+		name: "PingSource delay exceeds period",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("pingsource-probe", withProbeExtension("period", "0s")),
+				wantResult: cloudevents.ResultNACK,
+			},
+		},
+	}, {
+		name: "PingSource missing period extension",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("pingsource-probe"),
+				wantResult: cloudevents.ResultNACK,
+			},
+		},
+	}, {
+		name: "PingSource has invalid period format",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("pingsource-probe", withProbeExtension("period", "100ps")),
+				wantResult: cloudevents.ResultNACK,
+			},
+		},
+	}, {
 		name: "Unrecognized probe event type",
 		steps: []eventAndResult{
 			{
@@ -547,6 +611,9 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 
 	// Run the test CloudSchedulerSource.
 	runTestCloudSchedulerSource(ctx, group, 100*time.Millisecond, receiverURL)
+
+	// Run the test PingSource.
+	runTestPingSource(ctx, group, 100*time.Millisecond, receiverURL)
 
 	// Run the test CloudAuditLogsSource.
 	runTestCloudAuditLogsSource(ctx, group, pubsubClient, receiverURL)

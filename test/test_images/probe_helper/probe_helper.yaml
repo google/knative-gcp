@@ -45,7 +45,7 @@ spec:
               value: "30m"
             - name: LIVENESS_STALE_DURATION
               value: "5m"
-            - name: SCHEDULER_STALE_DURATION
+            - name: CRON_STALE_DURATION
               value: "3m"
           livenessProbe:
             failureThreshold: 3

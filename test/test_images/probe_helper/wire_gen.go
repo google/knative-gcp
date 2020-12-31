@@ -15,7 +15,7 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeProbeHelper(ctx context.Context, brokerCellBaseUrl string, projectID clients.ProjectID, schedulerStaleDuration time.Duration, helperEnv probe.EnvConfig, forwardPort probe.ForwardPort, receivePort probe.ReceivePort) (*probe.Helper, error) {
+func InitializeProbeHelper(ctx context.Context, brokerCellBaseUrl string, projectID clients.ProjectID, cronStaleDuration time.Duration, helperEnv probe.EnvConfig, forwardPort probe.ForwardPort, receivePort probe.ReceivePort) (*probe.Helper, error) {
 	forwardClientOptions := probe.NewCeForwardClientOptions(forwardPort)
 	ceForwardClient, err := probe.NewCeForwardClient(forwardClientOptions)
 	if err != nil {
@@ -49,9 +49,10 @@ func InitializeProbeHelper(ctx context.Context, brokerCellBaseUrl string, projec
 		CloudStorageSourceProbe: cloudStorageSourceProbe,
 	}
 	cloudAuditLogsSourceProbe := handlers.NewCloudAuditLogsSourceProbe(projectID, client)
-	cloudSchedulerSourceProbe := handlers.NewCloudSchedulerSourceProbe(schedulerStaleDuration)
-	eventTypeProbe := handlers.NewEventTypeHandler(brokerE2EDeliveryProbe, cloudPubSubSourceProbe, cloudStorageSourceCreateProbe, cloudStorageSourceUpdateMetadataProbe, cloudStorageSourceArchiveProbe, cloudStorageSourceDeleteProbe, cloudAuditLogsSourceProbe, cloudSchedulerSourceProbe)
-	livenessChecker := handlers.NewLivenessChecker(cloudSchedulerSourceProbe)
+	cloudSchedulerSourceProbe := handlers.NewCloudSchedulerSourceProbe(cronStaleDuration)
+	pingSourceProbe := handlers.NewPingSourceProbe(cronStaleDuration)
+	eventTypeProbe := handlers.NewEventTypeHandler(brokerE2EDeliveryProbe, cloudPubSubSourceProbe, cloudStorageSourceCreateProbe, cloudStorageSourceUpdateMetadataProbe, cloudStorageSourceArchiveProbe, cloudStorageSourceDeleteProbe, cloudAuditLogsSourceProbe, cloudSchedulerSourceProbe, pingSourceProbe)
+	livenessChecker := handlers.NewLivenessChecker(cloudSchedulerSourceProbe, pingSourceProbe)
 	receiveClientOptions := probe.NewCeReceiverClientOptions(receivePort)
 	ceReceiveClient, err := probe.NewCeReceiverClient(ctx, livenessChecker, receiveClientOptions)
 	if err != nil {

@@ -16,7 +16,7 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeTestProbeHelper(ctx context.Context, brokerCellBaseUrl string, projectID clients.ProjectID, schedulerStaleDuration time.Duration, helperEnv EnvConfig, forwardListener ForwardListener, receiveListener ReceiveListener, storageClient *storage.Client, psClient *pubsub.Client) (*Helper, error) {
+func InitializeTestProbeHelper(ctx context.Context, brokerCellBaseUrl string, projectID clients.ProjectID, cronStaleDuration time.Duration, helperEnv EnvConfig, forwardListener ForwardListener, receiveListener ReceiveListener, storageClient *storage.Client, psClient *pubsub.Client) (*Helper, error) {
 	forwardClientOptions := NewTestCeForwardClientOptions(forwardListener)
 	ceForwardClient, err := NewCeForwardClient(forwardClientOptions)
 	if err != nil {
@@ -42,9 +42,10 @@ func InitializeTestProbeHelper(ctx context.Context, brokerCellBaseUrl string, pr
 		CloudStorageSourceProbe: cloudStorageSourceProbe,
 	}
 	cloudAuditLogsSourceProbe := handlers.NewCloudAuditLogsSourceProbe(projectID, psClient)
-	cloudSchedulerSourceProbe := handlers.NewCloudSchedulerSourceProbe(schedulerStaleDuration)
-	eventTypeProbe := handlers.NewEventTypeHandler(brokerE2EDeliveryProbe, cloudPubSubSourceProbe, cloudStorageSourceCreateProbe, cloudStorageSourceUpdateMetadataProbe, cloudStorageSourceArchiveProbe, cloudStorageSourceDeleteProbe, cloudAuditLogsSourceProbe, cloudSchedulerSourceProbe)
-	livenessChecker := handlers.NewLivenessChecker(cloudSchedulerSourceProbe)
+	cloudSchedulerSourceProbe := handlers.NewCloudSchedulerSourceProbe(cronStaleDuration)
+	pingSourceProbe := handlers.NewPingSourceProbe(cronStaleDuration)
+	eventTypeProbe := handlers.NewEventTypeHandler(brokerE2EDeliveryProbe, cloudPubSubSourceProbe, cloudStorageSourceCreateProbe, cloudStorageSourceUpdateMetadataProbe, cloudStorageSourceArchiveProbe, cloudStorageSourceDeleteProbe, cloudAuditLogsSourceProbe, cloudSchedulerSourceProbe, pingSourceProbe)
+	livenessChecker := handlers.NewLivenessChecker(cloudSchedulerSourceProbe, pingSourceProbe)
 	receiveClientOptions := NewTestCeReceiverClientOptions(receiveListener)
 	ceReceiveClient, err := NewCeReceiverClient(ctx, livenessChecker, receiveClientOptions)
 	if err != nil {
