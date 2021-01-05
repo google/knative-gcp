@@ -25,6 +25,8 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 )
 
 const (
@@ -67,6 +69,7 @@ func (p *CloudAuditLogsSourceProbe) Forward(ctx context.Context, event cloudeven
 
 	// The probe creates a Pub/Sub topic.
 	topic := event.ID()
+	logging.FromContext(ctx).Infow("Creating pubsub topic", zap.String("topic", topic))
 	if _, err := p.pubsubClient.CreateTopic(ctx, topic); err != nil {
 		return fmt.Errorf("Failed to create pubsub topic '%s': %v", topic, err)
 	}

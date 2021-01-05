@@ -16,7 +16,7 @@ import (
 // Injectors from wire.go:
 
 func InitializeProbeHelper(ctx context.Context, brokerCellBaseUrl string, projectID clients.ProjectID, schedulerStaleDuration time.Duration, helperEnv probe.EnvConfig, forwardPort probe.ForwardPort, receivePort probe.ReceivePort) (*probe.Helper, error) {
-	forwardClientOptions := probe.NewCeReceiverClientOptions(receivePort)
+	forwardClientOptions := probe.NewCeForwardClientOptions(forwardPort)
 	ceForwardClient, err := probe.NewCeForwardClient(forwardClientOptions)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func InitializeProbeHelper(ctx context.Context, brokerCellBaseUrl string, projec
 	cloudSchedulerSourceProbe := handlers.NewCloudSchedulerSourceProbe(schedulerStaleDuration)
 	eventTypeProbe := handlers.NewEventTypeHandler(brokerE2EDeliveryProbe, cloudPubSubSourceProbe, cloudStorageSourceCreateProbe, cloudStorageSourceUpdateMetadataProbe, cloudStorageSourceArchiveProbe, cloudStorageSourceDeleteProbe, cloudAuditLogsSourceProbe, cloudSchedulerSourceProbe)
 	livenessChecker := handlers.NewLivenessChecker(cloudSchedulerSourceProbe)
-	receiveClientOptions := probe.NewCeForwardClientOptions(forwardPort)
+	receiveClientOptions := probe.NewCeReceiverClientOptions(receivePort)
 	ceReceiveClient, err := probe.NewCeReceiverClient(ctx, livenessChecker, receiveClientOptions)
 	if err != nil {
 		return nil, err
