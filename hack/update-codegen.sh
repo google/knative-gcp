@@ -30,24 +30,6 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${REPO_ROOT_DIR}"; ls -d -1 ./vendor/k8s.io/cod
 
 KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd "${REPO_ROOT_DIR}"; ls -d -1 ./vendor/knative.dev/pkg 2>/dev/null || echo ../pkg)}
 
-PUBSUBAPICOPY=(
-	"implements_test.go"
-	"pullsubscription_defaults.go"
-	"pullsubscription_defaults_test.go"
-	"pullsubscription_lifecycle.go"
-	"pullsubscription_lifecycle_test.go"
-	"pullsubscription_types.go"
-	"pullsubscription_validation.go"
-	"pullsubscription_validation_test.go"
-	"topic_defaults.go"
-	"topic_defaults_test.go"
-	"topic_lifecycle.go"
-	"topic_lifecycle_test.go"
-	"topic_types.go"
-	"topic_validation.go"
-	"topic_validation_test.go"
-)
-
 chmod +x "${CODEGEN_PKG}"/generate-groups.sh
 # Only deepcopy the Duck types, as they are not real resources.
 "${CODEGEN_PKG}"/generate-groups.sh "deepcopy" \
