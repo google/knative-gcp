@@ -24,6 +24,8 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 )
 
 const (
@@ -107,8 +109,10 @@ func (p *CloudStorageSourceCreateProbe) Forward(ctx context.Context, event cloud
 		return fmt.Errorf("CloudStorageSource probe event has no '%s' extension", bucketExtension)
 	}
 	bucketHandle := p.storageClient.Bucket(fmt.Sprint(bucket))
-	obj := bucketHandle.Object(event.ID()[len(event.Type())+1:])
-	if err := obj.NewWriter(ctx).Close(); err != nil {
+	objectID := event.ID()[len(event.Type())+1:]
+	object := bucketHandle.Object(objectID)
+	logging.FromContext(ctx).Infow("Writing object to cloud storage bucket", zap.String("object", objectID), zap.String("bucket", fmt.Sprint(bucket)))
+	if err := object.NewWriter(ctx).Close(); err != nil {
 		return fmt.Errorf("Failed to close storage writer for object finalizing: %v", err)
 	}
 
@@ -132,13 +136,15 @@ func (p *CloudStorageSourceUpdateMetadataProbe) Forward(ctx context.Context, eve
 		return fmt.Errorf("CloudStorageSource probe event has no '%s' extension", bucketExtension)
 	}
 	bucketHandle := p.storageClient.Bucket(fmt.Sprint(bucket))
-	obj := bucketHandle.Object(event.ID()[len(event.Type())+1:])
+	objectID := event.ID()[len(event.Type())+1:]
+	object := bucketHandle.Object(objectID)
 	objectAttrs := storage.ObjectAttrsToUpdate{
 		Metadata: map[string]string{
 			"some-key": "Metadata updated!",
 		},
 	}
-	if _, err := obj.Update(ctx, objectAttrs); err != nil {
+	logging.FromContext(ctx).Infow("Updating object metadata in cloud storage bucket", zap.String("object", objectID), zap.String("bucket", fmt.Sprint(bucket)))
+	if _, err := object.Update(ctx, objectAttrs); err != nil {
 		return fmt.Errorf("Failed to update object metadata: %v", err)
 	}
 
@@ -161,9 +167,11 @@ func (p *CloudStorageSourceArchiveProbe) Forward(ctx context.Context, event clou
 		return fmt.Errorf("CloudStorageSource probe event has no '%s' extension", bucketExtension)
 	}
 	bucketHandle := p.storageClient.Bucket(fmt.Sprint(bucket))
-	obj := bucketHandle.Object(event.ID()[len(event.Type())+1:])
-	w := obj.NewWriter(ctx)
+	objectID := event.ID()[len(event.Type())+1:]
+	object := bucketHandle.Object(objectID)
+	w := object.NewWriter(ctx)
 	w.ObjectAttrs.StorageClass = "ARCHIVE"
+	logging.FromContext(ctx).Infow("Archiving object in cloud storage bucket", zap.String("object", objectID), zap.String("bucket", fmt.Sprint(bucket)))
 	if err := w.Close(); err != nil {
 		return fmt.Errorf("Failed to close storage writer for object finalizing: %v", err)
 	}
@@ -187,12 +195,14 @@ func (p *CloudStorageSourceDeleteProbe) Forward(ctx context.Context, event cloud
 		return fmt.Errorf("CloudStorageSource probe event has no '%s' extension", bucketExtension)
 	}
 	bucketHandle := p.storageClient.Bucket(fmt.Sprint(bucket))
-	obj := bucketHandle.Object(event.ID()[len(event.Type())+1:])
-	objectAttrs, err := obj.Attrs(ctx)
+	objectID := event.ID()[len(event.Type())+1:]
+	object := bucketHandle.Object(objectID)
+	objectAttrs, err := object.Attrs(ctx)
 	if err != nil {
 		return fmt.Errorf("Failed to get object attributes: %v", err)
 	}
-	if err := obj.Generation(objectAttrs.Generation).Delete(ctx); err != nil {
+	logging.FromContext(ctx).Infow("Deleting object in cloud storage bucket", zap.String("object", objectID), zap.String("bucket", fmt.Sprint(bucket)))
+	if err := object.Generation(objectAttrs.Generation).Delete(ctx); err != nil {
 		return fmt.Errorf("Failed to delete object: %v", err)
 	}
 

@@ -82,12 +82,12 @@ func NewCeForwardClient(opts ForwardClientOptions) (handlers.CeForwardClient, er
 	return cloudevents.NewClient(sp)
 }
 
-func NewCeReceiverClientOptions(port ReceivePort) ForwardClientOptions {
+func NewCeReceiverClientOptions(port ReceivePort) ReceiveClientOptions {
 	opts := []cehttp.Option{cloudevents.WithPort(int(port))}
 	return opts
 }
 
-func NewCeForwardClientOptions(port ForwardPort) ReceiveClientOptions {
+func NewCeForwardClientOptions(port ForwardPort) ForwardClientOptions {
 	opts := []cehttp.Option{cloudevents.WithPort(int(port))}
 	return opts
 }
