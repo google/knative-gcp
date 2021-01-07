@@ -46,7 +46,9 @@ initialize $@
 
 TIMEOUT=${TIMEOUT:-30m}
 
-go_test_e2e -v \
+export GO_TEST_VERBOSITY=standard-verbose
+
+go_test_e2e \
   -tags=upgrade \
   -timeout="${TIMEOUT}" \
   ./test/upgrade \
