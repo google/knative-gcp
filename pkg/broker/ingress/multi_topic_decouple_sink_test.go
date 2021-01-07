@@ -24,15 +24,10 @@ import (
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
 	"github.com/google/uuid"
-	"k8s.io/apimachinery/pkg/types"
 
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
-	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
-	"github.com/cloudevents/sdk-go/v2/client/test"
-	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/event"
-	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
@@ -53,7 +48,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 	brokerTargets := map[string]*config.Target{"target": {}}
 
 	type brokerTestCase struct {
-		broker  types.NamespacedName
+		broker  *config.BrokerKey
 		topic   string
 		wantErr bool
 	}
@@ -71,11 +66,8 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
-					topic: "test_topic_1",
+					broker: config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
+					topic:  "test_topic_1",
 				},
 			},
 		},
@@ -89,18 +81,12 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
-					topic: "test_topic_1",
+					broker: config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
+					topic:  "test_topic_1",
 				},
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_2",
-						Name:      "test_broker_2",
-					},
-					topic: "test_topic_2",
+					broker: config.TestOnlyBrokerKey("test_ns_2", "test_broker_2"),
+					topic:  "test_topic_2",
 				},
 			},
 		},
@@ -111,10 +97,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -129,10 +112,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -147,10 +127,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -165,10 +142,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -245,7 +219,7 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 	brokerTargets := map[string]*config.Target{"target": {}}
 
 	type brokerTestCase struct {
-		broker  types.NamespacedName
+		broker  *config.BrokerKey
 		topic   string
 		wantErr bool
 	}
@@ -263,11 +237,8 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
-					topic: "test_topic_1",
+					broker: config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
+					topic:  "test_topic_1",
 				},
 			},
 		},
@@ -281,18 +252,12 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
-					topic: "test_topic_1",
+					broker: config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
+					topic:  "test_topic_1",
 				},
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_2",
-						Name:      "test_broker_2",
-					},
-					topic: "test_topic_2",
+					broker: config.TestOnlyBrokerKey("test_ns_2", "test_broker_2"),
+					topic:  "test_topic_2",
 				},
 			},
 		},
@@ -303,10 +268,7 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -321,10 +283,7 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -339,10 +298,7 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -357,10 +313,7 @@ func TestMultiTopicDecoupleSinkWithoutIngressFiltering(t *testing.T) {
 			},
 			cases: []brokerTestCase{
 				{
-					broker: types.NamespacedName{
-						Namespace: "test_ns_1",
-						Name:      "test_broker_1",
-					},
+					broker:  config.TestOnlyBrokerKey("test_ns_1", "test_broker_1"),
 					topic:   "test_topic_1",
 					wantErr: true,
 				},
@@ -595,11 +548,7 @@ func TestMultiTopicDecoupleSinkSendChecksFilter(t *testing.T) {
 	// Send event.
 	event := createTestEvent(uuid.New().String())
 
-	namespace := types.NamespacedName{
-		Namespace: "test_ns_1",
-		Name:      "test_broker_1",
-	}
-
+	namespace := config.TestOnlyBrokerKey("test_ns_1", "test_broker_1")
 	err := sink.Send(context.Background(), namespace, *event)
 	if err != nil {
 		t.Fatal(err)
@@ -652,11 +601,7 @@ func TestMultiTopicDecoupleSinkSendDoesNotChecksFilterWhenFeatureDisabled(t *tes
 	// Send event.
 	event := createTestEvent(uuid.New().String())
 
-	namespace := types.NamespacedName{
-		Namespace: "test_ns_1",
-		Name:      "test_broker_1",
-	}
-
+	namespace := config.TestOnlyBrokerKey("test_ns_1", "test_broker_1")
 	err := sink.Send(context.Background(), namespace, *event)
 	if err != nil {
 		t.Fatal(err)
@@ -665,51 +610,5 @@ func TestMultiTopicDecoupleSinkSendDoesNotChecksFilterWhenFeatureDisabled(t *tes
 	// Verify results.
 	if filterCalled {
 		t.Errorf("Send called EventFilterFunc when feature is disabled")
-	}
-}
-
-type fakePubsubClient struct {
-	t *testing.T
-	// topics is the mapping from topic name to corresponding channel which contains the event.
-	topics        map[string]<-chan cloudevents.Event
-	topicToClient map[string]cloudevents.Client
-	// topicToErr injects error to a topic to simulate client error.
-	topicToErr map[string]error
-}
-
-func newFakePubsubClient(t *testing.T) *fakePubsubClient {
-	return &fakePubsubClient{
-		t:             t,
-		topics:        map[string]<-chan cloudevents.Event{},
-		topicToClient: map[string]cloudevents.Client{},
-		topicToErr:    map[string]error{},
-	}
-}
-
-func (c *fakePubsubClient) Send(ctx context.Context, event cloudevents.Event) protocol.Result {
-	topic := cecontext.TopicFrom(ctx)
-	if err := c.topicToErr[topic]; err != nil {
-		return err
-	}
-	_, ok := c.topicToClient[topic]
-	if !ok {
-		c.topicToClient[topic], c.topics[topic] = test.NewMockSenderClient(c.t, 1)
-	}
-	return c.topicToClient[topic].Send(ctx, event)
-}
-
-func (c *fakePubsubClient) Request(ctx context.Context, event event.Event) (*event.Event, protocol.Result) {
-	// noop
-	return nil, nil
-}
-
-func (c *fakePubsubClient) StartReceiver(ctx context.Context, fn interface{}) error {
-	// noop
-	return nil
-}
-
-func injectErr(topic string, err error) func(client *fakePubsubClient) {
-	return func(client *fakePubsubClient) {
-		client.topicToErr[topic] = err
 	}
 }

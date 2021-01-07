@@ -22,15 +22,7 @@ import (
 
 func TestBrokerKey(t *testing.T) {
 	want := "namespace/broker"
-	got := BrokerKey("namespace", "broker")
-	if got != want {
-		t.Errorf("unexpected readiness: want %v, got %v", want, got)
-	}
-}
-
-func TestTriggerKeyAndSplitTriggerKey(t *testing.T) {
-	want := "namespace/broker/target"
-	got := TriggerKey(SplitTriggerKey(want))
+	got := TestOnlyBrokerKey("namespace", "broker").PersistenceString()
 	if got != want {
 		t.Errorf("unexpected readiness: want %v, got %v", want, got)
 	}

@@ -84,7 +84,7 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 	broker, ok := p.Targets.GetBrokerByKey(bk)
 	if !ok {
 		// If the broker no longer exists, then there is nothing to process.
-		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.String("broker", bk))
+		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.Stringer("broker", bk))
 		trace.FromContext(ctx).Annotate(
 			ceclient.EventTraceAttributes(e),
 			"event dropped: broker config no longer exists",
@@ -94,7 +94,7 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 	target, ok := p.Targets.GetTargetByKey(tk)
 	if !ok {
 		// If the target no longer exists, then there is nothing to process.
-		logging.FromContext(ctx).Warn("target no longer exist in the config", zap.String("target", tk))
+		logging.FromContext(ctx).Warn("target no longer exist in the config", zap.Stringer("target", tk))
 		trace.FromContext(ctx).Annotate(
 			ceclient.EventTraceAttributes(e),
 			"event dropped: trigger config no longer exists",
@@ -132,7 +132,7 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 			return err
 		}
 
-		logging.FromContext(ctx).Warn("target delivery failed", zap.String("target", tk), zap.Error(err))
+		logging.FromContext(ctx).Warn("target delivery failed", zap.Stringer("target", tk), zap.Error(err))
 		trace.FromContext(ctx).Annotate(
 			[]trace.Attribute{trace.StringAttribute("error_message", err.Error())},
 			"enqueueing for retry",

@@ -12,23 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: serving.knative.dev/v1
-kind: Service
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: probe-helper-receiver
+  name: probe-helper
   namespace: cloud-run-events-probe
 spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: probe-helper
   template:
     metadata:
-      annotations:
-        autoscaling.knative.dev/minScale: "1"
-        autoscaling.knative.dev/maxScale: "1"
+      labels:
+        app: probe-helper
     spec:
-      serviceAccountName: probe-helper
       containers:
         - name: probe-helper
           image: ko://github.com/google/knative-gcp/test/test_images/probe_helper
           env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/key.json
             - name: BROKER_CELL_INGRESS_BASE_URL
               value: "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local"
             - name: PROBE_PORT
@@ -47,9 +51,16 @@ spec:
             failureThreshold: 3
             httpGet:
               path: /healthz
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 125
             successThreshold: 1
             timeoutSeconds: 10
-          ports:
-            - containerPort: 8080
+          volumeMounts:
+          - name: probe-helper-key
+            mountPath: /var/secrets/google
+      volumes:
+      - name: probe-helper-key
+        secret:
+          secretName: probe-helper-key
+          optional: true

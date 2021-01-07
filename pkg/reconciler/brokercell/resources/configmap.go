@@ -73,6 +73,6 @@ func MakeTargetsConfig(bc *intv1alpha1.BrokerCell, brokerTargets config.Targets)
 		},
 		BinaryData: map[string][]byte{targetsCMKey: data},
 		// Write out the text version for debugging purposes only
-		Data: map[string]string{"targets.txt": brokerTargets.String()},
+		Data: map[string]string{"debugOnlyTargets.txt": brokerTargets.DebugString()},
 	}, nil
 }

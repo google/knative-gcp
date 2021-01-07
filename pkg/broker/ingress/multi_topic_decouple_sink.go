@@ -25,7 +25,6 @@ import (
 	"cloud.google.com/go/pubsub"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/types"
 
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cev2 "github.com/cloudevents/sdk-go/v2"
@@ -51,7 +50,7 @@ func NewMultiTopicDecoupleSink(
 		publishSettings: publishSettings,
 		brokerConfig:    brokerConfig,
 		// TODO(#1118): remove Topic when broker config is removed
-		topics: make(map[types.NamespacedName]*pubsub.Topic),
+		topics: make(map[config.BrokerKey]*pubsub.Topic),
 		// TODO(#1804): remove this field when enabling the feature by default.
 		enableEventFiltering: enableEventFilterFunc(),
 	}
@@ -64,7 +63,7 @@ type multiTopicDecoupleSink struct {
 	pubsub          *pubsub.Client
 	publishSettings pubsub.PublishSettings
 	// map from brokers to topics
-	topics    map[types.NamespacedName]*pubsub.Topic
+	topics    map[config.BrokerKey]*pubsub.Topic
 	topicsMut sync.RWMutex
 	// brokerConfig holds configurations for all brokers. It's a view of a configmap populated by
 	// the broker controller.
@@ -74,7 +73,7 @@ type multiTopicDecoupleSink struct {
 }
 
 // Send sends incoming event to its corresponding pubsub topic based on which broker it belongs to.
-func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker types.NamespacedName, event cev2.Event) protocol.Result {
+func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker *config.BrokerKey, event cev2.Event) protocol.Result {
 	topic, err := m.getTopicForBroker(ctx, broker)
 	if err != nil {
 		trace.FromContext(ctx).Annotate(
@@ -135,7 +134,7 @@ func (m *multiTopicDecoupleSink) hasTrigger(ctx context.Context, event *cev2.Eve
 }
 
 // getTopicForBroker finds the corresponding decouple topic for the broker from the mounted broker configmap volume.
-func (m *multiTopicDecoupleSink) getTopicForBroker(ctx context.Context, broker types.NamespacedName) (*pubsub.Topic, error) {
+func (m *multiTopicDecoupleSink) getTopicForBroker(ctx context.Context, broker *config.BrokerKey) (*pubsub.Topic, error) {
 	topicID, err := m.getTopicIDForBroker(ctx, broker)
 	if err != nil {
 		return nil, err
@@ -152,7 +151,7 @@ func (m *multiTopicDecoupleSink) getTopicForBroker(ctx context.Context, broker t
 	return m.updateTopicForBroker(ctx, broker)
 }
 
-func (m *multiTopicDecoupleSink) updateTopicForBroker(ctx context.Context, broker types.NamespacedName) (*pubsub.Topic, error) {
+func (m *multiTopicDecoupleSink) updateTopicForBroker(ctx context.Context, broker *config.BrokerKey) (*pubsub.Topic, error) {
 	m.topicsMut.Lock()
 	defer m.topicsMut.Unlock()
 	// Fetch latest decouple topic ID under lock.
@@ -161,21 +160,21 @@ func (m *multiTopicDecoupleSink) updateTopicForBroker(ctx context.Context, broke
 		return nil, err
 	}
 
-	if topic, ok := m.topics[broker]; ok {
+	if topic, ok := m.topics[*broker]; ok {
 		if topic.ID() == topicID {
 			// Topic already updated.
 			return topic, nil
 		}
 		// Stop old topic.
-		m.topics[broker].Stop()
+		m.topics[*broker].Stop()
 	}
 	topic := m.pubsub.Topic(topicID)
-	m.topics[broker] = topic
+	m.topics[*broker] = topic
 	return topic, nil
 }
 
-func (m *multiTopicDecoupleSink) getTopicIDForBroker(ctx context.Context, broker types.NamespacedName) (string, error) {
-	brokerConfig, ok := m.brokerConfig.GetBroker(broker.Namespace, broker.Name)
+func (m *multiTopicDecoupleSink) getTopicIDForBroker(ctx context.Context, broker *config.BrokerKey) (string, error) {
+	brokerConfig, ok := m.brokerConfig.GetBrokerByKey(broker)
 	if !ok {
 		// There is an propagation delay between the controller reconciles the broker config and
 		// the config being pushed to the configmap volume in the ingress pod. So sometimes we return
@@ -194,9 +193,9 @@ func (m *multiTopicDecoupleSink) getTopicIDForBroker(ctx context.Context, broker
 	return brokerConfig.DecoupleQueue.Topic, nil
 }
 
-func (m *multiTopicDecoupleSink) getExistingTopic(broker types.NamespacedName) (*pubsub.Topic, bool) {
+func (m *multiTopicDecoupleSink) getExistingTopic(broker *config.BrokerKey) (*pubsub.Topic, bool) {
 	m.topicsMut.RLock()
 	defer m.topicsMut.RUnlock()
-	topic, ok := m.topics[broker]
+	topic, ok := m.topics[*broker]
 	return topic, ok
 }

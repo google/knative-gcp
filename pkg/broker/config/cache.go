@@ -57,38 +57,25 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 	}
 }
 
-// GetTarget returns a target.
+// GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 // Do not modify the returned Target copy.
-func (ct *CachedTargets) GetTarget(namespace, brokerName, targetName string) (*Target, bool) {
-	Broker, ok := ct.GetBroker(namespace, brokerName)
+func (ct *CachedTargets) GetTargetByKey(key *TargetKey) (*Target, bool) {
+	broker, ok := ct.GetBrokerByKey(key.ParentKey())
 	if !ok {
 		return nil, false
 	}
-	t, ok := Broker.Targets[targetName]
+	t, ok := broker.Targets[key.name]
 	return t, ok
-}
-
-// GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
-// Do not modify the returned Target copy.
-func (ct *CachedTargets) GetTargetByKey(key string) (*Target, bool) {
-	namespace, brokerName, targetName := SplitTriggerKey(key)
-	return ct.GetTarget(namespace, brokerName, targetName)
-}
-
-// GetBroker returns a broker and its targets if it exists.
-// Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBroker(namespace, name string) (*Broker, bool) {
-	return ct.GetBrokerByKey(BrokerKey(namespace, name))
 }
 
 // GetBrokerByKey returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBrokerByKey(key string) (*Broker, bool) {
+func (ct *CachedTargets) GetBrokerByKey(key *BrokerKey) (*Broker, bool) {
 	val := ct.Load()
 	if val == nil || val.Brokers == nil {
 		return nil, false
 	}
-	b, ok := val.Brokers[key]
+	b, ok := val.Brokers[key.PersistenceString()]
 	return b, ok
 }
 
@@ -112,30 +99,12 @@ func (ct *CachedTargets) Bytes() ([]byte, error) {
 	return proto.Marshal(val)
 }
 
-// String returns the text format of all the targets.
-func (ct *CachedTargets) String() string {
+// DebugString returns the text format of all the targets. It is for _debug_ purposes only. The
+// output format is not guaranteed to be stable and may change at any time.
+func (ct *CachedTargets) DebugString() string {
 	val := ct.Load()
-	return prototext.MarshalOptions{}.Format(val)
-}
-
-// EqualsBytes checks if the current targets config equals the given
-// targets config in bytes.
-func (ct *CachedTargets) EqualsBytes(b []byte) bool {
-	self := ct.Load()
-	var other TargetsConfig
-	if err := proto.Unmarshal(b, &other); err != nil {
-		return false
-	}
-	return proto.Equal(self, &other)
-}
-
-// EqualsString checks if the current targets config equals the given
-// targets config in string.
-func (ct *CachedTargets) EqualsString(s string) bool {
-	self := ct.Load()
-	var other TargetsConfig
-	if err := prototext.Unmarshal([]byte(s), &other); err != nil {
-		return false
-	}
-	return proto.Equal(self, &other)
+	return prototext.MarshalOptions{
+		Multiline: true,
+		Indent:    "\t",
+	}.Format(val)
 }

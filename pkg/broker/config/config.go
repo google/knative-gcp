@@ -16,40 +16,25 @@ limitations under the License.
 
 package config
 
-import (
-	"fmt"
-	"strings"
-)
-
 // ReadonlyTargets provides "read" functions for brokers and targets.
 type ReadonlyTargets interface {
 	// RangeAllTargets ranges over all targets.
 	// Do not modify the given Target copy.
 	RangeAllTargets(func(*Target) bool)
-	// GetTarget returns a target.
-	// Do not modify the returned Target copy.
-	GetTarget(namespace, brokerName, targetName string) (*Target, bool)
 	// GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 	// Do not modify the returned Target copy.
-	GetTargetByKey(key string) (*Target, bool)
-	// GetBroker returns a broker and its targets if it exists.
+	GetTargetByKey(key *TargetKey) (*Target, bool)
+	// GetBrokerByKey returns a Broker and its targets, if it exists.
 	// Do not modify the returned Broker copy.
-	GetBroker(namespace, name string) (*Broker, bool)
-	// GetBroker by its key (namespace/name).
-	GetBrokerByKey(key string) (*Broker, bool)
+	GetBrokerByKey(key *BrokerKey) (*Broker, bool)
 	// RangeBrokers ranges over all brokers.
 	// Do not modify the given Broker copy.
 	RangeBrokers(func(*Broker) bool)
 	// Bytes serializes all the targets.
 	Bytes() ([]byte, error)
-	// String returns the text format of all the targets.
-	String() string
-	// EqualsBytes checks if the current targets config equals the given
-	// targets config in bytes.
-	EqualsBytes([]byte) bool
-	// EqualsString checks if the current targets config equals the given
-	// targets config in string.
-	EqualsString(string) bool
+	// DebugString returns the text format of all the targets. It is for _debug_ purposes only. The
+	// output format is not guaranteed to be stable and may change at any time.
+	DebugString() string
 }
 
 // BrokerMutation provides functions to mutate a Broker.
@@ -78,31 +63,5 @@ type Targets interface {
 	ReadonlyTargets
 	// MutateBroker mutates a broker by namespace and name.
 	// If the broker doesn't exist, it will be added (unless Delete() is called).
-	MutateBroker(namespace, name string, mutate func(BrokerMutation))
-}
-
-// BrokerKey returns the key of a broker.
-func BrokerKey(namespace, name string) string {
-	return namespace + "/" + name
-}
-
-// TriggerKey returns the key of a trigger. Format is namespace/brokerName/targetName.
-func TriggerKey(namespace, broker, target string) string {
-	return fmt.Sprintf("%s/%s/%s", namespace, broker, target)
-}
-
-// SplitTriggerKey splits a trigger key into namespace, brokerName, targetName.
-func SplitTriggerKey(key string) (string, string, string) {
-	keys := strings.Split(key, "/")
-	return keys[0], keys[1], keys[2]
-}
-
-// Key returns the target key.
-func (t *Target) Key() string {
-	return TriggerKey(t.Namespace, t.Broker, t.Name)
-}
-
-// Key returns the broker key.
-func (b *Broker) Key() string {
-	return BrokerKey(b.Namespace, b.Name)
+	MutateBroker(key *BrokerKey, mutate func(BrokerMutation))
 }

@@ -33,12 +33,12 @@ var TestHelperSet wire.ProviderSet = wire.NewSet(
 	NewTestCeForwardClientOptions,
 )
 
-func NewTestCeReceiverClientOptions(listener ForwardListener) ForwardClientOptions {
+func NewTestCeReceiverClientOptions(listener ReceiveListener) ReceiveClientOptions {
 	opts := []cehttp.Option{cloudevents.WithListener(listener)}
 	return opts
 }
 
-func NewTestCeForwardClientOptions(listener ReceiveListener) ReceiveClientOptions {
+func NewTestCeForwardClientOptions(listener ForwardListener) ForwardClientOptions {
 	opts := []cehttp.Option{cloudevents.WithListener(listener)}
 	return opts
 }

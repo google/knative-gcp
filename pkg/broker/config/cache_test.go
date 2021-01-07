@@ -19,6 +19,8 @@ package config
 import (
 	"testing"
 
+	"google.golang.org/protobuf/encoding/prototext"
+
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -129,7 +131,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	t.Run("range brokers", func(t *testing.T) {
 		gotBrokers := make(map[string]*Broker)
 		targets.RangeBrokers(func(b *Broker) bool {
-			gotBrokers[b.Key()] = b
+			gotBrokers[b.Key().PersistenceString()] = b
 			return true
 		})
 		if diff := cmp.Diff(val.Brokers, gotBrokers, protocmp.Transform()); diff != "" {
@@ -138,18 +140,18 @@ func TestCachedTargetsRange(t *testing.T) {
 	})
 
 	t.Run("get individual broker", func(t *testing.T) {
-		gotBroker, ok := targets.GetBroker("ns", "non-existing")
+		gotBroker, ok := targets.GetBrokerByKey(TestOnlyBrokerKey("ns", "non-existing"))
 		if ok {
 			t.Error("get non-existing broker got ok=true, want ok=false")
 		}
-		gotBroker, ok = targets.GetBroker(b1.Namespace, b1.Name)
+		gotBroker, ok = targets.GetBrokerByKey(b1.Key())
 		if !ok {
 			t.Error("get existing broker got ok=false, want ok=true")
 		}
 		if !proto.Equal(b1, gotBroker) {
 			t.Errorf("get existing broker got=%+v, want=%+v", gotBroker, b1)
 		}
-		gotBroker, ok = targets.GetBroker(b2.Namespace, b2.Name)
+		gotBroker, ok = targets.GetBrokerByKey(b2.Key())
 		if !ok {
 			t.Error("get existing broker got ok=false, want ok=true")
 		}
@@ -263,13 +265,24 @@ func TestCachedTargetsBytes(t *testing.T) {
 	}
 
 	// Test EqualsBytes
-	if !targets.EqualsBytes(wantBytes) {
+	if !equalsBytes(targets, wantBytes) {
 		t.Error("CachedTargets.EqualsBytes() got=false, want=true")
 	}
 
-	if targets.EqualsBytes([]byte("random")) {
+	if equalsBytes(targets, []byte("random")) {
 		t.Error("CachedTargets.EqualBytes() with random bytes got=true, want=false")
 	}
+}
+
+// equalsBytes checks if the current targets config equals the given
+// targets config in bytes.
+func equalsBytes(ct *CachedTargets, b []byte) bool {
+	self := ct.Load()
+	var other TargetsConfig
+	if err := proto.Unmarshal(b, &other); err != nil {
+		return false
+	}
+	return proto.Equal(self, &other)
 }
 
 func TestCachedTargetsString(t *testing.T) {
@@ -357,19 +370,13 @@ func TestCachedTargetsString(t *testing.T) {
 	targets := &CachedTargets{}
 	targets.Store(val)
 
-	gotStr := targets.String()
-	wantStr := val.String()
+	gotStr := targets.DebugString()
+	wantStr := prototext.MarshalOptions{
+		Multiline: true,
+		Indent:    "\t",
+	}.Format(val)
 	if gotStr != wantStr {
 		t.Errorf("BaseTargets.String() got=%s, want=%s", gotStr, wantStr)
-	}
-
-	// Test EqualsString
-	if !targets.EqualsString(wantStr) {
-		t.Error("BaseTargets.EqualsString() got=false, want=true")
-	}
-
-	if targets.EqualsString("random") {
-		t.Error("CachedTargets.EqualsString() with random string got=true, want=false")
 	}
 }
 
@@ -464,7 +471,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 
 	t.Run("get broker", func(t *testing.T) {
 		wantBroker := b1
-		gotBroker, _ := targets.GetBroker(b1.Namespace, b1.Name)
+		gotBroker, _ := targets.GetBrokerByKey(b1.Key())
 		if diff := cmp.Diff(wantBroker, gotBroker, protocmp.Transform()); diff != "" {
 			t.Errorf("GetBroker (-want,+got): %v", diff)
 		}

@@ -197,6 +197,15 @@ func TestAllCasesTrigger(t *testing.T) {
 					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123", "cre-tgr_testnamespace_test-trigger_abc123"),
 				},
 			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerFinalizers(finalizerName),
+					WithTriggerSetDefaults,
+					WithInitTriggerConditions,
+					WithTriggerBrokerFailed("BrokerDoesNotExist", "Broker test-broker does not exist"),
+				),
+			}},
 		},
 		{
 			Name: "Broker is being deleted, Trigger with finalizer should be finalized",
