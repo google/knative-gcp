@@ -1,6 +1,5 @@
 /*
  * Copyright 2020 The Knative Authors
- * Modified work Copyright 2020 Google LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,7 +25,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/wavesoftware/go-ensure"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,7 +43,7 @@ const (
 	defaultWatholaEventsPrefix = "com.github.cardil.wathola"
 	defaultBrokerName          = "default"
 	defaultHealthEndpoint      = "/healthz"
-	defaultFinishedSleep       = 40 * time.Second
+	defaultFinishedSleep       = 5 * time.Second
 
 	Silence DuplicateAction = "silence"
 	Warn    DuplicateAction = "warn"
@@ -66,6 +64,7 @@ type Config struct {
 	Serving       ServingConfig
 	FailOnErrors  bool
 	OnDuplicate   DuplicateAction
+	BrokerOpts    []resources.BrokerV1Beta1Option
 }
 
 // Wathola represents options related strictly to wathola testing tool.
@@ -78,6 +77,8 @@ type Wathola struct {
 
 // ConfigMap represents options of wathola config toml file.
 type ConfigMap struct {
+	// ConfigTemplate is a template file that will be compiled to the configmap
+	ConfigTemplate   string
 	ConfigMapName    string
 	ConfigMountPoint string
 	ConfigFilename   string
@@ -99,12 +100,14 @@ func NewConfig(namespace string) *Config {
 		FinishedSleep: defaultFinishedSleep,
 		FailOnErrors:  true,
 		OnDuplicate:   Warn,
+		BrokerOpts:    make([]resources.BrokerV1Beta1Option, 0),
 		Serving: ServingConfig{
 			Use:         false,
 			ScaleToZero: true,
 		},
 		Wathola: Wathola{
 			ConfigMap: ConfigMap{
+				ConfigTemplate:   defaultConfigFilename,
 				ConfigMapName:    defaultConfigName,
 				ConfigMountPoint: fmt.Sprintf("%s/%s", defaultHomedir, defaultConfigHomedirPath),
 				ConfigFilename:   defaultConfigFilename,
@@ -115,8 +118,8 @@ func NewConfig(namespace string) *Config {
 		},
 	}
 
-	// False in knative eventing, but gcp broker support this
-	config.FailOnErrors = true
+	// FIXME: remove while fixing https://github.com/knative/eventing/issues/2665
+	config.FailOnErrors = false
 
 	err := envconfig.Process("e2e_upgrade_tests", config)
 	ensure.NoError(err)
@@ -131,13 +134,7 @@ func (p *prober) deployConfiguration() {
 }
 
 func (p *prober) deployBroker() {
-	// Almost all the code in this directory is from knative eventing, but we need
-	// to add this annotation to switch to gcp broker type
-	p.client.CreateBrokerV1Beta1OrFail(p.config.BrokerName, func(b *eventingv1beta1.Broker) {
-		b.SetAnnotations(map[string]string{
-			"eventing.knative.dev/broker.class": v1beta1.BrokerClass,
-		})
-	})
+	p.client.CreateBrokerV1Beta1OrFail(p.config.BrokerName, p.config.BrokerOpts...)
 }
 
 func (p *prober) fetchBrokerURL() (*apis.URL, error) {
@@ -168,7 +165,7 @@ func (p *prober) deployConfigMap() {
 	p.log.Infof("Deploying config map: \"%s/%s\"", p.config.Namespace, name)
 	brokerURL, err := p.fetchBrokerURL()
 	ensure.NoError(err)
-	configData := p.compileTemplate(p.config.ConfigFilename, brokerURL)
+	configData := p.compileTemplate(p.config.ConfigTemplate, brokerURL)
 	p.client.CreateConfigMapOrFail(name, p.config.Namespace, map[string]string{
 		p.config.ConfigFilename: configData,
 	})

@@ -17,8 +17,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/rickb777/date v1.13.0
-	github.com/stretchr/testify v1.5.1
-	github.com/wavesoftware/go-ensure v1.0.0
 	go.opencensus.io v0.22.5
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0

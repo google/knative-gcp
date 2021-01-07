@@ -21,8 +21,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/knative-gcp/test/upgrade/prober"
+	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	testlib "knative.dev/eventing/test/lib"
+	"knative.dev/eventing/test/lib/resources"
+	"knative.dev/eventing/test/upgrade/prober"
 	pkgupgrade "knative.dev/pkg/test/upgrade"
 )
 
@@ -38,6 +40,9 @@ func ContinualTest() pkgupgrade.BackgroundOperation {
 			// overwrite configuration
 			config.FailOnErrors = true
 			config.Interval = 10 * time.Millisecond
+			config.BrokerOpts = append(config.BrokerOpts, resources.WithBrokerClassForBrokerV1Beta1(v1beta1.BrokerClass))
+			config.FinishedSleep = 40 * time.Second
+			config.ConfigTemplate = "../../../../../../test/upgrade/config.toml"
 			probe = prober.RunEventProber(ctx, c.Log, client, config)
 		},
 		func(c pkgupgrade.Context) {
