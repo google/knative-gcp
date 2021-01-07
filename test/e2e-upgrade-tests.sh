@@ -46,7 +46,7 @@ initialize $@
 
 TIMEOUT=${TIMEOUT:-30m}
 
-go_test_e2e \
+go_test_e2e -v \
   -tags=upgrade \
   -timeout="${TIMEOUT}" \
   ./test/upgrade \
