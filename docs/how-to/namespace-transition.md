@@ -96,7 +96,7 @@ release from the `knative-gcp` repository. We will update the page with specific
    kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    ```
 
-1. Confirm the new BrokerCell is working correctly
+1. Confirm the new BrokerCell is working correctly.
 
    First ensure that the BrokerCell exists inside the `events-system` namespace.
 
@@ -146,8 +146,8 @@ release from the `knative-gcp` repository. We will update the page with specific
    ```
 
    Next, for each broker that you have previously deployed, make sure it is
-   using the new BrokerCell Ingress. Below we show an example where we examine
-   the Broker `test-broker` from the namespace `example`.
+   using the new BrokerCell ingress. Below we show an example where we examine
+   the broker `test-broker` from the namespace `example`.
 
    ```shell script
    kubectl describe broker test-broker -n example
@@ -157,7 +157,7 @@ release from the `knative-gcp` repository. We will update the page with specific
    `http://default-brokercell-ingress.events-system.svc.cluster.local/example/test-broker`
    as shown in the sample output below. Take note that if the URL is
    `http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/example/test-broker`
-   you are still using the old Broker installation.
+   you are still using the old broker installation.
 
    ```shell script
    Name:         test-broker
@@ -176,7 +176,7 @@ release from the `knative-gcp` repository. We will update the page with specific
      ...
    ```
 
-1. Delete the old Broker cell
+1. Delete the old BrokerCell since it is no longer useful.
 
    ```shell script
    kubectl delete deployment default-brokercell-fanout -n cloud-run-events
@@ -280,4 +280,7 @@ release from the `knative-gcp` repository. We will update the page with specific
 
 1. Validate and resolve any hard-coded uses of the namespace in the user code to
    ensure no unintended impact. Search for the `cloud-run-events` keywords in
-   any scripts you may have created and replace them with `events-system`.
+   any scripts you may have created and replace them with `events-system`. Note
+   that any hardcoded uses of the old BrokerCell ingress
+   `http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/...`
+   will fail when attempting to send events.
