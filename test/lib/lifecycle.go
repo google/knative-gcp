@@ -40,6 +40,7 @@ import (
 	"knative.dev/eventing/test/lib/resources"
 	pkgTest "knative.dev/pkg/test"
 
+	apiduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	knativegcp "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	"github.com/google/knative-gcp/test/lib/metrics"
@@ -249,20 +250,26 @@ func (c *Client) StackDriverEventCountMetricFor(_, projectID, filter string) (in
 }
 
 // WaitForSourceAuthCheckPendingOrFail waits for the GCP Sources
-// to have authenticationCheckPending condition reason for PullSubscriptionConditionReady condition or fail.
+// to have authenticationCheckPending condition reason for PullSubscriptionConditionReady condition or fail,
+// and return the message from this status.
 // To use this function, the given resource must have implemented the PubSub Status duck-type,
 // and have PullSubscriptionConditionReady condition.
-func (c *Client) WaitForSourceAuthCheckPendingOrFail(name string, typemeta *metav1.TypeMeta) {
+func (c *Client) WaitForSourceAuthCheckPendingOrFail(name string, typemeta *metav1.TypeMeta) string {
 	namespace := c.Namespace
 	metaResource := resources.NewMetaResource(name, namespace, typemeta)
-	if err := WaitForSourceAuthCheckPending(c.Core.Dynamic, metaResource); err != nil {
-		untyped, err := duck.GetGenericObject(c.Core.Dynamic, metaResource, &duckv1.PubSub{})
-		if err != nil {
-			c.T.Errorf("Failed to get the object %v-%s when dumping error state: %v", *typemeta, name, err)
-		}
+	waitErr := WaitForSourceAuthCheckPending(c.Core.Dynamic, metaResource)
+	// Get the real-time object right after it is running into the desired status.
+	untyped, err := duck.GetGenericObject(c.Core.Dynamic, metaResource, &duckv1.PubSub{})
+	if err != nil {
+		c.T.Fatalf("Failed to get the object %v-%s: %v", *typemeta, name, err)
+	}
+	if waitErr != nil {
 		if untyped != nil {
 			c.T.Errorf("Object that did not run into authenticationCheckPending %v-%s when dumping error state: %+v", *typemeta, name, untyped)
 		}
 		c.T.Fatalf("Failed to get %s-%s with authenticationCheckPending reason in type PullSubscriptionConditionReady : %+v", typemeta, name, pkgerrors.WithStack(err))
 	}
+	source := untyped.(*apiduckv1.PubSub)
+	cond := source.Status.GetCondition(duckv1.PullSubscriptionReady)
+	return cond.Message
 }

@@ -30,11 +30,10 @@ import (
 	"knative.dev/eventing/test/lib/resources"
 
 	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
-
 	eventsv1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 )
 

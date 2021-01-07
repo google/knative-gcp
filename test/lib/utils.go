@@ -22,7 +22,6 @@ package lib
 import (
 	"os"
 	"testing"
-	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -48,7 +47,7 @@ func GetEnvOrFail(t *testing.T, key string) string {
 // every interval until isSourceAuthCheckPending returns `true` indicating
 // it is done, or returns an error, or timeout.
 func WaitForSourceAuthCheckPending(dynamicClient dynamic.Interface, obj *resources.MetaResource) error {
-	return wait.PollImmediate(1*time.Second, 2*time.Minute, func() (bool, error) {
+	return wait.PollImmediate(interval, timeout, func() (bool, error) {
 		return checkSourceAuthCheckPending(dynamicClient, obj)
 	})
 }
