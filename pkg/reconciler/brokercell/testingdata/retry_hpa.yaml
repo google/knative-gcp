@@ -16,7 +16,7 @@ metadata:
   name: test-brokercell-brokercell-retry-hpa
   namespace: testnamespace
   labels:
-    app: cloud-run-events
+    app: events-system
     brokerCell: test-brokercell
     role: retry
   ownerReferences:

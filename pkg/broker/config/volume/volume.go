@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	defaultPath = "/var/run/cloud-run-events/broker/targets"
+	defaultPath = "/var/run/events-system/broker/targets"
 )
 
 // Targets implements config.ReadonlyTargets with data

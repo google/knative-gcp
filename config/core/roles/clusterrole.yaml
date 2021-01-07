@@ -15,7 +15,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: cloud-run-events-controller
+  name: events-system-controller
   labels:
     events.cloud.google.com/release: devel
 rules:
