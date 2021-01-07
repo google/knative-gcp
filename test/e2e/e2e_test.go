@@ -463,3 +463,17 @@ func TestCloudLoggingGCPTopic(t *testing.T) {
 	defer cancel()
 	CloudLoggingTopicTestImpl(t, authConfig)
 }
+
+// TestAuthCheckForAuthType tests the authentication check functionality to determine the auth type.
+func TestAuthCheckForAuthType(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	AuthCheckForAuthTypeTestImpl(t, authConfig)
+}
+
+// TestAuthCheckForPodCheck tests the authentication check functionality which is running inside of the Pod.
+func TestAuthCheckForPodCheck(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	AuthCheckForPodCheckTestImpl(t, authConfig)
+}
