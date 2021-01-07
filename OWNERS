@@ -14,6 +14,7 @@ approvers:
 - cathyzhyi
 - AlexandraRoatis
 - stuart-xyz
+- MohamedElhawaty
 
 # Reviewers are suggested from the reviewers list first, then the approvers
 # list. To add reviewers while spreading the load among existing approvers,
@@ -35,3 +36,4 @@ reviewers:
 - cathyzhyi
 - AlexandraRoatis
 - stuart-xyz
+- MohamedElhawaty
