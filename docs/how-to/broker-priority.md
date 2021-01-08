@@ -3,8 +3,8 @@
 ## Background
 
 The data plane components of `GCP-broker` are running on Kubernetes clusters in
-`events-system` namespace. Their resource consumption depends on the number
-of cluster nodes and number of pods running in total.
+`events-system` namespace. Their resource consumption depends on the number of
+cluster nodes and number of pods running in total.
 
 As existing components use more resources and as we add more new components,
 more cluster and node resources are required to run Kubernetes. This

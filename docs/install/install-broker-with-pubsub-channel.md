@@ -15,8 +15,8 @@ Channel.
 
 ## Deployment
 
-1.  Verify the configmap `config-br-default-channel` is in the
-    `events-system` namespace.
+1.  Verify the configmap `config-br-default-channel` is in the `events-system`
+    namespace.
 
     ```shell
     kubectl get configmap config-br-default-channel -n events-system
