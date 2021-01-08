@@ -1,6 +1,5 @@
 /*
  * Copyright 2020 The Knative Authors
- * Modified work Copyright 2020 Google LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,8 +27,9 @@ import (
 )
 
 var (
-	// Interval is the event interval of the sender pod
-	Interval = 10 * time.Millisecond
+	// FIXME: Interval is set to 200 msec, as lower values will result in errors: knative/eventing#2357
+	// Interval = 10 * time.Millisecond
+	Interval = 200 * time.Millisecond
 )
 
 // Prober is the interface for a prober, which checks the result of the probes when stopped.
