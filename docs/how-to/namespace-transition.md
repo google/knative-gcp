@@ -190,8 +190,8 @@ release from the `knative-gcp` repository. We will update the page with specific
    kubectl delete job.batch/storage-version-migration-knative-gcp -n cloud-run-events
    ```
 
-1. For each existing source delete the old source controller. A new source
-   controller will be created automatically. The example below illustrates the
+1. For each existing source delete the old source deployment. A new source
+   deployment will be created automatically. The example below illustrates the
    process for a Cloud PubSub source `cloudpubsubsource-test` in the `example`
    namespace.
 
