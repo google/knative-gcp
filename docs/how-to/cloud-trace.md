@@ -15,8 +15,8 @@ to grant dataplane service accounts `roles/cloudtrace.agent`.
 
 ## Enable Tracing in the `config-tracing` ConfigMap
 
-Edit the `config-tracing` ConfigMap under the `events-system` namespace in
-Cloud Console or with the following `kubectl` command:
+Edit the `config-tracing` ConfigMap under the `events-system` namespace in Cloud
+Console or with the following `kubectl` command:
 
 ```shell
 kubectl edit configmap -n events-system config-tracing
