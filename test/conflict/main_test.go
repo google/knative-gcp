@@ -46,14 +46,11 @@ func TestGCPEventingInstallationObjectNameConflicts(t *testing.T) {
 	// Dec 10 17:09:28.571 install_cloud_run_events_nocheck_pods_running [OUT] clusterrolebinding.rbac.authorization.k8s.io/cloud-run-events-controller created/configured
 	// If the last word is "configured", there is a naming conflict with the components already installed
 	pattern := "configured"
-	var prevline string
-	if strings.Contains(out.String(), pattern) {
-		t.Error("The following objects in knative GCP installation have naming conflicts with existing components")
-		for _, line := range strings.Fields(out.String()) {
-			if strings.Contains(line, pattern) {
-				t.Error(prevline)
-			}
-			prevline = line
+	for _, line := range strings.Split(out.String(), "\n") {
+		words := strings.Fields(line)
+		if len(words) > 0 && strings.Compare(words[len(words)-1], pattern) == 0 {
+			t.Error("The following objects in knative GCP installation have naming conflicts with existing components")
+			t.Error(line)
 		}
 	}
 }
