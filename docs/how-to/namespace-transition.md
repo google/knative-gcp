@@ -1,4 +1,4 @@
-# Transition a cluster to the new `events-system` namespace
+# Upgrade cluster from eventing release v0.19 to v0.20
 
 **This documentation is for clusters that already have release `v0.19` of
 eventing running in the `cloud-run-events` namespace. If you are installing
