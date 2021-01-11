@@ -1,4 +1,10 @@
-# Transition a project to the new `events-system` namespace
+# Transition a cluster to the new `events-system` namespace
+
+**This documentation is for clusters that already have release `v0.19` of
+eventing running in the `cloud-run-events` namespace. If you are installing
+eventing for the first time on your cluster, you do not need to follow this
+steps and can go directly to
+[Installing Knative-GCP](https://github.com/google/knative-gcp/blob/master/docs/install/install-knative-gcp.md).**
 
 The upcoming `v0.20` release of `knative-gcp` will contain changes that are not
 compatible with old releases. Namely, the namespace will change from
@@ -20,7 +26,7 @@ release from the `knative-gcp` repository. We will update the page with specific
    explain the purpose of each command in comments.
 
    ```shell script
-   # create the new namespace by copying the information from the old one
+   # create the new namespace by copying the labels and annotations from the old one
    kubectl get namespace cloud-run-events -o yaml | \
      sed 's/  name: cloud-run-events/  name: events-system/g' | \
      kubectl create -f -
@@ -76,21 +82,13 @@ release from the `knative-gcp` repository. We will update the page with specific
    kubectl delete -f namespace-transition.yaml
    ```
 
-1. Upgrade to the new namespace by applying the changes from the `master` branch
-   or any of the releases from `v0.20` onward. This instructions are identical
-   to the
+1. Upgrade to the new namespace by applying the changes from release `v0.20`.
+   These instructions are identical to the
    [installation instructions](https://github.com/google/knative-gcp/blob/master/docs/install/install-knative-gcp.md#install-the-knative-gcp-constructs).
 
    ```shell script
-   # apply changes based on the master branch
-   cd knative-gcp
-   git checkout master
-   ko apply -f ./config
-   ```
-
-   ```shell script
    # apply changes based on the release
-   export KGCP_VERSION=v0.20.0 # or above
+   export KGCP_VERSION=v0.20.0
    kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events-pre-install-jobs.yaml
    kubectl apply --selector events.cloud.google.com/crd-install=true --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
