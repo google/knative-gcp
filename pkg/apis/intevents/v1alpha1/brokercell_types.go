@@ -136,7 +136,7 @@ type BrokerCellStatus struct {
 	// IngressTemplate contains a URI template as specified by RFC6570 to
 	// generate Broker ingress URIs. It may contain variables `name` and
 	// `namespace`.
-	// Example: "http://broker-ingress.events-system.svc.cluster.local/{namespace}/{name}"
+	// Example: "http://broker-ingress.cloud-run-events.svc.cluster.local/{namespace}/{name}"
 	IngressTemplate string `json:"ingressTemplate,omitempty"`
 }
 

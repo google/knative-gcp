@@ -3,8 +3,13 @@
 ## Background
 
 The data plane components of `GCP-broker` are running on Kubernetes clusters in
+<<<<<<< HEAD
 `events-system` namespace. Their resource consumption depends on the number of
 cluster nodes and number of pods running in total.
+=======
+`cloud-run-events` namespace. Their resource consumption depends on the number
+of cluster nodes and number of pods running in total.
+>>>>>>> parent of 2435e8c3 (Rename namespace (#1917))
 
 As existing components use more resources and as we add more new components,
 more cluster and node resources are required to run Kubernetes. This
@@ -56,7 +61,7 @@ value bigger than `1000000000`(one billion).
 1. Make sure you have at least one broker in your cluster.
 2. Apply the following command to check the broker data plane:
    ```
-   kubectl get deployment -n events-system
+   kubectl get deployment -n cloud-run-events
    ```
    You are going to update `deployment`s:
    ```
@@ -86,7 +91,7 @@ value bigger than `1000000000`(one billion).
 4. Use the following command to verify the Pod Priority.
 
    ```
-   kubectl get pod -n events-system -l 'role in (ingress,fanout,retry)' -o yaml
+   kubectl get pod -n cloud-run-events -l 'role in (ingress,fanout,retry)' -o yaml
    ```
 
    You will find a new field `Priority` under `spec.template.spec` with the

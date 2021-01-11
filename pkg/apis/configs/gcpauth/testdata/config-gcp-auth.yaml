@@ -16,7 +16,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: config-gcp-auth
-  namespace: events-system
+  namespace: cloud-run-events
   labels:
     events.cloud.google.com/release: devel
 

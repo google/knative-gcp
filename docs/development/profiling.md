@@ -12,7 +12,7 @@ below. Currently this includes:
 ## Enabling the pprof HTTP server
 
 The pprof HTTP server is enabled automatically when `config-observability` in
-the system namespace (normally `events-system`) includes the key
+the system namespace (normally `cloud-run-events`) includes the key
 `profiling.enable` with any value. The profiling port is 8008. See
 [`server.go`](https://github.com/knative/pkg/blob/master/profiling/server.go)
 for more details.

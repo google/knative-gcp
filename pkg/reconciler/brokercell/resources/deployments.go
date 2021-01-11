@@ -230,7 +230,7 @@ func containerTemplate(args Args) corev1.Container {
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      "broker-config",
-				MountPath: "/var/run/events-system/broker",
+				MountPath: "/var/run/cloud-run-events/broker",
 			},
 			{
 				Name:      "google-broker-key",

@@ -48,7 +48,7 @@ const (
 // 1. It listens on port specified by "PORT" env var, or default 8080 if env var is not set
 // 2. It reads "PROJECT_ID" env var for pubsub project. If the env var is empty, it retrieves project ID from
 //    GCE metadata.
-// 3. It expects broker configmap mounted at "/var/run/events-system/broker/targets"
+// 3. It expects broker configmap mounted at "/var/run/cloud-run-events/broker/targets"
 func main() {
 	appcredentials.MustExistOrUnsetEnv()
 

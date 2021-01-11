@@ -130,7 +130,7 @@ spec:
         image: ko://github.com/google/knative-gcp/test/actor/seeder
         env:
         - name: TARGET
-          value: http://default-brokercell-ingress.events-system.svc.cluster.local/{{.namespace}}/testbroker
+          value: http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/{{.namespace}}/testbroker
         - name: INTERVAL
           value: {{.interval}}
         - name: SIZE

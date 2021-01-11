@@ -16,7 +16,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: config-tracing
-  namespace: events-system
+  namespace: cloud-run-events
   annotations:
     knative.dev/example-checksum: 4002b4c2
 data:

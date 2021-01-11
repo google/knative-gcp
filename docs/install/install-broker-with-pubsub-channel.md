@@ -15,11 +15,16 @@ Channel.
 
 ## Deployment
 
+<<<<<<< HEAD
 1.  Verify the configmap `config-br-default-channel` is in the `events-system`
     namespace.
+=======
+1.  Verify the configmap `config-br-default-channel` is in the
+    `cloud-run-events` namespace.
+>>>>>>> parent of 2435e8c3 (Rename namespace (#1917))
 
     ```shell
-    kubectl get configmap config-br-default-channel -n events-system
+    kubectl get configmap config-br-default-channel -n cloud-run-events
     ```
 
     By default, it is assumed to use a default secret. Modify

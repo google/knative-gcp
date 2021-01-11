@@ -17,7 +17,7 @@ metadata:
   name: test-brokercell-brokercell-retry
   namespace: testnamespace
   labels:
-    app: events-system
+    app: cloud-run-events
     brokerCell: test-brokercell
     role: retry
   ownerReferences:
@@ -29,7 +29,7 @@ metadata:
 spec:
   selector:
     matchLabels: &labels
-      app: events-system
+      app: cloud-run-events
       brokerCell: test-brokercell
       role: retry
   minReadySeconds: 60
@@ -77,7 +77,7 @@ spec:
           value: "secret"
         volumeMounts:
         - name: broker-config
-          mountPath: /var/run/events-system/broker
+          mountPath: /var/run/cloud-run-events/broker
         - name: google-broker-key
           mountPath: /var/secrets/google          
         resources:

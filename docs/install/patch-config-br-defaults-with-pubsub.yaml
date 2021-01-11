@@ -20,4 +20,4 @@ data:
       apiVersion: v1
       kind: ConfigMap
       name: config-br-default-channel
-      namespace: events-system
+      namespace: cloud-run-events
