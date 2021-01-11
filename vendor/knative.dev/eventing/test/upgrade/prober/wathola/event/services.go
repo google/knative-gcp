@@ -61,10 +61,11 @@ func NewStepsStore(errors *ErrorStore) StepsStore {
 // NewFinishedStore creates FinishedStore
 func NewFinishedStore(steps StepsStore, errors *ErrorStore) FinishedStore {
 	return &finishedStore{
-		received: 0,
-		count:    -1,
-		steps:    steps,
-		errors:   errors,
+		received:      0,
+		eventsSent:    -1,
+		totalRequests: 0,
+		steps:         steps,
+		errors:        errors,
 	}
 }
 
@@ -94,21 +95,35 @@ func (f *finishedStore) RegisterFinished(finished *Finished) {
 			f.received+1)
 	}
 	f.received++
-	f.count = finished.Count
-	log.Infof("finish event received, expecting %d event ware propagated", finished.Count)
+	f.eventsSent = finished.EventsSent
+	f.totalRequests = finished.TotalRequests
+	log.Infof("finish event received, expecting %d event ware propagated", finished.EventsSent)
 	d := config.Instance.Receiver.Teardown.Duration
 	log.Infof("waiting additional %v to be sure all events came", d)
 	time.Sleep(d)
 	receivedEvents := f.steps.Count()
-	if receivedEvents != finished.Count {
+	if receivedEvents != finished.EventsSent {
 		f.errors.throwUnexpected("expecting to have %v unique events received, "+
-			"but received %v unique events", finished.Count, receivedEvents)
+			"but received %v unique events", finished.EventsSent, receivedEvents)
 		f.reportViolations(finished)
 		f.errors.state = Failed
 	} else {
 		log.Infof("properly received %d unique events", receivedEvents)
 		f.errors.state = Success
 	}
+	// check down time
+	for _, unavailablePeriod := range finished.UnavailablePeriods {
+		if unavailablePeriod > config.Instance.Receiver.ErrorCfg.UnavailablePeriodToReport {
+			// TODO: decide how to do this properly
+			f.errors.throwUnexpected("actual unavailable period %v is over down time limit of %v", unavailablePeriod, config.Instance.Receiver.ErrorCfg.UnavailablePeriodToReport)
+			f.errors.state = Failed
+		}
+		log.Infof("detecting unavailable time %v", unavailablePeriod)
+	}
+}
+
+func (f *finishedStore) TotalRequests() int {
+	return f.totalRequests
 }
 
 func (f *finishedStore) State() State {
@@ -138,7 +153,7 @@ func asStrings(errThrown []thrown) []string {
 
 func (f *finishedStore) reportViolations(finished *Finished) {
 	steps := f.steps.(*stepStore)
-	for eventNo := 1; eventNo <= finished.Count; eventNo++ {
+	for eventNo := 1; eventNo <= finished.EventsSent; eventNo++ {
 		times, ok := steps.store[eventNo]
 		if !ok {
 			times = 0
@@ -188,10 +203,11 @@ type stepStore struct {
 }
 
 type finishedStore struct {
-	received int
-	count    int
-	errors   *ErrorStore
-	steps    StepsStore
+	received      int
+	eventsSent    int
+	totalRequests int
+	errors        *ErrorStore
+	steps         StepsStore
 }
 
 type thrown struct {

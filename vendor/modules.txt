@@ -1006,7 +1006,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.19.1-0.20210108134136-08f6fca21267
+# knative.dev/eventing v0.19.1-0.20210108134136-08f6fca21267 => github.com/zhongduo/eventing v0.16.1-0.20210107223701-788e872b2d3c
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1320,3 +1320,4 @@ sigs.k8s.io/yaml
 # gomodules.xyz/jsonpatch/v2 => gomodules.xyz/jsonpatch/v2 v2.0.1
 # gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
 # sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
+# knative.dev/eventing => github.com/zhongduo/eventing v0.16.1-0.20210107223701-788e872b2d3c
