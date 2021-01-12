@@ -19,6 +19,8 @@
 
 # Script entry point.
 
+exit 0
+
 export GO111MODULE=on
 
 # shellcheck disable=SC1090
