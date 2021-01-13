@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -174,6 +175,13 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("event delivery failed: HTTP status code %d", resp.StatusCode)
+	}
+
+	// Pre-check the reply response header, if it's not in structured mode/batched mode or binary mode,
+	// then it's not a CloudEvent, we treat the delivery as successful and ignore the response.
+	// Otherwise, we proceed with the malformed event check.
+	if !strings.HasPrefix(resp.Header.Get("Content-Type"), "application/cloudevents") && (resp.Header.Get("ce-specversion") == "") {
+		return nil
 	}
 
 	respMsg := cehttp.NewMessageFromHttpResponse(resp)
