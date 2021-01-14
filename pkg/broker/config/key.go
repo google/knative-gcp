@@ -64,36 +64,27 @@ func CellTenantKeyFromPersistenceString(s string) (*CellTenantKey, error) {
 		return nil, fmt.Errorf(
 			"malformed request path; expect format '/<ns>/<broker>' or '/<type>/<ns>/<broker>', actually %q", s)
 	}
+	var blank, ns, brokerName string
+	var t CellTenantType
 	if len(pieces) == 3 {
 		// Broker's persistence strings are in the form "/<ns>/<brokerName>".
-		blank, ns, brokerName := pieces[0], pieces[1], pieces[2]
-		if blank != "" {
-			return nil, fmt.Errorf(
-				"malformed request path; expect format '/<ns>/<broker>' or '/<type>/<ns>/<broker>', actually %q", s)
-		}
-		if err := validateNamespace(ns); err != nil {
+		blank, ns, brokerName = pieces[0], pieces[1], pieces[2]
+		t = CellTenantType_BROKER
+	} else {
+		// len(pieces) must be 4, so this is the standard form of the persistence string,
+		// '/<type>/<ns>/<name>'.
+		var ts string
+		blank, ts, ns, brokerName = pieces[0], pieces[1], pieces[2], pieces[3]
+		if ctt, err := validateCellTenantTypeFromString(ts); err != nil {
 			return nil, err
+		} else {
+			t = ctt
 		}
-		if err := validateBrokerName(brokerName); err != nil {
-			return nil, err
-		}
-		return &CellTenantKey{
-			cellTenantType: CellTenantType_BROKER,
-			namespace:      ns,
-			name:           brokerName,
-		}, nil
 	}
-	// len(pieces) must be 4, so this is the standard form of the persistence string,
-	// '/<type>/<ns>/<name>'.
 
-	blank, ts, ns, brokerName := pieces[0], pieces[1], pieces[2], pieces[3]
 	if blank != "" {
 		return nil, fmt.Errorf(
 			"malformed request path; expect format '/<ns>/<broker>' or '/<type>/<ns>/<broker>', actually %q", s)
-	}
-	t, err := validateCellTenetTypeFromString(ts)
-	if err != nil {
-		return nil, err
 	}
 	if err := validateNamespace(ns); err != nil {
 		return nil, err
@@ -224,7 +215,7 @@ func validateBrokerName(name string) error {
 	return fmt.Errorf("invalid name %q, %v", name, errs)
 }
 
-func validateCellTenetTypeFromString(s string) (CellTenantType, error) {
+func validateCellTenantTypeFromString(s string) (CellTenantType, error) {
 	i, present := CellTenantType_value[s]
 	if !present {
 		return CellTenantType_UNKNOWN_CELL_TENANT_TYPE, fmt.Errorf("unknown CellTenantType %q", s)
