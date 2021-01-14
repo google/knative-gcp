@@ -80,7 +80,8 @@ func AuthCheckForPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	// and with Message includes the wanted message.
 	gotMessage := client.WaitForSourceAuthCheckPendingOrFail(psName, lib.CloudPubSubSourceV1TypeMeta)
 	if !strings.Contains(gotMessage, wantMessage) {
-		t.Fatalf("unexpected message from PullSubscriptionConditionReady condition with authenticationCheckPending reason: %s", gotMessage)
+		t.Fatalf("unexpected message from PullSubscriptionConditionReady condition with authenticationCheckPending reason, "+
+			"message wanted to include: %q, got: %q", wantMessage, gotMessage)
 	}
 }
 
@@ -123,6 +124,7 @@ func AuthCheckForNonPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	// and with Message includes the wanted message.
 	gotMessage := client.WaitForSourceAuthCheckPendingOrFail(psName, lib.CloudPubSubSourceV1TypeMeta)
 	if !strings.Contains(gotMessage, wantMessage) {
-		t.Fatalf("unexpected message from PullSubscriptionConditionReady condition with authenticationCheckPending reason: %s", gotMessage)
+		t.Fatalf("unexpected message from PullSubscriptionConditionReady condition with authenticationCheckPending reason, "+
+			"message wanted to include: %q, got: %q", wantMessage, gotMessage)
 	}
 }
