@@ -16,6 +16,7 @@ require (
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/pkg/errors v0.9.1
 	github.com/rickb777/date v1.13.0
 	go.opencensus.io v0.22.5
 	go.uber.org/multierr v1.6.0

@@ -43,14 +43,18 @@ type PubSubConfig struct {
 
 func MakePubSubOrDie(client *Client, config PubSubConfig) {
 	client.T.Helper()
+	MakePubSub(client, config)
+	client.Core.WaitForResourceReadyOrFail(config.PubSubName, CloudPubSubSourceV1TypeMeta)
+}
+
+func MakePubSub(client *Client, config PubSubConfig) {
+	client.T.Helper()
 	so := make([]reconcilertestingv1.CloudPubSubSourceOption, 0)
 	so = append(so, reconcilertestingv1.WithCloudPubSubSourceSink(config.SinkGVK, config.SinkName))
 	so = append(so, reconcilertestingv1.WithCloudPubSubSourceTopic(config.TopicName))
 	so = append(so, reconcilertestingv1.WithCloudPubSubSourceServiceAccount(config.ServiceAccountName))
 	eventsPubSub := reconcilertestingv1.NewCloudPubSubSource(config.PubSubName, client.Namespace, so...)
 	client.CreatePubSubOrFail(eventsPubSub)
-
-	client.Core.WaitForResourceReadyOrFail(config.PubSubName, CloudPubSubSourceV1TypeMeta)
 }
 
 func MakePubSubV1beta1OrDie(client *Client, config PubSubConfig) {

@@ -19,19 +19,21 @@ package lib
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
+
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 
-	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"knative.dev/eventing/test/lib/resources"
 
+	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	eventsv1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 )
 
@@ -268,4 +270,26 @@ func (c *Client) CreateJobOrFail(job *batchv1.Job, options ...func(*batchv1.Job,
 	}
 	c.T.Logf("Created job %s/%s", job.Namespace, job.Name)
 	c.Tracker.Add("batch", "v1", "jobs", job.Namespace, job.Name)
+}
+
+func (c *Client) CreateSecretOrFail(secret *corev1.Secret) {
+	ctx := context.Background()
+	c.T.Helper()
+	_, err := c.Core.Kube.CoreV1().Secrets(c.Namespace).Create(ctx, secret, v1.CreateOptions{})
+	if err != nil {
+		c.T.Fatalf("Failed to create secret %s/%s: %v", c.Namespace, secret.Name, err)
+	}
+	c.T.Logf("Created secret: %s/%s", c.Namespace, secret.Name)
+	c.Tracker.Add("", "v1", "secrets", c.Namespace, secret.Name)
+}
+
+func (c *Client) CreateServiceAccountOrFail(sa *corev1.ServiceAccount) {
+	ctx := context.Background()
+	c.T.Helper()
+	_, err := c.Core.Kube.CoreV1().ServiceAccounts(c.Namespace).Create(ctx, sa, v1.CreateOptions{})
+	if err != nil {
+		c.T.Fatalf("Failed to create serviceAccount %s/%s: %v", c.Namespace, sa.Name, err)
+	}
+	c.T.Logf("Created serviceAccount: %s/%s", c.Namespace, sa.Name)
+	c.Tracker.Add("", "v1", "serviceaccounts", c.Namespace, sa.Name)
 }
