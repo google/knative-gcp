@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2021 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,12 +28,11 @@ import (
 const (
 	authCheckServiceAccountName = "auth-check-test"
 	fakeServiceAccount          = "fakeserviceaccount@test-project.iam.gserviceaccount.com"
-	fakeValue                   = "{\n  \"type\": \"service_account\",\n  \"project_id\": \"fake-project-id\",\n  \"private_key_id\": \"fake-key-id\"}"
+	invalidSecretValue          = "{\n  \"type\": \"service_account\",\n  \"project_id\": \"fake-project-id\",\n  \"private_key_id\": \"fake-key-id\"}"
 )
 
 func AuthCheckForPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	ctx := context.Background()
-	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
@@ -57,7 +56,7 @@ func AuthCheckForPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	} else {
 		so := make([]reconcilertesting.SecretOption, 0)
 		so = append(so, reconcilertesting.WithData(map[string][]byte{
-			"key.json": []byte(fakeValue),
+			"key.json": []byte(invalidSecretValue),
 		}))
 		secret := reconcilertesting.NewSecret("google-cloud-key", client.Namespace, so...)
 		client.CreateSecretOrFail(secret)
@@ -74,9 +73,11 @@ func AuthCheckForPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	lib.MakePubSub(client, pubSubConfig)
 
-	// Authentication check will return error for:
+	// In this test, authentication check will mark Source with AuthenticationCheckPending Reason for:
 	// 1. In Workload Identity mode, relationship between ksa and gsa is uncompleted.
-	// 2. In Secret mode, the key in k8s secret is a fake one.
+	// 2. In Secret mode, the key in k8s secret is a invalid one.
+	// Test will fail if authentication check does not mark Source with AuthenticationCheckPending Reason
+	// and with Message includes the wanted message.
 	gotMessage := client.WaitForSourceAuthCheckPendingOrFail(psName, lib.CloudPubSubSourceV1TypeMeta)
 	if !strings.Contains(gotMessage, wantMessage) {
 		t.Fatalf("unexpected message from PullSubscriptionConditionReady condition with authenticationCheckPending reason: %s", gotMessage)
@@ -85,7 +86,6 @@ func AuthCheckForPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 func AuthCheckForNonPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	ctx := context.Background()
-	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
@@ -116,9 +116,11 @@ func AuthCheckForNonPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	lib.MakePubSub(client, pubSubConfig)
 
-	// Authentication check will return error for:
+	// In this test, authentication check will mark Source with AuthenticationCheckPending Reason for:
 	// 1. In Workload Identity mode, there is no k8s service account.
 	// 2. In Secret mode, there is no k8s secret.
+	// Test will fail if authentication check does not mark Source with AuthenticationCheckPending Reason
+	// and with Message includes the wanted message.
 	gotMessage := client.WaitForSourceAuthCheckPendingOrFail(psName, lib.CloudPubSubSourceV1TypeMeta)
 	if !strings.Contains(gotMessage, wantMessage) {
 		t.Fatalf("unexpected message from PullSubscriptionConditionReady condition with authenticationCheckPending reason: %s", gotMessage)

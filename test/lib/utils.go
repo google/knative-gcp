@@ -45,7 +45,9 @@ func GetEnvOrFail(t *testing.T, key string) string {
 
 // WaitForSourceAuthCheckPending polls the status of the Source from client
 // every interval until isSourceAuthCheckPending returns `true` indicating
-// it is done, or returns an error, or timeout.
+// the Source is in AuthenticationCheckPending state,
+// or returns an error, or timeout.
+// AuthenticationCheckPending is the state that will continue until authentication check succeeds.
 func WaitForSourceAuthCheckPending(dynamicClient dynamic.Interface, obj *resources.MetaResource) error {
 	return wait.PollImmediate(interval, timeout, func() (bool, error) {
 		return checkSourceAuthCheckPending(dynamicClient, obj)
@@ -54,15 +56,15 @@ func WaitForSourceAuthCheckPending(dynamicClient dynamic.Interface, obj *resourc
 
 func checkSourceAuthCheckPending(dynamicClient dynamic.Interface, obj *resources.MetaResource) (bool, error) {
 	psObj, err := duck.GetGenericObject(dynamicClient, obj, &apiduckv1.PubSub{})
-	return isSourceAuthCheckPending(psObj, err)
-}
-
-func isSourceAuthCheckPending(psObj runtime.Object, err error) (bool, error) {
 	if err != nil {
 		// Return error to stop the polling.
 		return false, err
 	}
+	return isSourceAuthCheckPending(psObj), nil
+}
+
+func isSourceAuthCheckPending(psObj runtime.Object) bool {
 	source := psObj.(*apiduckv1.PubSub)
 	cond := source.Status.GetCondition(v1.PullSubscriptionConditionReady)
-	return cond != nil && cond.IsUnknown() && cond.Reason == authcheck.AuthenticationCheckUnknownReason, nil
+	return cond != nil && cond.IsUnknown() && cond.Reason == authcheck.AuthenticationCheckUnknownReason
 }

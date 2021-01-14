@@ -288,8 +288,8 @@ func (c *Client) CreateServiceAccountOrFail(sa *corev1.ServiceAccount) {
 	c.T.Helper()
 	_, err := c.Core.Kube.CoreV1().ServiceAccounts(c.Namespace).Create(ctx, sa, v1.CreateOptions{})
 	if err != nil {
-		c.T.Fatalf("Failed to create secret %s/%s: %v", c.Namespace, sa.Name, err)
+		c.T.Fatalf("Failed to create serviceAccount %s/%s: %v", c.Namespace, sa.Name, err)
 	}
-	c.T.Logf("Created secret: %s/%s", c.Namespace, sa.Name)
+	c.T.Logf("Created serviceAccount: %s/%s", c.Namespace, sa.Name)
 	c.Tracker.Add("", "v1", "serviceaccounts", c.Namespace, sa.Name)
 }
