@@ -88,7 +88,7 @@ func authChecker(authType authcheck.AuthType) func(w nethttp.ResponseWriter, req
 				w.WriteHeader(nethttp.StatusInternalServerError)
 				return
 			}
-			w.WriteHeader(nethttp.StatusOK)
 		}
+		w.WriteHeader(nethttp.StatusOK)
 	}
 }
