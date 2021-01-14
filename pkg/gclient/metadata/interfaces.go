@@ -20,14 +20,18 @@ package metadata
 // Client matches the interface exposed by metadata.Client
 type Client interface {
 	// InstanceAttributeValue returns the value of the provided VM instance attribute.
-	// See https://godoc.org/cloud.google.com/compute/metadata#Client.ProjectID
+	// See https://godoc.org/cloud.google.com/go/compute/metadata#Client.ProjectID
 	InstanceAttributeValue(attr string) (string, error)
 
 	// ProjectID returns the current instance's project ID string.
-	// See https://godoc.org/cloud.google.com/compute/metadata#Client.InstanceAttributeValue
+	// See https://godoc.org/cloud.google.com/go/compute/metadata#Client.InstanceAttributeValue
 	ProjectID() (string, error)
 
 	// OnGCE reports whether this process is running on Google Compute Engine.
-	// See https://godoc.org/cloud.google.com/compute/metadata#OnGCE
+	// See https://godoc.org/cloud.google.com/go/compute/metadata#OnGCE
 	OnGCE() bool
+
+	// Zone returns the current VM's zone, such as "us-central1-b".
+	// See https://godoc.org/cloud.google.com/go/compute/metadata#Zone
+	Zone() (string, error)
 }

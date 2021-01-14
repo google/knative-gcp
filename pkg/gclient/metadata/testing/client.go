@@ -24,6 +24,7 @@ var (
 	clusterNameAttr = "cluster-name"
 	FakeClusterName = "fake-cluster-name"
 	FakeProjectID   = "fake-project-id"
+	FakeZone        = "us-central1-b"
 )
 
 // TestClientData is the data used to configure the test metadata client.
@@ -72,4 +73,8 @@ func (m *testMetadataClient) ProjectID() (string, error) {
 // Assume this process is always running on Google Compute Engine
 func (m *testMetadataClient) OnGCE() bool {
 	return true
+}
+
+func (m *testMetadataClient) Zone() (string, error) {
+	return FakeZone, nil
 }

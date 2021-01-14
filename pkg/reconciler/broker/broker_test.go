@@ -58,6 +58,7 @@ const (
 	systemNS    = "knative-testing"
 
 	brokerFinalizerName = "brokers.eventing.knative.dev"
+	testClusterRegion   = "us-east1"
 )
 
 var (
@@ -479,6 +480,7 @@ func TestAllCases(t *testing.T) {
 			projectID:          testProject,
 			pubsubClient:       testPSClient,
 			dataresidencyStore: drStore,
+			clusterRegion:      testClusterRegion,
 		}
 		return brokerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerLister(), r.Recorder, r, brokerv1beta1.BrokerClass)
 	}))

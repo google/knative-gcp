@@ -55,6 +55,10 @@ func (m *metadataClient) OnGCE() bool {
 	return metadata.OnGCE()
 }
 
+func (m *metadataClient) Zone() (string, error) {
+	return metadata.Zone()
+}
+
 func NewMetadataClient(httpClient *http.Client) Client {
 	return &metadataClient{
 		metadata: metadata.NewClient(httpClient),

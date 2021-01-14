@@ -17,7 +17,9 @@ limitations under the License.
 package utils
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 )
@@ -74,4 +76,27 @@ func ClusterName(clusterName string, client metadataClient.Client) (string, erro
 		return "", err
 	}
 	return clusterName, nil
+}
+
+// ZoneToRegion converts a GKE zone to its region
+func ZoneToRegion(zone string) (string, error) {
+	fields := strings.Split(zone, "-")
+	if len(fields) == 3 {
+		return fmt.Sprintf("%s-%s", fields[0], fields[1]), nil
+	}
+	// We can as well treat xx-xx as region and simply return,
+	// but let's be strict here
+	return "", fmt.Errorf("zone %s is not valid", zone)
+}
+
+// ClusterRegion returns the region of the cluster
+func ClusterRegion(clusterRegion string, clientCreator func() metadataClient.Client) (string, error) {
+	if clusterRegion != "" {
+		return clusterRegion, nil
+	}
+	zone, err := clientCreator().Zone()
+	if err != nil {
+		return "", err
+	}
+	return ZoneToRegion(zone)
 }
