@@ -72,7 +72,7 @@ func TestBroker_Validate(t *testing.T) {
 				},
 			},
 		},
-		want: apis.ErrMissingField("spec.delivery.deadLetterSink"),
+		want: apis.ErrGeneric("need DeadLetterSink when retry is defined", "spec.delivery.deadLetterSink"),
 	}, {
 		name: "invalid dead letter sink missing uri",
 		broker: Broker{

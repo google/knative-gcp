@@ -44,7 +44,7 @@ func ValidateDeliverySpec(ctx context.Context, spec *eventingduckv1beta1.Deliver
 		errs = errs.Also(apis.ErrMissingField("backoffPolicy"))
 	}
 	if spec.Retry != nil && spec.DeadLetterSink == nil {
-		errs = errs.Also(apis.ErrMissingField("deadLetterSink"))
+		errs = errs.Also(apis.ErrGeneric("need DeadLetterSink when retry is defined", "deadLetterSink"))
 	}
 	return errs.Also(ValidateDeadLetterSink(ctx, spec.DeadLetterSink).ViaField("deadLetterSink"))
 }
