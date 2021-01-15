@@ -69,7 +69,7 @@ func TestNewHTTPMessageReceiverWithChecker(t *testing.T) {
 
 			time.Sleep(1 * time.Second)
 
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d"+tc.path, port), nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d%s", port, tc.path), nil)
 			req.Header = tc.header
 			if err != nil {
 				t.Fatal("Failed to create a http request:", err)
@@ -124,7 +124,7 @@ func TestNewHTTPMessageReceiver(t *testing.T) {
 
 			time.Sleep(1 * time.Second)
 
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d"+tc.path, port), nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d%s", port, tc.path), nil)
 			req.Header = tc.header
 			if err != nil {
 				t.Fatal("Failed to create a http request:", err)
