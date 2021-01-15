@@ -20,6 +20,22 @@ import (
 	"testing"
 )
 
+func TestCellTenantKeyToFromLowerCase(t *testing.T) {
+	if want, got := len(CellTenantType_value), len(cellTenantTypeFromLowerCase); want != got {
+		t.Errorf("Incorrect length of cellTenantTypeFromLowerCase, expected %d, actual %d", want, got)
+	}
+	if want, got := len(CellTenantType_value), len(cellTenantTypeToLowerCase); want != got {
+		t.Errorf("Incorrect length of cellTenantTypeToLowerCase, expected %d, actual %d", want, got)
+	}
+	for _, v := range CellTenantType_value {
+		ctt := CellTenantType(v)
+		roundTrip := cellTenantTypeFromLowerCase[cellTenantTypeToLowerCase[ctt]]
+		if ctt != roundTrip {
+			t.Errorf("Unable to correctly round trip %v, actual %v", ctt, roundTrip)
+		}
+	}
+}
+
 func TestBrokerKeyPersistenceString(t *testing.T) {
 	testCases := map[string]struct {
 		key  CellTenantKey
@@ -66,15 +82,15 @@ func TestCellTenantKeyFromPersistenceString(t *testing.T) {
 			wantErr: true,
 		},
 		"no leading slash": {
-			s:       "foo/BROKER/bar/baz",
+			s:       "foo/broker/bar/baz",
 			wantErr: true,
 		},
 		"invalid namespace": {
-			s:       "/BROKER/_foo/bar",
+			s:       "/broker/_foo/bar",
 			wantErr: true,
 		},
 		"invalid name": {
-			s:       "/BROKER/foo/_bar",
+			s:       "/broker/foo/_bar",
 			wantErr: true,
 		},
 		"original broker format - no leading slash": {
@@ -98,7 +114,7 @@ func TestCellTenantKeyFromPersistenceString(t *testing.T) {
 			},
 		},
 		"broker": {
-			s: "/BROKER/my-ns/my-name",
+			s: "/broker/my-ns/my-name",
 			want: &CellTenantKey{
 				cellTenantType: CellTenantType_BROKER,
 				namespace:      "my-ns",

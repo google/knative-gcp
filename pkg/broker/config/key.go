@@ -30,6 +30,26 @@ import (
 	"knative.dev/pkg/metrics/metricskey"
 )
 
+var (
+	// cellTenantTypeFromLowerCase maps the lower case string to its type.
+	// E.g. 'broker' -> CellTenantType_BROKER. It is filled in by init().
+	cellTenantTypeFromLowerCase map[string]CellTenantType
+	// cellTenantTypeToLowerCase maps the type to its lower case string.
+	// E.g. CellTenantType_BROKER -> 'broker'. It is filled in by init().
+	cellTenantTypeToLowerCase map[CellTenantType]string
+)
+
+func init() {
+	cellTenantTypeFromLowerCase = make(map[string]CellTenantType, len(CellTenantType_value))
+	cellTenantTypeToLowerCase = make(map[CellTenantType]string, len(CellTenantType_value))
+	for k, v := range CellTenantType_value {
+		t := CellTenantType(v)
+		lowerCase := strings.ToLower(k)
+		cellTenantTypeFromLowerCase[lowerCase] = t
+		cellTenantTypeToLowerCase[t] = lowerCase
+	}
+}
+
 // CellTenantKey uniquely identifies a single CellTenant, at a given point in time.
 type CellTenantKey struct {
 	cellTenantType CellTenantType
@@ -49,13 +69,14 @@ func (k *CellTenantKey) String() string {
 // is stable and can only change if all existing usage locations are made backwards compatible,
 // supporting _both_ the old and the new format, for at least one release.
 func (k *CellTenantKey) PersistenceString() string {
-	// TODO Remove this.
+	// TODO It is safe to remove this after release-0.22, decide whether we want to leave Broker
+	// special-cased or not.
 	if k.cellTenantType == CellTenantType_BROKER {
 		// For backwards compatibility from when the only type was Broker, Brokers do not embed
 		// their type into the string.
 		return k.namespace + "/" + k.name
 	}
-	return fmt.Sprintf("%s/%s/%s", k.cellTenantType, k.namespace, k.name)
+	return fmt.Sprintf("%s/%s/%s", cellTenantTypeToLowerCase[k.cellTenantType], k.namespace, k.name)
 }
 
 func CellTenantKeyFromPersistenceString(s string) (*CellTenantKey, error) {
@@ -216,7 +237,7 @@ func validateBrokerName(name string) error {
 }
 
 func validateCellTenantTypeFromString(s string) (CellTenantType, error) {
-	i, present := CellTenantType_value[s]
+	i, present := cellTenantTypeFromLowerCase[s]
 	if !present {
 		return CellTenantType_UNKNOWN_CELL_TENANT_TYPE, fmt.Errorf("unknown CellTenantType %q", s)
 	}
