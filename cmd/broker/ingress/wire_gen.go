@@ -18,7 +18,7 @@ import (
 // Injectors from wire.go:
 
 func InitializeHandler(ctx context.Context, port clients.Port, projectID clients.ProjectID, podName metrics.PodName, containerName metrics.ContainerName, publishSettings pubsub.PublishSettings, authType authcheck.AuthType) (*ingress.Handler, error) {
-	httpMessageReceiver := clients.NewHTTPMessageReceiver(port)
+	httpMessageReceiver := clients.NewHTTPMessageReceiverWithChecker(port, authType)
 	v := _wireValue
 	readonlyTargets, err := volume.NewTargetsFromFile(v...)
 	if err != nil {
