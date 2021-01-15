@@ -29,11 +29,12 @@ func TestTargetKey(t *testing.T) {
 		t.Errorf("error from GetTargetKey got=%v, want=%v", err, ErrTargetKeyNotPresent)
 	}
 	wantTarget := (&config.Target{
-		Id:        "456",
-		Name:      "my-target",
-		Namespace: "namespace",
-		Broker:    "broker-name",
-		Address:   "baz",
+		Id:             "456",
+		Name:           "my-target",
+		Namespace:      "namespace",
+		CellTenantType: config.CellTenantType_BROKER,
+		CellTenantName: "broker-name",
+		Address:        "baz",
 	}).Key()
 	ctx := WithTargetKey(context.Background(), wantTarget)
 	gotTarget, err := GetTargetKey(ctx)

@@ -59,12 +59,12 @@ type FanoutPool struct {
 
 type fanoutHandlerCache struct {
 	Handler
-	b *config.Broker
+	b *config.CellTenant
 }
 
 // If somehow the existing handler's setting has deviated from the current broker config,
 // we need to renew the handler.
-func (hc *fanoutHandlerCache) shouldRenew(b *config.Broker) bool {
+func (hc *fanoutHandlerCache) shouldRenew(b *config.CellTenant) bool {
 	if !hc.IsAlive() {
 		return true
 	}
@@ -125,15 +125,15 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 		logging.FromContext(ctx).Error("failed to add tags to context", zap.Error(err))
 	}
 
-	p.pool.Range(func(key config.BrokerKey, value *fanoutHandlerCache) bool {
-		if _, ok := p.targets.GetBrokerByKey(&key); !ok {
+	p.pool.Range(func(key config.CellTenantKey, value *fanoutHandlerCache) bool {
+		if _, ok := p.targets.GetCellTenantByKey(&key); !ok {
 			value.Stop()
 			p.pool.Delete(key)
 		}
 		return true
 	})
 
-	p.targets.RangeBrokers(func(b *config.Broker) bool {
+	p.targets.RangeCellTenants(func(b *config.CellTenant) bool {
 		if value, ok := p.pool.Load(*b.Key()); ok {
 			// Skip if we don't need to renew the handler.
 			if !value.shouldRenew(b) {
@@ -195,11 +195,11 @@ type syncMapBrokerKey struct {
 	m sync.Map
 }
 
-func (m *syncMapBrokerKey) Store(k config.BrokerKey, v *fanoutHandlerCache) {
+func (m *syncMapBrokerKey) Store(k config.CellTenantKey, v *fanoutHandlerCache) {
 	m.m.Store(k, v)
 }
 
-func (m *syncMapBrokerKey) Load(k config.BrokerKey) (*fanoutHandlerCache, bool) {
+func (m *syncMapBrokerKey) Load(k config.CellTenantKey) (*fanoutHandlerCache, bool) {
 	v, ok := m.m.Load(k)
 	if v == nil {
 		return nil, ok
@@ -207,17 +207,17 @@ func (m *syncMapBrokerKey) Load(k config.BrokerKey) (*fanoutHandlerCache, bool) 
 	return v.(*fanoutHandlerCache), ok
 }
 
-func (m *syncMapBrokerKey) Delete(k config.BrokerKey) {
+func (m *syncMapBrokerKey) Delete(k config.CellTenantKey) {
 	m.m.Delete(k)
 }
 
-func (m *syncMapBrokerKey) Range(f func(key config.BrokerKey, value *fanoutHandlerCache) bool) {
+func (m *syncMapBrokerKey) Range(f func(key config.CellTenantKey, value *fanoutHandlerCache) bool) {
 	wrapped := func(key interface{}, value interface{}) bool {
 		var wrappedValue *fanoutHandlerCache
 		if value != nil {
 			wrappedValue = value.(*fanoutHandlerCache)
 		}
-		return f(key.(config.BrokerKey), wrappedValue)
+		return f(key.(config.CellTenantKey), wrappedValue)
 	}
 	m.m.Range(wrapped)
 }

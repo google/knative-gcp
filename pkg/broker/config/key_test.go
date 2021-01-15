@@ -20,15 +20,32 @@ import (
 	"testing"
 )
 
+func TestCellTenantKeyToFromLowerCase(t *testing.T) {
+	if want, got := len(CellTenantType_value), len(cellTenantTypeFromLowerCase); want != got {
+		t.Errorf("Incorrect length of cellTenantTypeFromLowerCase, expected %d, actual %d", want, got)
+	}
+	if want, got := len(CellTenantType_value), len(cellTenantTypeToLowerCase); want != got {
+		t.Errorf("Incorrect length of cellTenantTypeToLowerCase, expected %d, actual %d", want, got)
+	}
+	for _, v := range CellTenantType_value {
+		ctt := CellTenantType(v)
+		roundTrip := cellTenantTypeFromLowerCase[cellTenantTypeToLowerCase[ctt]]
+		if ctt != roundTrip {
+			t.Errorf("Unable to correctly round trip %v, actual %v", ctt, roundTrip)
+		}
+	}
+}
+
 func TestBrokerKeyPersistenceString(t *testing.T) {
 	testCases := map[string]struct {
-		key  BrokerKey
+		key  CellTenantKey
 		want string
 	}{
 		"broker": {
-			key: BrokerKey{
-				namespace: "my-namespace",
-				name:      "my-name",
+			key: CellTenantKey{
+				cellTenantType: CellTenantType_BROKER,
+				namespace:      "my-namespace",
+				name:           "my-name",
 			},
 			want: "my-namespace/my-name",
 		},
@@ -46,10 +63,10 @@ func TestBrokerKeyPersistenceString(t *testing.T) {
 	}
 }
 
-func TestBrokerKeyFromPersistenceString(t *testing.T) {
+func TestCellTenantKeyFromPersistenceString(t *testing.T) {
 	testCases := map[string]struct {
 		s       string
-		want    *BrokerKey
+		want    *CellTenantKey
 		wantErr bool
 	}{
 		"empty": {
@@ -61,42 +78,63 @@ func TestBrokerKeyFromPersistenceString(t *testing.T) {
 			wantErr: true,
 		},
 		"too long": {
-			s:       "/foo/bar/baz",
+			s:       "/foo/bar/baz/qux",
 			wantErr: true,
 		},
 		"no leading slash": {
-			s:       "foo/bar/baz",
+			s:       "foo/broker/bar/baz",
 			wantErr: true,
 		},
 		"invalid namespace": {
-			s:       "/_foo/bar",
+			s:       "/broker/_foo/bar",
 			wantErr: true,
 		},
 		"invalid name": {
+			s:       "/broker/foo/_bar",
+			wantErr: true,
+		},
+		"original broker format - no leading slash": {
+			s:       "foo/bar/baz",
+			wantErr: true,
+		},
+		"original broker format - invalid namespace": {
+			s:       "/_foo/bar",
+			wantErr: true,
+		},
+		"original broker format - invalid name": {
 			s:       "/foo/_bar",
 			wantErr: true,
 		},
-		"valid": {
+		"original broker format - valid": {
 			s: "/my-ns/my-name",
-			want: &BrokerKey{
-				namespace: "my-ns",
-				name:      "my-name",
+			want: &CellTenantKey{
+				cellTenantType: CellTenantType_BROKER,
+				namespace:      "my-ns",
+				name:           "my-name",
+			},
+		},
+		"broker": {
+			s: "/broker/my-ns/my-name",
+			want: &CellTenantKey{
+				cellTenantType: CellTenantType_BROKER,
+				namespace:      "my-ns",
+				name:           "my-name",
 			},
 		},
 	}
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			got, err := BrokerKeyFromPersistenceString(tc.s)
+			got, err := CellTenantKeyFromPersistenceString(tc.s)
 			if errIsNil := err == nil; tc.wantErr == errIsNil {
 				t.Errorf("Unexpected error. Wanted %v, Got %v", tc.wantErr, err)
 				return
 			}
 			if wantNil, gotNil := tc.want == nil, got == nil; wantNil != gotNil {
-				t.Errorf("Unexpected BrokerKey. Wanted %v, Got %v", tc.want, got)
+				t.Errorf("Unexpected CellTenantKey. Wanted %v, Got %v", tc.want, got)
 			}
 			if got != nil && *got != *tc.want {
-				t.Errorf("Unexpected BrokerKey. Wanted %v, Got %v", tc.want, got)
+				t.Errorf("Unexpected CellTenantKey. Wanted %v, Got %v", tc.want, got)
 			}
 		})
 	}

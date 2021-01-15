@@ -125,10 +125,20 @@ func TestDeliverSuccess(t *testing.T) {
 			ingressSvr := httptest.NewServer(ingressClient)
 			defer ingressSvr.Close()
 
-			broker := &config.Broker{Namespace: "ns", Name: "broker"}
-			target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
+			broker := &config.CellTenant{
+				Type:      config.CellTenantType_BROKER,
+				Namespace: "ns",
+				Name:      "broker",
+			}
+			target := &config.Target{
+				Namespace:      "ns",
+				Name:           "target",
+				CellTenantType: config.CellTenantType_BROKER,
+				CellTenantName: "broker",
+				Address:        targetSvr.URL,
+			}
 			testTargets := memory.NewEmptyTargets()
-			testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
+			testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
 				bm.SetAddress(ingressSvr.URL)
 				bm.UpsertTargets(target)
 			})
@@ -293,18 +303,23 @@ func TestDeliverFailure(t *testing.T) {
 				t.Fatalf("failed to create cloudevents client: %v", err)
 			}
 
-			broker := &config.Broker{Namespace: "ns", Name: "broker"}
-			target := &config.Target{
+			broker := &config.CellTenant{
+				Type:      config.CellTenantType_BROKER,
 				Namespace: "ns",
-				Name:      "target",
-				Broker:    "broker",
-				Address:   targetSvr.URL,
+				Name:      "broker",
+			}
+			target := &config.Target{
+				Namespace:      "ns",
+				Name:           "target",
+				CellTenantType: config.CellTenantType_BROKER,
+				CellTenantName: "broker",
+				Address:        targetSvr.URL,
 				RetryQueue: &config.Queue{
 					Topic: "test-retry-topic",
 				},
 			}
 			testTargets := memory.NewEmptyTargets()
-			testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
+			testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
 				bm.UpsertTargets(target)
 			})
 			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
@@ -474,10 +489,16 @@ func benchmarkNoReply(b *testing.B, httpClient *http.Client, targetAddress strin
 
 	sampleEvent := kgcptesting.NewTestEvent(b, eventSize)
 
-	broker := &config.Broker{Namespace: "ns", Name: "broker"}
-	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
+	broker := &config.CellTenant{Namespace: "ns", Name: "broker"}
+	target := &config.Target{
+		Namespace:      "ns",
+		Name:           "target",
+		CellTenantType: config.CellTenantType_BROKER,
+		CellTenantName: "broker",
+		Address:        targetAddress,
+	}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
+	testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
 		bm.UpsertTargets(target)
 	})
 	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(b, zaptest.Level(zap.InfoLevel)).Sugar())
@@ -514,10 +535,16 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, eventSize int, make
 
 	httpClient, targetAddress := makeTarget(b, &sampleReply)
 
-	broker := &config.Broker{Namespace: "ns", Name: "broker"}
-	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
+	broker := &config.CellTenant{Namespace: "ns", Name: "broker"}
+	target := &config.Target{
+		Namespace:      "ns",
+		Name:           "target",
+		CellTenantType: config.CellTenantType_BROKER,
+		CellTenantName: "broker",
+		Address:        targetAddress,
+	}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
+	testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
 		bm.SetAddress(ingressAddress)
 		bm.UpsertTargets(target)
 	})
@@ -593,16 +620,17 @@ func benchmarkRetry(b *testing.B, httpClient *http.Client, targetAddress string,
 
 	sampleEvent := kgcptesting.NewTestEvent(b, eventSize)
 
-	broker := &config.Broker{Namespace: "ns", Name: "broker"}
+	broker := &config.CellTenant{Namespace: "ns", Name: "broker"}
 	target := &config.Target{
-		Namespace:  "ns",
-		Name:       "target",
-		Broker:     "broker",
-		Address:    targetAddress,
-		RetryQueue: &config.Queue{Topic: "test-retry-topic"},
+		Namespace:      "ns",
+		Name:           "target",
+		CellTenantType: config.CellTenantType_BROKER,
+		CellTenantName: "broker",
+		Address:        targetAddress,
+		RetryQueue:     &config.Queue{Topic: "test-retry-topic"},
 	}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker(broker.Key(), func(bm config.BrokerMutation) {
+	testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
 		bm.UpsertTargets(target)
 	})
 	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())

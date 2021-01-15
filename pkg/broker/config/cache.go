@@ -38,7 +38,22 @@ func (ct *CachedTargets) Store(t *TargetsConfig) {
 // Load atomically loads a stored TargetsConfig.
 // If there was no TargetsConfig stored, nil will be returned.
 func (ct *CachedTargets) Load() *TargetsConfig {
-	return ct.Value.Load().(*TargetsConfig)
+	tc := ct.Value.Load().(*TargetsConfig)
+
+	// To support downgrades, we need to pretend entries without a CellTenantType are actually
+	// Broker typed. That way, if the newer BrokerCell code is running, but has an older ConfigMap,
+	// it doesn't think that every CellTenant is of unknown type.
+	// TODO Remove after release 0.22.
+	for _, t := range tc.CellTenants {
+		if t.Type == CellTenantType_UNKNOWN_CELL_TENANT_TYPE {
+			t.Type = CellTenantType_BROKER
+			for _, tt := range t.Targets {
+				tt.CellTenantType = CellTenantType_BROKER
+			}
+		}
+	}
+
+	return tc
 }
 
 // RangeAllTargets ranges over all targets.
@@ -48,7 +63,7 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 	if val == nil {
 		return
 	}
-	for _, b := range val.Brokers {
+	for _, b := range val.CellTenants {
 		for _, t := range b.Targets {
 			if c := f(t); !c {
 				return
@@ -60,7 +75,7 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 // GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
 // Do not modify the returned Target copy.
 func (ct *CachedTargets) GetTargetByKey(key *TargetKey) (*Target, bool) {
-	broker, ok := ct.GetBrokerByKey(key.ParentKey())
+	broker, ok := ct.GetCellTenantByKey(key.ParentKey())
 	if !ok {
 		return nil, false
 	}
@@ -70,23 +85,23 @@ func (ct *CachedTargets) GetTargetByKey(key *TargetKey) (*Target, bool) {
 
 // GetBrokerByKey returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
-func (ct *CachedTargets) GetBrokerByKey(key *BrokerKey) (*Broker, bool) {
+func (ct *CachedTargets) GetCellTenantByKey(key *CellTenantKey) (*CellTenant, bool) {
 	val := ct.Load()
-	if val == nil || val.Brokers == nil {
+	if val == nil || val.CellTenants == nil {
 		return nil, false
 	}
-	b, ok := val.Brokers[key.PersistenceString()]
+	b, ok := val.CellTenants[key.PersistenceString()]
 	return b, ok
 }
 
 // RangeBrokers ranges over all brokers.
 // Do not modify the given Broker copy.
-func (ct *CachedTargets) RangeBrokers(f func(*Broker) bool) {
+func (ct *CachedTargets) RangeCellTenants(f func(*CellTenant) bool) {
 	val := ct.Load()
 	if val == nil {
 		return
 	}
-	for _, b := range val.Brokers {
+	for _, b := range val.CellTenants {
 		if c := f(b); !c {
 			break
 		}

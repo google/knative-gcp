@@ -28,11 +28,12 @@ import (
 
 func TestSyncConfigFromFile(t *testing.T) {
 	data := &config.TargetsConfig{
-		Brokers: map[string]*config.Broker{
+		CellTenants: map[string]*config.CellTenant{
 			"ns1/broker1": {
 				Id:        "b-uid-1",
 				Address:   "broker1.ns1.example.com",
 				Name:      "broker1",
+				Type:      config.CellTenantType_BROKER,
 				Namespace: "ns1",
 				DecoupleQueue: &config.Queue{
 					Topic:        "topic1",
@@ -43,6 +44,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 					"name1": {
 						Id:               "uid-1",
 						Name:             "name1",
+						CellTenantType:   config.CellTenantType_BROKER,
 						Namespace:        "ns1",
 						FilterAttributes: map[string]string{"app": "foo"},
 						RetryQueue: &config.Queue{
@@ -54,6 +56,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 					"name2": {
 						Id:               "uid-2",
 						Name:             "name2",
+						CellTenantType:   config.CellTenantType_BROKER,
 						Namespace:        "ns1",
 						FilterAttributes: map[string]string{"app": "bar"},
 						RetryQueue: &config.Queue{
@@ -66,6 +69,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 			},
 			"ns2/broker2": {
 				Id:        "b-uid-2",
+				Type:      config.CellTenantType_BROKER,
 				Address:   "broker2.ns2.example.com",
 				Name:      "broker2",
 				Namespace: "ns2",
@@ -78,6 +82,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 					"name3": {
 						Id:               "uid-3",
 						Name:             "name3",
+						CellTenantType:   config.CellTenantType_BROKER,
 						Namespace:        "ns2",
 						FilterAttributes: map[string]string{"app": "foo"},
 						RetryQueue: &config.Queue{
@@ -89,6 +94,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 					"name4": {
 						Id:               "uid-4",
 						Name:             "name4",
+						CellTenantType:   config.CellTenantType_BROKER,
 						Namespace:        "ns2",
 						FilterAttributes: map[string]string{"app": "bar"},
 						RetryQueue: &config.Queue{
@@ -134,9 +140,10 @@ func TestSyncConfigFromFile(t *testing.T) {
 		t.Errorf("initial targets got=%+v, want=%+v", gotTargets, data)
 	}
 
-	data.Brokers["ns1/broker1"].Targets["name1"] = &config.Target{
+	data.CellTenants["ns1/broker1"].Targets["name1"] = &config.Target{
 		Id:               "uid-1",
 		Name:             "name1",
+		CellTenantType:   config.CellTenantType_BROKER,
 		Namespace:        "ns1",
 		FilterAttributes: map[string]string{"app": "zzz"},
 		RetryQueue: &config.Queue{
@@ -145,9 +152,10 @@ func TestSyncConfigFromFile(t *testing.T) {
 		},
 		State: config.State_UNKNOWN,
 	}
-	data.Brokers["ns2/broker2"].Targets["name3"] = &config.Target{
+	data.CellTenants["ns2/broker2"].Targets["name3"] = &config.Target{
 		Id:               "uid-3",
 		Name:             "name3",
+		CellTenantType:   config.CellTenantType_BROKER,
 		Namespace:        "ns2",
 		FilterAttributes: map[string]string{"app": "xxx"},
 		RetryQueue: &config.Queue{
@@ -157,7 +165,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 		State: config.State_READY,
 	}
 
-	delete(data.Brokers["ns2/broker2"].Targets, "name4")
+	delete(data.CellTenants["ns2/broker2"].Targets, "name4")
 	b, _ = proto.Marshal(data)
 	atomicWriteFile(t, tmp.Name(), b)
 

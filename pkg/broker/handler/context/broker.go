@@ -26,15 +26,15 @@ import (
 type brokerKey struct{}
 
 // WithBrokerKey sets a broker key in the context.
-func WithBrokerKey(ctx context.Context, key *config.BrokerKey) context.Context {
+func WithBrokerKey(ctx context.Context, key *config.CellTenantKey) context.Context {
 	return context.WithValue(ctx, brokerKey{}, key)
 }
 
 // GetBrokerKey gets the broker key from the context.
-func GetBrokerKey(ctx context.Context) (*config.BrokerKey, error) {
+func GetBrokerKey(ctx context.Context) (*config.CellTenantKey, error) {
 	untyped := ctx.Value(brokerKey{})
 	if untyped == nil {
 		return nil, ErrBrokerKeyNotPresent
 	}
-	return untyped.(*config.BrokerKey), nil
+	return untyped.(*config.CellTenantKey), nil
 }

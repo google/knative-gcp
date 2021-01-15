@@ -81,7 +81,7 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 	if err != nil {
 		return err
 	}
-	broker, ok := p.Targets.GetBrokerByKey(bk)
+	broker, ok := p.Targets.GetCellTenantByKey(bk)
 	if !ok {
 		// If the broker no longer exists, then there is nothing to process.
 		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.Stringer("broker", bk))
@@ -145,7 +145,7 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 }
 
 // deliver delivers msg to target and sends the target's reply to the broker ingress.
-func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *config.Broker, msg binding.Message, hops int32) error {
+func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *config.CellTenant, msg binding.Message, hops int32) error {
 	startTime := time.Now()
 	// Remove hops from forwarded event.
 	resp, err := p.sendMsg(ctx, target.Address, msg, transformer.DeleteExtension(eventutil.HopsAttribute))

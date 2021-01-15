@@ -72,7 +72,7 @@ func TestFanoutWatchAndSync(t *testing.T) {
 
 	t.Run("no handler created for not-ready broker", func(t *testing.T) {
 		b := helper.GenerateBroker(ctx, t, "ns")
-		helper.Targets.MutateBroker(b.Key(), func(bm config.BrokerMutation) {
+		helper.Targets.MutateCellTenant(b.Key(), func(bm config.CellTenantMutation) {
 			bm.SetState(config.State_UNKNOWN)
 		})
 		signal <- struct{}{}
@@ -81,7 +81,7 @@ func TestFanoutWatchAndSync(t *testing.T) {
 		assertFanoutHandlers(t, syncPool, helper.Targets)
 	})
 
-	bs := make([]*config.Broker, 0, 4)
+	bs := make([]*config.CellTenant, 0, 4)
 
 	t.Run("adding new brokers creates new handlers", func(t *testing.T) {
 		// First add some brokers.
@@ -397,15 +397,15 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 
 func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 	t.Helper()
-	gotHandlers := make(map[config.BrokerKey]bool)
-	wantHandlers := make(map[config.BrokerKey]bool)
+	gotHandlers := make(map[config.CellTenantKey]bool)
+	wantHandlers := make(map[config.CellTenantKey]bool)
 
-	p.pool.Range(func(key config.BrokerKey, _ *fanoutHandlerCache) bool {
+	p.pool.Range(func(key config.CellTenantKey, _ *fanoutHandlerCache) bool {
 		gotHandlers[key] = true
 		return true
 	})
 
-	targets.RangeBrokers(func(b *config.Broker) bool {
+	targets.RangeCellTenants(func(b *config.CellTenant) bool {
 		if b.State == config.State_READY {
 			wantHandlers[*b.Key()] = true
 		}
@@ -429,6 +429,6 @@ func trigger(target *config.Target) reportertest.Trigger {
 	return reportertest.Trigger{
 		Namespace: target.Namespace,
 		Trigger:   target.Name,
-		Broker:    target.Broker,
+		Broker:    target.CellTenantName,
 	}
 }

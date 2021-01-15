@@ -314,12 +314,13 @@ func TestFilterProcessor(t *testing.T) {
 func newTestTargets(filter map[string]string) (context.Context, config.Targets) {
 	testTarget := &config.Target{
 		Name:             "target",
-		Broker:           "broker",
+		CellTenantType:   config.CellTenantType_BROKER,
+		CellTenantName:   "broker",
 		Namespace:        "ns",
 		FilterAttributes: filter,
 	}
 	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker(testTarget.Key().ParentKey(), func(bm config.BrokerMutation) {
+	testTargets.MutateCellTenant(testTarget.Key().ParentKey(), func(bm config.CellTenantMutation) {
 		bm.UpsertTargets(testTarget)
 	})
 	ctx := handlerctx.WithTargetKey(context.Background(), testTarget.Key())

@@ -30,36 +30,82 @@ import (
 	"knative.dev/pkg/metrics/metricskey"
 )
 
-// BrokerKey uniquely identifies a single Broker, at a given point in time.
-type BrokerKey struct {
-	namespace string
-	name      string
+var (
+	// cellTenantTypeFromLowerCase maps the lower case string to its type.
+	// E.g. 'broker' -> CellTenantType_BROKER. It is filled in by init().
+	cellTenantTypeFromLowerCase map[string]CellTenantType
+	// cellTenantTypeToLowerCase maps the type to its lower case string.
+	// E.g. CellTenantType_BROKER -> 'broker'. It is filled in by init().
+	cellTenantTypeToLowerCase map[CellTenantType]string
+)
+
+func init() {
+	cellTenantTypeFromLowerCase = make(map[string]CellTenantType, len(CellTenantType_value))
+	cellTenantTypeToLowerCase = make(map[CellTenantType]string, len(CellTenantType_value))
+	for k, v := range CellTenantType_value {
+		t := CellTenantType(v)
+		lowerCase := strings.ToLower(k)
+		cellTenantTypeFromLowerCase[lowerCase] = t
+		cellTenantTypeToLowerCase[t] = lowerCase
+	}
+}
+
+// CellTenantKey uniquely identifies a single CellTenant, at a given point in time.
+type CellTenantKey struct {
+	cellTenantType CellTenantType
+	namespace      string
+	name           string
 }
 
 // String creates a human readable version of this key. It is for debug purposes only. It is free to
 // change at any time.
-func (k *BrokerKey) String() string {
+func (k *CellTenantKey) String() string {
 	// Note that this is explicitly different than the PersistenceString, so that we don't
 	// accidentally use String(), rather than PersistenceString().
-	return k.namespace + "//" + k.name
+	return fmt.Sprintf("%s:%s//%s", k.cellTenantType, k.namespace, k.name)
 }
 
 // PersistenceString is the string that is persisted as the key for this Broker in the protobuf. It
 // is stable and can only change if all existing usage locations are made backwards compatible,
 // supporting _both_ the old and the new format, for at least one release.
-func (k *BrokerKey) PersistenceString() string {
-	return k.namespace + "/" + k.name
+func (k *CellTenantKey) PersistenceString() string {
+	// TODO It is safe to remove this after release-0.22, decide whether we want to leave Broker
+	// special-cased or not.
+	if k.cellTenantType == CellTenantType_BROKER {
+		// For backwards compatibility from when the only type was Broker, Brokers do not embed
+		// their type into the string.
+		return k.namespace + "/" + k.name
+	}
+	return fmt.Sprintf("%s/%s/%s", cellTenantTypeToLowerCase[k.cellTenantType], k.namespace, k.name)
 }
 
-func BrokerKeyFromPersistenceString(s string) (*BrokerKey, error) {
+func CellTenantKeyFromPersistenceString(s string) (*CellTenantKey, error) {
 	pieces := strings.Split(s, "/")
-	if len(pieces) != 3 {
-		return nil, fmt.Errorf("malformed request path; expect format '/<ns>/<broker>', actually %q", s)
+	if len(pieces) <= 2 || len(pieces) >= 5 {
+		return nil, fmt.Errorf(
+			"malformed request path; expect format '/<ns>/<broker>' or '/<type>/<ns>/<broker>', actually %q", s)
 	}
-	// Broker's persistence strings are in the form "/<ns>/<brokerName>".
-	blank, ns, brokerName := pieces[0], pieces[1], pieces[2]
+	var blank, ns, brokerName string
+	var t CellTenantType
+	if len(pieces) == 3 {
+		// Broker's persistence strings are in the form "/<ns>/<brokerName>".
+		blank, ns, brokerName = pieces[0], pieces[1], pieces[2]
+		t = CellTenantType_BROKER
+	} else {
+		// len(pieces) must be 4, so this is the standard form of the persistence string,
+		// '/<type>/<ns>/<name>'.
+		var ts string
+		blank, ts, ns, brokerName = pieces[0], pieces[1], pieces[2], pieces[3]
+		if ctt, err := validateCellTenantTypeFromString(ts); err != nil {
+			return nil, err
+		} else {
+			t = ctt
+		}
+	}
+
 	if blank != "" {
-		return nil, fmt.Errorf("malformed request path; expect format '/<ns>/<broker>', actually %q", s)
+		return nil, fmt.Errorf(
+			"malformed request path; expect format '/<ns>/<broker>' or '/<type>/<ns>/<broker>', actually %q", s)
 	}
 	if err := validateNamespace(ns); err != nil {
 		return nil, err
@@ -67,14 +113,15 @@ func BrokerKeyFromPersistenceString(s string) (*BrokerKey, error) {
 	if err := validateBrokerName(brokerName); err != nil {
 		return nil, err
 	}
-	return &BrokerKey{
-		namespace: ns,
-		name:      brokerName,
+	return &CellTenantKey{
+		cellTenantType: t,
+		namespace:      ns,
+		name:           brokerName,
 	}, nil
 }
 
 // MetricsResource generates the Resource object that metrics will be associated with.
-func (k *BrokerKey) MetricsResource() resource.Resource {
+func (k *CellTenantKey) MetricsResource() resource.Resource {
 	return resource.Resource{
 		Type: metricskey.ResourceTypeKnativeBroker,
 		Labels: map[string]string{
@@ -84,50 +131,52 @@ func (k *BrokerKey) MetricsResource() resource.Resource {
 	}
 }
 
-// CreateEmptyBroker creates an empty Broker that corresponds to this BrokerKey. It is empty except
-// for the portions known about by the BrokerKey.
-func (k *BrokerKey) CreateEmptyBroker() *Broker {
-	return &Broker{
+// CreateEmptyCellTenant creates an empty CellTenant that corresponds to this CellTenantKey. It is
+// empty except for the portions known about by the CellTenantKey.
+func (k *CellTenantKey) CreateEmptyCellTenant() *CellTenant {
+	return &CellTenant{
+		Type:      k.cellTenantType,
 		Namespace: k.namespace,
 		Name:      k.name,
 	}
 }
 
-// SpanMessagingDestination is the Messaging Destination of requests sent to this BrokerKey.
-func (k *BrokerKey) SpanMessagingDestination() string {
+// SpanMessagingDestination is the Messaging Destination of requests sent to this CellTenantKey.
+func (k *CellTenantKey) SpanMessagingDestination() string {
 	return kntracing.BrokerMessagingDestination(k.namespacedName())
 }
 
 // SpanMessagingDestinationAttribute is the Messaging Destination attribute that should be attached
 // to the tracing Span.
-func (k *BrokerKey) SpanMessagingDestinationAttribute() trace.Attribute {
+func (k *CellTenantKey) SpanMessagingDestinationAttribute() trace.Attribute {
 	return kntracing.BrokerMessagingDestinationAttribute(k.namespacedName())
 }
 
-func (k *BrokerKey) namespacedName() types.NamespacedName {
+func (k *CellTenantKey) namespacedName() types.NamespacedName {
 	return types.NamespacedName{
 		Namespace: k.namespace,
 		Name:      k.name,
 	}
 }
 
-// Key returns the BrokerKey for this Broker.
-func (x *Broker) Key() *BrokerKey {
-	return &BrokerKey{
-		namespace: x.Namespace,
-		name:      x.Name,
+// Key returns the CellTenantKey for this Broker.
+func (x *CellTenant) Key() *CellTenantKey {
+	return &CellTenantKey{
+		cellTenantType: x.Type,
+		namespace:      x.Namespace,
+		name:           x.Name,
 	}
 }
 
 // TargetKey uniquely identifies a single Target, at a given point in time.
 type TargetKey struct {
-	brokerKey BrokerKey
-	name      string
+	cellTenantKey CellTenantKey
+	name          string
 }
 
 // ParentKey is the key of the parent this Target corresponds to.
-func (k *TargetKey) ParentKey() *BrokerKey {
-	return &k.brokerKey
+func (k *TargetKey) ParentKey() *CellTenantKey {
+	return &k.cellTenantKey
 }
 
 // String creates a human readable version of this key. It is for debug purposes only. It is free to
@@ -135,34 +184,37 @@ func (k *TargetKey) ParentKey() *BrokerKey {
 func (k *TargetKey) String() string {
 	// Note that this is explicitly different than the PersistenceString, so that we don't
 	// accidentally use String(), rather than PersistenceString().
-	return k.brokerKey.String() + "//" + k.name
+	return k.cellTenantKey.String() + "//" + k.name
 }
 
 // Key returns the TargetKey for this Target.
 func (x *Target) Key() *TargetKey {
 	return &TargetKey{
-		brokerKey: BrokerKey{
-			namespace: x.Namespace,
-			name:      x.Broker,
+		cellTenantKey: CellTenantKey{
+			cellTenantType: x.CellTenantType,
+			namespace:      x.Namespace,
+			name:           x.CellTenantName,
 		},
 		name: x.Name,
 	}
 }
 
-// KeyFromBroker creates a BrokerKey from a K8s Broker object.
-func KeyFromBroker(b *brokerv1beta1.Broker) *BrokerKey {
-	return &BrokerKey{
-		namespace: b.Namespace,
-		name:      b.Name,
+// KeyFromBroker creates a CellTenantKey from a K8s Broker object.
+func KeyFromBroker(b *brokerv1beta1.Broker) *CellTenantKey {
+	return &CellTenantKey{
+		cellTenantType: CellTenantType_BROKER,
+		namespace:      b.Namespace,
+		name:           b.Name,
 	}
 }
 
 // TestOnlyBrokerKey returns the key of a broker. This method exists to make tests that need a
-// BrokerKey, but do not need an actual Broker, easier to write.
-func TestOnlyBrokerKey(namespace, name string) *BrokerKey {
-	return &BrokerKey{
-		namespace: namespace,
-		name:      name,
+// CellTenantKey, but do not need an actual Broker, easier to write.
+func TestOnlyBrokerKey(namespace, name string) *CellTenantKey {
+	return &CellTenantKey{
+		cellTenantType: CellTenantType_BROKER,
+		namespace:      namespace,
+		name:           name,
 	}
 }
 
@@ -182,4 +234,12 @@ func validateBrokerName(name string) error {
 		return nil
 	}
 	return fmt.Errorf("invalid name %q, %v", name, errs)
+}
+
+func validateCellTenantTypeFromString(s string) (CellTenantType, error) {
+	i, present := cellTenantTypeFromLowerCase[s]
+	if !present {
+		return CellTenantType_UNKNOWN_CELL_TENANT_TYPE, fmt.Errorf("unknown CellTenantType %q", s)
+	}
+	return CellTenantType(i), nil
 }
