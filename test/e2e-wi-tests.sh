@@ -48,6 +48,13 @@ function export_variable() {
 # Setup resources common to all eventing tests.
 function test_setup() {
   pubsub_setup "workload_identity" || return 1
+
+  # Authentication check test for brokerCell. It is used in integration test in workload identity mode.
+  # We do not put it in the same place as other integration tests, because this test can not run parallelly with others.
+  if [[ -v ENABLE_AUTH_CHECK_TEST && $ENABLE_AUTH_CHECK_TEST == 0 ]]; then
+    test_authentication_check_for_brokercell "workload_identity" || return 1
+  fi
+
   gcp_broker_setup "workload_identity" || return 1
   # Create private key that will be used in storage_setup
   create_private_key_for_pubsub_service_account || return 1

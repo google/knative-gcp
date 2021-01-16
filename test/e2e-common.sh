@@ -32,6 +32,7 @@ readonly VENDOR_EVENTING_TEST_IMAGES="vendor/knative.dev/eventing/test/test_imag
 readonly APP_ENGINE_REGION="us-central"
 
 export CONFIG_WARMUP_GCP_BROKER="test/test_configs/warmup-broker.yaml"
+export CONFIG_INVALID_CREDENTIAL="test/test_configs/invalid-credential.json"
 
 # Setup Knative GCP.
 function knative_setup() {
@@ -208,6 +209,78 @@ function enable_monitoring(){
   gcloud projects add-iam-policy-binding "${project_id}" \
       --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
       --role roles/cloudtrace.agent
+}
+
+function test_authentication_check_for_brokercell() {
+  echo "Starting authentication check test for brokercell."
+  local auth_mode=${1}
+  ko apply -f ${CONFIG_WARMUP_GCP_BROKER}
+
+  echo "Starting authentication check test which is running outside of the broker related Pods."
+  wait_until_brokercell_authentication_check_pending "$(non_pod_check_keywords)" || return 1
+
+  echo "Starting authentication check test which is running inside of the broker related Pods."
+  apply_invalid_resource "$auth_mode"
+  wait_until_brokercell_authentication_check_pending "$(pod_check_keywords "$auth_mode")" || return 1
+
+  # Clean up all the testing resources.
+  echo "Authentication check test finished, waiting until all broker related testing resources deleted."
+  delete_invalid_resource "$auth_mode"
+  ko delete -f ${CONFIG_WARMUP_GCP_BROKER}
+  kubectl delete brokercell default -n "${CONTROL_PLANE_NAMESPACE}"
+  kubectl wait pod --for=delete -n "${CONTROL_PLANE_NAMESPACE}" --selector=brokerCell=default --timeout=5m || return 1
+}
+
+function wait_until_brokercell_authentication_check_pending() {
+  local keywords=${1}
+  echo "Waiting until brokercell authentication check pending."
+  for i in {1..150}; do #timeout after 5 minutes
+    local reason=$(kubectl get brokercell default -n "${CONTROL_PLANE_NAMESPACE}" -o=jsonpath="{range .status.conditions[*]}{.reason}" --ignore-not-found=true)
+    local message=$(kubectl get brokercell default -n "${CONTROL_PLANE_NAMESPACE}" -o=jsonpath="{range .status.conditions[*]}{.message}" --ignore-not-found=true)
+    if [[ "$reason" == *"AuthenticationCheckPending"* ]] && [[ "$message" == *"$keywords"* ]]; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo -e "\n\nERROR: timeout waiting for brokercell authentication check pending with correct message."
+  return 1
+}
+
+function pod_check_keywords() {
+  local auth_mode=${1}
+  if [ "${auth_mode}" == "secret" ]; then
+    echo "error getting the token, probably due to the key stored in the Kubernetes Secret is expired or revoked"
+  elif [ "${auth_mode}" == "workload_identity" ]; then
+    echo "the Pod is not fully authenticated, probably due to corresponding k8s service account and google service account do not establish a correct relationship"
+  else
+    echo "Invalid parameter"
+  fi
+}
+
+function non_pod_check_keywords() {
+  echo "authentication is not configured"
+}
+
+function apply_invalid_resource() {
+  local auth_mode=${1}
+  if [ "${auth_mode}" == "secret" ]; then
+    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "google-broker-key" --from-file=key.json=${CONFIG_INVALID_CREDENTIAL}
+  elif [ "${auth_mode}" == "workload_identity" ]; then
+    kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account=fakeserviceaccount@test-project.iam.gserviceaccount.com
+  else
+    echo "Invalid parameter"
+  fi
+}
+
+function delete_invalid_resource() {
+  local auth_mode=${1}
+  if [ "${auth_mode}" == "secret" ]; then
+    kubectl -n "${CONTROL_PLANE_NAMESPACE}" delete secret "google-broker-key"
+  elif [ "${auth_mode}" == "workload_identity" ]; then
+    kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account-
+  else
+    echo "Invalid parameter"
+  fi
 }
 
 # The warm-up broker serves the following purposes:
