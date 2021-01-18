@@ -201,10 +201,11 @@ func TestDeliverSuccess(t *testing.T) {
 }
 
 type targetWithFailureHandler struct {
-	t              *testing.T
-	delay          time.Duration
-	respCode       int
-	malFormedEvent bool
+	t                  *testing.T
+	delay              time.Duration
+	nonCloudEventReply bool
+	respCode           int
+	respBody           string
 }
 
 func (h *targetWithFailureHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -218,10 +219,15 @@ func (h *targetWithFailureHandler) ServeHTTP(w http.ResponseWriter, req *http.Re
 
 	time.Sleep(h.delay)
 
-	if h.malFormedEvent {
-		w.Write([]byte("not an valid event body"))
+	w.Header().Set("ce-specversion", "1.0")
+	if h.nonCloudEventReply {
+		// missing ce-specversion header
+		w.Header().Del("ce-specversion")
+		// Content-Type does not start with `application/cloudevents`
+		w.Header().Set("Content-Type", "text/html")
 	}
 	w.WriteHeader(h.respCode)
+	w.Write([]byte(h.respBody))
 }
 
 func TestDeliverFailure(t *testing.T) {
@@ -239,6 +245,7 @@ func TestDeliverFailure(t *testing.T) {
 		name:          "delivery error retry success",
 		targetHandler: &targetWithFailureHandler{respCode: http.StatusInternalServerError},
 		withRetry:     true,
+		wantErr:       false,
 	}, {
 		name:          "delivery error retry failure",
 		targetHandler: &targetWithFailureHandler{respCode: http.StatusInternalServerError},
@@ -253,6 +260,7 @@ func TestDeliverFailure(t *testing.T) {
 		name:          "delivery timeout retry success",
 		targetHandler: &targetWithFailureHandler{delay: time.Second, respCode: http.StatusOK},
 		withRetry:     true,
+		wantErr:       false,
 	}, {
 		name:          "delivery timeout retry failure",
 		withRetry:     true,
@@ -260,9 +268,19 @@ func TestDeliverFailure(t *testing.T) {
 		failRetry:     true,
 		wantErr:       true,
 	}, {
-		name: "malformed reply failure",
+		name: "malformed CloudEvent reply failure",
 		// Return 2xx but with a malformed event should be considered error.
-		targetHandler: &targetWithFailureHandler{respCode: http.StatusOK, malFormedEvent: true},
+		targetHandler: &targetWithFailureHandler{respCode: http.StatusOK, respBody: "not a valid reply body"},
+		wantErr:       true,
+	}, {
+		name: "non-CloudEvent reply success",
+		// a non-CloudEvent reply with 2xx status code should be considered delivery success.
+		targetHandler: &targetWithFailureHandler{respCode: http.StatusOK, respBody: "reply body", nonCloudEventReply: true},
+		wantErr:       false,
+	}, {
+		name: "non-CloudEvent reply failure",
+		// a non-CloudEvent reply with non-2xx status code should be considered delivery failure.
+		targetHandler: &targetWithFailureHandler{respCode: http.StatusBadRequest, respBody: "reply body", nonCloudEventReply: true},
 		wantErr:       true,
 	}}
 
@@ -626,14 +644,6 @@ func benchmarkRetry(b *testing.B, httpClient *http.Client, targetAddress string,
 	})
 }
 
-func toFakePubsubMessage(m *pstest.Message) *pubsub.Message {
-	return &pubsub.Message{
-		ID:         m.ID,
-		Attributes: m.Attributes,
-		Data:       m.Data,
-	}
-}
-
 func testPubsubClient(ctx context.Context, t testing.TB, projectID string) (*pstest.Server, *pubsub.Client, func()) {
 	t.Helper()
 	srv := pstest.NewServer()
@@ -657,6 +667,7 @@ func newSampleEvent() *event.Event {
 	sampleEvent.SetID("id")
 	sampleEvent.SetSource("source")
 	sampleEvent.SetSubject("subject")
+	sampleEvent.SetSpecVersion("1.0")
 	sampleEvent.SetType("type")
 	sampleEvent.SetTime(time.Now())
 	return &sampleEvent
