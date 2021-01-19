@@ -70,6 +70,7 @@ func (p *CloudSchedulerSourceProbe) Forward(ctx context.Context, event cloudeven
 	p.EventTimes.RLock()
 	defer p.EventTimes.RUnlock()
 
+	logging.FromContext(ctx).Infow("Checking last observed scheduler tick")
 	timestampID := fmt.Sprint(event.Extensions()[utils.ProbeEventTargetPathExtension])
 	schedulerTime, ok := p.EventTimes.Times[timestampID]
 	if !ok {

@@ -16,9 +16,8 @@ require (
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/pkg/errors v0.9.1
 	github.com/rickb777/date v1.13.0
-	github.com/stretchr/testify v1.5.1
-	github.com/wavesoftware/go-ensure v1.0.0
 	go.opencensus.io v0.22.5
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
@@ -32,10 +31,10 @@ require (
 	k8s.io/api v0.18.12
 	k8s.io/apimachinery v0.18.12
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.19.1-0.20201224090404-c00ee93f0739
-	knative.dev/hack v0.0.0-20201214230143-4ed1ecb8db24
-	knative.dev/pkg v0.0.0-20201224024804-27db5ac24cfb
-	knative.dev/serving v0.19.1-0.20201225185204-5ef6464614bd
+	knative.dev/eventing v0.20.1-0.20210119133921-b10d7208c941
+	knative.dev/hack v0.0.0-20210114150620-4422dcadb3c8
+	knative.dev/pkg v0.0.0-20210118192521-75d66b58948d
+	knative.dev/serving v0.20.1-0.20210119065921-4a7c82a32db9
 	sigs.k8s.io/yaml v1.2.0
 )
 

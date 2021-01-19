@@ -22,6 +22,8 @@ import (
 	"context"
 	"fmt"
 
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -63,6 +65,9 @@ type CellTenantReconciler struct {
 	PubsubClient *pubsub.Client
 
 	DataresidencyStore *dataresidency.Store
+
+	// clusterRegion is the region where GKE is running.
+	ClusterRegion string
 }
 
 func (r *CellTenantReconciler) ReconcileGCPCellAddressable(ctx context.Context, b CellTenantStatusable) error {
@@ -101,6 +106,12 @@ func (r *CellTenantReconciler) reconcileDecouplingTopicAndSubscription(ctx conte
 	//TODO uncomment when eventing webhook allows this
 	//b.Status.ProjectID = projectID
 
+	r.ClusterRegion, err = utils.ClusterRegion(r.ClusterRegion, metadataClient.NewDefaultMetadataClient)
+	if err != nil {
+		logger.Error("Failed to get cluster region: ", zap.Error(err))
+		return err
+	}
+
 	client, err := r.getClientOrCreateNew(ctx, projectID, b.StatusUpdater())
 	if err != nil {
 		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
@@ -112,12 +123,11 @@ func (r *CellTenantReconciler) reconcileDecouplingTopicAndSubscription(ctx conte
 	topicID := b.GetTopicID()
 	topicConfig := &pubsub.TopicConfig{Labels: b.GetLabels()}
 	if r.DataresidencyStore != nil {
-		if dataresidencyConfig := r.DataresidencyStore.Load(); dataresidencyConfig != nil {
-			if dataresidencyConfig.DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig) {
-				logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Broker", zap.Any("topicConfig", *topicConfig))
-			}
+		if r.DataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, r.ClusterRegion) {
+			logger.Debug("Updated Topic Config AllowedPersistenceRegions for Broker", zap.Any("topicConfig", *topicConfig))
 		}
 	}
+
 	topic, err := pubsubReconciler.ReconcileTopic(ctx, topicID, topicConfig, b.Object(), b.StatusUpdater())
 	if err != nil {
 		return err

@@ -22,9 +22,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/knative-gcp/pkg/reconciler/celltenant"
-
 	"github.com/google/knative-gcp/pkg/logging"
+	"github.com/google/knative-gcp/pkg/reconciler/celltenant"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	pkgreconciler "knative.dev/pkg/reconciler"

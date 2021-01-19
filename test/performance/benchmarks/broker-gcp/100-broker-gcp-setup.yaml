@@ -29,7 +29,7 @@ metadata:
   annotations:
     internal.events.cloud.google.com/creator: googlecloud
   name: default
-  namespace: cloud-run-events
+  namespace: events-system
 spec:
   components:
     fanout:

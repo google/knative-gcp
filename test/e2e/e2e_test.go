@@ -463,3 +463,18 @@ func TestCloudLoggingGCPTopic(t *testing.T) {
 	defer cancel()
 	CloudLoggingTopicTestImpl(t, authConfig)
 }
+
+// TestAuthCheckForPodCheck tests the authentication check functionality which is running inside of the Pod.
+func TestAuthCheckForPodCheck(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	AuthCheckForPodCheckTestImpl(t, authConfig)
+}
+
+// TestAuthCheckForNonPodCheck tests the authentication check functionality which is running outside of the Pod.
+// e.g. checking if k8s service account or k8s secret are correctly set.
+func TestAuthCheckForNonPodCheck(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	AuthCheckForNonPodCheckTestImpl(t, authConfig)
+}

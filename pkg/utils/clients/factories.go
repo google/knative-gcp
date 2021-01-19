@@ -27,6 +27,8 @@ import (
 	"go.opencensus.io/plugin/ochttp"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/tracing/propagation/tracecontextb3"
+
+	"github.com/google/knative-gcp/pkg/utils/authcheck"
 )
 
 type Port int
@@ -36,6 +38,11 @@ type MaxConnsPerHost int
 // NewHTTPMessageReceiver wraps kncloudevents.NewHttpMessageReceiver with type-safe options.
 func NewHTTPMessageReceiver(port Port) *kncloudevents.HTTPMessageReceiver {
 	return kncloudevents.NewHTTPMessageReceiver(int(port))
+}
+
+// NewHTTPMessageReceiverWithChecker wraps kncloudevents.NewHttpMessageReceiver with a authentication checker.
+func NewHTTPMessageReceiverWithChecker(port Port, authType authcheck.AuthType) *kncloudevents.HTTPMessageReceiver {
+	return kncloudevents.NewHTTPMessageReceiver(int(port), kncloudevents.WithChecker(authChecker(authType)))
 }
 
 // NewPubsubClient provides a pubsub client from PubsubClientOpts.
@@ -69,5 +76,19 @@ func NewHTTPClient(_ context.Context, maxConnsPerHost MaxConnsPerHost) *nethttp.
 			},
 			Propagation: tracecontextb3.TraceContextEgress,
 		},
+	}
+}
+
+func authChecker(authType authcheck.AuthType) func(w nethttp.ResponseWriter, req *nethttp.Request) {
+	authCheck := authcheck.NewDefault(authType)
+	return func(w nethttp.ResponseWriter, req *nethttp.Request) {
+		if req.URL.Path == "/healthz" {
+			// Perform Authentication check.
+			if err := authCheck.Check(req.Context()); err != nil {
+				w.WriteHeader(nethttp.StatusInternalServerError)
+				return
+			}
+		}
+		w.WriteHeader(nethttp.StatusOK)
 	}
 }

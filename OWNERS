@@ -3,7 +3,6 @@ approvers:
 - Harwayne
 - ian-mi
 - yolocs
-- liu-cong
 - grac3gao
 - nlopezgi
 - tommyreddad
@@ -14,6 +13,8 @@ approvers:
 - eclipselu
 - cathyzhyi
 - AlexandraRoatis
+- stuart-xyz
+- MohamedElhawaty
 
 # Reviewers are suggested from the reviewers list first, then the approvers
 # list. To add reviewers while spreading the load among existing approvers,
@@ -23,7 +24,6 @@ reviewers:
 - Harwayne
 - ian-mi
 - yolocs
-- liu-cong
 # Add reviewers below
 - grac3gao
 - nlopezgi
@@ -35,3 +35,5 @@ reviewers:
 - eclipselu
 - cathyzhyi
 - AlexandraRoatis
+- stuart-xyz
+- MohamedElhawaty

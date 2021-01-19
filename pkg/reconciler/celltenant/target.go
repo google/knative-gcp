@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"time"
 
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+
 	"k8s.io/client-go/tools/record"
 
 	"github.com/rickb777/date/period"
@@ -59,6 +61,9 @@ type TargetReconciler struct {
 	PubsubClient *pubsub.Client
 
 	DataresidencyStore *dataresidency.Store
+
+	// ClusterRegion is the region where GKE is running.
+	ClusterRegion string
 }
 
 func (r *TargetReconciler) ReconcileRetryTopicAndSubscription(ctx context.Context, recorder record.EventRecorder, t CellTenantTarget) error {
@@ -75,6 +80,12 @@ func (r *TargetReconciler) ReconcileRetryTopicAndSubscription(ctx context.Contex
 	}
 	t.SetStatusProjectID(projectID)
 
+	r.ClusterRegion, err = utils.ClusterRegion(r.ClusterRegion, metadataClient.NewDefaultMetadataClient)
+	if err != nil {
+		logger.Error("Failed to get cluster region: ", zap.Error(err))
+		return err
+	}
+
 	client, err := r.getClientOrCreateNew(ctx, projectID, t.StatusUpdater())
 	if err != nil {
 		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
@@ -87,10 +98,8 @@ func (r *TargetReconciler) ReconcileRetryTopicAndSubscription(ctx context.Contex
 	topicID := t.GetTopicID()
 	topicConfig := &pubsub.TopicConfig{Labels: t.GetLabels()}
 	if r.DataresidencyStore != nil {
-		if dataresidencyConfig := r.DataresidencyStore.Load(); dataresidencyConfig != nil {
-			if dataresidencyConfig.DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig) {
-				logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Trigger", zap.Any("topicConfig", *topicConfig))
-			}
+		if r.DataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, r.ClusterRegion) {
+			logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Trigger", zap.Any("topicConfig", *topicConfig))
 		}
 	}
 	topic, err := pubsubReconciler.ReconcileTopic(ctx, topicID, topicConfig, t.Object(), t.StatusUpdater())
@@ -159,10 +168,14 @@ func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.Deliv
 		return nil
 	}
 	// Translate to the pubsub dead letter policy format.
-	return &pubsub.DeadLetterPolicy{
-		MaxDeliveryAttempts: int(*spec.Retry),
-		DeadLetterTopic:     fmt.Sprintf("projects/%s/topics/%s", projectID, spec.DeadLetterSink.URI.Host),
+
+	dlp := &pubsub.DeadLetterPolicy{
+		DeadLetterTopic: fmt.Sprintf("projects/%s/topics/%s", projectID, spec.DeadLetterSink.URI.Host),
 	}
+	if spec.Retry != nil {
+		dlp.MaxDeliveryAttempts = int(*spec.Retry)
+	}
+	return dlp
 }
 
 func (r *TargetReconciler) DeleteRetryTopicAndSubscription(ctx context.Context, recorder record.EventRecorder, t CellTenantDeletingTarget) error {

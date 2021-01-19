@@ -19,11 +19,10 @@ package serving
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/api/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -34,13 +33,14 @@ import (
 
 var (
 	allowedAnnotations = sets.NewString(
-		UpdaterAnnotation,
 		CreatorAnnotation,
-		RevisionLastPinnedAnnotationKey,
-		RoutingStateModifiedAnnotationKey,
 		ForceUpgradeAnnotationKey,
+		RevisionLastPinnedAnnotationKey,
 		RevisionPreservedAnnotationKey,
+		RolloutDurationKey,
 		RoutesAnnotationKey,
+		RoutingStateModifiedAnnotationKey,
+		UpdaterAnnotation,
 	)
 )
 
@@ -51,6 +51,34 @@ func ValidateObjectMetadata(ctx context.Context, meta metav1.Object) *apis.Field
 		Also(autoscaling.ValidateAnnotations(ctx, config.FromContextOrDefaults(ctx).Autoscaler, meta.GetAnnotations()).
 			Also(validateKnativeAnnotations(meta.GetAnnotations())).
 			ViaField("annotations"))
+}
+
+// ValidateRolloutDurationAnnotation validates the rollout duration annotation.
+// This annotation can be set on either service or route objects.
+func ValidateRolloutDurationAnnotation(annos map[string]string) (errs *apis.FieldError) {
+	if v := annos[RolloutDurationKey]; v != "" {
+		// Parse as duration.
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return errs.Also(apis.ErrInvalidValue(v, RolloutDurationKey))
+		}
+		// Validate that it has second precision.
+		if d.Round(time.Second) != d {
+			return errs.Also(&apis.FieldError{
+				// Even if tempting %v won't work here, since it might output the value spelled differently.
+				Message: fmt.Sprintf("rolloutDuration=%s is not at second precision", v),
+				Paths:   []string{RolloutDurationKey},
+			})
+		}
+		// And positive.
+		if d < 0 {
+			return errs.Also(&apis.FieldError{
+				Message: fmt.Sprintf("rolloutDuration=%s must be positive", v),
+				Paths:   []string{RolloutDurationKey},
+			})
+		}
+	}
+	return errs
 }
 
 func validateKnativeAnnotations(annotations map[string]string) (errs *apis.FieldError) {
@@ -75,38 +103,6 @@ func ValidateHasNoAutoscalingAnnotation(annotations map[string]string) (errs *ap
 	return errs
 }
 
-// ValidateQueueSidecarAnnotation validates QueueSideCarResourcePercentageAnnotation
-func ValidateQueueSidecarAnnotation(annotations map[string]string) *apis.FieldError {
-	if len(annotations) == 0 {
-		return nil
-	}
-	v, ok := annotations[QueueSideCarResourcePercentageAnnotation]
-	if !ok {
-		return nil
-	}
-	value, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return apis.ErrInvalidValue(v, apis.CurrentField).ViaKey(QueueSideCarResourcePercentageAnnotation)
-	}
-	if value < 0.1 || value > 100 {
-		return apis.ErrOutOfBoundsValue(value, 0.1, 100.0, apis.CurrentField).ViaKey(QueueSideCarResourcePercentageAnnotation)
-	}
-	return nil
-}
-
-// ValidateTimeoutSeconds validates timeout by comparing MaxRevisionTimeoutSeconds
-func ValidateTimeoutSeconds(ctx context.Context, timeoutSeconds int64) *apis.FieldError {
-	if timeoutSeconds != 0 {
-		cfg := config.FromContextOrDefaults(ctx)
-		if timeoutSeconds > cfg.Defaults.MaxRevisionTimeoutSeconds || timeoutSeconds < 0 {
-			return apis.ErrOutOfBoundsValue(timeoutSeconds, 0,
-				cfg.Defaults.MaxRevisionTimeoutSeconds,
-				"timeoutSeconds")
-		}
-	}
-	return nil
-}
-
 // ValidateContainerConcurrency function validates the ContainerConcurrency field
 // TODO(#5007): Move this to autoscaling.
 func ValidateContainerConcurrency(ctx context.Context, containerConcurrency *int64) *apis.FieldError {
@@ -126,12 +122,12 @@ func ValidateContainerConcurrency(ctx context.Context, containerConcurrency *int
 	return nil
 }
 
-// ValidateClusterVisibilityLabel function validates the visibility label on a Route
-func ValidateClusterVisibilityLabel(label, key string) (errs *apis.FieldError) {
+// validateClusterVisibilityLabel function validates the visibility label on a Route
+func validateClusterVisibilityLabel(label, key string) (errs *apis.FieldError) {
 	if label != VisibilityClusterLocal {
 		errs = apis.ErrInvalidValue(label, key)
 	}
-	return
+	return errs
 }
 
 // SetUserInfo sets creator and updater annotations
@@ -157,39 +153,4 @@ func SetUserInfo(ctx context.Context, oldSpec, newSpec, resource interface{}) {
 			ans[UpdaterAnnotation] = ui.Username
 		}
 	}
-}
-
-// ValidateRevisionName validates name and generateName for the revisionTemplate
-func ValidateRevisionName(ctx context.Context, name, generateName string) *apis.FieldError {
-	if generateName != "" {
-		if msgs := validation.NameIsDNS1035Label(generateName, true); len(msgs) > 0 {
-			return apis.ErrInvalidValue(
-				fmt.Sprint("not a DNS 1035 label prefix: ", msgs),
-				"metadata.generateName")
-		}
-	}
-	if name != "" {
-		if msgs := validation.NameIsDNS1035Label(name, false); len(msgs) > 0 {
-			return apis.ErrInvalidValue(
-				fmt.Sprint("not a DNS 1035 label: ", msgs),
-				"metadata.name")
-		}
-		om := apis.ParentMeta(ctx)
-		prefix := om.Name + "-"
-		if om.Name != "" {
-			// Even if there is GenerateName, allow the use
-			// of Name post-creation.
-		} else if om.GenerateName != "" {
-			// We disallow bringing your own name when the parent
-			// resource uses generateName (at creation).
-			return apis.ErrDisallowedFields("metadata.name")
-		}
-
-		if !strings.HasPrefix(name, prefix) {
-			return apis.ErrInvalidValue(
-				fmt.Sprintf("%q must have prefix %q", name, prefix),
-				"metadata.name")
-		}
-	}
-	return nil
 }

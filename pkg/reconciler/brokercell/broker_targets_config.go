@@ -85,7 +85,7 @@ func (r *Reconciler) addBrokersAndTriggersToTargets(ctx context.Context, bc *int
 	return nil
 }
 
-// addToConfig reconstructs the data entry for the given broker and add it to targets-config.
+// addBrokerAndTriggersToConfig reconstructs the data entry for the given broker and adds it to targets-config.
 func addBrokerAndTriggersToConfig(_ context.Context, b *brokerv1beta1.Broker, triggers []*brokerv1beta1.Trigger, brokerTargets config.Targets) {
 	// TODO Maybe get rid of GCPCellAddressableMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we always
 	//  delete or update the entire broker entry and we don't need partial updates per trigger.
@@ -121,10 +121,9 @@ func addBrokerAndTriggersToConfig(_ context.Context, b *brokerv1beta1.Broker, tr
 					Id:             string(t.UID),
 					Name:           t.Name,
 					Namespace:      t.Namespace,
-					CellTenantName: b.Name,
 					CellTenantType: config.CellTenantType_BROKER,
-					// ReplyAddress:           b.Status.Address.URL.String(),
-					Address: t.Status.SubscriberURI.String(),
+					CellTenantName: b.Name,
+					Address:        t.Status.SubscriberURI.String(),
 					RetryQueue: &config.Queue{
 						Topic:        brokerresources.GenerateRetryTopicName(t),
 						Subscription: brokerresources.GenerateRetrySubscriptionName(t),

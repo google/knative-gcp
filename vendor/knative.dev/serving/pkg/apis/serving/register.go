@@ -51,6 +51,12 @@ const (
 	// referenced by one or many routes. The value is a comma separated list of Route names.
 	RoutesAnnotationKey = GroupName + "/routes"
 
+	// RolloutDurationKey is an annotation attached to a Route to indicate the duration
+	// of the rollout of the latest revision. The value must be a valid positive
+	// Golang time.Duration value serialized to string.
+	// The value can be specified with at most with a second precision.
+	RolloutDurationKey = GroupName + "/rolloutDuration"
+
 	// RoutingStateLabelKey is the label attached to a Revision indicating
 	// its state in relation to serving a Route.
 	RoutingStateLabelKey = GroupName + "/routingState"
@@ -71,9 +77,21 @@ const (
 	// its unique identifier
 	RevisionUID = GroupName + "/revisionUID"
 
+	// ConfigUIDLabelKey is the label key attached to a pod to reference its
+	// Knative Configuration by its unique UID
+	ConfigUIDLabelKey = GroupName + "/configUID"
+
+	// ServiceUIDLabelKey is the label key attached to a pod to reference its
+	// Knative Service by its unique UID
+	ServiceUIDLabelKey = GroupName + "/serviceUID"
+
 	// ServiceLabelKey is the label key attached to a Route and Configuration indicating by
 	// which Service they are created.
 	ServiceLabelKey = GroupName + "/service"
+
+	// DomainMappingLabelKey is the label key attached to Ingress resources to indicate
+	// which DomainMapping triggered their creation.
+	DomainMappingLabelKey = GroupName + "/domainmapping"
 
 	// ConfigurationGenerationLabelKey is the label key attached to a Revision indicating the
 	// metadata generation of the Configuration that created this revision
@@ -95,10 +113,6 @@ const (
 	// QueueSideCarResourcePercentageAnnotation is the percentage of user container resources to be used for queue-proxy
 	// It has to be in [0.1,100]
 	QueueSideCarResourcePercentageAnnotation = "queue.sidecar." + GroupName + "/resourcePercentage"
-
-	// VisibilityLabelKeyObsolete is the obsolete VisibilityLabelKey.
-	// This will move over to VisibilityLabelKey in networking repo..
-	VisibilityLabelKeyObsolete = "serving.knative.dev/visibility"
 
 	// VisibilityClusterLocal is the label value for VisibilityLabelKey
 	// that will result to the Route/KService getting a cluster local

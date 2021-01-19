@@ -73,14 +73,15 @@ func (ph *Helper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 	return func(event cloudevents.Event) cloudevents.Result {
 		// Attach important metadata about the event to the logging context.
 		ctx := withProbeEventLoggingContext(ctx, event)
-		logging.FromContext(ctx).Infow("Received probe request")
+		// Scope this to debug level log to avoid log clutter in case of unintended probe requests.
+		logging.FromContext(ctx).Debugw("Received probe request")
 
 		// Refresh the forward probe liveness time
 		ph.lastForwardEventTime.SetNow()
 
 		// Ensure there is a targetpath CloudEvent extension
 		if _, ok := event.Extensions()[utils.ProbeEventTargetPathExtension]; !ok {
-			logging.FromContext(ctx).Warnf("Probe forwarding failed, forward probe event missing '%s' extension", utils.ProbeEventTargetPathExtension)
+			logging.FromContext(ctx).Debugf("Probe forwarding failed, forward probe event missing '%s' extension", utils.ProbeEventTargetPathExtension)
 			return cloudevents.ResultNACK
 		}
 
@@ -104,21 +105,22 @@ func (ph *Helper) receiveEvent(ctx context.Context) cloudEventsFunc {
 	return func(event cloudevents.Event) cloudevents.Result {
 		// Attach important metadata about the event to the logging context.
 		ctx := withProbeEventLoggingContext(ctx, event)
-		logging.FromContext(ctx).Infow("Received event")
+		// Scope this to debug level log to avoid log clutter in case of unintended probe requests.
+		logging.FromContext(ctx).Debugw("Received event")
 
 		// Refresh the receiver probe liveness time
 		ph.lastReceiverEventTime.SetNow()
 
 		// Ensure there is a receiverpath CloudEvent extension
 		if _, ok := event.Extensions()[utils.ProbeEventReceiverPathExtension]; !ok {
-			logging.FromContext(ctx).Warnf("Probe receiver failed, receiver probe event missing '%s' extension", utils.ProbeEventReceiverPathExtension)
-			return cloudevents.ResultNACK
+			logging.FromContext(ctx).Debugf("Probe receiver failed, receiver probe event missing '%s' extension", utils.ProbeEventReceiverPathExtension)
+			return cloudevents.ResultACK
 		}
 
 		// Receive the probe event
 		if err := ph.probeHandler.Receive(ctx, event); err != nil {
 			logging.FromContext(ctx).Warnw("Probe receiver failed", zap.Error(err))
-			return cloudevents.ResultNACK
+			return cloudevents.ResultACK
 		}
 		return cloudevents.ResultACK
 	}

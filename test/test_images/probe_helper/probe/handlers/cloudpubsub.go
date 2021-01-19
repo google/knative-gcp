@@ -25,6 +25,8 @@ import (
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 )
 
 const (
@@ -70,6 +72,7 @@ func (p *CloudPubSubSourceProbe) Forward(ctx context.Context, event cloudevents.
 		return fmt.Errorf("CloudPubSubSource probe event has no '%s' extension", topicExtension)
 	}
 	ctx = cecontext.WithTopic(ctx, fmt.Sprint(topic))
+	logging.FromContext(ctx).Infow("Publishing message to pubsub topic", zap.String("topic", fmt.Sprint(topic)))
 	if res := p.cePubsubClient.Send(ctx, event); !cloudevents.IsACK(res) {
 		return fmt.Errorf("Failed sending event to topic %s, got result %s", topic, res)
 	}
@@ -92,7 +95,7 @@ func (p *CloudPubSubSourceProbe) Receive(ctx context.Context, event cloudevents.
 	//     datacontenttype: application/json
 	//   Data,
 	//     {
-	//       "subscription": "cre-src_cloud-run-events-probe_cloudpubsubsource_02f88763-1df6-4944-883f-010ebac27dd2",
+	//       "subscription": "cre-src_events-system-probe_cloudpubsubsource_02f88763-1df6-4944-883f-010ebac27dd2",
 	//       "message": {
 	//         "messageId": "1529309436535525",
 	//         "data": "eydtc2cnOidQcm9iZSBDbG91ZCBSdW4gRXZlbnRzISd9",

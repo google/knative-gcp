@@ -18,7 +18,7 @@ metadata:
   labels:
     run: curl
   name: curl
-  namespace: cloud-run-events-example
+  namespace: events-system-example
 spec:
   containers:
     # This could be any image that we can SSH into and has curl.

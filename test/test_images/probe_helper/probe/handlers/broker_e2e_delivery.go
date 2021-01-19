@@ -23,6 +23,8 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 )
 
 const (
@@ -77,6 +79,7 @@ func (p *BrokerE2EDeliveryProbe) Forward(ctx context.Context, event cloudevents.
 	// The probe sends the event to a given broker in a given namespace.
 	target := fmt.Sprintf("%s/%s/%s", p.brokerCellIngressBaseURL, namespace, broker)
 	ctx = cecontext.WithTarget(ctx, target)
+	logging.FromContext(ctx).Infow("Sending event to broker target", zap.String("target", target))
 	if res := p.client.Send(ctx, event); !cloudevents.IsACK(res) {
 		return fmt.Errorf("Could not send event to broker target '%s', got result %s", target, res)
 	}

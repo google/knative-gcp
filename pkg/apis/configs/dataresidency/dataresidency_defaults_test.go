@@ -65,6 +65,7 @@ func TestNewDefaultsConfigFromConfigMap(t *testing.T) {
 }
 
 func TestComputeAllowedPersistenceRegions(t *testing.T) {
+	const clusterRegion = "us-central1"
 	// Only cluster wide configuration is supported now, but we use the namespace
 	// as the test name and for future extension.
 	testCases := []struct {
@@ -72,45 +73,72 @@ func TestComputeAllowedPersistenceRegions(t *testing.T) {
 		topicConfigRegions []string
 		dsRegions          []string
 		expectedRegions    []string
+		global             bool
+		updated            bool
 	}{
 		{
 			ns:                 "subset",
 			topicConfigRegions: []string{"us-east1", "us-west1"},
 			dsRegions:          []string{"us-west1"},
-			expectedRegions:    []string{"us-west1"},
+			expectedRegions:    []string{"us-east1", "us-west1"},
+			updated:            false,
 		},
 		{
 			ns:                 "conflict",
 			topicConfigRegions: []string{"us-east1"},
 			dsRegions:          []string{"us-west1"},
-			expectedRegions:    []string{"us-west1"},
+			expectedRegions:    []string{"us-east1"},
+			updated:            false,
 		},
 		{
 			ns:                 "topic-nil",
 			topicConfigRegions: nil,
 			dsRegions:          []string{"us-west1"},
 			expectedRegions:    []string{"us-west1"},
+			updated:            true,
 		},
 		{
 			ns:                 "topic-nil-ds-empty",
 			topicConfigRegions: nil,
 			dsRegions:          []string{},
-			expectedRegions:    nil,
+			expectedRegions:    []string{clusterRegion},
+			updated:            true,
 		},
 		{
-			ns:                 "ds-empty",
-			topicConfigRegions: []string{"us-east1"},
-			dsRegions:          []string{},
+			ns:                 "topic-nil-ds-empty",
+			topicConfigRegions: nil,
+			dsRegions:          nil,
+			expectedRegions:    []string{clusterRegion},
+			updated:            true,
+		},
+		{
+			ns:                 "topic-nil-ds-global",
+			global:             true,
+			topicConfigRegions: nil,
+			dsRegions:          nil,
+			expectedRegions:    nil,
+			updated:            false,
+		},
+		{
+			ns:                 "ds-global-and-regions",
+			global:             true,
+			topicConfigRegions: nil,
+			dsRegions:          []string{"us-east1"},
 			expectedRegions:    []string{"us-east1"},
+			updated:            true,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.ns, func(t *testing.T) {
 			defaults := &Defaults{}
 			defaults.ClusterDefaults.AllowedPersistenceRegions = tc.dsRegions
+			defaults.ClusterDefaults.Global = tc.global
 			topicConfig := &pubsub.TopicConfig{}
 			topicConfig.MessageStoragePolicy.AllowedPersistenceRegions = tc.topicConfigRegions
-			defaults.ComputeAllowedPersistenceRegions(topicConfig)
+			updated := defaults.ComputeAllowedPersistenceRegions(topicConfig, clusterRegion)
+			if updated != tc.updated {
+				t.Errorf("Unexpected updated value, expected: %v, got %v", tc.updated, updated)
+			}
 			if diff := cmp.Diff(tc.expectedRegions, topicConfig.MessageStoragePolicy.AllowedPersistenceRegions); diff != "" {
 				t.Errorf("Unexpected value (-want +got): %s", diff)
 			}
@@ -126,7 +154,7 @@ func TestNewDefaultsConfigFromConfigMapWithKeyError(t *testing.T) {
 		"empty data": {
 			config: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "cloud-run-events",
+					Namespace: "events-system",
 					Name:      configName,
 				},
 				Data: map[string]string{},
@@ -135,7 +163,7 @@ func TestNewDefaultsConfigFromConfigMapWithKeyError(t *testing.T) {
 		"missing key": {
 			config: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "cloud-run-events",
+					Namespace: "events-system",
 					Name:      configName,
 				},
 				Data: map[string]string{
@@ -146,7 +174,7 @@ func TestNewDefaultsConfigFromConfigMapWithKeyError(t *testing.T) {
 		"wrong format": {
 			config: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "cloud-run-events",
+					Namespace: "events-system",
 					Name:      configName,
 				},
 				Data: map[string]string{

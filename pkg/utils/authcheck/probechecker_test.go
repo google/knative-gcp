@@ -20,12 +20,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/google/knative-gcp/pkg/logging"
+	pkgtesting "github.com/google/knative-gcp/pkg/testing"
 )
 
 func TestProbeCheckResult(t *testing.T) {
@@ -51,7 +51,7 @@ func TestProbeCheckResult(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			// Get a free port.
-			port := getFreePort(t)
+			port := pkgtesting.GetFreePort(t)
 
 			logger := logging.FromContext(ctx)
 			probeChecker := ProbeChecker{
@@ -80,17 +80,4 @@ func TestProbeCheckResult(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getFreePort(t *testing.T) int {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal("Failed to resolve TCP address:", err)
-	}
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		t.Fatal("failed to listen TCP:", err)
-	}
-	l.Close()
-	return l.Addr().(*net.TCPAddr).Port
 }

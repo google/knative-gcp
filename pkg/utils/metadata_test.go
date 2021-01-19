@@ -127,3 +127,66 @@ func TestClusterName(t *testing.T) {
 		})
 	}
 }
+
+func TestZoneToRegion(t *testing.T) {
+	testCases := map[string]struct {
+		zone           string
+		expectedRegion string
+		expectedError  bool
+	}{
+		"empty": {
+			zone:          "",
+			expectedError: true,
+		},
+		"normal": {
+			zone:           "us-east1-b",
+			expectedRegion: "us-east1",
+		},
+		"wrong number of field": {
+			zone:          "us-east1",
+			expectedError: true,
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			region, err := ZoneToRegion(tc.zone)
+			if err != nil {
+				if !tc.expectedError {
+					t.Error("Unexpected Error: ", err)
+				}
+				return
+			}
+			if region != tc.expectedRegion {
+				t.Errorf("Wrong region, expected %s, got %s", tc.expectedRegion, region)
+			}
+
+		})
+	}
+}
+
+func TestClusterRegion(t *testing.T) {
+	testCases := map[string]struct {
+		clusterRegion string
+		expected      string
+	}{
+		"Return Region if set": {
+			clusterRegion: "us-east2",
+			expected:      "us-east2",
+		},
+		"Metadata Client": {
+			clusterRegion: "",
+			expected:      "us-central1",
+		},
+	}
+	defaultMetadataClientCreator = func() metadataClient.Client {
+		return testingMetadataClient.NewTestClient(testingMetadataClient.TestClientData{})
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			got, _ := ClusterRegion(tc.clusterRegion, defaultMetadataClientCreator)
+			if got != tc.expected {
+				t.Errorf("expected: %s, got %s", tc.expected, got)
+			}
+		})
+	}
+}

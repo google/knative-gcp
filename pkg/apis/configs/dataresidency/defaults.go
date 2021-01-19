@@ -32,6 +32,8 @@ type ScopedDefaults struct {
 	// storage. Eg "us-east1". An empty configuration means no data residency
 	// constraints.
 	AllowedPersistenceRegions []string `json:"messagestoragepolicy.allowedpersistenceregions,omitempty"`
+	// Global is an indicator that no data residency is set, the topic will follow Org Policy
+	Global bool `json:"messagestoragepolicy.global,omitempty"`
 }
 
 // scoped gets the scoped data residency defaults, for now we only have
@@ -48,18 +50,34 @@ func (d *Defaults) AllowedPersistenceRegions() []string {
 	return d.scoped().AllowedPersistenceRegions
 }
 
+// Global gets the Global setting in the default.
+func (d *Defaults) Global() bool {
+	return d.scoped().Global
+}
+
 // ComputeAllowedPersistenceRegions computes the final message storage policy in
 // topicConfig. Return true if the topicConfig is updated.
-func (d *Defaults) ComputeAllowedPersistenceRegions(topicConfig *pubsub.TopicConfig) bool {
+func (d *Defaults) ComputeAllowedPersistenceRegions(topicConfig *pubsub.TopicConfig, clusterRegion string) bool {
+	if topicConfig.MessageStoragePolicy.AllowedPersistenceRegions != nil {
+		// Don't try to change anything if it is not empty
+		return false
+	}
 	// We can do subset of both in the future, but for now, we just overwrite the
 	// configuration as the relationship between region and zones are not clear to handle,
 	// eg. us-east1 vs us-east1-a. Important note: setting the AllowedPersistenceRegions
 	// to empty string slice is an error, should set it to nil for all regions.
 	allowedRegions := d.AllowedPersistenceRegions()
-	if allowedRegions == nil || len(allowedRegions) == 0 {
-		return false
+	// overwrite empty allowedRegions to nil
+	if len(allowedRegions) == 0 {
+		if d.Global() {
+			// Not setting means same as Org Policy
+			return false
+		}
+		allowedRegions = nil
 	}
-
+	if clusterRegion != "" && allowedRegions == nil {
+		allowedRegions = []string{clusterRegion}
+	}
 	topicConfig.MessageStoragePolicy.AllowedPersistenceRegions = allowedRegions
-	return true
+	return (allowedRegions != nil)
 }

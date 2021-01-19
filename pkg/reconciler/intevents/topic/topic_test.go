@@ -61,12 +61,13 @@ const (
 	topicName = "hubbub"
 	sinkName  = "sink"
 
-	testNS       = "testnamespace"
-	testImage    = "test_image"
-	topicUID     = topicName + "-abc-123"
-	testProject  = "test-project-id"
-	testTopicID  = "cloud-run-topic-" + testNS + "-" + topicName + "-" + topicUID
-	testTopicURI = "http://" + topicName + "-topic." + testNS + ".svc.cluster.local"
+	testNS            = "testnamespace"
+	testImage         = "test_image"
+	topicUID          = topicName + "-abc-123"
+	testProject       = "test-project-id"
+	testTopicID       = "cloud-run-topic-" + testNS + "-" + topicName + "-" + topicUID
+	testTopicURI      = "http://" + topicName + "-topic." + testNS + ".svc.cluster.local"
+	testClusterRegion = "us-east1"
 
 	secretName = "testing-secret"
 
@@ -824,6 +825,7 @@ func TestAllCases(t *testing.T) {
 			publisherImage:     testImage,
 			createClientFn:     createClientFn,
 			dataresidencyStore: drStore,
+			clusterRegion:      testClusterRegion,
 		}
 		return topic.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetTopicLister(), r.Recorder, r)
 	}))
