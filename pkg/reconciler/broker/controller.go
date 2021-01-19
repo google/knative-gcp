@@ -88,7 +88,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdeliv
 	}
 
 	r := &Reconciler{
-		CellTenantReconciler: celltenant.CellTenantReconciler{
+		Reconciler: celltenant.Reconciler{
 			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
 			BrokerCellLister:   bcInformer.Lister(),
 			PubsubClient:       client,

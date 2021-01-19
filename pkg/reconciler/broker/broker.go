@@ -39,7 +39,7 @@ const (
 )
 
 type Reconciler struct {
-	celltenant.CellTenantReconciler
+	celltenant.Reconciler
 }
 
 // Check that Reconciler implements Interface
@@ -52,8 +52,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *brokerv1beta1.Broker)
 	b.Status.InitializeConditions()
 	b.Status.ObservedGeneration = b.Generation
 
-	bcs := celltenant.CellTenantStatusableFromBroker(b)
-	if err := r.CellTenantReconciler.ReconcileGCPCellAddressable(ctx, bcs); err != nil {
+	bcs := celltenant.StatusableFromBroker(b)
+	if err := r.Reconciler.ReconcileGCPCellAddressable(ctx, bcs); err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling broker", zap.Error(err))
 		return fmt.Errorf("failed to reconcile broker: %w", err)
 		//TODO instead of returning on error, update the data plane configmap with
@@ -66,8 +66,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *brokerv1beta1.Broker)
 func (r *Reconciler) FinalizeKind(ctx context.Context, b *brokerv1beta1.Broker) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Finalizing Broker", zap.Any("broker", b))
-	bcs := celltenant.CellTenantStatusableFromBroker(b)
-	if err := r.CellTenantReconciler.FinalizeGCPCellAddressable(ctx, bcs); err != nil {
+	bcs := celltenant.StatusableFromBroker(b)
+	if err := r.Reconciler.FinalizeGCPCellAddressable(ctx, bcs); err != nil {
 		return err
 	}
 

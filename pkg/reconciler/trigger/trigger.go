@@ -131,7 +131,7 @@ func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1beta1.Trigger, b 
 		b.SetDefaults(ctx)
 	}
 
-	ct := celltenant.CellTenantTargetFromTrigger(t, b.Spec.Delivery)
+	ct := celltenant.TargetFromTrigger(t, b.Spec.Delivery)
 	if err := r.targetReconciler.ReconcileRetryTopicAndSubscription(ctx, r.Recorder, ct); err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, t *brokerv1beta1.Trigger)
 	if !hasGCPBrokerFinalizer(t) {
 		return nil
 	}
-	ct := celltenant.CellTenantTargetFromTrigger(t, nil)
+	ct := celltenant.TargetFromTrigger(t, nil)
 	if err := r.targetReconciler.DeleteRetryTopicAndSubscription(ctx, r.Recorder, ct); err != nil {
 		return err
 	}

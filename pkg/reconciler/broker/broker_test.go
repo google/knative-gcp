@@ -476,7 +476,7 @@ func TestAllCases(t *testing.T) {
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
 		r := &Reconciler{
-			CellTenantReconciler: celltenant.CellTenantReconciler{
+			Reconciler: celltenant.Reconciler{
 				Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
 				BrokerCellLister:   listers.GetBrokerCellLister(),
 				ProjectID:          testProject,

@@ -52,8 +52,8 @@ const (
 	brokerCellCreated = "BrokerCellCreated"
 )
 
-// CellTenantReconciler implements controller.Reconciler for CellTenants.
-type CellTenantReconciler struct {
+// Reconciler implements controller.Reconciler for CellTenants.
+type Reconciler struct {
 	*reconciler.Base
 
 	// listers index properties about resources
@@ -70,7 +70,7 @@ type CellTenantReconciler struct {
 	ClusterRegion string
 }
 
-func (r *CellTenantReconciler) ReconcileGCPCellAddressable(ctx context.Context, b CellTenantStatusable) error {
+func (r *Reconciler) ReconcileGCPCellAddressable(ctx context.Context, b Statusable) error {
 	if err := r.ensureBrokerCellExists(ctx, b); err != nil {
 		return fmt.Errorf("brokercell reconcile failed: %v", err)
 	}
@@ -84,14 +84,14 @@ func (r *CellTenantReconciler) ReconcileGCPCellAddressable(ctx context.Context, 
 	return nil
 }
 
-func (r *CellTenantReconciler) FinalizeGCPCellAddressable(ctx context.Context, b CellTenantStatusable) error {
+func (r *Reconciler) FinalizeGCPCellAddressable(ctx context.Context, b Statusable) error {
 	if err := r.deleteDecouplingTopicAndSubscription(ctx, b); err != nil {
 		return fmt.Errorf("failed to delete Pub/Sub topic: %v", err)
 	}
 	return nil
 }
 
-func (r *CellTenantReconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context, b CellTenantStatusable) error {
+func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context, b Statusable) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling decoupling topic", zap.Any("broker", b))
 	// get ProjectID from metadata if projectID isn't set
@@ -156,7 +156,7 @@ func (r *CellTenantReconciler) reconcileDecouplingTopicAndSubscription(ctx conte
 	return nil
 }
 
-func (r *CellTenantReconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b CellTenantStatusable) error {
+func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b Statusable) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Deleting decoupling topic")
 
@@ -191,7 +191,7 @@ var CreatePubsubClientFn reconcilerutilspubsub.CreateFn = pubsub.NewClient
 
 // getClientOrCreateNew Return the pubsubCient if it is valid, otherwise it tries to create a new client
 // and register it for later usage.
-func (r *CellTenantReconciler) getClientOrCreateNew(ctx context.Context, projectID string, b reconcilerutilspubsub.StatusUpdater) (*pubsub.Client, error) {
+func (r *Reconciler) getClientOrCreateNew(ctx context.Context, projectID string, b reconcilerutilspubsub.StatusUpdater) (*pubsub.Client, error) {
 	if r.PubsubClient != nil {
 		return r.PubsubClient, nil
 	}
@@ -207,7 +207,7 @@ func (r *CellTenantReconciler) getClientOrCreateNew(ctx context.Context, project
 }
 
 // ensureBrokerCellExists creates a BrokerCell if it doesn't exist, and update broker status based on brokercell status.
-func (r *CellTenantReconciler) ensureBrokerCellExists(ctx context.Context, b CellTenantStatusable) error {
+func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b Statusable) error {
 	var bc *inteventsv1alpha1.BrokerCell
 	var err error
 	// TODO(#866) Get brokercell based on the label (or annotation) on the broker.

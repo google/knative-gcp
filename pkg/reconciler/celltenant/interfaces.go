@@ -29,47 +29,47 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-// CellTenantDeletingTarget is the interface that the TargetReconciler takes for FinalizeKind().
-type CellTenantDeletingTarget interface {
+// DeletingTarget is the interface that the TargetReconciler takes for FinalizeKind().
+type DeletingTarget interface {
 	Object() runtime.Object
 	StatusUpdater() reconcilerutilspubsub.StatusUpdater
 	GetTopicID() string
 	GetSubscriptionName() string
 }
 
-// CellTenantTarget is the interface that the TargetReconciler takes for ReconcileKind().
-type CellTenantTarget interface {
-	CellTenantDeletingTarget
+// Target is the interface that the TargetReconciler takes for ReconcileKind().
+type Target interface {
+	DeletingTarget
 	GetLabels() map[string]string
 	DeliverySpec() *eventingduckv1beta1.DeliverySpec
 	SetStatusProjectID(projectID string)
 }
 
-var _ CellTenantTarget = (*cellTenantTargetForTrigger)(nil)
+var _ Target = (*targetForTrigger)(nil)
 
-type cellTenantTargetForTrigger struct {
+type targetForTrigger struct {
 	trigger      *brokerv1beta1.Trigger
 	deliverySpec *eventingduckv1beta1.DeliverySpec
 }
 
-// CellTenantTargetFromTrigger creates a CellTenantTarget for the given Trigger and associated
+// TargetFromTrigger creates a Target for the given Trigger and associated
 // Broker's deliverySpec.
-func CellTenantTargetFromTrigger(t *brokerv1beta1.Trigger, deliverySpec *eventingduckv1beta1.DeliverySpec) CellTenantTarget {
-	return &cellTenantTargetForTrigger{
+func TargetFromTrigger(t *brokerv1beta1.Trigger, deliverySpec *eventingduckv1beta1.DeliverySpec) Target {
+	return &targetForTrigger{
 		trigger:      t,
 		deliverySpec: deliverySpec,
 	}
 }
 
-func (t *cellTenantTargetForTrigger) Object() runtime.Object {
+func (t *targetForTrigger) Object() runtime.Object {
 	return t.trigger
 }
 
-func (t *cellTenantTargetForTrigger) StatusUpdater() reconcilerutilspubsub.StatusUpdater {
+func (t *targetForTrigger) StatusUpdater() reconcilerutilspubsub.StatusUpdater {
 	return &t.trigger.Status
 }
 
-func (t *cellTenantTargetForTrigger) GetLabels() map[string]string {
+func (t *targetForTrigger) GetLabels() map[string]string {
 	return map[string]string{
 		"resource":  "triggers",
 		"namespace": t.trigger.Namespace,
@@ -78,19 +78,19 @@ func (t *cellTenantTargetForTrigger) GetLabels() map[string]string {
 	}
 }
 
-func (t *cellTenantTargetForTrigger) GetTopicID() string {
+func (t *targetForTrigger) GetTopicID() string {
 	return resources.GenerateRetryTopicName(t.trigger)
 }
 
-func (t *cellTenantTargetForTrigger) GetSubscriptionName() string {
+func (t *targetForTrigger) GetSubscriptionName() string {
 	return resources.GenerateRetrySubscriptionName(t.trigger)
 }
 
-func (t *cellTenantTargetForTrigger) DeliverySpec() *eventingduckv1beta1.DeliverySpec {
+func (t *targetForTrigger) DeliverySpec() *eventingduckv1beta1.DeliverySpec {
 	return t.deliverySpec
 }
 
-func (t *cellTenantTargetForTrigger) SetStatusProjectID(projectID string) {
+func (t *targetForTrigger) SetStatusProjectID(_ string) {
 	// TODO uncomment when eventing webhook allows this
 	// t.trigger.Status.ProjectID = projectID
 }
@@ -154,8 +154,8 @@ func (s SubscriberStatus) Message() string {
 	return ""
 }
 
-// CellTenantStatusable is the interface used by the CellTenantReconciler.
-type CellTenantStatusable interface {
+// Statusable is the interface used by the Reconciler.
+type Statusable interface {
 	Key() *config.CellTenantKey
 	MarkBrokerCellReady()
 	MarkBrokerCellUnknown(reason, format string, args ...interface{})
@@ -168,47 +168,47 @@ type CellTenantStatusable interface {
 	GetSubscriptionName() string
 }
 
-var _ CellTenantStatusable = (*cellTenantStatusableForBroker)(nil)
+var _ Statusable = (*statusableForBroker)(nil)
 
-type cellTenantStatusableForBroker struct {
+type statusableForBroker struct {
 	broker *brokerv1beta1.Broker
 }
 
-func CellTenantStatusableFromBroker(b *brokerv1beta1.Broker) CellTenantStatusable {
-	return &cellTenantStatusableForBroker{
+func StatusableFromBroker(b *brokerv1beta1.Broker) Statusable {
+	return &statusableForBroker{
 		broker: b,
 	}
 }
 
-func (b cellTenantStatusableForBroker) Key() *config.CellTenantKey {
+func (b statusableForBroker) Key() *config.CellTenantKey {
 	return config.KeyFromBroker(b.broker)
 }
 
-func (b cellTenantStatusableForBroker) MarkBrokerCellReady() {
+func (b statusableForBroker) MarkBrokerCellReady() {
 	b.broker.Status.MarkBrokerCellReady()
 }
 
-func (b cellTenantStatusableForBroker) MarkBrokerCellUnknown(reason, format string, args ...interface{}) {
+func (b statusableForBroker) MarkBrokerCellUnknown(reason, format string, args ...interface{}) {
 	b.broker.Status.MarkBrokerCellUnknown(reason, format, args...)
 }
 
-func (b cellTenantStatusableForBroker) MarkBrokerCellFailed(reason, format string, args ...interface{}) {
+func (b statusableForBroker) MarkBrokerCellFailed(reason, format string, args ...interface{}) {
 	b.broker.Status.MarkBrokerCellFailed(reason, format, args...)
 }
 
-func (b cellTenantStatusableForBroker) SetAddress(url *apis.URL) {
+func (b statusableForBroker) SetAddress(url *apis.URL) {
 	b.broker.Status.SetAddress(url)
 }
 
-func (b cellTenantStatusableForBroker) Object() runtime.Object {
+func (b statusableForBroker) Object() runtime.Object {
 	return b.broker
 }
 
-func (b cellTenantStatusableForBroker) StatusUpdater() reconcilerutilspubsub.StatusUpdater {
+func (b statusableForBroker) StatusUpdater() reconcilerutilspubsub.StatusUpdater {
 	return &b.broker.Status
 }
 
-func (b cellTenantStatusableForBroker) GetLabels() map[string]string {
+func (b statusableForBroker) GetLabels() map[string]string {
 	return map[string]string{
 		"resource":     "brokers",
 		"broker_class": brokerv1beta1.BrokerClass,
@@ -218,10 +218,10 @@ func (b cellTenantStatusableForBroker) GetLabels() map[string]string {
 	}
 }
 
-func (b cellTenantStatusableForBroker) GetTopicID() string {
+func (b statusableForBroker) GetTopicID() string {
 	return resources.GenerateDecouplingTopicName(b.broker)
 }
 
-func (b cellTenantStatusableForBroker) GetSubscriptionName() string {
+func (b statusableForBroker) GetSubscriptionName() string {
 	return resources.GenerateDecouplingSubscriptionName(b.broker)
 }

@@ -48,11 +48,6 @@ const (
 	// defaulting fails.
 )
 
-var (
-	defaultBackoffDelay  = "PT1S"
-	defaultBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
-)
-
 // TargetReconciler implements controller.Reconciler for CellTenant Targets.
 type TargetReconciler struct {
 	ProjectID string
@@ -66,7 +61,7 @@ type TargetReconciler struct {
 	ClusterRegion string
 }
 
-func (r *TargetReconciler) ReconcileRetryTopicAndSubscription(ctx context.Context, recorder record.EventRecorder, t CellTenantTarget) error {
+func (r *TargetReconciler) ReconcileRetryTopicAndSubscription(ctx context.Context, recorder record.EventRecorder, t Target) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling retry topic")
 	// get ProjectID from metadata
@@ -178,7 +173,7 @@ func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.Deliv
 	return dlp
 }
 
-func (r *TargetReconciler) DeleteRetryTopicAndSubscription(ctx context.Context, recorder record.EventRecorder, t CellTenantDeletingTarget) error {
+func (r *TargetReconciler) DeleteRetryTopicAndSubscription(ctx context.Context, recorder record.EventRecorder, t DeletingTarget) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Deleting retry topic")
 
