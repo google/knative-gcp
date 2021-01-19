@@ -61,10 +61,6 @@ func CellTenantTargetFromTrigger(t *brokerv1beta1.Trigger, deliverySpec *eventin
 	}
 }
 
-func (t *cellTenantTargetForTrigger) Key222() *config.TargetKey {
-	return config.KeyFromTrigger(t.trigger)
-}
-
 func (t *cellTenantTargetForTrigger) Object() runtime.Object {
 	return t.trigger
 }
