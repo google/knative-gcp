@@ -22,6 +22,46 @@ release from the `knative-gcp` repository. We will update the page with specific
 
 ## Recommended Migration
 
+Migrating your events resources to the new namespace involves two main steps:
+
+1. Upgrading to the new version of events and setting up authentication for the
+   new namespace.
+2. Verifying the correct functionality of already deployed resources.
+
+We assume here that the desire is to keep the existing authentication mechanism
+and provide the steps to correct the permissions to work in the new namespace.
+For this purpose we need to first setup a number of environment variables based
+on the existing authentication settings. The following `gcloud` command can be
+used to view the existing Google Service Accounts (GSAs) and their roles.
+
+```shell script
+# view GSAs and roles
+gcloud projects get-iam-policy $PROJECT_ID
+```
+
+Using this information, you can find the service accounts set up for the control
+plane and broker data plane. The control plane GSA should have the roles:
+`pubsub.admin`, `storage.admin`, `cloudscheduler.admin`, `logging.configWriter`
+and `logging.privateLogViewer`. The broker data plane GSA should have the roles:
+`pubsub.editor`, `monitoring.metricWriter` and `cloudtrace.agent`.
+
+Once you found the names for these service accounts, set the following
+environment variables. In this example the names of the GSAs are
+`events-controller-gsa` for the control plane and `events-broker-gsa` for the
+broker data plane.
+
+```
+export CONTROLLER_GSA=events-controller-gsa
+export BROKER_GSA=events-broker-gsa
+```
+
+Next follow the upgrade instructions for authentication with either Kubernetes
+Secrets or Workload Identity, depending on what was used in the old namespace.
+After you've completed the upgrade verify that everything is working correctly
+by following the steps in the last section.
+
+### Upgrade for Authentication using Kubernetes Secrets
+
 1. Run the following commands before installing the new `v0.20` release. We
    explain the purpose of each command in comments.
 
@@ -29,57 +69,33 @@ release from the `knative-gcp` repository. We will update the page with specific
    # create the new namespace by copying the labels and annotations from the old one
    kubectl get namespace cloud-run-events -o yaml | \
      sed 's/  name: cloud-run-events/  name: events-system/g' | \
-     kubectl create -f -
-   # setup identical authentication by copying the existing secrets from the old namespace
-   kubectl get secrets -n cloud-run-events -o yaml | \
-     sed 's/  namespace: cloud-run-events/  namespace: events-system/g' | \
-     kubectl create -f -
+     sed 's/\/cloud-run-events/\/events-system/g' | \
+     kubectl apply -f -
    # copy the existing config maps to maintain existing configurations
    kubectl get configmaps -n cloud-run-events --field-selector metadata.name!=kube-root-ca.crt -o yaml | \
      sed 's/  namespace: cloud-run-events/  namespace: events-system/g' | \
-     kubectl create -f -
+     sed 's/\/cloud-run-events\//\/events-system\//g' | \
+     kubectl apply -f -
+
+   # setup authentication for the new namespace using secrets
+   # this setup can be done before the upgrade and will ensure the speediest creation of the necessary resources
+
+   # auth for the control plane
+   gcloud iam service-accounts keys create controller.json \
+     --iam-account=$CONTROLLER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+   kubectl -n events-system create secret generic \
+     google-cloud-key --from-file=key.json=controller.json
+   # auth for the broker data plane
+   gcloud iam service-accounts keys create broker.json \
+     --iam-account=$BROKER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+   kubectl -n events-system create secret generic \
+     google-broker-key --from-file=key.json=broker.json
 
    # remove the old webhook and controller to prevent them from interfering with the new ones
    kubectl delete deployment webhook -n cloud-run-events
    kubectl delete service webhook -n cloud-run-events
    kubectl delete deployment controller -n cloud-run-events
    kubectl delete service controller -n cloud-run-events
-   ```
-
-   For your convenience, we also packaged these instructions as a shell script
-   and as a yaml file that you can execute as shown below.
-
-   ```shell script
-   # execute the setup commands using the provided script
-   bash namespace-transition.sh
-   ```
-
-   Or, if you prefer executing these commands as a job, apply the following yaml
-   file.
-
-   ```shell script
-   # execute the setup commands as a job
-   kubectl apply -f namespace-transition.yaml
-   ```
-
-   Once you confirm that the job has completed successfully, you can delete it.
-
-   ```shell script
-   # confirm that the job has completed successfully
-   kubectl get all -n cloud-run-events
-   ```
-
-   ```shell script
-   NAME                                              READY   STATUS        RESTARTS   AGE
-   pod/namespace-transition-xwrxk                    0/1     Completed     0          3m3s
-
-   NAME                                              COMPLETIONS   DURATION   AGE
-   job.batch/namespace-transition                    1/1           37s        3m3s
-   ```
-
-   ```shell script
-   # delete the job
-   kubectl delete -f namespace-transition.yaml
    ```
 
 1. Upgrade to the new namespace by applying the changes from release `v0.20`.
@@ -93,6 +109,72 @@ release from the `knative-gcp` repository. We will update the page with specific
    kubectl apply --selector events.cloud.google.com/crd-install=true --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    ```
+
+### Upgrade for Authentication using Workload Identity
+
+1. Run the following commands before installing the new `v0.20` release. We
+   explain the purpose of each command in comments.
+
+   ```shell script
+   # create the new namespace by copying the labels and annotations from the old one
+   kubectl get namespace cloud-run-events -o yaml | \
+     sed 's/  name: cloud-run-events/  name: events-system/g' | \
+     sed 's/\/cloud-run-events/\/events-system/g' | \
+     kubectl apply -f -
+   # copy the existing config maps to maintain existing configurations
+   kubectl get configmaps -n cloud-run-events --field-selector metadata.name!=kube-root-ca.crt -o yaml | \
+     sed 's/  namespace: cloud-run-events/  namespace: events-system/g' | \
+     sed 's/\/cloud-run-events\//\/events-system\//g' | \
+     kubectl apply -f -
+
+   # remove the old webhook and controller to prevent them from interfering with the new ones
+   kubectl delete deployment webhook -n cloud-run-events
+   kubectl delete service webhook -n cloud-run-events
+   kubectl delete deployment controller -n cloud-run-events
+   kubectl delete service controller -n cloud-run-events
+   ```
+
+1. Upgrade to the new namespace by applying the changes from release `v0.20`.
+   These instructions are identical to the
+   [installation instructions](https://github.com/google/knative-gcp/blob/master/docs/install/install-knative-gcp.md#install-the-knative-gcp-constructs).
+
+   ```shell script
+   # apply changes based on the release
+   export KGCP_VERSION=v0.20.0
+   kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events-pre-install-jobs.yaml
+   kubectl apply --selector events.cloud.google.com/crd-install=true --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
+   kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
+   ```
+
+1. Update Workload Identity authentication to work in the new namespace. This
+   can only be done after the upgrade above is executed, otherwise the
+   Kubernetes Service Accounts in the new namespace will not be automatically
+   created.
+
+   ```shell script
+   # auth for the control plane
+   gcloud iam service-accounts add-iam-policy-binding \
+     --role roles/iam.workloadIdentityUser \
+     --member serviceAccount:$PROJECT_ID.svc.id.goog[$NEW_EVENTS_NS/controller] \
+     $CONTROLLER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+   kubectl annotate serviceaccount -n $NEW_EVENTS_NS controller \
+     iam.gke.io/gcp-service-account=$CONTROLLER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+
+   # auth for the broker data plane
+   gcloud iam service-accounts add-iam-policy-binding \
+     --role roles/iam.workloadIdentityUser \
+     --member=serviceAccount:$PROJECT_ID.svc.id.goog[$NEW_EVENTS_NS/broker] \
+     $BROKER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+   kubectl annotate serviceaccount -n $NEW_EVENTS_NS broker \
+     iam.gke.io/gcp-service-account=$BROKER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+
+   # mark config-gcp-auth as initialized (important for the Cloud Console, which checks for this)
+   kubectl annotate configmap  -n $NEW_EVENTS_NS  \
+     config-gcp-auth --overwrite events.cloud.google.com/initialized=true
+
+   ```
+
+### Verify and Correct Existing Functionality
 
 1. Confirm the new BrokerCell is working correctly.
 
