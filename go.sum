@@ -1389,9 +1389,11 @@ knative.dev/pkg v0.0.0-20210114223020-f0ea5e6b9c4e/go.mod h1:hckgW978SdzPA2H5EDv
 knative.dev/pkg v0.0.0-20210115202020-5bb97df49b44/go.mod h1:hckgW978SdzPA2H5EDvRPY8xsnPuDZLJLbPf8Jte7Q0=
 knative.dev/pkg v0.0.0-20210118192521-75d66b58948d h1:EY2H22iv1MuvuSZzXwode/quaZQKx0utiNkC2SSOm5k=
 knative.dev/pkg v0.0.0-20210118192521-75d66b58948d/go.mod h1:cZdMjcJE6JGSNaEypgbUigX1TjteMIwQsW2woNBPVCA=
+knative.dev/pkg v0.0.0-20210119162123-1bbf0a6436c3 h1:kvBQKadSBqhTMveExPsvlkTWNS8yQcvxes6PS5RxDQs=
+knative.dev/pkg v0.0.0-20210119162123-1bbf0a6436c3/go.mod h1:cZdMjcJE6JGSNaEypgbUigX1TjteMIwQsW2woNBPVCA=
 knative.dev/reconciler-test v0.0.0-20210115075620-6fe6ef693370/go.mod h1:A5ZaQo+1lWGw2OoSc06wSyReX6huzBPJ2ra/R48s1yo=
-knative.dev/serving v0.20.1-0.20210119065921-4a7c82a32db9 h1:QKTTamdmEbf0gc1SCr8I/yl6Oed+NPSZSkhb4swznmE=
-knative.dev/serving v0.20.1-0.20210119065921-4a7c82a32db9/go.mod h1:TWH+7fhgVP4y6DiyHlPKgluouGnGVUE+kQA++6BbSA0=
+knative.dev/serving v0.20.1-0.20210120012853-76e9ba52e949 h1:PehgOfEcRVX5vjnuwZwzUND1QqsbegttbrC7AvI8My4=
+knative.dev/serving v0.20.1-0.20210120012853-76e9ba52e949/go.mod h1:TWH+7fhgVP4y6DiyHlPKgluouGnGVUE+kQA++6BbSA0=
 pgregory.net/rapid v0.3.3 h1:jCjBsY4ln4Atz78QoBWxUEvAHaFyNDQg9+WU62aCn1U=
 pgregory.net/rapid v0.3.3/go.mod h1:UYpPVyjFHzYBGHIxLFoupi8vwk6rXNzRY9OMvVxFIOU=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
