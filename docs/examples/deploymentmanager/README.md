@@ -6,7 +6,7 @@ This document describes how to install Knative-GCP using [Deployment Manager](ht
 
 Install `gcloud` and have it associated with a project with the Deployment Manager API activated.
 
-Note, if you want to activate APIs or manipulate the project's IAM policy (to add the newly 
+Note, if you want to activate APIs or manipulate the project's IAM policy (to add the newly
 created GSA), then you need to increase the permission of the service account that Deployment Manager
 uses to `roles/owner`:
 
@@ -18,7 +18,7 @@ gcloud projects add-iam-policy-binding $(gcloud config get-value core/project) \
 
 ## Installation
 
-Due to the way DM works (specifically acquiring existing resources without updating them), 
+Due to the way DM works (specifically acquiring existing resources without updating them),
 the same configuration has to be installed and then updated three times.
 Each time, the only thing that should change is the `stage` property:
 - `1_clusterCreate`
@@ -46,7 +46,7 @@ Create the cluster and set up events in the cluster:
         grantGSAsPermissionsOnProject: true
    ```
    See other options in [`events.py.schema`](./events.py.schema).
-   
+
 1. Create the deployment using [`cluster-plus-events.yaml`](./cluster-plus-events.yaml).
    ```shell
    gcloud deployment-manager deployments create ce --config cluster-plus-events.yaml
@@ -56,17 +56,17 @@ Create the cluster and set up events in the cluster:
    ```yaml
    stage: 2_acquireOperator
    ```
-   
+
 1. Update the Deployment with the updated config.
    ```shell
    gcloud deployment-manager deployments udpate ce --config cluster-plus-events.yaml
    ```
-   
+
 1. Change the `stage` in `cluster-plus-events.yaml` to `3_installEventing`.
    ```yaml
    stage: 3_installEventing
    ```
-   
+
 1. Update the Deployment with the updated config.
    ```shell
    gcloud deployment-manager deployments udpate ce --config cluster-plus-events.yaml
