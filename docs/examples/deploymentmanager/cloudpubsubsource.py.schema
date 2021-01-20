@@ -1,0 +1,68 @@
+# Copyright 2021 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+info:
+  description: A CloudPubSubSource.
+  author: Google, Inc.
+
+required:
+- dmMeta
+- metadata
+
+properties:
+  dmMeta:
+    required:
+      - typeProvider
+    properties:
+      typeProvider:
+        type: string
+        description: The name of the TypeProvider object for the cluster. Assumed to exist in the project the deployment is running in.
+      dependsOn:
+        type: array
+        items:
+          type: string
+  metadata:
+    type: object
+    description: The Kubernetes metadata for the CloudPubSubSource. Must contain the namespace.
+    required:
+      - namespace
+    properties:
+      namespace:
+        type: string
+        description: The namespace of the CloudPubSubSource.
+  spec:
+    type: object
+    required:
+      - topic
+      - sink
+    properties:
+      topic:
+        type: string
+      sink:
+        type: object
+        ref:
+          type: object
+          required:
+            - apiVersion
+            - kind
+            - name
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            name:
+              type: string
+        url:
+          type: string

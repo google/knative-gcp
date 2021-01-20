@@ -1,0 +1,66 @@
+# Copyright 2021 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+imports:
+  - path: cluster.py
+  - path: ksvc.py
+  - path: config-map.py
+
+resources:
+  - name: ksvc-plus-cluster
+    type: cluster.py
+    properties:
+      zone: us-central1-a
+  - name: my-ksvc
+    type: ksvc.py
+    properties:
+      # These are properties used by the template, not part of the Knative Service's YAML itself.
+      dmMeta:
+        # This is the name of the TypeProvider, it does not include the project.
+        typeProvider: $(ref.ksvc-plus-cluster.clusterType)
+        dependsOn:
+          - $(ref.ksvc-plus-cluster.clusterType)
+      # Everything else is a complete Knative Service's YAML. The apiVersion, kind, and metadata.name will be filled in automatically. Everything else is manual.
+      metadata:
+        namespace: default
+      spec:
+        template:
+          spec:
+            containers:
+              - image: us-docker.pkg.dev/cloudrun/container/hello
+                env:
+                  - name: TARGET
+                    value: "Go with ConfigMap"
+                volumeMounts:
+                  - name: hello-cm
+                    readOnly: true
+                    mountPath: /hello-cm
+            volumes:
+              - name: hello-cm
+                configMap:
+                  name: $(ref.my-config-map.metadata.name)
+  - name: my-config-map
+    type: config-map.py
+    properties:
+      # These are properties used by the template, not part of the Knative Service's YAML itself.
+      dmMeta:
+        # This is the name of the TypeProvider, it does not include the project.
+        typeProvider: $(ref.ksvc-plus-cluster.clusterType)
+        dependsOn:
+          - $(ref.ksvc-plus-cluster.clusterType)
+      # Everything else is a complete ConfigMap's YAML. The apiVersion, kind, and metadata.name will be filled in automatically. Everything else is manual.
+      metadata:
+        namespace: default
+      data:
+        key: value

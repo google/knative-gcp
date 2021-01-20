@@ -1,0 +1,79 @@
+# Copyright 2021 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+imports:
+  - path: broker.py
+  - path: trigger.py
+  - path: ksvc.py
+  - path: cloudpubsubsource.py
+
+resources:
+  - name: foo-source
+    type: cloudpubsubsource.py
+    properties:
+      dmMeta:
+        # This is the name of the TypeProvider, it does not include the project.
+        typeProvider: ce-events-plus-cluster-type
+      # Everything else is a complete Knative Broker's YAML. The apiVersion, kind, and metadata.name will be filled in automatically. Everything else is manual.
+      metadata:
+        namespace: default
+      spec:
+        topic: foo
+        sink:
+          ref:
+            apiVersion: eventing.knative.dev/v1
+            kind: Broker
+            name: default
+  - name: default-broker
+    type: broker.py
+    properties:
+      dmMeta:
+        # This is the name of the TypeProvider, it does not include the project.
+        typeProvider: ce-events-plus-cluster-type
+      # Everything else is a complete Knative Broker's YAML. The apiVersion, kind, and metadata.name will be filled in automatically. Everything else is manual.
+      metadata:
+        namespace: default
+        name: default
+  - name: foo-trigger
+    type: trigger.py
+    properties:
+      dmMeta:
+        # This is the name of the TypeProvider, it does not include the project.
+        typeProvider: ce-events-plus-cluster-type
+      # Everything else is a complete Knative Broker's YAML. The apiVersion, kind, and metadata.name will be filled in automatically. Everything else is manual.
+      metadata:
+        namespace: default
+      spec:
+        filter:
+          attributes:
+            source: //pubsub.googleapis.com/projects/test-project/topics/foo
+        subscriber:
+          ref:
+            apiVersion: serving.knative.dev/v1
+            kind: Service
+            name: foo-ksvc
+  - name: foo-ksvc
+    type: ksvc.py
+    properties:
+      dmMeta:
+        # This is the name of the TypeProvider, it does not include the project.
+        typeProvider: ce-events-plus-cluster-type
+      # Everything else is a complete Knative Broker's YAML. The apiVersion, kind, and metadata.name will be filled in automatically. Everything else is manual.
+      metadata:
+        namespace: default
+      spec:
+        template:
+          spec:
+            containers:
+              - image: gcr.io/knative-releases/knative.dev/eventing-contrib/cmd/event_display

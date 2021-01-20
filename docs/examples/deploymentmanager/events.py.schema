@@ -1,0 +1,57 @@
+# Copyright 2021 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+info:
+  description: Sets up Cloud Run for Anthos Eventing on a Cluster.
+  author: Google, Inc.
+
+imports:
+  - path: config-map.py
+
+required:
+  - stage
+  - typeProvider
+
+properties:
+  stage:
+    type: string
+    enum:
+      - 1_clusterCreate
+      - 2_acquireOperator
+      - 3_installEventing
+      - 4_initializeEventing
+  activateAPIsOnProject:
+    type: boolean
+    default: false
+  dependsOnTypeProvider:
+    type: boolean
+    default: false
+  typeProvider:
+    type: string
+    description: The name of the TypeProvider object for the cluster. Assumed to exist in the project the deployment is running in.
+  controllerGSA:
+    type: string
+    default: kre-controller-via-dm
+  brokerGSA:
+    type: string
+    default: kre-broker-via-dm
+  sourcesGSA:
+    type: string
+    default: kre-sources-via-dm
+  grantGSAsPermissionsOnProject:
+    type: boolean
+    default: false
+  concurrentAPIActivation:
+    type: boolean
+    default: true
