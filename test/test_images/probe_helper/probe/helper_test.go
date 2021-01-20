@@ -19,12 +19,14 @@ package probe
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -45,7 +47,15 @@ import (
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
+	sources "knative.dev/eventing/pkg/apis/sources"
 	sourcesv1beta1 "knative.dev/eventing/pkg/apis/sources/v1beta1"
+
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -59,6 +69,8 @@ const (
 	testSubscriptionID = "cre-src-test-subscription-id"
 	// the fake Cloud Storage bucket ID used in the test CloudStorageSource
 	testStorageBucket = "cloudstoragesource-bucket"
+	// the fake pod name used in the test ApiServerSource
+	testPodName = "apiserversource-test-pod"
 )
 
 var (
@@ -68,7 +80,13 @@ var (
 	testStorageCreateBody         = `{"bucket":"cloudstoragesource-bucket","name":"1234567890"}`
 	testStorageUpdateMetadataBody = `{"bucket":"cloudstoragesource-bucket","metadata":{"some-key":"Metadata updated!"}}`
 	testStorageArchiveBody        = `{"bucket":"cloudstoragesource-bucket","name":"1234567890","storageClass":"ARCHIVE"}`
-	testTargetReceiverPath        = "test-namespace"
+
+	testPodCreateRequest = fmt.Sprintf("/api/v1/namespaces/%s/pods", testNamespace)
+	testPodModifyRequest = fmt.Sprintf("/api/v1/namespaces/%s/pods/%s", testNamespace, testPodName)
+	testPodCreateBody    = fmt.Sprintf(`{"metadata":{"name":"%s.1234567890","namespace":"%s","creationTimestamp":null},"spec":{"containers":[{"name":"busybox","image":"busybox","resources":{},"imagePullPolicy":"IfNotPresent"}],"restartPolicy":"Never"},"status":{}}`, testPodName, testNamespace)
+	testPodUpdateBody    = fmt.Sprintf(`{"metadata":{"name":"%s.1234567890","namespace":"%s","creationTimestamp":null},"spec":{"containers":[{"name":"busybox","image":"alpine","resources":{},"imagePullPolicy":"IfNotPresent"}],"restartPolicy":"Never"},"status":{}}`, testPodName, testNamespace)
+
+	testTargetReceiverPath = "test-namespace"
 )
 
 // A helper function that starts a test Broker which receives events forwarded by
@@ -169,6 +187,55 @@ func runTestCloudAuditLogsSource(ctx context.Context, group *errgroup.Group, pub
 						logging.FromContext(ctx).Warnf("Failed to send topic created CloudEvent from the test CloudAuditLogsSource: %v", res)
 					}
 					topicCreated = true
+				}
+			}
+		}
+	})
+}
+
+// A helper function that starts a test ApiServerSource which intercepts
+// Kubernetes API requests and forwards the appropriate notifications as
+// CloudEvents to the probe helper receiver.
+func runTestApiServerSource(ctx context.Context, group *errgroup.Group, gotRequest chan *http.Request, probeReceiverURL string) {
+	cp, err := cloudevents.NewHTTP(cloudevents.WithTarget(probeReceiverURL))
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("Failed to create http protocol of the test ApiServerSource, %v", err)
+	}
+	c, err := cloudevents.NewClient(cp)
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("Failed to create the test ApiServerSource client, %v", err)
+	}
+	group.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case req := <-gotRequest:
+				bodyBytes, err := ioutil.ReadAll(req.Body)
+				if err != nil {
+					logging.FromContext(ctx).Warnf("Failed to read request body in test ApiServerSource, %v", err)
+				}
+				body := string(bodyBytes)
+				method := req.Method
+				url := req.URL.String()
+				logging.FromContext(ctx).Warnf("DEBUG: %s", url)
+				finalizeEvent := cloudevents.NewEvent()
+				finalizeEvent.SetID("1234567890")
+				finalizeEvent.SetSubject(fmt.Sprintf("/apis/v1/namespaces/%s/events/apiserversource.1234567890", testNamespace))
+				finalizeEvent.SetSource("https://0.0.0.0:443")
+				finalizeEvent.SetExtension("name", fmt.Sprintf("%s.%s", testPodName, "1234567890"))
+				if method == "POST" && url == testPodCreateRequest && strings.Contains(body, testPodCreateBody) {
+					// This request indicates the client's intent to create a new pod.
+					finalizeEvent.SetType(sources.ApiServerSourceAddEventType)
+				} else if method == "PUT" && url == testPodModifyRequest && strings.Contains(body, testPodUpdateBody) {
+					// This request indicates the client's intent to update a pod.
+					finalizeEvent.SetType(sources.ApiServerSourceUpdateEventType)
+				} else if method == "DELETE" && url == testPodModifyRequest {
+					// This request indicates the client's intent to delete a pod.
+					finalizeEvent.SetType(sources.ApiServerSourceDeleteEventType)
+				}
+				if res := c.Send(ctx, finalizeEvent); !cloudevents.IsACK(res) {
+					logging.FromContext(ctx).Warnf("Failed to send object finalized CloudEvent from the test ApiServerSource: %v", res)
 				}
 			}
 		}
@@ -370,6 +437,75 @@ func testStorageClient(ctx context.Context, t *testing.T) (*storage.Client, chan
 	return c, gotRequest, srv.Close
 }
 
+func testK8sClient(ctx context.Context, t *testing.T) (*utils.K8sClient, chan *http.Request, func()) {
+	gotRequest := make(chan *http.Request, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The test Kubernetes API server forwards the client's generated HTTP requests.
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			logging.FromContext(ctx).Fatal("Test Kubernetes API server could not read request body.")
+		}
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		gotRequest <- r
+		w.Write([]byte("{}"))
+	}))
+	fakeK8sClientset := fake.NewSimpleClientset()
+	informers := informers.NewSharedInformerFactory(fakeK8sClientset, 0)
+	podInformer := informers.Core().V1().Pods().Informer()
+	podInformer.AddEventHandler(&cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			pod := obj.(*corev1.Pod)
+			json, err := json.Marshal(pod)
+			if err != nil {
+				t.Fatalf("Failed to create test k8s client: %v", err)
+			}
+			httpClient := &http.Client{
+				Timeout: time.Second * 10,
+			}
+			httpClient.Post(fmt.Sprintf("%s%s", srv.URL, testPodCreateRequest), "application/json", bytes.NewBuffer(json))
+		},
+		UpdateFunc: func(oldObj interface{}, obj interface{}) {
+			pod := obj.(*corev1.Pod)
+			json, err := json.Marshal(pod)
+			if err != nil {
+				t.Fatalf("Failed to create test k8s client: %v", err)
+			}
+			reqURL, err := url.Parse(fmt.Sprintf("%s%s", srv.URL, testPodModifyRequest))
+			if err != nil {
+				t.Fatalf("Failed to create test k8s client: %v", err)
+			}
+			httpClient := &http.Client{
+				Timeout: time.Second * 10,
+			}
+			httpClient.Do(&http.Request{
+				Method: "PUT",
+				URL:    reqURL,
+				Header: map[string][]string{
+					"Content-Type": {"application/json; charset=UTF-8"},
+				},
+				Body: ioutil.NopCloser(bytes.NewReader(json)),
+			})
+		},
+		DeleteFunc: func(obj interface{}) {
+			reqURL, err := url.Parse(fmt.Sprintf("%s%s", srv.URL, testPodModifyRequest))
+			if err != nil {
+				t.Fatalf("Failed to create test k8s client: %v", err)
+			}
+			httpClient := &http.Client{
+				Timeout: time.Second * 10,
+			}
+			httpClient.Do(&http.Request{
+				Method: "DELETE",
+				URL:    reqURL,
+			})
+		},
+	})
+	informers.Start(ctx.Done())
+	k8sClient := utils.K8sClient{}
+	k8sClient.Clientset = fakeK8sClientset
+	return &k8sClient, gotRequest, srv.Close
+}
+
 type eventAndResult struct {
 	event      *cloudevents.Event
 	wantResult protocol.Result
@@ -481,6 +617,22 @@ func TestProbeHelper(t *testing.T) {
 		steps: []eventAndResult{
 			{
 				event:      probeEvent("cloudauditlogssource-probe"),
+				wantResult: cloudevents.ResultACK,
+			},
+		},
+	}, {
+		name: "ApiServerSource probe",
+		steps: []eventAndResult{
+			{
+				event:      probeEvent("apiserversource-probe-create"),
+				wantResult: cloudevents.ResultACK,
+			},
+			{
+				event:      probeEvent("apiserversource-probe-update"),
+				wantResult: cloudevents.ResultACK,
+			},
+			{
+				event:      probeEvent("apiserversource-probe-delete"),
 				wantResult: cloudevents.ResultACK,
 			},
 		},
@@ -618,6 +770,10 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 	// Run the test CloudAuditLogsSource.
 	runTestCloudAuditLogsSource(ctx, group, pubsubClient, receiverURL)
 
+	// Run the test ApiServerSource.
+	k8sClient, gotK8sAPIRequest, closeK8sAPIServer := testK8sClient(ctx, t)
+	runTestApiServerSource(ctx, group, gotK8sAPIRequest, receiverURL)
+
 	// Run the test Broker for testing Broker E2E delivery.
 	brokerCellIngressBaseURL := runTestBroker(ctx, group, receiverURL)
 	// Create the probe helper and initialize it.
@@ -626,7 +782,7 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 		DefaultTimeoutDuration: 2 * time.Minute,
 		MaxTimeoutDuration:     30 * time.Minute,
 	}
-	ph, err := InitializeTestProbeHelper(ctx, brokerCellIngressBaseURL, testProjectID, time.Second, env, probeListener, receiverListener, storageClient, pubsubClient)
+	ph, err := InitializeTestProbeHelper(ctx, brokerCellIngressBaseURL, testProjectID, time.Second, env, probeListener, receiverListener, storageClient, pubsubClient, k8sClient)
 	if err != nil {
 		t.Fatal("Failed to create probe helper:", err)
 	}
@@ -637,6 +793,7 @@ func makeProbeHelper(ctx context.Context, t *testing.T, group *errgroup.Group) m
 		cleanup: func() {
 			closeStorage()
 			closePubsub()
+			closeK8sAPIServer()
 		},
 	}
 }

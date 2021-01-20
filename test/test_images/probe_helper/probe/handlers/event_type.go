@@ -23,6 +23,7 @@ import (
 	"knative.dev/pkg/logging"
 
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+	sources "knative.dev/eventing/pkg/apis/sources"
 	sourcesv1beta1 "knative.dev/eventing/pkg/apis/sources/v1beta1"
 )
 
@@ -35,7 +36,7 @@ type EventTypeProbe struct {
 func NewEventTypeHandler(brokerE2EDeliveryProbe *BrokerE2EDeliveryProbe, cloudPubSubSourceProbe *CloudPubSubSourceProbe,
 	cloudStorageSourceCreateProbe *CloudStorageSourceCreateProbe, cloudStorageSourceUpdateMetadataProbe *CloudStorageSourceUpdateMetadataProbe,
 	cloudStorageSourceArchiveProbe *CloudStorageSourceArchiveProbe, cloudStorageSourceDeleteProbe *CloudStorageSourceDeleteProbe,
-	cloudAuditLogsSourceProbe *CloudAuditLogsSourceProbe, cloudSchedulerSourceProbe *CloudSchedulerSourceProbe, pingSourceProbe *PingSourceProbe) *EventTypeProbe {
+	cloudAuditLogsSourceProbe *CloudAuditLogsSourceProbe, apiServerSourceCreateProbe *ApiServerSourceCreateProbe, apiServerSourceUpdateProbe *ApiServerSourceUpdateProbe, apiServerSourceDeleteProbe *ApiServerSourceDeleteProbe, cloudSchedulerSourceProbe *CloudSchedulerSourceProbe, pingSourceProbe *PingSourceProbe) *EventTypeProbe {
 	// Set the forward and receiver probe handlers now that they are initialized.
 	forwardHandlers := map[string]Interface{
 		BrokerE2EDeliveryProbeEventType:                brokerE2EDeliveryProbe,
@@ -45,6 +46,9 @@ func NewEventTypeHandler(brokerE2EDeliveryProbe *BrokerE2EDeliveryProbe, cloudPu
 		CloudStorageSourceArchiveProbeEventType:        cloudStorageSourceArchiveProbe,
 		CloudStorageSourceDeleteProbeEventType:         cloudStorageSourceDeleteProbe,
 		CloudAuditLogsSourceProbeEventType:             cloudAuditLogsSourceProbe,
+		ApiServerSourceCreateProbeEventType:            apiServerSourceCreateProbe,
+		ApiServerSourceUpdateProbeEventType:            apiServerSourceUpdateProbe,
+		ApiServerSourceDeleteProbeEventType:            apiServerSourceDeleteProbe,
 		CloudSchedulerSourceProbeEventType:             cloudSchedulerSourceProbe,
 		PingSourceProbeEventType:                       pingSourceProbe,
 	}
@@ -56,6 +60,9 @@ func NewEventTypeHandler(brokerE2EDeliveryProbe *BrokerE2EDeliveryProbe, cloudPu
 		schemasv1.CloudStorageObjectArchivedEventType:        cloudStorageSourceArchiveProbe,
 		schemasv1.CloudStorageObjectDeletedEventType:         cloudStorageSourceDeleteProbe,
 		schemasv1.CloudAuditLogsLogWrittenEventType:          cloudAuditLogsSourceProbe,
+		sources.ApiServerSourceAddEventType:                  apiServerSourceCreateProbe,
+		sources.ApiServerSourceUpdateEventType:               apiServerSourceUpdateProbe,
+		sources.ApiServerSourceDeleteEventType:               apiServerSourceDeleteProbe,
 		schemasv1.CloudSchedulerJobExecutedEventType:         cloudSchedulerSourceProbe,
 		sourcesv1beta1.PingSourceEventType:                   pingSourceProbe,
 	}

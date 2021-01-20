@@ -28,8 +28,9 @@ import (
 
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/test/test_images/probe_helper/probe/handlers"
+	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
 )
 
-func InitializeTestProbeHelper(ctx context.Context, brokerCellBaseUrl string, projectID clients.ProjectID, cronStaleDuration time.Duration, helperEnv EnvConfig, forwardListener ForwardListener, receiveListener ReceiveListener, storageClient *storage.Client, psClient *pubsub.Client) (*Helper, error) {
+func InitializeTestProbeHelper(ctx context.Context, brokerCellBaseUrl string, projectID clients.ProjectID, cronStaleDuration time.Duration, helperEnv EnvConfig, forwardListener ForwardListener, receiveListener ReceiveListener, storageClient *storage.Client, psClient *pubsub.Client, k8sClient *utils.K8sClient) (*Helper, error) {
 	panic(wire.Build(TestHelperSet, handlers.HandlerSet))
 }

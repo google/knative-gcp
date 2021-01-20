@@ -49,9 +49,23 @@ func InitializeProbeHelper(ctx context.Context, brokerCellBaseUrl string, projec
 		CloudStorageSourceProbe: cloudStorageSourceProbe,
 	}
 	cloudAuditLogsSourceProbe := handlers.NewCloudAuditLogsSourceProbe(projectID, client)
+	k8sClient, err := probe.NewK8sClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	apiServerSourceProbe := handlers.NewApiServerSourceProbe(projectID, k8sClient)
+	apiServerSourceCreateProbe := &handlers.ApiServerSourceCreateProbe{
+		ApiServerSourceProbe: apiServerSourceProbe,
+	}
+	apiServerSourceUpdateProbe := &handlers.ApiServerSourceUpdateProbe{
+		ApiServerSourceProbe: apiServerSourceProbe,
+	}
+	apiServerSourceDeleteProbe := &handlers.ApiServerSourceDeleteProbe{
+		ApiServerSourceProbe: apiServerSourceProbe,
+	}
 	cloudSchedulerSourceProbe := handlers.NewCloudSchedulerSourceProbe(cronStaleDuration)
 	pingSourceProbe := handlers.NewPingSourceProbe(cronStaleDuration)
-	eventTypeProbe := handlers.NewEventTypeHandler(brokerE2EDeliveryProbe, cloudPubSubSourceProbe, cloudStorageSourceCreateProbe, cloudStorageSourceUpdateMetadataProbe, cloudStorageSourceArchiveProbe, cloudStorageSourceDeleteProbe, cloudAuditLogsSourceProbe, cloudSchedulerSourceProbe, pingSourceProbe)
+	eventTypeProbe := handlers.NewEventTypeHandler(brokerE2EDeliveryProbe, cloudPubSubSourceProbe, cloudStorageSourceCreateProbe, cloudStorageSourceUpdateMetadataProbe, cloudStorageSourceArchiveProbe, cloudStorageSourceDeleteProbe, cloudAuditLogsSourceProbe, apiServerSourceCreateProbe, apiServerSourceUpdateProbe, apiServerSourceDeleteProbe, cloudSchedulerSourceProbe, pingSourceProbe)
 	livenessChecker := handlers.NewLivenessChecker(cloudSchedulerSourceProbe, pingSourceProbe)
 	receiveClientOptions := probe.NewCeReceiverClientOptions(receivePort)
 	ceReceiveClient, err := probe.NewCeReceiverClient(ctx, livenessChecker, receiveClientOptions)
