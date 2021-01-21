@@ -137,12 +137,6 @@ func (m *fakeOverloadedDecoupleSink) Send(_ context.Context, _ *config.BrokerKey
 func TestHandler(t *testing.T) {
 	tests := []testCase{
 		{
-			name:     "probe check",
-			path:     "/healthz",
-			method:   nethttp.MethodGet,
-			wantCode: nethttp.StatusOK,
-		},
-		{
 			name:           "happy case",
 			path:           "/ns1/broker1",
 			event:          createTestEvent("test-event"),

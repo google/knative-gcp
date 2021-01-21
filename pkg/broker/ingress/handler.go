@@ -60,9 +60,6 @@ const (
 	// The format is an RFC3339 time in string format. For example: 2019-08-26T23:38:17.834384404Z.
 	EventArrivalTime = "knativearrivaltime"
 
-	// For probes.
-	heathCheckPath = "/healthz"
-
 	// for permission denied error msg
 	// TODO(cathyzhyi) point to official doc rather than github doc
 	deniedErrMsg string = `Failed to publish to PubSub because permission denied.
@@ -124,10 +121,6 @@ func (h *Handler) Start(ctx context.Context) error {
 // 3. Convert request to event.
 // 4. Send event to decouple sink.
 func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Request) {
-	if request.URL.Path == heathCheckPath {
-		response.WriteHeader(nethttp.StatusOK)
-		return
-	}
 	ctx := request.Context()
 	ctx = logging.WithLogger(ctx, h.logger)
 	ctx = tracing.WithLogging(ctx, trace.FromContext(ctx))
