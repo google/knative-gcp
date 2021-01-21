@@ -214,6 +214,7 @@ function enable_monitoring(){
 # test_authentication_check_for_brokercell tests the authentication check function for BrokerCell.
 # This test required the entire BrokerCell to be non-functional.
 # In order to avoid running in parallel with other tests, we put it in the shell script, rather than more common go tests.
+# TODO Once we support multiple BrokerCells with distinct authentication mechanisms, make this a normal test that runs in parallel with the others.
 function test_authentication_check_for_brokercell() {
   echo "Starting authentication check test for brokercell."
   local auth_mode=${1}
