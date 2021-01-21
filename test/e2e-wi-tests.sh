@@ -49,8 +49,9 @@ function export_variable() {
 function test_setup() {
   pubsub_setup "workload_identity" || return 1
 
-  # Authentication check test for brokerCell. It is used in integration test in workload identity mode.
-  # We do not put it in the same place as other integration tests, because this test can not run parallelly with others.
+  # Authentication check test for BrokerCell. It is used in integration test in workload identity mode.
+  # We do not put it in the same place as other integration tests, because this test can not run in parallel with others,
+  # as this test requires the entire BrokerCell to be non-functional.
   if [[ -v ENABLE_AUTH_CHECK_TEST && $ENABLE_AUTH_CHECK_TEST == 0 ]]; then
     test_authentication_check_for_brokercell "workload_identity" || return 1
   fi

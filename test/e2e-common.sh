@@ -211,22 +211,25 @@ function enable_monitoring(){
       --role roles/cloudtrace.agent
 }
 
+# test_authentication_check_for_brokercell tests the authentication check function for BrokerCell.
+# This test required the entire BrokerCell to be non-functional.
+# In order to avoid running in parallel with other tests, we put it in the shell script, rather than more common go tests.
 function test_authentication_check_for_brokercell() {
   echo "Starting authentication check test for brokercell."
   local auth_mode=${1}
-  ko apply -f ${CONFIG_WARMUP_GCP_BROKER}
+  kubectl apply -f ${CONFIG_WARMUP_GCP_BROKER}
 
   echo "Starting authentication check test which is running outside of the broker related Pods."
   wait_until_brokercell_authentication_check_pending "$(non_pod_check_keywords)" || return 1
 
   echo "Starting authentication check test which is running inside of the broker related Pods."
-  apply_invalid_resource "$auth_mode"
+  apply_invalid_auth "$auth_mode" || return 1
   wait_until_brokercell_authentication_check_pending "$(pod_check_keywords "$auth_mode")" || return 1
 
   # Clean up all the testing resources.
   echo "Authentication check test finished, waiting until all broker related testing resources deleted."
-  delete_invalid_resource "$auth_mode"
-  ko delete -f ${CONFIG_WARMUP_GCP_BROKER}
+  delete_invalid_auth "$auth_mode" || return 1
+  kubectl delete -f ${CONFIG_WARMUP_GCP_BROKER}
   kubectl delete brokercell default -n "${CONTROL_PLANE_NAMESPACE}"
   kubectl wait pod --for=delete -n "${CONTROL_PLANE_NAMESPACE}" --selector=brokerCell=default --timeout=5m || return 1
 }
@@ -235,14 +238,14 @@ function wait_until_brokercell_authentication_check_pending() {
   local keywords=${1}
   echo "Waiting until brokercell authentication check pending."
   for i in {1..150}; do #timeout after 5 minutes
-    local reason=$(kubectl get brokercell default -n "${CONTROL_PLANE_NAMESPACE}" -o=jsonpath="{range .status.conditions[*]}{.reason}" --ignore-not-found=true)
-    local message=$(kubectl get brokercell default -n "${CONTROL_PLANE_NAMESPACE}" -o=jsonpath="{range .status.conditions[*]}{.message}" --ignore-not-found=true)
-    if [[ "$reason" == *"AuthenticationCheckPending"* ]] && [[ "$message" == *"$keywords"* ]]; then
+    local message=$(kubectl get brokercell default -n "${CONTROL_PLANE_NAMESPACE}" -o=jsonpath='{.status.conditions[?(@.reason == "AuthenticationCheckPending")].message}' --ignore-not-found=true)
+    if [[ "$message" == *"$keywords"* ]]; then
       return 0
     fi
     sleep 2
   done
-  echo -e "\n\nERROR: timeout waiting for brokercell authentication check pending with correct message."
+  echo -e "\n\nERROR: timeout waiting for brokercell authentication check pending with correct key message: ${keywords}"
+  echo -e "brokercell object YAML: $(kubectl get brokercell default -n "${CONTROL_PLANE_NAMESPACE}" -o yaml)"
   return 1
 }
 
@@ -254,6 +257,7 @@ function pod_check_keywords() {
     echo "the Pod is not fully authenticated, probably due to corresponding k8s service account and google service account do not establish a correct relationship"
   else
     echo "Invalid parameter"
+    return 1
   fi
 }
 
@@ -261,7 +265,7 @@ function non_pod_check_keywords() {
   echo "authentication is not configured"
 }
 
-function apply_invalid_resource() {
+function apply_invalid_auth() {
   local auth_mode=${1}
   if [ "${auth_mode}" == "secret" ]; then
     kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "google-broker-key" --from-file=key.json=${CONFIG_INVALID_CREDENTIAL}
@@ -269,10 +273,11 @@ function apply_invalid_resource() {
     kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account=fakeserviceaccount@test-project.iam.gserviceaccount.com
   else
     echo "Invalid parameter"
+    return 1
   fi
 }
 
-function delete_invalid_resource() {
+function delete_invalid_auth() {
   local auth_mode=${1}
   if [ "${auth_mode}" == "secret" ]; then
     kubectl -n "${CONTROL_PLANE_NAMESPACE}" delete secret "google-broker-key"
@@ -280,6 +285,7 @@ function delete_invalid_resource() {
     kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account-
   else
     echo "Invalid parameter"
+    return 1
   fi
 }
 
