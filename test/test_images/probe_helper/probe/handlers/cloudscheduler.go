@@ -32,7 +32,7 @@ const (
 	// CloudSchedulerSource probes.
 	CloudSchedulerSourceProbeEventType = "cloudschedulersource-probe"
 
-	periodExtension = "period"
+	cloudSchedulerPeriodExtension = "period"
 )
 
 func NewCloudSchedulerSourceProbe(staleDuration time.Duration) *CloudSchedulerSourceProbe {
@@ -58,9 +58,9 @@ type CloudSchedulerSourceProbe struct {
 // Forward tests the delay between the current time and the latest recorded Cloud
 // Scheduler tick in a given scope.
 func (p *CloudSchedulerSourceProbe) Forward(ctx context.Context, event cloudevents.Event) error {
-	period, ok := event.Extensions()[periodExtension]
+	period, ok := event.Extensions()[cloudSchedulerPeriodExtension]
 	if !ok {
-		return fmt.Errorf("CloudSchedulerProbe event has no '%s' extension", namespaceExtension)
+		return fmt.Errorf("CloudSchedulerProbe event has no '%s' extension", cloudSchedulerPeriodExtension)
 	}
 	periodDuration, err := time.ParseDuration(fmt.Sprint(period))
 	if err != nil {

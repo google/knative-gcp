@@ -30,6 +30,7 @@ var HandlerSet wire.ProviderSet = wire.NewSet(
 	NewCloudAuditLogsSourceProbe,
 	NewCloudPubSubSourceProbe,
 	NewCloudSchedulerSourceProbe,
+	NewPingSourceProbe,
 	NewCloudStorageSourceProbe,
 	wire.Struct(new(CloudStorageSourceCreateProbe), "*"),
 	wire.Struct(new(CloudStorageSourceDeleteProbe), "*"),
@@ -38,6 +39,9 @@ var HandlerSet wire.ProviderSet = wire.NewSet(
 	NewLivenessChecker,
 )
 
-func NewLivenessChecker(probe *CloudSchedulerSourceProbe) *utils.LivenessChecker {
-	return &utils.LivenessChecker{ActionFuncs: []utils.ActionFunc{probe.CleanupStaleSchedulerTimes()}}
+func NewLivenessChecker(cloudSchedulerProbe *CloudSchedulerSourceProbe, pingSourceProbe *PingSourceProbe) *utils.LivenessChecker {
+	return &utils.LivenessChecker{ActionFuncs: []utils.ActionFunc{
+		cloudSchedulerProbe.CleanupStaleSchedulerTimes(),
+		pingSourceProbe.CleanupStalePingSourceTimes(),
+	}}
 }

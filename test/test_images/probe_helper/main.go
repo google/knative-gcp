@@ -95,6 +95,14 @@ The Probe Helper can handle multiple different types of probes.
 	The Probe Helper receives an event, creates a Pub/Sub topic named after it,
 	and waits to observe its creation having been logged by a CloudAuditLogsSource.
 
+6. PingSource Probe
+
+	This is similar to the CloudSchedulerSource Probe.
+
+	The Probe Helper receives an event of type `pingsource-probe`, and
+	compares the delay between the current time and the last observed PingSource
+	tick. The probe fails if the delay exceeds a threshold.
+
 */
 
 type envConfig struct {
@@ -105,8 +113,8 @@ type envConfig struct {
 	ReceiverPort probe.ReceivePort `envconfig:"RECEIVER_PORT" default:"8080"`
 	// Environment variable containing the base URL for the brokercell ingress, used in the broker e2e delivery probe
 	BrokerCellIngressBaseURL string `envconfig:"BROKER_CELL_INGRESS_BASE_URL" default:"http://default-brokercell-ingress.events-system.svc.cluster.local"`
-	// Environment variable containing the maximum tolerated staleness duration for Cloud Scheduler job ticks before they are discarded
-	SchedulerStaleDuration time.Duration `envconfig:"SCHEDULER_STALE_DURATION" default:"3m"`
+	// Environment variable containing the maximum tolerated staleness duration for Cloud Scheduler job / PingSource ticks before they are discarded
+	CronStaleDuration time.Duration `envconfig:"CRON_STALE_DURATION" default:"3m"`
 }
 
 func main() {
@@ -130,7 +138,7 @@ func main() {
 		logging.FromContext(ctx).Fatal("Failed to get the default project ID", zap.Error(err))
 	}
 
-	ph, err := InitializeProbeHelper(ctx, env.BrokerCellIngressBaseURL, clients.ProjectID(projectID), env.SchedulerStaleDuration, env.EnvConfig, env.ProbePort, env.ReceiverPort)
+	ph, err := InitializeProbeHelper(ctx, env.BrokerCellIngressBaseURL, clients.ProjectID(projectID), env.CronStaleDuration, env.EnvConfig, env.ProbePort, env.ReceiverPort)
 	if err != nil {
 		logging.FromContext(ctx).Fatal("Failed to initialize probe helper", zap.Error(err))
 	}

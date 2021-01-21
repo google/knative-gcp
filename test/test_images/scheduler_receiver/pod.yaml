@@ -18,6 +18,6 @@ metadata:
   name: scheduler_receiver
 spec:
   containers:
-    - name: auditlogs_receiver
+    - name: scheduler_receiver
       image: ko://github.com/google/knative-gcp/test/test_images/scheduler_receiver
 

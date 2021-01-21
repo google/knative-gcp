@@ -29,6 +29,6 @@ import (
 	"github.com/google/knative-gcp/test/test_images/probe_helper/probe/handlers"
 )
 
-func InitializeProbeHelper(ctx context.Context, brokerCellBaseUrl string, projectID clients.ProjectID, schedulerStaleDuration time.Duration, helperEnv probe.EnvConfig, forwardPort probe.ForwardPort, receivePort probe.ReceivePort) (*probe.Helper, error) {
+func InitializeProbeHelper(ctx context.Context, brokerCellBaseUrl string, projectID clients.ProjectID, cronStaleDuration time.Duration, helperEnv probe.EnvConfig, forwardPort probe.ForwardPort, receivePort probe.ReceivePort) (*probe.Helper, error) {
 	panic(wire.Build(probe.HelperSet, handlers.HandlerSet))
 }
