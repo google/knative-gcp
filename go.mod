@@ -2,6 +2,8 @@ module github.com/google/knative-gcp
 
 go 1.14
 
+replace knative.dev/pkg => /Users/harwayne/go/src/knative.dev/pkg
+
 require (
 	cloud.google.com/go v0.72.0
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
