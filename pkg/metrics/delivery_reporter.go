@@ -175,7 +175,7 @@ func AddTargetTags(ctx context.Context, target *config.Target) (context.Context,
 		Labels: map[string]string{
 			metricskey.LabelNamespaceName: target.GetNamespace(),
 			metricskey.LabelTriggerName:   target.GetName(),
-			metricskey.LabelBrokerName:    target.GetBroker(),
+			metricskey.LabelBrokerName:    target.GetCellTenantName(),
 		},
 	})
 	return tag.New(ctx, tag.Insert(TriggerFilterTypeKey, filterTypeValue(target.FilterAttributes["type"])))

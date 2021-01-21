@@ -72,7 +72,7 @@ Please refer to "Configure the Authentication Mechanism for GCP" at https://gith
 // HandlerSet provides a handler with a real HTTPMessageReceiver and pubsub MultiTopicDecoupleSink.
 var HandlerSet wire.ProviderSet = wire.NewSet(
 	NewHandler,
-	clients.NewHTTPMessageReceiver,
+	clients.NewHTTPMessageReceiverWithChecker,
 	wire.Bind(new(HttpMessageReceiver), new(*kncloudevents.HTTPMessageReceiver)),
 	NewMultiTopicDecoupleSink,
 	wire.Bind(new(DecoupleSink), new(*multiTopicDecoupleSink)),
@@ -83,7 +83,7 @@ var HandlerSet wire.ProviderSet = wire.NewSet(
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
 type DecoupleSink interface {
 	// Send sends the event from a broker to the corresponding decoupling sink.
-	Send(ctx context.Context, broker *config.BrokerKey, event cev2.Event) protocol.Result
+	Send(ctx context.Context, broker *config.CellTenantKey, event cev2.Event) protocol.Result
 }
 
 // HttpMessageReceiver is an interface to listen on http requests.
@@ -143,7 +143,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	}
 	request.Body = nethttp.MaxBytesReader(nil, request.Body, maxRequestBodyBytes)
 
-	broker, err := config.BrokerKeyFromPersistenceString(request.URL.Path)
+	broker, err := config.CellTenantKeyFromPersistenceString(request.URL.Path)
 	if err != nil {
 		logging.FromContext(ctx).Debug("Malformed request path", zap.String("path", request.URL.Path))
 		nethttp.Error(response, err.Error(), nethttp.StatusNotFound)

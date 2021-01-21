@@ -73,7 +73,7 @@ func TestRetryWatchAndSync(t *testing.T) {
 		b := helper.GenerateBroker(ctx, t, "ns")
 		target := helper.GenerateTarget(ctx, t, b.Key(), nil)
 		target.State = config.State_UNKNOWN
-		helper.Targets.MutateBroker(b.Key(), func(bm config.BrokerMutation) {
+		helper.Targets.MutateCellTenant(b.Key(), func(bm config.CellTenantMutation) {
 			bm.UpsertTargets(target)
 		})
 		signal <- struct{}{}
@@ -82,7 +82,7 @@ func TestRetryWatchAndSync(t *testing.T) {
 		assertRetryHandlers(t, syncPool, helper.Targets)
 	})
 
-	bs := make([]*config.Broker, 0, 4)
+	bs := make([]*config.CellTenant, 0, 4)
 
 	t.Run("adding some brokers with their targets", func(t *testing.T) {
 		// Add some brokers with their targets.
@@ -271,7 +271,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		// Target t1 and t2 original don't have filter attributes,
 		// update t1 filter attributes, and keep t2 filter attributes nil.
 		t1.FilterAttributes = map[string]string{"subject": "foo"}
-		helper.Targets.MutateBroker(t1.Key().ParentKey(), func(bm config.BrokerMutation) {
+		helper.Targets.MutateCellTenant(t1.Key().ParentKey(), func(bm config.CellTenantMutation) {
 			bm.UpsertTargets(t1)
 		})
 

@@ -16,20 +16,20 @@ limitations under the License.
 
 package config
 
-// ReadonlyTargets provides "read" functions for brokers and targets.
+// ReadonlyTargets provides "read" functions for CellTenants and targets.
 type ReadonlyTargets interface {
 	// RangeAllTargets ranges over all targets.
 	// Do not modify the given Target copy.
 	RangeAllTargets(func(*Target) bool)
-	// GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
+	// GetTargetByKey returns a target by its trigger key, if it exists.
 	// Do not modify the returned Target copy.
 	GetTargetByKey(key *TargetKey) (*Target, bool)
-	// GetBrokerByKey returns a Broker and its targets, if it exists.
-	// Do not modify the returned Broker copy.
-	GetBrokerByKey(key *BrokerKey) (*Broker, bool)
-	// RangeBrokers ranges over all brokers.
-	// Do not modify the given Broker copy.
-	RangeBrokers(func(*Broker) bool)
+	// GetCellTenantByKey returns a CellTenant and its Targets, if it exists.
+	// Do not modify the returned CellTenant copy.
+	GetCellTenantByKey(key *CellTenantKey) (*CellTenant, bool)
+	// RangeCellTenants ranges over all CellTenants.
+	// Do not modify the given CellTenant copy.
+	RangeCellTenants(func(*CellTenant) bool)
 	// Bytes serializes all the targets.
 	Bytes() ([]byte, error)
 	// DebugString returns the text format of all the targets. It is for _debug_ purposes only. The
@@ -37,31 +37,31 @@ type ReadonlyTargets interface {
 	DebugString() string
 }
 
-// BrokerMutation provides functions to mutate a Broker.
-// The changes made via the BrokerMutation must be "committed" altogether.
-type BrokerMutation interface {
-	// SetID sets the broker ID.
-	SetID(id string) BrokerMutation
-	// SetAddress sets the broker address.
-	SetAddress(address string) BrokerMutation
-	// SetDecoupleQueue sets the broker decouple queue.
-	SetDecoupleQueue(q *Queue) BrokerMutation
-	// SetState sets the broker state.
-	SetState(s State) BrokerMutation
-	// UpsertTargets upserts Targets to the broker.
-	// The targets' namespace and broker will be forced to be
-	// the same as the broker's namespace and name.
-	UpsertTargets(...*Target) BrokerMutation
-	// DeleteTargets targets deletes Targets from the broker.
-	DeleteTargets(...*Target) BrokerMutation
-	// Delete deletes the broker.
+// CellTenantMutation provides functions to mutate a CellTenant.
+// The changes made via the CellTenantMutation must be "committed" altogether.
+type CellTenantMutation interface {
+	// SetID sets the CellTenant's ID.
+	SetID(id string) CellTenantMutation
+	// SetAddress sets the CellTenant's subscriber's address.
+	SetAddress(address string) CellTenantMutation
+	// SetDecoupleQueue sets the CellTenant's decouple queue.
+	SetDecoupleQueue(q *Queue) CellTenantMutation
+	// SetState sets the CellTenant's state.
+	SetState(s State) CellTenantMutation
+	// UpsertTargets upserts Targets to the CellTenant.
+	// The targets' namespace, CellTenantType, and CellTenantName will be set to the CellTenant's
+	// value.
+	UpsertTargets(...*Target) CellTenantMutation
+	// DeleteTargets targets deletes Targets from the CellTenant.
+	DeleteTargets(...*Target) CellTenantMutation
+	// Delete deletes the CellTenant.
 	Delete()
 }
 
-// Targets provides "read" and "write" functions for broker targets.
+// Targets provides "read" and "write" functions for BrokerCell targets.
 type Targets interface {
 	ReadonlyTargets
-	// MutateBroker mutates a broker by namespace and name.
-	// If the broker doesn't exist, it will be added (unless Delete() is called).
-	MutateBroker(key *BrokerKey, mutate func(BrokerMutation))
+	// MutateCellTenant mutates a CellTenant by its key.
+	// If the CellTenant doesn't exist, it will be added (unless Delete() is called).
+	MutateCellTenant(key *CellTenantKey, mutate func(CellTenantMutation))
 }
