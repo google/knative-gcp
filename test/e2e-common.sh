@@ -269,7 +269,7 @@ function non_pod_check_keywords() {
 function apply_invalid_auth() {
   local auth_mode=${1}
   if [ "${auth_mode}" == "secret" ]; then
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "google-broker-key" --from-file=key.json=${CONFIG_INVALID_CREDENTIAL}
+    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${GCP_BROKER_SECRET_NAME}" --from-file=key.json=${CONFIG_INVALID_CREDENTIAL}
   elif [ "${auth_mode}" == "workload_identity" ]; then
     kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account=fakeserviceaccount@test-project.iam.gserviceaccount.com
   else
@@ -281,7 +281,7 @@ function apply_invalid_auth() {
 function delete_invalid_auth() {
   local auth_mode=${1}
   if [ "${auth_mode}" == "secret" ]; then
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" delete secret "google-broker-key"
+    kubectl -n "${CONTROL_PLANE_NAMESPACE}" delete secret "${GCP_BROKER_SECRET_NAME}"
   elif [ "${auth_mode}" == "workload_identity" ]; then
     kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account-
   else
