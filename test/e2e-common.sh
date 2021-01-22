@@ -218,7 +218,7 @@ function enable_monitoring(){
 function test_authentication_check_for_brokercell() {
   echo "Starting authentication check test for brokercell."
   local auth_mode=${1}
-  kubectl apply -f ${CONFIG_WARMUP_GCP_BROKER}
+  kubectl apply -f "${CONFIG_WARMUP_GCP_BROKER}"
 
   echo "Starting authentication check test which is running outside of the broker related Pods."
   wait_until_brokercell_authentication_check_pending "$(non_pod_check_keywords)" || return 1
@@ -230,7 +230,7 @@ function test_authentication_check_for_brokercell() {
   # Clean up all the testing resources.
   echo "Authentication check test finished, waiting until all broker related testing resources deleted."
   delete_invalid_auth "$auth_mode" || return 1
-  kubectl delete -f ${CONFIG_WARMUP_GCP_BROKER}
+  kubectl delete -f "${CONFIG_WARMUP_GCP_BROKER}"
   kubectl delete brokercell default -n "${CONTROL_PLANE_NAMESPACE}"
   kubectl wait pod --for=delete -n "${CONTROL_PLANE_NAMESPACE}" --selector=brokerCell=default --timeout=5m || return 1
 }

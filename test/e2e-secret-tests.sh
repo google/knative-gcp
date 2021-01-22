@@ -49,7 +49,7 @@ function test_setup() {
   # Authentication check test for BrokerCell. It is used in integration test in secret mode.
   # We do not put it in the same place as other integration tests, because this test can not run in parallel with others,
   # as this test requires the entire BrokerCell to be non-functional.
-  if [[ -v ENABLE_AUTH_CHECK_TEST && $ENABLE_AUTH_CHECK_TEST == 0 ]]; then
+  if [[ -v ENABLE_AUTH_CHECK_TEST && $ENABLE_AUTH_CHECK_TEST == "true" ]]; then
     test_authentication_check_for_brokercell "secret" || return 1
   fi
 
