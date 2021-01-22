@@ -169,8 +169,7 @@ def GenerateConfig(context):
             'type': 'gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding',
             'properties': {
                 'resource': context.env['project'],
-                # TODO: Reduce scope.
-                'role': 'roles/editor',
+                'role': 'roles/kuberun.eventsControlPlaneServiceAgent',
                 'member': ''.join(['serviceAccount:$(ref.', context.properties['controllerGSA'], '.email)']),
             },
         })
@@ -179,8 +178,7 @@ def GenerateConfig(context):
             'type': 'gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding',
             'properties': {
                 'resource': context.env['project'],
-                # TODO: Reduce scope.
-                'role': 'roles/editor',
+                'role': 'roles/kuberun.eventsDataPlaneServiceAgent',
                 'member': ''.join(['serviceAccount:$(ref.', context.properties['brokerGSA'], '.email)']),
             },
         })
@@ -189,8 +187,7 @@ def GenerateConfig(context):
             'type': 'gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding',
             'properties': {
                 'resource': context.env['project'],
-                # TODO: Reduce scope.
-                'role': 'roles/editor',
+                'role': 'roles/kuberun.eventsDataPlaneServiceAgent',
                 'member': ''.join(['serviceAccount:$(ref.', context.properties['sourcesGSA'], '.email)']),
             },
         })
