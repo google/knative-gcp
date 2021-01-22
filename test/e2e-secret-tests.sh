@@ -24,7 +24,7 @@ source $(dirname "${BASH_SOURCE[0]}")/e2e-common.sh
 readonly E2E_TEST_NAMESPACE="default"
 
 # Constants used for creating ServiceAccount for the Control Plane if it's not running on Prow.
-readonly CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
+readonly CONTROLLER_GSA_NON_PROW_KEY_TEMP="$(mktemp)"
 
 # Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
 readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
@@ -34,10 +34,10 @@ readonly GCP_BROKER_SECRET_NAME="google-broker-key"
 
 function export_variable() {
   if (( ! IS_PROW )); then
-    readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
+    readonly CONTROLLER_GSA_KEY_TEMP="${CONTROLLER_GSA_NON_PROW_KEY_TEMP}"
     readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
   else
-    readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
+    readonly CONTROLLER_GSA_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
     readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
   fi
 }
@@ -66,7 +66,7 @@ function test_setup() {
 # Tear down tmp files which store the private key.
 function knative_teardown() {
   if (( ! IS_PROW )); then
-    rm "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
+    rm "${CONTROLLER_GSA_NON_PROW_KEY_TEMP}"
   fi
 }
 
@@ -75,9 +75,9 @@ function control_plane_setup() {
   # When not running on Prow we need to set up a service account for managing resources.
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
-    init_control_plane_service_account "${E2E_PROJECT_ID}" "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}"
-    gcloud iam service-accounts keys create "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}" \
-      --iam-account="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
+    init_controller_gsa "${E2E_PROJECT_ID}" "${CONTROLLER_GSA_NON_PROW}"
+    gcloud iam service-accounts keys create "${CONTROLLER_GSA_NON_PROW_KEY_TEMP}" \
+      --iam-account="${CONTROLLER_GSA_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
   fi
   prow_control_plane_setup "secret"
   wait_until_pods_running "${CONTROL_PLANE_NAMESPACE}" || return 1

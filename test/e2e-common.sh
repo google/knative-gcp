@@ -20,7 +20,7 @@
 which gcloud &> /dev/null || gcloud() { echo "[ignore-gcloud $*]" 1>&2; }
 
 # Constants used for creating ServiceAccount for the Control Plane if it's not running on Prow.
-readonly CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW="events-controller-gsa"
+readonly CONTROLLER_GSA_NON_PROW="events-controller-gsa"
 
 # Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
 readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW="cre-pubsub"
@@ -137,7 +137,7 @@ function prow_control_plane_setup() {
 
   if [ "${auth_mode}" == "secret" ]; then
     echo "Create the control plane secret"
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${CONTROL_PLANE_SECRET_NAME}" --from-file=key.json="${CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP}"
+    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${CONTROLLER_GSA_SECRET_NAME}" --from-file=key.json="${CONTROLLER_GSA_KEY_TEMP}"
     echo "Delete the controller pod in the namespace '${CONTROL_PLANE_NAMESPACE}' to refresh the created/patched secret"
     kubectl delete pod -n "${CONTROL_PLANE_NAMESPACE}" --selector role=controller
   elif [ "${auth_mode}" == "workload_identity" ]; then
@@ -146,8 +146,8 @@ function prow_control_plane_setup() {
     gcloud iam service-accounts add-iam-policy-binding \
       --role roles/iam.workloadIdentityUser \
       --member "${MEMBER}" \
-      --project "${PROW_PROJECT_NAME}" "${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}"
-    kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}" \
+      --project "${PROW_PROJECT_NAME}" "${CONTROLLER_GSA_EMAIL}"
+    kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROLLER_GSA_EMAIL}" \
       --namespace "${CONTROL_PLANE_NAMESPACE}"
     # Setup default credential information for Workload Identity.
     sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/PUBSUB-SERVICE-ACCOUNT/${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -

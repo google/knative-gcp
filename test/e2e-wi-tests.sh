@@ -30,11 +30,11 @@ function export_variable() {
   readonly MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
   readonly BROKER_MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${BROKER_SERVICE_ACCOUNT}]"
   if (( ! IS_PROW )); then
-    readonly CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
+    readonly CONTROLLER_GSA_EMAIL="${CONTROLLER_GSA_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
     readonly PUBSUB_SERVICE_ACCOUNT_EMAIL="${PUBSUB_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
     readonly DATA_PLANE_SERVICE_ACCOUNT_EMAIL=PUBSUB_SERVICE_ACCOUNT_EMAIL
   else
-    readonly CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
+    readonly CONTROLLER_GSA_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
     # Get the PROW service account.
     readonly PROW_PROJECT_NAME=$(cut -d'.' -f1 <<< "$(cut -d'@' -f2 <<< "${PROW_SERVICE_ACCOUNT_EMAIL}")")
     readonly DATA_PLANE_SERVICE_ACCOUNT_EMAIL="cloud-run-events-source@${PROW_PROJECT_NAME}.iam.gserviceaccount.com"
@@ -67,14 +67,14 @@ function control_plane_setup() {
   # When not running on Prow we need to set up a service account for managing resources.
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
-    init_control_plane_service_account "${E2E_PROJECT_ID}" "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}"
+    init_controller_gsa "${E2E_PROJECT_ID}" "${CONTROLLER_GSA_NON_PROW}"
     local cluster_name="$(cut -d'_' -f4 <<<"$(kubectl config current-context)")"
     local cluster_location="$(cut -d'_' -f3 <<<"$(kubectl config current-context)")"
-    enable_workload_identity "${E2E_PROJECT_ID}" "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}" "${cluster_name}" "${cluster_location}" "${REGIONAL_CLUSTER_LOCATION_TYPE}"
+    enable_workload_identity "${E2E_PROJECT_ID}" "${CONTROLLER_GSA_NON_PROW}" "${cluster_name}" "${cluster_location}" "${REGIONAL_CLUSTER_LOCATION_TYPE}"
     gcloud iam service-accounts add-iam-policy-binding \
       --role roles/iam.workloadIdentityUser \
-      --member "${MEMBER}" "${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}"
-    kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}" \
+      --member "${MEMBER}" "${CONTROLLER_GSA_EMAIL}"
+    kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROLLER_GSA_EMAIL}" \
       --namespace "${CONTROL_PLANE_NAMESPACE}"
     # Setup default credential information for Workload Identity.
     sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/PUBSUB-SERVICE-ACCOUNT/${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -

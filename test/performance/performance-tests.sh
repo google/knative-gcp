@@ -30,7 +30,7 @@ readonly TEST_CONFIG_VARIANT="continuous"
 readonly TEST_NAMESPACE="default"
 readonly PUBSUB_SECRET_NAME="google-cloud-key"
 readonly CONTROL_PLANE_NAMESPACE="events-system"
-readonly CONTROL_PLANE_SECRET_NAME="google-cloud-key"
+readonly CONTROLLER_GSA_SECRET_NAME="google-cloud-key"
 readonly BROKER_DATA_PLANE_SECRET_NAME="google-broker-key"
 
 function update_knative() {
@@ -44,8 +44,8 @@ function update_knative() {
     kubectl create namespace ${CONTROL_PLANE_NAMESPACE}
 
   # Create the secret for control-plane if it does not exist.
-  kubectl -n ${CONTROL_PLANE_NAMESPACE} get secret ${CONTROL_PLANE_SECRET_NAME} || \
-  kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${CONTROL_PLANE_SECRET_NAME} \
+  kubectl -n ${CONTROL_PLANE_NAMESPACE} get secret ${CONTROLLER_GSA_SECRET_NAME} || \
+  kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${CONTROLLER_GSA_SECRET_NAME} \
     --from-file=key.json="${GOOGLE_APPLICATION_CREDENTIALS}"
 
   # Create the secret for data-plane if it does not exist.
