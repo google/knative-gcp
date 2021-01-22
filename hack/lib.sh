@@ -17,8 +17,6 @@
 readonly CONTROL_PLANE_SERVICE_ACCOUNT="events-controller-gsa"
 readonly CONTROL_PLANE_NAMESPACE="events-system"
 
-readonly PUBSUB_SERVICE_ACCOUNT="cre-pubsub"
-
 readonly SERVICE_ACCOUNT_EMAIL_KEY="EMAIL"
 
 readonly ZONAL_CLUSTER_LOCATION_TYPE="zonal"
@@ -151,16 +149,11 @@ function enable_workload_identity(){
 function storage_admin_set_up() {
   echo "Update ServiceAccount for Storage Admin"
   local project_id=${1}
-  local pubsub_service_account=${2}
 
   echo "parameter project_id used when setting up storage admin is'${project_id}'"
-  echo "parameter pubsub_service_account used when setting up storage admin is'${pubsub_service_account}'"
   echo "Update ServiceAccount for Storage Admin"
   gcloud services enable storage-component.googleapis.com
   gcloud services enable storage-api.googleapis.com
-  gcloud projects add-iam-policy-binding "${project_id}" \
-    --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
-    --role roles/storage.admin
 
   # We assume the service account's name is in the form '<project-number>@gs-project-accounts.iam.gserviceaccount.com',
   # because it has been for all projects we've encountered. However, nothing requires this
