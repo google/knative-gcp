@@ -45,6 +45,14 @@ function export_variable() {
 # Setup resources common to all eventing tests.
 function test_setup() {
   pubsub_setup "secret" || return 1
+
+  # Authentication check test for BrokerCell. It is used in integration test in secret mode.
+  # We do not put it in the same place as other integration tests, because this test can not run in parallel with others,
+  # as this test requires the entire BrokerCell to be non-functional.
+  if [[ -v ENABLE_AUTH_CHECK_TEST && $ENABLE_AUTH_CHECK_TEST == "true" ]]; then
+    test_authentication_check_for_brokercell "secret" || return 1
+  fi
+
   gcp_broker_setup "secret" || return 1
   storage_setup || return 1
   scheduler_setup || return 1
