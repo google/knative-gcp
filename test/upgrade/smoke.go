@@ -38,7 +38,7 @@ func runSmokeTest(t *testing.T) {
 	fn := shell.Function{
 		Script: shell.Script{
 			Label:      funcName,
-			ScriptPath: "test/e2e-secret-tests.sh",
+			ScriptPath: "test/e2e-secret-lib.sh",
 		},
 		FunctionName: funcName,
 	}

@@ -22,7 +22,7 @@
 export GO111MODULE=on
 
 # shellcheck disable=SC1090
-source "$(dirname "${BASH_SOURCE[0]}")/e2e-secret-tests.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/e2e-secret-lib.sh"
 
 # Overrides
 
