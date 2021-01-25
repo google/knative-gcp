@@ -703,3 +703,51 @@ func TestMultiTopicDecoupleSinkSendDoesNotChecksFilterWhenFeatureDisabled(t *tes
 		t.Errorf("Send called EventFilterFunc when feature is disabled")
 	}
 }
+
+func TestMultiTopicDecoupleSinkUsesPublishSettings(t *testing.T) {
+	ctx := logtest.TestContextWithLogger(t)
+	psSrv := pstest.NewServer()
+	defer psSrv.Close()
+	psClient := createPubsubClient(ctx, t, psSrv)
+
+	testBrokerConfig := &config.TargetsConfig{
+		CellTenants: map[string]*config.CellTenant{
+			"test_ns_1/test_broker_1": {
+				Type:          config.CellTenantType_BROKER,
+				DecoupleQueue: &config.Queue{Topic: "test_topic_1", State: config.State_READY},
+				Targets: map[string]*config.Target{"target_1": {
+					CellTenantType: config.CellTenantType_BROKER,
+				}},
+			},
+		},
+	}
+
+	brokerConfig := memory.NewTargets(testBrokerConfig)
+
+	testTopic := "test_topic_1"
+	topic := psClient.Topic(testTopic)
+	if exists, err := topic.Exists(ctx); err != nil {
+		t.Fatal(err)
+	} else if !exists {
+		if topic, err = psClient.CreateTopic(ctx, testTopic); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	ce := createTestEvent(uuid.New().String())
+	ce.SetData(event.ApplicationJSON, `{"hello": "world"}`)
+	publishSettings := pubsub.DefaultPublishSettings
+	// This is a purposely smaller than the event's data to cause an error.
+	publishSettings.BufferedByteLimit = len(ce.Data()) - 1
+	sink := NewMultiTopicDecoupleSink(ctx, brokerConfig, psClient, publishSettings)
+	// Send event.
+
+	namespace := config.TestOnlyBrokerKey("test_ns_1", "test_broker_1")
+	err := sink.Send(context.Background(), namespace, *ce)
+	if err == nil {
+		t.Fatal("Expected an error due to the BufferedByteLimit being smaller than the event, actually none.")
+	}
+	if want, got := "bundler reached buffered byte limit", err.Error(); want != got {
+		t.Fatalf("Unexpected error, expected %q, actually %q", want, got)
+	}
+}
