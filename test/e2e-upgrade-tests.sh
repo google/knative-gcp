@@ -29,7 +29,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/e2e-secret-lib.sh"
 function knative_setup {
   start_knative_gcp_from_latest_release || return 1
   export_variable || return 1
-  control_plane_setup || return 1
 }
 
 function install_test_resources {

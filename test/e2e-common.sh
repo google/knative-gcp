@@ -41,7 +41,6 @@ export CONFIG_INVALID_CREDENTIAL="test/test_configs/invalid-credential.json"
 function knative_setup() {
   start_knative_gcp || return 1
   export_variable || return 1
-  control_plane_setup || return 1
 }
 
 # Tear down tmp files which store the private key.
@@ -76,30 +75,6 @@ function scheduler_setup() {
 function storage_setup() {
   if (( ! IS_PROW )); then
     storage_admin_set_up "${E2E_PROJECT_ID}"
-  fi
-}
-
-function prow_control_plane_setup() {
-  local auth_mode=${1}
-
-  if [ "${auth_mode}" == "secret" ]; then
-    echo "Create the control plane secret"
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${CONTROLLER_GSA_SECRET_NAME}" --from-file=key.json="${CONTROLLER_GSA_KEY_TEMP}"
-    echo "Delete the controller pod in the namespace '${CONTROL_PLANE_NAMESPACE}' to refresh the created/patched secret"
-    kubectl delete pod -n "${CONTROL_PLANE_NAMESPACE}" --selector role=controller
-  elif [ "${auth_mode}" == "workload_identity" ]; then
-    cleanup_iam_policy_binding_members
-    # Allow the Kubernetes service account to use Google service account.
-    gcloud iam service-accounts add-iam-policy-binding \
-      --role roles/iam.workloadIdentityUser \
-      --member "${MEMBER}" \
-      --project "${PROW_PROJECT_NAME}" "${CONTROLLER_GSA_EMAIL}"
-    kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROLLER_GSA_EMAIL}" \
-      --namespace "${CONTROL_PLANE_NAMESPACE}"
-    # Setup default credential information for Workload Identity.
-    sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/SOURCES-GOOGLE-SERVICE-ACCOUNT/${SOURCES_GSA_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
-  else
-    echo "Invalid parameter"
   fi
 }
 

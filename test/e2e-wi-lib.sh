@@ -43,6 +43,7 @@ function export_variable() {
 
 # Setup resources common to all eventing tests.
 function test_setup() {
+  wi_controller_auth_setup || return 1
   wi_sources_auth_setup || return 1
 
   # Authentication check test for BrokerCell. It is used in integration test in workload identity mode.
@@ -62,24 +63,40 @@ function test_setup() {
   publish_test_images
 }
 
-function control_plane_setup() {
+function wi_controller_auth_setup() {
   # When not running on Prow we need to set up a service account for managing resources.
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
     init_controller_gsa "${E2E_PROJECT_ID}" "${CONTROLLER_GSA_NON_PROW}"
+
+    # Enable workload identity
     local cluster_name="$(cut -d'_' -f4 <<<"$(kubectl config current-context)")"
     local cluster_location="$(cut -d'_' -f3 <<<"$(kubectl config current-context)")"
     enable_workload_identity "${E2E_PROJECT_ID}" "${CONTROLLER_GSA_NON_PROW}" "${cluster_name}" "${cluster_location}" "${REGIONAL_CLUSTER_LOCATION_TYPE}"
+
+	  # Allow the Kubernetes service account to use Google service account
     gcloud iam service-accounts add-iam-policy-binding \
       --role roles/iam.workloadIdentityUser \
       --member "${MEMBER}" "${CONTROLLER_GSA_EMAIL}"
-    kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROLLER_GSA_EMAIL}" \
-      --namespace "${CONTROL_PLANE_NAMESPACE}"
-    # Setup default credential information for Workload Identity.
-    sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/SOURCES-GOOGLE-SERVICE-ACCOUNT/${SOURCES_GSA_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
+
+    kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" \
+      iam.gke.io/gcp-service-account="${CONTROLLER_GSA_EMAIL}" --namespace "${CONTROL_PLANE_NAMESPACE}"
   else
-    prow_control_plane_setup "workload_identity"
+    cleanup_iam_policy_binding_members
+
+    # Allow the Kubernetes service account to use Google service account.
+    gcloud iam service-accounts add-iam-policy-binding \
+      --role roles/iam.workloadIdentityUser \
+      --member "${MEMBER}" \
+      --project "${PROW_PROJECT_NAME}" "${CONTROLLER_GSA_EMAIL}"
+
+    kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" \
+      iam.gke.io/gcp-service-account="${CONTROLLER_GSA_EMAIL}" --namespace "${CONTROL_PLANE_NAMESPACE}"
   fi
+
+  # Setup default credential information for Workload Identity.
+  sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/SOURCES-GOOGLE-SERVICE-ACCOUNT/${SOURCES_GSA_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
+
   wait_until_pods_running "${CONTROL_PLANE_NAMESPACE}" || return 1
 }
 

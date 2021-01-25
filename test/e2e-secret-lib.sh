@@ -49,6 +49,7 @@ function export_variable() {
 
 # Setup resources common to all eventing tests.
 function test_setup() {
+  controller_auth_setup || return 1
   sources_auth_setup || return 1
 
   # Authentication check test for BrokerCell. It is used in integration test in secret mode.
@@ -76,15 +77,24 @@ function knative_teardown() {
 }
 
 # Create resources required for the Control Plane setup.
-function control_plane_setup() {
+function controller_auth_setup() {
   # When not running on Prow we need to set up a service account for managing resources.
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
     init_controller_gsa "${E2E_PROJECT_ID}" "${CONTROLLER_GSA_NON_PROW}"
+
+    echo "Create the controller service account key file"
     gcloud iam service-accounts keys create "${CONTROLLER_GSA_NON_PROW_KEY_TEMP}" \
       --iam-account="${CONTROLLER_GSA_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
   fi
-  prow_control_plane_setup "secret"
+
+  echo "Create the controller secret"
+  kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${CONTROLLER_GSA_SECRET_NAME}" \
+    --from-file=key.json="${CONTROLLER_GSA_KEY_TEMP}"
+
+  echo "Delete the controller pod in the namespace '${CONTROL_PLANE_NAMESPACE}' to refresh the created/patched secret"
+  kubectl delete pod -n "${CONTROL_PLANE_NAMESPACE}" --selector role=controller
+
   wait_until_pods_running "${CONTROL_PLANE_NAMESPACE}" || return 1
 }
 
