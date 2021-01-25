@@ -137,3 +137,11 @@ function broker_auth_setup() {
 
   warmup_broker_setup || true
 }
+
+function apply_invalid_auth() {
+  kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${BROKER_GSA_SECRET_NAME}" --from-file=key.json=${CONFIG_INVALID_CREDENTIAL}
+}
+
+function delete_invalid_auth() {
+  kubectl -n "${CONTROL_PLANE_NAMESPACE}" delete secret "${BROKER_GSA_SECRET_NAME}"
+}

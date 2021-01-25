@@ -138,3 +138,11 @@ function wi_broker_auth_setup() {
 
   warmup_broker_setup || true
 }
+
+function apply_invalid_auth() {
+  kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account=fakeserviceaccount@test-project.iam.gserviceaccount.com
+}
+
+function delete_invalid_auth() {
+  kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account-
+}

@@ -146,12 +146,12 @@ function test_authentication_check_for_brokercell() {
   wait_until_brokercell_authentication_check_pending "$(non_pod_check_keywords)" || return 1
 
   echo "Starting authentication check test which is running inside of the broker related Pods."
-  apply_invalid_auth "$auth_mode" || return 1
+  apply_invalid_auth || return 1
   wait_until_brokercell_authentication_check_pending "$(pod_check_keywords "$auth_mode")" || return 1
 
   # Clean up all the testing resources.
   echo "Authentication check test finished, waiting until all broker related testing resources deleted."
-  delete_invalid_auth "$auth_mode" || return 1
+  delete_invalid_auth || return 1
   kubectl delete -f "${CONFIG_WARMUP_GCP_BROKER}"
   kubectl delete brokercell default -n "${CONTROL_PLANE_NAMESPACE}"
   kubectl wait pod --for=delete -n "${CONTROL_PLANE_NAMESPACE}" --selector=brokerCell=default --timeout=5m || return 1
@@ -186,30 +186,6 @@ function pod_check_keywords() {
 
 function non_pod_check_keywords() {
   echo "authentication is not configured"
-}
-
-function apply_invalid_auth() {
-  local auth_mode=${1}
-  if [ "${auth_mode}" == "secret" ]; then
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${BROKER_GSA_SECRET_NAME}" --from-file=key.json=${CONFIG_INVALID_CREDENTIAL}
-  elif [ "${auth_mode}" == "workload_identity" ]; then
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account=fakeserviceaccount@test-project.iam.gserviceaccount.com
-  else
-    echo "Invalid parameter"
-    return 1
-  fi
-}
-
-function delete_invalid_auth() {
-  local auth_mode=${1}
-  if [ "${auth_mode}" == "secret" ]; then
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" delete secret "${BROKER_GSA_SECRET_NAME}"
-  elif [ "${auth_mode}" == "workload_identity" ]; then
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account-
-  else
-    echo "Invalid parameter"
-    return 1
-  fi
 }
 
 # The warm-up broker serves the following purposes:
