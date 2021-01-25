@@ -23,28 +23,33 @@ source $(dirname "${BASH_SOURCE[0]}")/e2e-common.sh
 # Eventing main config.
 readonly E2E_TEST_NAMESPACE="default"
 
-# Constants used for creating ServiceAccount for the Control Plane if it's not running on Prow.
+# Constants used for creating ServiceAccount for the Controllers GSA if it's not running on Prow.
 readonly CONTROLLER_GSA_NON_PROW_KEY_TEMP="$(mktemp)"
 
-# Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
-readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
+# Constants used for creating ServiceAccount for the Sources if it's not running on Prow.
+readonly SOURCES_GSA_NON_PROW_KEY_TEMP="$(mktemp)"
+
+# Constants used for creating ServiceAccount for the Broker if it's not running on Prow.
+readonly BROKER_GSA_NON_PROW_KEY_TEMP="$(mktemp)"
 
 # Constants used for authentication setup for GCP Broker if it's not running on Prow.
-readonly GCP_BROKER_SECRET_NAME="google-broker-key"
+readonly BROKER_GSA_SECRET_NAME="google-broker-key"
 
 function export_variable() {
   if (( ! IS_PROW )); then
     readonly CONTROLLER_GSA_KEY_TEMP="${CONTROLLER_GSA_NON_PROW_KEY_TEMP}"
-    readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
+    readonly SOURCES_GSA_KEY_TEMP="${SOURCES_GSA_NON_PROW_KEY_TEMP}"
+    readonly BROKER_GSA_KEY_TEMP="${BROKER_GSA_NON_PROW_KEY_TEMP}"
   else
     readonly CONTROLLER_GSA_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
-    readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
+    readonly SOURCES_GSA_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
+    readonly BROKER_GSA_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
   fi
 }
 
 # Setup resources common to all eventing tests.
 function test_setup() {
-  pubsub_setup "secret" || return 1
+  sources_auth_setup "secret" || return 1
 
   # Authentication check test for BrokerCell. It is used in integration test in secret mode.
   # We do not put it in the same place as other integration tests, because this test can not run in parallel with others,
@@ -53,7 +58,7 @@ function test_setup() {
     test_authentication_check_for_brokercell "secret" || return 1
   fi
 
-  gcp_broker_setup "secret" || return 1
+  broker_auth_setup "secret" || return 1
   storage_setup || return 1
   scheduler_setup || return 1
   echo "Sleep 2 mins to wait for all resources to setup"

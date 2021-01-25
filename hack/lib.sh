@@ -25,7 +25,7 @@ readonly REGIONAL_CLUSTER_LOCATION_TYPE="regional"
 # Constants used for both init_XXX.sh and e2e-xxx.sh
 export K8S_CONTROLLER_SERVICE_ACCOUNT="controller"
 export CONTROLLER_GSA_SECRET_NAME="google-cloud-key"
-export PUBSUB_SECRET_NAME="google-cloud-key"
+export SOURCES_GSA_SECRET_NAME="google-cloud-key"
 
 function init_controller_gsa() {
   local project_id=${1}
@@ -72,29 +72,29 @@ function init_controller_gsa() {
 
 }
 
-function init_pubsub_service_account() {
+function init_gsa_with_pubsub_editor() {
   local project_id=${1}
-  local pubsub_service_account=${2}
-  echo "parameter project_id used when initiating pubsub service account is'${project_id}'"
-  echo "parameter data_plane_service_account used when initiating pubsub service account is'${pubsub_service_account}'"
+  local service_account=${2}
+  echo "parameter project_id used when initiating service account is'${project_id}'"
+  echo "parameter service_account to be initiated with pubsub/editor role is'${pubsub_service_account}'"
+
   # Enable APIs.
   gcloud services enable pubsub.googleapis.com
 
-  # Create the pubsub service account for the data plane if it doesn't exist
-  existing_pubsub_service_account=$(gcloud iam service-accounts list \
-    --filter="${SERVICE_ACCOUNT_EMAIL_KEY} ~ ^${pubsub_service_account}@")
-  if [ -z "${existing_pubsub_service_account}" ]; then
-    echo "Create PubSub Service Account '${pubsub_service_account}' neeeded for the Data Plane"
-    gcloud iam service-accounts create "${pubsub_service_account}"
+  # Create the service account if it doesn't exist
+  existing_service_account=$(gcloud iam service-accounts list \
+    --filter="${SERVICE_ACCOUNT_EMAIL_KEY} ~ ^${service_account}@")
+  if [ -z "${existing_service_account}" ]; then
+    echo "Create Service Account '${service_account}' neeeded for the Data Plane"
+    gcloud iam service-accounts create "${service_account}"
   else
-    echo "PubSub Service Account '${pubsub_service_account}' needed for the Data Plane already existed"
+    echo "Service Account '${service_account}' needed for the Data Plane already existed"
   fi
 
   # Grant pubsub.editor role to the service account for the data plane to read and/or write to Pub/Sub.
   gcloud projects add-iam-policy-binding "${project_id}" \
-    --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
+    --member=serviceAccount:"${service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/pubsub.editor
-
 }
 
 function enable_workload_identity(){
