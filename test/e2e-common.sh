@@ -79,37 +79,6 @@ function storage_setup() {
   fi
 }
 
-# Create resources required for Sources authentication setup.
-function sources_auth_setup() {
-  local auth_mode=${1}
-
-  if [ "${auth_mode}" == "secret" ]; then
-    if (( ! IS_PROW )); then
-      # When not running on Prow we need to set up a service account for sources.
-      echo "Set up the Sources ServiceAccount"
-      init_gsa_with_pubsub_editor "${E2E_PROJECT_ID}" "${SOURCES_GSA_NON_PROW}"
-      enable_monitoring "${E2E_PROJECT_ID}" "${SOURCES_GSA_NON_PROW}"
-      gcloud iam service-accounts keys create "${SOURCES_GSA_KEY_TEMP}" \
-        --iam-account="${SOURCES_GSA_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
-    else
-      delete_topics_and_subscriptions
-    fi
-    kubectl -n ${E2E_TEST_NAMESPACE} create secret generic "${SOURCES_GSA_SECRET_NAME}" \
-      --from-file=key.json="${SOURCES_GSA_KEY_TEMP}"
-  elif [ "${auth_mode}" == "workload_identity" ]; then
-    if (( ! IS_PROW )); then
-      # When not running on Prow we need to set up a service account for sources.
-      echo "Set up the Sources ServiceAccount"
-      init_gsa_with_pubsub_editor "${E2E_PROJECT_ID}" "${SOURCES_GSA_NON_PROW}"
-      enable_monitoring "${E2E_PROJECT_ID}" "${SOURCES_GSA_NON_PROW}"
-    else
-      delete_topics_and_subscriptions
-    fi
-  else
-    echo "Invalid parameter"
-  fi
-}
-
 # Create resources required for Broker authentication setup.
 function broker_auth_setup() {
   echo "Authentication setup for GCP Broker"

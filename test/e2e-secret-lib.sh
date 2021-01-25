@@ -49,7 +49,7 @@ function export_variable() {
 
 # Setup resources common to all eventing tests.
 function test_setup() {
-  sources_auth_setup "secret" || return 1
+  sources_auth_setup || return 1
 
   # Authentication check test for BrokerCell. It is used in integration test in secret mode.
   # We do not put it in the same place as other integration tests, because this test can not run in parallel with others,
@@ -88,3 +88,21 @@ function control_plane_setup() {
   wait_until_pods_running "${CONTROL_PLANE_NAMESPACE}" || return 1
 }
 
+# Create resources required for Sources authentication setup.
+function sources_auth_setup() {
+  if (( ! IS_PROW )); then
+    # When not running on Prow we need to set up a service account for sources.
+    echo "Set up the Sources ServiceAccount"
+    init_gsa_with_pubsub_editor "${E2E_PROJECT_ID}" "${SOURCES_GSA_NON_PROW}"
+    enable_monitoring "${E2E_PROJECT_ID}" "${SOURCES_GSA_NON_PROW}"
+    gcloud iam service-accounts keys create "${SOURCES_GSA_KEY_TEMP}" \
+      --iam-account="${SOURCES_GSA_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
+  else
+    delete_topics_and_subscriptions
+  fi
+
+  # Create the sources secret
+  echo "Create the sources secret"
+  kubectl -n ${E2E_TEST_NAMESPACE} create secret generic "${SOURCES_GSA_SECRET_NAME}" \
+    --from-file=key.json="${SOURCES_GSA_KEY_TEMP}"
+}
