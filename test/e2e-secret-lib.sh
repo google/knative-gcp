@@ -20,13 +20,11 @@ source $(dirname "${BASH_SOURCE[0]}")/../hack/lib.sh
 
 source $(dirname "${BASH_SOURCE[0]}")/e2e-common.sh
 
-# Eventing main config.
-readonly E2E_TEST_NAMESPACE="default"
-
-# Constants used for authentication setup for GCP Broker if it's not running on Prow.
-readonly BROKER_GSA_SECRET_NAME="google-broker-key"
-
 function export_variable() {
+  readonly E2E_TEST_NAMESPACE="default"
+
+  readonly BROKER_GSA_SECRET_NAME="google-broker-key"
+
   if (( ! IS_PROW )); then
     readonly CONTROLLER_GSA_KEY_TEMP="$(mktemp)"
     readonly SOURCES_GSA_KEY_TEMP="$(mktemp)"

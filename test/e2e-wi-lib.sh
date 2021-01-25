@@ -20,22 +20,25 @@ source $(dirname "${BASH_SOURCE[0]}")/../hack/lib.sh
 
 source $(dirname "${BASH_SOURCE[0]}")/e2e-common.sh
 
-readonly BROKER_SERVICE_ACCOUNT="broker"
-readonly PROW_SERVICE_ACCOUNT_EMAIL=$(gcloud config get-value core/account)
-readonly CONFIG_GCP_AUTH="test/test_configs/config-gcp-auth-wi.yaml"
-readonly K8S_SERVICE_ACCOUNT_NAME="ksa-name"
-
 function export_variable() {
   readonly MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
+  readonly BROKER_SERVICE_ACCOUNT="broker"
   readonly BROKER_MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${BROKER_SERVICE_ACCOUNT}]"
+
+  readonly K8S_SERVICE_ACCOUNT_NAME="ksa-name"
+  readonly CONFIG_GCP_AUTH="test/test_configs/config-gcp-auth-wi.yaml"
+
   if (( ! IS_PROW )); then
     readonly CONTROLLER_GSA_EMAIL="${CONTROLLER_GSA_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
     readonly BROKER_GSA_EMAIL="${BROKER_GSA_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
     readonly SOURCES_GSA_EMAIL="${SOURCES_GSA_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
   else
-    readonly CONTROLLER_GSA_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
-    # Get the PROW service account.
+    # Get the PROW service account & project name.
+    readonly PROW_SERVICE_ACCOUNT_EMAIL=$(gcloud config get-value core/account)
     readonly PROW_PROJECT_NAME=$(cut -d'.' -f1 <<< "$(cut -d'@' -f2 <<< "${PROW_SERVICE_ACCOUNT_EMAIL}")")
+
+    # Set the GSA emails.
+    readonly CONTROLLER_GSA_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
     readonly SOURCES_GSA_EMAIL="cloud-run-events-source@${PROW_PROJECT_NAME}.iam.gserviceaccount.com"
     readonly BROKER_GSA_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
   fi
