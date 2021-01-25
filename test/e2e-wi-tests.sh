@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+source $(dirname "${BASH_SOURCE[0]}")/lib.sh
+
+source $(dirname "${BASH_SOURCE[0]}")/../hack/lib.sh
+
+source $(dirname "${BASH_SOURCE[0]}")/e2e-common.sh
+
 source $(dirname "${BASH_SOURCE[0]}")/e2e-wi-lib.sh
 
 if [ "${SKIP_TESTS:-}" == "true" ]; then

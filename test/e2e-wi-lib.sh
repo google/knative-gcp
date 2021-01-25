@@ -14,12 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $(dirname "${BASH_SOURCE[0]}")/lib.sh
-
-source $(dirname "${BASH_SOURCE[0]}")/../hack/lib.sh
-
-source $(dirname "${BASH_SOURCE[0]}")/e2e-common.sh
-
 function export_variable() {
   readonly MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
   readonly BROKER_SERVICE_ACCOUNT="broker"
