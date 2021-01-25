@@ -146,3 +146,24 @@ function apply_invalid_auth() {
 function delete_invalid_auth() {
   kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account-
 }
+
+function cleanup_iam_policy_binding_members() {
+  # If the tests are run on Prow, clean up the member for roles/iam.workloadIdentityUser before running it.
+  members=$(gcloud iam service-accounts get-iam-policy \
+    --project="${PROW_PROJECT_NAME}" "${SOURCES_GSA_EMAIL}" \
+    --format="value(bindings.members)" \
+    --filter="bindings.role:roles/iam.workloadIdentityUser" \
+    --flatten="bindings[].members")
+  while read -r member_name
+  do
+    # Only delete the iam bindings that is related to the current boskos project.
+    if [ "$(cut -d'.' -f1 <<< "${member_name}")" == "serviceAccount:${E2E_PROJECT_ID}" ]; then
+      gcloud iam service-accounts remove-iam-policy-binding \
+        --role roles/iam.workloadIdentityUser \
+        --member "${member_name}" \
+        --project "${PROW_PROJECT_NAME}" "${SOURCES_GSA_EMAIL}"
+        # Add a sleep time between each get-set iam-policy-binding loop to avoid concurrency issue. Sleep time is based on the SLO.
+        sleep 10
+    fi
+  done <<< "$members"
+}
