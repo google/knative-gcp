@@ -79,42 +79,6 @@ function storage_setup() {
   fi
 }
 
-# Create resources required for Broker authentication setup.
-function broker_auth_setup() {
-  echo "Authentication setup for GCP Broker"
-  local auth_mode=${1}
-
-  if [ "${auth_mode}" == "secret" ]; then
-    if (( ! IS_PROW )); then
-      init_gsa_with_pubsub_editor "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
-      enable_monitoring "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
-      gcloud iam service-accounts keys create "${BROKER_GSA_KEY_TEMP}" \
-        --iam-account="${BROKER_GSA_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
-    fi
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${BROKER_GSA_SECRET_NAME}" \
-      --from-file=key.json="${BROKER_GSA_KEY_TEMP}"
-  elif [ "${auth_mode}" == "workload_identity" ]; then
-    if (( ! IS_PROW )); then
-      init_gsa_with_pubsub_editor "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
-      enable_monitoring "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
-      gcloud iam service-accounts add-iam-policy-binding \
-        --role roles/iam.workloadIdentityUser \
-        --member "${BROKER_MEMBER}" "${BROKER_GSA_EMAIL}"
-    else
-      gcloud iam service-accounts add-iam-policy-binding \
-        --role roles/iam.workloadIdentityUser \
-        --member "${BROKER_MEMBER}" \
-        --project "${PROW_PROJECT_NAME}" "${BROKER_GSA_EMAIL}"
-    fi
-    kubectl annotate --overwrite serviceaccount ${BROKER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account="${BROKER_GSA_EMAIL}" \
-      --namespace "${CONTROL_PLANE_NAMESPACE}"
-  else
-    echo "Invalid parameter"
-  fi
-
-  warmup_broker_setup || true
-}
-
 function prow_control_plane_setup() {
   local auth_mode=${1}
 

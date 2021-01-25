@@ -52,7 +52,7 @@ function test_setup() {
     test_authentication_check_for_brokercell "workload_identity" || return 1
   fi
 
-  broker_auth_setup "workload_identity" || return 1
+  wi_broker_auth_setup || return 1
   storage_setup || return 1
   scheduler_setup || return 1
   echo "Sleep 2 mins to wait for all resources to setup"
@@ -93,4 +93,31 @@ function wi_sources_auth_setup() {
   else
     delete_topics_and_subscriptions
   fi
+}
+
+# Create resources required for Broker authentication setup.
+function wi_broker_auth_setup() {
+  echo "Authentication setup for GCP Broker"
+
+  if (( ! IS_PROW )); then
+    echo "Set up the Broker ServiceAccount"
+    init_gsa_with_pubsub_editor "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
+    enable_monitoring "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
+
+    # Allow the Kubernetes service account to use Google service account.
+    gcloud iam service-accounts add-iam-policy-binding \
+      --role roles/iam.workloadIdentityUser \
+      --member "${BROKER_MEMBER}" "${BROKER_GSA_EMAIL}"
+  else
+    # Allow the Kubernetes service account to use Google service account.
+    gcloud iam service-accounts add-iam-policy-binding \
+      --role roles/iam.workloadIdentityUser \
+      --member "${BROKER_MEMBER}" \
+      --project "${PROW_PROJECT_NAME}" "${BROKER_GSA_EMAIL}"
+  fi
+
+  kubectl annotate --overwrite serviceaccount ${BROKER_SERVICE_ACCOUNT} \
+    iam.gke.io/gcp-service-account="${BROKER_GSA_EMAIL}" --namespace "${CONTROL_PLANE_NAMESPACE}"
+
+  warmup_broker_setup || true
 }

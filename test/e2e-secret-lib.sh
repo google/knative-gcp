@@ -58,7 +58,7 @@ function test_setup() {
     test_authentication_check_for_brokercell "secret" || return 1
   fi
 
-  broker_auth_setup "secret" || return 1
+  broker_auth_setup || return 1
   storage_setup || return 1
   scheduler_setup || return 1
   echo "Sleep 2 mins to wait for all resources to setup"
@@ -105,4 +105,25 @@ function sources_auth_setup() {
   echo "Create the sources secret"
   kubectl -n ${E2E_TEST_NAMESPACE} create secret generic "${SOURCES_GSA_SECRET_NAME}" \
     --from-file=key.json="${SOURCES_GSA_KEY_TEMP}"
+}
+
+# Create resources required for Broker authentication setup.
+function broker_auth_setup() {
+  echo "Authentication setup for GCP Broker"
+
+  if (( ! IS_PROW )); then
+    # When not running on Prow we need to set up a service account for broker.
+    echo "Set up the Broker ServiceAccount"
+    init_gsa_with_pubsub_editor "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
+    enable_monitoring "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
+    gcloud iam service-accounts keys create "${BROKER_GSA_KEY_TEMP}" \
+      --iam-account="${BROKER_GSA_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
+  fi
+
+  # Create the broker secret
+  echo "Create the broker secret"
+  kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${BROKER_GSA_SECRET_NAME}" \
+    --from-file=key.json="${BROKER_GSA_KEY_TEMP}"
+
+  warmup_broker_setup || true
 }
