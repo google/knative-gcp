@@ -23,23 +23,14 @@ source $(dirname "${BASH_SOURCE[0]}")/e2e-common.sh
 # Eventing main config.
 readonly E2E_TEST_NAMESPACE="default"
 
-# Constants used for creating ServiceAccount for the Controllers GSA if it's not running on Prow.
-readonly CONTROLLER_GSA_NON_PROW_KEY_TEMP="$(mktemp)"
-
-# Constants used for creating ServiceAccount for the Sources if it's not running on Prow.
-readonly SOURCES_GSA_NON_PROW_KEY_TEMP="$(mktemp)"
-
-# Constants used for creating ServiceAccount for the Broker if it's not running on Prow.
-readonly BROKER_GSA_NON_PROW_KEY_TEMP="$(mktemp)"
-
 # Constants used for authentication setup for GCP Broker if it's not running on Prow.
 readonly BROKER_GSA_SECRET_NAME="google-broker-key"
 
 function export_variable() {
   if (( ! IS_PROW )); then
-    readonly CONTROLLER_GSA_KEY_TEMP="${CONTROLLER_GSA_NON_PROW_KEY_TEMP}"
-    readonly SOURCES_GSA_KEY_TEMP="${SOURCES_GSA_NON_PROW_KEY_TEMP}"
-    readonly BROKER_GSA_KEY_TEMP="${BROKER_GSA_NON_PROW_KEY_TEMP}"
+    readonly CONTROLLER_GSA_KEY_TEMP="$(mktemp)"
+    readonly SOURCES_GSA_KEY_TEMP="$(mktemp)"
+    readonly BROKER_GSA_KEY_TEMP="$(mktemp)"
   else
     readonly CONTROLLER_GSA_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
     readonly SOURCES_GSA_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
@@ -72,7 +63,9 @@ function test_setup() {
 # Tear down tmp files which store the private key.
 function knative_teardown() {
   if (( ! IS_PROW )); then
-    rm "${CONTROLLER_GSA_NON_PROW_KEY_TEMP}"
+    rm "${CONTROLLER_GSA_KEY_TEMP}"
+    rm "${SOURCES_GSA_KEY_TEMP}"
+    rm "${BROKER_GSA_KEY_TEMP}"
   fi
 }
 
@@ -84,7 +77,7 @@ function controller_auth_setup() {
     init_controller_gsa "${E2E_PROJECT_ID}" "${CONTROLLER_GSA_NON_PROW}"
 
     echo "Create the controller service account key file"
-    gcloud iam service-accounts keys create "${CONTROLLER_GSA_NON_PROW_KEY_TEMP}" \
+    gcloud iam service-accounts keys create "${CONTROLLER_GSA_KEY_TEMP}" \
       --iam-account="${CONTROLLER_GSA_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
   fi
 

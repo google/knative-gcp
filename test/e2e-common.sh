@@ -43,14 +43,6 @@ function knative_setup() {
   export_variable || return 1
 }
 
-# Tear down tmp files which store the private key.
-function test_teardown() {
-  if (( ! IS_PROW )); then
-    rm "${SOURCES_GSA_KEY_TEMP}"
-    rm "${BROKER_GSA_KEY_TEMP}"
-  fi
-}
-
 function publish_test_images() {
   # Publish test images.
   echo ">> Publishing test images"
