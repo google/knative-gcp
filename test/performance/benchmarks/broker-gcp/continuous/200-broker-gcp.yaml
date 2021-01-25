@@ -123,6 +123,7 @@ spec:
                 # set to the number of sender + receiver (same image that does both counts 2)
                 - "--expect-records=2"
                 - "--mako-tags=channel=pubsub"
+                - "-logtostderr"
               env:
                 - name: GOGC
                   value: "on"
