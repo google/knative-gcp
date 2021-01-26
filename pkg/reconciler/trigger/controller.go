@@ -28,7 +28,6 @@ import (
 
 	"github.com/google/knative-gcp/pkg/logging"
 	"knative.dev/eventing/pkg/apis/eventing"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/source"
@@ -36,7 +35,6 @@ import (
 	"knative.dev/pkg/controller"
 	pkgcontroller "knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
-	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
@@ -45,6 +43,7 @@ import (
 	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	reconcilerutils "github.com/google/knative-gcp/pkg/reconciler/utils"
 	"github.com/google/knative-gcp/pkg/utils"
 )
 
@@ -55,9 +54,6 @@ const (
 	// finalizerName is the name of the finalizer that this controller adds to the Triggers that it reconciles.
 	finalizerName = "googlecloud"
 )
-
-// filterBroker is the function to filter brokers with proper brokerclass.
-var filterBroker = pkgreconciler.AnnotationFilterFunc(eventingv1beta1.BrokerClassAnnotationKey, brokerv1beta1.BrokerClass, false /*allowUnset*/)
 
 type Constructor injection.ControllerConstructor
 
@@ -116,7 +112,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 	brokerinformer.Get(ctx).Informer().AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			// Only care about brokers with the proper class annotation
-			FilterFunc: filterBroker,
+			FilterFunc: reconcilerutils.BrokerClassFilter,
 			Handler: controller.HandleAll(func(obj interface{}) {
 				if b, ok := obj.(*brokerv1beta1.Broker); ok {
 					triggers, err := triggerinformer.Get(ctx).Lister().Triggers(b.Namespace).List(labels.SelectorFromSet(map[string]string{eventing.BrokerLabelKey: b.Name}))
