@@ -37,6 +37,12 @@ import (
 	"github.com/google/knative-gcp/pkg/metrics"
 )
 
+const (
+	// timeoutCushion is the difference between event timeout and delivery
+	// timeout so that delivery can timeout first to trigger retry
+	timeoutCushion = 5 * time.Second
+)
+
 // FanoutPool is the sync pool for fanout handlers.
 // For each broker in the config, it will attempt to create a handler.
 // It will also stop/delete the handler if the corresponding broker is deleted
@@ -94,7 +100,7 @@ func NewFanoutPool(
 		return nil, err
 	}
 
-	if options.TimeoutPerEvent < 5*time.Second {
+	if options.TimeoutPerEvent < timeoutCushion {
 		return nil, fmt.Errorf("timeout per event cannot be lower than %v", 5*time.Second)
 	}
 
@@ -103,8 +109,8 @@ func NewFanoutPool(
 	// It allows the delivery processor to timeout the delivery
 	// before the handler nacks the pubsub message, which will
 	// cause event re-delivery for all targets.
-	if options.DeliveryTimeout == 0 || options.DeliveryTimeout > options.TimeoutPerEvent-(5*time.Second) {
-		options.DeliveryTimeout = options.TimeoutPerEvent - (5 * time.Second)
+	if options.DeliveryTimeout == 0 || options.DeliveryTimeout > options.TimeoutPerEvent-timeoutCushion {
+		options.DeliveryTimeout = options.TimeoutPerEvent - timeoutCushion
 	}
 	p := &FanoutPool{
 		targets:            targets,
