@@ -8,12 +8,12 @@ import (
 
 func ResetIngressMetrics() {
 	// OpenCensus metrics carry global state that need to be reset between unit tests.
-	metricstest.Unregister("event_count", "event_dispatch_latencies")
+	metricstest.Unregister("event_count", "event_dispatch_latencies", "subscriber_event_count")
 }
 
 func ResetDeliveryMetrics() {
 	// OpenCensus metrics carry global state that need to be reset between unit tests.
-	metricstest.Unregister("event_count", "event_dispatch_latencies", "event_processing_latencies")
+	metricstest.Unregister("event_count", "event_dispatch_latencies", "event_processing_latencies", "subscriber_event_count")
 }
 
 func ResetBrokerCellMetrics() {

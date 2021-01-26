@@ -45,6 +45,7 @@ type DeliveryReporter struct {
 	containerName         ContainerName
 	dispatchTimeInMsecM   *stats.Float64Measure
 	processingTimeInMsecM *stats.Float64Measure
+	subscriberCount				*stats.Float64Measure
 }
 
 func (r *DeliveryReporter) register() error {
@@ -82,6 +83,22 @@ func (r *DeliveryReporter) register() error {
 			Aggregation: view.Distribution(metrics.Buckets125(1, 10000)...), // 1, 2, 5, 10, 20, 50, 100, 1000, 5000, 10000
 			TagKeys: []tag.Key{
 				TriggerFilterTypeKey,
+				PodNameKey,
+				ContainerNameKey,
+			},
+		},
+		&view.View{
+			Name:        "subscriber_event_count",
+			Description: "Number of events sent to a Trigger subscriber with subscriber information",
+			Measure:     r.dispatchTimeInMsecM,
+			Aggregation: view.Count(),
+			TagKeys: []tag.Key{
+				TriggerFilterTypeKey,
+				ResponseCodeKey,
+				ResponseCodeClassKey,
+				SubscriberTypeKey,
+				SubscriberNamespaceKey,
+				SubscriberNameKey,
 				PodNameKey,
 				ContainerNameKey,
 			},
@@ -179,6 +196,14 @@ func AddTargetTags(ctx context.Context, target *config.Target) (context.Context,
 		},
 	})
 	return tag.New(ctx, tag.Insert(TriggerFilterTypeKey, filterTypeValue(target.FilterAttributes["type"])))
+}
+
+func AddSubscriberTags(ctx context.Context, target *config.Target) (context.Context, error) {
+	return tag.New(ctx,
+		tag.Insert(SubscriberTypeKey, target.GetSubscriberInfo().GetSubscriberType().String()),
+		tag.Insert(SubscriberNamespaceKey, target.GetSubscriberInfo().GetSubscriberNamespace()),
+		tag.Insert(SubscriberNameKey, target.GetSubscriberInfo().GetSubscriberName()),
+	)
 }
 
 func getStartDeliveryProcessingTime(ctx context.Context) (time.Time, error) {

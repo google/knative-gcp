@@ -39,6 +39,9 @@ func (a TriggerMetricAssertion) Assert(client *monitoring.MetricClient) error {
 	if err := a.assertMetric(client, TriggerEventProcessingLatencyType, a.CountPerTriggerNoRespCode, accumProcessingLatency); err != nil {
 		return err
 	}
+	if err := a.assertMetric(client, TriggerSubscriberEventCountType, a.CountPerTriggerWithRespCode, accumEventCount); err != nil {
+		return err
+	}
 	return nil
 }
 

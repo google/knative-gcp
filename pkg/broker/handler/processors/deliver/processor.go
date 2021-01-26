@@ -170,6 +170,13 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	if err != nil {
 		logging.FromContext(ctx).Error("failed to add status code tags to context", zap.Error(err))
 	}
+
+	// Insert subscriber info into context.
+	cctx, err = metrics.AddSubscriberTags(ctx, target)
+	if err != nil {
+		logging.FromContext(ctx).Error("failed to add subscriber tags to context", zap.Error(err))
+	}
+
 	// Report event dispatch time with resp status code.
 	p.StatsReporter.ReportEventDispatchTime(cctx, time.Since(startTime))
 

@@ -30,6 +30,7 @@ const (
 	TriggerEventCountMetricType       = "knative.dev/eventing/trigger/event_count"
 	TriggerEventDispatchLatencyType   = "knative.dev/eventing/trigger/event_dispatch_latencies"
 	TriggerEventProcessingLatencyType = "knative.dev/eventing/trigger/event_processing_latencies"
+	TriggerSubscriberEventCountType   = "knative.dev/eventing/trigger/subscriber_event_count"
 	TriggerMonitoredResourceType      = "knative_trigger"
 
 	EventType          = "type"

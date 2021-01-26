@@ -40,6 +40,18 @@ func TestReportEventDispatchTime(t *testing.T) {
 		metricskey.ContainerName:          "testcontainer",
 	}
 
+	wantSubscriberTags := map[string]string{
+		metricskey.LabelFilterType:        	 "testeventtype",
+		metricskey.LabelResponseCode:      	 "202",
+		metricskey.LabelResponseCodeClass: 	 "2xx",
+		metricskey.LabelSubscriberType: 	 	 "KNATIVE_SERVICE",
+		metricskey.LabelSubscriberNamespace: "test-namespace",
+		metricskey.LabelSubscriberName: 		 "test-serving",
+		metricskey.PodName:                	 "testpod",
+		metricskey.ContainerName:          	 "testcontainer",
+	}
+
+
 	r, err := NewDeliveryReporter("testpod", "testcontainer")
 	if err != nil {
 		t.Fatal(err)
@@ -61,7 +73,17 @@ func TestReportEventDispatchTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	cctx, _ := AddRespStatusCodeTags(ctx, 202)
+
+	cctx, _ = AddSubscriberTags(cctx, &config.Target{
+		SubscriberInfo: &config.SubscriberInfo{
+			SubscriberType:      config.SubscriberType_KNATIVE_SERVICE,
+			SubscriberNamespace: "test-namespace",
+			SubscriberName:      "test-serving",
+		},
+	})
+
 	reportertest.ExpectMetrics(t, func() error {
 		r.ReportEventDispatchTime(cctx, 1100*time.Millisecond)
 		return nil
@@ -72,6 +94,7 @@ func TestReportEventDispatchTime(t *testing.T) {
 	})
 	metricstest.CheckCountData(t, "event_count", wantTags, 2)
 	metricstest.CheckDistributionData(t, "event_dispatch_latencies", wantTags, 2, 1100.0, 9100.0)
+	metricstest.CheckCountData(t, "subscriber_event_count", wantSubscriberTags, 2)
 }
 
 func TestReportEventProcessingTime(t *testing.T) {

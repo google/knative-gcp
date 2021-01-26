@@ -19,6 +19,7 @@ package brokercell
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
@@ -117,6 +118,11 @@ func (r *Reconciler) addToConfig(_ context.Context, b *brokerv1beta1.Broker, tri
 						Topic:        brokerresources.GenerateRetryTopicName(t),
 						Subscription: brokerresources.GenerateRetrySubscriptionName(t),
 					},
+					SubscriberInfo: &config.SubscriberInfo{
+						SubscriberType: getSubscriberType(t.Kind, t.APIVersion),
+						SubscriberNamespace: t.Spec.Subscriber.Ref.Namespace,
+						SubscriberName: t.Spec.Subscriber.Ref.Name,
+					},
 				}
 				if t.Spec.Filter != nil && t.Spec.Filter.Attributes != nil {
 					target.FilterAttributes = t.Spec.Filter.Attributes
@@ -159,4 +165,22 @@ func (r *Reconciler) refreshPodVolume(ctx context.Context, bc *intv1alpha1.Broke
 		// refreshed. But this is not treated as an error.
 		logging.FromContext(ctx).Warn("Error updating annotation for data plane pods", zap.Error(err))
 	}
+}
+
+func getSubscriberType(kind string, version string) config.SubscriberType {
+	var subscriberType config.SubscriberType
+
+	if kind == "Service" {
+		if strings.HasPrefix(version, "serving.knative.dev") {
+			subscriberType = config.SubscriberType_KNATIVE_SERVICE
+		} else {
+			subscriberType = config.SubscriberType_KUBERNETES_SERVICE
+		}
+	} else if kind == "URL" {
+		subscriberType = config.SubscriberType_URL
+	} else {
+		subscriberType = config.SubscriberType_OTHER
+	}
+
+	return subscriberType
 }

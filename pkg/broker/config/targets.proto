@@ -31,11 +31,26 @@ enum CellTenantType {
   BROKER = 1;
 }
 
+// Types of the possible subscribers
+enum SubscriberType {
+  OTHER = 0;
+  KNATIVE_SERVICE = 1;
+  KUBERNETES_SERVICE = 2;
+  URL = 3;
+}
+
 // A pubsub "queue".
 message Queue {
   string topic = 1;
   string subscription = 2;
   State state = 3;
+}
+
+// Info associated with a subscriber
+message SubscriberInfo {
+  SubscriberType subscriberType = 1;
+  string subscriberNamespace = 2;
+  string subscriberName = 3;
 }
 
 // Represents a tenant of the Cell. E.g. Broker, Channel, etc.
@@ -95,6 +110,9 @@ message Target {
 
   // The target state.
   State state = 8;
+
+  // The metadata associated with a subscriber
+  SubscriberInfo subscriberInfo = 10;
 }
 
 // TargetsConfig is the collection of all Targets.
