@@ -41,16 +41,15 @@ func TestReportEventDispatchTime(t *testing.T) {
 	}
 
 	wantSubscriberTags := map[string]string{
-		metricskey.LabelFilterType:        	 "testeventtype",
-		metricskey.LabelResponseCode:      	 "202",
-		metricskey.LabelResponseCodeClass: 	 "2xx",
-		metricskey.LabelSubscriberType: 	 	 "KNATIVE_SERVICE",
+		metricskey.LabelFilterType:          "testeventtype",
+		metricskey.LabelResponseCode:        "202",
+		metricskey.LabelResponseCodeClass:   "2xx",
+		metricskey.LabelSubscriberType:      "KNATIVE_SERVICE",
 		metricskey.LabelSubscriberNamespace: "test-namespace",
-		metricskey.LabelSubscriberName: 		 "test-serving",
-		metricskey.PodName:                	 "testpod",
-		metricskey.ContainerName:          	 "testcontainer",
+		metricskey.LabelSubscriberName:      "test-serving",
+		metricskey.PodName:                  "testpod",
+		metricskey.ContainerName:            "testcontainer",
 	}
-
 
 	r, err := NewDeliveryReporter("testpod", "testcontainer")
 	if err != nil {

@@ -47,9 +47,9 @@ var (
 	TriggerNameKey       = tag.MustNewKey(metricskey.LabelTriggerName)
 	TriggerFilterTypeKey = tag.MustNewKey(metricskey.LabelFilterType)
 
-	SubscriberTypeKey = tag.MustNewKey(metricskey.LabelSubscriberType)
+	SubscriberTypeKey      = tag.MustNewKey(metricskey.LabelSubscriberType)
 	SubscriberNamespaceKey = tag.MustNewKey(metricskey.LabelSubscriberNamespace)
-	SubscriberNameKey = tag.MustNewKey(metricskey.LabelSubscriberName)
+	SubscriberNameKey      = tag.MustNewKey(metricskey.LabelSubscriberName)
 
 	ResponseCodeKey      = tag.MustNewKey(metricskey.LabelResponseCode)
 	ResponseCodeClassKey = tag.MustNewKey(metricskey.LabelResponseCodeClass)

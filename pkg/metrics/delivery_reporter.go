@@ -45,7 +45,7 @@ type DeliveryReporter struct {
 	containerName         ContainerName
 	dispatchTimeInMsecM   *stats.Float64Measure
 	processingTimeInMsecM *stats.Float64Measure
-	subscriberCount				*stats.Float64Measure
+	subscriberCount       *stats.Float64Measure
 }
 
 func (r *DeliveryReporter) register() error {

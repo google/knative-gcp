@@ -119,9 +119,9 @@ func (r *Reconciler) addToConfig(_ context.Context, b *brokerv1beta1.Broker, tri
 						Subscription: brokerresources.GenerateRetrySubscriptionName(t),
 					},
 					SubscriberInfo: &config.SubscriberInfo{
-						SubscriberType: getSubscriberType(t.Kind, t.APIVersion),
+						SubscriberType:      getSubscriberType(t.Kind, t.APIVersion),
 						SubscriberNamespace: t.Spec.Subscriber.Ref.Namespace,
-						SubscriberName: t.Spec.Subscriber.Ref.Name,
+						SubscriberName:      t.Spec.Subscriber.Ref.Name,
 					},
 				}
 				if t.Spec.Filter != nil && t.Spec.Filter.Attributes != nil {
