@@ -111,7 +111,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 	// Watch brokers.
 	brokerinformer.Get(ctx).Informer().AddEventHandler(
 		cache.FilteringResourceEventHandler{
-			// Only care about brokers with the proper class annotation
+			// Only care about brokers with proper brokerclass
 			FilterFunc: reconcilerutils.BrokerClassFilter,
 			Handler: controller.HandleAll(func(obj interface{}) {
 				if b, ok := obj.(*brokerv1beta1.Broker); ok {

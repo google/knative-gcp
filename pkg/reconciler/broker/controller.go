@@ -106,7 +106,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdeliv
 
 	brokerInformer.Informer().AddEventHandlerWithResyncPeriod(
 		cache.FilteringResourceEventHandler{
-			// Only reconcile brokers with the proper class annotation
+			// Only reconcile brokers with proper brokerclass
 			FilterFunc: reconcilerutils.BrokerClassFilter,
 			Handler:    controller.HandleAll(impl.Enqueue),
 		},
