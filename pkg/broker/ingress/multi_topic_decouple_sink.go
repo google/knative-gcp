@@ -89,7 +89,7 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker *config.CellTe
 	// to the decouple topic.
 	// TODO(#1804): remove first check when enabling the feature by default.
 	if m.enableEventFiltering && !m.hasTrigger(ctx, &event) {
-		logging.FromContext(ctx).Debug("Filering target-less event at ingress", zap.String("Eventid", event.ID()))
+		logging.FromContext(ctx).Debug("Filtering target-less event at ingress", zap.String("Eventid", event.ID()))
 		return nil
 	}
 
@@ -169,6 +169,7 @@ func (m *multiTopicDecoupleSink) updateTopicForBroker(ctx context.Context, broke
 		m.topics[*broker].Stop()
 	}
 	topic := m.pubsub.Topic(topicID)
+	topic.PublishSettings = m.publishSettings
 	m.topics[*broker] = topic
 	return topic, nil
 }

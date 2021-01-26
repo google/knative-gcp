@@ -55,7 +55,7 @@ spec:
     ref:
       apiVersion: v1
       kind: Service
-      name: broker-gcp-receiver
+      name: broker-gcp-sender-receiver
 
 ---
 
@@ -85,10 +85,10 @@ roleRef:
 apiVersion: v1
 kind: Service
 metadata:
-  name: broker-gcp-receiver
+  name: broker-gcp-sender-receiver
 spec:
   selector:
-    role: broker-gcp-receiver
+    role: broker-gcp-sender-receiver
   ports:
     - name: http
       port: 80

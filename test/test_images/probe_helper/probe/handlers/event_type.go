@@ -23,6 +23,7 @@ import (
 	"knative.dev/pkg/logging"
 
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
+	sourcesv1beta1 "knative.dev/eventing/pkg/apis/sources/v1beta1"
 )
 
 // EventTypeProbe is a handler that maps an event types to its corresponding underlying handler.
@@ -34,7 +35,7 @@ type EventTypeProbe struct {
 func NewEventTypeHandler(brokerE2EDeliveryProbe *BrokerE2EDeliveryProbe, cloudPubSubSourceProbe *CloudPubSubSourceProbe,
 	cloudStorageSourceCreateProbe *CloudStorageSourceCreateProbe, cloudStorageSourceUpdateMetadataProbe *CloudStorageSourceUpdateMetadataProbe,
 	cloudStorageSourceArchiveProbe *CloudStorageSourceArchiveProbe, cloudStorageSourceDeleteProbe *CloudStorageSourceDeleteProbe,
-	cloudAuditLogsSourceProbe *CloudAuditLogsSourceProbe, cloudSchedulerSourceProbe *CloudSchedulerSourceProbe) *EventTypeProbe {
+	cloudAuditLogsSourceProbe *CloudAuditLogsSourceProbe, cloudSchedulerSourceProbe *CloudSchedulerSourceProbe, pingSourceProbe *PingSourceProbe) *EventTypeProbe {
 	// Set the forward and receiver probe handlers now that they are initialized.
 	forwardHandlers := map[string]Interface{
 		BrokerE2EDeliveryProbeEventType:                brokerE2EDeliveryProbe,
@@ -45,6 +46,7 @@ func NewEventTypeHandler(brokerE2EDeliveryProbe *BrokerE2EDeliveryProbe, cloudPu
 		CloudStorageSourceDeleteProbeEventType:         cloudStorageSourceDeleteProbe,
 		CloudAuditLogsSourceProbeEventType:             cloudAuditLogsSourceProbe,
 		CloudSchedulerSourceProbeEventType:             cloudSchedulerSourceProbe,
+		PingSourceProbeEventType:                       pingSourceProbe,
 	}
 	receiveHandlers := map[string]Interface{
 		BrokerE2EDeliveryProbeEventType:                      brokerE2EDeliveryProbe,
@@ -55,6 +57,7 @@ func NewEventTypeHandler(brokerE2EDeliveryProbe *BrokerE2EDeliveryProbe, cloudPu
 		schemasv1.CloudStorageObjectDeletedEventType:         cloudStorageSourceDeleteProbe,
 		schemasv1.CloudAuditLogsLogWrittenEventType:          cloudAuditLogsSourceProbe,
 		schemasv1.CloudSchedulerJobExecutedEventType:         cloudSchedulerSourceProbe,
+		sourcesv1beta1.PingSourceEventType:                   pingSourceProbe,
 	}
 	return &EventTypeProbe{
 		forward: forwardHandlers,

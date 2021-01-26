@@ -31,6 +31,7 @@ import (
 func TestBroker_Validate(t *testing.T) {
 	bop := eventingduckv1beta1.BackoffPolicyExponential
 	bod := "PT1S"
+	retry := int32(4)
 	tests := []struct {
 		name   string
 		broker Broker
@@ -60,6 +61,18 @@ func TestBroker_Validate(t *testing.T) {
 			},
 		},
 		want: apis.ErrMissingField("spec.delivery.backoffDelay"),
+	}, {
+		name: "missing dead letter sink for retry",
+		broker: Broker{
+			Spec: v1beta1.BrokerSpec{
+				Delivery: &eventingduckv1beta1.DeliverySpec{
+					BackoffDelay:  &bod,
+					BackoffPolicy: &bop,
+					Retry:         &retry,
+				},
+			},
+		},
+		want: apis.ErrGeneric("need DeadLetterSink when retry is defined", "spec.delivery.deadLetterSink"),
 	}, {
 		name: "invalid dead letter sink missing uri",
 		broker: Broker{
