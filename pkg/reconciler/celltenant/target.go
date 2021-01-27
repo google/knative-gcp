@@ -43,9 +43,6 @@ const (
 	// Default maximum backoff duration used in the backoff retry policy for
 	// pubsub subscriptions. 600 seconds is the longest supported time.
 	defaultMaximumBackoff = 600 * time.Second
-	// Default backoff policy settings. Should normally be configured through the
-	// br-delivery ConfigMap, but these values serve in case the intended
-	// defaulting fails.
 )
 
 // TargetReconciler implements controller.Reconciler for CellTenant Targets.

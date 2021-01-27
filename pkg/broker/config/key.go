@@ -218,18 +218,6 @@ func TestOnlyBrokerKey(namespace, name string) *CellTenantKey {
 	}
 }
 
-// KeyFromTrigger creates a TargetKey from a K8s Trigger object.
-func KeyFromTrigger(t *brokerv1beta1.Trigger) *TargetKey {
-	return &TargetKey{
-		cellTenantKey: CellTenantKey{
-			cellTenantType: CellTenantType_BROKER,
-			namespace:      t.Namespace,
-			name:           t.Spec.Broker,
-		},
-		name: t.Name,
-	}
-}
-
 // validateNamespace validates that the given string is a valid K8s namespace.
 func validateNamespace(ns string) error {
 	errs := validation.IsDNS1123Label(ns)

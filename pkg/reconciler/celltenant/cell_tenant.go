@@ -70,7 +70,7 @@ type Reconciler struct {
 	ClusterRegion string
 }
 
-func (r *Reconciler) ReconcileGCPCellAddressable(ctx context.Context, b Statusable) error {
+func (r *Reconciler) ReconcileGCPCellTenant(ctx context.Context, b Statusable) error {
 	if err := r.ensureBrokerCellExists(ctx, b); err != nil {
 		return fmt.Errorf("brokercell reconcile failed: %v", err)
 	}
@@ -84,7 +84,7 @@ func (r *Reconciler) ReconcileGCPCellAddressable(ctx context.Context, b Statusab
 	return nil
 }
 
-func (r *Reconciler) FinalizeGCPCellAddressable(ctx context.Context, b Statusable) error {
+func (r *Reconciler) FinalizeGCPCellTenant(ctx context.Context, b Statusable) error {
 	if err := r.deleteDecouplingTopicAndSubscription(ctx, b); err != nil {
 		return fmt.Errorf("failed to delete Pub/Sub topic: %v", err)
 	}
@@ -156,7 +156,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	return nil
 }
 
-func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b Statusable) error {
+func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, s Statusable) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Deleting decoupling topic")
 
@@ -164,12 +164,12 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 	projectID, err := utils.ProjectIDOrDefault(r.ProjectID)
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
-		b.StatusUpdater().MarkTopicUnknown("FinalizeTopicProjectIdNotFound", "Failed to find project id: %v", err)
-		b.StatusUpdater().MarkSubscriptionUnknown("FinalizeSubscriptionProjectIdNotFound", "Failed to find project id: %v", err)
+		s.StatusUpdater().MarkTopicUnknown("FinalizeTopicProjectIdNotFound", "Failed to find project id: %v", err)
+		s.StatusUpdater().MarkSubscriptionUnknown("FinalizeSubscriptionProjectIdNotFound", "Failed to find project id: %v", err)
 		return err
 	}
 
-	client, err := r.getClientOrCreateNew(ctx, projectID, b.StatusUpdater())
+	client, err := r.getClientOrCreateNew(ctx, projectID, s.StatusUpdater())
 	if err != nil {
 		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
@@ -178,27 +178,29 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 
 	// Delete topic if it exists. Pull subscriptions continue pulling from the
 	// topic until deleted themselves.
-	topicID := b.GetTopicID()
-	err = multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, b.Object(), b.StatusUpdater()))
-	subID := b.GetSubscriptionName()
-	err = multierr.Append(err, pubsubReconciler.DeleteSubscription(ctx, subID, b.Object(), b.StatusUpdater()))
+	topicID := s.GetTopicID()
+	err = multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, s.Object(), s.StatusUpdater()))
+	subID := s.GetSubscriptionName()
+	err = multierr.Append(err, pubsubReconciler.DeleteSubscription(ctx, subID, s.Object(), s.StatusUpdater()))
 
 	return err
 }
 
 // CreatePubsubClientFn is a function for pubsub client creation. Changed in testing only.
+// TODO Stop exporting this once unit tests are migrated from the Broker and Trigger reconcilers to
+// the CellTenant and Target reconcilers.
 var CreatePubsubClientFn reconcilerutilspubsub.CreateFn = pubsub.NewClient
 
 // getClientOrCreateNew Return the pubsubCient if it is valid, otherwise it tries to create a new client
 // and register it for later usage.
-func (r *Reconciler) getClientOrCreateNew(ctx context.Context, projectID string, b reconcilerutilspubsub.StatusUpdater) (*pubsub.Client, error) {
+func (r *Reconciler) getClientOrCreateNew(ctx context.Context, projectID string, su reconcilerutilspubsub.StatusUpdater) (*pubsub.Client, error) {
 	if r.PubsubClient != nil {
 		return r.PubsubClient, nil
 	}
 	client, err := CreatePubsubClientFn(ctx, projectID)
 	if err != nil {
-		b.MarkTopicUnknown("FinalizeTopicPubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
-		b.MarkSubscriptionUnknown("FinalizeSubscriptionPubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
+		su.MarkTopicUnknown("FinalizeTopicPubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
+		su.MarkSubscriptionUnknown("FinalizeSubscriptionPubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
 		return nil, err
 	}
 	// Register the client for next run
@@ -207,7 +209,7 @@ func (r *Reconciler) getClientOrCreateNew(ctx context.Context, projectID string,
 }
 
 // ensureBrokerCellExists creates a BrokerCell if it doesn't exist, and update broker status based on brokercell status.
-func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b Statusable) error {
+func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, s Statusable) error {
 	var bc *inteventsv1alpha1.BrokerCell
 	var err error
 	// TODO(#866) Get brokercell based on the label (or annotation) on the broker.
@@ -216,7 +218,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b Statusable) e
 	bc, err = r.BrokerCellLister.BrokerCells(bcNS).Get(bcName)
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Error getting BrokerCell", zap.String("namespace", bcNS), zap.String("brokerCell", bcName), zap.Error(err))
-		b.MarkBrokerCellUnknown("BrokerCellUnknown", "Failed to get BrokerCell %s/%s", bcNS, bcName)
+		s.MarkBrokerCellUnknown("BrokerCellUnknown", "Failed to get BrokerCell %s/%s", bcNS, bcName)
 		return err
 	}
 
@@ -225,7 +227,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b Statusable) e
 		bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Create(ctx, want, metav1.CreateOptions{})
 		if err != nil && !apierrs.IsAlreadyExists(err) {
 			logging.FromContext(ctx).Error("Error creating brokerCell", zap.String("namespace", want.Namespace), zap.String("brokerCell", want.Name), zap.Error(err))
-			b.MarkBrokerCellFailed("BrokerCellCreationFailed", "Failed to create BrokerCell %s/%s", want.Namespace, want.Name)
+			s.MarkBrokerCellFailed("BrokerCellCreationFailed", "Failed to create BrokerCell %s/%s", want.Namespace, want.Name)
 			return err
 		}
 		if apierrs.IsAlreadyExists(err) {
@@ -235,27 +237,27 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b Statusable) e
 			bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Get(ctx, want.Name, metav1.GetOptions{})
 			if err != nil {
 				logging.FromContext(ctx).Error("Failed to get the BrokerCell from the API server", zap.String("namespace", want.Namespace), zap.String("brokerCell", want.Name), zap.Error(err))
-				b.MarkBrokerCellUnknown("BrokerCellUnknown", "Failed to get BrokerCell %s/%s", want.Namespace, want.Name)
+				s.MarkBrokerCellUnknown("BrokerCellUnknown", "Failed to get BrokerCell %s/%s", want.Namespace, want.Name)
 				return err
 			}
 		}
 		if err == nil {
-			r.Recorder.Eventf(b.Object(), corev1.EventTypeNormal, brokerCellCreated, "Created BrokerCell %s/%s", bc.Namespace, bc.Name)
+			r.Recorder.Eventf(s.Object(), corev1.EventTypeNormal, brokerCellCreated, "Created BrokerCell %s/%s", bc.Namespace, bc.Name)
 		}
 	}
 
 	if bc.Status.IsReady() {
-		b.MarkBrokerCellReady()
+		s.MarkBrokerCellReady()
 	} else {
-		b.MarkBrokerCellUnknown("BrokerCellNotReady", "BrokerCell %s/%s is not ready", bc.Namespace, bc.Name)
+		s.MarkBrokerCellUnknown("BrokerCellNotReady", "BrokerCell %s/%s is not ready", bc.Namespace, bc.Name)
 	}
 
 	//TODO(#1019) Use the IngressTemplate of brokercell.
 	ingressServiceName := brokercellresources.Name(bc.Name, brokercellresources.IngressName)
-	b.SetAddress(&apis.URL{
+	s.SetAddress(&apis.URL{
 		Scheme: "http",
 		Host:   network.GetServiceHostname(ingressServiceName, bc.Namespace),
-		Path:   "/" + b.Key().PersistenceString(),
+		Path:   "/" + s.Key().PersistenceString(),
 	})
 
 	return nil

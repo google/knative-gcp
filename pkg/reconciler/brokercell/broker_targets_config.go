@@ -60,6 +60,8 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.Broker
 	return nil
 }
 
+// addBrokersAndTriggersToTargets adds all Brokers that are associated with the `bc` BrokerCell to
+// `targets`, along with all Triggers that target those Brokers.
 func (r *Reconciler) addBrokersAndTriggersToTargets(ctx context.Context, bc *intv1alpha1.BrokerCell, targets config.Targets) error {
 	// TODO(#866) Only select brokers that point to this brokercell by label selector once the
 	// webhook assigns the brokercell label, i.e.,

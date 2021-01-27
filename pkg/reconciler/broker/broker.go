@@ -53,7 +53,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *brokerv1beta1.Broker)
 	b.Status.ObservedGeneration = b.Generation
 
 	bcs := celltenant.StatusableFromBroker(b)
-	if err := r.Reconciler.ReconcileGCPCellAddressable(ctx, bcs); err != nil {
+	if err := r.Reconciler.ReconcileGCPCellTenant(ctx, bcs); err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling broker", zap.Error(err))
 		return fmt.Errorf("failed to reconcile broker: %w", err)
 		//TODO instead of returning on error, update the data plane configmap with
@@ -67,7 +67,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, b *brokerv1beta1.Broker) 
 	logger := logging.FromContext(ctx)
 	logger.Debug("Finalizing Broker", zap.Any("broker", b))
 	bcs := celltenant.StatusableFromBroker(b)
-	if err := r.Reconciler.FinalizeGCPCellAddressable(ctx, bcs); err != nil {
+	if err := r.Reconciler.FinalizeGCPCellTenant(ctx, bcs); err != nil {
 		return err
 	}
 
