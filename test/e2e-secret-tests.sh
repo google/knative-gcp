@@ -23,23 +23,14 @@ source $(dirname "${BASH_SOURCE[0]}")/e2e-common.sh
 # Eventing main config.
 readonly E2E_TEST_NAMESPACE="default"
 
-# Constants used for creating ServiceAccount for the Control Plane if it's not running on Prow.
-readonly CONTROL_PLANE_GSA_NON_PROW_KEY_TEMP="$(mktemp)"
-
-# Constants used for creating ServiceAccount for the Sources if it's not running on Prow.
-readonly SOURCES_GSA_NON_PROW_KEY_TEMP="$(mktemp)"
-
-# Constants used for creating ServiceAccount for the Broker if it's not running on Prow.
-readonly BROKER_GSA_NON_PROW_KEY_TEMP="$(mktemp)"
-
 # Constants used for authentication setup for GCP Broker if it's not running on Prow.
 readonly BROKER_GSA_SECRET_NAME="google-broker-key"
 
 function export_variable() {
   if (( ! IS_PROW )); then
-    readonly CONTROL_PLANE_GSA_KEY_TEMP="${CONTROL_PLANE_GSA_NON_PROW_KEY_TEMP}"
-    readonly SOURCES_GSA_KEY_TEMP="${SOURCES_GSA_NON_PROW_KEY_TEMP}"
-    readonly BROKER_GSA_KEY_TEMP="${BROKER_GSA_NON_PROW_KEY_TEMP}"
+    readonly CONTROL_PLANE_GSA_KEY_TEMP="$(mktemp)"
+    readonly SOURCES_GSA_KEY_TEMP="$(mktemp)"
+    readonly BROKER_GSA_KEY_TEMP="$(mktemp)"
   else
     readonly CONTROL_PLANE_GSA_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
     readonly SOURCES_GSA_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
@@ -81,7 +72,7 @@ function control_plane_setup() {
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
     init_control_plane_gsa "${E2E_PROJECT_ID}" "${CONTROL_PLANE_GSA_NON_PROW}"
-    gcloud iam service-accounts keys create "${CONTROL_PLANE_GSA_NON_PROW_KEY_TEMP}" \
+    gcloud iam service-accounts keys create "${CONTROL_PLANE_GSA_KEY_TEMP}" \
       --iam-account="${CONTROL_PLANE_GSA_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
   fi
   prow_control_plane_setup "secret"
