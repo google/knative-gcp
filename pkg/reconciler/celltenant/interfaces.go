@@ -29,8 +29,8 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-// DeletingTarget is the interface that the TargetReconciler takes for FinalizeKind().
-type DeletingTarget interface {
+// DeletableTarget is the interface that the TargetReconciler takes for FinalizeKind().
+type DeletableTarget interface {
 	Object() runtime.Object
 	StatusUpdater() reconcilerutilspubsub.StatusUpdater
 	GetTopicID() string
@@ -39,7 +39,7 @@ type DeletingTarget interface {
 
 // Target is the interface that the TargetReconciler takes for ReconcileKind().
 type Target interface {
-	DeletingTarget
+	DeletableTarget
 	GetLabels() map[string]string
 	DeliverySpec() *eventingduckv1beta1.DeliverySpec
 	SetStatusProjectID(projectID string)

@@ -170,7 +170,7 @@ func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.Deliv
 	return dlp
 }
 
-func (r *TargetReconciler) DeleteRetryTopicAndSubscription(ctx context.Context, recorder record.EventRecorder, t DeletingTarget) error {
+func (r *TargetReconciler) DeleteRetryTopicAndSubscription(ctx context.Context, recorder record.EventRecorder, t DeletableTarget) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Deleting retry topic")
 
