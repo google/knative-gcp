@@ -25,7 +25,7 @@ readonly REGIONAL_CLUSTER_LOCATION_TYPE="regional"
 # Constants used for both init_XXX.sh and e2e-xxx.sh
 export K8S_CONTROLLER_SERVICE_ACCOUNT="controller"
 export CONTROL_PLANE_SECRET_NAME="google-cloud-key"
-export PUBSUB_SECRET_NAME="google-cloud-key"
+export SOURCES_GSA_SECRET_NAME="google-cloud-key"
 
 function init_control_plane_service_account() {
   local project_id=${1}

@@ -22,8 +22,11 @@ which gcloud &> /dev/null || gcloud() { echo "[ignore-gcloud $*]" 1>&2; }
 # Constants used for creating ServiceAccount for the Control Plane if it's not running on Prow.
 readonly CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW="events-controller-gsa"
 
-# Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
-readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW="cre-pubsub"
+# Constants used for creating ServiceAccount for the Sources if it's not running on Prow.
+readonly SOURCES_GSA_NON_PROW="events-sources-gsa"
+
+# Constants used for creating ServiceAccount for the Broker if it's not running on Prow.
+readonly BROKER_GSA_NON_PROW="events-broker-gsa"
 
 # Vendored eventing test images.
 readonly VENDOR_EVENTING_TEST_IMAGES="vendor/knative.dev/eventing/test/test_images/"
@@ -44,7 +47,8 @@ function knative_setup() {
 # Tear down tmp files which store the private key.
 function test_teardown() {
   if (( ! IS_PROW )); then
-    rm "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
+    rm "${SOURCES_GSA_KEY_TEMP}"
+    rm "${BROKER_GSA_KEY_TEMP}"
   fi
 }
 
@@ -75,28 +79,28 @@ function storage_setup() {
   fi
 }
 
-# Create resources required for Pub/Sub Editor setup.
-function pubsub_setup() {
+# Create resources required for Sources authentication setup.
+function sources_auth_setup() {
   local auth_mode=${1}
 
   if [ "${auth_mode}" == "secret" ]; then
     if (( ! IS_PROW )); then
-      # When not running on Prow we need to set up a service account for PubSub.
-      echo "Set up ServiceAccount for Pub/Sub Editor"
-      init_pubsub_service_account "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
-      enable_monitoring "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
-      gcloud iam service-accounts keys create "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}" \
-        --iam-account="${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
+      # When not running on Prow we need to set up a service account for sources.
+      echo "Set up the Sources ServiceAccount"
+      init_pubsub_service_account "${E2E_PROJECT_ID}" "${SOURCES_GSA_NON_PROW}"
+      enable_monitoring "${E2E_PROJECT_ID}" "${SOURCES_GSA_NON_PROW}"
+      gcloud iam service-accounts keys create "${SOURCES_GSA_KEY_TEMP}" \
+        --iam-account="${SOURCES_GSA_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
     else
       delete_topics_and_subscriptions
     fi
-    kubectl -n ${E2E_TEST_NAMESPACE} create secret generic "${PUBSUB_SECRET_NAME}" --from-file=key.json="${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
+    kubectl -n ${E2E_TEST_NAMESPACE} create secret generic "${SOURCES_GSA_SECRET_NAME}" --from-file=key.json="${SOURCES_GSA_KEY_TEMP}"
   elif [ "${auth_mode}" == "workload_identity" ]; then
     if (( ! IS_PROW )); then
-      # When not running on Prow we need to set up a service account for PubSub.
-      echo "Set up ServiceAccount for Pub/Sub Editor"
-      init_pubsub_service_account "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
-      enable_monitoring "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
+      # When not running on Prow we need to set up a service account for sources.
+      echo "Set up the Sources ServiceAccount"
+      init_pubsub_service_account "${E2E_PROJECT_ID}" "${SOURCES_GSA_NON_PROW}"
+      enable_monitoring "${E2E_PROJECT_ID}" "${SOURCES_GSA_NON_PROW}"
     else
       delete_topics_and_subscriptions
     fi
@@ -106,24 +110,32 @@ function pubsub_setup() {
 }
 
 # Create resources required for GCP Broker authentication setup.
-function gcp_broker_setup() {
+function broker_auth_setup() {
   echo "Authentication setup for GCP Broker"
   local auth_mode=${1}
 
   if [ "${auth_mode}" == "secret" ]; then
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${GCP_BROKER_SECRET_NAME}" --from-file=key.json="${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
+    if (( ! IS_PROW )); then
+      init_pubsub_service_account "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
+      enable_monitoring "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
+      gcloud iam service-accounts keys create "${BROKER_GSA_KEY_TEMP}" \
+        --iam-account="${BROKER_GSA_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
+    fi
+    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${BROKER_GSA_SECRET_NAME}" --from-file=key.json="${BROKER_GSA_KEY_TEMP}"
   elif [ "${auth_mode}" == "workload_identity" ]; then
     if (( ! IS_PROW )); then
+      init_pubsub_service_account "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
+      enable_monitoring "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
       gcloud iam service-accounts add-iam-policy-binding \
         --role roles/iam.workloadIdentityUser \
-        --member "${BROKER_MEMBER}" "${PUBSUB_SERVICE_ACCOUNT_EMAIL}"
+        --member "${BROKER_MEMBER}" "${BROKER_GSA_EMAIL}"
     else
       gcloud iam service-accounts add-iam-policy-binding \
         --role roles/iam.workloadIdentityUser \
         --member "${BROKER_MEMBER}" \
-        --project "${PROW_PROJECT_NAME}" "${PUBSUB_SERVICE_ACCOUNT_EMAIL}"
+        --project "${PROW_PROJECT_NAME}" "${BROKER_GSA_EMAIL}"
     fi
-    kubectl annotate --overwrite serviceaccount ${BROKER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account="${PUBSUB_SERVICE_ACCOUNT_EMAIL}" \
+    kubectl annotate --overwrite serviceaccount ${BROKER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account="${BROKER_GSA_EMAIL}" \
       --namespace "${CONTROL_PLANE_NAMESPACE}"
   else
     echo "Invalid parameter"
@@ -150,7 +162,7 @@ function prow_control_plane_setup() {
     kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}" \
       --namespace "${CONTROL_PLANE_NAMESPACE}"
     # Setup default credential information for Workload Identity.
-    sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/PUBSUB-SERVICE-ACCOUNT/${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
+    sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/SOURCES-GOOGLE-SERVICE-ACCOUNT/${SOURCES_GSA_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
   else
     echo "Invalid parameter"
   fi
@@ -159,7 +171,7 @@ function prow_control_plane_setup() {
 function cleanup_iam_policy_binding_members() {
   # If the tests are run on Prow, clean up the member for roles/iam.workloadIdentityUser before running it.
   members=$(gcloud iam service-accounts get-iam-policy \
-    --project="${PROW_PROJECT_NAME}" "${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}" \
+    --project="${PROW_PROJECT_NAME}" "${SOURCES_GSA_EMAIL}" \
     --format="value(bindings.members)" \
     --filter="bindings.role:roles/iam.workloadIdentityUser" \
     --flatten="bindings[].members")
@@ -170,7 +182,7 @@ function cleanup_iam_policy_binding_members() {
       gcloud iam service-accounts remove-iam-policy-binding \
         --role roles/iam.workloadIdentityUser \
         --member "${member_name}" \
-        --project "${PROW_PROJECT_NAME}" "${DATA_PLANE_SERVICE_ACCOUNT_EMAIL}"
+        --project "${PROW_PROJECT_NAME}" "${SOURCES_GSA_EMAIL}"
         # Add a sleep time between each get-set iam-policy-binding loop to avoid concurrency issue. Sleep time is based on the SLO.
         sleep 10
     fi
@@ -196,18 +208,18 @@ function delete_topics_and_subscriptions() {
 
 function enable_monitoring(){
   local project_id=${1}
-  local pubsub_service_account=${2}
+  local service_account=${2}
 
   echo "parameter project_id used when enabling monitoring is'${project_id}'"
-  echo "parameter data_plane_service_account used when enabling monitoring is'${pubsub_service_account}'"
+  echo "parameter service_account used when enabling monitoring is'${service_account}'"
   # Enable monitoring
   echo "Enable Monitoring"
   gcloud services enable monitoring
   gcloud projects add-iam-policy-binding "${project_id}" \
-      --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
+      --member=serviceAccount:"${service_account}"@"${project_id}".iam.gserviceaccount.com \
       --role roles/monitoring.metricWriter
   gcloud projects add-iam-policy-binding "${project_id}" \
-      --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
+      --member=serviceAccount:"${service_account}"@"${project_id}".iam.gserviceaccount.com \
       --role roles/cloudtrace.agent
 }
 
@@ -269,7 +281,7 @@ function non_pod_check_keywords() {
 function apply_invalid_auth() {
   local auth_mode=${1}
   if [ "${auth_mode}" == "secret" ]; then
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${GCP_BROKER_SECRET_NAME}" --from-file=key.json=${CONFIG_INVALID_CREDENTIAL}
+    kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${BROKER_GSA_SECRET_NAME}" --from-file=key.json=${CONFIG_INVALID_CREDENTIAL}
   elif [ "${auth_mode}" == "workload_identity" ]; then
     kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account=fakeserviceaccount@test-project.iam.gserviceaccount.com
   else
@@ -281,7 +293,7 @@ function apply_invalid_auth() {
 function delete_invalid_auth() {
   local auth_mode=${1}
   if [ "${auth_mode}" == "secret" ]; then
-    kubectl -n "${CONTROL_PLANE_NAMESPACE}" delete secret "${GCP_BROKER_SECRET_NAME}"
+    kubectl -n "${CONTROL_PLANE_NAMESPACE}" delete secret "${BROKER_GSA_SECRET_NAME}"
   elif [ "${auth_mode}" == "workload_identity" ]; then
     kubectl -n "${CONTROL_PLANE_NAMESPACE}" annotate sa broker iam.gke.io/gcp-service-account-
   else
