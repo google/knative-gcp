@@ -26,8 +26,10 @@ import (
 )
 
 // CloudSchedulerSourceLister helps list CloudSchedulerSources.
+// All objects returned here must be treated as read-only.
 type CloudSchedulerSourceLister interface {
 	// List lists all CloudSchedulerSources in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.CloudSchedulerSource, err error)
 	// CloudSchedulerSources returns an object that can list and get CloudSchedulerSources.
 	CloudSchedulerSources(namespace string) CloudSchedulerSourceNamespaceLister
@@ -58,10 +60,13 @@ func (s *cloudSchedulerSourceLister) CloudSchedulerSources(namespace string) Clo
 }
 
 // CloudSchedulerSourceNamespaceLister helps list and get CloudSchedulerSources.
+// All objects returned here must be treated as read-only.
 type CloudSchedulerSourceNamespaceLister interface {
 	// List lists all CloudSchedulerSources in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.CloudSchedulerSource, err error)
 	// Get retrieves the CloudSchedulerSource from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.CloudSchedulerSource, error)
 	CloudSchedulerSourceNamespaceListerExpansion
 }

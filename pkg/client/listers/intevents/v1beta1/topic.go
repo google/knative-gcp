@@ -26,8 +26,10 @@ import (
 )
 
 // TopicLister helps list Topics.
+// All objects returned here must be treated as read-only.
 type TopicLister interface {
 	// List lists all Topics in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Topic, err error)
 	// Topics returns an object that can list and get Topics.
 	Topics(namespace string) TopicNamespaceLister
@@ -58,10 +60,13 @@ func (s *topicLister) Topics(namespace string) TopicNamespaceLister {
 }
 
 // TopicNamespaceLister helps list and get Topics.
+// All objects returned here must be treated as read-only.
 type TopicNamespaceLister interface {
 	// List lists all Topics in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Topic, err error)
 	// Get retrieves the Topic from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.Topic, error)
 	TopicNamespaceListerExpansion
 }

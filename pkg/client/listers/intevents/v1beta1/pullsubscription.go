@@ -26,8 +26,10 @@ import (
 )
 
 // PullSubscriptionLister helps list PullSubscriptions.
+// All objects returned here must be treated as read-only.
 type PullSubscriptionLister interface {
 	// List lists all PullSubscriptions in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.PullSubscription, err error)
 	// PullSubscriptions returns an object that can list and get PullSubscriptions.
 	PullSubscriptions(namespace string) PullSubscriptionNamespaceLister
@@ -58,10 +60,13 @@ func (s *pullSubscriptionLister) PullSubscriptions(namespace string) PullSubscri
 }
 
 // PullSubscriptionNamespaceLister helps list and get PullSubscriptions.
+// All objects returned here must be treated as read-only.
 type PullSubscriptionNamespaceLister interface {
 	// List lists all PullSubscriptions in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.PullSubscription, err error)
 	// Get retrieves the PullSubscription from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.PullSubscription, error)
 	PullSubscriptionNamespaceListerExpansion
 }
