@@ -216,7 +216,6 @@ github.com/google/wire/internal/wire
 ## explicit
 github.com/googleapis/gax-go/v2
 # github.com/googleapis/gnostic v0.4.1
-github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
 github.com/googleapis/gnostic/openapiv2
@@ -1002,7 +1001,7 @@ k8s.io/gengo/types
 k8s.io/klog
 # k8s.io/klog/v2 v2.2.0
 k8s.io/klog/v2
-# k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6 => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
+# k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6
 k8s.io/kube-openapi/cmd/openapi-gen/args
 k8s.io/kube-openapi/pkg/common
 k8s.io/kube-openapi/pkg/generators
@@ -1155,7 +1154,7 @@ knative.dev/eventing/test/upgrade/prober/wathola/sender
 ## explicit
 knative.dev/hack
 knative.dev/hack/shell
-# knative.dev/networking v0.0.0-20210123150554-8b522a9049a1
+# knative.dev/networking v0.0.0-20210125050654-94433ab7f620
 knative.dev/networking/pkg
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
@@ -1274,7 +1273,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.20.1-0.20210125050555-39d33bf147c0
+# knative.dev/serving v0.20.1-0.20210128144031-5cd4f6442637
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
@@ -1315,7 +1314,6 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 ## explicit
 sigs.k8s.io/yaml
-# k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 # github.com/json-iterator/go => github.com/json-iterator/go v1.1.7
 # github.com/modern-go/reflect2 => github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
 # github.com/pkg/errors => github.com/pkg/errors v0.8.1

@@ -34,11 +34,9 @@ require (
 	knative.dev/eventing v0.20.1-0.20210128132430-1725902f7e39
 	knative.dev/hack v0.0.0-20210120165453-8d623a0af457
 	knative.dev/pkg v0.0.0-20210127163530-0d31134d5f4e
-	knative.dev/serving v0.20.1-0.20210125050555-39d33bf147c0
+	knative.dev/serving v0.20.1-0.20210128144031-5cd4f6442637
 	sigs.k8s.io/yaml v1.2.0
 )
-
-replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 
 // The following packages were pinned as part of the go module transition and should eventually be
 // unpinned.
