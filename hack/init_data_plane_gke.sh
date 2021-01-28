@@ -47,7 +47,7 @@ if [[ $MODE == "default" ]]; then
   # Grant iam.serviceAccountAdmin permission of the Google service account events-sources-gsa
   # to the Control Plane's Google service account events-controller-gsa.
   gcloud iam service-accounts add-iam-policy-binding ${DATA_PLANE_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com  \
-  --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com \
+  --member=serviceAccount:${CONTROL_PLANE_GSA}@${PROJECT_ID}.iam.gserviceaccount.com \
   --role roles/iam.serviceAccountAdmin
 
 # Modify ConfigMap config-gcp-auth.
