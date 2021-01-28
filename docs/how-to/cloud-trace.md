@@ -52,8 +52,8 @@ The following additional filters can be used to filter by event attributes:
 ```
 messaging.message_id:<event-id>
 cloudevents.type:<event-type>
-cloudevents.source<event-source>
-cloudevents.subject<event-subject>
+cloudevents.source:<event-source>
+cloudevents.subject:<event-subject>
 cloudevents.datacontenttype:<content-type>
 cloudevents.specversion:<cloudevent-version>
 ```
