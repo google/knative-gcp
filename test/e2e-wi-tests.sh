@@ -23,7 +23,6 @@ source $(dirname "${BASH_SOURCE[0]}")/e2e-common.sh
 readonly BROKER_SERVICE_ACCOUNT="broker"
 readonly PROW_SERVICE_ACCOUNT_EMAIL=$(gcloud config get-value core/account)
 # Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
-readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
 readonly CONFIG_GCP_AUTH="test/test_configs/config-gcp-auth-wi.yaml"
 readonly K8S_SERVICE_ACCOUNT_NAME="ksa-name"
 
@@ -34,14 +33,12 @@ function export_variable() {
     readonly CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
     readonly PUBSUB_SERVICE_ACCOUNT_EMAIL="${PUBSUB_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
     readonly DATA_PLANE_SERVICE_ACCOUNT_EMAIL=PUBSUB_SERVICE_ACCOUNT_EMAIL
-    readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
   else
     readonly CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
     # Get the PROW service account.
     readonly PROW_PROJECT_NAME=$(cut -d'.' -f1 <<< "$(cut -d'@' -f2 <<< "${PROW_SERVICE_ACCOUNT_EMAIL}")")
     readonly DATA_PLANE_SERVICE_ACCOUNT_EMAIL="cloud-run-events-source@${PROW_PROJECT_NAME}.iam.gserviceaccount.com"
     readonly PUBSUB_SERVICE_ACCOUNT_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
-    readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
   fi
 }
 
@@ -57,8 +54,6 @@ function test_setup() {
   fi
 
   gcp_broker_setup "workload_identity" || return 1
-  # Create private key that will be used in storage_setup
-  create_private_key_for_pubsub_service_account || return 1
   storage_setup || return 1
   scheduler_setup || return 1
   echo "Sleep 2 mins to wait for all resources to setup"
@@ -88,14 +83,6 @@ function control_plane_setup() {
   fi
   wait_until_pods_running "${CONTROL_PLANE_NAMESPACE}" || return 1
 }
-
-function create_private_key_for_pubsub_service_account {
-  if (( ! IS_PROW )); then
-    gcloud iam service-accounts keys create "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}" \
-      --iam-account="${PUBSUB_SERVICE_ACCOUNT_EMAIL}"
-  fi
-}
-
 
 if [ "${SKIP_TESTS:-}" == "true" ]; then
   echo "**************************************"
