@@ -239,6 +239,9 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	if err != nil {
 		return err
 	}
+	if replyResp.StatusCode/100 != 2 {
+		return fmt.Errorf("event delivery failed sending the reply: HTTP status code %d", replyResp.StatusCode)
+	}
 	if err := replyResp.Body.Close(); err != nil {
 		logging.FromContext(ctx).Warn("failed to close reply response body", zap.Error(err))
 	}

@@ -341,8 +341,7 @@ func TestDeliverFailure(t *testing.T) {
 		replyHandler: testingReplyHandler{
 			responseCode: http.StatusBadRequest,
 		},
-		// TODO(https://github.com/google/knative-gcp/issues/2106): This should actually be true.
-		wantErr: false,
+		wantErr: true,
 	}, {
 		name: "reply server success",
 		targetHandler: &targetWithFailureHandler{
