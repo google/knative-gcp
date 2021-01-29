@@ -318,14 +318,14 @@ func TestGetMountFailureMessageFromEventList(t *testing.T) {
 						Name:      "event-1",
 						Namespace: testNS,
 					},
-					Message: `MountVolume.SetUp failed for volume "google-cloud-key"`,
+					Message: `secret "google-cloud-key" not found`,
 				}},
 			},
 			secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{Name: "google-cloud-key"},
 				Key:                  "key.json",
 			},
-			wantMessage: `MountVolume.SetUp failed for volume "google-cloud-key"`,
+			wantMessage: `secret "google-cloud-key" not found`,
 		},
 		{
 			name: "qualified key related message from event",
@@ -367,7 +367,7 @@ func TestGetMountFailureMessageFromEventList(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			getMessage := GetMountFailureMessageFromEventList(tc.eventlist, tc.secret)
-			if diff := cmp.Diff(getMessage, tc.wantMessage); diff != "" {
+			if diff := cmp.Diff(tc.wantMessage, getMessage); diff != "" {
 				t.Error("unexpected termination message (-want, +got) = ", diff)
 			}
 		})
