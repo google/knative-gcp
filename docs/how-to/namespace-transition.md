@@ -36,10 +36,13 @@ steps:
 
 We assume here that the desire is to keep the existing authentication mechanism
 and provide the steps to correct the permissions to work in the new namespace.
-Next follow the upgrade instructions for authentication with either Kubernetes
-Secrets or Workload Identity, depending on what was used in the old namespace.
-After you've completed the upgrade verify that everything is working correctly
-by following the steps in the last section.
+These steps will transfer your cluster's authentication configuration to the new
+namespace. Follow the upgrade instructions for either
+[Kubernetes Secrets](#using-kubernetes-secrets) or
+[Workload Identity](#using-workload-identity) depending on your cluster's
+current authentication mechanism. After the upgrade is completed, verify that
+everything is working correctly by following the steps in
+[Verify and Correct Existing Functionality](#verify-and-correct-existing-functionality).
 
 #### Using Kubernetes Secrets
 
@@ -77,80 +80,101 @@ by following the steps in the last section.
 
 #### Using Workload Identity
 
-1. For this purpose we need to first setup a number of environment variables
-   based on the existing authentication settings. The following `gcloud` command
-   can be used to view the existing Google Service Accounts (GSAs) and their
-   roles in your GCP project.
+1.  We need to first setup a number of environment variables based on the
+    existing authentication settings.
 
-   ```shell script
-   export PROJECT_ID=<gcp-project-identifier>
-   # view GSAs and roles
-   gcloud projects get-iam-policy $PROJECT_ID
-   ```
+    1.  If you used the same names for the Google Service Accounts (GSAs) as
+        throughout the documentation in
+        [Installing Knative-GCP ](https://github.com/google/knative-gcp/blob/release-0.19/docs/install/install-knative-gcp.md)
+        and
+        [Installing a Service Account for the Data Plane](https://github.com/google/knative-gcp/blob/release-0.19/docs/install/dataplane-service-account.md)
+        you can directly define the environment variables as listed below.
 
-   Using this information, you can find the service accounts set up for the
-   control plane and broker data plane. The control plane GSA should have the
-   roles: `pubsub.admin`, `storage.admin`, `cloudscheduler.admin`,
-   `logging.configWriter` and `logging.privateLogViewer`. The broker data plane
-   GSA should have the roles: `pubsub.editor`, `monitoring.metricWriter` and
-   `cloudtrace.agent`.
+        ```shell script
+        # environment variable with the project ID the cluster is in
+        export PROJECT_ID=<gcp-project-identifier>
+        # GSA for the control plane
+        export CONTROLLER_GSA=cloud-run-events
+        # GSA for the broker data plane
+        export BROKER_GSA=cre-dataplane
+        ```
 
-   Once you found the names for these service accounts, set the following
-   environment variables. In this example the names of the GSAs are
-   `events-controller-gsa` for the control plane and `events-broker-gsa` for the
-   broker data plane.
+    2.  Otherwise, the following `gcloud` command can be used to view the
+        existing Google Service Accounts (GSAs) and their roles in your GCP
+        project.
 
-   ```shell script
-   export CONTROLLER_GSA=events-controller-gsa
-   export BROKER_GSA=events-broker-gsa
-   ```
+        ```shell script
+        # environment variable with the project ID the cluster is in
+        export PROJECT_ID=<gcp-project-identifier>
+        # view GSAs and roles
+        gcloud projects get-iam-policy $PROJECT_ID
+        ```
 
-1. Run the following commands before installing the new `v0.20` release. We
-   explain the purpose of each command in comments.
+        Using this information, you can find the service accounts set up for the
+        control plane and broker data plane. The control plane GSA should have
+        the roles: `pubsub.admin`, `storage.admin`, `cloudscheduler.admin`,
+        `logging.configWriter` and `logging.privateLogViewer`. The broker data
+        plane GSA should have the roles: `pubsub.editor`,
+        `monitoring.metricWriter` and `cloudtrace.agent`.
 
-   ```shell script
-   # create the new namespace by copying the labels and annotations from the old one
-   kubectl get namespace cloud-run-events -o yaml | \
-     sed 's/  name: cloud-run-events/  name: events-system/g' | \
-     sed 's!/cloud-run-events!/events-system!g' | \
-     kubectl apply -f -
-   # copy the existing config maps to maintain existing configurations
-   kubectl get configmaps -n cloud-run-events --field-selector metadata.name!=kube-root-ca.crt -o yaml | \
-     sed 's/  namespace: cloud-run-events/  namespace: events-system/g' | \
-     sed 's!/cloud-run-events/!/events-system/!g' | \
-     kubectl apply -f -
+        Once you found the names for these service accounts, set the following
+        environment variables. In this example the names of the GSAs are
+        `events-controller-gsa` for the control plane and `events-broker-gsa`
+        for the broker data plane.
 
-   # setup authentication for the new namespace using workload identity
-   # this setup can be done before the upgrade and will ensure the speediest creation of the necessary resources
+        ```shell script
+        # GSA for the control plane
+        export CONTROLLER_GSA=events-controller-gsa
+        # GSA for the broker data plane
+        export BROKER_GSA=events-broker-gsa
+        ```
 
-   # auth for the control plane
-   gcloud iam service-accounts add-iam-policy-binding \
-     --role roles/iam.workloadIdentityUser \
-     --member serviceAccount:$PROJECT_ID.svc.id.goog[events-system/controller] \
-     $CONTROLLER_GSA@$PROJECT_ID.iam.gserviceaccount.com
-   kubectl create serviceaccount --namespace events-system controller
-   kubectl annotate serviceaccount -n events-system controller \
-     iam.gke.io/gcp-service-account=$CONTROLLER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+1.  Run the following commands before installing the new `v0.20` release. We
+    explain the purpose of each command in comments.
 
-   # auth for the broker data plane
-   gcloud iam service-accounts add-iam-policy-binding \
-     --role roles/iam.workloadIdentityUser \
-     --member=serviceAccount:$PROJECT_ID.svc.id.goog[events-system/broker] \
-     $BROKER_GSA@$PROJECT_ID.iam.gserviceaccount.com
-   kubectl create serviceaccount --namespace events-system broker
-   kubectl annotate serviceaccount -n events-system broker \
-     iam.gke.io/gcp-service-account=$BROKER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+    ```shell script
+    # create the new namespace by copying the labels and annotations from the old one
+    kubectl get namespace cloud-run-events -o yaml | \
+      sed 's/  name: cloud-run-events/  name: events-system/g' | \
+      sed 's!/cloud-run-events!/events-system!g' | \
+      kubectl apply -f -
+    # copy the existing config maps to maintain existing configurations
+    kubectl get configmaps -n cloud-run-events --field-selector metadata.name!=kube-root-ca.crt -o yaml | \
+      sed 's/  namespace: cloud-run-events/  namespace: events-system/g' | \
+      sed 's!/cloud-run-events/!/events-system/!g' | \
+      kubectl apply -f -
 
-   # mark config-gcp-auth as initialized (important for the Cloud Console, which checks for this)
-   kubectl annotate configmap  -n events-system  \
-     config-gcp-auth --overwrite events.cloud.google.com/initialized=true
+    # setup authentication for the new namespace using workload identity
+    # this setup can be done before the upgrade and will ensure the speediest creation of the necessary resources
 
-   # remove the old webhook and controller to prevent them from interfering with the new ones
-   kubectl delete deployment webhook -n cloud-run-events
-   kubectl delete service webhook -n cloud-run-events
-   kubectl delete deployment controller -n cloud-run-events
-   kubectl delete service controller -n cloud-run-events
-   ```
+    # auth for the control plane
+    gcloud iam service-accounts add-iam-policy-binding \
+      --role roles/iam.workloadIdentityUser \
+      --member serviceAccount:$PROJECT_ID.svc.id.goog[events-system/controller] \
+      $CONTROLLER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+    kubectl create serviceaccount --namespace events-system controller
+    kubectl annotate serviceaccount -n events-system controller \
+      iam.gke.io/gcp-service-account=$CONTROLLER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+
+    # auth for the broker data plane
+    gcloud iam service-accounts add-iam-policy-binding \
+      --role roles/iam.workloadIdentityUser \
+      --member=serviceAccount:$PROJECT_ID.svc.id.goog[events-system/broker] \
+      $BROKER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+    kubectl create serviceaccount --namespace events-system broker
+    kubectl annotate serviceaccount -n events-system broker \
+      iam.gke.io/gcp-service-account=$BROKER_GSA@$PROJECT_ID.iam.gserviceaccount.com
+
+    # mark config-gcp-auth as initialized (important for the Cloud Console, which checks for this)
+    kubectl annotate configmap  -n events-system  \
+      config-gcp-auth --overwrite events.cloud.google.com/initialized=true
+
+    # remove the old webhook and controller to prevent them from interfering with the new ones
+    kubectl delete deployment webhook -n cloud-run-events
+    kubectl delete service webhook -n cloud-run-events
+    kubectl delete deployment controller -n cloud-run-events
+    kubectl delete service controller -n cloud-run-events
+    ```
 
 ### Upgrade to the Eventing v0.20 Release
 
@@ -249,7 +273,9 @@ by following the steps in the last section.
      ...
    ```
 
-1. Delete the old BrokerCell since it is no longer useful.
+1. Delete the old BrokerCell since it is no longer used. This will not cause any
+   service disruptions since the previous step already verified that the new
+   BrokerCell is ready and active.
 
    ```shell script
    kubectl delete brokercell default -n cloud-run-events
@@ -288,7 +314,7 @@ by following the steps in the last section.
    ```
 
    ```shell script
-   # delete all the source deployment referencing the old namespace
+   # delete all the source deployments referencing the old namespace
    kubectl delete deploy --all-namespaces \
      --selector internal.events.cloud.google.com/controller=events-system-pubsub-pullsubscription-controller
    ```
