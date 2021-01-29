@@ -104,7 +104,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Trigger does not have broker", zap.String("namespace", t.Namespace), zap.String("trigger", t.Name), zap.String("broker", t.Spec.Broker))
-		t.Status.MarkBrokerFailed("BrokerDoesNotExist", "Broker %s does not exist", t.Spec.Broker)
+		t.Status.MarkBrokerFailed("BrokerDoesNotExist", "Broker %q does not exist", t.Spec.Broker)
 	}
 
 	// If the broker has been or is being deleted, we clean up resources created by this controller
