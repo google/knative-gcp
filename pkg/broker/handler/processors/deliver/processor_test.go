@@ -60,7 +60,7 @@ const (
 	fakeIngressAddress = "ingress"
 	ceBody             = `{
   "specversion": "1.0",
-  "type": "com.exmaple.someevent",
+  "type": "com.example.someevent",
   "id": "123",
   "source": "http://example.com/",
   "data": {
@@ -253,13 +253,18 @@ func (h *targetWithFailureHandler) ServeHTTP(w http.ResponseWriter, req *http.Re
 	w.Write([]byte(h.respBody))
 }
 
-type testingReplyHandler struct {
+// statusCodeReplyHandler is intended to be used as the handler that replies are sent to. It will
+// respond with `responseCode`. If `responseCode` is not set, then the handler asserts that it
+// should not have been called (i.e. no reply event was expected to be sent).
+type statusCodeReplyHandler struct {
 	t            *testing.T
 	responseCode int
+	eventsSeen   int
 }
 
-func (h *testingReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *statusCodeReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	io.Copy(ioutil.Discard, req.Body)
+	h.eventsSeen += 1
 	if h.responseCode == 0 {
 		h.t.Errorf("Reply Handler was not configured, no event should have been seen")
 	} else {
@@ -269,12 +274,13 @@ func (h *testingReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 
 func TestDeliverFailure(t *testing.T) {
 	cases := []struct {
-		name          string
-		withRetry     bool
-		targetHandler *targetWithFailureHandler
-		replyHandler  testingReplyHandler
-		failRetry     bool
-		wantErr       bool
+		name                string
+		withRetry           bool
+		targetHandler       *targetWithFailureHandler
+		replyHandler        statusCodeReplyHandler
+		expectedReplyEvents int
+		failRetry           bool
+		wantErr             bool
 	}{{
 		name:          "delivery error no retry",
 		targetHandler: &targetWithFailureHandler{respCode: http.StatusInternalServerError},
@@ -338,20 +344,22 @@ func TestDeliverFailure(t *testing.T) {
 			respCode: http.StatusAccepted,
 			respBody: ceBody,
 		},
-		replyHandler: testingReplyHandler{
+		replyHandler: statusCodeReplyHandler{
 			responseCode: http.StatusBadRequest,
 		},
-		wantErr: true,
+		expectedReplyEvents: 1,
+		wantErr:             true,
 	}, {
 		name: "reply server success",
 		targetHandler: &targetWithFailureHandler{
 			respCode: http.StatusAccepted,
 			respBody: ceBody,
 		},
-		replyHandler: testingReplyHandler{
+		replyHandler: statusCodeReplyHandler{
 			responseCode: http.StatusOK,
 		},
-		wantErr: false,
+		expectedReplyEvents: 1,
+		wantErr:             false,
 	}}
 
 	for _, tc := range cases {
@@ -425,6 +433,9 @@ func TestDeliverFailure(t *testing.T) {
 			err = p.Process(ctx, origin)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("processing got error=%v, want=%v", err, tc.wantErr)
+			}
+			if want, got := tc.expectedReplyEvents, tc.replyHandler.eventsSeen; want != got {
+				t.Errorf("Unexpected number of reply events. Want %d, Got %d", want, got)
 			}
 		})
 	}
