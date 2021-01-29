@@ -19,6 +19,8 @@ package trigger
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/reconciler/celltenant"
+
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/labels"
@@ -92,11 +94,13 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 		}()
 	}
 	r := &Reconciler{
-		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-		brokerLister:       brokerinformer.Get(ctx).Lister(),
-		pubsubClient:       client,
-		projectID:          projectID,
-		dataresidencyStore: drs,
+		Base:         reconciler.NewBase(ctx, controllerAgentName, cmw),
+		brokerLister: brokerinformer.Get(ctx).Lister(),
+		targetReconciler: &celltenant.TargetReconciler{
+			ProjectID:          projectID,
+			PubsubClient:       client,
+			DataresidencyStore: drs,
+		},
 	}
 
 	impl := triggerreconciler.NewImpl(ctx, r, withAgentAndFinalizer)
@@ -131,7 +135,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 	return impl
 }
 
-func withAgentAndFinalizer(impl *pkgcontroller.Impl) pkgcontroller.Options {
+func withAgentAndFinalizer(_ *pkgcontroller.Impl) pkgcontroller.Options {
 	return pkgcontroller.Options{
 		FinalizerName: finalizerName,
 		AgentName:     controllerAgentName,

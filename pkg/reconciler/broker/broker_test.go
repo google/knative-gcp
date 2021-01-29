@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/reconciler/celltenant"
+
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
@@ -210,7 +212,7 @@ func TestAllCases(t *testing.T) {
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerReadyURI(brokerAddress),
-				WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
+				WithBrokerBrokerCellUnknown("BrokerCellNotReady", "BrokerCell knative-testing/default is not ready"),
 				WithBrokerSetDefaults,
 			),
 		}},
@@ -251,7 +253,7 @@ func TestAllCases(t *testing.T) {
 					WithBrokerUID(testUID),
 					WithBrokerDeliverySpec(brokerDeliverySpec),
 					WithInitBrokerConditions,
-					WithBrokerBrokerCellFailed("BrokerCellCreationFailed", "Failed to create knative-testing/default"),
+					WithBrokerBrokerCellFailed("BrokerCellCreationFailed", "Failed to create BrokerCell knative-testing/default"),
 					WithBrokerSetDefaults,
 				),
 			},
@@ -284,7 +286,7 @@ func TestAllCases(t *testing.T) {
 					WithBrokerUID(testUID),
 					WithBrokerDeliverySpec(brokerDeliverySpec),
 					WithBrokerReadyURI(brokerAddress),
-					WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
+					WithBrokerBrokerCellUnknown("BrokerCellNotReady", "BrokerCell knative-testing/default is not ready"),
 					WithBrokerSetDefaults,
 				),
 			},
@@ -293,7 +295,7 @@ func TestAllCases(t *testing.T) {
 		SkipNamespaceValidation: true, // The brokercell resource is created in a different namespace (system namespace) than the broker
 		WantEvents: []string{
 			brokerFinalizerUpdatedEvent,
-			Eventf(corev1.EventTypeNormal, "BrokerCellCreated", `Created brokercell knative-testing/default`),
+			Eventf(corev1.EventTypeNormal, "BrokerCellCreated", `Created BrokerCell knative-testing/default`),
 			Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-bkr_testnamespace_test-broker_abc123"`),
 			Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-bkr_testnamespace_test-broker_abc123"`),
 			brokerReconciledEvent,
@@ -441,12 +443,11 @@ func TestAllCases(t *testing.T) {
 		srv := pstest.NewServer()
 		// Insert pubsub client for PostConditions and create fixtures
 		psclient, _ := GetTestClientCreateFunc(srv.Addr)(ctx, testProject)
-		savedCreateFn := createPubsubClientFn
-		close := func() {
+		savedCreateFn := celltenant.CreatePubsubClientFn
+		t.Cleanup(func() {
 			srv.Close()
-			createPubsubClientFn = savedCreateFn
-		}
-		t.Cleanup(close)
+			celltenant.CreatePubsubClientFn = savedCreateFn
+		})
 		if testData != nil {
 			InjectPubsubClient(testData, psclient)
 			if testData["pre"] != nil {
@@ -468,19 +469,21 @@ func TestAllCases(t *testing.T) {
 		if maxTime, ok := testData["maxPSClientCreateTime"]; ok {
 			// Overwrite the createPubsubClientFn to one that failed when called more than maxTime times.
 			// maxTime=0 is used to inject error
-			createPubsubClientFn = GetFailedTestClientCreateFunc(srv.Addr, maxTime.(int))
+			celltenant.CreatePubsubClientFn = GetFailedTestClientCreateFunc(srv.Addr, maxTime.(int))
 			testPSClient = nil
 		}
 
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
 		r := &Reconciler{
-			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-			brokerCellLister:   listers.GetBrokerCellLister(),
-			projectID:          testProject,
-			pubsubClient:       testPSClient,
-			dataresidencyStore: drStore,
-			clusterRegion:      testClusterRegion,
+			Reconciler: celltenant.Reconciler{
+				Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+				BrokerCellLister:   listers.GetBrokerCellLister(),
+				ProjectID:          testProject,
+				PubsubClient:       testPSClient,
+				DataresidencyStore: drStore,
+				ClusterRegion:      testClusterRegion,
+			},
 		}
 		return brokerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerLister(), r.Recorder, r, brokerv1beta1.BrokerClass)
 	}))
