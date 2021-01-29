@@ -26,8 +26,10 @@ import (
 )
 
 // CloudStorageSourceLister helps list CloudStorageSources.
+// All objects returned here must be treated as read-only.
 type CloudStorageSourceLister interface {
 	// List lists all CloudStorageSources in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.CloudStorageSource, err error)
 	// CloudStorageSources returns an object that can list and get CloudStorageSources.
 	CloudStorageSources(namespace string) CloudStorageSourceNamespaceLister
@@ -58,10 +60,13 @@ func (s *cloudStorageSourceLister) CloudStorageSources(namespace string) CloudSt
 }
 
 // CloudStorageSourceNamespaceLister helps list and get CloudStorageSources.
+// All objects returned here must be treated as read-only.
 type CloudStorageSourceNamespaceLister interface {
 	// List lists all CloudStorageSources in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.CloudStorageSource, err error)
 	// Get retrieves the CloudStorageSource from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.CloudStorageSource, error)
 	CloudStorageSourceNamespaceListerExpansion
 }

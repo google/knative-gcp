@@ -1,6 +1,6 @@
 module github.com/google/knative-gcp
 
-go 1.14
+go 1.15
 
 require (
 	cloud.google.com/go v0.72.0
@@ -30,21 +30,12 @@ require (
 	google.golang.org/protobuf v1.25.0
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
-	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.20.1-0.20210125061954-340f07f40bda
+	k8s.io/client-go v0.19.7
+	knative.dev/eventing v0.20.1-0.20210128132430-1725902f7e39
 	knative.dev/hack v0.0.0-20210120165453-8d623a0af457
-	knative.dev/pkg v0.0.0-20210124203454-7101e9d4f6c6
-	knative.dev/serving v0.20.1-0.20210125050555-39d33bf147c0
+	knative.dev/pkg v0.0.0-20210127163530-0d31134d5f4e
+	knative.dev/serving v0.20.1-0.20210128144031-5cd4f6442637
 	sigs.k8s.io/yaml v1.2.0
-)
-
-replace (
-	k8s.io/api => k8s.io/api v0.18.8
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.8
-	k8s.io/apimachinery => k8s.io/apimachinery v0.18.8
-	k8s.io/client-go => k8s.io/client-go v0.18.8
-	k8s.io/code-generator => k8s.io/code-generator v0.18.8
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 )
 
 // The following packages were pinned as part of the go module transition and should eventually be
