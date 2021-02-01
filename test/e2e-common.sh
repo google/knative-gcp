@@ -116,6 +116,7 @@ function broker_auth_setup() {
 
   if [ "${auth_mode}" == "secret" ]; then
     if (( ! IS_PROW )); then
+      # When not running on Prow we need to set up a service account for broker.
       init_pubsub_service_account "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
       enable_monitoring "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
       gcloud iam service-accounts keys create "${BROKER_GSA_KEY_TEMP}" \
@@ -124,6 +125,7 @@ function broker_auth_setup() {
     kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${BROKER_GSA_SECRET_NAME}" --from-file=key.json="${BROKER_GSA_KEY_TEMP}"
   elif [ "${auth_mode}" == "workload_identity" ]; then
     if (( ! IS_PROW )); then
+      # When not running on Prow we need to set up a service account for broker.
       init_pubsub_service_account "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
       enable_monitoring "${E2E_PROJECT_ID}" "${BROKER_GSA_NON_PROW}"
       gcloud iam service-accounts add-iam-policy-binding \
