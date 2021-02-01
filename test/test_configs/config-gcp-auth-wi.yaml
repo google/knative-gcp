@@ -25,4 +25,4 @@ data:
     clusterDefaults:
       serviceAccountName: K8S_SERVICE_ACCOUNT_NAME
       workloadIdentityMapping:
-        K8S_SERVICE_ACCOUNT_NAME: PUBSUB-SERVICE-ACCOUNT
+        K8S_SERVICE_ACCOUNT_NAME: SOURCES-GOOGLE-SERVICE-ACCOUNT
