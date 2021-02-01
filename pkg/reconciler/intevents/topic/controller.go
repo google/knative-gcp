@@ -41,7 +41,6 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
-	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/utils/authcheck"
 )
 
@@ -86,14 +85,10 @@ func newController(
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	pubsubBase := &intevents.PubSubBase{
-		Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
-	}
-
 	topicLister := topicInformer.Lister()
 
 	r := &Reconciler{
-		PubSubBase:           pubsubBase,
+		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
 		Identity:             identity.NewIdentity(ctx, ipm, gcpas),
 		dataresidencyStore:   dataresidencyStore,
 		topicLister:          topicLister,
@@ -105,7 +100,7 @@ func newController(
 
 	impl := topicreconciler.NewImpl(ctx, r)
 
-	pubsubBase.Logger.Info("Setting up event handlers")
+	r.Logger.Info("Setting up event handlers")
 	topicInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	topicGK := v1.Kind("Topic")
