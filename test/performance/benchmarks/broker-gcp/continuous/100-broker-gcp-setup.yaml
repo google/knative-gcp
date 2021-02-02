@@ -19,6 +19,7 @@ metadata:
   namespace: default
   annotations:
     eventing.knative.dev/broker.class: googlecloud
+spec: {}
 
 ---
 

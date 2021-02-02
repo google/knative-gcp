@@ -21,8 +21,8 @@ require (
 	go.opencensus.io v0.22.5
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
-	golang.org/x/oauth2 v0.0.0-20210126194326-f9ce19ea3013
+	golang.org/x/net v0.0.0-20201209123823-ac852fbbde11
+	golang.org/x/oauth2 v0.0.0-20201208152858-08078c50e5b5
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	google.golang.org/api v0.36.0
 	google.golang.org/genproto v0.0.0-20201211151036-40ec1c210f7a
@@ -31,10 +31,10 @@ require (
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v0.19.7
-	knative.dev/eventing v0.20.1-0.20210202082232-a4a9f4875544
+	knative.dev/eventing v0.20.1-0.20210128132430-1725902f7e39
 	knative.dev/hack v0.0.0-20210120165453-8d623a0af457
-	knative.dev/pkg v0.0.0-20210130001831-ca02ef752ac6
-	knative.dev/serving v0.20.1-0.20210202104232-6313088d8452
+	knative.dev/pkg v0.0.0-20210127163530-0d31134d5f4e
+	knative.dev/serving v0.20.1-0.20210128144031-5cd4f6442637
 	sigs.k8s.io/yaml v1.2.0
 )
 

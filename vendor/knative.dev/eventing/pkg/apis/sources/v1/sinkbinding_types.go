@@ -20,7 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 )
@@ -51,7 +50,6 @@ var (
 	_ apis.Defaultable   = (*SinkBinding)(nil)
 	_ apis.HasSpec       = (*SinkBinding)(nil)
 	_ duckv1.KRShaped    = (*SinkBinding)(nil)
-	_ duck.Bindable      = (*SinkBinding)(nil)
 )
 
 // SinkBindingSpec holds the desired state of the SinkBinding (from the client).

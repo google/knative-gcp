@@ -173,7 +173,7 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	// Report event dispatch time with resp status code.
 	p.StatsReporter.ReportEventDispatchTime(cctx, time.Since(startTime))
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("event delivery failed: HTTP status code %d", resp.StatusCode)
 	}
 
@@ -238,12 +238,6 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	replyResp, err := p.sendMsg(ctx, broker.Address, respMsg, eventutil.SetRemainingHopsTransformer(hops))
 	if err != nil {
 		return err
-	}
-	// TODO Add metrics around the reply requests, as they can lead to redelivery of events through
-	// the Trigger, but do not currently expose any metrics for users to understand why events are
-	// redelivered.
-	if replyResp.StatusCode < 200 || replyResp.StatusCode >= 300 {
-		return fmt.Errorf("event delivery failed sending the reply: HTTP status code %d", replyResp.StatusCode)
 	}
 	if err := replyResp.Body.Close(); err != nil {
 		logging.FromContext(ctx).Warn("failed to close reply response body", zap.Error(err))

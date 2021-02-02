@@ -1,7 +1,3 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
 package imports
 
 import (
@@ -86,12 +82,7 @@ func (r *ModuleResolver) init() error {
 		r.modsByDir = []*gocommand.ModuleJSON{mainMod, r.dummyVendorMod}
 	} else {
 		// Vendor mode is off, so run go list -m ... to find everything.
-		err := r.initAllMods()
-		// We expect an error when running outside of a module with
-		// GO111MODULE=on. Other errors are fatal.
-		if err != nil && !strings.Contains(err.Error(), "working directory is not part of a module") {
-			return err
-		}
+		r.initAllMods()
 	}
 
 	if gmc := r.env.Env["GOMODCACHE"]; gmc != "" {
@@ -166,7 +157,7 @@ func (r *ModuleResolver) init() error {
 }
 
 func (r *ModuleResolver) initAllMods() error {
-	stdout, err := r.env.invokeGo(context.TODO(), "list", "-m", "-e", "-json", "...")
+	stdout, err := r.env.invokeGo(context.TODO(), "list", "-m", "-json", "...")
 	if err != nil {
 		return err
 	}
