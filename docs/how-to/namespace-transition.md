@@ -39,8 +39,8 @@ and provide the steps to correct the permissions to work in the new namespace.
 These steps will transfer your cluster's authentication configuration to the new
 namespace.
 
-You will fist need to create the new namespace. We recommend doing it by copying
-the current one to keep any annotations or labels you have added.
+You will first need to create the new namespace. We recommend doing it by
+copying the current one to keep any annotations or labels you have added.
 
 ```shell script
 # create the new namespace by copying the labels and annotations from the old one
@@ -125,9 +125,13 @@ everything is working correctly by following the steps in
    # auth for the broker data plane
    kubectl get secret google-broker-key --namespace=cloud-run-events -o yaml | \
      grep -v '^\s*namespace:\s' | kubectl apply --namespace=events-system -f -
+   # [optional] if the google-cloud-sources-key secret is present in cloud-run-events
+   # auth for the sources data plane
+   kubectl get secret google-cloud-sources-key --namespace=cloud-run-events -o yaml | \
+     grep -v '^\s*namespace:\s' | kubectl apply --namespace=events-system -f -
    ```
 
-   The expected output is:
+   The expected output (assuming only the first two secrets are present) is:
 
    ```shell script
    secret/google-cloud-key created
@@ -419,8 +423,31 @@ everything is working correctly by following the steps in
    ```
 
 1. **If you have sources deployed.** For each existing source delete the old
-   source deployment. A new source deployment will be created automatically. The
-   example below illustrates the process for a Cloud PubSub source
+   source deployment. A new source deployment will be created automatically.
+
+   You can view the deployed sources using the following commands:
+
+   ```shell script
+   # list all the sources in the cluster
+   kubectl get sources --all-namespaces
+   # list all the source deployments linked to the old cloud-run-events namespace
+   kubectl get deploy --all-namespaces \
+        --selector internal.events.cloud.google.com/controller=cloud-run-events-pubsub-pullsubscription-controller
+   ```
+
+   In the sample output below we have a single Cloud PubSub source with a
+   deployment that uses the old namespace.
+
+   ```shell script
+   NAMESPACE   NAME                                                               READY   REASON   AGE
+   default     cloudpubsubsource.events.cloud.google.com/cloudpubsubsource-test   True             61s
+   NAMESPACE   NAME                                                             READY   UP-TO-DATE   AVAILABLE   AGE
+   default     cre-src-cloudpubsubsource-test482579758ed75d60ed92997c7b3015bc   1/1     1            1           93s
+   ```
+
+   You can examine each source deployment that was identified by the command
+   above to still be using the old `cloud-run-events` namespace. The example
+   below illustrates the process for a Cloud PubSub source
    `cloudpubsubsource-test` in the `example` namespace.
 
    ```shell script
@@ -451,9 +478,9 @@ everything is working correctly by following the steps in
    ```
 
    ```shell script
-   # delete all the source deployments referencing the old namespace
+   # delete all the source deployments referencing the old cloud-run-events namespace
    kubectl delete deploy --all-namespaces \
-     --selector internal.events.cloud.google.com/controller=events-system-pubsub-pullsubscription-controller
+     --selector internal.events.cloud.google.com/controller=cloud-run-events-pubsub-pullsubscription-controller
    ```
 
    A new deployment will be automatically generated using `events-system` for
