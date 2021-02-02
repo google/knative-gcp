@@ -40,7 +40,7 @@ function start_knative_gcp_monitoring() {
 
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
-  start_latest_knative_serving || return 1
+  start_latest_knative_serving || start_latest_knative_serving || return 1
   # Try reapply eventing yaml again if config-imc-event-dispatcher failed to start
   # TODO: Restore the below line after https://github.com/knative/eventing/issues/3244 is fixed
   #start_latest_knative_eventing || return 1
