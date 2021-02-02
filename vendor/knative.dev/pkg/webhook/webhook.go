@@ -184,27 +184,19 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 		Addr:    fmt.Sprint(":", wh.Options.Port),
 		TLSConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,
-
-			// If we return (nil, error) the client sees - 'tls: internal error"
-			// If we return (nil, nil) the client sees - 'tls: no certificates configured'
-			//
-			// We'll return (nil, nil) when we don't find a certificate
 			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
 				secret, err := wh.secretlister.Secrets(system.Namespace()).Get(wh.Options.SecretName)
 				if err != nil {
-					logger.Errorw("failed to fetch secret", zap.Error(err))
-					return nil, nil
+					return nil, err
 				}
 
 				serverKey, ok := secret.Data[certresources.ServerKey]
 				if !ok {
-					logger.Warn("server key missing")
-					return nil, nil
+					return nil, errors.New("server key missing")
 				}
 				serverCert, ok := secret.Data[certresources.ServerCert]
 				if !ok {
-					logger.Warn("server cert missing")
-					return nil, nil
+					return nil, errors.New("server cert missing")
 				}
 				cert, err := tls.X509KeyPair(serverCert, serverKey)
 				if err != nil {

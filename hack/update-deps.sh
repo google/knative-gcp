@@ -22,3 +22,7 @@ set -o nounset
 set -o pipefail
 
 go_update_deps "$@"
+
+# Patch k8s leader-election fixing graceful release
+# More information: https://github.com/kubernetes/kubernetes/pull/91942
+git apply ${ROOT_DIR}/hack/k8s-client-go.patch

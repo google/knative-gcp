@@ -77,15 +77,15 @@ func (c *Configuration) validateLabels() (errs *apis.FieldError) {
 			}
 		}
 	}
-	return errs
+	return
 }
 
 // verifyLabelOwnerRef function verifies the owner references of resource with label key has val value.
 func verifyLabelOwnerRef(val, label, resource string, ownerRefs []metav1.OwnerReference) (errs *apis.FieldError) {
 	for _, ref := range ownerRefs {
-		if ref.Kind == resource && ref.Name == val {
-			return nil
+		if ref.Kind == resource && val == ref.Name {
+			return
 		}
 	}
-	return apis.ErrMissingField(label)
+	return errs.Also(apis.ErrMissingField(label))
 }

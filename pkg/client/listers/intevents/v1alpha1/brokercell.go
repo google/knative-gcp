@@ -26,10 +26,8 @@ import (
 )
 
 // BrokerCellLister helps list BrokerCells.
-// All objects returned here must be treated as read-only.
 type BrokerCellLister interface {
 	// List lists all BrokerCells in the indexer.
-	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.BrokerCell, err error)
 	// BrokerCells returns an object that can list and get BrokerCells.
 	BrokerCells(namespace string) BrokerCellNamespaceLister
@@ -60,13 +58,10 @@ func (s *brokerCellLister) BrokerCells(namespace string) BrokerCellNamespaceList
 }
 
 // BrokerCellNamespaceLister helps list and get BrokerCells.
-// All objects returned here must be treated as read-only.
 type BrokerCellNamespaceLister interface {
 	// List lists all BrokerCells in the indexer for a given namespace.
-	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.BrokerCell, err error)
 	// Get retrieves the BrokerCell from the indexer for a given namespace and name.
-	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.BrokerCell, error)
 	BrokerCellNamespaceListerExpansion
 }

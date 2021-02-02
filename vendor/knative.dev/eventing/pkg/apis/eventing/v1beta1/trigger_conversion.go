@@ -20,13 +20,12 @@ import (
 	"context"
 	"fmt"
 
-	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
 )
 
 // ConvertTo implements apis.Convertible
-func (source *Trigger) ConvertTo(ctx context.Context, to apis.Convertible) error {
+func (source *Trigger) ConvertTo(_ context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *v1.Trigger:
 		sink.ObjectMeta = source.ObjectMeta
@@ -40,10 +39,6 @@ func (source *Trigger) ConvertTo(ctx context.Context, to apis.Convertible) error
 				sink.Spec.Filter.Attributes[k] = v
 			}
 		}
-		if source.Spec.Delivery != nil {
-			sink.Spec.Delivery = &eventingduckv1.DeliverySpec{}
-			source.Spec.Delivery.DeepCopyInto(sink.Spec.Delivery)
-		}
 		sink.Status.Status = source.Status.Status
 		sink.Status.SubscriberURI = source.Status.SubscriberURI
 		return nil
@@ -53,7 +48,7 @@ func (source *Trigger) ConvertTo(ctx context.Context, to apis.Convertible) error
 }
 
 // ConvertFrom implements apis.Convertible
-func (sink *Trigger) ConvertFrom(ctx context.Context, from apis.Convertible) error {
+func (sink *Trigger) ConvertFrom(_ context.Context, from apis.Convertible) error {
 	switch source := from.(type) {
 	case *v1.Trigger:
 		sink.ObjectMeta = source.ObjectMeta
@@ -67,10 +62,6 @@ func (sink *Trigger) ConvertFrom(ctx context.Context, from apis.Convertible) err
 			sink.Spec.Filter = &TriggerFilter{
 				Attributes: attributes,
 			}
-		}
-		if source.Spec.Delivery != nil {
-			sink.Spec.Delivery = &eventingduckv1.DeliverySpec{}
-			source.Spec.Delivery.DeepCopyInto(sink.Spec.Delivery)
 		}
 		sink.Status.Status = source.Status.Status
 		sink.Status.SubscriberURI = source.Status.SubscriberURI

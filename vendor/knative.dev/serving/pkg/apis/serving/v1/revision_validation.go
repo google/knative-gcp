@@ -140,7 +140,7 @@ func (r *Revision) ValidateLabels() (errs *apis.FieldError) {
 			}
 		}
 	}
-	return errs
+	return
 }
 
 // validateRevisionName validates name and generateName for the revisionTemplate

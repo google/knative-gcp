@@ -97,7 +97,7 @@ func isAuthMessage(message string) bool {
 
 // isSecretFailureMessage checks if the message is for a specific secret's failure.
 func isSecretFailureMessage(message, namespace string, secret *corev1.SecretKeySelector) bool {
-	return strings.Contains(message, fmt.Sprintf(`secret "%s" not found`, secret.Name)) ||
+	return strings.Contains(message, fmt.Sprintf(`MountVolume.SetUp failed for volume "%s"`, secret.Name)) ||
 		strings.Contains(message, fmt.Sprintf(`couldn't find key %s in Secret %s/%s`, secret.Key, namespace, secret.Name))
 }
 

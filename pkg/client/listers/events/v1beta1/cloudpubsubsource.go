@@ -26,10 +26,8 @@ import (
 )
 
 // CloudPubSubSourceLister helps list CloudPubSubSources.
-// All objects returned here must be treated as read-only.
 type CloudPubSubSourceLister interface {
 	// List lists all CloudPubSubSources in the indexer.
-	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.CloudPubSubSource, err error)
 	// CloudPubSubSources returns an object that can list and get CloudPubSubSources.
 	CloudPubSubSources(namespace string) CloudPubSubSourceNamespaceLister
@@ -60,13 +58,10 @@ func (s *cloudPubSubSourceLister) CloudPubSubSources(namespace string) CloudPubS
 }
 
 // CloudPubSubSourceNamespaceLister helps list and get CloudPubSubSources.
-// All objects returned here must be treated as read-only.
 type CloudPubSubSourceNamespaceLister interface {
 	// List lists all CloudPubSubSources in the indexer for a given namespace.
-	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.CloudPubSubSource, err error)
 	// Get retrieves the CloudPubSubSource from the indexer for a given namespace and name.
-	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.CloudPubSubSource, error)
 	CloudPubSubSourceNamespaceListerExpansion
 }

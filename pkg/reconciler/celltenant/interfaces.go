@@ -99,37 +99,37 @@ type SubscriberStatus struct {
 	subscriptionMessage string
 }
 
-func (s *SubscriberStatus) MarkTopicFailed(_, format string, args ...interface{}) {
+func (s SubscriberStatus) MarkTopicFailed(_, format string, args ...interface{}) {
 	s.topicStatus = corev1.ConditionFalse
 	s.topicMessage = fmt.Sprintf(format, args...)
 }
 
-func (s *SubscriberStatus) MarkTopicUnknown(_, format string, args ...interface{}) {
+func (s SubscriberStatus) MarkTopicUnknown(_, format string, args ...interface{}) {
 	s.topicStatus = corev1.ConditionFalse
 	s.topicMessage = fmt.Sprintf(format, args...)
 }
 
-func (s *SubscriberStatus) MarkTopicReady() {
+func (s SubscriberStatus) MarkTopicReady() {
 	s.topicStatus = corev1.ConditionTrue
 	s.topicMessage = ""
 }
 
-func (s *SubscriberStatus) MarkSubscriptionFailed(_, format string, args ...interface{}) {
+func (s SubscriberStatus) MarkSubscriptionFailed(_, format string, args ...interface{}) {
 	s.topicStatus = corev1.ConditionFalse
 	s.topicMessage = fmt.Sprintf(format, args...)
 }
 
-func (s *SubscriberStatus) MarkSubscriptionUnknown(_, format string, args ...interface{}) {
+func (s SubscriberStatus) MarkSubscriptionUnknown(_, format string, args ...interface{}) {
 	s.subscriptionStatus = corev1.ConditionFalse
 	s.subscriptionMessage = fmt.Sprintf(format, args...)
 }
 
-func (s *SubscriberStatus) MarkSubscriptionReady() {
+func (s SubscriberStatus) MarkSubscriptionReady() {
 	s.subscriptionStatus = corev1.ConditionTrue
 	s.subscriptionMessage = ""
 }
 
-func (s *SubscriberStatus) Ready() corev1.ConditionStatus {
+func (s SubscriberStatus) Ready() corev1.ConditionStatus {
 	if s.topicStatus == corev1.ConditionFalse || s.subscriptionStatus == corev1.ConditionFalse {
 		return corev1.ConditionFalse
 	}
@@ -139,7 +139,7 @@ func (s *SubscriberStatus) Ready() corev1.ConditionStatus {
 	return corev1.ConditionTrue
 }
 
-func (s *SubscriberStatus) Message() string {
+func (s SubscriberStatus) Message() string {
 	if s.topicMessage != "" {
 		return s.topicMessage
 	}
@@ -175,35 +175,35 @@ func StatusableFromBroker(b *brokerv1beta1.Broker) Statusable {
 	}
 }
 
-func (b *statusableForBroker) Key() *config.CellTenantKey {
+func (b statusableForBroker) Key() *config.CellTenantKey {
 	return config.KeyFromBroker(b.broker)
 }
 
-func (b *statusableForBroker) MarkBrokerCellReady() {
+func (b statusableForBroker) MarkBrokerCellReady() {
 	b.broker.Status.MarkBrokerCellReady()
 }
 
-func (b *statusableForBroker) MarkBrokerCellUnknown(reason, format string, args ...interface{}) {
+func (b statusableForBroker) MarkBrokerCellUnknown(reason, format string, args ...interface{}) {
 	b.broker.Status.MarkBrokerCellUnknown(reason, format, args...)
 }
 
-func (b *statusableForBroker) MarkBrokerCellFailed(reason, format string, args ...interface{}) {
+func (b statusableForBroker) MarkBrokerCellFailed(reason, format string, args ...interface{}) {
 	b.broker.Status.MarkBrokerCellFailed(reason, format, args...)
 }
 
-func (b *statusableForBroker) SetAddress(url *apis.URL) {
+func (b statusableForBroker) SetAddress(url *apis.URL) {
 	b.broker.Status.SetAddress(url)
 }
 
-func (b *statusableForBroker) Object() runtime.Object {
+func (b statusableForBroker) Object() runtime.Object {
 	return b.broker
 }
 
-func (b *statusableForBroker) StatusUpdater() reconcilerutilspubsub.StatusUpdater {
+func (b statusableForBroker) StatusUpdater() reconcilerutilspubsub.StatusUpdater {
 	return &b.broker.Status
 }
 
-func (b *statusableForBroker) GetLabels() map[string]string {
+func (b statusableForBroker) GetLabels() map[string]string {
 	return map[string]string{
 		"resource":     "brokers",
 		"broker_class": brokerv1beta1.BrokerClass,
@@ -213,10 +213,10 @@ func (b *statusableForBroker) GetLabels() map[string]string {
 	}
 }
 
-func (b *statusableForBroker) GetTopicID() string {
+func (b statusableForBroker) GetTopicID() string {
 	return resources.GenerateDecouplingTopicName(b.broker)
 }
 
-func (b *statusableForBroker) GetSubscriptionName() string {
+func (b statusableForBroker) GetSubscriptionName() string {
 	return resources.GenerateDecouplingSubscriptionName(b.broker)
 }

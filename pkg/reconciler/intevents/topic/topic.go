@@ -35,7 +35,7 @@ import (
 	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	"knative.dev/pkg/logging"
-	pkgreconciler "knative.dev/pkg/reconciler"
+	"knative.dev/pkg/reconciler"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
@@ -48,8 +48,8 @@ import (
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic/resources"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
 	"github.com/google/knative-gcp/pkg/testing/testloggingutil"
@@ -68,7 +68,7 @@ const (
 
 // Reconciler implements controller.Reconciler for Topic resources.
 type Reconciler struct {
-	*reconciler.Base
+	*intevents.PubSubBase
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
 	// data residency store
@@ -93,7 +93,7 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface.
 var _ topicreconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1.Topic) pkgreconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1.Topic) reconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("topic", topic)))
 
 	// This is added purely for the TestCloudLogging E2E tests, which verify that the log line is
@@ -107,13 +107,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1.Topic) pkgreco
 	// Otherwise, its owner will reconcile workload identity.
 	if (topic.OwnerReferences == nil || len(topic.OwnerReferences) == 0) && topic.Spec.ServiceAccountName != "" {
 		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, topic.Spec.Project, topic); err != nil {
-			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Pub/Sub topic workload identity: %s", err.Error())
+			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Pub/Sub topic workload identity: %s", err.Error())
 		}
 	}
 
 	if err := r.reconcileTopic(ctx, topic); err != nil {
 		topic.Status.MarkNoTopic(reconciledTopicFailedReason, "Failed to reconcile Pub/Sub topic: %s", err.Error())
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledTopicFailedReason, "Failed to reconcile Pub/Sub topic: %s", err.Error())
+		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledTopicFailedReason, "Failed to reconcile Pub/Sub topic: %s", err.Error())
 	}
 	topic.Status.MarkTopicReady()
 	// Set the topic being used.
@@ -121,19 +121,19 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1.Topic) pkgreco
 
 	// If enablePublisher is false, then skip creating the publisher.
 	if enablePublisher := topic.Spec.EnablePublisher; enablePublisher != nil && !*enablePublisher {
-		return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, topic.Namespace, topic.Name)
+		return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, topic.Namespace, topic.Name)
 	}
 
 	err, svc := r.reconcilePublisher(ctx, topic)
 	if err != nil {
 		topic.Status.MarkPublisherNotDeployed(reconciledPublisherFailedReason, "Failed to reconcile Publisher: %s", err.Error())
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledPublisherFailedReason, "Failed to reconcile Publisher: %s", err.Error())
+		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPublisherFailedReason, "Failed to reconcile Publisher: %s", err.Error())
 	}
 
 	// Update the topic.
 	topic.Status.PropagatePublisherStatus(&svc.Status)
 
-	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, topic.Namespace, topic.Name)
+	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, topic.Namespace, topic.Name)
 }
 
 func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1.Topic) error {
@@ -306,20 +306,20 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 	// TODO: requeue all Topics. See https://github.com/google/knative-gcp/issues/457.
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, topic *v1.Topic) pkgreconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, topic *v1.Topic) reconciler.Event {
 	// If topic doesn't have ownerReference, and
 	// k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
 	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 	if (topic.OwnerReferences == nil || len(topic.OwnerReferences) == 0) && topic.Spec.ServiceAccountName != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, topic.Spec.Project, topic); err != nil {
-			return pkgreconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete delete Pub/Sub topic workload identity: %s", err.Error())
+			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete delete Pub/Sub topic workload identity: %s", err.Error())
 		}
 	}
 	if topic.Spec.PropagationPolicy == v1.TopicPolicyCreateDelete {
 		logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub topic")
 		if err := r.deleteTopic(ctx, topic); err != nil {
-			return pkgreconciler.NewEvent(corev1.EventTypeWarning, deleteTopicFailed, "Failed to delete Pub/Sub topic: %s", err.Error())
+			return reconciler.NewEvent(corev1.EventTypeWarning, deleteTopicFailed, "Failed to delete Pub/Sub topic: %s", err.Error())
 		}
 	}
 	return nil
