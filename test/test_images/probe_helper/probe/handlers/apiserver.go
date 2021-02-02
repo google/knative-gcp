@@ -28,13 +28,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"knative.dev/eventing/pkg/apis/sources"
 	"knative.dev/pkg/logging"
 )
 
 const (
 	// ApiServerSourceCreateProbeEventType is the CloudEvent type of forward
-	// ApiServerSource add probes.
+	// ApiServerSource create probes.
 	ApiServerSourceCreateProbeEventType = "apiserversource-probe-create"
 
 	// ApiServerSourceUpdateProbeEventType is the CloudEvent type of forward
@@ -48,7 +49,7 @@ const (
 	testPodName = "apiserversource-test-pod"
 )
 
-func NewApiServerSourceProbe(projectID clients.ProjectID, k8sClient *utils.K8sClient) *ApiServerSourceProbe {
+func NewApiServerSourceProbe(projectID clients.ProjectID, k8sClient kubernetes.Interface) *ApiServerSourceProbe {
 	return &ApiServerSourceProbe{
 		projectID:      projectID,
 		k8sClient:      k8sClient,
@@ -63,7 +64,7 @@ type ApiServerSourceProbe struct {
 	projectID clients.ProjectID
 
 	// Kubernetes client used to create a test pod
-	k8sClient *utils.K8sClient
+	k8sClient kubernetes.Interface
 
 	// The map of received events to be tracked by the forwarder and receiver
 	receivedEvents *utils.SyncReceivedEvents
@@ -95,7 +96,7 @@ func (p *ApiServerSourceCreateProbe) Forward(ctx context.Context, event cloudeve
 	// The probe creates a pod.
 	podName := fmt.Sprintf("%s.%s", testPodName, event.ID()[len(event.Type())+1:])
 	logging.FromContext(ctx).Infow("Creating pod", zap.String("podName", podName))
-	_, err = p.k8sClient.Clientset.CoreV1().Pods(namespace).Create(ctx, &corev1.Pod{
+	_, err = p.k8sClient.CoreV1().Pods(namespace).Create(ctx, &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
 		},
@@ -132,7 +133,7 @@ func (p *ApiServerSourceUpdateProbe) Forward(ctx context.Context, event cloudeve
 	podName := fmt.Sprintf("%s.%s", testPodName, event.ID()[len(event.Type())+1:])
 	logging.FromContext(ctx).Infow("Updating pod", zap.String("podName", podName))
 
-	_, err = p.k8sClient.Clientset.CoreV1().Pods(namespace).Patch(ctx, podName, types.JSONPatchType, []byte(`[{"op": "replace", "path": "/spec/containers/0/image", "value":"alpine"}]`), metav1.PatchOptions{})
+	_, err = p.k8sClient.CoreV1().Pods(namespace).Patch(ctx, podName, types.JSONPatchType, []byte(`[{"op": "replace", "path": "/spec/containers/0/image", "value":"alpine"}]`), metav1.PatchOptions{})
 	if err != nil {
 		return fmt.Errorf("Failed to update test pod: %v", err)
 	}
@@ -154,7 +155,7 @@ func (p *ApiServerSourceDeleteProbe) Forward(ctx context.Context, event cloudeve
 	// The probe deletes a pod.
 	podName := fmt.Sprintf("%s.%s", testPodName, event.ID()[len(event.Type())+1:])
 	logging.FromContext(ctx).Infow("Deleting pod", zap.String("podName", podName))
-	err = p.k8sClient.Clientset.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+	err = p.k8sClient.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("Failed to delete test pod: %v", err)
 	}

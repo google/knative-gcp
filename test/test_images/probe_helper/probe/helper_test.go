@@ -47,11 +47,11 @@ import (
 	. "github.com/google/knative-gcp/pkg/pubsub/adapter/context"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
-	"github.com/google/knative-gcp/test/test_images/probe_helper/utils"
 	sources "knative.dev/eventing/pkg/apis/sources"
 	sourcesv1beta1 "knative.dev/eventing/pkg/apis/sources/v1beta1"
 
 	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 
@@ -218,7 +218,6 @@ func runTestApiServerSource(ctx context.Context, group *errgroup.Group, gotReque
 				body := string(bodyBytes)
 				method := req.Method
 				url := req.URL.String()
-				logging.FromContext(ctx).Warnf("DEBUG: %s", url)
 				finalizeEvent := cloudevents.NewEvent()
 				finalizeEvent.SetID("1234567890")
 				finalizeEvent.SetSubject(fmt.Sprintf("/apis/v1/namespaces/%s/events/apiserversource.1234567890", testNamespace))
@@ -437,7 +436,7 @@ func testStorageClient(ctx context.Context, t *testing.T) (*storage.Client, chan
 	return c, gotRequest, srv.Close
 }
 
-func testK8sClient(ctx context.Context, t *testing.T) (*utils.K8sClient, chan *http.Request, func()) {
+func testK8sClient(ctx context.Context, t *testing.T) (kubernetes.Interface, chan *http.Request, func()) {
 	gotRequest := make(chan *http.Request, 1)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// The test Kubernetes API server forwards the client's generated HTTP requests.
@@ -501,9 +500,7 @@ func testK8sClient(ctx context.Context, t *testing.T) (*utils.K8sClient, chan *h
 		},
 	})
 	informers.Start(ctx.Done())
-	k8sClient := utils.K8sClient{}
-	k8sClient.Clientset = fakeK8sClientset
-	return &k8sClient, gotRequest, srv.Close
+	return fakeK8sClientset, gotRequest, srv.Close
 }
 
 type eventAndResult struct {

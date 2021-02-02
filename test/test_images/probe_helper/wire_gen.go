@@ -49,11 +49,11 @@ func InitializeProbeHelper(ctx context.Context, brokerCellBaseUrl string, projec
 		CloudStorageSourceProbe: cloudStorageSourceProbe,
 	}
 	cloudAuditLogsSourceProbe := handlers.NewCloudAuditLogsSourceProbe(projectID, client)
-	k8sClient, err := probe.NewK8sClient(ctx)
+	kubernetesInterface, err := probe.NewK8sClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	apiServerSourceProbe := handlers.NewApiServerSourceProbe(projectID, k8sClient)
+	apiServerSourceProbe := handlers.NewApiServerSourceProbe(projectID, kubernetesInterface)
 	apiServerSourceCreateProbe := &handlers.ApiServerSourceCreateProbe{
 		ApiServerSourceProbe: apiServerSourceProbe,
 	}

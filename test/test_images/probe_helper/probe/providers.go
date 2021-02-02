@@ -111,14 +111,13 @@ func NewStorageClient(ctx context.Context) (c *storage.Client, err error) {
 	return storage.NewClient(ctx)
 }
 
-func NewK8sClient(ctx context.Context) (c *utils.K8sClient, err error) {
+func NewK8sClient(ctx context.Context) (c kubernetes.Interface, err error) {
 	config, err := clientcmd.BuildConfigFromFlags("", "")
 	if err != nil {
 		return nil, err
 	}
-	k8sClient := utils.K8sClient{}
-	k8sClient.Clientset, err = kubernetes.NewForConfig(config)
-	return &k8sClient, err
+	k8sClient, err := kubernetes.NewForConfig(config)
+	return kubernetes.Interface(k8sClient), err
 }
 
 type ForwardPort int
