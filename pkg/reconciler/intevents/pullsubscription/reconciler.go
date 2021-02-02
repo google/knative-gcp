@@ -39,14 +39,14 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
-	"knative.dev/pkg/reconciler"
+	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	v1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
+	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
 	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
 	"github.com/google/knative-gcp/pkg/tracing"
@@ -71,7 +71,7 @@ const (
 
 // Base implements the core controller logic for pullsubscription.
 type Base struct {
-	*intevents.PubSubBase
+	*reconciler.Base
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
 	// DeploymentLister index properties about deployments.
@@ -102,7 +102,7 @@ type Base struct {
 // ReconcileDataPlaneFunc is used to reconcile the data plane component(s).
 type ReconcileDataPlaneFunc func(ctx context.Context, d *appsv1.Deployment, ps *v1.PullSubscription) error
 
-func (r *Base) ReconcileKind(ctx context.Context, ps *v1.PullSubscription) reconciler.Event {
+func (r *Base) ReconcileKind(ctx context.Context, ps *v1.PullSubscription) pkgreconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("pullsubscription", ps)))
 
 	ps.Status.InitializeConditions()
@@ -112,7 +112,7 @@ func (r *Base) ReconcileKind(ctx context.Context, ps *v1.PullSubscription) recon
 	// Otherwise, its owner will reconcile workload identity.
 	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.ServiceAccountName != "" {
 		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, ps.Spec.Project, ps); err != nil {
-			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Pub/Sub subscription workload identity: %s", err.Error())
+			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Pub/Sub subscription workload identity: %s", err.Error())
 		}
 	}
 
@@ -120,7 +120,7 @@ func (r *Base) ReconcileKind(ctx context.Context, ps *v1.PullSubscription) recon
 	sinkURI, err := r.resolveDestination(ctx, ps.Spec.Sink, ps)
 	if err != nil {
 		ps.Status.MarkNoSink("InvalidSink", err.Error())
-		return reconciler.NewEvent(corev1.EventTypeWarning, "InvalidSink", "InvalidSink: %s", err.Error())
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, "InvalidSink", "InvalidSink: %s", err.Error())
 	} else {
 		ps.Status.MarkSink(sinkURI)
 	}
@@ -142,16 +142,16 @@ func (r *Base) ReconcileKind(ctx context.Context, ps *v1.PullSubscription) recon
 	subscriptionID, err := r.reconcileSubscription(ctx, ps)
 	if err != nil {
 		ps.Status.MarkNoSubscription(reconciledPubSubFailedReason, "Failed to reconcile Pub/Sub subscription: %s", err.Error())
-		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Failed to reconcile Pub/Sub subscription: %s", err.Error())
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Failed to reconcile Pub/Sub subscription: %s", err.Error())
 	}
 	ps.Status.MarkSubscribed(subscriptionID)
 
 	err = r.reconcileDataPlaneResources(ctx, ps, r.ReconcileDataPlaneFn)
 	if err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledDataPlaneFailedReason, "Failed to reconcile Data Plane resource(s): %s", err.Error())
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledDataPlaneFailedReason, "Failed to reconcile Data Plane resource(s): %s", err.Error())
 	}
 
-	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `PullSubscription reconciled: "%s/%s"`, ps.Namespace, ps.Name)
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `PullSubscription reconciled: "%s/%s"`, ps.Namespace, ps.Name)
 }
 
 func (r *Base) reconcileSubscription(ctx context.Context, ps *v1.PullSubscription) (string, error) {
@@ -437,20 +437,20 @@ func (r *Base) resolveDestination(ctx context.Context, destination duckv1.Destin
 	return url, nil
 }
 
-func (r *Base) FinalizeKind(ctx context.Context, ps *v1.PullSubscription) reconciler.Event {
+func (r *Base) FinalizeKind(ctx context.Context, ps *v1.PullSubscription) pkgreconciler.Event {
 	// If pullsubscription doesn't have ownerReference, and
 	// k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
 	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.ServiceAccountName != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, ps.Spec.Project, ps); err != nil {
-			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete delete Pub/Sub subscription workload identity: %s", err.Error())
+			return pkgreconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete delete Pub/Sub subscription workload identity: %s", err.Error())
 		}
 	}
 
 	logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub subscription")
 	if err := r.deleteSubscription(ctx, ps); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailedReason, "Failed to delete Pub/Sub subscription: %s", err.Error())
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailedReason, "Failed to delete Pub/Sub subscription: %s", err.Error())
 	}
 	return nil
 }

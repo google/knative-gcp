@@ -36,7 +36,6 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
-	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
 	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
@@ -94,15 +93,11 @@ func newController(
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	pubsubBase := &intevents.PubSubBase{
-		Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
-	}
-
 	pullSubscriptionLister := pullSubscriptionInformer.Lister()
 
 	r := &Reconciler{
 		Base: &psreconciler.Base{
-			PubSubBase:             pubsubBase,
+			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 			Identity:               identity.NewIdentity(ctx, ipm, gcpas),
 			DeploymentLister:       deploymentInformer.Lister(),
 			ServiceAccountLister:   serviceAccountInformer.Lister(),
@@ -116,7 +111,7 @@ func newController(
 
 	impl := pullsubscriptionreconciler.NewImpl(ctx, r)
 
-	pubsubBase.Logger.Info("Setting up event handlers")
+	r.Logger.Info("Setting up event handlers")
 	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duck.AutoscalingClassAnnotation, duck.KEDA, false)
 
 	pullSubscriptionHandler := cache.FilteringResourceEventHandler{

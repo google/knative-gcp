@@ -41,7 +41,7 @@ existing_namespace=$(kubectl get namespace "${NAMESPACE}" --ignore-not-found)
   fi
 echo "NAMESPACE '${NAMESPACE}' is used for this configuration"
 
-SECRET=${2:-$PUBSUB_SECRET_NAME}
+SECRET=${2:-$SOURCES_GSA_SECRET_NAME}
 echo "SECRET '${SECRET}' is used"
 PROJECT_ID=${3:-$(gcloud config get-value project)}
 echo "PROJECT_ID '${PROJECT_ID}' is used for this configuration"
