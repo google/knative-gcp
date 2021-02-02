@@ -147,23 +147,79 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 
 // deliver delivers msg to target and sends the target's reply to the broker ingress.
 func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *config.CellTenant, msg binding.Message, hops int32) error {
+	// Channels can have a reply address without a subscriber. So default the replyMessage to the
+	// original message. If there is a subscriber, then replyMessage is overwritten.
+	replyMessage := msg
+	if target.Address != "" {
+		replyMsg, cleanUp, err := p.sendToSubscriber(ctx, target, msg, hops)
+		defer cleanUp()
+		if err != nil {
+			return fmt.Errorf("sending event to subscriber: %w", err)
+		}
+		if replyMsg == nil {
+			// There is no reply message to send.
+			return nil
+		}
+		replyMessage = replyMsg
+	}
+
+	replyAddress := target.ReplyAddress
+	if replyAddress == "" && target.CellTenantType == config.CellTenantType_BROKER {
+		// During the switch over from Broker only to all Cell Tenants, there will be a short period
+		// of time for the reconciler to write in all the reply_addresses into the config. So, we
+		// will add a special case for it here.
+		// TODO Remove after 0.22.0.
+		replyAddress = broker.Address
+	}
+	if replyAddress == "" {
+		return nil
+	}
+
+	var transformers []binding.Transformer
+	if target.CellTenantType == config.CellTenantType_BROKER {
+		// Hops only exist for the Broker. Nothing else uses them.
+		// Attach the previous hops for the reply.
+		transformers = append(transformers, eventutil.SetRemainingHopsTransformer(hops))
+	}
+
+	replyResp, err := p.sendMsg(ctx, replyAddress, replyMessage, transformers...)
+	if err != nil {
+		return fmt.Errorf("sending event to reply: %w", err)
+	}
+	if err := replyResp.Body.Close(); err != nil {
+		logging.FromContext(ctx).Warn("Failed to close reply response body", zap.Error(err))
+	}
+	// TODO(https://github.com/google/knative-gcp/issues/2117) Add metrics around the reply
+	// requests, as they can lead to redelivery of events through the Trigger, but do not currently
+	// expose any metrics for users to understand why events are redelivered.
+	if replyResp.StatusCode < 200 || replyResp.StatusCode >= 300 {
+		return fmt.Errorf("event delivery failed sending the reply: HTTP status code %d", replyResp.StatusCode)
+	}
+
+	return nil
+}
+
+func (p *Processor) sendToSubscriber(ctx context.Context, target *config.Target, msg binding.Message, hops int32) (*cehttp.Message, func(), error) {
+	transformers := []binding.Transformer{
+		// Remove hops from forwarded event.
+		transformer.DeleteExtension(eventutil.HopsAttribute),
+	}
 	startTime := time.Now()
-	// Remove hops from forwarded event.
-	resp, err := p.sendMsg(ctx, target.Address, msg, transformer.DeleteExtension(eventutil.HopsAttribute))
+	resp, err := p.sendMsg(ctx, target.Address, msg, transformers...)
 	if err != nil {
 		var result *url.Error
 		if errors.As(err, &result) && result.Timeout() {
 			// If the delivery is cancelled because of timeout, report event dispatch time without resp status code.
 			p.StatsReporter.ReportEventDispatchTime(ctx, time.Since(startTime))
 		}
-		return err
+		return nil, func() {}, err
 	}
 
-	defer func() {
+	closeBody := func() {
 		if err := resp.Body.Close(); err != nil {
 			logging.FromContext(ctx).Warn("failed to close response body", zap.Error(err))
 		}
-	}()
+	}
 
 	// Insert status code tag into context.
 	cctx, err := metrics.AddRespStatusCodeTags(ctx, resp.StatusCode)
@@ -174,14 +230,14 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	p.StatsReporter.ReportEventDispatchTime(cctx, time.Since(startTime))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("event delivery failed: HTTP status code %d", resp.StatusCode)
+		return nil, closeBody, fmt.Errorf("event delivery failed: HTTP status code %d", resp.StatusCode)
 	}
 
 	// Pre-check the reply response header, if it's not in structured mode/batched mode or binary mode,
 	// then it's not a CloudEvent, we treat the delivery as successful and ignore the response.
 	// Otherwise, we proceed with the malformed event check.
 	if !strings.HasPrefix(resp.Header.Get("Content-Type"), "application/cloudevents") && (resp.Header.Get("ce-specversion") == "") {
-		return nil
+		return nil, closeBody, nil
 	}
 
 	respMsg := cehttp.NewMessageFromHttpResponse(resp)
@@ -195,11 +251,13 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 		body := make([]byte, 1)
 		n, _ := respMsg.BodyReader.Read(body)
 		respMsg.BodyReader.Close()
+		// Body has already been closed.
+		closeBody = func() {}
 		if n != 0 {
-			return errors.New("Received a malformed event in reply")
+			return nil, closeBody, errors.New("received a malformed event in reply")
 		}
 		// No reply.
-		return nil
+		return nil, closeBody, nil
 	}
 
 	if span := trace.FromContext(ctx); span.IsRecordingEvents() {
@@ -208,47 +266,34 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 		}, "event reply received")
 	}
 
-	if hops <= 0 {
-		e, err := binding.ToEvent(ctx, respMsg)
-		if err != nil {
-			logging.FromContext(ctx).Error("failed to convert response message to event",
-				zap.Error(err),
-				zap.Any("response", respMsg),
-			)
-			return nil
-		}
-		logging.FromContext(ctx).Warn("event has exhausted allowed hops: dropping reply",
-			zap.String("target", target.Name),
-			zap.Int32("hops", hops),
-			zap.Any("event context", e.Context),
-		)
-		if span := trace.FromContext(ctx); span.IsRecordingEvents() {
-			span.Annotate(
-				append(
-					ceclient.EventTraceAttributes(e),
-					trace.Int64Attribute("remaining_hops", int64(hops)),
-				),
-				"Event reply dropped due to hop limit",
-			)
-		}
-		return nil
+	if hops > 0 {
+		return respMsg, closeBody, nil
 	}
 
-	// Attach the previous hops for the reply.
-	replyResp, err := p.sendMsg(ctx, broker.Address, respMsg, eventutil.SetRemainingHopsTransformer(hops))
+	// This event has gone through too many hops and should be dropped.
+	e, err := binding.ToEvent(ctx, respMsg)
 	if err != nil {
-		return err
+		logging.FromContext(ctx).Error("failed to convert response message to event",
+			zap.Error(err),
+			zap.Any("response", respMsg),
+		)
+		return nil, closeBody, nil
 	}
-	// TODO Add metrics around the reply requests, as they can lead to redelivery of events through
-	// the Trigger, but do not currently expose any metrics for users to understand why events are
-	// redelivered.
-	if replyResp.StatusCode < 200 || replyResp.StatusCode >= 300 {
-		return fmt.Errorf("event delivery failed sending the reply: HTTP status code %d", replyResp.StatusCode)
+	logging.FromContext(ctx).Warn("event has exhausted allowed hops: dropping reply",
+		zap.String("target", target.Name),
+		zap.Int32("hops", hops),
+		zap.Any("event context", e.Context),
+	)
+	if span := trace.FromContext(ctx); span.IsRecordingEvents() {
+		span.Annotate(
+			append(
+				ceclient.EventTraceAttributes(e),
+				trace.Int64Attribute("remaining_hops", int64(hops)),
+			),
+			"Event reply dropped due to hop limit",
+		)
 	}
-	if err := replyResp.Body.Close(); err != nil {
-		logging.FromContext(ctx).Warn("failed to close reply response body", zap.Error(err))
-	}
-	return nil
+	return nil, closeBody, nil
 }
 
 func (p *Processor) sendMsg(ctx context.Context, address string, msg binding.Message, transformers ...binding.Transformer) (*http.Response, error) {

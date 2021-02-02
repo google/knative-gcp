@@ -51,6 +51,7 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 			Namespace:      t.Namespace,
 			CellTenantType: config.CellTenantType_BROKER,
 			CellTenantName: broker.Name,
+			ReplyAddress:   broker.Status.Address.URL.String(),
 			Address:        t.Status.SubscriberURI.String(),
 			RetryQueue: &config.Queue{
 				Topic:        brokerresources.GenerateRetryTopicName(t),

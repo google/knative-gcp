@@ -87,6 +87,9 @@ message Target {
   // The resolved subscriber URI of the target.
   string address = 5;
 
+  // The resolved URI that replies are sent to.
+  string reply_address = 10;
+
   // Optional filters from the trigger.
   map<string, string> filter_attributes = 6;
 
