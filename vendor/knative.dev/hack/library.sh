@@ -421,8 +421,8 @@ function start_knative_serving() {
   kubectl apply -f "$1"
   echo "Installing Serving core components from $2"
   kubectl apply -f "$2"
-  echo "Installing net-istio components from $3"
-  kubectl apply -f "$3"
+  #echo "Installing net-istio components from $3"
+  #kubectl apply -f "$3"
   wait_until_pods_running knative-serving || return 1
 }
 
