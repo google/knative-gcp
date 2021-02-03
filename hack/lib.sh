@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-readonly CONTROL_PLANE_SERVICE_ACCOUNT="events-controller-gsa"
+readonly CONTROL_PLANE_GSA="events-controller-gsa"
 readonly CONTROL_PLANE_NAMESPACE="events-system"
 
 readonly SERVICE_ACCOUNT_EMAIL_KEY="EMAIL"
@@ -24,10 +24,10 @@ readonly REGIONAL_CLUSTER_LOCATION_TYPE="regional"
 
 # Constants used for both init_XXX.sh and e2e-xxx.sh
 export K8S_CONTROLLER_SERVICE_ACCOUNT="controller"
-export CONTROL_PLANE_SECRET_NAME="google-cloud-key"
-export PUBSUB_SECRET_NAME="google-cloud-key"
+export CONTROL_PLANE_GSA_SECRET_NAME="google-cloud-key"
+export SOURCES_GSA_SECRET_NAME="google-cloud-key"
 
-function init_control_plane_service_account() {
+function init_control_plane_gsa() {
   local project_id=${1}
   local control_plane_service_account=${2}
 

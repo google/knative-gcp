@@ -104,7 +104,7 @@ func AuthCheckForNonPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 		serviceAccountName = authCheckServiceAccountName
 		wantMessage = "can't find Kubernetes Service Account"
 	} else {
-		wantMessage = "MountVolume.SetUp failed for volume"
+		wantMessage = `secret "google-cloud-key" not found`
 	}
 
 	pubSubConfig := lib.PubSubConfig{

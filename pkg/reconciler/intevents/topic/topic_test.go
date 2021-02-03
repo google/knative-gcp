@@ -52,7 +52,6 @@ import (
 	pubsubv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/topic"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
@@ -815,11 +814,9 @@ func TestAllCases(t *testing.T) {
 		} else {
 			createClientFn = GetTestClientCreateFunc(srv.Addr)
 		}
-		pubsubBase := &intevents.PubSubBase{
-			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
-		}
+
 		r := &Reconciler{
-			PubSubBase:         pubsubBase,
+			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
 			topicLister:        listers.GetTopicLister(),
 			serviceLister:      listers.GetV1ServiceLister(),
 			publisherImage:     testImage,

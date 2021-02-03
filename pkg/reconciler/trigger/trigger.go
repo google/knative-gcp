@@ -36,6 +36,7 @@ import (
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	reconcilerutils "github.com/google/knative-gcp/pkg/reconciler/utils"
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 )
 
@@ -75,7 +76,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Trigger does not have broker", zap.String("namespace", t.Namespace), zap.String("trigger", t.Name), zap.String("broker", t.Spec.Broker))
-		t.Status.MarkBrokerFailed("BrokerDoesNotExist", "Broker %s does not exist", t.Spec.Broker)
+		t.Status.MarkBrokerFailed("BrokerDoesNotExist", "Broker %q does not exist", t.Spec.Broker)
 	}
 
 	// If the broker has been or is being deleted, we clean up resources created by this controller
@@ -84,7 +85,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 		return r.FinalizeKind(ctx, t)
 	}
 
-	if !filterBroker(b) {
+	if !reconcilerutils.BrokerClassFilter(b) {
 		// Call Finalizer anyway in case the Trigger still holds GCP Broker related resources.
 		// If a Trigger used to point to a GCP Broker but now has a Broker with a different brokerclass,
 		// we should clean up resources related to GCP Broker.

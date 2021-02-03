@@ -216,7 +216,7 @@ func TestAllCasesTrigger(t *testing.T) {
 					WithTriggerFinalizers(finalizerName),
 					WithTriggerSetDefaults,
 					WithInitTriggerConditions,
-					WithTriggerBrokerFailed("BrokerDoesNotExist", "Broker test-broker does not exist"),
+					WithTriggerBrokerFailed("BrokerDoesNotExist", `Broker "test-broker" does not exist`),
 				),
 			}},
 		},
