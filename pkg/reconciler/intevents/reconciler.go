@@ -288,5 +288,6 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 		return fmt.Errorf("failed to delete PullSubscription: %w", err)
 	}
 	status.SinkURI = nil
+	status.SubscriptionID = ""
 	return nil
 }
