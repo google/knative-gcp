@@ -74,9 +74,8 @@ type BrokerSpec struct {
 	// +optional
 	Config *duckv1.KReference `json:"config,omitempty"`
 
-	// Delivery contains the delivery spec for each trigger
-	// to this Broker. Each trigger delivery spec, if any, overrides this
-	// global delivery spec.
+	// Delivery is the delivery specification for Events within the Broker mesh.
+	// This includes things like retries, DLQ, etc.
 	// +optional
 	Delivery *eventingduckv1.DeliverySpec `json:"delivery,omitempty"`
 }

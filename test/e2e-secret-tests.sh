@@ -23,24 +23,28 @@ source $(dirname "${BASH_SOURCE[0]}")/e2e-common.sh
 # Eventing main config.
 readonly E2E_TEST_NAMESPACE="default"
 
+# Constants used for creating ServiceAccount for the Control Plane if it's not running on Prow.
+readonly CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
+
+# Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
+readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
+
 # Constants used for authentication setup for GCP Broker if it's not running on Prow.
-readonly BROKER_GSA_SECRET_NAME="google-broker-key"
+readonly GCP_BROKER_SECRET_NAME="google-broker-key"
 
 function export_variable() {
   if (( ! IS_PROW )); then
-    readonly CONTROL_PLANE_GSA_KEY_TEMP="$(mktemp)"
-    readonly SOURCES_GSA_KEY_TEMP="$(mktemp)"
-    readonly BROKER_GSA_KEY_TEMP="$(mktemp)"
+    readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
+    readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
   else
-    readonly CONTROL_PLANE_GSA_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
-    readonly SOURCES_GSA_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
-    readonly BROKER_GSA_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
+    readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
+    readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
   fi
 }
 
 # Setup resources common to all eventing tests.
 function test_setup() {
-  sources_auth_setup "secret" || return 1
+  pubsub_setup "secret" || return 1
 
   # Authentication check test for BrokerCell. It is used in integration test in secret mode.
   # We do not put it in the same place as other integration tests, because this test can not run in parallel with others,
@@ -49,7 +53,7 @@ function test_setup() {
     test_authentication_check_for_brokercell "secret" || return 1
   fi
 
-  broker_auth_setup "secret" || return 1
+  gcp_broker_setup "secret" || return 1
   storage_setup || return 1
   scheduler_setup || return 1
   echo "Sleep 2 mins to wait for all resources to setup"
@@ -62,7 +66,7 @@ function test_setup() {
 # Tear down tmp files which store the private key.
 function knative_teardown() {
   if (( ! IS_PROW )); then
-    rm "${CONTROL_PLANE_GSA_KEY_TEMP}"
+    rm "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
   fi
 }
 
@@ -71,9 +75,9 @@ function control_plane_setup() {
   # When not running on Prow we need to set up a service account for managing resources.
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
-    init_control_plane_gsa "${E2E_PROJECT_ID}" "${CONTROL_PLANE_GSA_NON_PROW}"
-    gcloud iam service-accounts keys create "${CONTROL_PLANE_GSA_KEY_TEMP}" \
-      --iam-account="${CONTROL_PLANE_GSA_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
+    init_control_plane_service_account "${E2E_PROJECT_ID}" "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}"
+    gcloud iam service-accounts keys create "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}" \
+      --iam-account="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
   fi
   prow_control_plane_setup "secret"
   wait_until_pods_running "${CONTROL_PLANE_NAMESPACE}" || return 1

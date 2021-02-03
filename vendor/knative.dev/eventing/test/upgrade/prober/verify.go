@@ -41,17 +41,11 @@ const (
 	jobWaitTimeout  = 5 * time.Minute
 )
 
-// Verify will verify prober state after finished has been sent.
+// Verify will verify prober state after finished has been send.
 func (p *prober) Verify(ctx context.Context) ([]error, int) {
 	report := p.fetchReport(ctx)
-	availRate := 0.0
-	if report.TotalRequests != 0 {
-		availRate = float64(report.EventsSent*100) / float64(report.TotalRequests)
-	}
-	p.log.Infof("Fetched receiver report. Events propagated: %v. State: %v.",
-		report.EventsSent, report.State)
-	p.log.Infof("Availability: %.3f%%, Requests sent: %d.",
-		availRate, report.TotalRequests)
+	p.log.Infof("Fetched receiver report. Events propagated: %v. "+
+		"State: %v", report.Events, report.State)
 	if report.State == "active" {
 		panic(errors.New("report fetched too early, receiver is in active state"))
 	}
@@ -62,9 +56,6 @@ func (p *prober) Verify(ctx context.Context) ([]error, int) {
 	for _, t := range report.Thrown.Unexpected {
 		errs = append(errs, errors.New(t))
 	}
-	for _, t := range report.Thrown.Unavailable {
-		errs = append(errs, errors.New(t))
-	}
 	for _, t := range report.Thrown.Duplicated {
 		if p.config.OnDuplicate == Warn {
 			p.log.Warn("Duplicate events: ", t)
@@ -72,7 +63,7 @@ func (p *prober) Verify(ctx context.Context) ([]error, int) {
 			errs = append(errs, errors.New(t))
 		}
 	}
-	return errs, report.EventsSent
+	return errs, report.Events
 }
 
 // Finish terminates sender which sends finished event.
@@ -112,14 +103,12 @@ func (p *prober) fetchExecution(ctx context.Context) *fetcher.Execution {
 	ex := &fetcher.Execution{
 		Logs: []fetcher.LogEntry{},
 		Report: &receiver.Report{
-			State:         "failure",
-			EventsSent:    0,
-			TotalRequests: 0,
+			State:  "failure",
+			Events: 0,
 			Thrown: receiver.Thrown{
-				Unexpected:  []string{"Report wasn't fetched"},
-				Missing:     []string{"Report wasn't fetched"},
-				Duplicated:  []string{"Report wasn't fetched"},
-				Unavailable: []string{"Report wasn't fetched"},
+				Unexpected: []string{"Report wasn't fetched"},
+				Missing:    []string{"Report wasn't fetched"},
+				Duplicated: []string{"Report wasn't fetched"},
 			},
 		},
 	}

@@ -32,7 +32,6 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
-	"github.com/google/knative-gcp/pkg/reconciler/utils"
 	"github.com/google/knative-gcp/pkg/reconciler/utils/volume"
 )
 
@@ -74,9 +73,6 @@ func (r *Reconciler) addBrokersAndTriggersToTargets(ctx context.Context, bc *int
 		return err
 	}
 	for _, broker := range brokers {
-		if !utils.BrokerClassFilter(broker) {
-			continue
-		}
 		// Filter by `eventing.knative.dev/broker: <name>` here
 		// to get only the triggers for this broker. The trigger webhook will
 		// ensure that triggers are always labeled with their broker name.

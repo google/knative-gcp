@@ -56,6 +56,7 @@ import (
 	pubsubv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -1383,10 +1384,12 @@ func TestAllCases(t *testing.T) {
 		} else {
 			createClientFn = GetTestClientCreateFunc(srv.Addr)
 		}
-
+		pubsubBase := &intevents.PubSubBase{
+			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
+		}
 		r := &Reconciler{
 			Base: &psreconciler.Base{
-				Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+				PubSubBase:             pubsubBase,
 				DeploymentLister:       listers.GetDeploymentLister(),
 				PullSubscriptionLister: listers.GetPullSubscriptionLister(),
 				UriResolver:            resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),

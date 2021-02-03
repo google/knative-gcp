@@ -247,11 +247,6 @@ func (in *TriggerSpec) DeepCopyInto(out *TriggerSpec) {
 		(*in).DeepCopyInto(*out)
 	}
 	in.Subscriber.DeepCopyInto(&out.Subscriber)
-	if in.Delivery != nil {
-		in, out := &in.Delivery, &out.Delivery
-		*out = new(apisduckv1.DeliverySpec)
-		(*in).DeepCopyInto(*out)
-	}
 	return
 }
 
