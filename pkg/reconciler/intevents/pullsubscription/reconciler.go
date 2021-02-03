@@ -28,7 +28,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
@@ -338,13 +337,13 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1.PullSubsc
 }
 
 func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.Deployment, ps *v1.PullSubscription) (*appsv1.Deployment, error) {
-	existing, err := r.getReceiveAdapter(ctx, ps)
-	if err != nil && !apierrors.IsNotFound(err) {
-		logging.FromContext(ctx).Desugar().Error("Unable to get an existing Receive Adapter", zap.Error(err))
-		ps.Status.MarkDeployedUnknown("ReceiveAdapterGetFailed", "Error getting the Receive Adapter: %s", err.Error())
-		return nil, err
-	}
-	if existing == nil {
+	existing, err := r.KubeClientSet.AppsV1().Deployments(ps.Namespace).Get(ctx, desired.Name, metav1.GetOptions{})
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			logging.FromContext(ctx).Desugar().Error("Unable to get an existing Receive Adapter", zap.Error(err))
+			ps.Status.MarkDeployedUnknown("ReceiveAdapterGetFailed", "Error getting the Receive Adapter: %s", err.Error())
+			return nil, err
+		}
 		existing, err = r.KubeClientSet.AppsV1().Deployments(ps.Namespace).Create(ctx, desired, metav1.CreateOptions{})
 		if err != nil {
 			ps.Status.MarkDeployedFailed("ReceiveAdapterCreateFailed", "Error creating the Receive Adapter: %s", err.Error())
@@ -353,27 +352,6 @@ func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.De
 		}
 	}
 	return existing, nil
-}
-
-func (r *Base) getReceiveAdapter(ctx context.Context, ps *v1.PullSubscription) (*appsv1.Deployment, error) {
-	dl, err := r.KubeClientSet.AppsV1().Deployments(ps.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: resources.GetLabelSelector(r.ControllerAgentName, ps.Name).String(),
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: appsv1.SchemeGroupVersion.String(),
-			Kind:       "Deployment",
-		},
-	})
-
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Unable to list deployments", zap.Error(err))
-		return nil, err
-	}
-	for _, dep := range dl.Items {
-		if metav1.IsControlledBy(&dep, ps) {
-			return &dep, nil
-		}
-	}
-	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
 }
 
 func (r *Base) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {
