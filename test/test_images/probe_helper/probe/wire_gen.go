@@ -11,12 +11,13 @@ import (
 	"context"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/test/test_images/probe_helper/probe/handlers"
+	"k8s.io/client-go/kubernetes"
 	"time"
 )
 
 // Injectors from wire.go:
 
-func InitializeTestProbeHelper(ctx context.Context, brokerCellBaseUrl string, projectID clients.ProjectID, cronStaleDuration time.Duration, helperEnv EnvConfig, forwardListener ForwardListener, receiveListener ReceiveListener, storageClient *storage.Client, psClient *pubsub.Client) (*Helper, error) {
+func InitializeTestProbeHelper(ctx context.Context, brokerCellBaseUrl string, projectID clients.ProjectID, cronStaleDuration time.Duration, helperEnv EnvConfig, forwardListener ForwardListener, receiveListener ReceiveListener, storageClient *storage.Client, psClient *pubsub.Client, k8sClient kubernetes.Interface) (*Helper, error) {
 	forwardClientOptions := NewTestCeForwardClientOptions(forwardListener)
 	ceForwardClient, err := NewCeForwardClient(forwardClientOptions)
 	if err != nil {
@@ -42,9 +43,19 @@ func InitializeTestProbeHelper(ctx context.Context, brokerCellBaseUrl string, pr
 		CloudStorageSourceProbe: cloudStorageSourceProbe,
 	}
 	cloudAuditLogsSourceProbe := handlers.NewCloudAuditLogsSourceProbe(projectID, psClient)
+	apiServerSourceProbe := handlers.NewApiServerSourceProbe(projectID, k8sClient)
+	apiServerSourceCreateProbe := &handlers.ApiServerSourceCreateProbe{
+		ApiServerSourceProbe: apiServerSourceProbe,
+	}
+	apiServerSourceUpdateProbe := &handlers.ApiServerSourceUpdateProbe{
+		ApiServerSourceProbe: apiServerSourceProbe,
+	}
+	apiServerSourceDeleteProbe := &handlers.ApiServerSourceDeleteProbe{
+		ApiServerSourceProbe: apiServerSourceProbe,
+	}
 	cloudSchedulerSourceProbe := handlers.NewCloudSchedulerSourceProbe(cronStaleDuration)
 	pingSourceProbe := handlers.NewPingSourceProbe(cronStaleDuration)
-	eventTypeProbe := handlers.NewEventTypeHandler(brokerE2EDeliveryProbe, cloudPubSubSourceProbe, cloudStorageSourceCreateProbe, cloudStorageSourceUpdateMetadataProbe, cloudStorageSourceArchiveProbe, cloudStorageSourceDeleteProbe, cloudAuditLogsSourceProbe, cloudSchedulerSourceProbe, pingSourceProbe)
+	eventTypeProbe := handlers.NewEventTypeHandler(brokerE2EDeliveryProbe, cloudPubSubSourceProbe, cloudStorageSourceCreateProbe, cloudStorageSourceUpdateMetadataProbe, cloudStorageSourceArchiveProbe, cloudStorageSourceDeleteProbe, cloudAuditLogsSourceProbe, apiServerSourceCreateProbe, apiServerSourceUpdateProbe, apiServerSourceDeleteProbe, cloudSchedulerSourceProbe, pingSourceProbe)
 	livenessChecker := handlers.NewLivenessChecker(cloudSchedulerSourceProbe, pingSourceProbe)
 	receiveClientOptions := NewTestCeReceiverClientOptions(receiveListener)
 	ceReceiveClient, err := NewCeReceiverClient(ctx, livenessChecker, receiveClientOptions)

@@ -57,7 +57,7 @@ type CloudAuditLogsSourceProbe struct {
 	receivedEvents *utils.SyncReceivedEvents
 }
 
-// Forward publishes creates a Pub/Sub topic in order to generate a Cloud Audit Logs notification event.
+// Forward creates a Pub/Sub topic in order to generate a Cloud Audit Logs notification event.
 func (p *CloudAuditLogsSourceProbe) Forward(ctx context.Context, event cloudevents.Event) error {
 	// Create the receiver channel
 	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventTargetPathExtension]), event.ID())
