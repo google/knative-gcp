@@ -550,7 +550,7 @@ func TestHasTrigger(t *testing.T) {
 				"non_matching_target_3": {
 					CellTenantType: config.CellTenantType_BROKER,
 					FilterAttributes: map[string]string{
-						"type": eventType + "dummy",
+						"type": eventType + "empty",
 					},
 				},
 			},
