@@ -161,6 +161,10 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 			return nil
 		}
 		replyMessage = replyMsg
+	} else if target.CellTenantType == config.CellTenantType_BROKER {
+		// Triggers require a subscriber address. This target is a Trigger (because it is associated
+		// with a Broker) and has no subscriber address. Therefore it is incorrect.
+		return fmt.Errorf("trigger %s/%s has no subscriber address", target.Namespace, target.Name)
 	}
 
 	replyAddress := target.ReplyAddress
