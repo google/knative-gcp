@@ -14,18 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package readiness
+package controller
 
 import (
 	"fmt"
 	"sync"
 
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	. "github.com/google/knative-gcp/pkg/broker/readiness"
 	inteventsv1alpha1lister "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	corev1informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
@@ -33,6 +35,15 @@ import (
 var (
 	once sync.Once
 )
+
+type podKeyType = types.NamespacedName
+
+func getPodKey(pod *corev1.Pod) podKeyType {
+	return types.NamespacedName{
+		Namespace: pod.Namespace,
+		Name:      pod.Name,
+	}
+}
 
 func getBrokerCellName(obj runtime.Object) string {
 	return resources.DefaultBrokerCellName
