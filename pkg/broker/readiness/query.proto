@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package readiness;
+option go_package = "github.com/google/knative-gcp/pkg/broker/readiness";
+
+service GenerationQueryService {
+  rpc GetCellTenantGeneration(GetGenerationReq) returns (GetGenerationResp) {};
+  rpc GetTargetGeneration(GetGenerationReq) returns (GetGenerationResp) {};
+}
+
+message GetGenerationReq {
+  string key = 1; // namespace/name/UID
+}
+
+message GetGenerationResp {
+  int64 generation = 1;
+}
+

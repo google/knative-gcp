@@ -65,6 +65,9 @@ message CellTenant {
 
   // The CellTenant's state.
   State state = 7;
+
+  // The broker generation
+  int64 generation = 9;
 }
 
 // Target defines the config schema for a CellTenant's subscription's target.
@@ -98,6 +101,9 @@ message Target {
 
   // The resolved URI that replies are sent to.
   string reply_address = 10;
+
+  // The target generation
+  int64 generation = 11;
 }
 
 // TargetsConfig is the collection of all Targets.
