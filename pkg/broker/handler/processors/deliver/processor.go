@@ -154,7 +154,7 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 		replyMsg, cleanUp, err := p.sendToSubscriber(ctx, target, msg, hops)
 		defer cleanUp()
 		if err != nil {
-			return fmt.Errorf("sending event to subscriber: %w", err)
+			return fmt.Errorf("failed to send event to subscriber: %w", err)
 		}
 		if replyMsg == nil {
 			// There is no reply message to send.
