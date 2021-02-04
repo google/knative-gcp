@@ -338,18 +338,19 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1.PullSubsc
 
 func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.Deployment, ps *v1.PullSubscription) (*appsv1.Deployment, error) {
 	existing, err := r.KubeClientSet.AppsV1().Deployments(ps.Namespace).Get(ctx, desired.Name, metav1.GetOptions{})
+	if err == nil {
+		return existing, nil
+	}
+	if !apierrors.IsNotFound(err) {
+		logging.FromContext(ctx).Desugar().Error("Unable to get an existing Receive Adapter", zap.Error(err))
+		ps.Status.MarkDeployedUnknown("ReceiveAdapterGetFailed", "Error getting the Receive Adapter: %s", err.Error())
+		return nil, err
+	}
+	existing, err = r.KubeClientSet.AppsV1().Deployments(ps.Namespace).Create(ctx, desired, metav1.CreateOptions{})
 	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			logging.FromContext(ctx).Desugar().Error("Unable to get an existing Receive Adapter", zap.Error(err))
-			ps.Status.MarkDeployedUnknown("ReceiveAdapterGetFailed", "Error getting the Receive Adapter: %s", err.Error())
-			return nil, err
-		}
-		existing, err = r.KubeClientSet.AppsV1().Deployments(ps.Namespace).Create(ctx, desired, metav1.CreateOptions{})
-		if err != nil {
-			ps.Status.MarkDeployedFailed("ReceiveAdapterCreateFailed", "Error creating the Receive Adapter: %s", err.Error())
-			logging.FromContext(ctx).Desugar().Error("Error creating Receive Adapter", zap.Error(err))
-			return nil, err
-		}
+		ps.Status.MarkDeployedFailed("ReceiveAdapterCreateFailed", "Error creating the Receive Adapter: %s", err.Error())
+		logging.FromContext(ctx).Desugar().Error("Error creating Receive Adapter", zap.Error(err))
+		return nil, err
 	}
 	return existing, nil
 }
