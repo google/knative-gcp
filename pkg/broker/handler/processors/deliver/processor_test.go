@@ -272,60 +272,100 @@ func (h *statusCodeReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Requ
 	}
 }
 
-func TestProcess_TriggerWithoutSubscriberAddress(t *testing.T) {
-	reportertest.ResetDeliveryMetrics()
-	ctx := logtest.TestContextWithLogger(t)
-	_, c, close := testPubsubClient(ctx, t, "test-project")
-	defer close()
-
-	ps, err := cepubsub.New(ctx, cepubsub.WithClient(c), cepubsub.WithProjectID("test-project"))
-	if err != nil {
-		t.Fatalf("failed to create pubsub protocol: %v", err)
-	}
-	deliverRetryClient, err := ceclient.New(ps)
-	if err != nil {
-		t.Fatalf("failed to create cloudevents client: %v", err)
-	}
-
-	broker := &config.CellTenant{
-		Type:      config.CellTenantType_BROKER,
-		Namespace: "ns",
-		Name:      "broker",
-	}
-	target := &config.Target{
-		Namespace:      "ns",
-		Name:           "target",
-		CellTenantType: config.CellTenantType_BROKER,
-		CellTenantName: "broker",
-		Address:        "",
-		RetryQueue: &config.Queue{
-			Topic: "test-retry-topic",
+func TestProcess_WithoutSubscriberAddress(t *testing.T) {
+	testCases := []struct {
+		name                string
+		cellTenantType      config.CellTenantType
+		replyHandler        statusCodeReplyHandler
+		expectedReplyEvents int
+		error               string
+	}{
+		{
+			name:           "trigger",
+			cellTenantType: config.CellTenantType_BROKER,
+			error:          "trigger ns/target has no subscriber address",
 		},
+		// TODO Add a test for Channels that allows an empty subscriber address, once Channel is a
+		// valid CellTenantType.
+		// {
+		//	name:           "Channel",
+		//	cellTenantType: config.CellTenantType_CHANNEL,
+		//	replyHandler: statusCodeReplyHandler{
+		//		responseCode: http.StatusAccepted,
+		//	},
+		//	expectedReplyEvents: 1,
+		//},
 	}
-	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
-		bm.SetAddress(broker.Address)
-		bm.UpsertTargets(target)
-	})
-	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
-	ctx = handlerctx.WithTargetKey(ctx, target.Key())
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			reportertest.ResetDeliveryMetrics()
+			ctx := logtest.TestContextWithLogger(t)
+			_, c, close := testPubsubClient(ctx, t, "test-project")
+			defer close()
+			replySvr := httptest.NewServer(&tc.replyHandler)
+			defer replySvr.Close()
 
-	r, err := metrics.NewDeliveryReporter("pod", "container")
-	if err != nil {
-		t.Fatal(err)
-	}
-	p := &Processor{
-		DeliverClient:      http.DefaultClient,
-		Targets:            testTargets,
-		DeliverRetryClient: deliverRetryClient,
-		DeliverTimeout:     500 * time.Millisecond,
-		StatsReporter:      r,
-	}
+			ps, err := cepubsub.New(ctx, cepubsub.WithClient(c), cepubsub.WithProjectID("test-project"))
+			if err != nil {
+				t.Fatalf("failed to create pubsub protocol: %v", err)
+			}
+			deliverRetryClient, err := ceclient.New(ps)
+			if err != nil {
+				t.Fatalf("failed to create cloudevents client: %v", err)
+			}
 
-	origin := newSampleEvent()
-	err = p.Process(ctx, origin)
-	if want, got := "trigger ns/target has no subscriber address", err; err == nil || want != got.Error() {
-		t.Errorf("processing want error %q, got %v", want, got)
+			ct := &config.CellTenant{
+				Type:      tc.cellTenantType,
+				Namespace: "ns",
+				Name:      "ct",
+				Address:   replySvr.URL,
+			}
+			target := &config.Target{
+				Namespace:      ct.Namespace,
+				Name:           "target",
+				CellTenantType: ct.Type,
+				CellTenantName: ct.Name,
+				Address:        "",
+				ReplyAddress:   replySvr.URL,
+				RetryQueue: &config.Queue{
+					Topic: "test-retry-topic",
+				},
+			}
+			testTargets := memory.NewEmptyTargets()
+			testTargets.MutateCellTenant(ct.Key(), func(bm config.CellTenantMutation) {
+				bm.SetAddress(ct.Address)
+				bm.UpsertTargets(target)
+			})
+			ctx = handlerctx.WithBrokerKey(ctx, ct.Key())
+			ctx = handlerctx.WithTargetKey(ctx, target.Key())
+
+			r, err := metrics.NewDeliveryReporter("pod", "container")
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := &Processor{
+				DeliverClient:      http.DefaultClient,
+				Targets:            testTargets,
+				DeliverRetryClient: deliverRetryClient,
+				DeliverTimeout:     500 * time.Millisecond,
+				StatsReporter:      r,
+			}
+
+			origin := newSampleEvent()
+			err = p.Process(ctx, origin)
+			if wantErr := (tc.error != ""); wantErr {
+				if err == nil {
+					t.Error("Wanted an error, received nil")
+				} else if tc.error != err.Error() {
+					t.Errorf("Unexpected error, want %q, got %q", tc.error, err.Error())
+				}
+			} else if err != nil {
+				t.Errorf("Wanted no error, received %v", err)
+			}
+			if want, got := tc.expectedReplyEvents, tc.replyHandler.eventsSeen; want != got {
+				t.Errorf("Unexpected number of reply events. Want %d, Got %d", want, got)
+			}
+		})
 	}
 }
 
@@ -461,6 +501,7 @@ func TestDeliverFailure(t *testing.T) {
 				CellTenantType: config.CellTenantType_BROKER,
 				CellTenantName: "broker",
 				Address:        targetSvr.URL,
+				ReplyAddress:   replySvr.URL,
 				RetryQueue: &config.Queue{
 					Topic: "test-retry-topic",
 				},
