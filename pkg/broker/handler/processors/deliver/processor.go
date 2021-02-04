@@ -188,7 +188,7 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 
 	replyResp, err := p.sendMsg(ctx, replyAddress, replyMessage, transformers...)
 	if err != nil {
-		return fmt.Errorf("sending event to reply: %w", err)
+		return fmt.Errorf("failed to send event to reply: %w", err)
 	}
 	if err := replyResp.Body.Close(); err != nil {
 		logging.FromContext(ctx).Warn("Failed to close reply response body", zap.Error(err))
