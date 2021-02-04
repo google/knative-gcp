@@ -120,6 +120,13 @@ func CellTenantKeyFromPersistenceString(s string) (*CellTenantKey, error) {
 	}, nil
 }
 
+func CellTenantKeyFromPersistenceStringWithOutSlash(s string) (*CellTenantKey, error) {
+	var sb strings.Builder
+	sb.WriteString("/")
+	sb.WriteString(s)
+	return CellTenantKeyFromPersistenceString(sb.String())
+}
+
 // MetricsResource generates the Resource object that metrics will be associated with.
 func (k *CellTenantKey) MetricsResource() resource.Resource {
 	return resource.Resource{
@@ -185,6 +192,38 @@ func (k *TargetKey) String() string {
 	// Note that this is explicitly different than the PersistenceString, so that we don't
 	// accidentally use String(), rather than PersistenceString().
 	return k.cellTenantKey.String() + "//" + k.name
+}
+
+func TargetKeyFromPersistenceStringWithOutSlash(s string) (*TargetKey, error) {
+	pieces := strings.Split(s, "/")
+	if len(pieces) <= 2 || len(pieces) >= 5 {
+		return nil, fmt.Errorf(
+			"malformed request path; expect format '<ns>/<broker>/<trigger>' or '<type>/<ns>/<broker>/<trigger>', actually %q", s)
+	}
+
+	triggerName := pieces[len(pieces)-1]
+	if err := validateBrokerName(triggerName); err != nil {
+		return nil, err
+	}
+
+	cellTenantStr := strings.TrimSuffix(strings.TrimSuffix(s, triggerName), "/")
+	cellTenantKey, err := CellTenantKeyFromPersistenceStringWithOutSlash(cellTenantStr)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"malformed request path; expect format '<ns>/<broker>/<trigger>' or '<type>/<ns>/<broker>/<trigger>', actually %q", s)
+	}
+
+	return &TargetKey{
+		cellTenantKey: *cellTenantKey,
+		name:          triggerName,
+	}, nil
+}
+
+// PersistenceString is the string that is persisted as the key for this Target in the protobuf. It
+// is stable and can only change if all existing usage locations are made backwards compatible,
+// supporting _both_ the old and the new format, for at least one release.
+func (k *TargetKey) PersistenceString() string {
+	return k.cellTenantKey.String() + "/" + k.name
 }
 
 // Key returns the TargetKey for this Target.
