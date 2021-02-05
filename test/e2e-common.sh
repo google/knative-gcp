@@ -321,26 +321,27 @@ function warmup_broker_setup(){
 }
 
 function dump_extra_cluster_state() {
-  # Collecting logs from all namespace `events-system` pods.
-  echo "============================================================"
-  local namespace=${CONTROL_PLANE_NAMESPACE}
-  local controller_logs="controller-logs"
-  local controller_logs_dir=${ARTIFACTS}/${controller_logs}
-  echo "Creating directory ${controller_logs_dir}"
-  mkdir -p ${controller_logs_dir}
+  for namespace in ${CONTROL_PLANE_NAMESPACE} gke-system knative-serving; do
+    # Collecting logs from all system namespace pods.
+    echo "============================================================"
+    local controller_logs="${namespace}-controller-logs"
+    local controller_logs_dir=${ARTIFACTS}/${controller_logs}
+    echo "Creating directory ${controller_logs_dir}"
+    mkdir -p ${controller_logs_dir}
 
-  for pod in $(kubectl get pod -n $namespace | grep Running | awk '{print $1}' ); do
-    for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
-      local current_output="${ARTIFACTS}/${controller_logs}/${namespace}-${pod}-${container}.txt"
-      echo ">>> The dump of Namespace, Pod, Container: ${namespace}, ${pod}, ${container} is located at ${current_output}"
-      echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"  >> "${current_output}"
-      kubectl logs -n $namespace "${pod}" -c "${container}" >> "${current_output}" || true
-      echo "----------------------------------------------------------"
-      local previous_output="${ARTIFACTS}/${controller_logs}/previous-${namespace}-${pod}-${container}.txt"
-      echo ">>> The dump of Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container} is located at ${previous_output}"
-      echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"  >> "${previous_output}"
-      kubectl logs -p -n $namespace "${pod}" -c "${container}" >> "${previous_output}" || true
-      echo "============================================================"
+    for pod in $(kubectl get pod -n $namespace | grep Running | awk '{print $1}' ); do
+      for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
+        local current_output="${ARTIFACTS}/${controller_logs}/${namespace}-${pod}-${container}.txt"
+        echo ">>> The dump of Namespace, Pod, Container: ${namespace}, ${pod}, ${container} is located at ${current_output}"
+        echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"  >> "${current_output}"
+        kubectl logs -n $namespace "${pod}" -c "${container}" >> "${current_output}" || true
+        echo "----------------------------------------------------------"
+        local previous_output="${ARTIFACTS}/${controller_logs}/previous-${namespace}-${pod}-${container}.txt"
+        echo ">>> The dump of Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container} is located at ${previous_output}"
+        echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"  >> "${previous_output}"
+        kubectl logs -p -n $namespace "${pod}" -c "${container}" >> "${previous_output}" || true
+        echo "============================================================"
+      done
     done
   done
 }
