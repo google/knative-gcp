@@ -116,7 +116,7 @@ func NewHandler(ctx context.Context, httpReceiver HttpMessageReceiver, decouple 
 
 // Start blocks to receive events over HTTP.
 func (h *Handler) Start(ctx context.Context) error {
-	h.readinessCheck.Start()
+	//h.readinessCheck.Start()
 	return h.httpReceiver.StartListen(ctx, h)
 }
 
