@@ -15,6 +15,7 @@ approvers:
 - AlexandraRoatis
 - stuart-xyz
 - MohamedElhawaty
+- bharattkukreja
 
 # Reviewers are suggested from the reviewers list first, then the approvers
 # list. To add reviewers while spreading the load among existing approvers,
@@ -37,3 +38,4 @@ reviewers:
 - AlexandraRoatis
 - stuart-xyz
 - MohamedElhawaty
+- bharattkukreja
