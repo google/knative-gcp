@@ -99,16 +99,19 @@ func getGeneration(genMap *rwMap, key string) (*GetGenerationResp, error) {
 }
 
 func (s *configReadinessCheckServer) UpdateCellTenantGeneration(b *config.CellTenant) {
+	fmt.Printf("UpdateCellTenantGeneration %s: %d\n", b.Key().PersistenceString(), b.Generation)
 	s.cellTenantGenMap.setKey(b.Key().PersistenceString(), b.Generation)
 }
 
 func (s *configReadinessCheckServer) UpdateTargetGeneration(t *config.Target) {
+	fmt.Printf("UpdateCellTenantGeneration %s: %d\n", t.Key().PersistenceString(), t.Generation)
 	s.cellTenantGenMap.setKey(t.Key().PersistenceString(), t.Generation) // TODO need to find a different key for target
 }
 
 func deleteNonExistObj(genMap *rwMap, ifExist func(key string) bool) {
 	genMap.rangeKeys(func(key string) {
 		if !ifExist(key) {
+			fmt.Printf("delete %s\n", key)
 			delete(genMap.m, key)
 		}
 	})
