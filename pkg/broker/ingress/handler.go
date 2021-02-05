@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/readiness"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -75,6 +76,7 @@ var HandlerSet wire.ProviderSet = wire.NewSet(
 	wire.Bind(new(DecoupleSink), new(*multiTopicDecoupleSink)),
 	clients.NewPubsubClient,
 	metrics.NewIngressReporter,
+	readiness.NewServer,
 )
 
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
@@ -93,26 +95,33 @@ type Handler struct {
 	// httpReceiver is an HTTP server to receive events.
 	httpReceiver HttpMessageReceiver
 	// decouple is the client to send events to a decouple sink.
-	decouple DecoupleSink
-	logger   *zap.Logger
-	reporter *metrics.IngressReporter
-	authType authcheck.AuthType
+	decouple       DecoupleSink
+	logger         *zap.Logger
+	reporter       *metrics.IngressReporter
+	authType       authcheck.AuthType
+	readinessCheck readiness.ConfigReadinessCheckServer
 }
 
 // NewHandler creates a new ingress handler.
-func NewHandler(ctx context.Context, httpReceiver HttpMessageReceiver, decouple DecoupleSink, reporter *metrics.IngressReporter, authType authcheck.AuthType) *Handler {
+func NewHandler(ctx context.Context, httpReceiver HttpMessageReceiver, decouple DecoupleSink, reporter *metrics.IngressReporter, authType authcheck.AuthType, readinessCheck readiness.ConfigReadinessCheckServer) *Handler {
 	return &Handler{
-		httpReceiver: httpReceiver,
-		decouple:     decouple,
-		reporter:     reporter,
-		logger:       logging.FromContext(ctx),
-		authType:     authType,
+		httpReceiver:   httpReceiver,
+		decouple:       decouple,
+		reporter:       reporter,
+		logger:         logging.FromContext(ctx),
+		authType:       authType,
+		readinessCheck: readinessCheck,
 	}
 }
 
 // Start blocks to receive events over HTTP.
 func (h *Handler) Start(ctx context.Context) error {
+	h.readinessCheck.Start()
 	return h.httpReceiver.StartListen(ctx, h)
+}
+
+func (h *Handler) SyncOnce(ctx context.Context) error {
+	return nil
 }
 
 // ServeHTTP implements net/http Handler interface method.

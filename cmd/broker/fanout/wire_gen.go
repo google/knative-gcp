@@ -9,13 +9,14 @@ import (
 	"context"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler"
+	"github.com/google/knative-gcp/pkg/broker/readiness/dataplane"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 )
 
 // Injectors from wire.go:
 
-func InitializeSyncPool(ctx context.Context, projectID clients.ProjectID, podName metrics.PodName, containerName metrics.ContainerName, targetsVolumeOpts []volume.Option, opts ...handler.Option) (*handler.FanoutPool, error) {
+func InitializeSyncPool(ctx context.Context, projectID clients.ProjectID, podName metrics.PodName, containerName metrics.ContainerName, configReadinessCheck dataplane.ConfigReadinessCheckServer, targetsVolumeOpts []volume.Option, opts ...handler.Option) (*handler.FanoutPool, error) {
 	readonlyTargets, err := volume.NewTargetsFromFile(targetsVolumeOpts...)
 	if err != nil {
 		return nil, err
@@ -34,7 +35,7 @@ func InitializeSyncPool(ctx context.Context, projectID clients.ProjectID, podNam
 	if err != nil {
 		return nil, err
 	}
-	fanoutPool, err := handler.NewFanoutPool(readonlyTargets, client, httpClient, retryClient, deliveryReporter, opts...)
+	fanoutPool, err := handler.NewFanoutPool(readonlyTargets, client, httpClient, retryClient, deliveryReporter, configReadinessCheck, opts...)
 	if err != nil {
 		return nil, err
 	}

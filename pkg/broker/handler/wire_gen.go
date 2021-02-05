@@ -9,12 +9,13 @@ import (
 	"cloud.google.com/go/pubsub"
 	"context"
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/readiness"
 	"github.com/google/knative-gcp/pkg/metrics"
 )
 
 // Injectors from wire.go:
 
-func InitializeTestFanoutPool(ctx context.Context, podName metrics.PodName, containerName metrics.ContainerName, targets config.ReadonlyTargets, pubsubClient *pubsub.Client, opts ...Option) (*FanoutPool, error) {
+func InitializeTestFanoutPool(ctx context.Context, podName metrics.PodName, containerName metrics.ContainerName, targets config.ReadonlyTargets, pubsubClient *pubsub.Client, readinessCheck readiness.ConfigReadinessCheckServer, opts ...Option) (*FanoutPool, error) {
 	client := _wireClientValue
 	v := _wireValue
 	retryClient, err := NewRetryClient(ctx, pubsubClient, v...)
@@ -25,7 +26,7 @@ func InitializeTestFanoutPool(ctx context.Context, podName metrics.PodName, cont
 	if err != nil {
 		return nil, err
 	}
-	fanoutPool, err := NewFanoutPool(targets, pubsubClient, client, retryClient, deliveryReporter, opts...)
+	fanoutPool, err := NewFanoutPool(targets, pubsubClient, client, retryClient, deliveryReporter, readinessCheck, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -23,6 +23,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/readiness"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/wire"
 )
@@ -33,6 +34,7 @@ func InitializeTestFanoutPool(
 	containerName metrics.ContainerName,
 	targets config.ReadonlyTargets,
 	pubsubClient *pubsub.Client,
+	readinessCheck readiness.ConfigReadinessCheckServer,
 	opts ...Option,
 ) (*FanoutPool, error) {
 	panic(wire.Build(

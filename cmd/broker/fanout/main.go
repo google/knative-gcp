@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler"
+	readinessdp "github.com/google/knative-gcp/pkg/broker/readiness/dataplane"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
@@ -89,11 +90,14 @@ func main() {
 	}
 
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
+	configReadinessCheckServer := readinessdp.NewServer()
+	configReadinessCheckServer.Start()
 	syncPool, err := InitializeSyncPool(
 		ctx,
 		clients.ProjectID(projectID),
 		metrics.PodName(env.PodName),
 		metrics.ContainerName(component),
+		configReadinessCheckServer,
 		[]volume.Option{
 			volume.WithPath(env.TargetsConfigPath),
 			volume.WithNotifyChan(targetsUpdateCh),

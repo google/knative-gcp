@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
+	"github.com/google/knative-gcp/pkg/broker/readiness"
 
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
@@ -53,13 +54,13 @@ const (
 type Constructor injection.ControllerConstructor
 
 // NewConstructor creates a constructor to make a Broker controller.
-func NewConstructor(brokerdeliveryss *brokerdelivery.StoreSingleton, dataresidencyss *dataresidency.StoreSingleton) Constructor {
+func NewConstructor(brokerdeliveryss *brokerdelivery.StoreSingleton, dataresidencyss *dataresidency.StoreSingleton, readinesscheckclients *readiness.ConfigCheckClientsMap) Constructor {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-		return newController(ctx, cmw, brokerdeliveryss.Store(ctx, cmw), dataresidencyss.Store(ctx, cmw))
+		return newController(ctx, cmw, brokerdeliveryss.Store(ctx, cmw), dataresidencyss.Store(ctx, cmw), readinesscheckclients)
 	}
 }
 
-func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdelivery.Store, drs *dataresidency.Store) *controller.Impl {
+func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdelivery.Store, drs *dataresidency.Store, rcc *readiness.ConfigCheckClientsMap) *controller.Impl {
 	brokerInformer := brokerinformer.Get(ctx)
 	bcInformer := brokercellinformer.Get(ctx)
 
@@ -86,12 +87,15 @@ func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdeliv
 		}()
 	}
 
+	configReadinessCheck := readiness.NewConfigQueryManager(rcc)
+
 	r := &Reconciler{
 		Reconciler: celltenant.Reconciler{
-			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-			BrokerCellLister:   bcInformer.Lister(),
-			PubsubClient:       client,
-			DataresidencyStore: drs,
+			Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
+			BrokerCellLister:     bcInformer.Lister(),
+			PubsubClient:         client,
+			DataresidencyStore:   drs,
+			ConfigReadinessCheck: configReadinessCheck,
 		},
 	}
 
@@ -101,6 +105,8 @@ func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdeliv
 				ConfigStore: brds,
 			}
 		})
+
+	configReadinessCheck.Setup(ctx, impl.WorkQueue(), r.KubeClientSet)
 
 	r.Logger.Info("Setting up event handlers")
 

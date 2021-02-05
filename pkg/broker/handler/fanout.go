@@ -34,6 +34,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/fanout"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
+	readinessdp "github.com/google/knative-gcp/pkg/broker/readiness/dataplane"
 	"github.com/google/knative-gcp/pkg/metrics"
 )
 
@@ -59,8 +60,9 @@ type FanoutPool struct {
 	deliverRetryClient ceclient.Client
 	// For initial events delivery. We only need a shared client.
 	// And we can set target address dynamically.
-	deliverClient *http.Client
-	statsReporter *metrics.DeliveryReporter
+	deliverClient  *http.Client
+	statsReporter  *metrics.DeliveryReporter
+	readinessCheck readinessdp.ConfigReadinessCheckServer
 }
 
 type fanoutHandlerCache struct {
@@ -93,6 +95,7 @@ func NewFanoutPool(
 	deliverClient *http.Client,
 	retryClient RetryClient,
 	statsReporter *metrics.DeliveryReporter,
+	readinessCheck readinessdp.ConfigReadinessCheckServer,
 	opts ...Option,
 ) (*FanoutPool, error) {
 	options, err := NewOptions(opts...)
@@ -120,6 +123,7 @@ func NewFanoutPool(
 		deliverClient:      deliverClient,
 		deliverRetryClient: retryClient,
 		statsReporter:      statsReporter,
+		readinessCheck:     readinessCheck,
 	}
 	return p, nil
 }
@@ -138,6 +142,8 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 		}
 		return true
 	})
+
+	p.readinessCheck.CleanupStaleRecords(p.targets)
 
 	p.targets.RangeCellTenants(func(b *config.CellTenant) bool {
 		if value, ok := p.pool.Load(*b.Key()); ok {
@@ -190,9 +196,14 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 		})
 
 		p.pool.Store(*b.Key(), hc)
+		p.readinessCheck.UpdateCellTenantGeneration(b)
 		return true
 	})
 
+	p.targets.RangeAllTargets(func(t *config.Target) bool {
+		p.readinessCheck.UpdateTargetGeneration(t)
+		return true
+	})
 	return nil
 }
 

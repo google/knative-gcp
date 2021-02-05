@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler"
+	readinessdp "github.com/google/knative-gcp/pkg/broker/readiness/dataplane"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/wire"
@@ -35,6 +36,7 @@ func InitializeSyncPool(
 	projectID clients.ProjectID,
 	podName metrics.PodName,
 	containerName metrics.ContainerName,
+	configReadinessCheck readinessdp.ConfigReadinessCheckServer,
 	targetsVolumeOpts []volume.Option,
 	opts ...handler.Option,
 ) (*handler.FanoutPool, error) {
