@@ -129,6 +129,7 @@ func addBrokerAndTriggersToConfig(_ context.Context, b *brokerv1beta1.Broker, tr
 					Namespace:      t.Namespace,
 					CellTenantType: config.CellTenantType_BROKER,
 					CellTenantName: b.Name,
+					ReplyAddress:   b.Status.Address.URL.String(),
 					Address:        t.Status.SubscriberURI.String(),
 					RetryQueue: &config.Queue{
 						Topic:        brokerresources.GenerateRetryTopicName(t),
