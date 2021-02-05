@@ -22,11 +22,12 @@
 package config
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	proto "github.com/golang/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -88,12 +89,13 @@ func (State) EnumDescriptor() ([]byte, []int) {
 	return file_pkg_broker_config_targets_proto_rawDescGZIP(), []int{0}
 }
 
-// CellTenantType is the type of the Cell Tenant. Currently only Brokers.
+// CellTenantType is the type of the Cell Tenant.
 type CellTenantType int32
 
 const (
 	CellTenantType_UNKNOWN_CELL_TENANT_TYPE CellTenantType = 0
 	CellTenantType_BROKER                   CellTenantType = 1
+	CellTenantType_CHANNEL                  CellTenantType = 2
 )
 
 // Enum value maps for CellTenantType.
@@ -101,10 +103,12 @@ var (
 	CellTenantType_name = map[int32]string{
 		0: "UNKNOWN_CELL_TENANT_TYPE",
 		1: "BROKER",
+		2: "CHANNEL",
 	}
 	CellTenantType_value = map[string]int32{
 		"UNKNOWN_CELL_TENANT_TYPE": 0,
 		"BROKER":                   1,
+		"CHANNEL":                  2,
 	}
 )
 

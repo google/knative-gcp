@@ -20,20 +20,13 @@ import (
 	"context"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/google/go-cmp/cmp"
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
-	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
 var (
-	validServiceAccountName   = "test"
-	invalidServiceAccountName = "@test"
-
 	channelSpec = ChannelSpec{
 		SubscribableSpec: &eventingduck.SubscribableSpec{
 			Subscribers: []eventingduck.SubscriberSpec{{
@@ -114,64 +107,6 @@ func TestChannelValidation(t *testing.T) {
 				}},
 		},
 		want: nil,
-	}, {
-		name: "invalid k8s service account",
-		cr: &Channel{
-			Spec: ChannelSpec{
-				IdentitySpec: gcpduckv1.IdentitySpec{
-					ServiceAccountName: invalidServiceAccountName,
-				},
-				SubscribableSpec: &eventingduck.SubscribableSpec{
-					Subscribers: []eventingduck.SubscriberSpec{{
-						SubscriberURI: apis.HTTP("subscriberendpoint"),
-						ReplyURI:      apis.HTTP("replyendpoint"),
-					}},
-				}},
-		},
-		want: func() *apis.FieldError {
-			fe := &apis.FieldError{
-				Message: `invalid value: @test, serviceAccountName should have format: ^[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$`,
-				Paths:   []string{"spec.serviceAccountName"},
-			}
-			return fe
-		}(),
-	}, {
-		name: "valid k8s service account",
-		cr: &Channel{
-			Spec: ChannelSpec{
-				IdentitySpec: gcpduckv1.IdentitySpec{
-					ServiceAccountName: validServiceAccountName,
-				},
-				SubscribableSpec: &eventingduck.SubscribableSpec{
-					Subscribers: []eventingduck.SubscriberSpec{{
-						SubscriberURI: apis.HTTP("subscriberendpoint"),
-						ReplyURI:      apis.HTTP("replyendpoint"),
-					}},
-				}},
-		},
-		want: nil,
-	}, {
-		name: "have k8s service account and secret at the same time",
-		cr: &Channel{
-			Spec: ChannelSpec{
-				IdentitySpec: gcpduckv1.IdentitySpec{
-					ServiceAccountName: validServiceAccountName,
-				},
-				Secret: &gcpauthtesthelper.Secret,
-				SubscribableSpec: &eventingduck.SubscribableSpec{
-					Subscribers: []eventingduck.SubscriberSpec{{
-						SubscriberURI: apis.HTTP("subscriberendpoint"),
-						ReplyURI:      apis.HTTP("replyendpoint"),
-					}},
-				}},
-		},
-		want: func() *apis.FieldError {
-			fe := &apis.FieldError{
-				Message: "Can't have spec.serviceAccountName and spec.secret at the same time",
-				Paths:   []string{"spec"},
-			}
-			return fe
-		}(),
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -192,34 +127,6 @@ func TestCheckImmutableFields(t *testing.T) {
 		"nil orig": {
 			updated: ChannelSpec{},
 			allowed: true,
-		},
-		"ServiceAccount changed": {
-			orig: &channelSpec,
-			updated: ChannelSpec{
-				IdentitySpec: gcpduckv1.IdentitySpec{
-					ServiceAccountName: "new-service-account",
-				},
-			},
-			allowed: false,
-		},
-		"Secret changed": {
-			orig: &channelSpec,
-			updated: ChannelSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "some-other-name",
-					},
-					Key: "some-other-secret-key",
-				},
-			},
-			allowed: false,
-		},
-		"Project changed": {
-			orig: &channelSpec,
-			updated: ChannelSpec{
-				Project: "some-other-project",
-			},
-			allowed: false,
 		},
 	}
 

@@ -184,11 +184,11 @@ func WithTriggerSubscriberResolvedUnknown(reason, message string) TriggerOption 
 }
 
 func WithTriggerSubscriptionReady(t *brokerv1beta1.Trigger) {
-	t.Status.MarkSubscriptionReady()
+	t.Status.MarkSubscriptionReady("")
 }
 
 func WithTriggerTopicReady(t *brokerv1beta1.Trigger) {
-	t.Status.MarkTopicReady()
+	t.Status.MarkTopicReady("")
 }
 
 func WithTriggerTopicUnknown(reason, msg string) TriggerOption {

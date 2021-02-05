@@ -42,7 +42,7 @@ func (su *StatusUpdater) MarkTopicUnknown(reason, format string, args ...interfa
 		Message: fmt.Sprintf(format, args...),
 	}
 }
-func (su *StatusUpdater) MarkTopicReady() {
+func (su *StatusUpdater) MarkTopicReady(_ string) {
 	su.TopicCondition = apis.Condition{
 		Status: corev1.ConditionTrue,
 	}
@@ -61,7 +61,7 @@ func (su *StatusUpdater) MarkSubscriptionUnknown(reason, format string, args ...
 		Message: fmt.Sprintf(format, args...),
 	}
 }
-func (su *StatusUpdater) MarkSubscriptionReady() {
+func (su *StatusUpdater) MarkSubscriptionReady(_ string) {
 	su.SubCondition = apis.Condition{
 		Status: corev1.ConditionTrue,
 	}

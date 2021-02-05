@@ -43,21 +43,6 @@ func TestChannelGetGroupVersionKind(t *testing.T) {
 	}
 }
 
-func TestChannelIdentitySpec(t *testing.T) {
-	s := &Channel{
-		Spec: ChannelSpec{
-			IdentitySpec: duckv1.IdentitySpec{
-				ServiceAccountName: "test",
-			},
-		},
-	}
-	want := "test"
-	got := s.IdentitySpec().ServiceAccountName
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
-}
-
 func TestChannelIdentityStatus(t *testing.T) {
 	s := &Channel{
 		Status: ChannelStatus{
@@ -76,6 +61,10 @@ func TestChannelConditionSet(t *testing.T) {
 		Type: ChannelConditionAddressable,
 	}, {
 		Type: ChannelConditionTopicReady,
+	}, {
+		Type: ChannelConditionSubscription,
+	}, {
+		Type: ChannelConditionBrokerCell,
 	}, {
 		Type: apis.ConditionReady,
 	}}

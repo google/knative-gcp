@@ -80,7 +80,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 			logger.Info("Updated PubSub subscription config", zap.String("name", sub.ID()))
 			r.recorder.Eventf(obj, corev1.EventTypeNormal, subConfigUpdated, "Updated config for PubSub subscription %q", sub.ID())
 		}
-		updater.MarkSubscriptionReady()
+		updater.MarkSubscriptionReady(sub.ID())
 		return sub, nil
 	}
 
@@ -129,6 +129,6 @@ func (r *Reconciler) createSubscription(ctx context.Context, id string, subConfi
 	}
 	logger.Info("Created PubSub subscription", zap.String("name", sub.ID()))
 	r.recorder.Eventf(obj, corev1.EventTypeNormal, subCreated, "Created PubSub subscription %q", sub.ID())
-	updater.MarkSubscriptionReady()
+	updater.MarkSubscriptionReady(sub.ID())
 	return sub, nil
 }

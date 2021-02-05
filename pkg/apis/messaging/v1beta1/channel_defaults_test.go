@@ -38,9 +38,7 @@ func TestChannelDefaults(t *testing.T) {
 						"messaging.knative.dev/subscribable": "v1beta1",
 					},
 				},
-				Spec: ChannelSpec{
-					Secret: &gcpauthtesthelper.Secret,
-				},
+				Spec: ChannelSpec{},
 			},
 		},
 		"with a subscribable annotation": {
@@ -57,9 +55,7 @@ func TestChannelDefaults(t *testing.T) {
 						"messaging.knative.dev/subscribable": "v1beta1",
 					},
 				},
-				Spec: ChannelSpec{
-					Secret: &gcpauthtesthelper.Secret,
-				},
+				Spec: ChannelSpec{},
 			},
 		},
 	} {

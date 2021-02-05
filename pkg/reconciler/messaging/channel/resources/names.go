@@ -17,38 +17,47 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
-	"strings"
-
-	"k8s.io/apimachinery/pkg/types"
-	"knative.dev/pkg/kmeta"
-
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"github.com/google/knative-gcp/pkg/utils/naming"
+	"k8s.io/apimachinery/pkg/types"
 )
 
-const (
-	subscriptionNamePrefix = "cre-sub-"
-)
+// For reference, the minimum number of characters available for a name
+// is 146. However, any name longer than 146 will be truncated and suffixed
+// with a 32-char hash, making its max length 114 chars.
+//
+// pubsub resource name max length: 255 chars
+// Namespace max length: 63 chars
+// broker name max length: 253 chars
+// trigger name max length: 253 chars
+// uid length: 36 chars
+// prefix + separators: 10 chars
+// 255 - 10 - 63 - 36 = 146
 
-// GenerateTopicID generates the name of the Pub/Sub topic, not our Topic resource.
-func GenerateTopicID(channel *v1beta1.Channel) string {
-	return naming.TruncatedPubsubResourceName("cre-chan", channel.Namespace, channel.Name, channel.UID)
+// GenerateDecouplingTopicName generates a deterministic topic name for a
+// Broker. If the topic name would be longer than allowed by PubSub, the
+// Broker name is truncated to fit.
+func GenerateDecouplingTopicName(c *v1beta1.Channel) string {
+	return naming.TruncatedPubsubResourceName("cre-ch", c.Namespace, c.Name, c.UID)
 }
 
-func GeneratePublisherName(channel *v1beta1.Channel) string {
-	if strings.HasPrefix(channel.Name, "cre-") {
-		return kmeta.ChildName(channel.Name, "-chan")
-	}
-	return kmeta.ChildName(fmt.Sprintf("cre-%s", channel.Name), "-chan")
+// GenerateDecouplingSubscriptionName generates a deterministic subscription
+// name for a Broker. If the subscription name would be longer than allowed by
+// PubSub, the Broker name is truncated to fit.
+func GenerateDecouplingSubscriptionName(c *v1beta1.Channel) string {
+	return naming.TruncatedPubsubResourceName("cre-ch", c.Namespace, c.Name, c.UID)
 }
 
-// GeneratePullSubscriptionName generates the name of the PullSubscription resource using the subscriber's UID.
-func GeneratePullSubscriptionName(UID types.UID) string {
-	return fmt.Sprintf("%s%s", subscriptionNamePrefix, string(UID))
+// GenerateSubscriberRetryTopicName generates a deterministic Topic name for a Knative
+// Subscription's retry topic. If the Topic name would be longer than allowed by PubSub, the name is
+// truncated to fit.
+func GenerateSubscriberRetryTopicName(c *v1beta1.Channel, subscriberUID types.UID) string {
+	return naming.TruncatedPubsubResourceName("cre-sub", c.Namespace, c.Name, subscriberUID)
 }
 
-// ExtractUIDFromPullSubscriptionName extracts the subscriber's UID from the PullSubscription name.
-func ExtractUIDFromPullSubscriptionName(name string) string {
-	return strings.TrimPrefix(name, subscriptionNamePrefix)
+// GenerateSubscriberRetrySubscriptionName generates a deterministic Pub/Sub Subscription name for a
+// Knative Subscription's retry Topic. If the subscription name would be longer than allowed by
+// PubSub, the Subscription name is truncated to fit.
+func GenerateSubscriberRetrySubscriptionName(c *v1beta1.Channel, subsciberUID types.UID) string {
+	return naming.TruncatedPubsubResourceName("cre-sub", c.Namespace, c.Name, subsciberUID)
 }

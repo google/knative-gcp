@@ -985,6 +985,7 @@ func TestAllCases(t *testing.T) {
 		base := reconciler.NewBase(ctx, controllerAgentName, cmw)
 		ls := listers{
 			brokerLister:         testingListers.GetBrokerLister(),
+			channelLister:        testingListers.GetChannelLister(),
 			hpaLister:            testingListers.GetHPALister(),
 			triggerLister:        testingListers.GetTriggerLister(),
 			configMapLister:      testingListers.GetConfigMapLister(),
@@ -1058,6 +1059,7 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 			testingListers := NewListers(objects)
 			ls := listers{
 				brokerLister:     testingListers.GetBrokerLister(),
+				channelLister:    testingListers.GetChannelLister(),
 				hpaLister:        testingListers.GetHPALister(),
 				triggerLister:    testingListers.GetTriggerLister(),
 				configMapLister:  testingListers.GetConfigMapLister(),

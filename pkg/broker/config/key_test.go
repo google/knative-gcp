@@ -49,6 +49,14 @@ func TestBrokerKeyPersistenceString(t *testing.T) {
 			},
 			want: "my-namespace/my-name",
 		},
+		"channel": {
+			key: CellTenantKey{
+				cellTenantType: CellTenantType_CHANNEL,
+				namespace:      "my-namespace",
+				name:           "my-name",
+			},
+			want: "channel/my-namespace/my-name",
+		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
@@ -117,6 +125,14 @@ func TestCellTenantKeyFromPersistenceString(t *testing.T) {
 			s: "/broker/my-ns/my-name",
 			want: &CellTenantKey{
 				cellTenantType: CellTenantType_BROKER,
+				namespace:      "my-ns",
+				name:           "my-name",
+			},
+		},
+		"channel": {
+			s: "/channel/my-ns/my-name",
+			want: &CellTenantKey{
+				cellTenantType: CellTenantType_CHANNEL,
 				namespace:      "my-ns",
 				name:           "my-name",
 			},

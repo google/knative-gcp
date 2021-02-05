@@ -23,6 +23,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 
+	channellisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1beta1"
 	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -58,6 +59,7 @@ type envConfig struct {
 
 type listers struct {
 	brokerLister         brokerlisters.BrokerLister
+	channelLister        channellisters.ChannelLister
 	hpaLister            hpav2beta2listers.HorizontalPodAutoscalerLister
 	triggerLister        brokerlisters.TriggerLister
 	configMapLister      corev1listers.ConfigMapLister
@@ -264,7 +266,25 @@ func (r *Reconciler) shouldGC(ctx context.Context, bc *intv1alpha1.BrokerCell) b
 		return false
 	}
 
-	return len(brokers) == 0
+	if len(brokers) > 0 {
+		// There are still Brokers using this BrokerCell, do not garbage collect it.
+		return false
+	}
+
+	// TODO(#866) Only select Channels that point to this brokercell by label selector once the
+	// webhook assigns the brokercell label, i.e.,
+	// r.brokerLister.List(labels.SelectorFromSet(map[string]string{"brokercell":bc.Name, "brokercellns":bc.Namespace}))
+	channels, err := r.channelLister.List(labels.Everything())
+	if err != nil {
+		logging.FromContext(ctx).Error("Failed to list Channels, skipping garbage collection logic", zap.String("brokercell", bc.Name), zap.String("Namespace", bc.Namespace))
+		return false
+	}
+	if len(channels) > 0 {
+		// There are still Channels using this BrokerCell, do not garbage collect it.
+		return false
+	}
+
+	return true
 }
 
 func (r *Reconciler) delete(ctx context.Context, bc *intv1alpha1.BrokerCell) pkgreconciler.Event {

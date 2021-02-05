@@ -96,7 +96,7 @@ func (bs *TriggerStatus) MarkTopicUnknown(reason, format string, args ...interfa
 	triggerCondSet.Manage(bs).MarkUnknown(TriggerConditionTopic, reason, format, args...)
 }
 
-func (bs *TriggerStatus) MarkTopicReady() {
+func (bs *TriggerStatus) MarkTopicReady(_ string) {
 	triggerCondSet.Manage(bs).MarkTrue(TriggerConditionTopic)
 }
 
@@ -108,7 +108,7 @@ func (bs *TriggerStatus) MarkSubscriptionUnknown(reason, format string, args ...
 	triggerCondSet.Manage(bs).MarkUnknown(TriggerConditionSubscription, reason, format, args...)
 }
 
-func (bs *TriggerStatus) MarkSubscriptionReady() {
+func (bs *TriggerStatus) MarkSubscriptionReady(_ string) {
 	triggerCondSet.Manage(bs).MarkTrue(TriggerConditionSubscription)
 }
 

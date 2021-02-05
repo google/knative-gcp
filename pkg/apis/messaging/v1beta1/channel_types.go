@@ -18,8 +18,6 @@ package v1beta1
 
 import (
 	gcpduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
-	kngcpduckv1 "github.com/google/knative-gcp/pkg/duck/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -55,7 +53,6 @@ var (
 	_ apis.Validatable             = (*Channel)(nil)
 	_ runtime.Object               = (*Channel)(nil)
 	_ resourcesemantics.GenericCRD = (*Channel)(nil)
-	_ kngcpduckv1.Identifiable     = (*Channel)(nil)
 	_ duckv1.KRShaped              = (*Channel)(nil)
 )
 
@@ -63,19 +60,6 @@ var (
 // receiving events from this Channel.
 // arguments for a Channel.
 type ChannelSpec struct {
-	gcpduckv1.IdentitySpec `json:",inline"`
-	// Secret is the credential to use to create, publish, and poll the Pub/Sub
-	// Topic and Subscriptions. The value of the secret entry must be a
-	// service account key in the JSON format
-	// (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
-	// +optional
-	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
-
-	// Project is the ID of the Google Cloud Project that the Pub/Sub
-	// Topic and Subscriptions will be created in.
-	// +optional
-	Project string `json:"project,omitempty"`
-
 	// Channel conforms to Duck type Subscribable.
 	// +optional
 	*eventingduck.SubscribableSpec `json:",inline"`
@@ -84,6 +68,8 @@ type ChannelSpec struct {
 var channelCondSet = apis.NewLivingConditionSet(
 	ChannelConditionAddressable,
 	ChannelConditionTopicReady,
+	ChannelConditionSubscription,
+	ChannelConditionBrokerCell,
 )
 
 const (
@@ -98,6 +84,14 @@ const (
 	// ChannelConditionTopicReady has status True when the Channel has had a
 	// Pub/Sub topic created for it.
 	ChannelConditionTopicReady apis.ConditionType = "TopicReady"
+
+	// ChannelConditionSubscription has status True when the Channel has had its primary Pub/Sub
+	// Subscription created.
+	ChannelConditionSubscription apis.ConditionType = "SubscriptionReady"
+
+	// ChannelConditionBrokerCell has status True when the BrokerCell that this Channel runs on is
+	// Ready=True.
+	ChannelConditionBrokerCell apis.ConditionType = "BrokerCellReady"
 )
 
 // ChannelStatus represents the current state of a Channel.
@@ -121,12 +115,6 @@ type ChannelStatus struct {
 	// TopicID is the created topic ID used by the Channel.
 	// +optional
 	TopicID string `json:"topicId,omitempty"`
-}
-
-// Methods for identifiable interface.
-// IdentitySpec returns the IdentitySpec portion of the Spec.
-func (c *Channel) IdentitySpec() *gcpduckv1.IdentitySpec {
-	return &c.Spec.IdentitySpec
 }
 
 // IdentityStatus returns the IdentityStatus portion of the Status.

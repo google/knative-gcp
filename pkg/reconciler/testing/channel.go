@@ -69,33 +69,14 @@ func WithChannelUID(uid types.UID) ChannelOption {
 	}
 }
 
-func WithChannelGenerateName(generateName string) ChannelOption {
-	return func(c *v1beta1.Channel) {
-		c.ObjectMeta.GenerateName = generateName
-	}
-}
-
 // WithInitChannelConditions initializes the Channels's conditions.
 func WithInitChannelConditions(c *v1beta1.Channel) {
 	c.Status.InitializeConditions()
 }
 
-func WithChannelWorkloadIdentityFailed(reason, message string) ChannelOption {
-	return func(c *v1beta1.Channel) {
-		c.Status.MarkWorkloadIdentityFailed(c.ConditionSet(), reason, message)
-	}
-}
-
 func WithChannelTopic(topicID string) ChannelOption {
 	return func(c *v1beta1.Channel) {
-		c.Status.MarkTopicReady()
-		c.Status.TopicID = topicID
-	}
-}
-
-func WithChannelTopicID(topicID string) ChannelOption {
-	return func(c *v1beta1.Channel) {
-		c.Status.TopicID = topicID
+		c.Status.MarkTopicReady(topicID)
 	}
 }
 
@@ -111,6 +92,42 @@ func WithChannelTopicUnknown(reason, message string) ChannelOption {
 	}
 }
 
+func WithChannelSubscriptionReady() ChannelOption {
+	return func(c *v1beta1.Channel) {
+		c.Status.MarkSubscriptionReady("")
+	}
+}
+
+func WithChannelSubscriptionFailed(reason, message string) ChannelOption {
+	return func(c *v1beta1.Channel) {
+		c.Status.MarkSubscriptionFailed(reason, message)
+	}
+}
+
+func WithChannelSubscriptionUnknown(reason, message string) ChannelOption {
+	return func(c *v1beta1.Channel) {
+		c.Status.MarkSubscriptionUnknown(reason, message)
+	}
+}
+
+func WithChannelBrokerCellReady() ChannelOption {
+	return func(c *v1beta1.Channel) {
+		c.Status.MarkBrokerCellReady()
+	}
+}
+
+func WithChannelBrokerCellFailed(reason, message string) ChannelOption {
+	return func(c *v1beta1.Channel) {
+		c.Status.MarkBrokerCellFailed(reason, message)
+	}
+}
+
+func WithChannelBrokerCellUnknown(reason, message string) ChannelOption {
+	return func(c *v1beta1.Channel) {
+		c.Status.MarkBrokerCellUnknown(reason, message)
+	}
+}
+
 func WithChannelSpec(spec v1beta1.ChannelSpec) ChannelOption {
 	return func(c *v1beta1.Channel) {
 		c.Spec = spec
@@ -121,23 +138,9 @@ func WithChannelSetDefaults(c *v1beta1.Channel) {
 	c.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }
 
-func WithChannelServiceAccount(kServiceAccount string) ChannelOption {
-	return func(c *v1beta1.Channel) {
-		c.Spec.ServiceAccountName = kServiceAccount
-	}
-}
-
 func WithChannelDeletionTimestamp(c *v1beta1.Channel) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	c.ObjectMeta.SetDeletionTimestamp(&t)
-}
-
-func WithChannelReady(topicID string) ChannelOption {
-	return func(c *v1beta1.Channel) {
-		c.Status.InitializeConditions()
-		c.Status.MarkTopicReady()
-		c.Status.TopicID = topicID
-	}
 }
 
 func WithChannelAddress(url string) ChannelOption {
@@ -147,7 +150,7 @@ func WithChannelAddress(url string) ChannelOption {
 	}
 }
 
-func WithChannelSubscribers(subscribers []duckv1beta1.SubscriberSpec) ChannelOption {
+func WithChannelSubscribers(subscribers ...duckv1beta1.SubscriberSpec) ChannelOption {
 	return func(c *v1beta1.Channel) {
 		c.Spec.SubscribableSpec = &duckv1beta1.SubscribableSpec{
 			Subscribers: subscribers,
@@ -155,7 +158,7 @@ func WithChannelSubscribers(subscribers []duckv1beta1.SubscriberSpec) ChannelOpt
 	}
 }
 
-func WithChannelSubscribersStatus(subscribers []eventingduckv1beta1.SubscriberStatus) ChannelOption {
+func WithChannelSubscribersStatus(subscribers ...eventingduckv1beta1.SubscriberStatus) ChannelOption {
 	return func(c *v1beta1.Channel) {
 		c.Status.SubscribableStatus = duckv1beta1.SubscribableStatus{
 			Subscribers: subscribers,
@@ -163,25 +166,19 @@ func WithChannelSubscribersStatus(subscribers []eventingduckv1beta1.SubscriberSt
 	}
 }
 
-func WithChannelDeleted(s *v1beta1.Channel) {
-	t := metav1.NewTime(time.Unix(1e9, 0))
-	s.ObjectMeta.SetDeletionTimestamp(&t)
-}
-
-func WithChannelOwnerReferences(ownerReferences []metav1.OwnerReference) ChannelOption {
-	return func(c *v1beta1.Channel) {
-		c.ObjectMeta.OwnerReferences = ownerReferences
-	}
-}
-
-func WithChannelLabels(labels map[string]string) ChannelOption {
-	return func(c *v1beta1.Channel) {
-		c.ObjectMeta.Labels = labels
-	}
-}
-
 func WithChannelAnnotations(Annotations map[string]string) ChannelOption {
 	return func(c *v1beta1.Channel) {
 		c.ObjectMeta.Annotations = Annotations
+	}
+}
+
+// WithBrokerReadyURI is a convenience function that sets all ready conditions to
+// true.
+func WithChannelReadyURI(topicId string, address *apis.URL) ChannelOption {
+	return func(c *v1beta1.Channel) {
+		WithChannelAddress(address.String())(c)
+		WithChannelBrokerCellReady()(c)
+		WithChannelSubscriptionReady()(c)
+		WithChannelTopic(topicId)(c)
 	}
 }

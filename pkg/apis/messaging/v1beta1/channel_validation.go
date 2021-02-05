@@ -50,10 +50,6 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	if err := duck.ValidateCredential(cs.Secret, cs.ServiceAccountName); err != nil {
-		errs = errs.Also(err)
-	}
-
 	return errs
 }
 
