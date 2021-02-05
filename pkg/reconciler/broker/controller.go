@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
-	"github.com/google/knative-gcp/pkg/broker/readiness"
+	readinessc "github.com/google/knative-gcp/pkg/broker/readiness/controller"
 
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
@@ -54,13 +54,13 @@ const (
 type Constructor injection.ControllerConstructor
 
 // NewConstructor creates a constructor to make a Broker controller.
-func NewConstructor(brokerdeliveryss *brokerdelivery.StoreSingleton, dataresidencyss *dataresidency.StoreSingleton, readinesscheckclients *readiness.ConfigCheckClientsMap) Constructor {
+func NewConstructor(brokerdeliveryss *brokerdelivery.StoreSingleton, dataresidencyss *dataresidency.StoreSingleton, readinesscheckclients *readinessc.ConfigCheckClientsMap) Constructor {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
 		return newController(ctx, cmw, brokerdeliveryss.Store(ctx, cmw), dataresidencyss.Store(ctx, cmw), readinesscheckclients)
 	}
 }
 
-func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdelivery.Store, drs *dataresidency.Store, rcc *readiness.ConfigCheckClientsMap) *controller.Impl {
+func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdelivery.Store, drs *dataresidency.Store, rcc *readinessc.ConfigCheckClientsMap) *controller.Impl {
 	brokerInformer := brokerinformer.Get(ctx)
 	bcInformer := brokercellinformer.Get(ctx)
 
@@ -87,7 +87,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdeliv
 		}()
 	}
 
-	configReadinessCheck := readiness.NewConfigQueryManager(rcc)
+	configReadinessCheck := readinessc.NewConfigQueryManager(rcc)
 
 	r := &Reconciler{
 		Reconciler: celltenant.Reconciler{

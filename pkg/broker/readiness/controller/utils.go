@@ -21,7 +21,6 @@ import (
 	"sync"
 
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	. "github.com/google/knative-gcp/pkg/broker/readiness"
 	inteventsv1alpha1lister "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	corev1 "k8s.io/api/core/v1"

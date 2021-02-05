@@ -21,7 +21,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/broker/readiness"
+	readinessc "github.com/google/knative-gcp/pkg/broker/readiness/controller"
 	"github.com/google/knative-gcp/pkg/reconciler/broker"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler/deployment"
@@ -48,7 +48,7 @@ func InitializeControllers(ctx context.Context) ([]injection.ControllerConstruct
 		wire.Struct(new(brokerdelivery.StoreSingleton)),
 		wire.Struct(new(gcpauth.StoreSingleton)),
 		wire.Struct(new(dataresidency.StoreSingleton)),
-		readiness.NewConfigCheckClientsMap,
+		readinessc.NewConfigCheckClientsMap,
 		auditlogs.NewConstructor,
 		storage.NewConstructor,
 		scheduler.NewConstructor,

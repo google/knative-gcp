@@ -34,9 +34,6 @@ const (
 	Port int = 3456
 )
 
-type CellTenantKeyType = string // TODO decide which key type to use
-type TargetKeyType = string
-
 type rwMap struct {
 	sync.RWMutex
 	m map[string]int64

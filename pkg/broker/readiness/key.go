@@ -18,16 +18,5 @@ limitations under the License.
 // probechecker.go  utilities to perform a probe check for liviness and readiness.
 package readiness
 
-import (
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
-)
-
-type PodKeyType = types.NamespacedName
-
-func getPodKey(pod *corev1.Pod) PodKeyType {
-	return types.NamespacedName{
-		Namespace: pod.Namespace,
-		Name:      pod.Name,
-	}
-}
+type CellTenantKeyType = string // TODO decide which key type to use
+type TargetKeyType = string

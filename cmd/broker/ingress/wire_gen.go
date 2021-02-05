@@ -10,7 +10,7 @@ import (
 	"context"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
-	"github.com/google/knative-gcp/pkg/broker/readiness"
+	"github.com/google/knative-gcp/pkg/broker/readiness/dataplane"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils/authcheck"
 	"github.com/google/knative-gcp/pkg/utils/clients"
@@ -34,7 +34,7 @@ func InitializeHandler(ctx context.Context, port clients.Port, projectID clients
 	if err != nil {
 		return nil, err
 	}
-	configReadinessCheckServer := readiness.NewServer()
+	configReadinessCheckServer := dataplane.NewServer()
 	handler := ingress.NewHandler(ctx, httpMessageReceiver, multiTopicDecoupleSink, ingressReporter, authType, configReadinessCheckServer)
 	return handler, nil
 }

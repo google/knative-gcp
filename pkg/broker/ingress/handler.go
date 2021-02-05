@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/readiness"
+	readinessdp "github.com/google/knative-gcp/pkg/broker/readiness/dataplane"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -76,7 +76,7 @@ var HandlerSet wire.ProviderSet = wire.NewSet(
 	wire.Bind(new(DecoupleSink), new(*multiTopicDecoupleSink)),
 	clients.NewPubsubClient,
 	metrics.NewIngressReporter,
-	readiness.NewServer,
+	readinessdp.NewServer,
 )
 
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
@@ -99,11 +99,11 @@ type Handler struct {
 	logger         *zap.Logger
 	reporter       *metrics.IngressReporter
 	authType       authcheck.AuthType
-	readinessCheck readiness.ConfigReadinessCheckServer
+	readinessCheck readinessdp.ConfigReadinessCheckServer
 }
 
 // NewHandler creates a new ingress handler.
-func NewHandler(ctx context.Context, httpReceiver HttpMessageReceiver, decouple DecoupleSink, reporter *metrics.IngressReporter, authType authcheck.AuthType, readinessCheck readiness.ConfigReadinessCheckServer) *Handler {
+func NewHandler(ctx context.Context, httpReceiver HttpMessageReceiver, decouple DecoupleSink, reporter *metrics.IngressReporter, authType authcheck.AuthType, readinessCheck readinessdp.ConfigReadinessCheckServer) *Handler {
 	return &Handler{
 		httpReceiver:   httpReceiver,
 		decouple:       decouple,

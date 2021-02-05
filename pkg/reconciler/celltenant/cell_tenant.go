@@ -25,7 +25,7 @@ import (
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/broker/readiness"
+	readinessc "github.com/google/knative-gcp/pkg/broker/readiness/controller"
 	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -70,7 +70,7 @@ type Reconciler struct {
 	// clusterRegion is the region where GKE is running.
 	ClusterRegion string
 
-	ConfigReadinessCheck *readiness.ConfigQueryManager
+	ConfigReadinessCheck *readinessc.ConfigQueryManager
 }
 
 func (r *Reconciler) ReconcileGCPCellTenant(ctx context.Context, b Statusable) error {

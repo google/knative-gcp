@@ -22,6 +22,7 @@ import (
 	context "context"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
+	. "github.com/google/knative-gcp/pkg/broker/readiness"
 )
 
 type FakeConfigReadinessCheckServer struct {
