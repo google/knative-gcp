@@ -29,6 +29,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	handlertesting "github.com/google/knative-gcp/pkg/broker/handler/testing"
+	"github.com/google/knative-gcp/pkg/broker/readiness"
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
@@ -52,7 +53,7 @@ func TestFanoutWatchAndSync(t *testing.T) {
 	defer helper.Close()
 
 	signal := make(chan struct{})
-	syncPool, err := InitializeTestFanoutPool(ctx, fanoutPod, fanoutContainer, helper.Targets, helper.PubsubClient)
+	syncPool, err := InitializeTestFanoutPool(ctx, fanoutPod, fanoutContainer, helper.Targets, helper.PubsubClient, &readiness.FakeConfigReadinessCheckServer{})
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
@@ -144,7 +145,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 
 	signal := make(chan struct{})
 	syncPool, err := InitializeTestFanoutPool(
-		ctx, fanoutPod, fanoutContainer, helper.Targets, helper.PubsubClient,
+		ctx, fanoutPod, fanoutContainer, helper.Targets, helper.PubsubClient, &readiness.FakeConfigReadinessCheckServer{},
 		WithDeliveryTimeout(500*time.Millisecond),
 	)
 	if err != nil {
