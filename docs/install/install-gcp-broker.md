@@ -152,11 +152,11 @@ and pull subscriptions for GCP Brokers, and the retry topics and pull
 subscriptions for the Triggers.
 
 - Code: The logic in in
-  [broker.go](https://github.com/google/knative-gcp/blob/master/pkg/reconciler/broker/broker.go).
+  [broker.go](https://github.com/google/knative-gcp/blob/main/pkg/reconciler/broker/broker.go).
   The main function is the
-  [shared main function](https://github.com/google/knative-gcp/blob/master/cmd/controller/main.go)
+  [shared main function](https://github.com/google/knative-gcp/blob/main/cmd/controller/main.go)
   with other controllers.
-- [Deployment](https://github.com/google/knative-gcp/blob/master/config/500-controller.yaml):
+- [Deployment](https://github.com/google/knative-gcp/blob/main/config/500-controller.yaml):
   By default it's deployed as `controller` in the `events-system` namespace.
 
 ### Data Plane
@@ -166,20 +166,20 @@ All GCP Brokers share the following data plane components:
 - Ingress. Ingress accepts events over HTTP/HTTPS and persists events in a
   Pub/Sub topic specific to each Broker.
   - Code:
-    [main.go](https://github.com/google/knative-gcp/blob/master/cmd/broker/ingress/main.go)
+    [main.go](https://github.com/google/knative-gcp/blob/main/cmd/broker/ingress/main.go)
   - Deployment: It contains a Service and Deployment, both called
     `broker-ingress` in the `events-system` namespace.
 - Fanout. Fanout continuously pull events from decouple topics for all Brokers,
   applies Trigger filters, and sends events to consumers. For failed deliveries,
   it sends the events to the corresponding retry topic.
   - Code:
-    [main.go](https://github.com/google/knative-gcp/blob/master/cmd/broker/fanout/main.go)
+    [main.go](https://github.com/google/knative-gcp/blob/main/cmd/broker/fanout/main.go)
   - Deployment: It a deployment called `broker-fanout` in the `events-system`
     namespace.
 - Retry. Retry continuously resends events that have failed in delivery to the
   consumers.
   - Code:
-    [main.go](https://github.com/google/knative-gcp/blob/master/cmd/broker/retry/main.go)
+    [main.go](https://github.com/google/knative-gcp/blob/main/cmd/broker/retry/main.go)
   - Deployment: It a deployment called `broker-retry` in the `events-system`
     namespace.
 

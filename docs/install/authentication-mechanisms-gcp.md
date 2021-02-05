@@ -172,7 +172,7 @@ broker data plane named `events-broker-gsa`. Follow
   which is bound to the Google Cloud Service Account `events-sources-gsa`.
   Remember to put this Kubernetes Service Account name as the
   `spec.serviceAccountName` when you create resources in the
-  [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
+  [example](https://github.com/google/knative-gcp/tree/main/docs/examples).
 
 - **_Default scenario:_**
 
@@ -219,7 +219,7 @@ broker data plane named `events-broker-gsa`. Follow
   Cloud Service Account `events-sources-gsa`. Remember to put this Kubernetes
   Service Account name as the `spec.serviceAccountName` when you create
   resources in the
-  [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
+  [example](https://github.com/google/knative-gcp/tree/main/docs/examples).
 
   Kubernetes Service Account `sources` doesn't need to exist in a specific
   namespace. Once it is set in the ConfigMap `config-gcp-auth`, the Control

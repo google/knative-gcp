@@ -63,7 +63,7 @@ const (
 	// for permission denied error msg
 	// TODO(cathyzhyi) point to official doc rather than github doc
 	deniedErrMsg string = `Failed to publish to PubSub because permission denied.
-Please refer to "Configure the Authentication Mechanism for GCP" at https://github.com/google/knative-gcp/blob/master/docs/install/install-gcp-broker.md`
+Please refer to "Configure the Authentication Mechanism for GCP" at https://github.com/google/knative-gcp/blob/main/docs/install/install-gcp-broker.md`
 )
 
 // HandlerSet provides a handler with a real HTTPMessageReceiver and pubsub MultiTopicDecoupleSink.
