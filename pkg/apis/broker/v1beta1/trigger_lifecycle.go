@@ -34,6 +34,8 @@ var triggerCondSet = apis.NewLivingConditionSet(
 const (
 	TriggerConditionTopic        apis.ConditionType = "TopicReady"
 	TriggerConditionSubscription apis.ConditionType = "SubscriptionReady"
+	// TriggerConditionBrokerCell reports the availability of the Trigger's BrokerCell.
+	TriggerConditionBrokerCell apis.ConditionType = "BrokerCellReady"
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
@@ -86,6 +88,18 @@ func (ts *TriggerStatus) MarkBrokerUnknown(reason, messageFormat string, message
 func (ts *TriggerStatus) MarkBrokerNotConfigured() {
 	triggerCondSet.Manage(ts).MarkUnknown(eventingv1beta1.TriggerConditionBroker,
 		"BrokerNotConfigured", "Broker has not yet been reconciled.")
+}
+
+func (bs *TriggerStatus) MarkBrokerCellUnknown(reason, format string, args ...interface{}) {
+	triggerCondSet.Manage(bs).MarkUnknown(TriggerConditionBrokerCell, reason, format, args...)
+}
+
+func (bs *TriggerStatus) MarkBrokerCellFailed(reason, format string, args ...interface{}) {
+	triggerCondSet.Manage(bs).MarkFalse(TriggerConditionBrokerCell, reason, format, args...)
+}
+
+func (bs *TriggerStatus) MarkBrokerCellReady() {
+	triggerCondSet.Manage(bs).MarkTrue(TriggerConditionBrokerCell)
 }
 
 func (bs *TriggerStatus) MarkTopicFailed(reason, format string, args ...interface{}) {

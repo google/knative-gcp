@@ -185,3 +185,9 @@ func WithChannelAnnotations(Annotations map[string]string) ChannelOption {
 		c.ObjectMeta.Annotations = Annotations
 	}
 }
+
+func WithChannelGeneration(int64 generation) ChannelOption {
+	return func(c *v1beta1.Channel) {
+		c.ObjectMeta.Generation = generation
+	}
+}
