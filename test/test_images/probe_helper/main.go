@@ -124,7 +124,9 @@ func main() {
 	}
 
 	// Create the logger and attach it to the context
-	loggingConfig, err := logging.NewConfigFromMap(map[string]string{})
+	loggingConfig, err := logging.NewConfigFromMap(map[string]string{
+		"loglevel.probe-helper": "debug",
+	})
 	if err != nil {
 		// If this fails, there is no recovering.
 		panic(err)

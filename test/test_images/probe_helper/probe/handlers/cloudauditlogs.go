@@ -112,5 +112,9 @@ func (p *CloudAuditLogsSourceProbe) Receive(ctx context.Context, event cloudeven
 		return fmt.Errorf("Failed to read Cloud AuditLogs event, unrecognized 'methodname' extension: %s", methodname)
 	}
 	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventReceiverPathExtension]), eventID)
-	return p.receivedEvents.SignalReceiverChannel(channelID)
+	if err := p.receivedEvents.SignalReceiverChannel(channelID); err != nil {
+		return err
+	}
+	logging.FromContext(ctx).Info("Successfully received CloudAuditLogsSource probe event")
+	return nil
 }
