@@ -201,8 +201,8 @@ Plane:
   Cloud Service Account `events-sources-gsa` (you just created it in the last
   step). What's more, you don't need to put this Kubernetes Service Account name
   as the `spec.serviceAccountName` when you create resources in the
-  [example](https://github.com/google/knative-gcp/tree/main/docs/examples),
-  the Controller will add it for you.
+  [example](https://github.com/google/knative-gcp/tree/main/docs/examples), the
+  Controller will add it for you.
 
   A `Condition` `WorkloadIdentityConfigured` will show up under resources'
   `Status`, indicating the Workload Identity configuration status.
