@@ -36,6 +36,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/protobuf/proto"
 
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
@@ -1012,58 +1013,93 @@ func emptyHPASpec(template *hpav2beta2.HorizontalPodAutoscaler) *hpav2beta2.Hori
 // and trigger. Since the serialization order of the binary data of brokerTargets in the configMap is not guaranteed, we need
 // to deserialization the binary data to a brokerTargets proto to compare, so it should be rewritten without using the tableTest Utility.
 func TestBrokerTargetsReconcileConfig(t *testing.T) {
-	setReconcilerEnv()
-	bc := NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)
-	objects := []runtime.Object{
-		bc,
-		NewBroker("broker", testNS, WithBrokerSetDefaults),
-		NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
-		NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults),
+	testCases := []struct {
+		name           string
+		broker         *brokerv1beta1.Broker
+		triggers       []*brokerv1beta1.Trigger
+		bc             *intv1alpha1.BrokerCell
+		expectEmptyMap bool
+	}{
+		{
+			name:   "reconcile config of one broker and its triggers",
+			broker: NewBroker("broker", testNS, WithBrokerClass(brokerv1beta1.BrokerClass)),
+			triggers: []*brokerv1beta1.Trigger{
+				NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
+				NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults),
+			},
+			bc:             NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+			expectEmptyMap: false,
+		},
+
+		{
+			name:   "reconcile config when the broker is not gcp broker",
+			broker: NewBroker("broker", testNS, WithBrokerClass("some-other-broker-class")),
+			triggers: []*brokerv1beta1.Trigger{
+				NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
+				NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults),
+			},
+			bc:             NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
+			expectEmptyMap: true,
+		},
 	}
-	ctx, _ := SetupFakeContext(t)
-	cmw := configmap.NewStaticWatcher()
-	ctx, client := fakekubeclient.With(ctx)
-	base := reconciler.NewBase(ctx, controllerAgentName, cmw)
-	testingListers := NewListers(objects)
-	ls := listers{
-		brokerLister:     testingListers.GetBrokerLister(),
-		hpaLister:        testingListers.GetHPALister(),
-		triggerLister:    testingListers.GetTriggerLister(),
-		configMapLister:  testingListers.GetConfigMapLister(),
-		serviceLister:    testingListers.GetK8sServiceLister(),
-		endpointsLister:  testingListers.GetEndpointsLister(),
-		deploymentLister: testingListers.GetDeploymentLister(),
-		podLister:        testingListers.GetPodLister(),
-	}
-	r, err := NewReconciler(base, ls)
-	if err != nil {
-		t.Fatalf("Failed to create BrokerCell reconciler: %v", err)
-	}
-	// here we only want to test the functionality of the reconcileConfig that it should create a brokerTargets config successfully
-	r.reconcileConfig(ctx, bc)
-	wantMap := testingdata.Config(t, NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
-		NewBroker("broker", testNS, WithBrokerSetDefaults),
-		NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
-		NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults))
-	gotMap, err := client.CoreV1().ConfigMaps(testNS).Get(context.Background(), resources.Name(bc.Name, targetsCMName), metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("Failed to get ConfigMap from client: %v", err)
-	}
-	// compare the ObjectMeta field
-	if diff := cmp.Diff(wantMap.ObjectMeta, gotMap.ObjectMeta); diff != "" {
-		t.Fatalf("Unexpected ObjectMeta in ConfigMap(-want, +got): %s", diff)
-	}
-	// deserialize the binary data to a broker targets config proto
-	var wantBrokerTargets config.TargetsConfig
-	var gotBrokerTargets config.TargetsConfig
-	if err := proto.Unmarshal(wantMap.BinaryData[targetsCMKey], &wantBrokerTargets); err != nil {
-		t.Fatalf("Failed to deserialize the binary data in ConfigMap: %v", err)
-	}
-	if err := proto.Unmarshal(gotMap.BinaryData[targetsCMKey], &gotBrokerTargets); err != nil {
-		t.Fatalf("Failed to deserialize the binary data in ConfigMap: %v", err)
-	}
-	// compare the broker targets config
-	if diff := cmp.Diff(wantBrokerTargets.String(), gotBrokerTargets.String()); diff != "" {
-		t.Fatalf("Unexpected brokerTargets in ConfigMap(-want, +got): %s", diff)
+
+	for _, tc := range testCases {
+		t.Run(tc.bc.Name, func(t *testing.T) {
+			setReconcilerEnv()
+			bc := NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults)
+			ctx, _ := SetupFakeContext(t)
+			cmw := configmap.NewStaticWatcher()
+			ctx, client := fakekubeclient.With(ctx)
+			base := reconciler.NewBase(ctx, controllerAgentName, cmw)
+			objects := []runtime.Object{tc.bc, tc.broker}
+			for _, t := range tc.triggers {
+				objects = append(objects, t)
+			}
+			testingListers := NewListers(objects)
+			ls := listers{
+				brokerLister:     testingListers.GetBrokerLister(),
+				hpaLister:        testingListers.GetHPALister(),
+				triggerLister:    testingListers.GetTriggerLister(),
+				configMapLister:  testingListers.GetConfigMapLister(),
+				serviceLister:    testingListers.GetK8sServiceLister(),
+				endpointsLister:  testingListers.GetEndpointsLister(),
+				deploymentLister: testingListers.GetDeploymentLister(),
+				podLister:        testingListers.GetPodLister(),
+			}
+			r, err := NewReconciler(base, ls)
+			if err != nil {
+				t.Fatalf("Failed to create BrokerCell reconciler: %v", err)
+			}
+			// here we only want to test the functionality of the reconcileConfig that it should create a brokerTargets config successfully
+			r.reconcileConfig(ctx, bc)
+			var wantMap *corev1.ConfigMap
+			if tc.expectEmptyMap {
+				wantMap = testingdata.EmptyConfig(t, tc.bc)
+			} else {
+				wantMap = testingdata.Config(t, tc.bc, tc.broker, tc.triggers...)
+			}
+
+			gotMap, err := client.CoreV1().ConfigMaps(testNS).Get(context.Background(), resources.Name(bc.Name, targetsCMName), metav1.GetOptions{})
+			if err != nil {
+				t.Fatalf("Failed to get ConfigMap from client: %v", err)
+			}
+			// compare the ObjectMeta field
+			if diff := cmp.Diff(wantMap.ObjectMeta, gotMap.ObjectMeta); diff != "" {
+				t.Fatalf("Unexpected ObjectMeta in ConfigMap(-want, +got): %s", diff)
+			}
+			// deserialize the binary data to a broker targets config proto
+			var wantBrokerTargets config.TargetsConfig
+			var gotBrokerTargets config.TargetsConfig
+			if err := proto.Unmarshal(wantMap.BinaryData[targetsCMKey], &wantBrokerTargets); err != nil {
+				t.Fatalf("Failed to deserialize the binary data in ConfigMap: %v", err)
+			}
+			if err := proto.Unmarshal(gotMap.BinaryData[targetsCMKey], &gotBrokerTargets); err != nil {
+				t.Fatalf("Failed to deserialize the binary data in ConfigMap: %v", err)
+			}
+			// compare the broker targets config
+			if diff := cmp.Diff(wantBrokerTargets.String(), gotBrokerTargets.String()); diff != "" {
+				t.Fatalf("Unexpected brokerTargets in ConfigMap(-want, +got): %s", diff)
+			}
+		})
 	}
 }

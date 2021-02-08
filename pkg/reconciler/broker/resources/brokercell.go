@@ -28,7 +28,9 @@ import (
 // TODO(#866) Delete hard-coded brokercell once we can dynamically assign brokercell to brokers.
 const DefaultBrokerCellName = "default"
 
-func CreateBrokerCell(b *v1beta1.Broker) *inteventsv1alpha1.BrokerCell {
+// TODO Replace the Broker parameter with a generic CellTenant interface that has a method to get
+// the name of the BrokerCell to create.
+func CreateBrokerCell(_ *v1beta1.Broker) *inteventsv1alpha1.BrokerCell {
 	// TODO(#866) Get brokercell from the label (or annotation) from the broker.
 	return &inteventsv1alpha1.BrokerCell{
 		ObjectMeta: metav1.ObjectMeta{

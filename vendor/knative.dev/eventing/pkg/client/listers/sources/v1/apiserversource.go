@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,8 +26,10 @@ import (
 )
 
 // ApiServerSourceLister helps list ApiServerSources.
+// All objects returned here must be treated as read-only.
 type ApiServerSourceLister interface {
 	// List lists all ApiServerSources in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.ApiServerSource, err error)
 	// ApiServerSources returns an object that can list and get ApiServerSources.
 	ApiServerSources(namespace string) ApiServerSourceNamespaceLister
@@ -58,10 +60,13 @@ func (s *apiServerSourceLister) ApiServerSources(namespace string) ApiServerSour
 }
 
 // ApiServerSourceNamespaceLister helps list and get ApiServerSources.
+// All objects returned here must be treated as read-only.
 type ApiServerSourceNamespaceLister interface {
 	// List lists all ApiServerSources in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.ApiServerSource, err error)
 	// Get retrieves the ApiServerSource from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.ApiServerSource, error)
 	ApiServerSourceNamespaceListerExpansion
 }

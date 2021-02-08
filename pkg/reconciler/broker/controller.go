@@ -19,6 +19,8 @@ package broker
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/reconciler/celltenant"
+
 	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 
@@ -28,11 +30,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/google/knative-gcp/pkg/logging"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
-	pkgreconciler "knative.dev/pkg/reconciler"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
@@ -40,6 +40,7 @@ import (
 	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	reconcilerutils "github.com/google/knative-gcp/pkg/reconciler/utils"
 	"github.com/google/knative-gcp/pkg/utils"
 )
 
@@ -86,10 +87,12 @@ func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdeliv
 	}
 
 	r := &Reconciler{
-		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-		brokerCellLister:   bcInformer.Lister(),
-		pubsubClient:       client,
-		dataresidencyStore: drs,
+		Reconciler: celltenant.Reconciler{
+			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+			BrokerCellLister:   bcInformer.Lister(),
+			PubsubClient:       client,
+			DataresidencyStore: drs,
+		},
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass,
@@ -103,8 +106,8 @@ func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdeliv
 
 	brokerInformer.Informer().AddEventHandlerWithResyncPeriod(
 		cache.FilteringResourceEventHandler{
-			// Only reconcile brokers with the proper class annotation
-			FilterFunc: pkgreconciler.AnnotationFilterFunc(eventingv1beta1.BrokerClassAnnotationKey, brokerv1beta1.BrokerClass, false /*allowUnset*/),
+			// Only reconcile brokers with proper brokerclass
+			FilterFunc: reconcilerutils.BrokerClassFilter,
 			Handler:    controller.HandleAll(impl.Enqueue),
 		},
 		reconciler.DefaultResyncPeriod,

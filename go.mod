@@ -1,6 +1,6 @@
 module github.com/google/knative-gcp
 
-go 1.14
+go 1.15
 
 require (
 	cloud.google.com/go v0.72.0
@@ -21,8 +21,8 @@ require (
 	go.opencensus.io v0.22.5
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/net v0.0.0-20201209123823-ac852fbbde11
-	golang.org/x/oauth2 v0.0.0-20201208152858-08078c50e5b5
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
+	golang.org/x/oauth2 v0.0.0-20210126194326-f9ce19ea3013
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	google.golang.org/api v0.36.0
 	google.golang.org/genproto v0.0.0-20201211151036-40ec1c210f7a
@@ -30,21 +30,12 @@ require (
 	google.golang.org/protobuf v1.25.0
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
-	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.20.1-0.20210125061954-340f07f40bda
-	knative.dev/hack v0.0.0-20210120165453-8d623a0af457
-	knative.dev/pkg v0.0.0-20210124203454-7101e9d4f6c6
-	knative.dev/serving v0.20.1-0.20210125050555-39d33bf147c0
+	k8s.io/client-go v0.19.7
+	knative.dev/eventing v0.20.1-0.20210205124628-1774243f59cc
+	knative.dev/hack v0.0.0-20210203173706-8368e1f6eacf
+	knative.dev/pkg v0.0.0-20210204171111-887806985c09
+	knative.dev/serving v0.20.1-0.20210205022012-390f2c239aaf
 	sigs.k8s.io/yaml v1.2.0
-)
-
-replace (
-	k8s.io/api => k8s.io/api v0.18.8
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.8
-	k8s.io/apimachinery => k8s.io/apimachinery v0.18.8
-	k8s.io/client-go => k8s.io/client-go v0.18.8
-	k8s.io/code-generator => k8s.io/code-generator v0.18.8
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 )
 
 // The following packages were pinned as part of the go module transition and should eventually be

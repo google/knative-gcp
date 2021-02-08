@@ -104,7 +104,7 @@ instructions in
 [Authentication Setup for GCP Broker](install-gcp-broker.md#authentication-setup-for-gcp-broker).
 
 If you want to run
-[example](https://github.com/google/knative-gcp/tree/master/docs/examples) to
+[example](https://github.com/google/knative-gcp/tree/main/docs/examples) to
 create resources (like
 [CloudPubSubSource](../examples/cloudpubsubsource/README.md),
 [GloudSchedulerSource](../examples/cloudschedulersource/README.md), etc.) and
@@ -181,7 +181,7 @@ Plane:
   Service Account `events-sources-gsa` (you just created it in the last step).
   Remember to put this Kubernetes Service Account name as the
   `spec.serviceAccountName` when you create resources in the
-  [example](https://github.com/google/knative-gcp/tree/master/docs/examples).
+  [example](https://github.com/google/knative-gcp/tree/main/docs/examples).
 
 - **_Default scenario:_**
 
@@ -201,8 +201,8 @@ Plane:
   Cloud Service Account `events-sources-gsa` (you just created it in the last
   step). What's more, you don't need to put this Kubernetes Service Account name
   as the `spec.serviceAccountName` when you create resources in the
-  [example](https://github.com/google/knative-gcp/tree/master/docs/examples),
-  the Controller will add it for you.
+  [example](https://github.com/google/knative-gcp/tree/main/docs/examples), the
+  Controller will add it for you.
 
   A `Condition` `WorkloadIdentityConfigured` will show up under resources'
   `Status`, indicating the Workload Identity configuration status.

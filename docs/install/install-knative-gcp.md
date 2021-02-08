@@ -62,13 +62,13 @@ export KO_DOCKER_REPO='gcr.io/my-gcloud-project-id'
 
 1. Download the `knative-gcp` source code into
    `$GOPATH/src/github.com/google/knative-gcp`. For development follow the
-   [fork instructions](https://github.com/google/knative-gcp/blob/master/DEVELOPMENT.md#checkout-your-fork).
+   [fork instructions](https://github.com/google/knative-gcp/blob/main/DEVELOPMENT.md#checkout-your-fork).
 
 ## Install the Knative-GCP Constructs
 
 Enter the `knative-gcp` directory before running the following commands.
 
-### Option 1: Install from Master using [ko](http://github.com/google/ko)
+### Option 1: Install from Main using [ko](http://github.com/google/ko)
 
 ```shell
 ko apply -f ./config

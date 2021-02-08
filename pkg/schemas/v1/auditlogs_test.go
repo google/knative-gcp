@@ -36,7 +36,7 @@ func TestCloudAuditLogsEventSubject(t *testing.T) {
 	}
 }
 
-func TestCloudAuditLogsventID(t *testing.T) {
+func TestCloudAuditLogsEventID(t *testing.T) {
 	want := "efdb9bf7d6fdfc922352530c1ba51242"
 	got := CloudAuditLogsEventID("pt9y76cxw5", "projects/knative-project-228222/logs/cloudaudit.googleapis.com%2Factivity", "2020-01-19T22:45:03.439395442Z")
 	if got != want {

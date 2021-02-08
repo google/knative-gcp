@@ -19,31 +19,24 @@ package trigger
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/rickb777/date/period"
-	"go.uber.org/multierr"
+	"github.com/google/knative-gcp/pkg/reconciler/celltenant"
+
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/google/knative-gcp/pkg/logging"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/eventing/pkg/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 
-	"cloud.google.com/go/pubsub"
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
-	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
-	"github.com/google/knative-gcp/pkg/utils"
+	reconcilerutils "github.com/google/knative-gcp/pkg/reconciler/utils"
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 )
 
@@ -51,23 +44,12 @@ const (
 	// Name of the corev1.Events emitted from the Trigger reconciliation process.
 	triggerReconciled = "TriggerReconciled"
 	triggerFinalized  = "TriggerFinalized"
-
-	// Default maximum backoff duration used in the backoff retry policy for
-	// pubsub subscriptions. 600 seconds is the longest supported time.
-	defaultMaximumBackoff = 600 * time.Second
-)
-
-var (
-	// Default backoff policy settings. Should normally be configured through the
-	// br-delivery ConfigMap, but these values serve in case the intended
-	// defaulting fails.
-	defaultBackoffDelay  = "PT1S"
-	defaultBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
 )
 
 // Reconciler implements controller.Reconciler for Trigger resources.
 type Reconciler struct {
 	*reconciler.Base
+	targetReconciler *celltenant.TargetReconciler
 
 	brokerLister brokerlisters.BrokerLister
 
@@ -77,16 +59,6 @@ type Reconciler struct {
 	// Dynamic tracker to track AddressableTypes. It tracks Trigger subscribers.
 	addressableTracker duck.ListableTracker
 	uriResolver        *resolver.URIResolver
-
-	projectID string
-
-	// pubsubClient is used as the Pubsub client when present.
-	pubsubClient *pubsub.Client
-
-	dataresidencyStore *dataresidency.Store
-
-	// clusterRegion is the region where GKE is running
-	clusterRegion string
 }
 
 // Check that TriggerReconciler implements Interface
@@ -104,7 +76,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Trigger does not have broker", zap.String("namespace", t.Namespace), zap.String("trigger", t.Name), zap.String("broker", t.Spec.Broker))
-		t.Status.MarkBrokerFailed("BrokerDoesNotExist", "Broker %s does not exist", t.Spec.Broker)
+		t.Status.MarkBrokerFailed("BrokerDoesNotExist", "Broker %q does not exist", t.Spec.Broker)
 	}
 
 	// If the broker has been or is being deleted, we clean up resources created by this controller
@@ -113,7 +85,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 		return r.FinalizeKind(ctx, t)
 	}
 
-	if !filterBroker(b) {
+	if !reconcilerutils.BrokerClassFilter(b) {
 		// Call Finalizer anyway in case the Trigger still holds GCP Broker related resources.
 		// If a Trigger used to point to a GCP Broker but now has a Broker with a different brokerclass,
 		// we should clean up resources related to GCP Broker.
@@ -159,7 +131,9 @@ func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1beta1.Trigger, b 
 	if b.Spec.Delivery == nil {
 		b.SetDefaults(ctx)
 	}
-	if err := r.reconcileRetryTopicAndSubscription(ctx, t, b.Spec.Delivery); err != nil {
+
+	ct := celltenant.TargetFromTrigger(t, b.Spec.Delivery)
+	if err := r.targetReconciler.ReconcileRetryTopicAndSubscription(ctx, r.Recorder, ct); err != nil {
 		return err
 	}
 
@@ -182,7 +156,8 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, t *brokerv1beta1.Trigger)
 	if !hasGCPBrokerFinalizer(t) {
 		return nil
 	}
-	if err := r.deleteRetryTopicAndSubscription(ctx, t); err != nil {
+	ct := celltenant.TargetFromTrigger(t, nil)
+	if err := r.targetReconciler.DeleteRetryTopicAndSubscription(ctx, r.Recorder, ct); err != nil {
 		return err
 	}
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, triggerFinalized, "Trigger finalized: \"%s/%s\"", t.Namespace, t.Name)
@@ -216,150 +191,6 @@ func hasGCPBrokerFinalizer(t *brokerv1beta1.Trigger) bool {
 		}
 	}
 	return false
-}
-
-func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger, deliverySpec *eventingduckv1beta1.DeliverySpec) error {
-	logger := logging.FromContext(ctx)
-	logger.Debug("Reconciling retry topic")
-	// get ProjectID from metadata
-	//TODO get from context
-	projectID, err := utils.ProjectIDOrDefault(r.projectID)
-	if err != nil {
-		logger.Error("Failed to find project id", zap.Error(err))
-		trig.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %v", err)
-		trig.Status.MarkSubscriptionUnknown("ProjectIdNotFound", "Failed to find project id: %v", err)
-		return err
-	}
-	r.clusterRegion, err = utils.ClusterRegion(r.clusterRegion, metadataClient.NewDefaultMetadataClient)
-	if err != nil {
-		logger.Error("Failed to get cluster region: ", zap.Error(err))
-		return err
-	}
-	// Set the projectID in the status.
-	//TODO uncomment when eventing webhook allows this
-	//trig.Status.ProjectID = projectID
-
-	client, err := r.getClientOrCreateNew(ctx, projectID, trig)
-	if err != nil {
-		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
-	}
-
-	pubsubReconciler := reconcilerutilspubsub.NewReconciler(client, r.Recorder)
-
-	labels := map[string]string{
-		"resource":  "triggers",
-		"namespace": trig.Namespace,
-		"name":      trig.Name,
-		//TODO add resource labels, but need to be sanitized: https://cloud.google.com/pubsub/docs/labels#requirements
-	}
-
-	// Check if topic exists, and if not, create it.
-	topicID := resources.GenerateRetryTopicName(trig)
-	topicConfig := &pubsub.TopicConfig{Labels: labels}
-	if r.dataresidencyStore != nil {
-		if r.dataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, r.clusterRegion) {
-			logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Trigger", zap.Any("topicConfig", *topicConfig))
-		}
-	}
-	topic, err := pubsubReconciler.ReconcileTopic(ctx, topicID, topicConfig, trig, &trig.Status)
-	if err != nil {
-		return err
-	}
-	// TODO(grantr): this isn't actually persisted due to webhook issues.
-	//TODO uncomment when eventing webhook allows this
-	//trig.Status.TopicID = topic.ID()
-
-	retryPolicy := getPubsubRetryPolicy(deliverySpec)
-	deadLetterPolicy := getPubsubDeadLetterPolicy(projectID, deliverySpec)
-
-	// Check if PullSub exists, and if not, create it.
-	subID := resources.GenerateRetrySubscriptionName(trig)
-	subConfig := pubsub.SubscriptionConfig{
-		Topic:            topic,
-		Labels:           labels,
-		RetryPolicy:      retryPolicy,
-		DeadLetterPolicy: deadLetterPolicy,
-		//TODO(grantr): configure these settings?
-		// AckDeadline
-		// RetentionDuration
-	}
-	if _, err := pubsubReconciler.ReconcileSubscription(ctx, subID, subConfig, trig, &trig.Status); err != nil {
-		return err
-	}
-	// TODO(grantr): this isn't actually persisted due to webhook issues.
-	//TODO uncomment when eventing webhook allows this
-	//trig.Status.SubscriptionID = sub.ID()
-
-	return nil
-}
-
-// getPubsubRetryPolicy gets the eventing retry policy from the Broker delivery
-// spec and translates it to a pubsub retry policy.
-func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryPolicy {
-	// The Broker delivery spec is translated to a pubsub retry policy in the
-	// manner defined in the following post:
-	// https://github.com/google/knative-gcp/issues/1392#issuecomment-655617873
-	p, _ := period.Parse(*spec.BackoffDelay)
-	minimumBackoff, _ := p.Duration()
-	var maximumBackoff time.Duration
-	switch *spec.BackoffPolicy {
-	case eventingduckv1beta1.BackoffPolicyLinear:
-		maximumBackoff = minimumBackoff
-	case eventingduckv1beta1.BackoffPolicyExponential:
-		maximumBackoff = defaultMaximumBackoff
-	}
-	return &pubsub.RetryPolicy{
-		MinimumBackoff: minimumBackoff,
-		MaximumBackoff: maximumBackoff,
-	}
-}
-
-// getPubsubDeadLetterPolicy gets the eventing dead letter policy from the
-// Broker delivery spec and translates it to a pubsub dead letter policy.
-func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) *pubsub.DeadLetterPolicy {
-	if spec.DeadLetterSink == nil {
-		return nil
-	}
-	// Translate to the pubsub dead letter policy format.
-	dlp := &pubsub.DeadLetterPolicy{
-		DeadLetterTopic: fmt.Sprintf("projects/%s/topics/%s", projectID, spec.DeadLetterSink.URI.Host),
-	}
-	if spec.Retry != nil {
-		dlp.MaxDeliveryAttempts = int(*spec.Retry)
-	}
-	return dlp
-}
-
-func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
-	logger := logging.FromContext(ctx)
-	logger.Debug("Deleting retry topic")
-
-	// get ProjectID from metadata
-	//TODO get from context
-	projectID, err := utils.ProjectIDOrDefault(r.projectID)
-	if err != nil {
-		logger.Error("Failed to find project id", zap.Error(err))
-		trig.Status.MarkTopicUnknown("FinalizeTopicProjectIdNotFound", "Failed to find project id: %v", err)
-		trig.Status.MarkSubscriptionUnknown("FinalizeSubscriptionProjectIdNotFound", "Failed to find project id: %v", err)
-		return err
-	}
-
-	client, err := r.getClientOrCreateNew(ctx, projectID, trig)
-	if err != nil {
-		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
-	}
-	pubsubReconciler := reconcilerutilspubsub.NewReconciler(client, r.Recorder)
-
-	// Delete topic if it exists. Pull subscriptions continue pulling from the
-	// topic until deleted themselves.
-	topicID := resources.GenerateRetryTopicName(trig)
-	err = multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, trig, &trig.Status))
-	// Delete pull subscription if it exists.
-	subID := resources.GenerateRetrySubscriptionName(trig)
-	err = multierr.Append(err, pubsubReconciler.DeleteSubscription(ctx, subID, trig, &trig.Status))
-	return err
 }
 
 func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *brokerv1beta1.Trigger) error {
@@ -412,24 +243,4 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *broker
 	}
 	t.Status.PropagateDependencyStatus(dependency)
 	return nil
-}
-
-// createPubsubClientFn is a function for pubsub client creation. Changed in testing only.
-var createPubsubClientFn reconcilerutilspubsub.CreateFn = pubsub.NewClient
-
-// getClientOrCreateNew Return the pubsubCient if it is valid, otherwise it tries to create a new client
-// and register it for later usage.
-func (r *Reconciler) getClientOrCreateNew(ctx context.Context, projectID string, trig *brokerv1beta1.Trigger) (*pubsub.Client, error) {
-	if r.pubsubClient != nil {
-		return r.pubsubClient, nil
-	}
-	client, err := createPubsubClientFn(ctx, projectID)
-	if err != nil {
-		trig.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
-		trig.Status.MarkSubscriptionUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %v", err)
-		return nil, err
-	}
-	// Register the client for next run
-	r.pubsubClient = client
-	return client, nil
 }

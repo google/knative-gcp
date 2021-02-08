@@ -39,17 +39,17 @@ echo "CLUSTER_LOCATION used when init_control_plane_gke is'${CLUSTER_LOCATION}'"
 echo "CLUSTER_LOCATION_TYPE used when init_control_plane_gke is'${CLUSTER_LOCATION_TYPE}'"
 echo "PROJECT_ID used when init_control_plane_gke is'${PROJECT_ID}'"
 
-init_control_plane_service_account "${PROJECT_ID}" "${CONTROL_PLANE_SERVICE_ACCOUNT}"
-enable_workload_identity "${PROJECT_ID}" "${CONTROL_PLANE_SERVICE_ACCOUNT}" "${CLUSTER_NAME}" "${CLUSTER_LOCATION}" "${CLUSTER_LOCATION_TYPE}"
+init_control_plane_gsa "${PROJECT_ID}" "${CONTROL_PLANE_GSA}"
+enable_workload_identity "${PROJECT_ID}" "${CONTROL_PLANE_GSA}" "${CLUSTER_NAME}" "${CLUSTER_LOCATION}" "${CLUSTER_LOCATION_TYPE}"
 
 # Allow the Kubernetes service account to use Google service account.
 MEMBER="serviceAccount:${PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
 gcloud iam service-accounts add-iam-policy-binding \
   --role roles/iam.workloadIdentityUser \
-  --member "$MEMBER" "${CONTROL_PLANE_SERVICE_ACCOUNT}"@"${PROJECT_ID}".iam.gserviceaccount.com
+  --member "$MEMBER" "${CONTROL_PLANE_GSA}"@"${PROJECT_ID}".iam.gserviceaccount.com
 
 # Add annotation to Kubernetes service account.
-kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROL_PLANE_SERVICE_ACCOUNT}"@"${PROJECT_ID}".iam.gserviceaccount.com \
+kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROL_PLANE_GSA}"@"${PROJECT_ID}".iam.gserviceaccount.com \
   --namespace "${CONTROL_PLANE_NAMESPACE}"
 
 # Delete the controller pod in the control plane namespace to refresh

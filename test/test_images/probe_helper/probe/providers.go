@@ -26,6 +26,8 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/wire"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/google/knative-gcp/pkg/utils/clients"
 	"github.com/google/knative-gcp/test/test_images/probe_helper/probe/handlers"
@@ -36,6 +38,7 @@ var HelperSet wire.ProviderSet = wire.NewSet(
 	NewHelper,
 	NewPubSubClient,
 	NewCePubSubClient,
+	NewK8sClient,
 	NewStorageClient,
 	NewCeForwardClient,
 	NewCeReceiverClient,
@@ -106,6 +109,15 @@ func NewPubSubClient(ctx context.Context, projectID clients.ProjectID) (c *pubsu
 
 func NewStorageClient(ctx context.Context) (c *storage.Client, err error) {
 	return storage.NewClient(ctx)
+}
+
+func NewK8sClient(ctx context.Context) (c kubernetes.Interface, err error) {
+	config, err := clientcmd.BuildConfigFromFlags("", "")
+	if err != nil {
+		return nil, err
+	}
+	k8sClient, err := kubernetes.NewForConfig(config)
+	return kubernetes.Interface(k8sClient), err
 }
 
 type ForwardPort int

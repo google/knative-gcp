@@ -58,6 +58,16 @@ import (
 const (
 	fakeTargetAddress  = "target"
 	fakeIngressAddress = "ingress"
+	ceBody             = `{
+  "specversion": "1.0",
+  "type": "com.example.someevent",
+  "id": "123",
+  "source": "http://example.com/",
+  "data": {
+    "foo": "bar"
+  }
+}
+`
 )
 
 func TestInvalidContext(t *testing.T) {
@@ -211,11 +221,12 @@ func TestDeliverSuccess(t *testing.T) {
 }
 
 type targetWithFailureHandler struct {
-	t                  *testing.T
-	delay              time.Duration
-	nonCloudEventReply bool
-	respCode           int
-	respBody           string
+	t                     *testing.T
+	delay                 time.Duration
+	structuredContentMode bool
+	nonCloudEventReply    bool
+	respCode              int
+	respBody              string
 }
 
 func (h *targetWithFailureHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -235,18 +246,138 @@ func (h *targetWithFailureHandler) ServeHTTP(w http.ResponseWriter, req *http.Re
 		w.Header().Del("ce-specversion")
 		// Content-Type does not start with `application/cloudevents`
 		w.Header().Set("Content-Type", "text/html")
+	} else if h.structuredContentMode {
+		w.Header().Set("Content-Type", "application/cloudevents+json; charset=utf-8")
 	}
 	w.WriteHeader(h.respCode)
 	w.Write([]byte(h.respBody))
 }
 
+// statusCodeReplyHandler is intended to be used as the handler that replies are sent to. It will
+// respond with `responseCode`. If `responseCode` is not set, then the handler asserts that it
+// should not have been called (i.e. no reply event was expected to be sent).
+type statusCodeReplyHandler struct {
+	t            *testing.T
+	responseCode int
+	eventsSeen   int
+}
+
+func (h *statusCodeReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	io.Copy(ioutil.Discard, req.Body)
+	h.eventsSeen += 1
+	if h.responseCode == 0 {
+		h.t.Errorf("Reply Handler was not configured, no event should have been seen")
+	} else {
+		w.WriteHeader(h.responseCode)
+	}
+}
+
+func TestProcess_WithoutSubscriberAddress(t *testing.T) {
+	testCases := []struct {
+		name                string
+		cellTenantType      config.CellTenantType
+		replyHandler        statusCodeReplyHandler
+		expectedReplyEvents int
+		error               string
+	}{
+		{
+			name:           "trigger",
+			cellTenantType: config.CellTenantType_BROKER,
+			error:          "trigger ns/target has no subscriber address",
+		},
+		// TODO Add a test for Channels that allows an empty subscriber address, once Channel is a
+		// valid CellTenantType.
+		// {
+		//	name:           "Channel",
+		//	cellTenantType: config.CellTenantType_CHANNEL,
+		//	replyHandler: statusCodeReplyHandler{
+		//		responseCode: http.StatusAccepted,
+		//	},
+		//	expectedReplyEvents: 1,
+		//},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			reportertest.ResetDeliveryMetrics()
+			ctx := logtest.TestContextWithLogger(t)
+			_, c, close := testPubsubClient(ctx, t, "test-project")
+			defer close()
+			replySvr := httptest.NewServer(&tc.replyHandler)
+			defer replySvr.Close()
+
+			ps, err := cepubsub.New(ctx, cepubsub.WithClient(c), cepubsub.WithProjectID("test-project"))
+			if err != nil {
+				t.Fatalf("failed to create pubsub protocol: %v", err)
+			}
+			deliverRetryClient, err := ceclient.New(ps)
+			if err != nil {
+				t.Fatalf("failed to create cloudevents client: %v", err)
+			}
+
+			ct := &config.CellTenant{
+				Type:      tc.cellTenantType,
+				Namespace: "ns",
+				Name:      "ct",
+				Address:   replySvr.URL,
+			}
+			target := &config.Target{
+				Namespace:      ct.Namespace,
+				Name:           "target",
+				CellTenantType: ct.Type,
+				CellTenantName: ct.Name,
+				Address:        "",
+				ReplyAddress:   replySvr.URL,
+				RetryQueue: &config.Queue{
+					Topic: "test-retry-topic",
+				},
+			}
+			testTargets := memory.NewEmptyTargets()
+			testTargets.MutateCellTenant(ct.Key(), func(bm config.CellTenantMutation) {
+				bm.SetAddress(ct.Address)
+				bm.UpsertTargets(target)
+			})
+			ctx = handlerctx.WithBrokerKey(ctx, ct.Key())
+			ctx = handlerctx.WithTargetKey(ctx, target.Key())
+
+			r, err := metrics.NewDeliveryReporter("pod", "container")
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := &Processor{
+				DeliverClient:      http.DefaultClient,
+				Targets:            testTargets,
+				DeliverRetryClient: deliverRetryClient,
+				DeliverTimeout:     500 * time.Millisecond,
+				StatsReporter:      r,
+			}
+
+			origin := newSampleEvent()
+			err = p.Process(ctx, origin)
+			if wantErr := (tc.error != ""); wantErr {
+				if err == nil {
+					t.Error("Wanted an error, received nil")
+				} else if tc.error != err.Error() {
+					t.Errorf("Unexpected error, want %q, got %q", tc.error, err.Error())
+				}
+			} else if err != nil {
+				t.Errorf("Wanted no error, received %v", err)
+			}
+			if want, got := tc.expectedReplyEvents, tc.replyHandler.eventsSeen; want != got {
+				t.Errorf("Unexpected number of reply events. Want %d, Got %d", want, got)
+			}
+		})
+	}
+}
+
 func TestDeliverFailure(t *testing.T) {
 	cases := []struct {
-		name          string
-		withRetry     bool
-		targetHandler *targetWithFailureHandler
-		failRetry     bool
-		wantErr       bool
+		name                string
+		withRetry           bool
+		targetHandler       *targetWithFailureHandler
+		replyHandler        statusCodeReplyHandler
+		expectedReplyEvents int
+		failRetry           bool
+		wantErr             bool
 	}{{
 		name:          "delivery error no retry",
 		targetHandler: &targetWithFailureHandler{respCode: http.StatusInternalServerError},
@@ -280,18 +411,52 @@ func TestDeliverFailure(t *testing.T) {
 	}, {
 		name: "malformed CloudEvent reply failure",
 		// Return 2xx but with a malformed event should be considered error.
-		targetHandler: &targetWithFailureHandler{respCode: http.StatusOK, respBody: "not a valid reply body"},
-		wantErr:       true,
+		targetHandler: &targetWithFailureHandler{
+			respCode:              http.StatusOK,
+			respBody:              "not a valid structured cloud event",
+			structuredContentMode: true,
+		},
+		wantErr: true,
 	}, {
 		name: "non-CloudEvent reply success",
 		// a non-CloudEvent reply with 2xx status code should be considered delivery success.
-		targetHandler: &targetWithFailureHandler{respCode: http.StatusOK, respBody: "reply body", nonCloudEventReply: true},
-		wantErr:       false,
+		targetHandler: &targetWithFailureHandler{
+			respCode:           http.StatusOK,
+			respBody:           "reply body",
+			nonCloudEventReply: true,
+		},
+		wantErr: false,
 	}, {
 		name: "non-CloudEvent reply failure",
 		// a non-CloudEvent reply with non-2xx status code should be considered delivery failure.
-		targetHandler: &targetWithFailureHandler{respCode: http.StatusBadRequest, respBody: "reply body", nonCloudEventReply: true},
-		wantErr:       true,
+		targetHandler: &targetWithFailureHandler{
+			respCode:           http.StatusBadRequest,
+			respBody:           "reply body",
+			nonCloudEventReply: true,
+		},
+		wantErr: true,
+	}, {
+		name: "reply server failure",
+		targetHandler: &targetWithFailureHandler{
+			respCode: http.StatusAccepted,
+			respBody: ceBody,
+		},
+		replyHandler: statusCodeReplyHandler{
+			responseCode: http.StatusBadRequest,
+		},
+		expectedReplyEvents: 1,
+		wantErr:             true,
+	}, {
+		name: "reply server success",
+		targetHandler: &targetWithFailureHandler{
+			respCode: http.StatusAccepted,
+			respBody: ceBody,
+		},
+		replyHandler: statusCodeReplyHandler{
+			responseCode: http.StatusOK,
+		},
+		expectedReplyEvents: 1,
+		wantErr:             false,
 	}}
 
 	for _, tc := range cases {
@@ -301,6 +466,9 @@ func TestDeliverFailure(t *testing.T) {
 			tc.targetHandler.t = t
 			targetSvr := httptest.NewServer(tc.targetHandler)
 			defer targetSvr.Close()
+			tc.replyHandler.t = t
+			replySvr := httptest.NewServer(&tc.replyHandler)
+			defer replySvr.Close()
 
 			_, c, close := testPubsubClient(ctx, t, "test-project")
 			defer close()
@@ -325,6 +493,7 @@ func TestDeliverFailure(t *testing.T) {
 				Type:      config.CellTenantType_BROKER,
 				Namespace: "ns",
 				Name:      "broker",
+				Address:   replySvr.URL,
 			}
 			target := &config.Target{
 				Namespace:      "ns",
@@ -332,12 +501,14 @@ func TestDeliverFailure(t *testing.T) {
 				CellTenantType: config.CellTenantType_BROKER,
 				CellTenantName: "broker",
 				Address:        targetSvr.URL,
+				ReplyAddress:   replySvr.URL,
 				RetryQueue: &config.Queue{
 					Topic: "test-retry-topic",
 				},
 			}
 			testTargets := memory.NewEmptyTargets()
 			testTargets.MutateCellTenant(broker.Key(), func(bm config.CellTenantMutation) {
+				bm.SetAddress(broker.Address)
 				bm.UpsertTargets(target)
 			})
 			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
@@ -360,6 +531,9 @@ func TestDeliverFailure(t *testing.T) {
 			err = p.Process(ctx, origin)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("processing got error=%v, want=%v", err, tc.wantErr)
+			}
+			if want, got := tc.expectedReplyEvents, tc.replyHandler.eventsSeen; want != got {
+				t.Errorf("Unexpected number of reply events. Want %d, Got %d", want, got)
 			}
 		})
 	}

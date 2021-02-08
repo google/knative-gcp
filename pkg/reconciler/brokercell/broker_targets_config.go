@@ -32,6 +32,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/utils"
 	"github.com/google/knative-gcp/pkg/reconciler/utils/volume"
 )
 
@@ -40,6 +41,29 @@ const (
 )
 
 func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.BrokerCell) error {
+	// Start with a fresh config and add into it. This approach is straightforward and reliable,
+	// however not efficient if there are too many triggers/subscriptions. If performance becomes
+	// an issue, we can consider maintaining 2 queues for updated brokers and triggers, and only
+	// update the config for updated triggers/subscriptions.
+	targets := memory.NewEmptyTargets()
+
+	err := r.addBrokersAndTriggersToTargets(ctx, bc, targets)
+	if err != nil {
+		return fmt.Errorf("unable to add Broker and Triggers to targets: %w", err)
+	}
+
+	if err := r.updateTargetsConfig(ctx, bc, targets); err != nil {
+		logging.FromContext(ctx).Error("Failed to update broker targets configmap", zap.Error(err))
+		bc.Status.MarkTargetsConfigFailed(configFailed, "failed to update configmap: %v", err)
+		return err
+	}
+	bc.Status.MarkTargetsConfigReady()
+	return nil
+}
+
+// addBrokersAndTriggersToTargets adds all Brokers that are associated with the `bc` BrokerCell to
+// `targets`, along with all Triggers that target those Brokers.
+func (r *Reconciler) addBrokersAndTriggersToTargets(ctx context.Context, bc *intv1alpha1.BrokerCell, targets config.Targets) error {
 	// TODO(#866) Only select brokers that point to this brokercell by label selector once the
 	// webhook assigns the brokercell label, i.e.,
 	// r.brokerLister.List(labels.SelectorFromSet(map[string]string{"brokercell":bc.Name, "brokercellns":bc.Namespace}))
@@ -49,11 +73,10 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.Broker
 		bc.Status.MarkTargetsConfigFailed(configFailed, "failed to list brokers: %v", err)
 		return err
 	}
-	// Start with a fresh config and add brokers/triggers into it. This approach is straightforward and reliable,
-	// however not efficient if there are too many triggers. If performance becomes an issue, we can consider
-	// maintaining 2 queues for updated brokers and triggers, and only update the config for updated brokers/triggers.
-	brokerTargets := memory.NewEmptyTargets()
 	for _, broker := range brokers {
+		if !utils.BrokerClassFilter(broker) {
+			continue
+		}
 		// Filter by `eventing.knative.dev/broker: <name>` here
 		// to get only the triggers for this broker. The trigger webhook will
 		// ensure that triggers are always labeled with their broker name.
@@ -63,20 +86,14 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.Broker
 			bc.Status.MarkTargetsConfigFailed(configFailed, "failed to list triggers for broker %v: %v", broker.Name, err)
 			return err
 		}
-		r.addToConfig(ctx, broker, triggers, brokerTargets)
+		addBrokerAndTriggersToConfig(ctx, broker, triggers, targets)
 	}
-	if err := r.updateTargetsConfig(ctx, bc, brokerTargets); err != nil {
-		logging.FromContext(ctx).Error("Failed to update broker targets configmap", zap.Error(err))
-		bc.Status.MarkTargetsConfigFailed(configFailed, "failed to update configmap: %v", err)
-		return err
-	}
-	bc.Status.MarkTargetsConfigReady()
 	return nil
 }
 
-// addToConfig reconstructs the data entry for the given broker and add it to targets-config.
-func (r *Reconciler) addToConfig(_ context.Context, b *brokerv1beta1.Broker, triggers []*brokerv1beta1.Trigger, brokerTargets config.Targets) {
-	// TODO Maybe get rid of CellTenantMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we always
+// addBrokerAndTriggersToConfig reconstructs the data entry for the given broker and adds it to targets-config.
+func addBrokerAndTriggersToConfig(_ context.Context, b *brokerv1beta1.Broker, triggers []*brokerv1beta1.Trigger, brokerTargets config.Targets) {
+	// TODO Maybe get rid of GCPCellAddressableMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we always
 	//  delete or update the entire broker entry and we don't need partial updates per trigger.
 	// The code can be simplified to r.targetsConfig.Upsert(brokerConfigEntry)
 	brokerTargets.MutateCellTenant(config.KeyFromBroker(b), func(m config.CellTenantMutation) {
@@ -112,6 +129,7 @@ func (r *Reconciler) addToConfig(_ context.Context, b *brokerv1beta1.Broker, tri
 					Namespace:      t.Namespace,
 					CellTenantType: config.CellTenantType_BROKER,
 					CellTenantName: b.Name,
+					ReplyAddress:   b.Status.Address.URL.String(),
 					Address:        t.Status.SubscriberURI.String(),
 					RetryQueue: &config.Queue{
 						Topic:        brokerresources.GenerateRetryTopicName(t),
