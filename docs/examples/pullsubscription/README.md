@@ -24,7 +24,7 @@ does so using a Pull format.
    gcloud pubsub topics create $TOPIC_NAME
    ```
 
-1. Update `googleServiceAccount` / `secret` in the
+1. Update `googleServiceAccount` / `secret` / `project`  in the
    [`pullsubscription.yaml`](pullsubscription.yaml)
 
    1. If you are in GKE and using
@@ -36,6 +36,9 @@ does so using a Pull format.
 
    1. If you are using standard Kubernetes secrets, but want to use a
       non-default one, update `secret` with your own secret.
+
+   1. If you are [managing multiple project](../../install/managing-multiple-projects.md), be careful to specify the `project`
+   where you want your Google Cloud resources resides.
 
 1. Update `TOPIC_NAME` in the [`pullsubscription.yaml`](pullsubscription.yaml)
    and apply it.

@@ -45,6 +45,9 @@ directly publish to the underlying transport (Pub/Sub), in CloudEvents format.
    1. If you are using standard Kubernetes secrets, but want to use a
       non-default one, update `secret` with your own secret.
 
+    1. If you are [managing multiple project](../../install/managing-multiple-projects.md), be careful to specify the `project`
+    where you want your Google Cloud resources resides.
+
    ```shell
    kubectl apply --filename cloudauditlogssource.yaml
    ```

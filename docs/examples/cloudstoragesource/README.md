@@ -77,7 +77,7 @@ Object Notifications for when a new object is added to Google Cloud Storage
 
 ## Deployment
 
-1. Update `serviceAccountName` / `secret` in the
+1. Update `serviceAccountName` / `secret` / `project` in the
    [`cloudstoragesource.yaml`](cloudstoragesource.yaml)
 
    1. If you are in GKE and using
@@ -89,6 +89,9 @@ Object Notifications for when a new object is added to Google Cloud Storage
 
    1. If you are using standard Kubernetes secrets, but want to use a
       non-default one, update `secret` with your own secret.
+
+   1. If you are [managing multiple project](../../install/managing-multiple-projects.md), be careful to specify the `project`
+   where you want your Google Cloud resources resides.
 
 1. Update `BUCKET` in the [`cloudstoragesource.yaml`](cloudstoragesource.yaml)
    and apply it.

@@ -39,6 +39,9 @@ build completes.
       non-default one, update `secret` with your own secret which has the
       permission of `roles/pubsub.subscriber`.
 
+   1. If you are [managing multiple project](../../install/managing-multiple-projects.md), be careful to specify the `project`
+   where you want your Google Cloud resources resides.
+
    ```shell
    kubectl apply --filename cloudbuildsource.yaml
    ```
