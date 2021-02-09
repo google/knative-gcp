@@ -12,29 +12,29 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-cmp v0.5.4
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.2.0
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
 	github.com/rickb777/date v1.13.0
-	go.opencensus.io v0.22.5
+	go.opencensus.io v0.22.6
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
 	golang.org/x/oauth2 v0.0.0-20210126194326-f9ce19ea3013
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	google.golang.org/api v0.36.0
-	google.golang.org/genproto v0.0.0-20201211151036-40ec1c210f7a
-	google.golang.org/grpc v1.34.0
+	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d
+	google.golang.org/grpc v1.35.0
 	google.golang.org/protobuf v1.25.0
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v0.19.7
-	knative.dev/eventing v0.20.1-0.20210208141833-b887ac41c5f8
+	knative.dev/eventing v0.20.1-0.20210209112550-3fcb64522f45
 	knative.dev/hack v0.0.0-20210203173706-8368e1f6eacf
-	knative.dev/pkg v0.0.0-20210208131226-4b2ae073fa06
-	knative.dev/serving v0.20.1-0.20210208120624-45a435ac973a
+	knative.dev/pkg v0.0.0-20210208175252-a02dcff9ee26
+	knative.dev/serving v0.20.1-0.20210209132429-5275f505ebea
 	sigs.k8s.io/yaml v1.2.0
 )
 
