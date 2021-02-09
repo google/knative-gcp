@@ -17,6 +17,7 @@ limitations under the License.
 package channel
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -78,6 +79,12 @@ func TestFilterChannelsForBrokerCell(t *testing.T) {
 			fi := &fakeImpl{}
 			filter := filterChannelsForBrokerCell(zap.NewNop(), ls.GetChannelLister(), fi.enqueue)
 			filter(tc.objectChanged)
+
+			// In order to remove any chance of ordering differences causing flakiness, sort by
+			// name.
+			sortChannelByName(tc.wantEnqueued)
+			sortChannelByName(fi.enqueued)
+
 			if diff := cmp.Diff(tc.wantEnqueued, fi.enqueued); diff != "" {
 				t.Errorf("Incorrect enqueued objects (-want +got) %s", diff)
 			}
@@ -99,4 +106,12 @@ type fakeImpl struct {
 
 func (f *fakeImpl) enqueue(obj interface{}) {
 	f.enqueued = append(f.enqueued, obj)
+}
+
+func sortChannelByName(unordered []interface{}) {
+	sort.Slice(unordered, func(i, j int) bool {
+		iName := unordered[i].(*v1beta1.Channel).Name
+		jName := unordered[j].(*v1beta1.Channel).Name
+		return iName < jName
+	})
 }
