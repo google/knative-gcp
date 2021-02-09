@@ -70,7 +70,7 @@ func (p *PingSourceProbe) Forward(ctx context.Context, event cloudevents.Event) 
 	p.EventTimes.RLock()
 	defer p.EventTimes.RUnlock()
 
-	logging.FromContext(ctx).Infow("Checking last observed PingSource tick")
+	logging.FromContext(ctx).Info("Checking last observed PingSource tick")
 	timestampID := fmt.Sprint(event.Extensions()[utils.ProbeEventTargetPathExtension])
 	pingSourceTime, ok := p.EventTimes.Times[timestampID]
 	if !ok {
