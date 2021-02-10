@@ -105,5 +105,9 @@ func (p *BrokerE2EDeliveryProbe) Receive(ctx context.Context, event cloudevents.
 	//   Data,
 	//     { ... }
 	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventReceiverPathExtension]), event.ID())
-	return p.receivedEvents.SignalReceiverChannel(channelID)
+	if err := p.receivedEvents.SignalReceiverChannel(channelID); err != nil {
+		return err
+	}
+	logging.FromContext(ctx).Info("Successfully received broker e2e delivery probe event")
+	return nil
 }

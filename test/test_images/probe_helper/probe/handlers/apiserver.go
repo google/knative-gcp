@@ -200,5 +200,9 @@ func (p *ApiServerSourceProbe) Receive(ctx context.Context, event cloudevents.Ev
 	eventID = fmt.Sprintf("%s-%s", forwardType, eventID)
 	namespace := fmt.Sprint(event.Extensions()[utils.ProbeEventReceiverPathExtension])[1:]
 	channelID := channelID(namespace, eventID)
-	return p.receivedEvents.SignalReceiverChannel(channelID)
+	if err := p.receivedEvents.SignalReceiverChannel(channelID); err != nil {
+		return err
+	}
+	logging.FromContext(ctx).Info("Successfully received ApiServerSource probe event")
+	return nil
 }

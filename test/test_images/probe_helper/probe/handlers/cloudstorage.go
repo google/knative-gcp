@@ -244,5 +244,9 @@ func (p *CloudStorageSourceProbe) Receive(ctx context.Context, event cloudevents
 	}
 	eventID = fmt.Sprintf("%s-%s", forwardType, eventID)
 	channelID := channelID(fmt.Sprint(event.Extensions()[utils.ProbeEventReceiverPathExtension]), eventID)
-	return p.receivedEvents.SignalReceiverChannel(channelID)
+	if err := p.receivedEvents.SignalReceiverChannel(channelID); err != nil {
+		return err
+	}
+	logging.FromContext(ctx).Info("Successfully received CloudStorageSource probe event")
+	return nil
 }

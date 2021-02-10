@@ -91,7 +91,7 @@ func (ph *Helper) forwardFromProbe(ctx context.Context) cloudEventsFunc {
 
 		// Forward the probe event. This call is likely to be blocking.
 		if err := ph.probeHandler.Forward(ctx, event); err != nil {
-			logging.FromContext(ctx).Warnw("Probe forwarding failed", zap.Error(err))
+			logging.FromContext(ctx).Debugw("Probe forwarding failed", zap.Error(err))
 			return cloudevents.ResultNACK
 		}
 		return cloudevents.ResultACK
@@ -119,7 +119,7 @@ func (ph *Helper) receiveEvent(ctx context.Context) cloudEventsFunc {
 
 		// Receive the probe event
 		if err := ph.probeHandler.Receive(ctx, event); err != nil {
-			logging.FromContext(ctx).Warnw("Probe receiver failed", zap.Error(err))
+			logging.FromContext(ctx).Debugw("Probe receiver failed", zap.Error(err))
 			return cloudevents.ResultACK
 		}
 		return cloudevents.ResultACK

@@ -102,6 +102,7 @@ func (p *CloudSchedulerSourceProbe) Receive(ctx context.Context, event cloudeven
 
 	timestampID := fmt.Sprint(event.Extensions()[utils.ProbeEventReceiverPathExtension])
 	p.EventTimes.Times[timestampID] = time.Now()
+	logging.FromContext(ctx).Info("Successfully received CloudSchedulerSource probe event")
 	return nil
 }
 
