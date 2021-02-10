@@ -75,7 +75,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, c *v1beta1.Channel) pkgr
 		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledSubscribersFailedReason, "Reconcile Subscribers failed with: %s", err.Error())
 	}
 
-	return pkgreconciler.NewEvent(corev1.EventTypeNormal, channelReconciled, "Channel reconciled: \"%s/%s\"", c.Namespace, c.Name)
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, channelReconciled, `Channel reconciled: "%s/%s"`, c.Namespace, c.Name)
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, c *v1beta1.Channel) pkgreconciler.Event {
@@ -90,7 +90,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, c *v1beta1.Channel) pkgre
 		return err
 	}
 
-	return pkgreconciler.NewEvent(corev1.EventTypeNormal, channelFinalized, "Channel finalized: \"%s/%s\"", c.Namespace, c.Name)
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, channelFinalized, `Channel finalized: "%s/%s"`, c.Namespace, c.Name)
 }
 
 func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Channel) error {
@@ -174,5 +174,9 @@ func (r *Reconciler) deleteAllSubscriberTopicsAndPullSubscriptions(ctx context.C
 		// TODO Do better than this n^2 algorithm.
 		removeSubscriberStatus(c, s)
 	}
+	// TODO If we weren't able to record the status properly, there may be some Topics and
+	// Subscriptions that correspond to spec subscribers. E.g. we reconciled them, but writing the
+	// updated status failed, so the GCP resources were created, but they aren't in the status.
+	// If we see this in practice, we should delete all the entries from spec.subscribers as well.
 	return nil
 }

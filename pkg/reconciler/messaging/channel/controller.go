@@ -107,7 +107,8 @@ func newController(
 	impl := channelreconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
-	channelInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	channelInformer.Informer().AddEventHandlerWithResyncPeriod(
+		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	bcInformer.Informer().AddEventHandler(controller.HandleAll(filterChannelsForBrokerCell(
 		r.Logger.Desugar(), channelInformer.Lister(), impl.Enqueue)))
