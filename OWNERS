@@ -1,6 +1,5 @@
 approvers:
 - grantr
-- Harwayne
 - ian-mi
 - yolocs
 - grac3gao
@@ -22,7 +21,6 @@ approvers:
 # copy the approvers to the reviewers list too.
 reviewers:
 - grantr
-- Harwayne
 - ian-mi
 - yolocs
 # Add reviewers below
