@@ -19,6 +19,10 @@ package testingdata
 import (
 	"testing"
 
+	channelresources "github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
+
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
+
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -33,38 +37,32 @@ func EmptyConfig(t *testing.T, bc *intv1alpha1.BrokerCell) *corev1.ConfigMap {
 	return cm
 }
 
-func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Broker, triggers ...*brokerv1beta1.Trigger) *corev1.ConfigMap {
-	// construct triggers config
-	targets := make(map[string]*config.Target, len(triggers))
-	for _, t := range triggers {
-		state := config.State_UNKNOWN
-		if t.Status.IsReady() {
-			state = config.State_READY
-		}
-		var filterAttributes map[string]string
-		if t.Spec.Filter != nil && t.Spec.Filter.Attributes != nil {
-			filterAttributes = t.Spec.Filter.Attributes
-		}
-		target := &config.Target{
-			Id:             string(t.UID),
-			Name:           t.Name,
-			Namespace:      t.Namespace,
-			CellTenantType: config.CellTenantType_BROKER,
-			CellTenantName: broker.Name,
-			ReplyAddress:   broker.Status.Address.URL.String(),
-			Address:        t.Status.SubscriberURI.String(),
-			RetryQueue: &config.Queue{
-				Topic:        brokerresources.GenerateRetryTopicName(t),
-				Subscription: brokerresources.GenerateRetrySubscriptionName(t),
-			},
-			State:            state,
-			FilterAttributes: filterAttributes,
-		}
+type BrokerCellObjects struct {
+	BrokersToTriggers map[*brokerv1beta1.Broker][]*brokerv1beta1.Trigger
+	Channels          []*v1beta1.Channel
+}
 
-		targets[t.Name] = target
+func Config(bc *intv1alpha1.BrokerCell, bco BrokerCellObjects) *corev1.ConfigMap {
+	targets := &config.TargetsConfig{
+		CellTenants: map[string]*config.CellTenant{},
 	}
 
-	// construct broker config
+	for broker, triggers := range bco.BrokersToTriggers {
+		addBroker(targets, broker, triggers)
+	}
+	for _, channel := range bco.Channels {
+		addChannel(targets, channel)
+	}
+
+	memoryTargets := memory.NewTargets(targets)
+	cm, _ := resources.MakeTargetsConfig(bc, memoryTargets)
+	return cm
+}
+
+func addBroker(targets *config.TargetsConfig, broker *brokerv1beta1.Broker, triggers []*brokerv1beta1.Trigger) {
+	if broker == nil {
+		return
+	}
 	state := config.State_UNKNOWN
 	if broker.Status.IsReady() {
 		state = config.State_READY
@@ -84,15 +82,76 @@ func Config(t *testing.T, bc *intv1alpha1.BrokerCell, broker *brokerv1beta1.Brok
 			Subscription: brokerresources.GenerateDecouplingSubscriptionName(broker),
 			State:        brokerQueueState,
 		},
-		Targets: targets,
+		Targets: make(map[string]*config.Target),
 		State:   state,
 	}
-	bt := &config.TargetsConfig{
-		CellTenants: map[string]*config.CellTenant{
-			brokerConfig.Key().PersistenceString(): brokerConfig,
-		},
+	for _, trigger := range triggers {
+		var filterAttributes map[string]string
+		if trigger.Spec.Filter != nil && trigger.Spec.Filter.Attributes != nil {
+			filterAttributes = trigger.Spec.Filter.Attributes
+		}
+		brokerConfig.Targets[trigger.Name] = &config.Target{
+			Id:             string(trigger.UID),
+			Name:           trigger.Name,
+			Namespace:      trigger.Namespace,
+			CellTenantType: config.CellTenantType_BROKER,
+			CellTenantName: trigger.Spec.Broker,
+			ReplyAddress:   broker.Status.Address.URL.String(),
+			Address:        trigger.Status.SubscriberURI.String(),
+			RetryQueue: &config.Queue{
+				Topic:        brokerresources.GenerateRetryTopicName(trigger),
+				Subscription: brokerresources.GenerateRetrySubscriptionName(trigger),
+			},
+			State:            state,
+			FilterAttributes: filterAttributes,
+		}
 	}
-	brokerTargets := memory.NewTargets(bt)
-	cm, _ := resources.MakeTargetsConfig(bc, brokerTargets)
-	return cm
+	targets.CellTenants[brokerConfig.Key().PersistenceString()] = brokerConfig
+}
+
+func addChannel(targets *config.TargetsConfig, channel *v1beta1.Channel) {
+	if channel == nil {
+		return
+	}
+	state := config.State_UNKNOWN
+	if channel.Status.IsReady() {
+		state = config.State_READY
+	}
+	queueState := config.State_UNKNOWN
+	if channel.Status.GetCondition(brokerv1beta1.BrokerConditionTopic).IsTrue() && channel.Status.GetCondition(brokerv1beta1.BrokerConditionSubscription).IsTrue() {
+		queueState = config.State_READY
+	}
+	cellTenant := &config.CellTenant{
+		Id:        string(channel.UID),
+		Type:      config.CellTenantType_CHANNEL,
+		Name:      channel.Name,
+		Namespace: channel.Namespace,
+		Address:   channel.Status.Address.URL.String(),
+		DecoupleQueue: &config.Queue{
+			Topic:        channelresources.GenerateDecouplingTopicName(channel),
+			Subscription: channelresources.GenerateDecouplingSubscriptionName(channel),
+			State:        queueState,
+		},
+		Targets: make(map[string]*config.Target),
+		State:   state,
+	}
+	if channel.Spec.SubscribableSpec != nil {
+		for _, s := range channel.Spec.Subscribers {
+			cellTenant.Targets[string(s.UID)] = &config.Target{
+				Id:             string(s.UID),
+				Name:           string(s.UID),
+				Namespace:      channel.Namespace,
+				CellTenantName: channel.Name,
+				CellTenantType: config.CellTenantType_CHANNEL,
+				Address:        s.SubscriberURI.String(),
+				RetryQueue: &config.Queue{
+					Topic:        channelresources.GenerateSubscriberRetryTopicName(channel, s.UID),
+					Subscription: channelresources.GenerateSubscriberRetrySubscriptionName(channel, s.UID),
+				},
+				State:        config.State_READY,
+				ReplyAddress: s.ReplyURI.String(),
+			}
+		}
+	}
+	targets.CellTenants[cellTenant.Key().PersistenceString()] = cellTenant
 }
