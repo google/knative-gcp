@@ -68,7 +68,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, c *v1beta1.Channel) pkgr
 		// whatever info is available. or put this in a defer?
 	}
 
-	// 2. Sync all subscriptions.
+	// Sync all subscriptions.
 	//   a. create all subscriptions that are in spec and not in status.
 	//   b. delete all subscriptions that are in status but not in spec.
 	if err := r.syncSubscribers(ctx, c); err != nil {
@@ -86,8 +86,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, c *v1beta1.Channel) pkgre
 		return err
 	}
 
-	err := r.deleteAllSubscriberTopicsAndPullSubscriptions(ctx, c)
-	if err != nil {
+	if err := r.deleteAllSubscriberTopicsAndPullSubscriptions(ctx, c); err != nil {
 		return err
 	}
 
