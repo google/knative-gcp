@@ -48,11 +48,11 @@ func (c *Channel) SetDefaults(ctx context.Context) {
 
 func (cs *ChannelSpec) SetDefaults(_ context.Context) {
 	if cs.SubscribableSpec != nil {
-		for _, s := range cs.SubscribableSpec.Subscribers {
+		for i := range cs.SubscribableSpec.Subscribers {
 			// TODO Default the DeliverySpec similar to how Broker defaults it, rather than just
 			// setting the empty object.
-			if s.Delivery == nil {
-				s.Delivery = &eventingduckv1beta1.DeliverySpec{}
+			if cs.SubscribableSpec.Subscribers[i].Delivery == nil {
+				cs.SubscribableSpec.Subscribers[i].Delivery = &eventingduckv1beta1.DeliverySpec{}
 			}
 		}
 	}
