@@ -43,8 +43,9 @@ scheduled events from
    1. If you are using standard Kubernetes secrets, but want to use a
       non-default one, update `secret` with your own secret.
 
-   1. If you are [managing multiple project](../../install/managing-multiple-projects.md), be careful to specify the `project`
-   where you want your Google Cloud resources resides.
+   1. By default, the Scheduler will be created in the same project as your GKE cluster.
+   However, if you are [managing multiple projects](../../install/managing-multiple-projects.md), then you can specify `spec.project`,
+   which is the Google Cloud Project that the Scheduler is created in.
 
    ```shell
    kubectl apply --filename cloudschedulersource.yaml

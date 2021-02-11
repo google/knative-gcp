@@ -7,85 +7,106 @@ A general Knative-GCP installation configures three identities (represents as Go
 3. Identity for the Source. (This is the default identity for the Source.
 Users can use this identity for multiple Source custom objects,
 or create additional identities in the form of Google service accounts for different Source custom objects,
-to achieve more fine-grained configurations)
+to achieve more fine-grained configurations).
 
 In general Knative-GCP installation guide, each Knative-GCP component consumes/creates Google Cloud resources within the scope of the project
-(the project where the kubernetes cluster contained your Knative-GCP components resides). For example, if your kubernetes cluster is in Project A, and
-you apply StorageSource in this kubernetes cluster, it will create a Google Cloud Storage Bucket, a Google Cloud PubSub Topic, and a Google Cloud PubSub Subscription,
-all belong to Project A.
+(the project where the Kubernetes cluster containing your Knative-GCP components resides). For example, if your Kubernetes cluster is in Project A, and
+you apply [CloudStorageSource](../examples/cloudstoragesource) in this Kubernetes cluster,
+then the Google Cloud Storage Notification, Google Cloud PubSub Topic, and Google Cloud PubSub Subscription will be created in Project A.
 
-This topic explains how to set-up Knative GCP configuration to create Sources which consume/create Google Cloud resources from other projects.
+This guide explains how to set-up Knative GCP configuration to create Sources which consume/create Google Cloud resources from other projects.
 
-Here we use PubSubSource as an example.
+Here we use CloudPubSubSource as an example.
 
-The following names are representing:
-* `project-a`: Project (project where all Knative-GCP system resides)
+We will use the following values as examples, you should replace them with the appropriate values for your project when running the example commands:
 
-* `events-controller-gsa@project-a.iam.gserviceaccount.com`: Control-plane GSA (which is used for the control plane)
+```
+# Cluster project is the GCP project that the Kubernetes cluster is running in.
+export CLUSTER_PROJECT=project-a
 
-* `project-b`: Project (project where your topic and subscription resides)
+# Source project is the GCP project that the source is reading information from.
+export SOURCE_PROJECT=project-b
 
-* `your-gsa@project-b.iam.gserviceaccount.com`: Source Data-Plane GSA (which is used in your namespace where your PubSubSource resides)
+# Control plane GSA is the GSA that is being used by the control plane. Note that it is normally in the CLUSTER_PROJECT.
+export CONTROL_PLANE_GSA="events-controller-gsa@$CLUSTER_PROJECT.iam.gserviceaccount.com"
 
-In order to make your PubSubSource in Project A' cluster to consume Google PubSub resource in Project B:
-1. Control Plane GSA `events-controller-gsa@project-a.iam.gserviceaccount.com` needs `pubsub.editor` role for `project-b`
+# Source data plane GSA is the GSA that is used when reading from the source's PullSubscription. Note that it is normally in the SOURCE_PROJECT.
+export SOURCE_DATA_PLANE_GSA="your-gsa@$SOURCE_PROJECT.iam.gserviceaccount.com"
+
+# Namespace is the Kubernetes cluster namespace where the CloudPubSubSource resides.
+export NAMESPACE=default
+
+# Kubernetes service account name is the KSA that is used for the CloudPubSubSource's underlying Pods. Note that it is only used in Workload Identity.
+export KSA_NAME=ksa-name
+```
+
+In order to make your CloudPubSubSource in `CLUSTER_PROJECT`'s cluster consume Google PubSub resources in `SOURCE_PROJECT`:
+1. Control Plane GSA `CONTROL_PLANE_GSA` needs `pubsub.editor` role from `SOURCE_PROJECT`
     ```
-    gcloud projects add-iam-policy-binding project-b
-    --member=serviceAccount:events-controller-gsa@project-a.iam.gserviceaccount.com
+    gcloud projects add-iam-policy-binding $SOURCE_PROJECT
+    --member=serviceAccount:$CONTROL_PLANE_GSA
     --role roles/pubsub.editor
     ```
     ***Note:*** To create different Google Cloud Resource, the Control Plane needs different permissions.
     Refer to [Manually Configure Authentication Mechanism for the Control Plane](./authentication-mechanisms-gcp.md/#authentication-mechanism-for-the-control-plane)
-    for specific roles(a set of permissions) needed to create each Source.
+    for specific roles (a set of permissions) needed to create each Source.
 
-1. Source Data-plane GSA `your-gsa@project-b.iam.gserviceaccount.com` needs `pubsub.editor` role for `project-b`
+1. Source Data Plane GSA `SOURCE_DATA_PLANE_GSA` need several roles from `SOURCE_PROJECT`
+    1. Needs `pubsub.editor` role to read information.
+        ```
+        gcloud projects add-iam-policy-binding $SOURCE_PROJECT
+        --member=serviceAccount:$SOURCE_DATA_PLANE_GSA \
+        --role roles/pubsub.editor
+        ```
+    1. Needs `monitoring.metricWriter` and `cloudtrace.agent` role for metrics and tracing.
+        ```
+        gcloud projects add-iam-policy-binding $SOURCE_PROJECT \
+        --member=serviceAccount:$SOURCE_DATA_PLANE_GSA \
+        --role roles/monitoring.metricWriter
 
-    ```
-    gcloud projects add-iam-policy-binding project-b
-    --member=serviceAccount:your-gsa@project-b.iam.gserviceaccount.com
-    --role roles/pubsub.editor
-    ```
+        gcloud projects add-iam-policy-binding $SOURCE_PROJECT \
+        --member=serviceAccount:$SOURCE_DATA_PLANE_GSA \
+        --role roles/cloudtrace.agent
+        ```
    ***Note:*** Source Data Plane only pulls subscription from Cloud PubSub Subscription, thus,
-   no matter which Cloud Source you are creating, this GSA only needs `roles/pubsub.editor` role.
-   Refer to [Installing a Service Account for the Data Plane](../install/dataplane-service-account.md)
-   for specific roles(a set of permissions) needed if you also want metrics and tracing for your Source.
+   no matter which CloudSource you create, the permissions needed are the same.
 
-1. Configure credentials in the kubernetes cluster. You can either use:
+1. Configure credentials in the Kubernetes cluster. You can either use:
     1. Workload Identity
-        1. Create a Kubernetes Service Account `ksa-name` in the same namespace where the PubSubSource will reside.
+        1. Create a Kubernetes Service Account `KSA_NAME` in the same namespace where the CloudPubSubSource will reside.
             ```
-            kubectl create service account ksa-name -n namespace
+            kubectl create service account $KSA_NAME -n $NAMESPACE
             ```
-        2. Source Data-plane GSA `your-gsa@project-b.iam.gserviceaccount.com` needs workload identity binding.
+        2. Source Data Plane GSA `SOURCE_DATA_PLANE_GSA` needs workload identity binding.
             ```
-            gcloud iam service-accounts add-iam-policy-binding your-gsa@project-b.iam.gserviceaccount.com
+            gcloud iam service-accounts add-iam-policy-binding $SOURCE_DATA_PLANE_GSA
             --role "roles/iam.workloadIdentityUser"
-            --member "serviceAccount:project-a.svc.id.goog[namespace/ksa-name]”
+            --member "serviceAccount:$CLUSTER_PROJECT.svc.id.goog[$NAMESPACE/$KSA_NAME]”
             ```
-        3. Kubernetes Service Account `ksa-name` needs annotation
+        3. Kubernetes Service Account `KSA_NAME` needs the workload identity annotation
             ```
-            kubectl annotate serviceaccount ksa-name \
-            iam.gke.io/gcp-service-account=your-gsa@project-b.iam.gserviceaccount.com
+            kubectl annotate serviceaccount $KSA_NAME \
+            iam.gke.io/gcp-service-account=$SOURCE_DATA_PLANE_GSA
             ```
     1. or Exporting Service Account Keys And Store Them as Kubernetes Secret
-       1. Download a new JSON private key for Source Data-plane GSA `your-gsa@project-b.iam.gserviceaccount.com`
+       1. Download a new JSON private key for Source Data Plane GSA `your-gsa@project-b.iam.gserviceaccount.com`
 
           ```shell
           gcloud iam service-accounts keys create events-sources-key.json \
-            --iam-account=your-gsa@project-b.iam.gserviceaccount.com
+            --iam-account=$SOURCE_DATA_PLANE_GSA
           ```
 
        1. Create a secret on the Kubernetes cluster with the downloaded key. Remember
-          to create the secret in the namespace your resources will reside.
+          to create the secret in the namespace where your CloudPubSubSource will reside.
 
           ```shell
-          kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=events-sources-key.json
+          kubectl --namespace $NAMESPACE create secret generic google-cloud-key --from-file=key.json=events-sources-key.json
           ```
 
           `google-cloud-key` and `key.json` are default values expected by our
           resources.
-1. Following [CloudPubSubSource](../examples/cloudpubsubsource/README.md) example to create your PubSubSource.
-***[Important]*** Don't forget to specifying `project-b` and `secret`/ `serviceAccountName` under `spec` when you apply your PubSubSource:
+1. Follow [CloudPubSubSource](../examples/cloudpubsubsource/README.md) example to create your CloudPubSubSource.
+***[Important]*** Don't forget to specifying `project` and `secret`/`serviceAccountName` under `spec` when you apply your CloudPubSubSource:
 
     ```
     apiVersion: events.cloud.google.com/v1
@@ -98,6 +119,6 @@ In order to make your PubSubSource in Project A' cluster to consume Google PubSu
         name: google-cloud-key
         key: key.json
       serviceAccountName: ksa-name
-      project: project-b
+      project: $SOURCE_PROJECT
       ...
    ```
