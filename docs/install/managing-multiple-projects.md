@@ -89,7 +89,7 @@ In order to make your CloudPubSubSource in `CLUSTER_PROJECT`'s cluster consume G
             iam.gke.io/gcp-service-account=$SOURCE_DATA_PLANE_GSA
             ```
     1. or Exporting Service Account Keys And Store Them as Kubernetes Secret
-       1. Download a new JSON private key for Source Data Plane GSA `your-gsa@project-b.iam.gserviceaccount.com`
+       1. Download a new JSON private key for Source Data Plane GSA `SOURCE_DATA_PLANE_GSA`
 
           ```shell
           gcloud iam service-accounts keys create events-sources-key.json \
