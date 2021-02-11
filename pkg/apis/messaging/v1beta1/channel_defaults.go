@@ -19,10 +19,10 @@ package v1beta1
 import (
 	"context"
 
-	"knative.dev/pkg/apis"
-
 	"github.com/google/knative-gcp/pkg/apis/messaging/internal"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/eventing/pkg/apis/messaging"
+	"knative.dev/pkg/apis"
 )
 
 func (c *Channel) SetDefaults(ctx context.Context) {
@@ -46,4 +46,14 @@ func (c *Channel) SetDefaults(ctx context.Context) {
 	c.Spec.SetDefaults(ctx)
 }
 
-func (cs *ChannelSpec) SetDefaults(_ context.Context) {}
+func (cs *ChannelSpec) SetDefaults(_ context.Context) {
+	if cs.SubscribableSpec != nil {
+		for _, s := range cs.SubscribableSpec.Subscribers {
+			// TODO Default the DeliverySpec similar to how Broker defaults it, rather than just
+			// setting the empty object.
+			if s.Delivery == nil {
+				s.Delivery = &eventingduckv1beta1.DeliverySpec{}
+			}
+		}
+	}
+}
