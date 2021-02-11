@@ -72,6 +72,18 @@ func TopicExists(id string) func(*testing.T, *rtesting.TableRow) {
 	}
 }
 
+func TopicDoesNotExist(id string) func(*testing.T, *rtesting.TableRow) {
+	return func(t *testing.T, r *rtesting.TableRow) {
+		c := getPubsubClient(r)
+		exist, err := c.Topic(id).Exists(context.Background())
+		if err != nil {
+			t.Errorf("Error checking topic existence: %v", err)
+		} else if exist {
+			t.Errorf("Expected topic %q not to exist", id)
+		}
+	}
+}
+
 func TopicExistsWithConfig(id string, expectedTopicConfig *pubsub.TopicConfig) func(*testing.T, *rtesting.TableRow) {
 	return func(t *testing.T, r *rtesting.TableRow) {
 		c := getPubsubClient(r)
@@ -127,6 +139,18 @@ func SubscriptionExists(id string) func(*testing.T, *rtesting.TableRow) {
 			t.Errorf("Error checking subscription existence: %v", err)
 		} else if !exist {
 			t.Errorf("Expected subscription %q to exist", id)
+		}
+	}
+}
+
+func SubscriptionDoesNotExist(id string) func(*testing.T, *rtesting.TableRow) {
+	return func(t *testing.T, r *rtesting.TableRow) {
+		c := getPubsubClient(r)
+		exist, err := c.Subscription(id).Exists(context.Background())
+		if err != nil {
+			t.Errorf("Error checking subscription existence: %v", err)
+		} else if exist {
+			t.Errorf("Expected subscription %q not to exist", id)
 		}
 	}
 }

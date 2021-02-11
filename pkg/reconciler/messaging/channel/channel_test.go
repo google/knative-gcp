@@ -19,7 +19,10 @@ package channel
 import (
 	"context"
 	"fmt"
+	"sort"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	duckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 
@@ -69,6 +72,20 @@ const (
 	subscriptionGeneration = 314
 
 	channelFinalizerName = "channels.messaging.cloud.google.com"
+
+	newSubscription1UID = "new-1-uid"
+	newSubscription2UID = "new-2-uid"
+	newSubscription3UID = "new-3-uid"
+
+	updatedSubscription1UID = "updated-1-uid"
+	updatedSubscription2UID = "updated-2-uid"
+	updatedSubscription3UID = "updated-3-uid"
+
+	unchangedSubscription1UID = "unchanged-1-uid"
+	unchangedSubscription2UID = "unchanged-2-uid"
+	unchangedSubscription3UID = "unchanged-3-uid"
+
+	deletedSubscription1UID = "deleted-1-uid"
 )
 
 var (
@@ -650,6 +667,302 @@ func TestAllCasesChannel(t *testing.T) {
 		PostConditions: []func(*testing.T, *TableRow){
 			OnlyTopics("cre-ch_testnamespace_test-channel_test-channel-abc-123"),
 			OnlySubscriptions("cre-ch_testnamespace_test-channel_test-channel-abc-123"),
+		},
+	}, {
+		Name: "Channel creates new Subscription, ignores unchanged Subscription, deletes old Subscription",
+		// This tests a Channel with:
+		// - 3 new subscriptions, they are in the spec but not the status.
+		// - 3 unchanged subscriptions, they are in the spec and the status.
+		// - 3 updated subscriptions, they are in the spec and the status, but the
+		//   ObservedGeneration in the status is older than the Generation in the spec.
+		// - 1 old subscription that is to be deleted, it is in the status, but not the spec.
+		//    - This was supposed to be three, but the TableTests enforce strict event ordering,
+		//      the reconciler deletes old Subscriptions in a random order (iterating through a
+		//      map), and I didn't want to slow down the real world use case to enforce an order
+		//      purely for a test.
+		Key: testKey,
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSetDefaults,
+				WithChannelSubscribers(
+					duckv1beta1.SubscriberSpec{
+						UID:           newSubscription1UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           unchangedSubscription1UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           updatedSubscription1UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           newSubscription2UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           unchangedSubscription2UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           updatedSubscription2UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           newSubscription3UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           unchangedSubscription3UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           updatedSubscription3UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+				),
+				WithChannelSubscribersStatus(
+					duckv1beta1.SubscriberStatus{
+						UID:                unchangedSubscription1UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                updatedSubscription1UID,
+						ObservedGeneration: subscriptionGeneration - 1,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                deletedSubscription1UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                unchangedSubscription2UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                updatedSubscription2UID,
+						ObservedGeneration: subscriptionGeneration - 2,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                unchangedSubscription3UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                updatedSubscription3UID,
+						ObservedGeneration: subscriptionGeneration - 1,
+						Ready:              "True",
+					},
+				),
+			),
+			NewBrokerCell(resources.DefaultBrokerCellName, systemNS,
+				WithBrokerCellReady,
+				WithBrokerCellSetDefaults),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelReadyURI(testTopicID, channelURI),
+				WithChannelSetDefaults,
+				WithChannelSubscribers(
+					duckv1beta1.SubscriberSpec{
+						UID:           newSubscription1UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           unchangedSubscription1UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           updatedSubscription1UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           newSubscription2UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           unchangedSubscription2UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           updatedSubscription2UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           newSubscription3UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           unchangedSubscription3UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+					duckv1beta1.SubscriberSpec{
+						UID:           updatedSubscription3UID,
+						Generation:    subscriptionGeneration,
+						SubscriberURI: subscriberURI,
+						ReplyURI:      replyURI,
+					},
+				),
+				WithChannelSubscribersStatus(
+					duckv1beta1.SubscriberStatus{
+						UID:                unchangedSubscription1UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                updatedSubscription1UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                newSubscription1UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                unchangedSubscription2UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                updatedSubscription2UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                newSubscription2UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                unchangedSubscription3UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                updatedSubscription3UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+					duckv1beta1.SubscriberStatus{
+						UID:                newSubscription3UID,
+						ObservedGeneration: subscriptionGeneration,
+						Ready:              "True",
+					},
+				),
+			),
+		}},
+		WantEvents: []string{
+			channelFinalizerUpdatedEvent,
+			Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-sub_testnamespace_test-channel_new-1-uid"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-sub_testnamespace_test-channel_new-1-uid"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionConfigUpdated", `Updated config for PubSub subscription "cre-sub_testnamespace_test-channel_unchanged-1-uid"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionConfigUpdated", `Updated config for PubSub subscription "cre-sub_testnamespace_test-channel_updated-1-uid"`),
+			Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-sub_testnamespace_test-channel_new-2-uid"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-sub_testnamespace_test-channel_new-2-uid"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionConfigUpdated", `Updated config for PubSub subscription "cre-sub_testnamespace_test-channel_unchanged-2-uid"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionConfigUpdated", `Updated config for PubSub subscription "cre-sub_testnamespace_test-channel_updated-2-uid"`),
+			Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-sub_testnamespace_test-channel_new-3-uid"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-sub_testnamespace_test-channel_new-3-uid"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionConfigUpdated", `Updated config for PubSub subscription "cre-sub_testnamespace_test-channel_unchanged-3-uid"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionConfigUpdated", `Updated config for PubSub subscription "cre-sub_testnamespace_test-channel_updated-3-uid"`),
+			Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-sub_testnamespace_test-channel_deleted-1-uid"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionDeleted", `Deleted PubSub subscription "cre-sub_testnamespace_test-channel_deleted-1-uid"`),
+			channelReconciledEvent,
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, channelName, channelFinalizerName),
+		},
+		OtherTestData: map[string]interface{}{
+			"pre": []PubsubAction{
+				TopicAndSub("cre-ch_testnamespace_test-channel_test-channel-abc-123", "cre-ch_testnamespace_test-channel_test-channel-abc-123"),
+				TopicAndSub("cre-sub_testnamespace_test-channel_unchanged-1-uid", "cre-sub_testnamespace_test-channel_unchanged-1-uid"),
+				TopicAndSub("cre-sub_testnamespace_test-channel_updated-1-uid", "cre-sub_testnamespace_test-channel_updated-1-uid"),
+				TopicAndSub("cre-sub_testnamespace_test-channel_deleted-1-uid", "cre-sub_testnamespace_test-channel_deleted-1-uid"),
+				TopicAndSub("cre-sub_testnamespace_test-channel_unchanged-2-uid", "cre-sub_testnamespace_test-channel_unchanged-2-uid"),
+				TopicAndSub("cre-sub_testnamespace_test-channel_updated-2-uid", "cre-sub_testnamespace_test-channel_updated-2-uid"),
+				TopicAndSub("cre-sub_testnamespace_test-channel_unchanged-3-uid", "cre-sub_testnamespace_test-channel_unchanged-3-uid"),
+				TopicAndSub("cre-sub_testnamespace_test-channel_updated-3-uid", "cre-sub_testnamespace_test-channel_updated-3-uid"),
+			},
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			TopicExists("cre-ch_testnamespace_test-channel_test-channel-abc-123"),
+			SubscriptionExists("cre-ch_testnamespace_test-channel_test-channel-abc-123"),
+			TopicExists("cre-sub_testnamespace_test-channel_new-1-uid"),
+			SubscriptionExists("cre-sub_testnamespace_test-channel_new-1-uid"),
+			TopicExists("cre-sub_testnamespace_test-channel_unchanged-1-uid"),
+			SubscriptionExists("cre-sub_testnamespace_test-channel_unchanged-1-uid"),
+			TopicExists("cre-sub_testnamespace_test-channel_updated-1-uid"),
+			SubscriptionExists("cre-sub_testnamespace_test-channel_updated-1-uid"),
+			TopicDoesNotExist("cre-sub_testnamespace_test-channel_deleted-1-uid"),
+			SubscriptionDoesNotExist("cre-sub_testnamespace_test-channel_deleted-1-uid"),
+			TopicExists("cre-sub_testnamespace_test-channel_new-2-uid"),
+			SubscriptionExists("cre-sub_testnamespace_test-channel_new-2-uid"),
+			TopicExists("cre-sub_testnamespace_test-channel_unchanged-2-uid"),
+			SubscriptionExists("cre-sub_testnamespace_test-channel_unchanged-2-uid"),
+			TopicExists("cre-sub_testnamespace_test-channel_updated-2-uid"),
+			SubscriptionExists("cre-sub_testnamespace_test-channel_updated-2-uid"),
+			TopicExists("cre-sub_testnamespace_test-channel_new-3-uid"),
+			SubscriptionExists("cre-sub_testnamespace_test-channel_new-3-uid"),
+			TopicExists("cre-sub_testnamespace_test-channel_unchanged-3-uid"),
+			SubscriptionExists("cre-sub_testnamespace_test-channel_unchanged-3-uid"),
+			TopicExists("cre-sub_testnamespace_test-channel_updated-3-uid"),
+			SubscriptionExists("cre-sub_testnamespace_test-channel_updated-3-uid"),
+		},
+		CmpOpts: []cmp.Option{
+			cmp.Transformer("alphabetizeSubscriberStatus", func(orig duckv1beta1.SubscribableStatus) duckv1beta1.SubscribableStatus {
+				// The order of subscriber status objects are not guaranteed, so alphabetize them to
+				// guarantee a consistent order.
+				sorted := duckv1beta1.SubscribableStatus{
+					Subscribers: make([]duckv1beta1.SubscriberStatus, len(orig.Subscribers)),
+				}
+				copy(sorted.Subscribers, orig.Subscribers)
+				sort.Slice(sorted.Subscribers, func(i, j int) bool {
+					return sorted.Subscribers[i].UID < sorted.Subscribers[j].UID
+				})
+				return sorted
+			}),
 		},
 	}}
 
