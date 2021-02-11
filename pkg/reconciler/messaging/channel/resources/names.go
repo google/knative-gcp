@@ -34,16 +34,16 @@ import (
 // prefix + separators: 10 chars
 // 255 - 10 - 63 - 36 = 146
 
-// GenerateDecouplingTopicName generates a deterministic topic name for a
-// Broker. If the topic name would be longer than allowed by PubSub, the
-// Broker name is truncated to fit.
+// GenerateDecouplingTopicName generates a deterministic Topic name for a
+// Channel. If the Topic name would be longer than allowed by PubSub, the
+// Channel name is truncated to fit.
 func GenerateDecouplingTopicName(c *v1beta1.Channel) string {
 	return naming.TruncatedPubsubResourceName("cre-ch", c.Namespace, c.Name, c.UID)
 }
 
-// GenerateDecouplingSubscriptionName generates a deterministic subscription
-// name for a Broker. If the subscription name would be longer than allowed by
-// PubSub, the Broker name is truncated to fit.
+// GenerateDecouplingSubscriptionName generates a deterministic Subscription
+// name for a Channel. If the Subscription name would be longer than allowed by
+// PubSub, the Channel name is truncated to fit.
 func GenerateDecouplingSubscriptionName(c *v1beta1.Channel) string {
 	return naming.TruncatedPubsubResourceName("cre-ch", c.Namespace, c.Name, c.UID)
 }
