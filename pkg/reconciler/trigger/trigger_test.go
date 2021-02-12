@@ -96,6 +96,16 @@ var (
 			},
 		},
 	}
+	brokerDeliverySpecWithoutRetry = &eventingduckv1beta1.DeliverySpec{
+		BackoffDelay:  &backoffDelay,
+		BackoffPolicy: &backoffPolicy,
+		DeadLetterSink: &duckv1.Destination{
+			URI: &apis.URL{
+				Scheme: "pubsub",
+				Host:   deadLetterTopicID,
+			},
+		},
+	}
 )
 
 func init() {
@@ -379,6 +389,73 @@ func TestAllCasesTrigger(t *testing.T) {
 						DeadLetterTopic:     "projects/test-project-id/topics/test-dead-letter-topic-id",
 					}),
 				TopicExistsWithConfig("cre-tgr_testnamespace_test-trigger_abc123", &pubsub.TopicConfig{
+					Labels: map[string]string{
+						"name": "test-trigger", "namespace": "testnamespace", "resource": "triggers",
+					},
+				}),
+			},
+		},
+		{
+			Name: "Check topic config and labels - broker without spec.delivery.retry",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithInitBrokerConditions,
+					WithBrokerReady("url"),
+					WithBrokerDeliverySpec(brokerDeliverySpecWithoutRetry),
+					WithBrokerSetDefaults,
+				),
+				makeSubscriberAddressableAsUnstructured(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerSetDefaults),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(testUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerBrokerReady,
+					WithTriggerSubscriptionReady,
+					WithTriggerTopicReady,
+					WithTriggerDependencyReady,
+					WithTriggerSubscriberResolvedSucceeded,
+					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerSetDefaults,
+				),
+			}},
+			WantEvents: []string{
+				triggerFinalizerUpdatedEvent,
+				topicCreatedEvent,
+				subscriptionCreatedEvent,
+				triggerReconciledEvent,
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName, finalizerName),
+			},
+			OtherTestData: map[string]interface{}{
+				"pre": []PubsubAction{
+					Topic("test-dead-letter-topic-id"),
+				},
+				"dataResidencyConfigMap": NewDataresidencyConfigMapFromRegions([]string{"us-east1"}),
+			},
+			PostConditions: []func(*testing.T, *TableRow){
+				OnlyTopics("cre-tgr_testnamespace_test-trigger_abc123", "test-dead-letter-topic-id"),
+				OnlySubscriptions("cre-tgr_testnamespace_test-trigger_abc123"),
+				SubscriptionHasRetryPolicy("cre-tgr_testnamespace_test-trigger_abc123",
+					&pubsub.RetryPolicy{
+						MaximumBackoff: 5 * time.Second,
+						MinimumBackoff: 5 * time.Second,
+					}),
+				SubscriptionHasDeadLetterPolicy("cre-tgr_testnamespace_test-trigger_abc123",
+					&pubsub.DeadLetterPolicy{
+						DeadLetterTopic: "projects/test-project-id/topics/test-dead-letter-topic-id",
+					}),
+				TopicExistsWithConfig("cre-tgr_testnamespace_test-trigger_abc123", &pubsub.TopicConfig{
+					MessageStoragePolicy: pubsub.MessageStoragePolicy{
+						AllowedPersistenceRegions: []string{"us-east1"},
+					},
 					Labels: map[string]string{
 						"name": "test-trigger", "namespace": "testnamespace", "resource": "triggers",
 					},
