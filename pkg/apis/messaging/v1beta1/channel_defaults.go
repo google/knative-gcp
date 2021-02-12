@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/internal"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/eventing/pkg/apis/messaging"
 	"knative.dev/pkg/apis"
 )
@@ -46,14 +45,8 @@ func (c *Channel) SetDefaults(ctx context.Context) {
 	c.Spec.SetDefaults(ctx)
 }
 
-func (cs *ChannelSpec) SetDefaults(_ context.Context) {
-	if cs.SubscribableSpec != nil {
-		for i := range cs.SubscribableSpec.Subscribers {
-			// TODO Default the DeliverySpec similar to how Broker defaults it, rather than just
-			// setting the empty object.
-			if cs.SubscribableSpec.Subscribers[i].Delivery == nil {
-				cs.SubscribableSpec.Subscribers[i].Delivery = &eventingduckv1beta1.DeliverySpec{}
-			}
-		}
-	}
+func (*ChannelSpec) SetDefaults(_ context.Context) {
+	// TODO Determine if we should default the Channel's Subscription's DeliverySpec. When I tried
+	// it ended up in the Subscription controller always undoing it. So for now, we make sure that
+	// a nil DeliverySpec is allowed in the reconciler.
 }

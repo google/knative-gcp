@@ -65,50 +65,6 @@ func TestChannelDefaults(t *testing.T) {
 				Spec: ChannelSpec{},
 			},
 		},
-		"missing delivery spec": {
-			in: Channel{
-				Spec: ChannelSpec{
-					SubscribableSpec: &eventingduckv1beta1.SubscribableSpec{
-						Subscribers: []eventingduckv1beta1.SubscriberSpec{
-							{
-								// 1 - Already has a DeliverySpec.
-								Delivery: &eventingduckv1beta1.DeliverySpec{
-									BackoffPolicy: &clusterDefaultedBackoffPolicy,
-									BackoffDelay:  &clusterDefaultedBackoffDelay,
-								},
-							},
-							{
-								// 2 - Does not have a DeliverySpec.
-							},
-						},
-					},
-				},
-			},
-			want: Channel{
-				ObjectMeta: v1.ObjectMeta{
-					Annotations: map[string]string{
-						"messaging.knative.dev/subscribable": "v1beta1",
-					},
-				},
-				Spec: ChannelSpec{
-					SubscribableSpec: &eventingduckv1beta1.SubscribableSpec{
-						Subscribers: []eventingduckv1beta1.SubscriberSpec{
-							{
-								// 1 - Already has a DeliverySpec.
-								Delivery: &eventingduckv1beta1.DeliverySpec{
-									BackoffPolicy: &clusterDefaultedBackoffPolicy,
-									BackoffDelay:  &clusterDefaultedBackoffDelay,
-								},
-							},
-							{
-								// 2 - Did not have a DeliverySpec, has now been defaulted.
-								Delivery: &eventingduckv1beta1.DeliverySpec{},
-							},
-						},
-					},
-				},
-			},
-		},
 	} {
 		t.Run(n, func(t *testing.T) {
 			got := tc.in

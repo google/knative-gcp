@@ -22,9 +22,6 @@ import (
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
-
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	"knative.dev/pkg/apis"
 )
@@ -65,16 +62,6 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, original *Chan
 	}
 
 	var errs *apis.FieldError
-
-	// Modification of Secret, ServiceAccountName and Project are not allowed. Everything else is mutable.
-	if diff := cmp.Diff(original.Spec, current.Spec,
-		cmpopts.IgnoreFields(ChannelSpec{}, "SubscribableSpec")); diff != "" {
-		errs = errs.Also(&apis.FieldError{
-			Message: "Immutable fields changed (-old +new)",
-			Paths:   []string{"spec"},
-			Details: diff,
-		})
-	}
 
 	// Modification of AutoscalingClassAnnotations is not allowed.
 	errs = duck.CheckImmutableAutoscalingClassAnnotations(&current.ObjectMeta, &original.ObjectMeta, errs)
