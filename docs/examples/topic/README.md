@@ -18,7 +18,7 @@ construct used by higher-level objects, such as `Channel`.
 
    ```shell
    export TOPIC_NAME=testing
-   gcloud pubsub topics create $TOPIC_NAME
+   gcloud pubsub topics create $TOPIC_NAME --project=$PROJECT_ID
    ```
 
 1. Update `googleServiceAccount` / `secret` in the [`topic.yaml`](topic.yaml)
@@ -32,6 +32,12 @@ construct used by higher-level objects, such as `Channel`.
 
    1. If you are using standard Kubernetes secrets, but want to use a
       non-default one, update `secret` with your own secret.
+
+1. Update `project` in the [`topic.yaml`](topic.yaml)
+
+   By default, the Topic will be created in the same project as your GKE cluster.
+   However, if you are [managing multiple projects](../../install/managing-multiple-projects.md), then you can specify `spec.project`,
+   which is the Google Cloud Project that the Topic is created in.
 
 1. Update `TOPIC_NAME` in the [`topic.yaml`](topic.yaml) and apply it.
 
@@ -63,6 +69,7 @@ construct used by higher-level objects, such as `Channel`.
    gcloud pubsub subscriptions create test-topic-subscription \
     --topic=$TOPIC_NAME \
     --topic-project=$PROJECT_ID
+    --project=$PROJECT_ID
    ```
 
 ## Publish
@@ -95,7 +102,8 @@ We will verify that the event was actually sent to Cloud Pub/Sub by pulling the
 message from the subscription:
 
 ```shell
-gcloud pubsub subscriptions pull test-topic-subscription --format=json
+gcloud pubsub subscriptions pull test-topic-subscription --format=json --project=$PROJECT_ID
+
 ```
 
 You should see log lines similar to:

@@ -29,8 +29,12 @@ events using a Push-compatible format.
    1. If you are using standard Kubernetes secrets, but want to use a
       non-default one, update `secret` with your own secret.
 
+   1. By default, the Pub/Sub Topic will exist in the same project as your GKE cluster.
+   However, if you are [managing multiple projects](../../install/managing-multiple-projects.md), then you can specify `spec.project`,
+   which is the Google Cloud Project that the Topic exists in.
+
    ```shell
-   gcloud pubsub topics create testing
+   gcloud pubsub topics create testing --project=your-project-id
    ```
 
 1. Create a [`CloudPubSubSource`](cloudpubsubsource.yaml)
@@ -51,7 +55,7 @@ events using a Push-compatible format.
 Publish messages to your GCP PubSub topic:
 
 ```shell
-gcloud pubsub topics publish testing --message='{"Hello": "world"}'
+gcloud pubsub topics publish testing --message='{"Hello": "world"}' --topic-project=$PROJECT_ID
 ```
 
 ## Verify
