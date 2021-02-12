@@ -44,8 +44,8 @@ func NewReconciler(client *pubsub.Client, recorder record.EventRecorder) *Reconc
 type StatusUpdater interface {
 	MarkTopicFailed(reason, format string, args ...interface{})
 	MarkTopicUnknown(reason, format string, args ...interface{})
-	MarkTopicReady()
+	MarkTopicReady(topicID string)
 	MarkSubscriptionFailed(reason, format string, args ...interface{})
 	MarkSubscriptionUnknown(reason, format string, args ...interface{})
-	MarkSubscriptionReady()
+	MarkSubscriptionReady(subscriptionID string)
 }

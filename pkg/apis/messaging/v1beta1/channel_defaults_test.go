@@ -19,10 +19,17 @@ package v1beta1
 import (
 	"testing"
 
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	clusterDefaultedBackoffDelay  = "PT1S"
+	clusterDefaultedBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
 )
 
 func TestChannelDefaults(t *testing.T) {
@@ -38,9 +45,7 @@ func TestChannelDefaults(t *testing.T) {
 						"messaging.knative.dev/subscribable": "v1beta1",
 					},
 				},
-				Spec: ChannelSpec{
-					Secret: &gcpauthtesthelper.Secret,
-				},
+				Spec: ChannelSpec{},
 			},
 		},
 		"with a subscribable annotation": {
@@ -57,9 +62,7 @@ func TestChannelDefaults(t *testing.T) {
 						"messaging.knative.dev/subscribable": "v1beta1",
 					},
 				},
-				Spec: ChannelSpec{
-					Secret: &gcpauthtesthelper.Secret,
-				},
+				Spec: ChannelSpec{},
 			},
 		},
 	} {

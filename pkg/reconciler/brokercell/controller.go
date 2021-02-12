@@ -22,9 +22,12 @@ import (
 	"context"
 	"time"
 
+	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1beta1/channel"
+
 	"go.uber.org/zap"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
 	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
 	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
@@ -81,6 +84,7 @@ func NewController(
 
 	ls := listers{
 		brokerLister:         brokerinformer.Get(ctx).Lister(),
+		channelLister:        channelinformer.Get(ctx).Lister(),
 		hpaLister:            hpainformer.Get(ctx).Lister(),
 		triggerLister:        triggerinformer.Get(ctx).Lister(),
 		configMapLister:      configmapinformer.Get(ctx).Lister(),
@@ -128,6 +132,17 @@ func NewController(
 				// TODO(#866) Select the brokercell that's associated with the given broker.
 				impl.EnqueueKey(types.NamespacedName{Namespace: system.Namespace(), Name: brokerresources.DefaultBrokerCellName})
 				reportLatency(ctx, t, latencyReporter, "Trigger", t.Name, t.Namespace)
+			}
+		},
+	))
+
+	// Watch GCP Channels and subscriptions on those channels to invoke configmap update immediately.
+	channelinformer.Get(ctx).Informer().AddEventHandler(controller.HandleAll(
+		func(obj interface{}) {
+			if c, ok := obj.(*v1beta1.Channel); ok {
+				// TODO(#866) Select the brokercell that's associated with the given broker.
+				impl.EnqueueKey(types.NamespacedName{Namespace: system.Namespace(), Name: brokerresources.DefaultBrokerCellName})
+				reportLatency(ctx, c, latencyReporter, "Channel", c.Name, c.Namespace)
 			}
 		},
 	))

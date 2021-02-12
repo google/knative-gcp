@@ -17,8 +17,6 @@
 package v1beta1
 
 import (
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -60,27 +58,9 @@ func (cs *ChannelStatus) SetAddress(url *apis.URL) {
 }
 
 // MarkTopicReady sets the condition that the topic has been created and ready.
-func (cs *ChannelStatus) MarkTopicReady() {
+func (cs *ChannelStatus) MarkTopicReady(topicID string) {
+	cs.TopicID = topicID
 	channelCondSet.Manage(cs).MarkTrue(ChannelConditionTopicReady)
-}
-
-func (cs *ChannelStatus) PropagateTopicStatus(ts *v1beta1.TopicStatus) {
-	tc := ts.GetTopLevelCondition()
-	if tc == nil {
-		cs.MarkTopicNotConfigured()
-		return
-	}
-
-	switch {
-	case tc.Status == corev1.ConditionUnknown:
-		cs.MarkTopicUnknown(tc.Reason, tc.Message)
-	case tc.Status == corev1.ConditionTrue:
-		cs.MarkTopicReady()
-	case tc.Status == corev1.ConditionFalse:
-		cs.MarkTopicFailed(tc.Reason, tc.Message)
-	default:
-		cs.MarkTopicUnknown("TopicUnknown", "The status of Topic is invalid: %v", tc.Status)
-	}
 }
 
 // MarkTopicFailed sets the condition that signals there is not a topic for this
@@ -100,4 +80,28 @@ func (cs *ChannelStatus) MarkTopicNotConfigured() {
 
 func (cs *ChannelStatus) MarkTopicUnknown(reason, messageFormat string, messageA ...interface{}) {
 	channelCondSet.Manage(cs).MarkUnknown(ChannelConditionTopicReady, reason, messageFormat, messageA...)
+}
+
+func (cs *ChannelStatus) MarkBrokerCellUnknown(reason, format string, args ...interface{}) {
+	channelCondSet.Manage(cs).MarkUnknown(ChannelConditionBrokerCell, reason, format, args...)
+}
+
+func (cs *ChannelStatus) MarkBrokerCellFailed(reason, format string, args ...interface{}) {
+	channelCondSet.Manage(cs).MarkFalse(ChannelConditionBrokerCell, reason, format, args...)
+}
+
+func (cs *ChannelStatus) MarkBrokerCellReady() {
+	channelCondSet.Manage(cs).MarkTrue(ChannelConditionBrokerCell)
+}
+
+func (cs *ChannelStatus) MarkSubscriptionFailed(reason, format string, args ...interface{}) {
+	channelCondSet.Manage(cs).MarkFalse(ChannelConditionSubscription, reason, format, args...)
+}
+
+func (cs *ChannelStatus) MarkSubscriptionUnknown(reason, format string, args ...interface{}) {
+	channelCondSet.Manage(cs).MarkUnknown(ChannelConditionSubscription, reason, format, args...)
+}
+
+func (cs *ChannelStatus) MarkSubscriptionReady(_ string) {
+	channelCondSet.Manage(cs).MarkTrue(ChannelConditionSubscription)
 }

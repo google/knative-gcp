@@ -20,9 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	"knative.dev/pkg/apis"
 )
@@ -47,11 +46,11 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 				fe.Details = "expected at least one of, got none"
 				errs = errs.Also(fe.ViaField(fmt.Sprintf("subscriber[%d]", i)).ViaField("subscribable"))
 			}
+			deliveryErr := brokerv1beta1.ValidateDeliverySpec(ctx, subscriber.Delivery)
+			if deliveryErr != nil {
+				errs = errs.Also(deliveryErr.ViaField(fmt.Sprintf("subscriber[%d]", i)).ViaField("delivery"))
+			}
 		}
-	}
-
-	if err := duck.ValidateCredential(cs.Secret, cs.ServiceAccountName); err != nil {
-		errs = errs.Also(err)
 	}
 
 	return errs
@@ -63,16 +62,6 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, original *Chan
 	}
 
 	var errs *apis.FieldError
-
-	// Modification of Secret, ServiceAccountName and Project are not allowed. Everything else is mutable.
-	if diff := cmp.Diff(original.Spec, current.Spec,
-		cmpopts.IgnoreFields(ChannelSpec{}, "SubscribableSpec")); diff != "" {
-		errs = errs.Also(&apis.FieldError{
-			Message: "Immutable fields changed (-old +new)",
-			Paths:   []string{"spec"},
-			Details: diff,
-		})
-	}
 
 	// Modification of AutoscalingClassAnnotations is not allowed.
 	errs = duck.CheckImmutableAutoscalingClassAnnotations(&current.ObjectMeta, &original.ObjectMeta, errs)

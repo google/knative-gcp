@@ -353,14 +353,14 @@ func TestBrokerConditionStatus(t *testing.T) {
 				bs.MarkBrokerCellUnknown("Unable to create brokercell", "induced unknown")
 			}
 			if test.subscriptionStatus == corev1.ConditionTrue {
-				bs.MarkSubscriptionReady()
+				bs.MarkSubscriptionReady("")
 			} else if test.subscriptionStatus == corev1.ConditionFalse {
 				bs.MarkSubscriptionFailed("Unable to create PubSub subscription", "induced failure")
 			} else {
 				bs.MarkSubscriptionUnknown("Unable to create PubSub subscription", "induced unknown")
 			}
 			if test.topicStatus == corev1.ConditionTrue {
-				bs.MarkTopicReady()
+				bs.MarkTopicReady("")
 			} else if test.topicStatus == corev1.ConditionFalse {
 				bs.MarkTopicFailed("Unable to create PubSub topic", "induced failure")
 			} else {

@@ -102,7 +102,7 @@ func (r *TargetReconciler) ReconcileRetryTopicAndSubscription(ctx context.Contex
 	//TODO uncomment when eventing webhook allows this
 	//trig.Status.TopicID = topic.ID()
 
-	retryPolicy := getPubsubRetryPolicy(t.DeliverySpec())
+	retryPolicy := getPubsubRetryPolicy(ctx, t.DeliverySpec())
 	deadLetterPolicy := getPubsubDeadLetterPolicy(projectID, t.DeliverySpec())
 
 	// Check if PullSub exists, and if not, create it.
@@ -128,7 +128,7 @@ func (r *TargetReconciler) ReconcileRetryTopicAndSubscription(ctx context.Contex
 
 // getPubsubRetryPolicy gets the eventing retry policy from the Broker delivery
 // spec and translates it to a pubsub retry policy.
-func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryPolicy {
+func getPubsubRetryPolicy(ctx context.Context, spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryPolicy {
 	if spec == nil {
 		return &pubsub.RetryPolicy{
 			MinimumBackoff: defaultMinimumBackoff,
@@ -138,10 +138,30 @@ func getPubsubRetryPolicy(spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryP
 	// The Broker delivery spec is translated to a pubsub retry policy in the
 	// manner defined in the following post:
 	// https://github.com/google/knative-gcp/issues/1392#issuecomment-655617873
-	p, _ := period.Parse(*spec.BackoffDelay)
-	minimumBackoff, _ := p.Duration()
+
+	var minimumBackoff time.Duration
+	if spec.BackoffDelay != nil {
+		p, err := period.Parse(*spec.BackoffDelay)
+		if err != nil {
+			// Not actually fatal, we will just use zero, rather than the stored value. But log an
+			// error so that we are aware of the issue.
+			logging.FromContext(ctx).Error("Unable to parse DeliverySpec.BackoffDelay",
+				zap.Error(err), zap.Stringp("backoffDelay", spec.BackoffDelay))
+		} else {
+			minimumBackoff, _ = p.Duration()
+		}
+	}
+
+	var backoffPolicy eventingduckv1beta1.BackoffPolicyType
+	if spec.BackoffPolicy != nil {
+		backoffPolicy = *spec.BackoffPolicy
+	} else {
+		// Default to Exponential.
+		backoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
+	}
+
 	var maximumBackoff time.Duration
-	switch *spec.BackoffPolicy {
+	switch backoffPolicy {
 	case eventingduckv1beta1.BackoffPolicyLinear:
 		maximumBackoff = minimumBackoff
 	case eventingduckv1beta1.BackoffPolicyExponential:

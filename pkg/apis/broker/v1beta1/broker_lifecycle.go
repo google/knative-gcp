@@ -90,7 +90,7 @@ func (bs *BrokerStatus) MarkTopicUnknown(reason, format string, args ...interfac
 	brokerCondSet.Manage(bs).MarkUnknown(BrokerConditionTopic, reason, format, args...)
 }
 
-func (bs *BrokerStatus) MarkTopicReady() {
+func (bs *BrokerStatus) MarkTopicReady(_ string) {
 	brokerCondSet.Manage(bs).MarkTrue(BrokerConditionTopic)
 }
 
@@ -102,6 +102,6 @@ func (bs *BrokerStatus) MarkSubscriptionUnknown(reason, format string, args ...i
 	brokerCondSet.Manage(bs).MarkUnknown(BrokerConditionSubscription, reason, format, args...)
 }
 
-func (bs *BrokerStatus) MarkSubscriptionReady() {
+func (bs *BrokerStatus) MarkSubscriptionReady(_ string) {
 	brokerCondSet.Manage(bs).MarkTrue(BrokerConditionSubscription)
 }

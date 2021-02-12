@@ -54,7 +54,7 @@ func InitializeControllers(ctx context.Context) ([]injection.ControllerConstruct
 	kedaConstructor := keda.NewConstructor(iamPolicyManager, storeSingleton)
 	dataresidencyStoreSingleton := &dataresidency.StoreSingleton{}
 	topicConstructor := topic.NewConstructor(iamPolicyManager, storeSingleton, dataresidencyStoreSingleton)
-	channelConstructor := channel.NewConstructor(iamPolicyManager, storeSingleton)
+	channelConstructor := channel.NewConstructor(dataresidencyStoreSingleton)
 	triggerConstructor := trigger.NewConstructor(dataresidencyStoreSingleton)
 	brokerdeliveryStoreSingleton := &brokerdelivery.StoreSingleton{}
 	brokerConstructor := broker.NewConstructor(brokerdeliveryStoreSingleton, dataresidencyStoreSingleton)

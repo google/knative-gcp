@@ -285,16 +285,14 @@ func TestProcess_WithoutSubscriberAddress(t *testing.T) {
 			cellTenantType: config.CellTenantType_BROKER,
 			error:          "trigger ns/target has no subscriber address",
 		},
-		// TODO Add a test for Channels that allows an empty subscriber address, once Channel is a
-		// valid CellTenantType.
-		// {
-		//	name:           "Channel",
-		//	cellTenantType: config.CellTenantType_CHANNEL,
-		//	replyHandler: statusCodeReplyHandler{
-		//		responseCode: http.StatusAccepted,
-		//	},
-		//	expectedReplyEvents: 1,
-		//},
+		{
+			name:           "Channel",
+			cellTenantType: config.CellTenantType_CHANNEL,
+			replyHandler: statusCodeReplyHandler{
+				responseCode: http.StatusAccepted,
+			},
+			expectedReplyEvents: 1,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

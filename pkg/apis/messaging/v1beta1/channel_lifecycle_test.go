@@ -79,16 +79,24 @@ func TestChannelInitializeConditions(t *testing.T) {
 		want: &ChannelStatus{
 			IdentityStatus: gcpduckv1.IdentityStatus{
 				Status: duckv1.Status{
-					Conditions: []apis.Condition{{
-						Type:   ChannelConditionAddressable,
-						Status: corev1.ConditionUnknown,
-					}, {
-						Type:   ChannelConditionReady,
-						Status: corev1.ConditionUnknown,
-					}, {
-						Type:   ChannelConditionTopicReady,
-						Status: corev1.ConditionUnknown,
-					}},
+					Conditions: []apis.Condition{
+						{
+							Type:   ChannelConditionAddressable,
+							Status: corev1.ConditionUnknown,
+						}, {
+							Type:   ChannelConditionReady,
+							Status: corev1.ConditionUnknown,
+						}, {
+							Type:   ChannelConditionTopicReady,
+							Status: corev1.ConditionUnknown,
+						}, {
+							Type:   ChannelConditionSubscription,
+							Status: corev1.ConditionUnknown,
+						}, {
+							Type:   ChannelConditionBrokerCell,
+							Status: corev1.ConditionUnknown,
+						},
+					},
 				},
 			},
 		},
@@ -115,6 +123,12 @@ func TestChannelInitializeConditions(t *testing.T) {
 						Status: corev1.ConditionUnknown,
 					}, {
 						Type:   ChannelConditionTopicReady,
+						Status: corev1.ConditionUnknown,
+					}, {
+						Type:   ChannelConditionSubscription,
+						Status: corev1.ConditionUnknown,
+					}, {
+						Type:   ChannelConditionBrokerCell,
 						Status: corev1.ConditionUnknown,
 					}},
 				},
@@ -144,6 +158,12 @@ func TestChannelInitializeConditions(t *testing.T) {
 					}, {
 						Type:   ChannelConditionTopicReady,
 						Status: corev1.ConditionUnknown,
+					}, {
+						Type:   ChannelConditionSubscription,
+						Status: corev1.ConditionUnknown,
+					}, {
+						Type:   ChannelConditionBrokerCell,
+						Status: corev1.ConditionUnknown,
 					}},
 				},
 			},
@@ -165,32 +185,50 @@ func TestChannelIsReady(t *testing.T) {
 	tests := []struct {
 		name                string
 		setAddress          bool
-		topicStatus         *v1beta1.TopicStatus
+		topic               corev1.ConditionStatus
+		subscription        corev1.ConditionStatus
+		brokerCell          corev1.ConditionStatus
 		wantConditionStatus corev1.ConditionStatus
 		want                bool
 	}{{
 		name:                "all happy",
 		setAddress:          true,
-		topicStatus:         ReadyTopicStatus(),
+		topic:               corev1.ConditionTrue,
+		subscription:        corev1.ConditionTrue,
+		brokerCell:          corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionTrue,
 		want:                true,
 	}, {
 		name:                "address not set",
 		setAddress:          false,
-		topicStatus:         ReadyTopicStatus(),
+		topic:               corev1.ConditionTrue,
+		subscription:        corev1.ConditionTrue,
+		brokerCell:          corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionUnknown,
 		want:                false,
 	}, {
 		name:                "the status of topic is false",
 		setAddress:          true,
-		topicStatus:         FalseTopicStatus(),
+		topic:               corev1.ConditionFalse,
+		subscription:        corev1.ConditionTrue,
+		brokerCell:          corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionFalse,
 		want:                false,
 	}, {
-		name:                "the status of topic is unknown",
+		name:                "the status of subscription is false",
 		setAddress:          true,
-		topicStatus:         UnknownTopicStatus(),
-		wantConditionStatus: corev1.ConditionUnknown,
+		topic:               corev1.ConditionTrue,
+		subscription:        corev1.ConditionFalse,
+		brokerCell:          corev1.ConditionTrue,
+		wantConditionStatus: corev1.ConditionFalse,
+		want:                false,
+	}, {
+		name:                "the status of BrokerCell is false",
+		setAddress:          true,
+		topic:               corev1.ConditionTrue,
+		subscription:        corev1.ConditionTrue,
+		brokerCell:          corev1.ConditionFalse,
+		wantConditionStatus: corev1.ConditionFalse,
 		want:                false,
 	}}
 	for _, test := range tests {
@@ -200,7 +238,24 @@ func TestChannelIsReady(t *testing.T) {
 			if test.setAddress {
 				cs.SetAddress(&apis.URL{Scheme: "http", Host: "foo.bar"})
 			}
-			cs.PropagateTopicStatus(test.topicStatus)
+			switch test.topic {
+			case corev1.ConditionTrue:
+				cs.MarkTopicReady("")
+			case corev1.ConditionFalse:
+				cs.MarkTopicFailed("", "")
+			}
+			switch test.subscription {
+			case corev1.ConditionTrue:
+				cs.MarkSubscriptionReady("")
+			case corev1.ConditionFalse:
+				cs.MarkSubscriptionFailed("", "")
+			}
+			switch test.brokerCell {
+			case corev1.ConditionTrue:
+				cs.MarkBrokerCellReady()
+			case corev1.ConditionFalse:
+				cs.MarkBrokerCellFailed("", "")
+			}
 			gotConditionStatus := cs.GetTopLevelCondition().Status
 			if test.wantConditionStatus != gotConditionStatus {
 				t.Errorf("unexpected condition status: want %v, got %v", test.wantConditionStatus, gotConditionStatus)

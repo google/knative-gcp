@@ -42,7 +42,7 @@ import (
 const (
 	// maxEventBufferSize is the estimated max number of event notifications that
 	// can be buffered during reconciliation.
-	maxEventBufferSize = 10
+	maxEventBufferSize = 100
 )
 
 // Ctor functions create a k8s controller with given params.

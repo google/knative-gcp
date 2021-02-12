@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
+
 	"go.opencensus.io/trace"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
@@ -122,8 +124,16 @@ func CellTenantKeyFromPersistenceString(s string) (*CellTenantKey, error) {
 
 // MetricsResource generates the Resource object that metrics will be associated with.
 func (k *CellTenantKey) MetricsResource() resource.Resource {
+	var t string
+	switch k.cellTenantType {
+	case CellTenantType_BROKER:
+		t = metricskey.ResourceTypeKnativeBroker
+	case CellTenantType_CHANNEL:
+		// TODO Replace with Channel once it exists.
+		t = metricskey.ResourceTypeKnativeBroker
+	}
 	return resource.Resource{
-		Type: metricskey.ResourceTypeKnativeBroker,
+		Type: t,
 		Labels: map[string]string{
 			metricskey.LabelNamespaceName: k.namespace,
 			metricskey.LabelBrokerName:    k.name,
@@ -143,12 +153,20 @@ func (k *CellTenantKey) CreateEmptyCellTenant() *CellTenant {
 
 // SpanMessagingDestination is the Messaging Destination of requests sent to this CellTenantKey.
 func (k *CellTenantKey) SpanMessagingDestination() string {
-	return kntracing.BrokerMessagingDestination(k.namespacedName())
+	switch k.cellTenantType {
+	case CellTenantType_BROKER:
+		return kntracing.BrokerMessagingDestination(k.namespacedName())
+	case CellTenantType_CHANNEL:
+		return fmt.Sprintf("gcpChannel:%s.%s", k.name, k.namespace)
+	default:
+		return ""
+	}
 }
 
 // SpanMessagingDestinationAttribute is the Messaging Destination attribute that should be attached
 // to the tracing Span.
 func (k *CellTenantKey) SpanMessagingDestinationAttribute() trace.Attribute {
+	// Despite being named Broker, this seems to work for both Broker and Channel.
 	return kntracing.BrokerMessagingDestinationAttribute(k.namespacedName())
 }
 
@@ -215,6 +233,15 @@ func TestOnlyBrokerKey(namespace, name string) *CellTenantKey {
 		cellTenantType: CellTenantType_BROKER,
 		namespace:      namespace,
 		name:           name,
+	}
+}
+
+// KeyFromBroker creates a CellTenantKey from a K8s Broker object.
+func KeyFromChannel(c *v1beta1.Channel) *CellTenantKey {
+	return &CellTenantKey{
+		cellTenantType: CellTenantType_CHANNEL,
+		namespace:      c.Namespace,
+		name:           c.Name,
 	}
 }
 

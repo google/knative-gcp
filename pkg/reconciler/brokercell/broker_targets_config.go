@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
+
 	"github.com/google/knative-gcp/pkg/logging"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/labels"
@@ -32,6 +34,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
+	channelresources "github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/utils"
 	"github.com/google/knative-gcp/pkg/reconciler/utils/volume"
 )
@@ -50,6 +53,11 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, bc *intv1alpha1.Broker
 	err := r.addBrokersAndTriggersToTargets(ctx, bc, targets)
 	if err != nil {
 		return fmt.Errorf("unable to add Broker and Triggers to targets: %w", err)
+	}
+
+	err = r.addChannelsToTargets(ctx, bc, targets)
+	if err != nil {
+		return fmt.Errorf("unable to add Channels to targets: %w", err)
 	}
 
 	if err := r.updateTargetsConfig(ctx, bc, targets); err != nil {
@@ -148,6 +156,86 @@ func addBrokerAndTriggersToConfig(_ context.Context, b *brokerv1beta1.Broker, tr
 				}
 				m.UpsertTargets(target)
 			}
+		}
+	})
+}
+func (r *Reconciler) addChannelsToTargets(ctx context.Context, bc *intv1alpha1.BrokerCell, targets config.Targets) error {
+	// TODO(#866) Only select Channels that point to this brokercell by label selector once the
+	// webhook assigns the brokercell label, i.e.,
+	// r.brokerLister.List(labels.SelectorFromSet(map[string]string{"brokercell":bc.Name, "brokercellns":bc.Namespace}))
+	channels, err := r.channelLister.List(labels.Everything())
+	if err != nil {
+		logging.FromContext(ctx).Error("Failed to list Channels", zap.Error(err))
+		bc.Status.MarkTargetsConfigFailed(configFailed, "failed to list channels: %v", err)
+		return err
+	}
+	for _, channel := range channels {
+		addChannelToConfig(ctx, channel, targets)
+	}
+	return nil
+}
+
+// addChannelToConfig reconstructs the data entry for the given Channel and adds it to targets-config.
+func addChannelToConfig(_ context.Context, c *v1beta1.Channel, targets config.Targets) {
+	if c.Status.Address == nil {
+		// The address hasn't been set. The Channel reconciler will get to it. At which point the
+		// Channel will be modified, so the BrokerCell will reconcile again. For now, ignore this
+		// Channel.
+		return
+	}
+	// TODO Maybe get rid of CellTenantMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we
+	// always delete or update the entire tenant entry and we don't need partial updates per trigger.
+	// The code can be simplified to r.targetsConfig.Upsert(brokerConfigEntry)
+	targets.MutateCellTenant(config.KeyFromChannel(c), func(m config.CellTenantMutation) {
+		// First delete the Channel entry.
+		m.Delete()
+
+		queueState := config.State_UNKNOWN
+		// Set decouple queue to be ready only when both the topic and pull subscription are ready.
+		// PubSub will drop messages published to a topic if there is no subscription.
+		if cs := c.Status; cs.GetCondition(v1beta1.ChannelConditionTopicReady).IsTrue() &&
+			cs.GetCondition(v1beta1.ChannelConditionSubscription).IsTrue() {
+			queueState = config.State_READY
+		}
+
+		// Then reconstruct the tenant entry and insert it.
+		m.SetID(string(c.UID))
+		m.SetAddress(c.Status.Address.URL.String())
+		m.SetDecoupleQueue(&config.Queue{
+			Topic:        channelresources.GenerateDecouplingTopicName(c),
+			Subscription: channelresources.GenerateDecouplingSubscriptionName(c),
+			State:        queueState,
+		})
+		if c.Status.IsReady() {
+			m.SetState(config.State_READY)
+		} else {
+			m.SetState(config.State_UNKNOWN)
+		}
+
+		if c.Spec.SubscribableSpec == nil {
+			return
+		}
+		for _, s := range c.Spec.SubscribableSpec.Subscribers {
+			target := &config.Target{
+				Id:        string(s.UID),
+				Namespace: c.Namespace,
+				// Name is used as a key to look up this target in the Fanout and Retry Pods. Be
+				// very careful changing it, as it might lead to event loss during upgrade (while
+				// the code is new, but the config is old).
+				Name:           string(s.UID),
+				CellTenantType: config.CellTenantType_CHANNEL,
+				CellTenantName: c.Name,
+				Address:        s.SubscriberURI.String(),
+				ReplyAddress:   s.ReplyURI.String(),
+				RetryQueue: &config.Queue{
+					Topic:        channelresources.GenerateSubscriberRetryTopicName(c, s.UID),
+					Subscription: channelresources.GenerateSubscriberRetrySubscriptionName(c, s.UID),
+				},
+				// TODO(#939) May need to use "data plane readiness" for trigger in stead of the
+				//  overall status, see https://github.com/google/knative-gcp/issues/939#issuecomment-644337937
+				State: config.State_READY,
+			}
+			m.UpsertTargets(target)
 		}
 	})
 }

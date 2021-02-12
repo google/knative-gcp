@@ -25,10 +25,11 @@ enum State {
   READY = 1;
 }
 
-// CellTenantType is the type of the Cell Tenant. Currently only Brokers.
+// CellTenantType is the type of the Cell Tenant.
 enum CellTenantType {
   UNKNOWN_CELL_TENANT_TYPE = 0;
   BROKER = 1;
+  CHANNEL = 2;
 }
 
 // A pubsub "queue".
@@ -104,5 +105,6 @@ message Target {
 message TargetsConfig {
   // Keyed by the CellTenant's PersistenceString().
   // Broker: "<ns>/<brokerName>"
+  // Channel: "channel/<ns>/<channelName>"
   map<string, CellTenant> cell_tenants = 1;
 }

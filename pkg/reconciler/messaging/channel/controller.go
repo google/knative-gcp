@@ -19,28 +19,32 @@ package channel
 import (
 	"context"
 
+	channellister "github.com/google/knative-gcp/pkg/client/listers/messaging/v1beta1"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
+
+	"github.com/google/knative-gcp/pkg/logging"
+
+	"cloud.google.com/go/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/celltenant"
+	"github.com/google/knative-gcp/pkg/utils"
+
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
+	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/labels"
+
 	"knative.dev/pkg/injection"
 
-	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
-	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
-	pullsubscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/pullsubscription"
-	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1beta1/topic"
 	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1beta1/channel"
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1beta1/channel"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
-	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 )
 
 const (
-	// reconcilerName is the name of the reconciler
-	reconcilerName = "Channels"
-
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "events-system-channel-controller"
@@ -49,51 +53,86 @@ const (
 type Constructor injection.ControllerConstructor
 
 // NewConstructor creates a constructor to make a Channel controller.
-func NewConstructor(ipm iam.IAMPolicyManager, gcpas *gcpauth.StoreSingleton) Constructor {
+func NewConstructor(drs *dataresidency.StoreSingleton) Constructor {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-		return newController(ctx, cmw, ipm, gcpas.Store(ctx, cmw))
+		return newController(ctx, cmw, drs.Store(ctx, cmw))
 	}
 }
 
 func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
-	ipm iam.IAMPolicyManager,
-	gcpas *gcpauth.Store,
+	drs *dataresidency.Store,
 ) *controller.Impl {
 	channelInformer := channelinformer.Get(ctx)
+	bcInformer := brokercellinformer.Get(ctx)
 
-	topicInformer := topicinformer.Get(ctx)
-	pullSubscriptionInformer := pullsubscriptioninformer.Get(ctx)
-	serviceAccountInformer := serviceaccountinformers.Get(ctx)
+	var client *pubsub.Client
+	// If there is an error, the projectID will be empty. The reconciler will retry
+	// to get the projectID during reconciliation.
+	projectID, err := utils.ProjectIDOrDefault("")
+	if err != nil {
+		logging.FromContext(ctx).Error("Failed to get project ID", zap.Error(err))
+	} else {
+		// Attempt to create a pubsub client for all worker threads to use. If this
+		// fails, pass a nil value to the Reconciler. They will attempt to
+		// create a client on reconcile.
+		if client, err = pubsub.NewClient(ctx, projectID); err != nil {
+			client = nil
+			logging.FromContext(ctx).Error("Failed to create controller-wide Pub/Sub client", zap.Error(err))
+		}
+	}
+
+	if client != nil {
+		go func() {
+			<-ctx.Done()
+			client.Close()
+		}()
+	}
 
 	r := &Reconciler{
-		Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
-		Identity:      identity.NewIdentity(ctx, ipm, gcpas),
-		channelLister: channelInformer.Lister(),
-		topicLister:   topicInformer.Lister(),
+		Reconciler: celltenant.Reconciler{
+			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+			BrokerCellLister:   bcInformer.Lister(),
+			ProjectID:          projectID,
+			PubsubClient:       client,
+			DataresidencyStore: drs,
+		},
+		targetReconciler: &celltenant.TargetReconciler{
+			ProjectID:          projectID,
+			PubsubClient:       client,
+			DataresidencyStore: drs,
+		},
 	}
 	impl := channelreconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
-	channelInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	channelInformer.Informer().AddEventHandlerWithResyncPeriod(
+		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
-	channelGK := v1beta1.Kind("Channel")
-
-	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(channelGK),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	pullSubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(channelGK),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(channelGK),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
+	bcInformer.Informer().AddEventHandler(controller.HandleAll(filterChannelsForBrokerCell(
+		r.Logger.Desugar(), channelInformer.Lister(), impl.Enqueue)))
 
 	return impl
+}
+
+// filterChannelsForBrokerCell creates a filter that is intended to be used on the BrokerCell
+//  informer. It will enqueue all Channels associated with the changed BrokerCell.
+func filterChannelsForBrokerCell(
+	logger *zap.Logger, channelInformer channellister.ChannelLister, enqueue func(interface{})) func(obj interface{}) {
+	return func(obj interface{}) {
+		if _, ok := obj.(*inteventsv1alpha1.BrokerCell); ok {
+			// TODO(#866) Only select brokers that point to this brokercell by label selector once the
+			// webhook assigns the brokercell label, i.e.,
+			// r.brokerLister.List(labels.SelectorFromSet(map[string]string{"brokercell":bc.Name, "brokercellns":bc.Namespace}))
+			channels, err := channelInformer.List(labels.Everything())
+			if err != nil {
+				logger.Error("Failed to list Channels", zap.Error(err))
+				return
+			}
+			for _, channel := range channels {
+				enqueue(channel)
+			}
+		}
+	}
 }
