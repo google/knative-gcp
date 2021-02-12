@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	pkgduckv1 "knative.dev/pkg/apis/duck/v1"
+
 	"github.com/google/go-cmp/cmp"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/apis"
@@ -27,14 +29,8 @@ import (
 )
 
 var (
-	channelSpec = ChannelSpec{
-		SubscribableSpec: &eventingduck.SubscribableSpec{
-			Subscribers: []eventingduck.SubscriberSpec{{
-				SubscriberURI: apis.HTTP("subscriberendpoint"),
-				ReplyURI:      apis.HTTP("resultendpoint"),
-			}},
-		},
-	}
+	backoffPolicy = eventingduck.BackoffPolicyExponential
+	backoffDelay  = "PT1S"
 )
 
 func TestChannelValidation(t *testing.T) {
@@ -96,17 +92,31 @@ func TestChannelValidation(t *testing.T) {
 			return errs
 		}(),
 	}, {
-		name: "nil secret",
+		name: "invalid Delivery DeadLetterSink",
 		cr: &Channel{
 			Spec: ChannelSpec{
 				SubscribableSpec: &eventingduck.SubscribableSpec{
-					Subscribers: []eventingduck.SubscriberSpec{{
-						SubscriberURI: apis.HTTP("subscriberendpoint"),
-						ReplyURI:      apis.HTTP("replyendpoint"),
-					}},
-				}},
+					Subscribers: []eventingduck.SubscriberSpec{
+						{
+							ReplyURI: apis.HTTP("subscriberendpoint"),
+							Delivery: &eventingduck.DeliverySpec{
+								BackoffDelay:  &backoffDelay,
+								BackoffPolicy: &backoffPolicy,
+								DeadLetterSink: &pkgduckv1.Destination{
+									URI: apis.HTTP("example.com"),
+								},
+							},
+						},
+					},
+				},
+			},
 		},
-		want: nil,
+		want: func() *apis.FieldError {
+			var errs *apis.FieldError
+			fe := apis.ErrInvalidValue("Dead letter sink URI scheme should be pubsub", "uri")
+			errs = errs.Also(fe.ViaField("spec.delivery.subscriber[0].deadLetterSink"))
+			return errs
+		}(),
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/google/go-cmp/cmp"
@@ -46,6 +48,10 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 				fe := apis.ErrMissingField("replyURI", "subscriberURI")
 				fe.Details = "expected at least one of, got none"
 				errs = errs.Also(fe.ViaField(fmt.Sprintf("subscriber[%d]", i)).ViaField("subscribable"))
+			}
+			deliveryErr := brokerv1beta1.ValidateDeliverySpec(ctx, subscriber.Delivery)
+			if deliveryErr != nil {
+				errs = errs.Also(deliveryErr.ViaField(fmt.Sprintf("subscriber[%d]", i)).ViaField("delivery"))
 			}
 		}
 	}

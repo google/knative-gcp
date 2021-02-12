@@ -36,6 +36,9 @@ func (b *Broker) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func ValidateDeliverySpec(ctx context.Context, spec *eventingduckv1beta1.DeliverySpec) *apis.FieldError {
+	if spec == nil {
+		return nil
+	}
 	var errs *apis.FieldError
 	if spec.BackoffDelay == nil {
 		errs = errs.Also(apis.ErrMissingField("backoffDelay"))
