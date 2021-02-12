@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/reconciler/broker"
@@ -43,6 +44,7 @@ func InitializeControllers(ctx context.Context) ([]injection.ControllerConstruct
 		Controllers,
 		ClientOptions,
 		iam.PolicyManagerSet,
+		wire.Struct(new(brokerdelivery.StoreSingleton)),
 		wire.Struct(new(gcpauth.StoreSingleton)),
 		wire.Struct(new(dataresidency.StoreSingleton)),
 		auditlogs.NewConstructor,

@@ -17,9 +17,14 @@ limitations under the License.
 package testing
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/system"
 )
 
@@ -74,14 +79,15 @@ func WithConfigMapBinaryDataEntry(key string, value []byte) ConfigMapOption {
 // from list of allowed persistence regions
 func NewDataresidencyConfigMapFromRegions(regions []string) *corev1.ConfigMap {
 	// Note that the data is in yaml, so no tab is allowed, use spaces instead.
-	configData := `
-  clusterDefaults:    
-    messagestoragepolicy.allowedpersistenceregions:`
+	var sb strings.Builder
+	sb.WriteString("\n  clusterDefaults:")
+	sb.WriteString("\n    messagestoragepolicy.allowedpersistenceregions:")
 	if regions == nil || len(regions) == 0 {
-		configData += " []"
+		sb.WriteString(" []")
 	} else {
 		for _, region := range regions {
-			configData += "\n    - " + region
+			sb.WriteString("\n    - ")
+			sb.WriteString(region)
 		}
 	}
 	return &corev1.ConfigMap{
@@ -90,7 +96,42 @@ func NewDataresidencyConfigMapFromRegions(regions []string) *corev1.ConfigMap {
 			Namespace: system.Namespace(),
 		},
 		Data: map[string]string{
-			"default-dataresidency-config": configData,
+			"default-dataresidency-config": sb.String(),
+		},
+	}
+}
+
+// NewBrokerDeliveryConfigMapFromDeliverySpec creates a new cluster defaulted
+// broker delivery configuration map from a given delivery spec.
+func NewBrokerDeliveryConfigMapFromDeliverySpec(spec *eventingduckv1beta1.DeliverySpec) *corev1.ConfigMap {
+	var sb strings.Builder
+	sb.WriteString("\n  clusterDefaults:")
+	if spec != nil {
+		if spec.BackoffPolicy != nil {
+			sb.WriteString("\n    backoffPolicy: ")
+			sb.WriteString(string(*spec.BackoffPolicy))
+		}
+		if spec.BackoffDelay != nil {
+			sb.WriteString("\n    backoffDelay: ")
+			sb.WriteString(*spec.BackoffDelay)
+		}
+		if spec.Retry != nil {
+			sb.WriteString("\n    retry: ")
+			sb.WriteString(fmt.Sprint(*spec.Retry))
+		}
+		if spec.DeadLetterSink != nil {
+			sb.WriteString("\n    deadLetterSink: ")
+			sb.WriteString("\n      uri: ")
+			sb.WriteString(spec.DeadLetterSink.URI.String())
+		}
+	}
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      brokerdelivery.ConfigMapName(),
+			Namespace: system.Namespace(),
+		},
+		Data: map[string]string{
+			"default-br-delivery-config": sb.String(),
 		},
 	}
 }
