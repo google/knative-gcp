@@ -192,7 +192,7 @@ func TestAllCasesChannel(t *testing.T) {
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
 				WithInitChannelConditions,
-				WithChannelReadyURI(testTopicID, channelURI),
+				WithChannelReadyURI(channelURI),
 				WithChannelDeletionTimestamp,
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
@@ -215,7 +215,7 @@ func TestAllCasesChannel(t *testing.T) {
 				WithChannelUID(channelUID),
 				WithInitChannelConditions,
 				WithChannelDeletionTimestamp,
-				WithChannelReadyURI(testTopicID, channelURI),
+				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
 					duckv1beta1.SubscriberSpec{
@@ -257,7 +257,7 @@ func TestAllCasesChannel(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelReadyURI(testTopicID, channelURI),
+				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 			),
 		}},
@@ -293,7 +293,7 @@ func TestAllCasesChannel(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelReadyURI(testTopicID, channelURI),
+				WithChannelReadyURI(channelURI),
 				WithChannelBrokerCellUnknown("BrokerCellNotReady", "BrokerCell knative-testing/default is not ready"),
 				WithChannelSetDefaults,
 			),
@@ -359,7 +359,7 @@ func TestAllCasesChannel(t *testing.T) {
 			{
 				Object: NewChannel(channelName, testNS,
 					WithChannelUID(channelUID),
-					WithChannelReadyURI(testTopicID, channelURI),
+					WithChannelReadyURI(channelURI),
 					WithChannelBrokerCellUnknown("BrokerCellNotReady", "BrokerCell knative-testing/default is not ready"),
 					WithChannelSetDefaults,
 				),
@@ -402,7 +402,7 @@ func TestAllCasesChannel(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelReadyURI(testTopicID, channelURI),
+				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 			),
 		}},
@@ -443,7 +443,7 @@ func TestAllCasesChannel(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelReadyURI(testTopicID, channelURI),
+				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 			),
 		}},
@@ -482,7 +482,7 @@ func TestAllCasesChannel(t *testing.T) {
 				WithChannelUID(channelUID),
 				// TopicID is the empty string because we are using Ready just as a shortcut, rather
 				// than calling each method directly.
-				WithChannelReadyURI("", channelURI),
+				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 				WithChannelTopicUnknown("FinalizeTopicPubSubClientCreationFailed", "Failed to create Pub/Sub client: Invoke time 0 reaches the max invoke time 0"),
 				WithChannelSubscriptionUnknown("FinalizeSubscriptionPubSubClientCreationFailed", "Failed to create Pub/Sub client: Invoke time 0 reaches the max invoke time 0"),
@@ -522,7 +522,7 @@ func TestAllCasesChannel(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelReadyURI(testTopicID, channelURI),
+				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
 					duckv1beta1.SubscriberSpec{
@@ -587,7 +587,7 @@ func TestAllCasesChannel(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelReadyURI(testTopicID, channelURI),
+				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
 					duckv1beta1.SubscriberSpec{
@@ -645,7 +645,7 @@ func TestAllCasesChannel(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelReadyURI(testTopicID, channelURI),
+				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 			),
 		}},
@@ -786,7 +786,7 @@ func TestAllCasesChannel(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelReadyURI(testTopicID, channelURI),
+				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
 					duckv1beta1.SubscriberSpec{

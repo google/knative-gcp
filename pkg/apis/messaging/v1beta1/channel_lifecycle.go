@@ -58,8 +58,7 @@ func (cs *ChannelStatus) SetAddress(url *apis.URL) {
 }
 
 // MarkTopicReady sets the condition that the topic has been created and ready.
-func (cs *ChannelStatus) MarkTopicReady(topicID string) {
-	cs.TopicID = topicID
+func (cs *ChannelStatus) MarkTopicReady() {
 	channelCondSet.Manage(cs).MarkTrue(ChannelConditionTopicReady)
 }
 

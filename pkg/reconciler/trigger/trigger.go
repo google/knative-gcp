@@ -103,7 +103,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 		// This line should be deleted once the following TODO is finished.
 		// TODO(https://github.com/knative/pkg/issues/1149) Add a FilterKind to genreconciler so it will
 		// skip a trigger if it's not pointed to a gcp broker and doesn't have googlecloud finalizer string.
-		t.Status.MarkTopicReady("")
+		t.Status.MarkTopicReady()
 		t.Status.MarkSubscriptionReady("")
 		var reconcilerEvent *pkgreconciler.ReconcilerEvent
 		switch {

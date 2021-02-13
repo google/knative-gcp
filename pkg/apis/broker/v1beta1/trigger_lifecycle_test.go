@@ -392,7 +392,7 @@ func TestTriggerConditionStatus(t *testing.T) {
 				ts.MarkSubscriptionUnknown("Unable to create PubSub subscription", "induced unknown")
 			}
 			if test.topicStatus == corev1.ConditionTrue {
-				ts.MarkTopicReady("")
+				ts.MarkTopicReady()
 			} else if test.topicStatus == corev1.ConditionFalse {
 				ts.MarkTopicFailed("Unable to create PubSub topic", "induced failure")
 			} else {
