@@ -96,7 +96,7 @@ func (bs *TriggerStatus) MarkTopicUnknown(reason, format string, args ...interfa
 	triggerCondSet.Manage(bs).MarkUnknown(TriggerConditionTopic, reason, format, args...)
 }
 
-func (bs *TriggerStatus) MarkTopicReady(_ string) {
+func (bs *TriggerStatus) MarkTopicReady() {
 	triggerCondSet.Manage(bs).MarkTrue(TriggerConditionTopic)
 }
 

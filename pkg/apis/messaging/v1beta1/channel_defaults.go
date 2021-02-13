@@ -19,9 +19,10 @@ package v1beta1
 import (
 	"context"
 
+	"knative.dev/pkg/apis"
+
 	"github.com/google/knative-gcp/pkg/apis/messaging/internal"
 	"knative.dev/eventing/pkg/apis/messaging"
-	"knative.dev/pkg/apis"
 )
 
 func (c *Channel) SetDefaults(ctx context.Context) {

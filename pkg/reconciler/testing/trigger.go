@@ -188,7 +188,7 @@ func WithTriggerSubscriptionReady(t *brokerv1beta1.Trigger) {
 }
 
 func WithTriggerTopicReady(t *brokerv1beta1.Trigger) {
-	t.Status.MarkTopicReady("")
+	t.Status.MarkTopicReady()
 }
 
 func WithTriggerTopicUnknown(reason, msg string) TriggerOption {

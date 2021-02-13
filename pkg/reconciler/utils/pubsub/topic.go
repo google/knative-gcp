@@ -43,7 +43,7 @@ func (r *Reconciler) ReconcileTopic(ctx context.Context, id string, topicConfig 
 		return nil, err
 	}
 	if exists {
-		updater.MarkTopicReady(topic.ID())
+		updater.MarkTopicReady()
 		return topic, nil
 	}
 
@@ -57,7 +57,7 @@ func (r *Reconciler) ReconcileTopic(ctx context.Context, id string, topicConfig 
 	}
 	logger.Info("Created PubSub topic", zap.String("name", topic.ID()))
 	r.recorder.Eventf(obj, corev1.EventTypeNormal, topicCreated, "Created PubSub topic %q", topic.ID())
-	updater.MarkTopicReady(topic.ID())
+	updater.MarkTopicReady()
 	return topic, nil
 }
 

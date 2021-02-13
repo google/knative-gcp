@@ -74,9 +74,9 @@ func WithInitChannelConditions(c *v1beta1.Channel) {
 	c.Status.InitializeConditions()
 }
 
-func WithChannelTopic(topicID string) ChannelOption {
+func WithChannelTopic() ChannelOption {
 	return func(c *v1beta1.Channel) {
-		c.Status.MarkTopicReady(topicID)
+		c.Status.MarkTopicReady()
 	}
 }
 
@@ -174,11 +174,11 @@ func WithChannelAnnotations(Annotations map[string]string) ChannelOption {
 
 // WithBrokerReadyURI is a convenience function that sets all ready conditions to
 // true.
-func WithChannelReadyURI(topicId string, address *apis.URL) ChannelOption {
+func WithChannelReadyURI(address *apis.URL) ChannelOption {
 	return func(c *v1beta1.Channel) {
 		WithChannelAddress(address.String())(c)
 		WithChannelBrokerCellReady()(c)
 		WithChannelSubscriptionReady()(c)
-		WithChannelTopic(topicId)(c)
+		WithChannelTopic()(c)
 	}
 }

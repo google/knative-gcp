@@ -32,7 +32,7 @@ func (t testHelper) ReadyBrokerStatus() *BrokerStatus {
 	bs := &BrokerStatus{}
 	bs.SetAddress(apis.HTTP("example.com"))
 	bs.MarkSubscriptionReady("")
-	bs.MarkTopicReady("")
+	bs.MarkTopicReady()
 	bs.MarkBrokerCellReady()
 	return bs
 }

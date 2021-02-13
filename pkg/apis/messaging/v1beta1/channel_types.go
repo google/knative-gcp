@@ -111,10 +111,6 @@ type ChannelStatus struct {
 	// ProjectID is the resolved project ID in use by the Channel.
 	// +optional
 	ProjectID string `json:"projectId,omitempty"`
-
-	// TopicID is the created topic ID used by the Channel.
-	// +optional
-	TopicID string `json:"topicId,omitempty"`
 }
 
 // IdentityStatus returns the IdentityStatus portion of the Status.

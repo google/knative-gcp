@@ -143,7 +143,7 @@ func WithBrokerSubscriptionReady(b *brokerv1beta1.Broker) {
 }
 
 func WithBrokerTopicReady(b *brokerv1beta1.Broker) {
-	b.Status.MarkTopicReady("")
+	b.Status.MarkTopicReady()
 }
 
 func WithBrokerTopicUnknown(reason, msg string) BrokerOption {

@@ -360,7 +360,7 @@ func TestBrokerConditionStatus(t *testing.T) {
 				bs.MarkSubscriptionUnknown("Unable to create PubSub subscription", "induced unknown")
 			}
 			if test.topicStatus == corev1.ConditionTrue {
-				bs.MarkTopicReady("")
+				bs.MarkTopicReady()
 			} else if test.topicStatus == corev1.ConditionFalse {
 				bs.MarkTopicFailed("Unable to create PubSub topic", "induced failure")
 			} else {

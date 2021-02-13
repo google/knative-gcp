@@ -219,7 +219,7 @@ func (s *SubscriberStatus) MarkTopicUnknown(_, format string, args ...interface{
 	s.topicMessage = fmt.Sprintf(format, args...)
 }
 
-func (s *SubscriberStatus) MarkTopicReady(_ string) {
+func (s *SubscriberStatus) MarkTopicReady() {
 	s.topicStatus = corev1.ConditionTrue
 	s.topicMessage = ""
 }

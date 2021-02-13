@@ -42,7 +42,7 @@ func (su *StatusUpdater) MarkTopicUnknown(reason, format string, args ...interfa
 		Message: fmt.Sprintf(format, args...),
 	}
 }
-func (su *StatusUpdater) MarkTopicReady(_ string) {
+func (su *StatusUpdater) MarkTopicReady() {
 	su.TopicCondition = apis.Condition{
 		Status: corev1.ConditionTrue,
 	}

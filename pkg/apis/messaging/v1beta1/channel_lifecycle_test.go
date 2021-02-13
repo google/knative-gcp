@@ -240,7 +240,7 @@ func TestChannelIsReady(t *testing.T) {
 			}
 			switch test.topic {
 			case corev1.ConditionTrue:
-				cs.MarkTopicReady("")
+				cs.MarkTopicReady()
 			case corev1.ConditionFalse:
 				cs.MarkTopicFailed("", "")
 			}
