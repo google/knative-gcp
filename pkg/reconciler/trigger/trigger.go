@@ -309,10 +309,13 @@ func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.Deliv
 		return nil
 	}
 	// Translate to the pubsub dead letter policy format.
-	return &pubsub.DeadLetterPolicy{
-		MaxDeliveryAttempts: int(*spec.Retry),
-		DeadLetterTopic:     fmt.Sprintf("projects/%s/topics/%s", projectID, spec.DeadLetterSink.URI.Host),
+	dlp := &pubsub.DeadLetterPolicy{
+		DeadLetterTopic: fmt.Sprintf("projects/%s/topics/%s", projectID, spec.DeadLetterSink.URI.Host),
 	}
+	if spec.Retry != nil {
+		dlp.MaxDeliveryAttempts = int(*spec.Retry)
+	}
+	return dlp
 }
 
 func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
