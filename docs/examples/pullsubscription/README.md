@@ -37,12 +37,13 @@ does so using a Pull format.
    1. If you are using standard Kubernetes secrets, but want to use a
       non-default one, update `secret` with your own secret.
 
-1. Update `project`  in the
-   [`pullsubscription.yaml`](pullsubscription.yaml)
+1. Update `project` in the [`pullsubscription.yaml`](pullsubscription.yaml)
 
-   By default, the PullSubscription will be created in the same project as your GKE cluster.
-   However, if you are [managing multiple projects](../../install/managing-multiple-projects.md), then you can specify `spec.project`,
-   which is the Google Cloud Project that the PullSubscription is created in.
+   By default, the PullSubscription will be created in the same project as your
+   GKE cluster. However, if you are
+   [managing multiple projects](../../install/managing-multiple-projects.md),
+   then you can specify `spec.project`, which is the Google Cloud Project that
+   the PullSubscription is created in.
 
 1. Update `TOPIC_NAME` in the [`pullsubscription.yaml`](pullsubscription.yaml)
    and apply it.

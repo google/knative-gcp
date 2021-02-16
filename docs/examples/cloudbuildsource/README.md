@@ -39,9 +39,11 @@ build completes.
       non-default one, update `secret` with your own secret which has the
       permission of `roles/pubsub.subscriber`.
 
-   1. By default, the events will be from Builds running in the same project as your GKE cluster.
-   However, if you are [managing multiple projects](../../install/managing-multiple-projects.md), then you can specify `spec.project`,
-   which is the Google Cloud Project whose Builds you want to get events for.
+   1. By default, the events will be from Builds running in the same project as
+      your GKE cluster. However, if you are
+      [managing multiple projects](../../install/managing-multiple-projects.md),
+      then you can specify `spec.project`, which is the Google Cloud Project
+      whose Builds you want to get events for.
 
    ```shell
    kubectl apply --filename cloudbuildsource.yaml

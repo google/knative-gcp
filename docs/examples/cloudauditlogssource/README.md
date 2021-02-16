@@ -45,9 +45,11 @@ directly publish to the underlying transport (Pub/Sub), in CloudEvents format.
    1. If you are using standard Kubernetes secrets, but want to use a
       non-default one, update `secret` with your own secret.
 
-   1. By default, the AuditLog Sink will be created in the same project as your GKE cluster.
-   However, if you are [managing multiple projects](../../install/managing-multiple-projects.md), then you can specify `spec.project`,
-   which is the Google Cloud Project that the AuditLog Sink is created in.
+   1. By default, the AuditLog Sink will be created in the same project as your
+      GKE cluster. However, if you are
+      [managing multiple projects](../../install/managing-multiple-projects.md),
+      then you can specify `spec.project`, which is the Google Cloud Project
+      that the AuditLog Sink is created in.
 
    ```shell
    kubectl apply --filename cloudauditlogssource.yaml

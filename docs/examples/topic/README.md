@@ -35,9 +35,11 @@ construct used by higher-level objects, such as `Channel`.
 
 1. Update `project` in the [`topic.yaml`](topic.yaml)
 
-   By default, the Topic will be created in the same project as your GKE cluster.
-   However, if you are [managing multiple projects](../../install/managing-multiple-projects.md), then you can specify `spec.project`,
-   which is the Google Cloud Project that the Topic is created in.
+   By default, the Topic will be created in the same project as your GKE
+   cluster. However, if you are
+   [managing multiple projects](../../install/managing-multiple-projects.md),
+   then you can specify `spec.project`, which is the Google Cloud Project that
+   the Topic is created in.
 
 1. Update `TOPIC_NAME` in the [`topic.yaml`](topic.yaml) and apply it.
 
