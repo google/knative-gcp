@@ -17,7 +17,7 @@ apiVersion: eventing.knative.dev/v1beta1
 kind: Trigger
 metadata:
   name: hello-display
-  namespace: events-system-example
+  namespace: broker-example
 spec:
   broker: test-broker
   filter:
@@ -35,7 +35,7 @@ apiVersion: eventing.knative.dev/v1beta1
 kind: Trigger
 metadata:
   name: goodbye-display
-  namespace: events-system-example
+  namespace: broker-example
 spec:
   broker: test-broker
   filter:
