@@ -98,7 +98,7 @@ Workload Identity see
 ## Usage
 
 ```shell
-export NAMESPACE=events-system-example
+export NAMESPACE=broker-example
 export BROKER=test-broker
 kubectl create namespace ${NAMESPACE}
 ```
@@ -131,7 +131,7 @@ kubectl create namespace ${NAMESPACE}
 
    ```shell
    NAME          READY   REASON   URL                                                                                                         AGE
-   test-broker   True             http://default-brokercell-ingress.events-system.svc.cluster.local/events-system-example/test-broker   15s
+   test-broker   True             http://default-brokercell-ingress.events-system.svc.cluster.local/broker-example/test-broker   15s
    ```
 
 Once the GCP broker is ready, you can use it by sending events to its `URL` and

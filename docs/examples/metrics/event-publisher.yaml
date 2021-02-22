@@ -18,7 +18,7 @@ metadata:
   labels:
     run: curl
   name: curl
-  namespace: events-system-example
+  namespace: broker-example
 spec:
   containers:
     # This could be any image that we can SSH into and has curl.
