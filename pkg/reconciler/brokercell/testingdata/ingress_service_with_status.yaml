@@ -18,7 +18,7 @@ metadata:
   name: test-brokercell-brokercell-ingress
   namespace: testnamespace
   labels:
-    app: events-system
+    app: cloud-run-events
     brokerCell: test-brokercell
     role: ingress
   ownerReferences:
@@ -29,7 +29,7 @@ metadata:
     blockOwnerDeletion: true
 spec:
   selector:
-    app: events-system
+    app: cloud-run-events
     brokerCell: test-brokercell
     role: ingress
   ports:

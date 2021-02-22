@@ -16,7 +16,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: events-system-source-observer
+  name: cloud-run-events-source-observer
   labels:
     events.cloud.google.com/release: devel
 aggregationRule:
@@ -26,7 +26,7 @@ aggregationRule:
 rules: [] # Rules are automatically filled in by the controller manager.
 
 ---
-# The role is needed for the aggregated role events-system-source-observer in knative-gcp to provide readonly access to "Sources".
+# The role is needed for the aggregated role cloud-run-events-source-observer in knative-gcp to provide readonly access to "Sources".
 # The role is needed for the aggregated role source-observer in knative-eventing to provide readonly access to "Sources".
 # See https://github.com/knative/eventing/blob/master/config/200-source-observer-clusterrole.yaml.
 kind: ClusterRole
@@ -36,7 +36,7 @@ metadata:
   labels:
     events.cloud.google.com/release: devel
     duck.knative.dev/source: "true"
-# Do not use this role directly. These rules will be added to the "events-system-source-observer" in knative-gcp and "source-observer" role in knative-eventing.
+# Do not use this role directly. These rules will be added to the "cloud-run-events-source-observer" in knative-gcp and "source-observer" role in knative-eventing.
 rules:
   - apiGroups:
       - "events.cloud.google.com"

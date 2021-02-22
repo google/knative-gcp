@@ -42,7 +42,7 @@ This example will run everything in the broker-example namespace.
 
    ```shell
    NAME          READY   REASON   URL                                                                                                         AGE
-   test-broker   True             http://default-brokercell-ingress.events-system.svc.cluster.local/broker-example/test-broker   9s
+   test-broker   True             http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker   9s
    ```
 
 4. Deploy a Trigger and event consumer
@@ -83,7 +83,7 @@ This example will run everything in the broker-example namespace.
    Send multiple events like this to generate metrics:
 
    ```sh
-   curl -v "http://default-brokercell-ingress.events-system.svc.cluster.local/broker-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello" \
      -H "Ce-Specversion: 1.0" \

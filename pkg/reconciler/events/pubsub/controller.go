@@ -44,7 +44,7 @@ const (
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "events-system-pubsub-source-controller"
+	controllerAgentName = "cloud-run-events-pubsub-source-controller"
 
 	// receiveAdapterName is the string used as name for the receive adapter pod.
 	receiveAdapterName = "cloudpubsubsource.events.cloud.google.com"

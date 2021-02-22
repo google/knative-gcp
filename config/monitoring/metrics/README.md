@@ -118,7 +118,7 @@ Then, access the [Grafana Dashboard](http://localhost:3000)
 1.  Run the following command to setup StackDriver as the metrics backend:
 
     ```shell
-       kubectl edit cm -n events-system config-observability
+       kubectl edit cm -n cloud-run-events config-observability
     ```
 
 Add `metrics.backend-destination: stackdriver`,

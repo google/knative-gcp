@@ -16,7 +16,7 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
-  name: events-system-googleapis-ext
+  name: cloud-run-events-googleapis-ext
   labels:
     events.cloud.google.com/release: devel
 spec:
