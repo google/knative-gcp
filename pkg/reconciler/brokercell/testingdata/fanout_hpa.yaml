@@ -16,7 +16,7 @@ metadata:
   name: test-brokercell-brokercell-fanout-hpa
   namespace: testnamespace
   labels:
-    app: events-system
+    app: cloud-run-events
     brokerCell: test-brokercell
     role: fanout
   ownerReferences:

@@ -16,7 +16,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: config-dataresidency
-  namespace: events-system
+  namespace: cloud-run-events
   annotations:
     knative.dev/example-checksum: "3c0011c5"
 data:

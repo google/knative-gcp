@@ -94,12 +94,12 @@ func CloudLoggingGCPControlPlaneTestImpl(t *testing.T, authConfig lib.AuthConfig
 	err = pollForStringInContainers(ctx, startTimestamp, randomString,
 		containerHierarchy{
 			gcpProject: project,
-			namespace:  "events-system",
+			namespace:  "cloud-run-events",
 			container:  "controller",
 		},
 		containerHierarchy{
 			gcpProject: project,
-			namespace:  "events-system",
+			namespace:  "cloud-run-events",
 			container:  "webhook",
 		})
 	if err != nil {

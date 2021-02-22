@@ -29,7 +29,7 @@ source $(dirname $0)/../lib.sh
 readonly TEST_CONFIG_VARIANT="continuous"
 readonly TEST_NAMESPACE="default"
 readonly PUBSUB_SECRET_NAME="google-cloud-key"
-readonly CONTROL_PLANE_NAMESPACE="events-system"
+readonly CONTROL_PLANE_NAMESPACE="cloud-run-events"
 readonly CONTROL_PLANE_GSA_SECRET_NAME="google-cloud-key"
 readonly SOURCES_GSA_SECRET_NAME="google-cloud-key"
 readonly BROKER_GSA_SECRET_NAME="google-broker-key"

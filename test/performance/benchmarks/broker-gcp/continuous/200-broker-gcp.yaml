@@ -43,7 +43,7 @@ spec:
               image: ko://knative.dev/eventing/test/test_images/performance
               args:
                 - "--roles=sender"
-                - "--sink=http://default-brokercell-ingress.events-system.svc.cluster.local/default/gcp"
+                - "--sink=http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/default/gcp"
                 - "--aggregator=broker-gcp-aggregator:10000"
                 - "--pace=6000:60,6000:60,6000:60"
               env:
@@ -65,7 +65,7 @@ spec:
               image: ko://knative.dev/eventing/test/test_images/performance
               args:
                 - "--roles=receiver"
-                - "--sink=http://default-brokercell-ingress.events-system.svc.cluster.local/default/gcp"
+                - "--sink=http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/default/gcp"
                 - "--aggregator=broker-gcp-aggregator:10000"
                 - "--pace=6000:60,6000:60,6000:60"
               env:

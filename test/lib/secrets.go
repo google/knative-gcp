@@ -67,7 +67,7 @@ func GetCredential(ctx context.Context, client *eventingtestlib.Client, workload
 func SetTracingToZipkin(ctx context.Context, client *eventingtestlib.Client) {
 	client.T.Helper()
 	setTracingConfigOnce.Do(func() {
-		err := pkgtest.UpdateConfigMap(ctx, client.Kube, "events-system", "config-tracing", map[string]string{
+		err := pkgtest.UpdateConfigMap(ctx, client.Kube, "cloud-run-events", "config-tracing", map[string]string{
 			"backend":         "zipkin",
 			"zipkin-endpoint": "http://zipkin.knative-eventing.svc.cluster.local:9411/api/v2/spans",
 		})

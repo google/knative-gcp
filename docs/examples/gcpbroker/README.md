@@ -38,7 +38,7 @@ kubectl -n broker-example get broker test-broker
 
 ```shell
 NAME          READY   REASON   URL                                                                                                         AGE
-test-broker   True             http://default-brokercell-ingress.events-system.svc.cluster.local/broker-example/test-broker   9s
+test-broker   True             http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker   9s
 ```
 
 Verify the triggers are ready:
@@ -76,7 +76,7 @@ To show the various types of events you can send, you will make three requests:
    `type:greeting`, run the following in the SSH terminal:
 
    ```sh
-   curl -v "http://default-brokercell-ingress.events-system.svc.cluster.local/broker-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello" \
      -H "Ce-Specversion: 1.0" \
@@ -102,7 +102,7 @@ To show the various types of events you can send, you will make three requests:
    `source:sendoff`, run the following in the SSH terminal:
 
    ```sh
-   curl -v "http://default-brokercell-ingress.events-system.svc.cluster.local/broker-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-goodbye" \
      -H "Ce-Specversion: 1.0" \
@@ -129,7 +129,7 @@ To show the various types of events you can send, you will make three requests:
    terminal:
 
    ```sh
-   curl -v "http://default-brokercell-ingress.events-system.svc.cluster.local/broker-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello-goodbye" \
      -H "Ce-Specversion: 1.0" \
@@ -274,7 +274,7 @@ consumers are back.
 1. Send an event that has the `type:greeting` and the`source:sendoff`:
 
    ```sh
-   curl -v "http://default-brokercell-ingress.events-system.svc.cluster.local/broker-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello-goodbye" \
      -H "Ce-Specversion: 1.0" \

@@ -313,7 +313,7 @@ function delete_invalid_auth() {
 # test flakiness.
 #
 # 2. The broker data plane will be GCed if there is no broker. Usually this would
-# happen before we dump all the pod logs in the events-system namespace. The
+# happen before we dump all the pod logs in the cloud-run-events namespace. The
 # warm-up broker makes sure there is always one broker left and thus data plane pods
 # won't be deleted before we dump logs.
 function warmup_broker_setup(){

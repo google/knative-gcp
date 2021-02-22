@@ -42,7 +42,7 @@ const (
 
 type envConfig struct {
 	PodName            string `envconfig:"POD_NAME" required:"true"`
-	TargetsConfigPath  string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/events-system/broker/targets"`
+	TargetsConfigPath  string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
 	HandlerConcurrency int    `envconfig:"HANDLER_CONCURRENCY"`
 
 	// Environment variable containing the authType, which represents the authentication configuration mode the Pod is using.

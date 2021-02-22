@@ -19,7 +19,7 @@ metadata:
     role: webhook
     events.cloud.google.com/release: devel
   name: webhook
-  namespace: events-system
+  namespace: cloud-run-events
 spec:
   ports:
     - port: 443

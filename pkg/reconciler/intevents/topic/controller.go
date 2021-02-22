@@ -50,7 +50,7 @@ const (
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "events-system-pubsub-topic-controller"
+	controllerAgentName = "cloud-run-events-pubsub-topic-controller"
 )
 
 type envConfig struct {

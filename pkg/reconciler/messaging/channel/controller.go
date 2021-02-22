@@ -47,7 +47,7 @@ import (
 const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "events-system-channel-controller"
+	controllerAgentName = "cloud-run-events-channel-controller"
 )
 
 type Constructor injection.ControllerConstructor

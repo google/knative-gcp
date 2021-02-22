@@ -37,7 +37,7 @@ import (
 
 const (
 	testDeploymentName = "test-controller"
-	testNS             = "test-events-system"
+	testNS             = "test-cloud-run-events"
 )
 
 func init() {

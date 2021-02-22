@@ -46,7 +46,7 @@ const (
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "events-system-storage-source-controller"
+	controllerAgentName = "cloud-run-events-storage-source-controller"
 
 	// receiveAdapterName is the string used as name for the receive adapter pod.
 	receiveAdapterName = "cloudstoragesource.events.cloud.google.com"

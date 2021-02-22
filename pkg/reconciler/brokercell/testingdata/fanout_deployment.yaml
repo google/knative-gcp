@@ -17,7 +17,7 @@ metadata:
   name: test-brokercell-brokercell-fanout
   namespace: testnamespace
   labels:
-    app: events-system
+    app: cloud-run-events
     brokerCell: test-brokercell
     role: fanout
   ownerReferences:
@@ -29,7 +29,7 @@ metadata:
 spec:
   selector:
     matchLabels: &labels
-      app: events-system
+      app: cloud-run-events
       brokerCell: test-brokercell
       role: fanout
   minReadySeconds: 60
@@ -79,7 +79,7 @@ spec:
           value: "100"
         volumeMounts:
         - name: broker-config
-          mountPath: /var/run/events-system/broker
+          mountPath: /var/run/cloud-run-events/broker
         - name: google-broker-key
           mountPath: /var/secrets/google          
         resources:

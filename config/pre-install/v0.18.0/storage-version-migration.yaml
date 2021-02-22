@@ -16,7 +16,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: storage-version-migration-knative-gcp
-  namespace: events-system
+  namespace: cloud-run-events
   labels:
     app: "storage-version-migration-knative-gcp"
     events.cloud.google.com/release: devel
