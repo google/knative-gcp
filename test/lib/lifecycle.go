@@ -40,7 +40,6 @@ import (
 	"knative.dev/eventing/test/lib/resources"
 	pkgTest "knative.dev/pkg/test"
 
-	apiduckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	duckv1 "github.com/google/knative-gcp/pkg/apis/duck/v1"
 	knativegcp "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	"github.com/google/knative-gcp/test/lib/metrics"
@@ -251,13 +250,13 @@ func (c *Client) StackDriverEventCountMetricFor(_, projectID, filter string) (in
 
 // WaitForSourceAuthCheckPendingOrFail waits for the GCP Sources
 // to have authenticationCheckPending condition reason for PullSubscriptionConditionReady condition or fail,
-// and return the message from this status.
+// and checks if the condition contains wanted message.
 // To use this function, the given resource must have implemented the PubSub Status duck-type,
 // and have PullSubscriptionConditionReady condition.
-func (c *Client) WaitForSourceAuthCheckPendingOrFail(name string, typemeta *metav1.TypeMeta) string {
+func (c *Client) WaitForSourceAuthCheckPendingOrFail(name string, typemeta *metav1.TypeMeta, wantMessage string) {
 	namespace := c.Namespace
 	metaResource := resources.NewMetaResource(name, namespace, typemeta)
-	waitErr := WaitForSourceAuthCheckPending(c.Core.Dynamic, metaResource)
+	waitErr := WaitForSourceAuthCheckPending(c.Core.Dynamic, metaResource, wantMessage)
 	// Get the real-time object right after it is running into the desired status.
 	untyped, err := duck.GetGenericObject(c.Core.Dynamic, metaResource, &duckv1.PubSub{})
 	if err != nil {
@@ -265,11 +264,8 @@ func (c *Client) WaitForSourceAuthCheckPendingOrFail(name string, typemeta *meta
 	}
 	if waitErr != nil {
 		if untyped != nil {
-			c.T.Errorf("Object that did not run into authenticationCheckPending %v-%s when dumping error state: %+v", *typemeta, name, untyped)
+			c.T.Errorf("Object that did not run into authenticationCheckPending or did not have wanted message %v-%s when dumping error state: %+v", *typemeta, name, untyped)
 		}
 		c.T.Fatalf("Failed to get %s-%s with authenticationCheckPending reason in type PullSubscriptionConditionReady : %+v", typemeta, name, pkgerrors.WithStack(err))
 	}
-	source := untyped.(*apiduckv1.PubSub)
-	cond := source.Status.GetCondition(duckv1.PullSubscriptionReady)
-	return cond.Message
 }

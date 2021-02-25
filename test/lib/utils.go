@@ -21,6 +21,7 @@ package lib
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,26 +46,27 @@ func GetEnvOrFail(t *testing.T, key string) string {
 
 // WaitForSourceAuthCheckPending polls the status of the Source from client
 // every interval until isSourceAuthCheckPending returns `true` indicating
-// the Source is in AuthenticationCheckPending state,
+// the Source is in AuthenticationCheckPending state and has wanted messages,
 // or returns an error, or timeout.
 // AuthenticationCheckPending is the state that will continue until authentication check succeeds.
-func WaitForSourceAuthCheckPending(dynamicClient dynamic.Interface, obj *resources.MetaResource) error {
+func WaitForSourceAuthCheckPending(dynamicClient dynamic.Interface, obj *resources.MetaResource, wantMessage string) error {
 	return wait.PollImmediate(interval, timeout, func() (bool, error) {
-		return checkSourceAuthCheckPending(dynamicClient, obj)
+		return checkSourceAuthCheckPending(dynamicClient, obj, wantMessage)
 	})
 }
 
-func checkSourceAuthCheckPending(dynamicClient dynamic.Interface, obj *resources.MetaResource) (bool, error) {
+func checkSourceAuthCheckPending(dynamicClient dynamic.Interface, obj *resources.MetaResource, wantMessage string) (bool, error) {
 	psObj, err := duck.GetGenericObject(dynamicClient, obj, &apiduckv1.PubSub{})
 	if err != nil {
 		// Return error to stop the polling.
 		return false, err
 	}
-	return isSourceAuthCheckPending(psObj), nil
+	return isSourceAuthCheckPending(psObj, wantMessage), nil
 }
 
-func isSourceAuthCheckPending(psObj runtime.Object) bool {
+func isSourceAuthCheckPending(psObj runtime.Object, wantMessage string) bool {
 	source := psObj.(*apiduckv1.PubSub)
 	cond := source.Status.GetCondition(v1.PullSubscriptionConditionReady)
-	return cond != nil && cond.IsUnknown() && cond.Reason == authcheck.AuthenticationCheckUnknownReason
+	return cond != nil && cond.IsUnknown() &&
+		cond.Reason == authcheck.AuthenticationCheckUnknownReason && strings.Contains(cond.Message, wantMessage)
 }
