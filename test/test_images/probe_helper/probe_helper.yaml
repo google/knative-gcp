@@ -16,7 +16,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: probe-helper
-  namespace: events-system-probe
+  namespace: cloud-run-events-probe
 spec:
   replicas: 1
   selector:
@@ -34,7 +34,7 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /var/secrets/google/key.json
             - name: BROKER_CELL_INGRESS_BASE_URL
-              value: "http://default-brokercell-ingress.events-system.svc.cluster.local"
+              value: "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local"
             - name: PROBE_PORT
               value: "8070"
             - name: RECEIVER_PORT

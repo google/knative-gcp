@@ -18,7 +18,7 @@ metadata:
   name: test-brokercell-brokercell-ingress
   namespace: testnamespace
   labels:
-    app: events-system
+    app: cloud-run-events
     brokerCell: test-brokercell
     role: ingress
   ownerReferences:
@@ -30,7 +30,7 @@ metadata:
 spec:
   selector:
     matchLabels: &labels
-      app: events-system
+      app: cloud-run-events
       brokerCell: test-brokercell
       role: ingress
   minReadySeconds: 60
@@ -93,7 +93,7 @@ spec:
               value: false
           volumeMounts:
             - name: broker-config
-              mountPath: /var/run/events-system/broker
+              mountPath: /var/run/cloud-run-events/broker
             - name: google-broker-key
               mountPath: /var/secrets/google
           resources:

@@ -151,7 +151,7 @@ First, you'll have to modify `clusterDefaults` in ConfigMap `config-gcp-auth`.
 You can directly edit the ConfigMap by:
 
 ```shell
-kubectl edit configmap config-gcp-auth -n events-system
+kubectl edit configmap config-gcp-auth -n cloud-run-events
 ```
 
 and replace the `default-auth-config:` part with:
@@ -276,7 +276,7 @@ prow links on the PR page. Such links are in the format of
 If the prow page doesn't provide any useful information, check out the full logs
 dump.
 
-- The control plane pods (in `events-system` namespace) logs dump are at
+- The control plane pods (in `cloud-run-events` namespace) logs dump are at
   `https://console.cloud.google.com/storage/browser/knative-prow/pr-logs/pull/google_knative-gcp/[PR ID]/[TEST NAME]/[TEST ID]/artifacts/controller-logs/`
   .
 - The data plane pods logs dump are at

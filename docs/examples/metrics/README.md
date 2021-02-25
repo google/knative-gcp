@@ -19,7 +19,7 @@ and viewing those metrics with common filters in Stackdriver.
 
 ## Generating metrics
 
-This example will run everything in the events-system-example namespace.
+This example will run everything in the broker-example namespace.
 
 1. Create the namespace
 
@@ -37,12 +37,12 @@ This example will run everything in the events-system-example namespace.
 3. Verify that the Broker is ready
 
    ```shell
-   kubectl -n events-system-example get broker test-broker
+   kubectl -n broker-example get broker test-broker
    ```
 
    ```shell
    NAME          READY   REASON   URL                                                                                                         AGE
-   test-broker   True             http://default-brokercell-ingress.events-system.svc.cluster.local/events-system-example/test-broker   9s
+   test-broker   True             http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker   9s
    ```
 
 4. Deploy a Trigger and event consumer
@@ -55,12 +55,12 @@ This example will run everything in the events-system-example namespace.
 5. Verify that the Trigger is ready
 
    ```shell
-   kubectl -n events-system-example get trigger hello-display
+   kubectl -n broker-example get trigger hello-display
    ```
 
    ```shell
    NAME              READY   REASON   BROKER        SUBSCRIBER_URI                                                       AGE
-   hello-display     True             test-broker   http://hello-display.events-system-example.svc.cluster.local/     4s
+   hello-display     True             test-broker   http://hello-display.broker-example.svc.cluster.local/     4s
    ```
 
 6. ##### Send events to the Broker:
@@ -68,14 +68,14 @@ This example will run everything in the events-system-example namespace.
    SSH into the event publisher Pod by running the following command:
 
    ```shell
-   kubectl -n events-system-example attach curl -it
+   kubectl -n broker-example attach curl -it
    ```
 
    A prompt similar to the one below will appear:
 
    ```sh
    Defaulting container name to curl.
-   Use 'kubectl describe pod/ -n events-system-example' to see all of the containers in this pod.
+   Use 'kubectl describe pod/ -n broker-example' to see all of the containers in this pod.
    If you don't see a command prompt, try pressing enter.
    [ root@curl:/ ]$
    ```
@@ -83,7 +83,7 @@ This example will run everything in the events-system-example namespace.
    Send multiple events like this to generate metrics:
 
    ```sh
-   curl -v "http://default-brokercell-ingress.events-system.svc.cluster.local/events-system-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello" \
      -H "Ce-Specversion: 1.0" \

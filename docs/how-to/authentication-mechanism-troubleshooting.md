@@ -140,16 +140,16 @@ kubectl describe cloudauditlogssource test -n default
   - If you are using Workload Identity for the Control Plane, refer
     [here](../install/authentication-mechanisms-gcp.md/#workload-identity) to
     check the Google Cloud Service Account `events-controller-gsa`, and the
-    Kubernetes Service Account `controller` in namespace `events-system`.
+    Kubernetes Service Account `controller` in namespace `cloud-run-events`.
   - If you are using Kubernetes Secret for the Control Plane, refer
     [here](../install/authentication-mechanisms-gcp.md/#kubernetes-secrets) to
-    check the Kubernetes Secret `google-cloud-key` in namespace `events-system`.
+    check the Kubernetes Secret `google-cloud-key` in namespace `cloud-run-events`.
 
 **_Note:_** For Kubernetes Secret, if the JSON private key no longer exists
 under your Google Cloud Service Account `events-controller-gsa`. Then, even the
 Google Cloud Service Account `events-controller-gsa` has all required
 permissions, and the corresponding Kubernetes Secret `google-cloud-key` is in
-namespace `events-system`, you still get permission related error. To such case,
+namespace `cloud-run-events`, you still get permission related error. To such case,
 you have to re-download the JSON private key and re-create the Kubernetes
 Secret, refer
 [here](../install/authentication-mechanisms-gcp.md/#option-2-kubernetes-secrets)

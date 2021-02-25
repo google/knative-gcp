@@ -219,7 +219,7 @@ function enable_monitoring(){
 # test flakiness.
 #
 # 2. The broker data plane will be GCed if there is no broker. Usually this would
-# happen before we dump all the pod logs in the events-system namespace. The
+# happen before we dump all the pod logs in the cloud-run-events namespace. The
 # warm-up broker makes sure there is always one broker left and thus data plane pods
 # won't be deleted before we dump logs.
 function warmup_broker_setup(){
@@ -227,7 +227,7 @@ function warmup_broker_setup(){
 }
 
 function dump_extra_cluster_state() {
-  # Collecting logs from all namespace `events-system` pods.
+  # Collecting logs from all namespace `cloud-run-events` pods.
   echo "============================================================"
   local namespace=${CONTROL_PLANE_NAMESPACE}
   local controller_logs="controller-logs"

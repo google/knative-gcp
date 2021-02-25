@@ -21,7 +21,7 @@ kubectl apply -f triggers.yaml
 
 The yamls create the following resources:
 
-- `events-system-example` namespace
+- `broker-example` namespace
 - A pod in which you can run `curl` as the event producer
 - 2 Kubernetes services `hello-display` and `goodbye-display` as event consumers
 - A GCP broker named `test-broker`
@@ -33,24 +33,24 @@ The yamls create the following resources:
 Verify the broker is ready:
 
 ```shell
-kubectl -n events-system-example get broker test-broker
+kubectl -n broker-example get broker test-broker
 ```
 
 ```shell
 NAME          READY   REASON   URL                                                                                                         AGE
-test-broker   True             http://default-brokercell-ingress.events-system.svc.cluster.local/events-system-example/test-broker   9s
+test-broker   True             http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker   9s
 ```
 
 Verify the triggers are ready:
 
 ```shell
-kubectl -n events-system-example get triggers
+kubectl -n broker-example get triggers
 ```
 
 ```shell
 NAME              READY   REASON   BROKER        SUBSCRIBER_URI                                                       AGE
-goodbye-display   True             test-broker   http://goodbye-display.events-system-example.svc.cluster.local/   4s
-hello-display     True             test-broker   http://hello-display.events-system-example.svc.cluster.local/     4s
+goodbye-display   True             test-broker   http://goodbye-display.broker-example.svc.cluster.local/   4s
+hello-display     True             test-broker   http://hello-display.broker-example.svc.cluster.local/     4s
 ```
 
 ## Send Events to the Broker
@@ -58,14 +58,14 @@ hello-display     True             test-broker   http://hello-display.events-sys
 SSH into the event publisher pod by running the following command:
 
 ```sh
-  kubectl -n events-system-example attach curl -it
+  kubectl -n broker-example attach curl -it
 ```
 
 A prompt similar to the one below will appear:
 
 ```sh
     Defaulting container name to curl.
-    Use 'kubectl describe pod/ -n events-system-example' to see all of the containers in this pod.
+    Use 'kubectl describe pod/ -n broker-example' to see all of the containers in this pod.
     If you don't see a command prompt, try pressing enter.
     [ root@curl:/ ]$
 ```
@@ -76,7 +76,7 @@ To show the various types of events you can send, you will make three requests:
    `type:greeting`, run the following in the SSH terminal:
 
    ```sh
-   curl -v "http://default-brokercell-ingress.events-system.svc.cluster.local/events-system-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello" \
      -H "Ce-Specversion: 1.0" \
@@ -102,7 +102,7 @@ To show the various types of events you can send, you will make three requests:
    `source:sendoff`, run the following in the SSH terminal:
 
    ```sh
-   curl -v "http://default-brokercell-ingress.events-system.svc.cluster.local/events-system-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-goodbye" \
      -H "Ce-Specversion: 1.0" \
@@ -129,7 +129,7 @@ To show the various types of events you can send, you will make three requests:
    terminal:
 
    ```sh
-   curl -v "http://default-brokercell-ingress.events-system.svc.cluster.local/events-system-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello-goodbye" \
      -H "Ce-Specversion: 1.0" \
@@ -167,7 +167,7 @@ After sending events, verify that your events were received by the appropriate
    following command:
 
    ```sh
-   kubectl -n events-system-example logs -l app=hello-display --tail=100
+   kubectl -n broker-example logs -l app=hello-display --tail=100
    ```
 
    This returns the `Attributes` and `Data` of the events you sent to
@@ -184,7 +184,7 @@ After sending events, verify that your events were received by the appropriate
      time: 2019-05-20T17:59:43.81718488Z
      contenttype: application/json
    Extensions,
-     knativehistory: default-broker-srk54-channel-24gls.events-system-example.svc.cluster.local
+     knativehistory: default-broker-srk54-channel-24gls.broker-example.svc.cluster.local
    Data,
      {
        "msg": "Hello Cloud Run Events!"
@@ -199,7 +199,7 @@ After sending events, verify that your events were received by the appropriate
      time: 2019-05-20T17:59:54.211866425Z
      contenttype: application/json
    Extensions,
-     knativehistory: default-broker-srk54-channel-24gls.events-system-example.svc.cluster.local
+     knativehistory: default-broker-srk54-channel-24gls.broker-example.svc.cluster.local
    Data,
     {
       "msg": "Hello Cloud Run Events! Goodbye Cloud Run Events!"
@@ -210,7 +210,7 @@ After sending events, verify that your events were received by the appropriate
    following command:
 
    ```sh
-   kubectl -n events-system-example logs -l app=goodbye-display --tail=100
+   kubectl -n broker-example logs -l app=goodbye-display --tail=100
    ```
 
    This returns the `Attributes` and `Data` of the events you sent to
@@ -227,7 +227,7 @@ After sending events, verify that your events were received by the appropriate
       time: 2019-05-20T17:59:49.044926148Z
       contenttype: application/json
     Extensions,
-      knativehistory: default-broker-srk54-channel-24gls.events-system-example.svc.cluster.local
+      knativehistory: default-broker-srk54-channel-24gls.broker-example.svc.cluster.local
    Data,
       {
         "msg": "Goodbye Cloud Run Events!"
@@ -242,7 +242,7 @@ After sending events, verify that your events were received by the appropriate
       time: 2019-05-20T17:59:54.211866425Z
       contenttype: application/json
     Extensions,
-      knativehistory: default-broker-srk54-channel-24gls.events-system-example.svc.cluster.local
+      knativehistory: default-broker-srk54-channel-24gls.broker-example.svc.cluster.local
     Data,
      {
        "msg": "Hello Cloud Run Events! Goodbye Cloud Run Events!"
@@ -268,13 +268,13 @@ consumers are back.
 1. SSH into the event publisher pod by running the following command:
 
    ```sh
-   kubectl -n events-system-example attach curl -it
+   kubectl -n broker-example attach curl -it
    ```
 
 1. Send an event that has the `type:greeting` and the`source:sendoff`:
 
    ```sh
-   curl -v "http://default-brokercell-ingress.events-system.svc.cluster.local/events-system-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello-goodbye" \
      -H "Ce-Specversion: 1.0" \

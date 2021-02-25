@@ -95,7 +95,7 @@ func (p *CloudPubSubSourceProbe) Receive(ctx context.Context, event cloudevents.
 	//     datacontenttype: application/json
 	//   Data,
 	//     {
-	//       "subscription": "cre-src_events-system-probe_cloudpubsubsource_02f88763-1df6-4944-883f-010ebac27dd2",
+	//       "subscription": "cre-src_cloud-run-events-probe_cloudpubsubsource_02f88763-1df6-4944-883f-010ebac27dd2",
 	//       "message": {
 	//         "messageId": "1529309436535525",
 	//         "data": "eydtc2cnOidQcm9iZSBDbG91ZCBSdW4gRXZlbnRzISd9",

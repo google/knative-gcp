@@ -77,7 +77,7 @@ func GCPBrokerTracingTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(ctx, t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(ctx, client)
 
-	err := client.Core.Kube.UpdateConfigMap(ctx, "events-system", "config-tracing", map[string]string{
+	err := client.Core.Kube.UpdateConfigMap(ctx, "cloud-run-events", "config-tracing", map[string]string{
 		"backend":                "stackdriver",
 		"stackdriver-project-id": projectID,
 	})

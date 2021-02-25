@@ -15,8 +15,8 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: events-system
-  name: events-system-webhook
+  namespace: cloud-run-events
+  name: cloud-run-events-webhook
   labels:
     events.cloud.google.com/release: devel
 rules:

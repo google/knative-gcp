@@ -46,7 +46,7 @@ const (
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "events-system-scheduler-source-controller"
+	controllerAgentName = "cloud-run-events-scheduler-source-controller"
 
 	// receiveAdapterName is the string used as name for the receive adapter pod.
 	receiveAdapterName = "cloudschedulersource.events.cloud.google.com"

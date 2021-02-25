@@ -116,7 +116,7 @@ func TestNewDefaultsConfigFromConfigMapWithError(t *testing.T) {
 		"empty data": {
 			config: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "events-system",
+					Namespace: "cloud-run-events",
 					Name:      configName,
 				},
 				Data: map[string]string{},
@@ -125,7 +125,7 @@ func TestNewDefaultsConfigFromConfigMapWithError(t *testing.T) {
 		"missing key": {
 			config: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "events-system",
+					Namespace: "cloud-run-events",
 					Name:      configName,
 				},
 				Data: map[string]string{
@@ -136,7 +136,7 @@ func TestNewDefaultsConfigFromConfigMapWithError(t *testing.T) {
 		"invalid YAML": {
 			config: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "events-system",
+					Namespace: "cloud-run-events",
 					Name:      configName,
 				},
 				Data: map[string]string{
