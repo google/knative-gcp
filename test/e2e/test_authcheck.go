@@ -18,7 +18,6 @@ package e2e
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -78,11 +77,7 @@ func AuthCheckForPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	// 2. In Secret mode, the key in k8s secret is a invalid one.
 	// Test will fail if authentication check does not mark Source with AuthenticationCheckPending Reason
 	// and with Message includes the wanted message.
-	gotMessage := client.WaitForSourceAuthCheckPendingOrFail(psName, lib.CloudPubSubSourceV1TypeMeta)
-	if !strings.Contains(gotMessage, wantMessage) {
-		t.Fatalf("unexpected message from PullSubscriptionConditionReady condition with authenticationCheckPending reason, "+
-			"message wanted to include: %q, got: %q", wantMessage, gotMessage)
-	}
+	client.WaitForSourceAuthCheckPendingOrFail(psName, lib.CloudPubSubSourceV1TypeMeta, wantMessage)
 }
 
 func AuthCheckForNonPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
@@ -122,9 +117,5 @@ func AuthCheckForNonPodCheckTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	// 2. In Secret mode, there is no k8s secret.
 	// Test will fail if authentication check does not mark Source with AuthenticationCheckPending Reason
 	// and with Message includes the wanted message.
-	gotMessage := client.WaitForSourceAuthCheckPendingOrFail(psName, lib.CloudPubSubSourceV1TypeMeta)
-	if !strings.Contains(gotMessage, wantMessage) {
-		t.Fatalf("unexpected message from PullSubscriptionConditionReady condition with authenticationCheckPending reason, "+
-			"message wanted to include: %q, got: %q", wantMessage, gotMessage)
-	}
+	client.WaitForSourceAuthCheckPendingOrFail(psName, lib.CloudPubSubSourceV1TypeMeta, wantMessage)
 }
