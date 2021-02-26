@@ -100,7 +100,7 @@ var setStackDriverConfigOnce = sync.Once{}
 func (c *Client) SetupStackDriverMetrics(ctx context.Context, t *testing.T) {
 	t.Helper()
 	setStackDriverConfigOnce.Do(func() {
-		err := pkgTest.UpdateConfigMap(ctx, c.Core.Kube, "events-system", "config-observability", map[string]string{
+		err := pkgTest.UpdateConfigMap(ctx, c.Core.Kube, "cloud-run-events", "config-observability", map[string]string{
 			"metrics.allow-stackdriver-custom-metrics":     "false",
 			"metrics.backend-destination":                  "stackdriver",
 			"metrics.stackdriver-custom-metrics-subdomain": "cloud.google.com",

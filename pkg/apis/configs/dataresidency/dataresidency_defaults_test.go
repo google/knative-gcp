@@ -154,7 +154,7 @@ func TestNewDefaultsConfigFromConfigMapWithKeyError(t *testing.T) {
 		"empty data": {
 			config: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "events-system",
+					Namespace: "cloud-run-events",
 					Name:      configName,
 				},
 				Data: map[string]string{},
@@ -163,7 +163,7 @@ func TestNewDefaultsConfigFromConfigMapWithKeyError(t *testing.T) {
 		"missing key": {
 			config: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "events-system",
+					Namespace: "cloud-run-events",
 					Name:      configName,
 				},
 				Data: map[string]string{
@@ -174,7 +174,7 @@ func TestNewDefaultsConfigFromConfigMapWithKeyError(t *testing.T) {
 		"wrong format": {
 			config: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "events-system",
+					Namespace: "cloud-run-events",
 					Name:      configName,
 				},
 				Data: map[string]string{

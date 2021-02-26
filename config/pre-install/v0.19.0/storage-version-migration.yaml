@@ -18,14 +18,14 @@ metadata:
   # naming it to storage-version-migration-knative-gcp-v0.19.0 will create the job,
   # but leaves the job in a limbo state that it does not start:
   #
-  # $ kubectl get job -n events-system
+  # $ kubectl get job -n cloud-run-events
   # NAME                                            COMPLETIONS   DURATION   AGE
   # storage-version-migration-knative-gcp           1/1           8s         13m
   # storage-version-migration-knative-gcp-v0.19.0   0/1                      15s
   #
   # The corresponding pod is not created either:
   #
-  # $ kubectl get pods -n events-system
+  # $ kubectl get pods -n cloud-run-events
   # NAME                                                  READY   STATUS      RESTARTS   AGE
   # controller-7847f7d8d7-mwdsm                           1/1     Running     0          4m31s
   # storage-version-migration-knative-gcp-fsxvk           0/1     Completed   0          13m
@@ -33,7 +33,7 @@ metadata:
   #
   # The reason is why this is happening is unknown, changing it to the following name works.
   name: storage-version-migration-knative-gcp-v0-19-0
-  namespace: events-system
+  namespace: cloud-run-events
   labels:
     app: "storage-version-migration-knative-gcp-v0-19-0"
     events.cloud.google.com/release: devel

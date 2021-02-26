@@ -47,7 +47,7 @@ spec:
       clientConfig:
         service:
           name: webhook
-          namespace: events-system
+          namespace: cloud-run-events
   versions:
     - &version
       name: v1beta1

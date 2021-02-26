@@ -50,7 +50,7 @@ Workload Identity see
     ```shell
     gcloud iam service-accounts add-iam-policy-binding \
       --role roles/iam.workloadIdentityUser \
-      --member serviceAccount:$PROJECT_ID.svc.id.goog[events-system/broker] \
+      --member serviceAccount:$PROJECT_ID.svc.id.goog[cloud-run-events/broker] \
       events-broker-gsa@$PROJECT_ID.iam.gserviceaccount.com
     ```
 
@@ -58,7 +58,7 @@ Workload Identity see
     `iam.gke.io/gcp-service-account=events-broker-gsa@PROJECT_ID.iam.gserviceaccount.com`
 
     ```shell
-    kubectl --namespace events-system annotate serviceaccount broker \
+    kubectl --namespace cloud-run-events annotate serviceaccount broker \
       iam.gke.io/gcp-service-account=events-broker-gsa@${PROJECT_ID}.iam.gserviceaccount.com
     ```
 
@@ -75,7 +75,7 @@ Workload Identity see
 1. Create a secret on the Kubernetes cluster with the downloaded key.
 
    ```shell
-   kubectl --namespace events-system create secret generic \
+   kubectl --namespace cloud-run-events create secret generic \
      google-broker-key --from-file=key.json=events-broker-key.json
    ```
 
@@ -98,7 +98,7 @@ Workload Identity see
 ## Usage
 
 ```shell
-export NAMESPACE=events-system-example
+export NAMESPACE=broker-example
 export BROKER=test-broker
 kubectl create namespace ${NAMESPACE}
 ```
@@ -131,7 +131,7 @@ kubectl create namespace ${NAMESPACE}
 
    ```shell
    NAME          READY   REASON   URL                                                                                                         AGE
-   test-broker   True             http://default-brokercell-ingress.events-system.svc.cluster.local/events-system-example/test-broker   15s
+   test-broker   True             http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/broker-example/test-broker   15s
    ```
 
 Once the GCP broker is ready, you can use it by sending events to its `URL` and
@@ -157,7 +157,7 @@ subscriptions for the Triggers.
   [shared main function](https://github.com/google/knative-gcp/blob/main/cmd/controller/main.go)
   with other controllers.
 - [Deployment](https://github.com/google/knative-gcp/blob/main/config/500-controller.yaml):
-  By default it's deployed as `controller` in the `events-system` namespace.
+  By default it's deployed as `controller` in the `cloud-run-events` namespace.
 
 ### Data Plane
 
@@ -168,19 +168,19 @@ All GCP Brokers share the following data plane components:
   - Code:
     [main.go](https://github.com/google/knative-gcp/blob/main/cmd/broker/ingress/main.go)
   - Deployment: It contains a Service and Deployment, both called
-    `broker-ingress` in the `events-system` namespace.
+    `broker-ingress` in the `cloud-run-events` namespace.
 - Fanout. Fanout continuously pull events from decouple topics for all Brokers,
   applies Trigger filters, and sends events to consumers. For failed deliveries,
   it sends the events to the corresponding retry topic.
   - Code:
     [main.go](https://github.com/google/knative-gcp/blob/main/cmd/broker/fanout/main.go)
-  - Deployment: It a deployment called `broker-fanout` in the `events-system`
+  - Deployment: It a deployment called `broker-fanout` in the `cloud-run-events`
     namespace.
 - Retry. Retry continuously resends events that have failed in delivery to the
   consumers.
   - Code:
     [main.go](https://github.com/google/knative-gcp/blob/main/cmd/broker/retry/main.go)
-  - Deployment: It a deployment called `broker-retry` in the `events-system`
+  - Deployment: It a deployment called `broker-retry` in the `cloud-run-events`
     namespace.
 
 ### Common Issues
@@ -201,8 +201,8 @@ All GCP Brokers share the following data plane components:
    - Check the ingress pod logs.
    - Make sure the HTTP method is POST and the request is a CloudEvent. It's
      recommended to use CloudEvents SDK to make the request.
-   - Compare `/var/run/events-system/broker/targets` file in the ingress pod
-     with the contents in `config-targets` configmap in `events-system`
+   - Compare `/var/run/cloud-run-events/broker/targets` file in the ingress pod
+     with the contents in `config-targets` configmap in `cloud-run-events`
      namespace. If they are not the same, it's likely that the configmap volume
      in the pod is not updated with the latest information. Delete the pod and
      wait for it to be recreated. Meanwhile file a bug.
@@ -214,8 +214,8 @@ All GCP Brokers share the following data plane components:
      [#832](https://github.com/google/knative-gcp/issues/832). In this case you
      need to delete the pull subscription manually and wait for it to be
      recreated by the controller.
-   - Compare `/var/run/events-system/broker/targets` file in the fanout pod with
-     the contents in `config-targets` configmap in `events-system` namespace. If
+   - Compare `/var/run/cloud-run-events/broker/targets` file in the fanout pod with
+     the contents in `config-targets` configmap in `cloud-run-events` namespace. If
      they are not the same, it's likely that the configmap volume in the pod is
      not updated with the latest information. Delete the pod and wait for it to
      be recreated. Meanwhile file a bug.
@@ -229,8 +229,8 @@ All GCP Brokers share the following data plane components:
      [#832](https://github.com/google/knative-gcp/issues/832). In this case you
      need to delete the pull subscription manually and wait for it to be
      recreated by the controller.
-   - Compare `/var/run/events-system/broker/targets` file in the retry pod with
-     the contents in `config-targets` configmap in `events-system` namespace. If
+   - Compare `/var/run/cloud-run-events/broker/targets` file in the retry pod with
+     the contents in `config-targets` configmap in `cloud-run-events` namespace. If
      they are not the same, it's likely that the configmap volume in the pod is
      not updated with the latest information. Delete the pod and wait for it to
      be recreated. Meanwhile file a bug.

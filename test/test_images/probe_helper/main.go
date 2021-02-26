@@ -112,7 +112,7 @@ type envConfig struct {
 	// Environment variable containing the port to receive delivered events
 	ReceiverPort probe.ReceivePort `envconfig:"RECEIVER_PORT" default:"8080"`
 	// Environment variable containing the base URL for the brokercell ingress, used in the broker e2e delivery probe
-	BrokerCellIngressBaseURL string `envconfig:"BROKER_CELL_INGRESS_BASE_URL" default:"http://default-brokercell-ingress.events-system.svc.cluster.local"`
+	BrokerCellIngressBaseURL string `envconfig:"BROKER_CELL_INGRESS_BASE_URL" default:"http://default-brokercell-ingress.cloud-run-events.svc.cluster.local"`
 	// Environment variable containing the maximum tolerated staleness duration for Cloud Scheduler job / PingSource ticks before they are discarded
 	CronStaleDuration time.Duration `envconfig:"CRON_STALE_DURATION" default:"3m"`
 }

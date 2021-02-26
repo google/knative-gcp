@@ -57,7 +57,7 @@ const (
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "events-system-pubsub-keda-pullsubscription-controller"
+	controllerAgentName = "cloud-run-events-pubsub-keda-pullsubscription-controller"
 
 	resourceGroup = "pullsubscriptions.internal.events.cloud.google.com"
 )

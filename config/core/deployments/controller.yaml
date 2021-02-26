@@ -16,19 +16,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: controller
-  namespace: events-system
+  namespace: cloud-run-events
   labels:
     events.cloud.google.com/release: devel
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: events-system
+      app: cloud-run-events
       role: controller
   template:
     metadata:
       labels:
-        app: events-system
+        app: cloud-run-events
         role: controller
       annotations:
         sidecar.istio.io/inject: "false"

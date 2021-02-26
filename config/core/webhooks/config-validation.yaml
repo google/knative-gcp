@@ -24,7 +24,7 @@ webhooks:
     clientConfig:
       service:
         name: webhook
-        namespace: events-system
+        namespace: cloud-run-events
     failurePolicy: Ignore
     sideEffects: None
     name: config.webhook.events.cloud.google.com

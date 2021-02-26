@@ -30,7 +30,7 @@ import (
 
 const (
 	testNS                   = "test"
-	testBrokerNS             = "events-system"
+	testBrokerNS             = "cloud-run-events"
 	serviceAccountName       = "test-ksa"
 	secretName               = "test-secret"
 	brokerServiceAccountName = "broker"

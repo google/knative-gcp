@@ -65,7 +65,7 @@ function cloud_run_events_setup() {
     kubectl apply -f $kne_config || return 1
   fi
   ko apply --strict -f ${CLOUD_RUN_EVENTS_ISTIO_CONFIG}|| return 1
-  wait_until_pods_running events-system || return 1
+  wait_until_pods_running cloud-run-events || return 1
 }
 
 # Latest release. If user does not supply this as a flag, the latest
@@ -98,7 +98,7 @@ function install_cloud_run_events() {
   else
     kubectl apply -f $kne_config || return 1
   fi
-  wait_until_pods_running events-system || return 1
+  wait_until_pods_running cloud-run-events || return 1
 }
 
 function install_cloud_run_events_from_head() {

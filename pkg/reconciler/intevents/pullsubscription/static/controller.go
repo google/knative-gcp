@@ -52,7 +52,7 @@ const (
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "events-system-pubsub-pullsubscription-controller"
+	controllerAgentName = "cloud-run-events-pubsub-pullsubscription-controller"
 
 	resourceGroup = "pullsubscriptions.internal.events.cloud.google.com"
 )

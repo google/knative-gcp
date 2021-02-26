@@ -15,8 +15,8 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: events-system-controller
-  namespace: events-system
+  name: cloud-run-events-controller
+  namespace: cloud-run-events
   labels:
     events.cloud.google.com/release: devel
 rules:
@@ -40,8 +40,8 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: events-system-broker
-  namespace: events-system
+  name: cloud-run-events-broker
+  namespace: cloud-run-events
   labels:
     events.cloud.google.com/release: devel
 rules:

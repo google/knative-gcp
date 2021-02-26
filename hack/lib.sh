@@ -15,7 +15,7 @@
 # limitations under the License.
 
 readonly CONTROL_PLANE_GSA="events-controller-gsa"
-readonly CONTROL_PLANE_NAMESPACE="events-system"
+readonly CONTROL_PLANE_NAMESPACE="cloud-run-events"
 
 readonly SERVICE_ACCOUNT_EMAIL_KEY="EMAIL"
 
