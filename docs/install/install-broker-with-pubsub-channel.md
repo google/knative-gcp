@@ -15,8 +15,8 @@ Channel.
 
 ## Deployment
 
-1.  Verify the configmap `config-br-default-channel` is in the `cloud-run-events`
-    namespace.
+1.  Verify the configmap `config-br-default-channel` is in the
+    `cloud-run-events` namespace.
 
     ```shell
     kubectl get configmap config-br-default-channel -n cloud-run-events

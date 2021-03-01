@@ -214,11 +214,11 @@ All GCP Brokers share the following data plane components:
      [#832](https://github.com/google/knative-gcp/issues/832). In this case you
      need to delete the pull subscription manually and wait for it to be
      recreated by the controller.
-   - Compare `/var/run/cloud-run-events/broker/targets` file in the fanout pod with
-     the contents in `config-targets` configmap in `cloud-run-events` namespace. If
-     they are not the same, it's likely that the configmap volume in the pod is
-     not updated with the latest information. Delete the pod and wait for it to
-     be recreated. Meanwhile file a bug.
+   - Compare `/var/run/cloud-run-events/broker/targets` file in the fanout pod
+     with the contents in `config-targets` configmap in `cloud-run-events`
+     namespace. If they are not the same, it's likely that the configmap volume
+     in the pod is not updated with the latest information. Delete the pod and
+     wait for it to be recreated. Meanwhile file a bug.
 1. Events are not retried after delivery failures.
    - Check the fanout pod logs to see if it sends failed events to the retry
      topic.
@@ -229,11 +229,11 @@ All GCP Brokers share the following data plane components:
      [#832](https://github.com/google/knative-gcp/issues/832). In this case you
      need to delete the pull subscription manually and wait for it to be
      recreated by the controller.
-   - Compare `/var/run/cloud-run-events/broker/targets` file in the retry pod with
-     the contents in `config-targets` configmap in `cloud-run-events` namespace. If
-     they are not the same, it's likely that the configmap volume in the pod is
-     not updated with the latest information. Delete the pod and wait for it to
-     be recreated. Meanwhile file a bug.
+   - Compare `/var/run/cloud-run-events/broker/targets` file in the retry pod
+     with the contents in `config-targets` configmap in `cloud-run-events`
+     namespace. If they are not the same, it's likely that the configmap volume
+     in the pod is not updated with the latest information. Delete the pod and
+     wait for it to be recreated. Meanwhile file a bug.
 1. Cannot delete a Trigger.
    - If the Broker doesn't exist, then it's a known issue:
      [#828](https://github.com/google/knative-gcp/issues/828)
