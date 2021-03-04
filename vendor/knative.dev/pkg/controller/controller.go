@@ -152,13 +152,6 @@ func FilterControllerGK(gk schema.GroupKind) func(obj interface{}) bool {
 	}
 }
 
-// FilterController makes it simple to create FilterFunc's for use with
-// cache.FilteringResourceEventHandler that filter based on the
-// controlling resource.
-func FilterController(r kmeta.OwnerRefable) func(obj interface{}) bool {
-	return FilterControllerGK(r.GetGroupVersionKind().GroupKind())
-}
-
 // FilterWithName makes it simple to create FilterFunc's for use with
 // cache.FilteringResourceEventHandler that filter based on a name.
 func FilterWithName(name string) func(obj interface{}) bool {
@@ -585,7 +578,7 @@ func NewSkipKey(key string) error {
 	return skipKeyError{key: key}
 }
 
-// skipKeyError is an error that indicates a key was skipped.
+// permanentError is an error that is considered not transient.
 // We should not re-queue keys when it returns with thus error in reconcile.
 type skipKeyError struct {
 	key string
