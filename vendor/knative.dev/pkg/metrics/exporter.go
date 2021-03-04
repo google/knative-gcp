@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats/view"
@@ -31,13 +32,8 @@ import (
 var (
 	curMetricsExporter view.Exporter
 	curMetricsConfig   *metricsConfig
-	mWorker            *metricsWorker
+	metricsMux         sync.RWMutex
 )
-
-func init() {
-	mWorker = newMetricsWorker()
-	go mWorker.start()
-}
 
 // SecretFetcher is a function (extracted from SecretNamespaceLister) for fetching
 // a specific Secret. This avoids requiring global or namespace list in controllers.
@@ -158,14 +154,28 @@ func UpdateExporter(ctx context.Context, ops ExporterOptions, logger *zap.Sugare
 
 	// Updating the metrics config and the metrics exporters needs to be atomic to
 	// avoid using an outdated metrics config with new exporters.
-	updateCmd := &updateMetricsConfigWithExporter{
-		ctx:       ctx,
-		newConfig: newConfig,
-		done:      make(chan error),
+	metricsMux.Lock()
+	defer metricsMux.Unlock()
+
+	if isNewExporterRequired(newConfig) {
+		logger.Info("Flushing the existing exporter before setting up the new exporter.")
+		flushGivenExporter(curMetricsExporter)
+		e, f, err := newMetricsExporter(newConfig, logger)
+		if err != nil {
+			logger.Errorw("Failed to update a new metrics exporter based on metric config", zap.Error(err), "config", newConfig)
+			return err
+		}
+		existingConfig := curMetricsConfig
+		curMetricsExporter = e
+		if err := setFactory(f); err != nil {
+			logger.Errorw("Failed to update metrics factory when loading metric config", zap.Error(err), "config", newConfig)
+			return err
+		}
+		logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, newConfig)
 	}
-	mWorker.c <- updateCmd
-	err = <-updateCmd.done
-	return err
+
+	setCurMetricsConfigUnlocked(newConfig)
+	return nil
 }
 
 // isNewExporterRequired compares the non-nil newConfig against curMetricsConfig. When backend changes,
@@ -218,35 +228,27 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 }
 
 func getCurMetricsExporter() view.Exporter {
-	readCmd := &readExporter{done: make(chan *view.Exporter)}
-	mWorker.c <- readCmd
-	e := <-readCmd.done
-	return *e
+	metricsMux.RLock()
+	defer metricsMux.RUnlock()
+	return curMetricsExporter
 }
 
 func setCurMetricsExporter(e view.Exporter) {
-	setCmd := &setExporter{
-		newExporter: &e,
-		done:        make(chan struct{}),
-	}
-	mWorker.c <- setCmd
-	<-setCmd.done
+	metricsMux.Lock()
+	defer metricsMux.Unlock()
+	curMetricsExporter = e
 }
 
 func getCurMetricsConfig() *metricsConfig {
-	readCmd := &readMetricsConfig{done: make(chan *metricsConfig)}
-	mWorker.c <- readCmd
-	cfg := <-readCmd.done
-	return cfg
+	metricsMux.RLock()
+	defer metricsMux.RUnlock()
+	return curMetricsConfig
 }
 
 func setCurMetricsConfig(c *metricsConfig) {
-	setCmd := &setMetricsConfig{
-		newConfig: c,
-		done:      make(chan struct{}),
-	}
-	mWorker.c <- setCmd
-	<-setCmd.done
+	metricsMux.Lock()
+	defer metricsMux.Unlock()
+	setCurMetricsConfigUnlocked(c)
 }
 
 func setCurMetricsConfigUnlocked(c *metricsConfig) {
