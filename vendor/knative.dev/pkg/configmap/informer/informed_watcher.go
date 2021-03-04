@@ -107,8 +107,7 @@ var _ configmap.Watcher = (*InformedWatcher)(nil)
 // Asserts that InformedWatcher implements DefaultingWatcher.
 var _ configmap.DefaultingWatcher = (*InformedWatcher)(nil)
 
-// WatchWithDefault implements DefaultingWatcher. Adding a default for the configMap being watched means that when
-// Start is called, Start will not wait for the add event from the API server.
+// WatchWithDefault implements DefaultingWatcher.
 func (i *InformedWatcher) WatchWithDefault(cm corev1.ConfigMap, o ...configmap.Observer) {
 	i.defaults[cm.Name] = &cm
 
@@ -127,59 +126,31 @@ func (i *InformedWatcher) WatchWithDefault(cm corev1.ConfigMap, o ...configmap.O
 	i.Watch(cm.Name, o...)
 }
 
-func (i *InformedWatcher) triggerAddEventForDefaultedConfigMaps(addConfigMapEvent func(obj interface{})) {
-	i.ForEach(func(k string, _ []configmap.Observer) error {
-		if def, ok := i.defaults[k]; ok {
-			addConfigMapEvent(def)
-		}
-		return nil
-	})
-}
-
-func (i *InformedWatcher) getConfigMapNames() []string {
-	var configMaps []string
-	i.ForEach(func(k string, _ []configmap.Observer) error {
-		configMaps = append(configMaps, k)
-		return nil
-	})
-	return configMaps
-}
-
-// Start implements Watcher. Start will wait for all watched resources to exist and for the add event handler to be
-// invoked at least once for each before continuing or for the stopCh to be signalled, whichever happens first. If
-// the watched resource is defaulted, Start will invoke the add event handler directly and will not wait for a further
-// add event from the API server.
+// Start implements Watcher.
 func (i *InformedWatcher) Start(stopCh <-chan struct{}) error {
-	// using the synced callback wrapper around the add event handler will allow the caller
-	// to wait for the add event to be processed for all configmaps
-	s := newSyncedCallback(i.getConfigMapNames(), i.addConfigMapEvent)
-	addConfigMapEvent := func(obj interface{}) {
-		configMap := obj.(*corev1.ConfigMap)
-		s.Call(obj, configMap.Name)
-	}
 	// Pretend that all the defaulted ConfigMaps were just created. This is done before we start
 	// the informer to ensure that if a defaulted ConfigMap does exist, then the real value is
 	// processed after the default one.
-	i.triggerAddEventForDefaultedConfigMaps(addConfigMapEvent)
+	i.ForEach(func(k string, _ []configmap.Observer) error {
+		if def, ok := i.defaults[k]; ok {
+			i.addConfigMapEvent(def)
+		}
+		return nil
+	})
 
-	if err := i.registerCallbackAndStartInformer(addConfigMapEvent, stopCh); err != nil {
+	if err := i.registerCallbackAndStartInformer(stopCh); err != nil {
 		return err
 	}
 
-	// Wait until the shared informer has been synced (WITHOUT holing the mutex, so callbacks happen)
+	// Wait until it has been synced (WITHOUT holing the mutex, so callbacks happen)
 	if ok := cache.WaitForCacheSync(stopCh, i.informer.Informer().HasSynced); !ok {
 		return errors.New("error waiting for ConfigMap informer to sync")
 	}
 
-	if err := i.checkObservedResourcesExist(); err != nil {
-		return err
-	}
-
-	// Wait until all config maps have been at least initially processed
-	return s.WaitForAllKeys(stopCh)
+	return i.checkObservedResourcesExist()
 }
 
-func (i *InformedWatcher) registerCallbackAndStartInformer(addConfigMapEvent func(obj interface{}), stopCh <-chan struct{}) error {
+func (i *InformedWatcher) registerCallbackAndStartInformer(stopCh <-chan struct{}) error {
 	i.Lock()
 	defer i.Unlock()
 	if i.started {
@@ -188,14 +159,13 @@ func (i *InformedWatcher) registerCallbackAndStartInformer(addConfigMapEvent fun
 	i.started = true
 
 	i.informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    addConfigMapEvent,
+		AddFunc:    i.addConfigMapEvent,
 		UpdateFunc: i.updateConfigMapEvent,
 		DeleteFunc: i.deleteConfigMapEvent,
 	})
 
 	// Start the shared informer factory (non-blocking).
 	i.sif.Start(stopCh)
-
 	return nil
 }
 

@@ -17,7 +17,6 @@ limitations under the License.
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -91,11 +90,11 @@ func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	if isKProbe(r) {
+	if network.IsKProbe(r) {
 		if d.draining() {
 			http.Error(w, "shutting down", http.StatusServiceUnavailable)
 		} else {
-			serveKProbe(w, r)
+			network.ServeKProbe(w, r)
 		}
 		return
 	}
@@ -146,22 +145,4 @@ func (d *Drainer) draining() bool {
 	d.RLock()
 	defer d.RUnlock()
 	return d.timer != nil
-}
-
-// isKProbe returns true if the request is a knatvie probe.
-func isKProbe(r *http.Request) bool {
-	return r.Header.Get(network.ProbeHeaderName) == network.ProbeHeaderValue
-}
-
-// serveKProbe serve KProbe requests.
-func serveKProbe(w http.ResponseWriter, r *http.Request) {
-	hh := r.Header.Get(network.HashHeaderName)
-	if hh == "" {
-		http.Error(w,
-			fmt.Sprintf("a probe request must contain a non-empty %q header", network.HashHeaderName),
-			http.StatusBadRequest)
-		return
-	}
-	w.Header().Set(network.HashHeaderName, hh)
-	w.WriteHeader(http.StatusOK)
 }
