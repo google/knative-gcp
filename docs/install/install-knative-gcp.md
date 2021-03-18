@@ -84,7 +84,7 @@ ko apply -f ./config
 
 1. First install the pre-install job by running the `kubectl apply` for
    `cloud-run-events-pre-install-jobs.yaml`. Skip this step if you are
-   installing a release before v0.18.0.
+   installing a release before v0.18.0 or after v0.20.0 (including v0.20.0).
    ```shell
    kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events-pre-install-jobs.yaml
    ```

@@ -20,7 +20,6 @@ source $(dirname "$0")/../vendor/knative.dev/hack/release.sh
 declare -A COMPONENTS
 COMPONENTS=(
   ["cloud-run-events-core.yaml"]="config"
-  ["cloud-run-events-pre-install-jobs.yaml"]="config/pre-install/v0.19.0"
 )
 readonly COMPONENTS
 
