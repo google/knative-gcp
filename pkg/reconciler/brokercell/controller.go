@@ -55,6 +55,7 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
 	systemnamespacesecretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
+	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
 )
 
@@ -181,7 +182,10 @@ func handleResourceUpdate(impl *controller.Impl) cache.ResourceEventHandler {
 	// Resources created by the brokercell, including the indirectly created ingress service endpoints,
 	// have such a label resources.BrokerCellLabelKey=<brokercellName>. Resources without this label
 	// will be skipped by the function.
-	return controller.HandleAll(impl.EnqueueLabelOfNamespaceScopedResource(namespaceLabel, resources.BrokerCellLabelKey))
+	return cache.FilteringResourceEventHandler{
+		FilterFunc: pkgreconciler.LabelExistsFilterFunc(resources.BrokerCellLabelKey),
+		Handler:    controller.HandleAll(impl.EnqueueLabelOfNamespaceScopedResource(namespaceLabel, resources.BrokerCellLabelKey)),
+	}
 }
 
 // reportLatency estimates the time spent since the last update of the resource object and records it to the latency metric
