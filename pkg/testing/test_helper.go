@@ -16,7 +16,6 @@ import (
 	knduckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	knduckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 
-	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 )
 
@@ -219,43 +218,6 @@ var (
 	CompleteV1AddressStatus = knduckv1.AddressStatus{
 		Address: &knduckv1.Addressable{
 			URL: &CompleteURL,
-		},
-	}
-
-	CompleteV1alpha1Subscribable = &eventingduckv1alpha1.Subscribable{
-		Subscribers: []eventingduckv1alpha1.SubscriberSpec{
-			{
-				UID:               "uid-1",
-				Generation:        1,
-				SubscriberURI:     &CompleteURL,
-				ReplyURI:          &CompleteURL,
-				DeadLetterSinkURI: &CompleteURL,
-				Delivery: &eventingduckv1beta1.DeliverySpec{
-					DeadLetterSink: &CompleteDestination,
-					Retry:          &three,
-					BackoffPolicy:  &backoffPolicy,
-					BackoffDelay:   &backoffDelay,
-				},
-			},
-		},
-	}
-
-	CompleteV1alpha1SubscribableTypeStatus = eventingduckv1alpha1.SubscribableTypeStatus{
-		SubscribableStatus: &eventingduckv1alpha1.SubscribableStatus{
-			Subscribers: []eventingduckv1beta1.SubscriberStatus{
-				{
-					UID:                "uid-1",
-					ObservedGeneration: 1,
-					Ready:              "ready-1",
-					Message:            "message-1",
-				},
-				{
-					UID:                "uid-2",
-					ObservedGeneration: 2,
-					Ready:              "ready-2",
-					Message:            "message-2",
-				},
-			},
 		},
 	}
 

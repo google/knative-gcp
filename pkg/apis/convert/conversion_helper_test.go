@@ -171,24 +171,6 @@ func TestV1AddressStatus(t *testing.T) {
 	}
 }
 
-func TestV1beta1SubscribableSpec(t *testing.T) {
-	// DeepCopy because we will edit it below.
-	want := gcptesting.CompleteV1alpha1Subscribable.DeepCopy()
-	v1b1 := convert.ToV1beta1SubscribableSpec(want)
-	got := convert.FromV1beta1SubscribableSpec(v1b1)
-
-	// DeadLetterSinkURI exists exclusively in v1alpha1, it has not yet been promoted to
-	// v1beta1. So it won't round trip, it will be silently removed.
-	for i := range want.Subscribers {
-		want.Subscribers[i].DeadLetterSinkURI = nil
-	}
-
-	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
-	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
-		t.Errorf("Unexpected difference (-want +got): %v", diff)
-	}
-}
-
 func TestV1alpha1Deprecated(t *testing.T) {
 	cs := apis.NewLivingConditionSet()
 	status := duckv1.Status{}
