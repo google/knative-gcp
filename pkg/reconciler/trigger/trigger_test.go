@@ -44,10 +44,10 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
-	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
+	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1/trigger"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
@@ -115,7 +115,7 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = brokerv1beta1.AddToScheme(scheme.Scheme)
+	_ = brokerv1.AddToScheme(scheme.Scheme)
 }
 
 func TestAllCasesTrigger(t *testing.T) {
@@ -290,7 +290,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerClass(brokerv1.BrokerClass),
 					WithInitBrokerConditions,
 					WithBrokerDeliverySpec(brokerDeliverySpec),
 					WithBrokerSetDefaults,
@@ -339,7 +339,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerClass(brokerv1.BrokerClass),
 					WithInitBrokerConditions,
 					WithBrokerReady("url"),
 					WithBrokerSetDefaults),
@@ -372,7 +372,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerClass(brokerv1.BrokerClass),
 					WithInitBrokerConditions,
 					WithBrokerReady("url"),
 					WithBrokerDeliverySpec(brokerDeliverySpec),
@@ -436,7 +436,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerClass(brokerv1.BrokerClass),
 					WithInitBrokerConditions,
 					WithBrokerReady("url"),
 					WithBrokerDeliverySpec(brokerDeliverySpec),
@@ -495,7 +495,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerClass(brokerv1.BrokerClass),
 					WithInitBrokerConditions,
 					WithBrokerReady("url"),
 					WithBrokerDeliverySpec(brokerDeliverySpecWithoutRetry),
@@ -562,7 +562,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerClass(brokerv1.BrokerClass),
 					WithInitBrokerConditions,
 					WithBrokerReady("url"),
 					WithBrokerDeliverySpec(brokerDeliverySpec),
@@ -630,7 +630,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerClass(brokerv1.BrokerClass),
 					WithInitBrokerConditions,
 					WithBrokerReady("url"),
 					WithBrokerDeliverySpec(brokerDeliverySpec),
@@ -697,7 +697,7 @@ func TestAllCasesTrigger(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerClass(brokerv1.BrokerClass),
 					WithInitBrokerConditions,
 					WithBrokerReady("url"),
 					WithBrokerDeliverySpec(brokerDeliverySpec),

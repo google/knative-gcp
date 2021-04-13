@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	"github.com/google/knative-gcp/pkg/utils/naming"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -196,8 +196,8 @@ func TestGenerateRetrySubscriptionName(t *testing.T) {
 	}
 }
 
-func broker(ns, n, uid string) *brokerv1beta1.Broker {
-	return &brokerv1beta1.Broker{
+func broker(ns, n, uid string) *brokerv1.Broker {
+	return &brokerv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
 			Name:      n,
@@ -206,8 +206,8 @@ func broker(ns, n, uid string) *brokerv1beta1.Broker {
 	}
 }
 
-func trigger(ns, n, uid string) *brokerv1beta1.Trigger {
-	return &brokerv1beta1.Trigger{
+func trigger(ns, n, uid string) *brokerv1.Trigger {
+	return &brokerv1.Trigger{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
 			Name:      n,

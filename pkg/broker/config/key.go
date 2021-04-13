@@ -24,7 +24,7 @@ import (
 
 	"go.opencensus.io/trace"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	"go.opencensus.io/resource"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -218,7 +218,7 @@ func (x *Target) Key() *TargetKey {
 }
 
 // KeyFromBroker creates a CellTenantKey from a K8s Broker object.
-func KeyFromBroker(b *brokerv1beta1.Broker) *CellTenantKey {
+func KeyFromBroker(b *brokerv1.Broker) *CellTenantKey {
 	return &CellTenantKey{
 		cellTenantType: CellTenantType_BROKER,
 		namespace:      b.Namespace,

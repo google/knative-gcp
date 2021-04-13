@@ -17,7 +17,7 @@ limitations under the License.
 package resources
 
 import (
-	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/system"
 
@@ -30,7 +30,7 @@ const DefaultBrokerCellName = "default"
 
 // TODO Replace the Broker parameter with a generic CellTenant interface that has a method to get
 // the name of the BrokerCell to create.
-func CreateBrokerCell(_ *v1beta1.Broker) *inteventsv1alpha1.BrokerCell {
+func CreateBrokerCell(_ *brokerv1.Broker) *inteventsv1alpha1.BrokerCell {
 	// TODO(#866) Get brokercell from the label (or annotation) from the broker.
 	return &inteventsv1alpha1.BrokerCell{
 		ObjectMeta: metav1.ObjectMeta{

@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	"knative.dev/pkg/apis"
@@ -46,7 +46,7 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 				fe.Details = "expected at least one of, got none"
 				errs = errs.Also(fe.ViaField(fmt.Sprintf("subscriber[%d]", i)).ViaField("subscribable"))
 			}
-			deliveryErr := brokerv1beta1.ValidateDeliverySpec(ctx, subscriber.Delivery)
+			deliveryErr := brokerv1.ValidateDeliverySpec(ctx, subscriber.Delivery)
 			if deliveryErr != nil {
 				errs = errs.Also(deliveryErr.ViaField(fmt.Sprintf("subscriber[%d]", i)).ViaField("delivery"))
 			}

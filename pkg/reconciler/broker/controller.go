@@ -34,11 +34,11 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
+	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1/broker"
 	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
-	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
+	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1/broker"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	reconcilerutils "github.com/google/knative-gcp/pkg/reconciler/utils"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -95,7 +95,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, brds *brokerdeliv
 		},
 	}
 
-	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass,
+	impl := brokerreconciler.NewImpl(ctx, r, brokerv1.BrokerClass,
 		func(impl *controller.Impl) controller.Options {
 			return controller.Options{
 				ConfigStore: brds,

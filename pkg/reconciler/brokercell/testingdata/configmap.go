@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
@@ -38,7 +38,7 @@ func EmptyConfig(t *testing.T, bc *intv1alpha1.BrokerCell) *corev1.ConfigMap {
 }
 
 type BrokerCellObjects struct {
-	BrokersToTriggers map[*brokerv1beta1.Broker][]*brokerv1beta1.Trigger
+	BrokersToTriggers map[*brokerv1.Broker][]*brokerv1.Trigger
 	Channels          []*v1beta1.Channel
 }
 
@@ -59,7 +59,7 @@ func Config(bc *intv1alpha1.BrokerCell, bco BrokerCellObjects) *corev1.ConfigMap
 	return cm
 }
 
-func addBroker(targets *config.TargetsConfig, broker *brokerv1beta1.Broker, triggers []*brokerv1beta1.Trigger) {
+func addBroker(targets *config.TargetsConfig, broker *brokerv1.Broker, triggers []*brokerv1.Trigger) {
 	if broker == nil {
 		return
 	}
@@ -68,7 +68,7 @@ func addBroker(targets *config.TargetsConfig, broker *brokerv1beta1.Broker, trig
 		state = config.State_READY
 	}
 	brokerQueueState := config.State_UNKNOWN
-	if broker.Status.GetCondition(brokerv1beta1.BrokerConditionTopic).IsTrue() && broker.Status.GetCondition(brokerv1beta1.BrokerConditionSubscription).IsTrue() {
+	if broker.Status.GetCondition(brokerv1.BrokerConditionTopic).IsTrue() && broker.Status.GetCondition(brokerv1.BrokerConditionSubscription).IsTrue() {
 		brokerQueueState = config.State_READY
 	}
 	brokerConfig := &config.CellTenant{
@@ -118,7 +118,7 @@ func addChannel(targets *config.TargetsConfig, channel *v1beta1.Channel) {
 		state = config.State_READY
 	}
 	queueState := config.State_UNKNOWN
-	if channel.Status.GetCondition(brokerv1beta1.BrokerConditionTopic).IsTrue() && channel.Status.GetCondition(brokerv1beta1.BrokerConditionSubscription).IsTrue() {
+	if channel.Status.GetCondition(brokerv1.BrokerConditionTopic).IsTrue() && channel.Status.GetCondition(brokerv1.BrokerConditionSubscription).IsTrue() {
 		queueState = config.State_READY
 	}
 	cellTenant := &config.CellTenant{

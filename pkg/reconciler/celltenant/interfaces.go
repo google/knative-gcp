@@ -19,7 +19,7 @@ package celltenant
 import (
 	"fmt"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	"github.com/google/knative-gcp/pkg/apis/duck"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -47,13 +47,13 @@ type Target interface {
 var _ Target = (*targetForTrigger)(nil)
 
 type targetForTrigger struct {
-	trigger      *brokerv1beta1.Trigger
+	trigger      *brokerv1.Trigger
 	deliverySpec *eventingduckv1beta1.DeliverySpec
 }
 
 // TargetFromTrigger creates a Target for the given Trigger and associated
 // Broker's deliverySpec.
-func TargetFromTrigger(t *brokerv1beta1.Trigger, deliverySpec *eventingduckv1beta1.DeliverySpec) Target {
+func TargetFromTrigger(t *brokerv1.Trigger, deliverySpec *eventingduckv1beta1.DeliverySpec) Target {
 	return &targetForTrigger{
 		trigger:      t,
 		deliverySpec: deliverySpec,
@@ -276,10 +276,10 @@ type Statusable interface {
 var _ Statusable = (*statusableForBroker)(nil)
 
 type statusableForBroker struct {
-	broker *brokerv1beta1.Broker
+	broker *brokerv1.Broker
 }
 
-func StatusableFromBroker(b *brokerv1beta1.Broker) Statusable {
+func StatusableFromBroker(b *brokerv1.Broker) Statusable {
 	return &statusableForBroker{
 		broker: b,
 	}
@@ -316,7 +316,7 @@ func (b *statusableForBroker) StatusUpdater() reconcilerutilspubsub.StatusUpdate
 func (b *statusableForBroker) GetLabels() map[string]string {
 	return map[string]string{
 		"resource":     "brokers",
-		"broker_class": brokerv1beta1.BrokerClass,
+		"broker_class": brokerv1.BrokerClass,
 		"namespace":    b.broker.Namespace,
 		"name":         b.broker.Name,
 		//TODO add resource labels, but need to be sanitized: https://cloud.google.com/pubsub/docs/labels#requirements

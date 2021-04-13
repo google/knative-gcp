@@ -17,7 +17,7 @@ limitations under the License.
 package resources
 
 import (
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	"github.com/google/knative-gcp/pkg/utils/naming"
 )
 
@@ -36,27 +36,27 @@ import (
 // GenerateDecouplingTopicName generates a deterministic topic name for a
 // Broker. If the topic name would be longer than allowed by PubSub, the
 // Broker name is truncated to fit.
-func GenerateDecouplingTopicName(b *brokerv1beta1.Broker) string {
+func GenerateDecouplingTopicName(b *brokerv1.Broker) string {
 	return naming.TruncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, b.UID)
 }
 
 // GenerateDecouplingSubscriptionName generates a deterministic subscription
 // name for a Broker. If the subscription name would be longer than allowed by
 // PubSub, the Broker name is truncated to fit.
-func GenerateDecouplingSubscriptionName(b *brokerv1beta1.Broker) string {
+func GenerateDecouplingSubscriptionName(b *brokerv1.Broker) string {
 	return naming.TruncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, b.UID)
 }
 
 // GenerateRetryTopicName generates a deterministic topic name for a Trigger.
 // If the topic name would be longer than allowed by PubSub, the Trigger name is
 // truncated to fit.
-func GenerateRetryTopicName(t *brokerv1beta1.Trigger) string {
+func GenerateRetryTopicName(t *brokerv1.Trigger) string {
 	return naming.TruncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, t.UID)
 }
 
 // GenerateRetrySubscriptionName generates a deterministic subscription name
 // for a Trigger. If the subscription name would be longer than allowed by
 // PubSub, the Trigger name is truncated to fit.
-func GenerateRetrySubscriptionName(t *brokerv1beta1.Trigger) string {
+func GenerateRetrySubscriptionName(t *brokerv1.Trigger) string {
 	return naming.TruncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, t.UID)
 }

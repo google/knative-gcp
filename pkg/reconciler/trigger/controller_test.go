@@ -32,8 +32,8 @@ import (
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 
 	// Fake injection informers
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1/broker/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1/trigger/fake"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/source/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
