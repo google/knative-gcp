@@ -23,7 +23,7 @@ import (
 	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
 )
@@ -174,7 +174,7 @@ func WithBrokerSetDefaults(b *brokerv1.Broker) {
 }
 
 // WithBrokerDeliverySpec sets the Broker's delivery spec.
-func WithBrokerDeliverySpec(deliverySpec *eventingduckv1beta1.DeliverySpec) BrokerOption {
+func WithBrokerDeliverySpec(deliverySpec *eventingduckv1.DeliverySpec) BrokerOption {
 	return func(b *brokerv1.Broker) {
 		b.Spec.Delivery = deliverySpec
 	}

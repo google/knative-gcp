@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"testing"
 
-	duckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
@@ -1109,24 +1109,24 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 			name: "Channels with Subscribers",
 			channels: []*v1beta1.Channel{
 				NewChannel("channel1", testNS, WithChannelSetDefaults, WithChannelAddress("http://example.com/1"),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-1-uid",
 						SubscriberURI: uri("http://example.com/subscriber-1-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-1-reply"),
 					}),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-2-uid",
 						SubscriberURI: uri("http://example.com/subscriber-2-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-2-reply"),
 					}),
 				),
 				NewChannel("channel2", testNS, WithChannelSetDefaults, WithChannelAddress("http://example.com/2"),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-3-uid",
 						SubscriberURI: uri("http://example.com/subscriber-3-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-3-reply"),
 					}),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-4-uid",
 						SubscriberURI: uri("http://example.com/subscriber-4-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-4-reply"),
@@ -1145,24 +1145,24 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 			bc: NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
 			channels: []*v1beta1.Channel{
 				NewChannel("channel1", testNS, WithChannelSetDefaults, WithChannelAddress("http://example.com/1"),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-1-uid",
 						SubscriberURI: uri("http://example.com/subscriber-1-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-1-reply"),
 					}),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-2-uid",
 						SubscriberURI: uri("http://example.com/subscriber-2-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-2-reply"),
 					}),
 				),
 				NewChannel("channel2", testNS, WithChannelSetDefaults, WithChannelAddress("http://example.com/2"),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-3-uid",
 						SubscriberURI: uri("http://example.com/subscriber-3-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-3-reply"),
 					}),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-4-uid",
 						SubscriberURI: uri("http://example.com/subscriber-4-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-4-reply"),

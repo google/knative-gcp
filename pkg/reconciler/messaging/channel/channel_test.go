@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	duckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 
 	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 
@@ -196,14 +196,14 @@ func TestAllCasesChannel(t *testing.T) {
 				WithChannelDeletionTimestamp,
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           subscriptionUID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					}),
 				WithChannelSubscribersStatus(
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                subscriptionUID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
@@ -218,7 +218,7 @@ func TestAllCasesChannel(t *testing.T) {
 				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           subscriptionUID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
@@ -509,7 +509,7 @@ func TestAllCasesChannel(t *testing.T) {
 				WithChannelUID(channelUID),
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           subscriptionUID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
@@ -525,14 +525,14 @@ func TestAllCasesChannel(t *testing.T) {
 				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           subscriptionUID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					}),
 				WithChannelSubscribersStatus(
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                subscriptionUID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
@@ -567,14 +567,14 @@ func TestAllCasesChannel(t *testing.T) {
 				WithChannelUID(channelUID),
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           subscriptionUID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					}),
 				WithChannelSubscribersStatus(
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                subscriptionUID,
 						ObservedGeneration: subscriptionGeneration - 1,
 						Ready:              "True",
@@ -590,14 +590,14 @@ func TestAllCasesChannel(t *testing.T) {
 				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           subscriptionUID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					}),
 				WithChannelSubscribersStatus(
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                subscriptionUID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
@@ -632,7 +632,7 @@ func TestAllCasesChannel(t *testing.T) {
 				WithChannelUID(channelUID),
 				WithChannelSetDefaults,
 				WithChannelSubscribersStatus(
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                subscriptionUID,
 						ObservedGeneration: subscriptionGeneration - 1,
 						Ready:              "True",
@@ -686,55 +686,55 @@ func TestAllCasesChannel(t *testing.T) {
 				WithChannelUID(channelUID),
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           newSubscription1UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           unchangedSubscription1UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           updatedSubscription1UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           newSubscription2UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           unchangedSubscription2UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           updatedSubscription2UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           newSubscription3UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           unchangedSubscription3UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           updatedSubscription3UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
@@ -742,37 +742,37 @@ func TestAllCasesChannel(t *testing.T) {
 					},
 				),
 				WithChannelSubscribersStatus(
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                unchangedSubscription1UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                updatedSubscription1UID,
 						ObservedGeneration: subscriptionGeneration - 1,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                deletedSubscription1UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                unchangedSubscription2UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                updatedSubscription2UID,
 						ObservedGeneration: subscriptionGeneration - 2,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                unchangedSubscription3UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                updatedSubscription3UID,
 						ObservedGeneration: subscriptionGeneration - 1,
 						Ready:              "True",
@@ -789,55 +789,55 @@ func TestAllCasesChannel(t *testing.T) {
 				WithChannelReadyURI(channelURI),
 				WithChannelSetDefaults,
 				WithChannelSubscribers(
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           newSubscription1UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           unchangedSubscription1UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           updatedSubscription1UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           newSubscription2UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           unchangedSubscription2UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           updatedSubscription2UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           newSubscription3UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           unchangedSubscription3UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
 						ReplyURI:      replyURI,
 					},
-					duckv1beta1.SubscriberSpec{
+					eventingduckv1.SubscriberSpec{
 						UID:           updatedSubscription3UID,
 						Generation:    subscriptionGeneration,
 						SubscriberURI: subscriberURI,
@@ -845,47 +845,47 @@ func TestAllCasesChannel(t *testing.T) {
 					},
 				),
 				WithChannelSubscribersStatus(
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                unchangedSubscription1UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                updatedSubscription1UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                newSubscription1UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                unchangedSubscription2UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                updatedSubscription2UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                newSubscription2UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                unchangedSubscription3UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                updatedSubscription3UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
 					},
-					duckv1beta1.SubscriberStatus{
+					eventingduckv1.SubscriberStatus{
 						UID:                newSubscription3UID,
 						ObservedGeneration: subscriptionGeneration,
 						Ready:              "True",
@@ -951,11 +951,11 @@ func TestAllCasesChannel(t *testing.T) {
 			SubscriptionExists("cre-sub_testnamespace_test-channel_updated-3-uid"),
 		},
 		CmpOpts: []cmp.Option{
-			cmp.Transformer("alphabetizeSubscriberStatus", func(orig duckv1beta1.SubscribableStatus) duckv1beta1.SubscribableStatus {
+			cmp.Transformer("alphabetizeSubscriberStatus", func(orig eventingduckv1.SubscribableStatus) eventingduckv1.SubscribableStatus {
 				// The order of subscriber status objects are not guaranteed, so alphabetize them to
 				// guarantee a consistent order.
-				sorted := duckv1beta1.SubscribableStatus{
-					Subscribers: make([]duckv1beta1.SubscriberStatus, len(orig.Subscribers)),
+				sorted := eventingduckv1.SubscribableStatus{
+					Subscribers: make([]eventingduckv1.SubscriberStatus, len(orig.Subscribers)),
 				}
 				copy(sorted.Subscribers, orig.Subscribers)
 				sort.Slice(sorted.Subscribers, func(i, j int) bool {

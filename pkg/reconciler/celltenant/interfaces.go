@@ -29,7 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 )
 
@@ -40,7 +40,7 @@ type Target interface {
 	GetTopicID() string
 	GetSubscriptionName() string
 	GetLabels() map[string]string
-	DeliverySpec() *eventingduckv1beta1.DeliverySpec
+	DeliverySpec() *eventingduckv1.DeliverySpec
 	SetStatusProjectID(projectID string)
 }
 
@@ -48,12 +48,12 @@ var _ Target = (*targetForTrigger)(nil)
 
 type targetForTrigger struct {
 	trigger      *brokerv1.Trigger
-	deliverySpec *eventingduckv1beta1.DeliverySpec
+	deliverySpec *eventingduckv1.DeliverySpec
 }
 
 // TargetFromTrigger creates a Target for the given Trigger and associated
 // Broker's deliverySpec.
-func TargetFromTrigger(t *brokerv1.Trigger, deliverySpec *eventingduckv1beta1.DeliverySpec) Target {
+func TargetFromTrigger(t *brokerv1.Trigger, deliverySpec *eventingduckv1.DeliverySpec) Target {
 	return &targetForTrigger{
 		trigger:      t,
 		deliverySpec: deliverySpec,
@@ -85,7 +85,7 @@ func (t *targetForTrigger) GetSubscriptionName() string {
 	return brokerresources.GenerateRetrySubscriptionName(t.trigger)
 }
 
-func (t *targetForTrigger) DeliverySpec() *eventingduckv1beta1.DeliverySpec {
+func (t *targetForTrigger) DeliverySpec() *eventingduckv1.DeliverySpec {
 	return t.deliverySpec
 }
 
@@ -97,12 +97,12 @@ func (t *targetForTrigger) SetStatusProjectID(_ string) {
 var _ Target = (*targetForSubscriberSpec)(nil)
 
 type targetForSubscriberSpec struct {
-	subscriberSpec *eventingduckv1beta1.SubscriberSpec
+	subscriberSpec *eventingduckv1.SubscriberSpec
 	channel        *v1beta1.Channel
 	status         *SubscriberStatus
 }
 
-func TargetFromSubscriberSpec(channel *v1beta1.Channel, subscribeSpec eventingduckv1beta1.SubscriberSpec) (Target, *SubscriberStatus) {
+func TargetFromSubscriberSpec(channel *v1beta1.Channel, subscribeSpec eventingduckv1.SubscriberSpec) (Target, *SubscriberStatus) {
 	status := &SubscriberStatus{}
 	return &targetForSubscriberSpec{
 		subscriberSpec: &subscribeSpec,
@@ -145,7 +145,7 @@ func (s *targetForSubscriberSpec) GetSubscriptionName() string {
 	return channelresources.GenerateSubscriberRetrySubscriptionName(s.channel, s.subscriberSpec.UID)
 }
 
-func (s *targetForSubscriberSpec) DeliverySpec() *eventingduckv1beta1.DeliverySpec {
+func (s *targetForSubscriberSpec) DeliverySpec() *eventingduckv1.DeliverySpec {
 	return s.subscriberSpec.Delivery
 }
 
@@ -156,7 +156,7 @@ func (s *targetForSubscriberSpec) SetStatusProjectID(_ string) {
 var _ Target = (*targetForSubscriberStatus)(nil)
 
 type targetForSubscriberStatus struct {
-	subscriberStatus *eventingduckv1beta1.SubscriberStatus
+	subscriberStatus *eventingduckv1.SubscriberStatus
 	channel          *v1beta1.Channel
 	status           *SubscriberStatus
 }
@@ -165,7 +165,7 @@ func (s *targetForSubscriberStatus) GetLabels() map[string]string {
 	return getLabelsForChannel(s.channel, s.subscriberStatus.UID)
 }
 
-func (s *targetForSubscriberStatus) DeliverySpec() *eventingduckv1beta1.DeliverySpec {
+func (s *targetForSubscriberStatus) DeliverySpec() *eventingduckv1.DeliverySpec {
 	// SubscriberStatus does not contain the DeliverySpec. This should only be used for deleting a
 	// Target, not creating one, so this shouldn't be needed.
 	return nil
@@ -175,7 +175,7 @@ func (s *targetForSubscriberStatus) SetStatusProjectID(_ string) {
 	// ProjectID is stored on the Channel's status, not each subscriber's, so this is a noop.
 }
 
-func TargetFromSubscriberStatus(channel *v1beta1.Channel, subscriberStatus eventingduckv1beta1.SubscriberStatus) (Target, *SubscriberStatus) {
+func TargetFromSubscriberStatus(channel *v1beta1.Channel, subscriberStatus eventingduckv1.SubscriberStatus) (Target, *SubscriberStatus) {
 	status := &SubscriberStatus{}
 	return &targetForSubscriberStatus{
 		subscriberStatus: &subscriberStatus,

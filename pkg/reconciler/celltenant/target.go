@@ -30,7 +30,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/google/knative-gcp/pkg/logging"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
@@ -128,7 +128,7 @@ func (r *TargetReconciler) ReconcileRetryTopicAndSubscription(ctx context.Contex
 
 // getPubsubRetryPolicy gets the eventing retry policy from the Broker delivery
 // spec and translates it to a pubsub retry policy.
-func getPubsubRetryPolicy(ctx context.Context, spec *eventingduckv1beta1.DeliverySpec) *pubsub.RetryPolicy {
+func getPubsubRetryPolicy(ctx context.Context, spec *eventingduckv1.DeliverySpec) *pubsub.RetryPolicy {
 	if spec == nil {
 		return &pubsub.RetryPolicy{
 			MinimumBackoff: defaultMinimumBackoff,
@@ -152,19 +152,19 @@ func getPubsubRetryPolicy(ctx context.Context, spec *eventingduckv1beta1.Deliver
 		}
 	}
 
-	var backoffPolicy eventingduckv1beta1.BackoffPolicyType
+	var backoffPolicy eventingduckv1.BackoffPolicyType
 	if spec.BackoffPolicy != nil {
 		backoffPolicy = *spec.BackoffPolicy
 	} else {
 		// Default to Exponential.
-		backoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
+		backoffPolicy = eventingduckv1.BackoffPolicyExponential
 	}
 
 	var maximumBackoff time.Duration
 	switch backoffPolicy {
-	case eventingduckv1beta1.BackoffPolicyLinear:
+	case eventingduckv1.BackoffPolicyLinear:
 		maximumBackoff = minimumBackoff
-	case eventingduckv1beta1.BackoffPolicyExponential:
+	case eventingduckv1.BackoffPolicyExponential:
 		maximumBackoff = defaultMaximumBackoff
 	}
 	return &pubsub.RetryPolicy{
@@ -175,7 +175,7 @@ func getPubsubRetryPolicy(ctx context.Context, spec *eventingduckv1beta1.Deliver
 
 // getPubsubDeadLetterPolicy gets the eventing dead letter policy from the
 // Broker delivery spec and translates it to a pubsub dead letter policy.
-func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1beta1.DeliverySpec) *pubsub.DeadLetterPolicy {
+func getPubsubDeadLetterPolicy(projectID string, spec *eventingduckv1.DeliverySpec) *pubsub.DeadLetterPolicy {
 	if spec == nil || spec.DeadLetterSink == nil {
 		return nil
 	}

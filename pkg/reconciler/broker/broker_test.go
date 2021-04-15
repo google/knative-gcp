@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
@@ -64,7 +64,7 @@ const (
 )
 
 var (
-	backoffPolicy           = eventingduckv1beta1.BackoffPolicyLinear
+	backoffPolicy           = eventingduckv1.BackoffPolicyLinear
 	backoffDelay            = "PT5S"
 	deadLetterTopicID       = "test-dead-letter-topic-id"
 	retry             int32 = 3
@@ -81,7 +81,7 @@ var (
 		Host:   fmt.Sprintf("%s.%s.svc.%s", ingressServiceName, systemNS, network.GetClusterDomainName()),
 		Path:   ingress.BrokerPath(testNS, brokerName),
 	}
-	brokerDeliverySpec = &eventingduckv1beta1.DeliverySpec{
+	brokerDeliverySpec = &eventingduckv1.DeliverySpec{
 		BackoffDelay:  &backoffDelay,
 		BackoffPolicy: &backoffPolicy,
 		Retry:         &retry,
