@@ -19,7 +19,7 @@ package v1
 import (
 	"context"
 
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -32,7 +32,7 @@ func (b *Broker) Validate(ctx context.Context) *apis.FieldError {
 	return ValidateDeliverySpec(withNS, b.Spec.Delivery).ViaField("spec", "delivery")
 }
 
-func ValidateDeliverySpec(ctx context.Context, spec *eventingduckv1beta1.DeliverySpec) *apis.FieldError {
+func ValidateDeliverySpec(ctx context.Context, spec *eventingduckv1.DeliverySpec) *apis.FieldError {
 	if spec == nil {
 		return nil
 	}

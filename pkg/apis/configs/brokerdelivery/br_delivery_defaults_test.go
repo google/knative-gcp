@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 	v1 "knative.dev/pkg/apis/duck/v1"
 	. "knative.dev/pkg/configmap/testing"
@@ -52,15 +52,15 @@ func TestNewDefaultsConfigFromConfigMap(t *testing.T) {
 	}
 
 	clusterDefaultedBackoffDelay := "PT1S"
-	clusterDefaultedBackoffPolicy := eventingduckv1beta1.BackoffPolicyExponential
+	clusterDefaultedBackoffPolicy := eventingduckv1.BackoffPolicyExponential
 	clusterDefaultedRetry := int32(10)
 	nsDefaultedBackoffDelay := "PT5S"
-	nsDefaultedBackoffPolicy := eventingduckv1beta1.BackoffPolicyLinear
+	nsDefaultedBackoffPolicy := eventingduckv1.BackoffPolicyLinear
 	nsDefaultedRetry := int32(20)
 	testCases := []struct {
 		ns             string
 		backoffDelay   *string
-		backoffPolicy  *eventingduckv1beta1.BackoffPolicyType
+		backoffPolicy  *eventingduckv1.BackoffPolicyType
 		deadLetterSink *v1.Destination
 		retry          *int32
 	}{

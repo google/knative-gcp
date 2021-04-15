@@ -28,7 +28,7 @@ import (
 func TestTrigger_GetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
 		Group:   "eventing.knative.dev",
-		Version: "v1beta1",
+		Version: "v1",
 		Kind:    "Trigger",
 	}
 	trig := Trigger{}

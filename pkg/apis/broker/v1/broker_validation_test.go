@@ -22,14 +22,14 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestBroker_Validate(t *testing.T) {
-	bop := eventingduckv1beta1.BackoffPolicyExponential
+	bop := eventingduckv1.BackoffPolicyExponential
 	bod := "PT1S"
 	retry := int32(4)
 	tests := []struct {
@@ -39,13 +39,13 @@ func TestBroker_Validate(t *testing.T) {
 	}{{
 		name: "no error on missing delivery spec",
 		broker: Broker{
-			Spec: v1beta1.BrokerSpec{},
+			Spec: eventingv1.BrokerSpec{},
 		},
 	}, {
 		name: "missing backoff policy",
 		broker: Broker{
-			Spec: v1beta1.BrokerSpec{
-				Delivery: &eventingduckv1beta1.DeliverySpec{
+			Spec: eventingv1.BrokerSpec{
+				Delivery: &eventingduckv1.DeliverySpec{
 					BackoffDelay: &bod,
 				},
 			},
@@ -54,8 +54,8 @@ func TestBroker_Validate(t *testing.T) {
 	}, {
 		name: "missing backoff delay",
 		broker: Broker{
-			Spec: v1beta1.BrokerSpec{
-				Delivery: &eventingduckv1beta1.DeliverySpec{
+			Spec: eventingv1.BrokerSpec{
+				Delivery: &eventingduckv1.DeliverySpec{
 					BackoffPolicy: &bop,
 				},
 			},
@@ -64,8 +64,8 @@ func TestBroker_Validate(t *testing.T) {
 	}, {
 		name: "missing dead letter sink for retry",
 		broker: Broker{
-			Spec: v1beta1.BrokerSpec{
-				Delivery: &eventingduckv1beta1.DeliverySpec{
+			Spec: eventingv1.BrokerSpec{
+				Delivery: &eventingduckv1.DeliverySpec{
 					BackoffDelay:  &bod,
 					BackoffPolicy: &bop,
 					Retry:         &retry,
@@ -76,8 +76,8 @@ func TestBroker_Validate(t *testing.T) {
 	}, {
 		name: "invalid dead letter sink missing uri",
 		broker: Broker{
-			Spec: v1beta1.BrokerSpec{
-				Delivery: &eventingduckv1beta1.DeliverySpec{
+			Spec: eventingv1.BrokerSpec{
+				Delivery: &eventingduckv1.DeliverySpec{
 					BackoffDelay:   &bod,
 					BackoffPolicy:  &bop,
 					DeadLetterSink: &duckv1.Destination{},
@@ -88,8 +88,8 @@ func TestBroker_Validate(t *testing.T) {
 	}, {
 		name: "invalid dead letter sink uri scheme",
 		broker: Broker{
-			Spec: v1beta1.BrokerSpec{
-				Delivery: &eventingduckv1beta1.DeliverySpec{
+			Spec: eventingv1.BrokerSpec{
+				Delivery: &eventingduckv1.DeliverySpec{
 					BackoffDelay:  &bod,
 					BackoffPolicy: &bop,
 					DeadLetterSink: &duckv1.Destination{
@@ -105,8 +105,8 @@ func TestBroker_Validate(t *testing.T) {
 	}, {
 		name: "invalid empty dead letter topic id",
 		broker: Broker{
-			Spec: v1beta1.BrokerSpec{
-				Delivery: &eventingduckv1beta1.DeliverySpec{
+			Spec: eventingv1.BrokerSpec{
+				Delivery: &eventingduckv1.DeliverySpec{
 					BackoffDelay:  &bod,
 					BackoffPolicy: &bop,
 					DeadLetterSink: &duckv1.Destination{
@@ -122,8 +122,8 @@ func TestBroker_Validate(t *testing.T) {
 	}, {
 		name: "invalid dead letter topic id too long",
 		broker: Broker{
-			Spec: v1beta1.BrokerSpec{
-				Delivery: &eventingduckv1beta1.DeliverySpec{
+			Spec: eventingv1.BrokerSpec{
+				Delivery: &eventingduckv1.DeliverySpec{
 					BackoffDelay:  &bod,
 					BackoffPolicy: &bop,
 					DeadLetterSink: &duckv1.Destination{
@@ -139,8 +139,8 @@ func TestBroker_Validate(t *testing.T) {
 	}, {
 		name: "valid dead letter topic",
 		broker: Broker{
-			Spec: v1beta1.BrokerSpec{
-				Delivery: &eventingduckv1beta1.DeliverySpec{
+			Spec: eventingv1.BrokerSpec{
+				Delivery: &eventingduckv1.DeliverySpec{
 					BackoffDelay:  &bod,
 					BackoffPolicy: &bop,
 					DeadLetterSink: &duckv1.Destination{

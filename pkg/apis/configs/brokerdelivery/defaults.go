@@ -17,7 +17,7 @@ limitations under the License.
 package brokerdelivery
 
 import (
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	v1 "knative.dev/pkg/apis/duck/v1"
 )
 
@@ -34,7 +34,7 @@ type Defaults struct {
 // ScopedDefaults are the Broker delivery setting defaults.
 type ScopedDefaults struct {
 	// ScopedDefaults implements the Broker delivery spec.
-	*eventingduckv1beta1.DeliverySpec
+	*eventingduckv1.DeliverySpec
 }
 
 // scoped gets the scoped Broker delivery setting defaults for the given namespace.
@@ -51,7 +51,7 @@ func (d *Defaults) Retry(ns string) *int32 {
 	return sd.Retry
 }
 
-func (d *Defaults) BackoffPolicy(ns string) *eventingduckv1beta1.BackoffPolicyType {
+func (d *Defaults) BackoffPolicy(ns string) *eventingduckv1.BackoffPolicyType {
 	sd := d.scoped(ns)
 	return sd.BackoffPolicy
 }

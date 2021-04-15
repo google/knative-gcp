@@ -19,7 +19,7 @@ package v1
 import (
 	"context"
 
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 
@@ -37,7 +37,7 @@ func (b *Broker) SetDefaults(ctx context.Context) {
 	}
 	// Set the default delivery spec.
 	if b.Spec.Delivery == nil {
-		b.Spec.Delivery = &eventingduckv1beta1.DeliverySpec{}
+		b.Spec.Delivery = &eventingduckv1.DeliverySpec{}
 	}
 	ns := apis.ParentMeta(withNS).Namespace
 	if b.Spec.Delivery.BackoffPolicy == nil || b.Spec.Delivery.BackoffDelay == nil {

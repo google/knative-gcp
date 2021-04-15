@@ -58,7 +58,7 @@ func TestAddKnownTypes(t *testing.T) {
 		"Trigger",
 		"TriggerList",
 	}
-	got := scheme.KnownTypes(schema.GroupVersion{Group: "eventing.knative.dev", Version: "v1beta1"})
+	got := scheme.KnownTypes(schema.GroupVersion{Group: "eventing.knative.dev", Version: "v1"})
 
 	for _, tn := range want {
 		if _, exist := got[tn]; !exist {

@@ -28,7 +28,7 @@ import (
 func TestBroker_GetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
 		Group:   "eventing.knative.dev",
-		Version: "v1beta1",
+		Version: "v1",
 		Kind:    "Broker",
 	}
 	b := Broker{}

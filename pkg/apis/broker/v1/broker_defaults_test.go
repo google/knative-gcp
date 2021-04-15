@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -32,10 +32,10 @@ import (
 
 var (
 	clusterDefaultedBackoffDelay        = "PT1S"
-	clusterDefaultedBackoffPolicy       = eventingduckv1beta1.BackoffPolicyExponential
+	clusterDefaultedBackoffPolicy       = eventingduckv1.BackoffPolicyExponential
 	clusterDefaultedRetry         int32 = 6
 	nsDefaultedBackoffDelay             = "PT2S"
-	nsDefaultedBackoffPolicy            = eventingduckv1beta1.BackoffPolicyLinear
+	nsDefaultedBackoffPolicy            = eventingduckv1.BackoffPolicyLinear
 	nsDefaultedRetry              int32 = 10
 	customRetry                   int32 = 5
 
@@ -45,7 +45,7 @@ var (
 			// Namespace is the key, the value is the KReference to the config.
 			NamespaceDefaults: map[string]brokerdelivery.ScopedDefaults{
 				"mynamespace": {
-					DeliverySpec: &eventingduckv1beta1.DeliverySpec{
+					DeliverySpec: &eventingduckv1.DeliverySpec{
 						BackoffDelay:  &nsDefaultedBackoffDelay,
 						BackoffPolicy: &nsDefaultedBackoffPolicy,
 						DeadLetterSink: &duckv1.Destination{
@@ -58,7 +58,7 @@ var (
 					},
 				},
 				"mynamespace2": {
-					DeliverySpec: &eventingduckv1beta1.DeliverySpec{
+					DeliverySpec: &eventingduckv1.DeliverySpec{
 						DeadLetterSink: &duckv1.Destination{
 							URI: &apis.URL{
 								Scheme: "pubsub",
@@ -69,19 +69,19 @@ var (
 					},
 				},
 				"mynamespace3": {
-					DeliverySpec: &eventingduckv1beta1.DeliverySpec{
+					DeliverySpec: &eventingduckv1.DeliverySpec{
 						BackoffDelay:  &nsDefaultedBackoffDelay,
 						BackoffPolicy: &nsDefaultedBackoffPolicy,
 					},
 				},
 				"mynamespace4": {
-					DeliverySpec: &eventingduckv1beta1.DeliverySpec{
+					DeliverySpec: &eventingduckv1.DeliverySpec{
 						Retry: &nsDefaultedRetry,
 					},
 				},
 			},
 			ClusterDefaults: brokerdelivery.ScopedDefaults{
-				DeliverySpec: &eventingduckv1beta1.DeliverySpec{
+				DeliverySpec: &eventingduckv1.DeliverySpec{
 					BackoffDelay:  &clusterDefaultedBackoffDelay,
 					BackoffPolicy: &clusterDefaultedBackoffPolicy,
 					DeadLetterSink: &duckv1.Destination{
@@ -105,7 +105,7 @@ func TestBroker_SetDefaults(t *testing.T) {
 		"default everything from cluster": {
 			expected: Broker{
 				Spec: eventingv1.BrokerSpec{
-					Delivery: &eventingduckv1beta1.DeliverySpec{
+					Delivery: &eventingduckv1.DeliverySpec{
 						BackoffDelay:  &clusterDefaultedBackoffDelay,
 						BackoffPolicy: &clusterDefaultedBackoffPolicy,
 						DeadLetterSink: &duckv1.Destination{
@@ -122,7 +122,7 @@ func TestBroker_SetDefaults(t *testing.T) {
 		"default backoff policy from cluster": {
 			expected: Broker{
 				Spec: eventingv1.BrokerSpec{
-					Delivery: &eventingduckv1beta1.DeliverySpec{
+					Delivery: &eventingduckv1.DeliverySpec{
 						BackoffDelay:  &clusterDefaultedBackoffDelay,
 						BackoffPolicy: &clusterDefaultedBackoffPolicy,
 						DeadLetterSink: &duckv1.Destination{
@@ -137,7 +137,7 @@ func TestBroker_SetDefaults(t *testing.T) {
 			},
 			initial: Broker{
 				Spec: eventingv1.BrokerSpec{
-					Delivery: &eventingduckv1beta1.DeliverySpec{
+					Delivery: &eventingduckv1.DeliverySpec{
 						DeadLetterSink: &duckv1.Destination{
 							URI: &apis.URL{
 								Scheme: "pubsub",
@@ -158,7 +158,7 @@ func TestBroker_SetDefaults(t *testing.T) {
 					Namespace: "mynamespace",
 				},
 				Spec: eventingv1.BrokerSpec{
-					Delivery: &eventingduckv1beta1.DeliverySpec{
+					Delivery: &eventingduckv1.DeliverySpec{
 						BackoffDelay:  &nsDefaultedBackoffDelay,
 						BackoffPolicy: &nsDefaultedBackoffPolicy,
 						DeadLetterSink: &duckv1.Destination{
@@ -181,7 +181,7 @@ func TestBroker_SetDefaults(t *testing.T) {
 					Namespace: "mynamespace2",
 				},
 				Spec: eventingv1.BrokerSpec{
-					Delivery: &eventingduckv1beta1.DeliverySpec{
+					Delivery: &eventingduckv1.DeliverySpec{
 						DeadLetterSink: &duckv1.Destination{
 							URI: &apis.URL{
 								Scheme: "pubsub",
@@ -202,7 +202,7 @@ func TestBroker_SetDefaults(t *testing.T) {
 					Namespace: "mynamespace3",
 				},
 				Spec: eventingv1.BrokerSpec{
-					Delivery: &eventingduckv1beta1.DeliverySpec{
+					Delivery: &eventingduckv1.DeliverySpec{
 						BackoffDelay:  &nsDefaultedBackoffDelay,
 						BackoffPolicy: &nsDefaultedBackoffPolicy,
 					},
@@ -218,7 +218,7 @@ func TestBroker_SetDefaults(t *testing.T) {
 					Namespace: "mynamespace4",
 				},
 				Spec: eventingv1.BrokerSpec{
-					Delivery: &eventingduckv1beta1.DeliverySpec{},
+					Delivery: &eventingduckv1.DeliverySpec{},
 				},
 			},
 		},
@@ -226,7 +226,7 @@ func TestBroker_SetDefaults(t *testing.T) {
 			initial: Broker{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "mynamespace4"},
 				Spec: eventingv1.BrokerSpec{
-					Delivery: &eventingduckv1beta1.DeliverySpec{
+					Delivery: &eventingduckv1.DeliverySpec{
 						DeadLetterSink: &duckv1.Destination{
 							URI: &apis.URL{
 								Scheme: "pubsub",
@@ -241,7 +241,7 @@ func TestBroker_SetDefaults(t *testing.T) {
 					Namespace: "mynamespace4",
 				},
 				Spec: eventingv1.BrokerSpec{
-					Delivery: &eventingduckv1beta1.DeliverySpec{
+					Delivery: &eventingduckv1.DeliverySpec{
 						DeadLetterSink: &duckv1.Destination{
 							URI: &apis.URL{
 								Scheme: "pubsub",
