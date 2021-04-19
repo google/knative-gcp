@@ -502,11 +502,11 @@ func createFirstNErrsReceiver(client *lib.Client, firstNErrs int) string {
 
 func createTriggerWithKServiceSubscriber(client *lib.Client,
 	brokerName, kserviceName string,
-	triggerFilter eventingtestresources.TriggerOptionV1Beta1) *eventingv1.Trigger {
+	triggerFilter eventingtestresources.TriggerOptionV1) *eventingv1.Trigger {
 	client.T.Helper()
 	// Please refer to the graph in the file to check what sample trigger is used for.
 	triggerName := "trigger-broker-" + brokerName
-	return client.Core.CreateTriggerOrFailV1Beta1(
+	return client.Core.CreateTriggerOrFail(
 		triggerName,
 		eventingtestresources.WithBrokerV1(brokerName),
 		triggerFilter,
@@ -516,14 +516,14 @@ func createTriggerWithKServiceSubscriber(client *lib.Client,
 
 func createTriggerWithTargetServiceSubscriber(client *lib.Client,
 	brokerName, targetName string,
-	triggerFilter eventingtestresources.TriggerOptionV1Beta1) *eventingv1.Trigger {
+	triggerFilter eventingtestresources.TriggerOptionV1) *eventingv1.Trigger {
 	client.T.Helper()
 	respTriggerName := "resp-broker-" + brokerName
-	return client.Core.CreateTriggerOrFailV1Beta1(
+	return client.Core.CreateTriggerOrFail(
 		respTriggerName,
 		eventingtestresources.WithBrokerV1(brokerName),
 		triggerFilter,
-		eventingtestresources.WithSubscriberServiceRefForTriggerV1Beta1(targetName),
+		eventingtestresources.WithSubscriberServiceRefForTriggerV1(targetName),
 	)
 }
 
