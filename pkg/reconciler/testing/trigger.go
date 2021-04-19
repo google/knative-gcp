@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -138,7 +137,7 @@ func WithInjectionAnnotation(injectionAnnotation string) TriggerOption {
 		if t.Annotations == nil {
 			t.Annotations = make(map[string]string)
 		}
-		t.Annotations[v1beta1.InjectionAnnotation] = injectionAnnotation
+		t.Annotations[eventingv1.InjectionAnnotation] = injectionAnnotation
 	}
 }
 
@@ -147,7 +146,7 @@ func WithDependencyAnnotation(dependencyAnnotation string) TriggerOption {
 		if t.Annotations == nil {
 			t.Annotations = make(map[string]string)
 		}
-		t.Annotations[v1beta1.DependencyAnnotation] = dependencyAnnotation
+		t.Annotations[eventingv1.DependencyAnnotation] = dependencyAnnotation
 	}
 }
 
