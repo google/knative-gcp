@@ -43,6 +43,7 @@ import (
 	"github.com/google/knative-gcp/pkg/metrics"
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	kgcptesting "github.com/google/knative-gcp/pkg/testing"
+	"github.com/google/knative-gcp/pkg/tracing"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/api/option"
@@ -590,7 +591,7 @@ func assertTraceID(id string) eventAssertion {
 			t.Errorf("event missing distributed tracing extensions: %v", e)
 			return
 		}
-		sc, err := dt.ToSpanContext()
+		sc, err := tracing.ToSpanContext(dt)
 		if err != nil {
 			t.Error(err)
 			return

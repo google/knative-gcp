@@ -7,6 +7,7 @@ require (
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
 	cloud.google.com/go/pubsub v1.8.0
 	cloud.google.com/go/storage v1.10.0
+	github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.4.1
 	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200806165906-9ae0708e27fa
 	github.com/cloudevents/sdk-go/v2 v2.4.1
 	github.com/fsnotify/fsnotify v1.4.9
@@ -16,6 +17,7 @@ require (
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/lightstep/tracecontext.go v0.0.0-20181129014701-1757c391b1ac
 	github.com/pkg/errors v0.9.1
 	github.com/rickb777/date v1.13.0
 	go.opencensus.io v0.23.0
