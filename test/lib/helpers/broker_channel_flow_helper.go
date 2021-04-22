@@ -21,7 +21,6 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	. "github.com/cloudevents/sdk-go/v2/test"
-	"github.com/google/knative-gcp/test/lib"
 	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -96,7 +95,7 @@ func BrokerChannelFlowWithTransformation(
 		} else {
 			client.CreateBrokerV1Beta1OrFail(brokerName, resources.WithBrokerClassForBrokerV1Beta1(brokerClass), resources.WithConfigForBrokerV1Beta1(config))
 		}
-		client.WaitForResourceReadyOrFail(brokerName, lib.BrokerTypeMeta)
+		client.WaitForResourceReadyOrFail(brokerName, testlib.BrokerTypeMeta)
 
 		// eventToSend is the event sent as input of the test
 		eventToSend := cloudevents.NewEvent()
@@ -194,7 +193,7 @@ func BrokerChannelFlowWithTransformation(
 		client.WaitForAllTestResourcesReadyOrFail(ctx)
 
 		// send CloudEvent to the broker
-		client.SendEventToAddressable(ctx, senderName, brokerName, lib.BrokerTypeMeta, eventToSend)
+		client.SendEventToAddressable(ctx, senderName, brokerName, testlib.BrokerTypeMeta, eventToSend)
 
 		// Assert the results on the event trackers
 		originalEventMatcher := recordevents.MatchEvent(AllOf(

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"knative.dev/eventing/pkg/apis/eventing"
+	testlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/test/helpers"
@@ -55,10 +56,10 @@ func createBrokerWithPubSubChannel(client *lib.Client) (url.URL, string) {
 	)
 
 	// Wait for broker ready.
-	client.Core.WaitForResourceReadyOrFail(brokerName, lib.BrokerTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(brokerName, testlib.BrokerTypeMeta)
 
 	// Get broker URL.
-	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, lib.BrokerTypeMeta)
+	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, testlib.BrokerTypeMeta)
 	u, err := duck.GetAddressableURI(client.Core.Dynamic, metaAddressable)
 	if err != nil {
 		client.T.Error(err.Error())

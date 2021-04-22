@@ -27,8 +27,6 @@ import (
 	testlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/recordevents"
 	"knative.dev/eventing/test/lib/resources"
-
-	"github.com/google/knative-gcp/test/lib"
 )
 
 /*
@@ -73,7 +71,7 @@ func EventTransformationForTriggerTestHelper(
 	defer testlib.TearDown(client)
 
 	brokerName := creator(client, brokerVersion)
-	client.WaitForResourceReadyOrFail(brokerName, lib.BrokerTypeMeta)
+	client.WaitForResourceReadyOrFail(brokerName, testlib.BrokerTypeMeta)
 
 	// create the transformation service
 	recordevents.DeployEventRecordOrFail(
@@ -134,7 +132,7 @@ func EventTransformationForTriggerTestHelper(
 	if err := eventToSend.SetData(cloudevents.ApplicationJSON, []byte(eventBody)); err != nil {
 		t.Fatal("Cannot set the payload of the event:", err.Error())
 	}
-	client.SendEventToAddressable(ctx, senderName, brokerName, lib.BrokerTypeMeta, eventToSend)
+	client.SendEventToAddressable(ctx, senderName, brokerName, testlib.BrokerTypeMeta, eventToSend)
 
 	// check if the logging service receives the correct event
 	eventTracker.AssertAtLeast(1, recordevents.MatchEvent(
