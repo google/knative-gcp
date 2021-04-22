@@ -50,7 +50,7 @@ func TestSingleBinaryEventForChannel(t *testing.T) {
 	e2ehelpers.SingleEventForChannelTestHelper(
 		context.Background(),
 		t,
-		binding.EncodingBinary, e2ehelpers.SubscriptionV1beta1,
+		binding.EncodingBinary, e2ehelpers.SubscriptionV1,
 		"",
 		channelTestRunner,
 		func(client *eventingtestlib.Client) {
@@ -76,7 +76,7 @@ func TestSingleStructuredEventForChannel(t *testing.T) {
 		context.Background(),
 		t,
 		binding.EncodingStructured,
-		e2ehelpers.SubscriptionV1beta1,
+		e2ehelpers.SubscriptionV1,
 		"",
 		channelTestRunner,
 		func(client *eventingtestlib.Client) {
@@ -146,7 +146,7 @@ func TestEventTransformationForSubscription(t *testing.T) {
 	e2ehelpers.EventTransformationForSubscriptionTestHelper(
 		context.Background(),
 		t,
-		e2ehelpers.SubscriptionV1beta1,
+		e2ehelpers.SubscriptionV1,
 		channelTestRunner,
 		func(client *eventingtestlib.Client) {
 			// This test is running based on code in knative/eventing, so it does not use the same
@@ -169,7 +169,7 @@ func TestChannelChain(t *testing.T) {
 	e2ehelpers.ChannelChainTestHelper(
 		context.Background(),
 		t,
-		e2ehelpers.SubscriptionV1beta1,
+		e2ehelpers.SubscriptionV1,
 		channelTestRunner,
 		func(client *eventingtestlib.Client) {
 			// This test is running based on code in knative/eventing, so it does not use the same
@@ -193,7 +193,7 @@ func TestChannelDeadLetterSink(t *testing.T) {
 	e2ehelpers.ChannelDeadLetterSinkTestHelper(
 		context.Background(),
 		t,
-		e2ehelpers.SubscriptionV1beta1,
+		e2ehelpers.SubscriptionV1,
 		channelTestRunner,
 		func(client *eventingtestlib.Client) {
 			// This test is running based on code in knative/eventing, so it does not use the same
