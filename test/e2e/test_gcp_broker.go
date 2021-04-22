@@ -135,7 +135,7 @@ func SmokeGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	brokerName := helpers.AppendRandomString("gcp")
 	// Create a new GCP Broker.
-	gcpBroker := client.CreateGCPBrokerV1OrFail(brokerName, reconcilertesting.WithBrokerClass(brokerv1.BrokerClass))
+	gcpBroker := client.CreateGCPBrokerOrFail(brokerName, reconcilertesting.WithBrokerClass(brokerv1.BrokerClass))
 
 	// Wait for broker ready.
 	client.Core.WaitForResourceReadyOrFail(brokerName, eventingtestlib.BrokerTypeMeta)
@@ -175,7 +175,7 @@ func SmokeGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 func createGCPBroker(client *lib.Client) (url.URL, string) {
 	brokerName := helpers.AppendRandomString("gcp")
 	// Create a new GCP Broker.
-	client.CreateGCPBrokerV1OrFail(brokerName, reconcilertesting.WithBrokerClass(brokerv1.BrokerClass))
+	client.CreateGCPBrokerOrFail(brokerName, reconcilertesting.WithBrokerClass(brokerv1.BrokerClass))
 
 	// Wait for broker ready.
 	client.Core.WaitForResourceReadyOrFail(brokerName, eventingtestlib.BrokerTypeMeta)

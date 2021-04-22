@@ -218,8 +218,8 @@ func (c *Client) CreateSchedulerV1beta1OrFail(scheduler *eventsv1beta1.CloudSche
 	c.Tracker.AddObj(scheduler)
 }
 
-// CreateGCPBrokerV1OrFail will create a GCP Broker or fail the test if there is an error.
-func (c *Client) CreateGCPBrokerV1OrFail(name string, options ...reconcilertesting.BrokerOption) *brokerv1.Broker {
+// CreateGCPBrokerOrFail will create a GCP Broker or fail the test if there is an error.
+func (c *Client) CreateGCPBrokerOrFail(name string, options ...reconcilertesting.BrokerOption) *brokerv1.Broker {
 	ctx := context.Background()
 	namespace := c.Namespace
 	broker := reconcilertesting.NewBroker(name, namespace, options...)
