@@ -56,7 +56,7 @@ func TriggerDependencyAnnotationTestImpl(t *testing.T, authConfig lib.AuthConfig
 	eventTracker, _ := recordevents.StartEventRecordOrFail(ctx, client.Core, subscriberName)
 
 	// Create triggers.
-	client.Core.CreateTriggerOrFailV1Beta1(triggerName,
+	client.Core.CreateTriggerOrFail(triggerName,
 		eventingresources.WithBrokerV1(brokerName),
 		eventingresources.WithSubscriberServiceRefForTriggerV1Beta1(subscriberName),
 		eventingresources.WithDependencyAnnotationTriggerV1Beta1(dependencyAnnotation),
