@@ -60,11 +60,11 @@ function cloud_run_events_setup() {
   subheader "Installing Cloud Run Events from: ${kne_config}"
   if [ -d "${kne_config}" ]; then
     # Install the latest Cloud Run Events in the current cluster.
-    ko apply --strict -f ${kne_config} || return 1
+    ko apply -f ${kne_config} || return 1
   else
     kubectl apply -f $kne_config || return 1
   fi
-  ko apply --strict -f ${CLOUD_RUN_EVENTS_ISTIO_CONFIG}|| return 1
+  ko apply -f ${CLOUD_RUN_EVENTS_ISTIO_CONFIG}|| return 1
   wait_until_pods_running cloud-run-events || return 1
 }
 
@@ -94,7 +94,7 @@ function install_cloud_run_events() {
   kne_config="${1:-${CLOUD_RUN_EVENTS_CONFIG}}"
   subheader "Installing Cloud Run Events from: ${kne_config}"
   if [ -d "${kne_config}" ]; then
-    ko apply --strict -f ${kne_config} || return 1
+    ko apply -f ${kne_config} || return 1
   else
     kubectl apply -f $kne_config || return 1
   fi
