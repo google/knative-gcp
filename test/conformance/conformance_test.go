@@ -41,8 +41,8 @@ func TestEventTransformationForTrigger(t *testing.T) {
 	defer cancel()
 
 	brokerClass := "MTChannelBasedBroker"
-	brokerVersion := "v1beta1"
-	triggerVersion := "v1beta1"
+	brokerVersion := "v1"
+	triggerVersion := "v1"
 	channelTestRunner.RunTests(t, eventingtestlib.FeatureBasic, func(t *testing.T, component metav1.TypeMeta) {
 		e2ehelpers.EventTransformationForTriggerTestHelper(
 			context.Background(),
@@ -71,8 +71,8 @@ func TestBrokerChannelFlow(t *testing.T) {
 	defer cancel()
 
 	brokerClass := "MTChannelBasedBroker"
-	brokerVersion := "v1beta1"
-	triggerVersion := "v1beta1"
+	brokerVersion := "v1"
+	triggerVersion := "v1"
 	e2ehelpers.BrokerChannelFlowWithTransformation(
 		context.Background(),
 		t,
