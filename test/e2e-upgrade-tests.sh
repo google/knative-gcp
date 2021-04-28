@@ -41,7 +41,7 @@ function uninstall_test_resources {
   # Nothing to uninstall after tests
   true
 }
-
+export TEST=True
 initialize $@
 
 TIMEOUT=${TIMEOUT:-30m}
