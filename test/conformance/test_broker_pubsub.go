@@ -51,7 +51,7 @@ func createBrokerWithPubSubChannel(client *lib.Client) (url.URL, string) {
 	client.Core.CreateRBACResourcesForBrokers()
 	client.Core.CreateBrokerConfigMapOrFail(brokerName, lib.ChannelTypeMeta)
 	client.Core.CreateBrokerOrFail(brokerName,
-		eventingtestresources.WithBrokerClassForBroker(eventing.MTChannelBrokerClassValue),
+		eventingtestresources.WithBrokerClassForBrokerV1(eventing.MTChannelBrokerClassValue),
 		eventingtestresources.WithConfigMapForBrokerConfig(),
 	)
 

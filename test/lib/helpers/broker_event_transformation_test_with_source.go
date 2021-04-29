@@ -69,13 +69,13 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	kserviceName := CreateKService(client, "receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleEventType})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleRespEventType})
 	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
@@ -129,13 +129,13 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 	kserviceName := createFirstNErrsReceiver(client, 2)
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleEventType})
 	trigger := createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleRespEventType})
 	respTrigger := createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
@@ -208,13 +208,13 @@ func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID st
 	kserviceName := CreateKService(client, "receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleEventType})
 	trigger := createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleRespEventType})
 	respTrigger := createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
@@ -268,14 +268,14 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 	kserviceName := CreateKService(client, "pubsub_receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter,
 		schemasv1.CloudPubSubMessagePublishedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter,
 		lib.E2EPubSubRespEventType,
 		map[string]interface{}{})
@@ -333,14 +333,14 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 	kserviceName := CreateKService(client, "storage_receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter,
 		schemasv1.CloudStorageObjectFinalizedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter,
 		lib.E2EStorageRespEventType,
 		map[string]interface{}{})
@@ -385,14 +385,14 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 	kserviceName := CreateKService(client, "auditlogs_receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter,
 		schemasv1.CloudAuditLogsLogWrittenEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter,
 		lib.E2EAuditLogsRespType,
 		map[string]interface{}{})
@@ -442,14 +442,14 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 	kserviceName := CreateKService(client, "scheduler_receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter,
 		schemasv1.CloudSchedulerJobExecutedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
 		eventingv1.TriggerAnyFilter,
 		lib.E2ESchedulerRespType,
 		map[string]interface{}{})
