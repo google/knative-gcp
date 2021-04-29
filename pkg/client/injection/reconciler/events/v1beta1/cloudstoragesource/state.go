@@ -29,28 +29,28 @@ import (
 
 // state is used to track the state of a reconciler in a single run.
 type state struct {
-	// key is the original reconciliation key from the queue.
+	// Key is the original reconciliation key from the queue.
 	key string
-	// namespace is the namespace split from the reconciliation key.
+	// Namespace is the namespace split from the reconciliation key.
 	namespace string
-	// name is the name split from the reconciliation key.
+	// Namespace is the name split from the reconciliation key.
 	name string
 	// reconciler is the reconciler.
 	reconciler Interface
-	// roi is the read only interface cast of the reconciler.
+	// rof is the read only interface cast of the reconciler.
 	roi ReadOnlyInterface
-	// isROI (Read Only Interface) the reconciler only observes reconciliation.
+	// IsROI (Read Only Interface) the reconciler only observes reconciliation.
 	isROI bool
 	// rof is the read only finalizer cast of the reconciler.
 	rof ReadOnlyFinalizer
-	// isROF (Read Only Finalizer) the reconciler only observes finalize.
+	// IsROF (Read Only Finalizer) the reconciler only observes finalize.
 	isROF bool
-	// isLeader the instance of the reconciler is the elected leader.
+	// IsLeader the instance of the reconciler is the elected leader.
 	isLeader bool
 }
 
 func newState(key string, r *reconcilerImpl) (*state, error) {
-	// Convert the namespace/name string into a distinct namespace and name.
+	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return nil, fmt.Errorf("invalid resource key: %s", key)

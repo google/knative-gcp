@@ -22,6 +22,7 @@ import (
 	context "context"
 	json "encoding/json"
 	fmt "fmt"
+	reflect "reflect"
 
 	v1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	versioned "github.com/google/knative-gcp/pkg/client/clientset/versioned"
@@ -87,13 +88,13 @@ type doReconcile func(ctx context.Context, o *v1beta1.CloudStorageSource) reconc
 
 // reconcilerImpl implements controller.Reconciler for v1beta1.CloudStorageSource resources.
 type reconcilerImpl struct {
-	// LeaderAwareFuncs is inlined to help us implement reconciler.LeaderAware.
+	// LeaderAwareFuncs is inlined to help us implement reconciler.LeaderAware
 	reconciler.LeaderAwareFuncs
 
 	// Client is used to write back status updates.
 	Client versioned.Interface
 
-	// Listers index properties about resources.
+	// Listers index properties about resources
 	Lister eventsv1beta1.CloudStorageSourceLister
 
 	// Recorder is an event recorder for recording Event resources to the
@@ -115,7 +116,7 @@ type reconcilerImpl struct {
 	skipStatusUpdates bool
 }
 
-// Check that our Reconciler implements controller.Reconciler.
+// Check that our Reconciler implements controller.Reconciler
 var _ controller.Reconciler = (*reconcilerImpl)(nil)
 
 // Check that our generated Reconciler is always LeaderAware.
@@ -211,15 +212,8 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	original, err := getter.Get(s.name)
 
 	if errors.IsNotFound(err) {
-		// The resource may no longer exist, in which case we stop processing and call
-		// the ObserveDeletion handler if appropriate.
+		// The resource may no longer exist, in which case we stop processing.
 		logger.Debugf("Resource %q no longer exists", key)
-		if del, ok := r.reconciler.(reconciler.OnDeletionInterface); ok {
-			return del.ObserveDeletion(ctx, types.NamespacedName{
-				Namespace: s.namespace,
-				Name:      s.name,
-			})
-		}
 		return nil
 	} else if err != nil {
 		return err
@@ -296,7 +290,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 		var event *reconciler.ReconcilerEvent
 		if reconciler.EventAs(reconcileEvent, &event) {
 			logger.Infow("Returned an event", zap.Any("event", reconcileEvent))
-			r.Recorder.Event(resource, event.EventType, event.Reason, event.Error())
+			r.Recorder.Eventf(resource, event.EventType, event.Reason, event.Format, event.Args...)
 
 			// the event was wrapped inside an error, consider the reconciliation as failed
 			if _, isEvent := reconcileEvent.(*reconciler.ReconcilerEvent); !isEvent {
@@ -328,7 +322,7 @@ func (r *reconcilerImpl) updateStatus(ctx context.Context, existing *v1beta1.Clo
 		}
 
 		// If there's nothing to update, just return.
-		if equality.Semantic.DeepEqual(existing.Status, desired.Status) {
+		if reflect.DeepEqual(existing.Status, desired.Status) {
 			return nil
 		}
 
