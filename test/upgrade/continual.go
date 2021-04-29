@@ -40,7 +40,7 @@ func ContinualTest() pkgupgrade.BackgroundOperation {
 			// overwrite configuration
 			config.FailOnErrors = true
 			config.Interval = 10 * time.Millisecond
-			config.BrokerOpts = append(config.BrokerOpts, resources.WithBrokerClassForBrokerV1(brokerv1.BrokerClass))
+			config.BrokerOpts = append(config.BrokerOpts, resources.WithBrokerClassForBrokerV1Beta1(brokerv1.BrokerClass))
 			config.FinishedSleep = 40 * time.Second
 			// This is always relative path from the eventing prober in vendor directory
 			config.ConfigTemplate = "../../../../../../test/upgrade/config.toml"
