@@ -7,6 +7,7 @@ require (
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
 	cloud.google.com/go/pubsub v1.8.0
 	cloud.google.com/go/storage v1.10.0
+	contrib.go.opencensus.io/exporter/prometheus v0.3.0 // indirect
 	github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.4.1
 	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.2.1-0.20200806165906-9ae0708e27fa
 	github.com/cloudevents/sdk-go/v2 v2.4.1
@@ -19,13 +20,17 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lightstep/tracecontext.go v0.0.0-20181129014701-1757c391b1ac
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.10.0 // indirect
+	github.com/prometheus/common v0.20.0 // indirect
 	github.com/rickb777/date v1.13.0
 	go.opencensus.io v0.23.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
+	golang.org/x/crypto v0.0.0-20210415154028-4f45737414dc // indirect
 	golang.org/x/net v0.0.0-20210415231046-e915ea6b2b7d
 	golang.org/x/oauth2 v0.0.0-20210413134643-5e61552d6c78
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	google.golang.org/api v0.36.0
 	google.golang.org/genproto v0.0.0-20210416161957-9910b6c460de
 	google.golang.org/grpc v1.37.0
@@ -33,10 +38,10 @@ require (
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v0.19.7
-	knative.dev/eventing v0.22.1-0.20210427180853-474fb5b41c3b
-	knative.dev/hack v0.0.0-20210427190353-86f9adc0c8e2
-	knative.dev/pkg v0.0.0-20210426180040-cfc1eed82870
-	knative.dev/serving v0.22.1-0.20210427151553-c28723a2c225
+	knative.dev/eventing v0.22.1
+	knative.dev/hack v0.0.0-20210325223819-b6ab329907d3
+	knative.dev/pkg v0.0.0-20210331065221-952fdd90dbb0
+	knative.dev/serving v0.22.0
 	sigs.k8s.io/yaml v1.2.0
 )
 

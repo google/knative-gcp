@@ -45,8 +45,12 @@ var (
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
+		&Broker{},
+		&BrokerList{},
 		&EventType{},
 		&EventTypeList{},
+		&Trigger{},
+		&TriggerList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

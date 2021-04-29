@@ -25,9 +25,7 @@ import (
 	nethttp "net/http"
 	"time"
 
-	obsclient "github.com/cloudevents/sdk-go/observability/opencensus/v2/client"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/cloudevents/sdk-go/v2/client"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.opencensus.io/plugin/ochttp"
 	"go.uber.org/zap"
@@ -117,7 +115,10 @@ func main() {
 		if err := test_images.ConfigureTracing(logger.Sugar(), ""); err != nil {
 			log.Fatalf("Unable to setup trace publishing: %v", err)
 		}
-		c, err = cloudevents.NewClient(t, client.WithObservabilityService(obsclient.New()))
+
+		c, err = cloudevents.NewClientObserved(t,
+			cloudevents.WithTracePropagation,
+		)
 	} else {
 		c, err = cloudevents.NewClient(t)
 	}

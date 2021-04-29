@@ -17,9 +17,6 @@
 # This is a helper script for Knative release scripts.
 # See README.md for instructions on how to use it.
 
-# Print commands
-set -x
-
 source $(dirname "${BASH_SOURCE[0]}")/library.sh
 
 # Organization name in GitHub; defaults to Knative.
@@ -210,7 +207,6 @@ function prepare_dot_release() {
   # List latest release
   local releases # don't combine with the line below, or $? will be 0
   releases="$(hub_tool release)"
-  echo "Current releases are: ${releases}"
   [[ $? -eq 0 ]] || abort "cannot list releases"
   # If --release-branch passed, restrict to that release
   if [[ -n "${RELEASE_BRANCH}" ]]; then

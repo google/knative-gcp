@@ -35,7 +35,7 @@ var (
 // Prober is the interface for a prober, which checks the result of the probes when stopped.
 type Prober interface {
 	// Verify will verify prober state after finished has been send
-	Verify(ctx context.Context) ([]error, int, error)
+	Verify(ctx context.Context) ([]error, int)
 
 	// Finish send finished event
 	Finish(ctx context.Context)
@@ -59,21 +59,20 @@ func RunEventProber(ctx context.Context, log *zap.SugaredLogger, client *testlib
 // AssertEventProber will send finish event and then verify if all events propagated well
 func AssertEventProber(ctx context.Context, t *testing.T, prober Prober) {
 	prober.Finish(ctx)
-	defer prober.remove()
 
 	waitAfterFinished(prober)
 
-	eventErrs, eventCount, err := prober.Verify(ctx)
-	if err != nil {
-		t.Fatal("fetch error:", err)
-	}
-	if len(eventErrs) == 0 {
-		t.Logf("All %d events propagated well", eventCount)
+	errors, events := prober.Verify(ctx)
+	if len(errors) == 0 {
+		t.Logf("All %d events propagated well", events)
 	} else {
 		t.Logf("There were %d events propagated, but %d errors occurred. "+
-			"Listing them below.", eventCount, len(eventErrs))
+			"Listing them below.", events, len(errors))
 	}
-	prober.ReportErrors(t, eventErrs)
+
+	prober.ReportErrors(t, errors)
+
+	prober.remove()
 }
 
 type prober struct {

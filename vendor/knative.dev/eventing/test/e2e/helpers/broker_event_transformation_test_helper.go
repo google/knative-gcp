@@ -85,22 +85,40 @@ func EventTransformationForTriggerTestHelper(
 	)
 
 	// create trigger1 for event transformation
-	client.CreateTriggerOrFail(
-		originalTriggerName,
-		resources.WithBroker(brokerName),
-		resources.WithAttributesTriggerFilter(eventSource, eventType, nil),
-		resources.WithSubscriberServiceRefForTrigger(transformationPodName),
-	)
+	if triggerVersion == "v1" {
+		client.CreateTriggerV1OrFail(
+			originalTriggerName,
+			resources.WithBrokerV1(brokerName),
+			resources.WithAttributesTriggerFilterV1(eventSource, eventType, nil),
+			resources.WithSubscriberServiceRefForTriggerV1(transformationPodName),
+		)
+	} else {
+		client.CreateTriggerOrFailV1Beta1(
+			originalTriggerName,
+			resources.WithBrokerV1Beta1(brokerName),
+			resources.WithAttributesTriggerFilterV1Beta1(eventSource, eventType, nil),
+			resources.WithSubscriberServiceRefForTriggerV1Beta1(transformationPodName),
+		)
+	}
 
 	// create logger pod and service
 	eventTracker, _ := recordevents.StartEventRecordOrFail(ctx, client, recordEventsPodName)
 	// create trigger2 for event receiving
-	client.CreateTriggerOrFail(
-		transformedTriggerName,
-		resources.WithBroker(brokerName),
-		resources.WithAttributesTriggerFilter(transformedEventSource, transformedEventType, nil),
-		resources.WithSubscriberServiceRefForTrigger(recordEventsPodName),
-	)
+	if triggerVersion == "v1" {
+		client.CreateTriggerV1OrFail(
+			transformedTriggerName,
+			resources.WithBrokerV1(brokerName),
+			resources.WithAttributesTriggerFilterV1(transformedEventSource, transformedEventType, nil),
+			resources.WithSubscriberServiceRefForTriggerV1(recordEventsPodName),
+		)
+	} else {
+		client.CreateTriggerOrFailV1Beta1(
+			transformedTriggerName,
+			resources.WithBrokerV1Beta1(brokerName),
+			resources.WithAttributesTriggerFilterV1Beta1(transformedEventSource, transformedEventType, nil),
+			resources.WithSubscriberServiceRefForTriggerV1Beta1(recordEventsPodName),
+		)
+	}
 
 	// wait for all test resources to be ready, so that we can start sending events
 	client.WaitForAllTestResourcesReadyOrFail(ctx)

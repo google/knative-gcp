@@ -18,4 +18,8 @@ limitations under the License.
 
 package v1beta1
 
+type BrokerExpansion interface{}
+
 type EventTypeExpansion interface{}
+
+type TriggerExpansion interface{}

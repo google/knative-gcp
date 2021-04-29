@@ -26,9 +26,8 @@ import (
 )
 
 const (
-	resolverFileName    = "/etc/resolv.conf"
-	clusterDomainEnvKey = "CLUSTER_DOMAIN"
-	defaultDomainName   = "cluster.local"
+	resolverFileName  = "/etc/resolv.conf"
+	defaultDomainName = "cluster.local"
 )
 
 var (
@@ -56,7 +55,6 @@ func GetClusterDomainName() string {
 }
 
 func getClusterDomainName(r io.Reader) string {
-	// First look in the conf file.
 	for scanner := bufio.NewScanner(r); scanner.Scan(); {
 		elements := strings.Split(scanner.Text(), " ")
 		if elements[0] != "search" {
@@ -68,12 +66,6 @@ func getClusterDomainName(r io.Reader) string {
 			}
 		}
 	}
-
-	// Then look in the ENV.
-	if domain := os.Getenv(clusterDomainEnvKey); len(domain) > 0 {
-		return domain
-	}
-
 	// For all abnormal cases return default domain name.
 	return defaultDomainName
 }

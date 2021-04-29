@@ -107,9 +107,14 @@ func ChannelBasedBrokerCreator(channel metav1.TypeMeta, brokerClass string) Brok
 
 		switch version {
 		case "v1":
-			client.CreateBrokerOrFail(brokerName,
-				resources.WithBrokerClassForBroker(brokerClass),
-				resources.WithConfigForBroker(config),
+			client.CreateBrokerV1OrFail(brokerName,
+				resources.WithBrokerClassForBrokerV1(brokerClass),
+				resources.WithConfigForBrokerV1(config),
+			)
+		case "v1beta1":
+			client.CreateBrokerV1Beta1OrFail(brokerName,
+				resources.WithBrokerClassForBrokerV1Beta1(brokerClass),
+				resources.WithConfigForBrokerV1Beta1(config),
 			)
 		default:
 			panic("unknown version: " + version)
@@ -150,6 +155,8 @@ func TestBrokerWithManyTriggers(ctx context.Context, t *testing.T, brokerCreator
 		eventFilters []eventTestCase
 		// TriggerFilter with DeprecatedSourceAndType or not
 		deprecatedTriggerFilter bool
+		// Use v1beta1 trigger
+		v1beta1 bool
 	}{
 		{
 			name: "test default broker with many deprecated triggers",
@@ -181,6 +188,22 @@ func TestBrokerWithManyTriggers(ctx context.Context, t *testing.T, brokerCreator
 				{Type: eventType1, Source: eventSource1},
 			},
 			deprecatedTriggerFilter: false,
+		}, {
+			name: "test default broker with many attribute triggers using v1beta1 trigger",
+			eventsToSend: []eventTestCase{
+				{Type: eventType1, Source: eventSource1},
+				{Type: eventType1, Source: eventSource2},
+				{Type: eventType2, Source: eventSource1},
+				{Type: eventType2, Source: eventSource2},
+			},
+			eventFilters: []eventTestCase{
+				{Type: any, Source: any},
+				{Type: eventType1, Source: any},
+				{Type: any, Source: eventSource1},
+				{Type: eventType1, Source: eventSource1},
+			},
+			deprecatedTriggerFilter: false,
+			v1beta1:                 true,
 		}, {
 			name: "test default broker with many attribute and extension triggers",
 			eventsToSend: []eventTestCase{
@@ -217,14 +240,14 @@ func TestBrokerWithManyTriggers(ctx context.Context, t *testing.T, brokerCreator
 				}
 			}
 
-			brokerName := brokerCreator(client, "v1")
+			brokerName := brokerCreator(client, "v1beta1")
 
 			// Wait for broker ready.
 			client.WaitForResourceReadyOrFail(brokerName, testlib.BrokerTypeMeta)
 
 			if shouldLabelNamespace {
 				// Test if namespace reconciler would recreate broker once broker was deleted.
-				if err := client.Eventing.EventingV1().Brokers(client.Namespace).Delete(context.Background(), brokerName, metav1.DeleteOptions{}); err != nil {
+				if err := client.Eventing.EventingV1beta1().Brokers(client.Namespace).Delete(context.Background(), brokerName, metav1.DeleteOptions{}); err != nil {
 					t.Fatal("Can't delete default broker in namespace:", client.Namespace)
 				}
 				client.WaitForResourceReadyOrFail(brokerName, testlib.BrokerTypeMeta)
@@ -239,10 +262,10 @@ func TestBrokerWithManyTriggers(ctx context.Context, t *testing.T, brokerCreator
 				eventTrackers[subscriberName] = eventTracker
 				// Create trigger.
 				triggerName := "trigger-" + event.String()
-				client.CreateTriggerOrFail(triggerName,
-					resources.WithSubscriberServiceRefForTrigger(subscriberName),
-					resources.WithAttributesTriggerFilter(event.Source, event.Type, event.Extensions),
-					resources.WithBroker(brokerName),
+				client.CreateTriggerOrFailV1Beta1(triggerName,
+					resources.WithSubscriberServiceRefForTriggerV1Beta1(subscriberName),
+					resources.WithAttributesTriggerFilterV1Beta1(event.Source, event.Type, event.Extensions),
+					resources.WithBrokerV1Beta1(brokerName),
 				)
 			}
 			// Wait for all test resources to become ready before sending the events.
