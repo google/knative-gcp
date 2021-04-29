@@ -49,10 +49,10 @@ func createBrokerWithPubSubChannel(client *lib.Client) (url.URL, string) {
 	// Create a new Broker.
 	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
 	client.Core.CreateRBACResourcesForBrokers()
-	client.Core.CreateBrokerConfigMapOrFail(brokerName, lib.ChannelTypeMeta)
-	client.Core.CreateBrokerOrFail(brokerName,
+	cmRef := client.Core.CreateBrokerConfigMapOrFail(brokerName, lib.ChannelTypeMeta)
+	client.Core.CreateBrokerV1OrFail(brokerName,
 		eventingtestresources.WithBrokerClassForBrokerV1(eventing.MTChannelBrokerClassValue),
-		eventingtestresources.WithConfigMapForBrokerConfig(),
+		eventingtestresources.WithConfigForBrokerV1(cmRef),
 	)
 
 	// Wait for broker ready.
