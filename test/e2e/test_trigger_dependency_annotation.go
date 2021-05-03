@@ -25,6 +25,7 @@ import (
 	"cloud.google.com/go/pubsub"
 	v1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/lib"
+	gcpeventingresources "github.com/google/knative-gcp/test/lib/resources"
 
 	. "github.com/cloudevents/sdk-go/v2/test"
 	testlib "knative.dev/eventing/test/lib"
@@ -59,7 +60,7 @@ func TriggerDependencyAnnotationTestImpl(t *testing.T, authConfig lib.AuthConfig
 	client.Core.CreateTriggerV1OrFail(triggerName,
 		eventingresources.WithBrokerV1(brokerName),
 		eventingresources.WithSubscriberServiceRefForTriggerV1(subscriberName),
-		eventingresources.WithDependencyAnnotationTrigger(dependencyAnnotation),
+		gcpeventingresources.WithDependencyAnnotationTriggerV1(dependencyAnnotation),
 	)
 
 	pubSubConfig := lib.PubSubConfig{
