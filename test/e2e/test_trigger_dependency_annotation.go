@@ -28,7 +28,6 @@ import (
 	gcpeventingresources "github.com/google/knative-gcp/test/lib/resources"
 
 	. "github.com/cloudevents/sdk-go/v2/test"
-	testlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/recordevents"
 	eventingresources "knative.dev/eventing/test/lib/resources"
 )
@@ -73,7 +72,7 @@ func TriggerDependencyAnnotationTestImpl(t *testing.T, authConfig lib.AuthConfig
 	lib.MakePubSubOrDie(client, pubSubConfig)
 
 	// Trigger should become ready after CloudPubSubSource was created
-	client.Core.WaitForResourceReadyOrFail(triggerName, testlib.TriggerTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(triggerName, lib.TriggerTypeMeta)
 
 	// publish a message to PubSub
 	topic := lib.GetTopic(t, topicName)

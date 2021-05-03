@@ -29,7 +29,6 @@ import (
 	"cloud.google.com/go/pubsub"
 	v1 "k8s.io/api/core/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	eventingtestlib "knative.dev/eventing/test/lib"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/test/helpers"
 
@@ -82,7 +81,7 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
@@ -142,7 +141,7 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
@@ -221,7 +220,7 @@ func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID st
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
@@ -283,7 +282,7 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
@@ -348,7 +347,7 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
@@ -400,7 +399,7 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
 
@@ -457,7 +456,7 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 	// Just to make sure all resources are ready.
 
 	// Just to make sure all resources are ready.
