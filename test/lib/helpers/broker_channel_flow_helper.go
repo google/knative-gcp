@@ -183,11 +183,11 @@ func BrokerChannelFlowWithTransformation(
 		transformedEventTracker, _ := recordevents.StartEventRecordOrFail(ctx, client, transformedEventsRecorderPodName)
 
 		// create subscription
-		client.CreateSubscriptionOrFail(
+		client.CreateSubscriptionV1OrFail(
 			subscriptionName,
 			channelName,
 			&channel,
-			resources.WithSubscriberForSubscription(transformedEventsRecorderPodName),
+			resources.WithSubscriberForSubscriptionV1(transformedEventsRecorderPodName),
 		)
 
 		// wait for all test resources to be ready, so that we can start sending events
