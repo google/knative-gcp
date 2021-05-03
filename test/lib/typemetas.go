@@ -20,7 +20,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/google/knative-gcp/test/lib/resources"
+
+	eventingresources "knative.dev/eventing/test/lib/resources"
 )
+
+var BrokerTypeMeta = eventsV1TypeMeta(eventingresources.BrokerKind)
 
 var JobTypeMeta = batchTypeMeta(resources.JobKind)
 
