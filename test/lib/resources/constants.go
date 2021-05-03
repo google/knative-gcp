@@ -22,7 +22,7 @@ import "time"
 const (
 	BatchAPIVersion             = "batch/v1"
 	MessagingV1beta1APIVersion  = "messaging.cloud.google.com/v1beta1"
-	EventingV1APIVersion        = "eventing.knative.dev/v1beta1"
+	EventingV1APIVersion        = "eventing.knative.dev/v1"
 	EventsV1APIVersion          = "events.cloud.google.com/v1"
 	EventsV1beta1APIVersion     = "events.cloud.google.com/v1beta1"
 	EventsV1alpha1APIVersion    = "events.cloud.google.com/v1alpha1"
