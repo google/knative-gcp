@@ -24,7 +24,10 @@ import (
 	eventingresources "knative.dev/eventing/test/lib/resources"
 )
 
-var BrokerTypeMeta = eventsV1TypeMeta(eventingresources.BrokerKind)
+var BrokerTypeMeta = &metav1.TypeMeta{
+	Kind:       eventingresources.BrokerKind,
+	APIVersion: resources.EventingV1APIVersion,
+}
 
 var JobTypeMeta = batchTypeMeta(resources.JobKind)
 
