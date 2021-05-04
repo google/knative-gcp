@@ -50,7 +50,7 @@ func convertPubSubPull(ctx context.Context, msg *pubsub.Message) (*cev2.Event, e
 			// CloudEvents v1.0 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') as per
 			// the spec. It's not even possible for a conformant transport to allow non-base36 characters.
 			// Note `SetExtension` will make it lowercase so only `IsAlphaNumeric` needs to be checked here.
-			if !IsAlphaNumeric(k) {
+			if !IsExtensionNameValid(k) {
 				return nil, fmt.Errorf("cannot convert attribute %q to extension", k)
 			}
 			event.SetExtension(k, v)

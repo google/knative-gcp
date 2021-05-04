@@ -28,8 +28,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
+	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1/broker"
 )
 
 const (
@@ -46,7 +46,7 @@ type Reconciler struct {
 var _ brokerreconciler.Interface = (*Reconciler)(nil)
 var _ brokerreconciler.Finalizer = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, b *brokerv1beta1.Broker) pkgreconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, b *brokerv1.Broker) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling Broker", zap.Any("broker", b))
 	b.Status.InitializeConditions()
@@ -63,7 +63,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *brokerv1beta1.Broker)
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, brokerReconciled, "Broker reconciled: \"%s/%s\"", b.Namespace, b.Name)
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, b *brokerv1beta1.Broker) pkgreconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, b *brokerv1.Broker) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Finalizing Broker", zap.Any("broker", b))
 	bcs := celltenant.StatusableFromBroker(b)

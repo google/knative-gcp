@@ -23,13 +23,13 @@ import (
 	pkgduckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/go-cmp/cmp"
-	eventingduck "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
 var (
-	backoffPolicy = eventingduck.BackoffPolicyExponential
+	backoffPolicy = eventingduckv1.BackoffPolicyExponential
 	backoffDelay  = "PT1S"
 )
 
@@ -48,8 +48,8 @@ func TestChannelValidation(t *testing.T) {
 		name: "valid subscribers array",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				SubscribableSpec: &eventingduck.SubscribableSpec{
-					Subscribers: []eventingduck.SubscriberSpec{{
+				SubscribableSpec: &eventingduckv1.SubscribableSpec{
+					Subscribers: []eventingduckv1.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),
 						ReplyURI:      apis.HTTP("resultendpoint"),
 					}},
@@ -60,8 +60,8 @@ func TestChannelValidation(t *testing.T) {
 		name: "empty subscriber at index 1",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				SubscribableSpec: &eventingduck.SubscribableSpec{
-					Subscribers: []eventingduck.SubscriberSpec{{
+				SubscribableSpec: &eventingduckv1.SubscribableSpec{
+					Subscribers: []eventingduckv1.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),
 						ReplyURI:      apis.HTTP("replyendpoint"),
 					}, {}},
@@ -76,8 +76,8 @@ func TestChannelValidation(t *testing.T) {
 		name: "2 empty subscribers",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				SubscribableSpec: &eventingduck.SubscribableSpec{
-					Subscribers: []eventingduck.SubscriberSpec{{}, {}},
+				SubscribableSpec: &eventingduckv1.SubscribableSpec{
+					Subscribers: []eventingduckv1.SubscriberSpec{{}, {}},
 				},
 			},
 		},
@@ -95,11 +95,11 @@ func TestChannelValidation(t *testing.T) {
 		name: "invalid Delivery DeadLetterSink",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				SubscribableSpec: &eventingduck.SubscribableSpec{
-					Subscribers: []eventingduck.SubscriberSpec{
+				SubscribableSpec: &eventingduckv1.SubscribableSpec{
+					Subscribers: []eventingduckv1.SubscriberSpec{
 						{
 							ReplyURI: apis.HTTP("subscriberendpoint"),
-							Delivery: &eventingduck.DeliverySpec{
+							Delivery: &eventingduckv1.DeliverySpec{
 								BackoffDelay:  &backoffDelay,
 								BackoffPolicy: &backoffPolicy,
 								DeadLetterSink: &pkgduckv1.Destination{

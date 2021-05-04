@@ -28,7 +28,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/apis/eventing"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
@@ -100,7 +100,7 @@ func (r *Reconciler) addBrokersAndTriggersToTargets(ctx context.Context, bc *int
 }
 
 // addBrokerAndTriggersToConfig reconstructs the data entry for the given broker and adds it to targets-config.
-func addBrokerAndTriggersToConfig(_ context.Context, b *brokerv1beta1.Broker, triggers []*brokerv1beta1.Trigger, brokerTargets config.Targets) {
+func addBrokerAndTriggersToConfig(_ context.Context, b *brokerv1.Broker, triggers []*brokerv1.Trigger, brokerTargets config.Targets) {
 	// TODO Maybe get rid of GCPCellAddressableMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we always
 	//  delete or update the entire broker entry and we don't need partial updates per trigger.
 	// The code can be simplified to r.targetsConfig.Upsert(brokerConfigEntry)
@@ -111,7 +111,7 @@ func addBrokerAndTriggersToConfig(_ context.Context, b *brokerv1beta1.Broker, tr
 		brokerQueueState := config.State_UNKNOWN
 		// Set broker decouple queue to be ready only when both the topic and pull subscription are ready.
 		// PubSub will drop messages published to a topic if there is no subscription.
-		if b.Status.GetCondition(brokerv1beta1.BrokerConditionTopic).IsTrue() && b.Status.GetCondition(brokerv1beta1.BrokerConditionSubscription).IsTrue() {
+		if b.Status.GetCondition(brokerv1.BrokerConditionTopic).IsTrue() && b.Status.GetCondition(brokerv1.BrokerConditionSubscription).IsTrue() {
 			brokerQueueState = config.State_READY
 		}
 		// Then reconstruct the broker entry and insert it

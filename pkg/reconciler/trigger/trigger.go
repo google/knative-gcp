@@ -27,17 +27,17 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/google/knative-gcp/pkg/logging"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
-	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
+	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1/trigger"
+	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	reconcilerutils "github.com/google/knative-gcp/pkg/reconciler/utils"
-	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 )
 
 const (
@@ -66,7 +66,7 @@ var _ triggerreconciler.Interface = (*Reconciler)(nil)
 var _ triggerreconciler.Finalizer = (*Reconciler)(nil)
 
 // ReconcileKind implements Interface.ReconcileKind.
-func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger) pkgreconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1.Trigger) pkgreconciler.Event {
 	b, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
 
 	if err != nil && !apierrs.IsNotFound(err) {
@@ -120,7 +120,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 }
 
 // reconciles the Trigger given that its Broker exists and is not being deleted.
-func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1beta1.Trigger, b *brokerv1beta1.Broker) pkgreconciler.Event {
+func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1.Trigger, b *brokerv1.Broker) pkgreconciler.Event {
 	t.Status.InitializeConditions()
 	t.Status.PropagateBrokerStatus(&b.Status)
 
@@ -148,7 +148,7 @@ func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1beta1.Trigger, b 
 // 1) the Trigger is being deleted;
 // 2) the Broker of this Trigger is deleted;
 // 3) the Broker of this Trigger is updated with one that is not a GCP broker.
-func (r *Reconciler) FinalizeKind(ctx context.Context, t *brokerv1beta1.Trigger) pkgreconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, t *brokerv1.Trigger) pkgreconciler.Event {
 	// Don't care if the Trigger doesn't have the GCP Broker specific finalizer string.
 	// Right now all triggers have the finalizer because genreconciler automatically adds it.
 	// TODO(https://github.com/knative/pkg/issues/1149) Add a FilterKind to genreconciler so it will
@@ -163,7 +163,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, t *brokerv1beta1.Trigger)
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, triggerFinalized, "Trigger finalized: \"%s/%s\"", t.Namespace, t.Name)
 }
 
-func (r *Reconciler) resolveSubscriber(ctx context.Context, t *brokerv1beta1.Trigger, b *brokerv1beta1.Broker) error {
+func (r *Reconciler) resolveSubscriber(ctx context.Context, t *brokerv1.Trigger, b *brokerv1.Broker) error {
 	if t.Spec.Subscriber.Ref != nil && t.Spec.Subscriber.Ref.Namespace == "" {
 		// To call URIFromDestination(dest apisv1alpha1.Destination, parent interface{}), dest.Ref must have a Namespace
 		// We will use the Namespace of Trigger as the Namespace of dest.Ref
@@ -184,7 +184,7 @@ func (r *Reconciler) resolveSubscriber(ctx context.Context, t *brokerv1beta1.Tri
 }
 
 // hasGCPBrokerFinalizer checks if the Trigger object has a finalizer matching the one added by this controller.
-func hasGCPBrokerFinalizer(t *brokerv1beta1.Trigger) bool {
+func hasGCPBrokerFinalizer(t *brokerv1.Trigger) bool {
 	for _, f := range t.Finalizers {
 		if f == finalizerName {
 			return true
@@ -193,9 +193,9 @@ func hasGCPBrokerFinalizer(t *brokerv1beta1.Trigger) bool {
 	return false
 }
 
-func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *brokerv1beta1.Trigger) error {
-	if dependencyAnnotation, ok := t.GetAnnotations()[v1beta1.DependencyAnnotation]; ok {
-		dependencyObjRef, err := v1beta1.GetObjRefFromDependencyAnnotation(dependencyAnnotation)
+func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *brokerv1.Trigger) error {
+	if dependencyAnnotation, ok := t.GetAnnotations()[eventingv1.DependencyAnnotation]; ok {
+		dependencyObjRef, err := eventingv1.GetObjRefFromDependencyAnnotation(dependencyAnnotation)
 		if err != nil {
 			t.Status.MarkDependencyFailed("ReferenceError", "Unable to unmarshal objectReference from dependency annotation of trigger: %v", err)
 			return fmt.Errorf("getting object ref from dependency annotation %q: %v", dependencyAnnotation, err)
@@ -215,7 +215,7 @@ func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *brokerv1b
 	return nil
 }
 
-func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *brokerv1beta1.Trigger, dependencyObjRef corev1.ObjectReference) error {
+func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *brokerv1.Trigger, dependencyObjRef corev1.ObjectReference) error {
 	lister, err := r.sourceTracker.ListerFor(dependencyObjRef)
 	if err != nil {
 		t.Status.MarkDependencyUnknown("ListerDoesNotExist", "Failed to retrieve lister: %v", err)

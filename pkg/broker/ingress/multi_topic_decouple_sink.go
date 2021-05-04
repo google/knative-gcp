@@ -29,11 +29,11 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
-	"github.com/cloudevents/sdk-go/v2/extensions"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
 	"github.com/google/knative-gcp/pkg/logging"
+	"github.com/google/knative-gcp/pkg/tracing"
 )
 
 const projectEnvKey = "PROJECT_ID"
@@ -93,7 +93,7 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, broker *config.CellTe
 		return nil
 	}
 
-	dt := extensions.FromSpanContext(trace.FromContext(ctx).SpanContext())
+	dt := tracing.FromSpanContext(trace.FromContext(ctx).SpanContext())
 	msg := new(pubsub.Message)
 	if err := cepubsub.WritePubSubMessage(ctx, binding.ToMessage(&event), msg, dt.WriteTransformer()); err != nil {
 		return err

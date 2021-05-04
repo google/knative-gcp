@@ -24,7 +24,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/system"
 )
 
@@ -103,7 +103,7 @@ func NewDataresidencyConfigMapFromRegions(regions []string) *corev1.ConfigMap {
 
 // NewBrokerDeliveryConfigMapFromDeliverySpec creates a new cluster defaulted
 // broker delivery configuration map from a given delivery spec.
-func NewBrokerDeliveryConfigMapFromDeliverySpec(spec *eventingduckv1beta1.DeliverySpec) *corev1.ConfigMap {
+func NewBrokerDeliveryConfigMapFromDeliverySpec(spec *eventingduckv1.DeliverySpec) *corev1.ConfigMap {
 	var sb strings.Builder
 	sb.WriteString("\n  clusterDefaults:")
 	if spec != nil {

@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
@@ -41,10 +41,10 @@ import (
 	"knative.dev/pkg/network"
 	. "knative.dev/pkg/reconciler/testing"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
-	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
+	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1/broker"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
@@ -64,7 +64,7 @@ const (
 )
 
 var (
-	backoffPolicy           = eventingduckv1beta1.BackoffPolicyLinear
+	backoffPolicy           = eventingduckv1.BackoffPolicyLinear
 	backoffDelay            = "PT5S"
 	deadLetterTopicID       = "test-dead-letter-topic-id"
 	retry             int32 = 3
@@ -81,7 +81,7 @@ var (
 		Host:   fmt.Sprintf("%s.%s.svc.%s", ingressServiceName, systemNS, network.GetClusterDomainName()),
 		Path:   ingress.BrokerPath(testNS, brokerName),
 	}
-	brokerDeliverySpec = &eventingduckv1beta1.DeliverySpec{
+	brokerDeliverySpec = &eventingduckv1.DeliverySpec{
 		BackoffDelay:  &backoffDelay,
 		BackoffPolicy: &backoffPolicy,
 		Retry:         &retry,
@@ -96,7 +96,7 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = brokerv1beta1.AddToScheme(scheme.Scheme)
+	_ = brokerv1.AddToScheme(scheme.Scheme)
 }
 
 func TestAllCases(t *testing.T) {
@@ -111,7 +111,7 @@ func TestAllCases(t *testing.T) {
 		Key:  testKey,
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithInitBrokerConditions,
 				WithBrokerDeletionTimestamp,
 				WithBrokerSetDefaults,
@@ -132,7 +132,7 @@ func TestAllCases(t *testing.T) {
 		Key:  testKey,
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithInitBrokerConditions,
 				WithBrokerDeletionTimestamp,
@@ -158,7 +158,7 @@ func TestAllCases(t *testing.T) {
 		Key:  testKey,
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerSetDefaults),
@@ -168,7 +168,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerReadyURI(brokerAddress),
@@ -196,7 +196,7 @@ func TestAllCases(t *testing.T) {
 		Key:  testKey,
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerSetDefaults,
@@ -208,7 +208,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerReadyURI(brokerAddress),
@@ -237,7 +237,7 @@ func TestAllCases(t *testing.T) {
 		Key:  testKey,
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerSetDefaults,
@@ -249,7 +249,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 			{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerClass(brokerv1.BrokerClass),
 					WithBrokerUID(testUID),
 					WithBrokerDeliverySpec(brokerDeliverySpec),
 					WithInitBrokerConditions,
@@ -273,7 +273,7 @@ func TestAllCases(t *testing.T) {
 		Key:  testKey,
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerSetDefaults,
@@ -282,7 +282,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 			{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerClass(brokerv1.BrokerClass),
 					WithBrokerUID(testUID),
 					WithBrokerDeliverySpec(brokerDeliverySpec),
 					WithBrokerReadyURI(brokerAddress),
@@ -319,7 +319,7 @@ func TestAllCases(t *testing.T) {
 		Key:  testKey,
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerSetDefaults),
@@ -329,7 +329,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerReadyURI(brokerAddress),
@@ -364,7 +364,7 @@ func TestAllCases(t *testing.T) {
 		Key:  testKey,
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerSetDefaults),
@@ -374,7 +374,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerReadyURI(brokerAddress),
@@ -405,7 +405,7 @@ func TestAllCases(t *testing.T) {
 		Key:  testKey,
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerSetDefaults),
@@ -415,7 +415,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewBroker(brokerName, testNS,
-				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerClass(brokerv1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerDeliverySpec(brokerDeliverySpec),
 				WithBrokerReadyURI(brokerAddress),
@@ -485,7 +485,7 @@ func TestAllCases(t *testing.T) {
 				ClusterRegion:      testClusterRegion,
 			},
 		}
-		return brokerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerLister(), r.Recorder, r, brokerv1beta1.BrokerClass)
+		return brokerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerLister(), r.Recorder, r, brokerv1.BrokerClass)
 	}))
 }
 

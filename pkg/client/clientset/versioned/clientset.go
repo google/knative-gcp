@@ -21,7 +21,7 @@ package versioned
 import (
 	"fmt"
 
-	eventingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/broker/v1beta1"
+	eventingv1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/broker/v1"
 	eventsv1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1"
 	internalv1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1"
@@ -35,7 +35,7 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	EventingV1beta1() eventingv1beta1.EventingV1beta1Interface
+	EventingV1() eventingv1.EventingV1Interface
 	EventsV1beta1() eventsv1beta1.EventsV1beta1Interface
 	EventsV1() eventsv1.EventsV1Interface
 	InternalV1alpha1() internalv1alpha1.InternalV1alpha1Interface
@@ -48,7 +48,7 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	eventingV1beta1  *eventingv1beta1.EventingV1beta1Client
+	eventingV1       *eventingv1.EventingV1Client
 	eventsV1beta1    *eventsv1beta1.EventsV1beta1Client
 	eventsV1         *eventsv1.EventsV1Client
 	internalV1alpha1 *internalv1alpha1.InternalV1alpha1Client
@@ -57,9 +57,9 @@ type Clientset struct {
 	messagingV1beta1 *messagingv1beta1.MessagingV1beta1Client
 }
 
-// EventingV1beta1 retrieves the EventingV1beta1Client
-func (c *Clientset) EventingV1beta1() eventingv1beta1.EventingV1beta1Interface {
-	return c.eventingV1beta1
+// EventingV1 retrieves the EventingV1Client
+func (c *Clientset) EventingV1() eventingv1.EventingV1Interface {
+	return c.eventingV1
 }
 
 // EventsV1beta1 retrieves the EventsV1beta1Client
@@ -113,7 +113,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.eventingV1beta1, err = eventingv1beta1.NewForConfig(&configShallowCopy)
+	cs.eventingV1, err = eventingv1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.eventingV1beta1 = eventingv1beta1.NewForConfigOrDie(c)
+	cs.eventingV1 = eventingv1.NewForConfigOrDie(c)
 	cs.eventsV1beta1 = eventsv1beta1.NewForConfigOrDie(c)
 	cs.eventsV1 = eventsv1.NewForConfigOrDie(c)
 	cs.internalV1alpha1 = internalv1alpha1.NewForConfigOrDie(c)
@@ -168,7 +168,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.eventingV1beta1 = eventingv1beta1.New(c)
+	cs.eventingV1 = eventingv1.New(c)
 	cs.eventsV1beta1 = eventsv1beta1.New(c)
 	cs.eventsV1 = eventsv1.New(c)
 	cs.internalV1alpha1 = internalv1alpha1.New(c)

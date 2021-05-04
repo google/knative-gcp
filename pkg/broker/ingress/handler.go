@@ -24,10 +24,10 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 
+	ceocclient "github.com/cloudevents/sdk-go/observability/opencensus/v2/client"
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
-	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/wire"
@@ -163,7 +163,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	if span.IsRecordingEvents() {
 		span.AddAttributes(
 			append(
-				ceclient.EventTraceAttributes(event),
+				ceocclient.EventTraceAttributes(event),
 				kntracing.MessagingSystemAttribute,
 				tracing.PubSubProtocolAttribute,
 				broker.SpanMessagingDestinationAttribute(),

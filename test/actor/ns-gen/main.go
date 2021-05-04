@@ -33,7 +33,7 @@ metadata:
   name: {{.namespace}}
 `
 
-const brTemplate = `apiVersion: eventing.knative.dev/v1beta1
+const brTemplate = `apiVersion: eventing.knative.dev/v1
 kind: Broker
 metadata:
   name: testbroker
@@ -91,7 +91,7 @@ spec:
           value: http://aggregator.{{.namespace}}.svc.cluster.local
 {{.envs}}
 ---
-apiVersion: eventing.knative.dev/v1beta1
+apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
   name: trigger-actor-{{.index}}

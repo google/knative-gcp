@@ -22,11 +22,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	knativegcptestresources "github.com/google/knative-gcp/test/lib/resources"
-	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/test/helpers"
@@ -135,10 +134,10 @@ func SmokeGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	brokerName := helpers.AppendRandomString("gcp")
 	// Create a new GCP Broker.
-	gcpBroker := client.CreateGCPBrokerV1Beta1OrFail(brokerName, reconcilertesting.WithBrokerClass(v1beta1.BrokerClass))
+	gcpBroker := client.CreateGCPBrokerOrFail(brokerName, reconcilertesting.WithBrokerClass(brokerv1.BrokerClass))
 
 	// Wait for broker ready.
-	client.Core.WaitForResourceReadyOrFail(brokerName, eventingtestlib.BrokerTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(brokerName, lib.BrokerTypeMeta)
 
 	brokerresources.GenerateDecouplingTopicName(gcpBroker)
 
@@ -175,13 +174,13 @@ func SmokeGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 func createGCPBroker(client *lib.Client) (url.URL, string) {
 	brokerName := helpers.AppendRandomString("gcp")
 	// Create a new GCP Broker.
-	client.CreateGCPBrokerV1Beta1OrFail(brokerName, reconcilertesting.WithBrokerClass(v1beta1.BrokerClass))
+	client.CreateGCPBrokerOrFail(brokerName, reconcilertesting.WithBrokerClass(brokerv1.BrokerClass))
 
 	// Wait for broker ready.
-	client.Core.WaitForResourceReadyOrFail(brokerName, eventingtestlib.BrokerTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(brokerName, lib.BrokerTypeMeta)
 
 	// Get broker URL.
-	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, eventingtestlib.BrokerTypeMeta)
+	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, lib.BrokerTypeMeta)
 	u, err := duck.GetAddressableURI(client.Core.Dynamic, metaAddressable)
 	if err != nil {
 		client.T.Error(err.Error())

@@ -37,11 +37,11 @@ import (
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/resolver"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
-	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
-	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
-	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
+	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1/broker"
+	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1/trigger"
+	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1/trigger"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	reconcilerutils "github.com/google/knative-gcp/pkg/reconciler/utils"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -114,7 +114,7 @@ func newController(ctx context.Context, cmw configmap.Watcher, drs *dataresidenc
 			// Only care about brokers with proper brokerclass
 			FilterFunc: reconcilerutils.BrokerClassFilter,
 			Handler: controller.HandleAll(func(obj interface{}) {
-				if b, ok := obj.(*brokerv1beta1.Broker); ok {
+				if b, ok := obj.(*brokerv1.Broker); ok {
 					triggers, err := triggerinformer.Get(ctx).Lister().Triggers(b.Namespace).List(labels.SelectorFromSet(map[string]string{eventing.BrokerLabelKey: b.Name}))
 					if err != nil {
 						r.Logger.Warn("Failed to list triggers", zap.String("Namespace", b.Namespace), zap.String("Broker", b.Name))

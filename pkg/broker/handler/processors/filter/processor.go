@@ -78,7 +78,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 func startSpan(ctx context.Context, trigger types.NamespacedName, event *event.Event) (context.Context, *trace.Span) {
 	var span *trace.Span
 	if dt, ok := extensions.GetDistributedTracingExtension(*event); ok {
-		ctx, span = dt.StartChildSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
+		ctx, span = tracing.StartChildSpan(ctx, dt, kntracing.TriggerMessagingDestination(trigger))
 	} else {
 		ctx, span = trace.StartSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
 	}

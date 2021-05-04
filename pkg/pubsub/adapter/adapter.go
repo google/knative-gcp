@@ -264,7 +264,7 @@ func (a *Adapter) startSpan(ctx context.Context, event *cev2.Event) (context.Con
 	}
 	var span *trace.Span
 	if dt, ok := extensions.GetDistributedTracingExtension(*event); ok {
-		ctx, span = dt.StartChildSpan(ctx, spanName)
+		ctx, span = tracing.StartChildSpan(ctx, dt, spanName)
 	} else {
 		ctx, span = trace.StartSpan(ctx, spanName)
 	}

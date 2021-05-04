@@ -39,7 +39,7 @@ import (
 
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
-	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
+	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1"
 	"github.com/google/knative-gcp/pkg/logging"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"

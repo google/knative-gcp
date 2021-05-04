@@ -28,8 +28,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	v1 "k8s.io/api/core/v1"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
-	eventingtestlib "knative.dev/eventing/test/lib"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/test/helpers"
 
@@ -69,20 +68,20 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	kserviceName := CreateKService(client, "receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleEventType})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleRespEventType})
 	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
@@ -129,20 +128,20 @@ func BrokerEventTransformationMetricsTestHelper(client *lib.Client, projectID st
 	kserviceName := createFirstNErrsReceiver(client, 2)
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleEventType})
 	trigger := createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleRespEventType})
 	respTrigger := createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
@@ -208,20 +207,20 @@ func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID st
 	kserviceName := CreateKService(client, "receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleEventType})
 	trigger := createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter, eventingv1.TriggerAnyFilter,
 		map[string]interface{}{"type": lib.E2ESampleRespEventType})
 	respTrigger := createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
@@ -268,22 +267,22 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 	kserviceName := CreateKService(client, "pubsub_receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter,
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter,
 		schemasv1.CloudPubSubMessagePublishedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter,
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter,
 		lib.E2EPubSubRespEventType,
 		map[string]interface{}{})
 	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
@@ -333,22 +332,22 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 	kserviceName := CreateKService(client, "storage_receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter,
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter,
 		schemasv1.CloudStorageObjectFinalizedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter,
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter,
 		lib.E2EStorageRespEventType,
 		map[string]interface{}{})
 	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
@@ -385,22 +384,22 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 	kserviceName := CreateKService(client, "auditlogs_receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter,
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter,
 		schemasv1.CloudAuditLogsLogWrittenEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter,
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter,
 		lib.E2EAuditLogsRespType,
 		map[string]interface{}{})
 	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 	// Just to make sure all resources are ready.
 	time.Sleep(resources.WaitBrokercellTime)
 
@@ -442,22 +441,22 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 	kserviceName := CreateKService(client, "scheduler_receiver")
 
 	// Create a Trigger with the Knative Service subscriber.
-	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter,
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter,
 		schemasv1.CloudSchedulerJobExecutedEventType,
 		map[string]interface{}{})
 	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
 
 	// Create a Trigger with the target Service subscriber.
-	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
-		eventingv1beta1.TriggerAnyFilter,
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1(
+		eventingv1.TriggerAnyFilter,
 		lib.E2ESchedulerRespType,
 		map[string]interface{}{})
 	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
 
 	// Wait for ksvc, trigger ready.
 	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(lib.TriggerTypeMeta)
 	// Just to make sure all resources are ready.
 
 	// Just to make sure all resources are ready.
@@ -502,28 +501,28 @@ func createFirstNErrsReceiver(client *lib.Client, firstNErrs int) string {
 
 func createTriggerWithKServiceSubscriber(client *lib.Client,
 	brokerName, kserviceName string,
-	triggerFilter eventingtestresources.TriggerOptionV1Beta1) *eventingv1beta1.Trigger {
+	triggerFilter eventingtestresources.TriggerOptionV1) *eventingv1.Trigger {
 	client.T.Helper()
 	// Please refer to the graph in the file to check what sample trigger is used for.
 	triggerName := "trigger-broker-" + brokerName
-	return client.Core.CreateTriggerOrFailV1Beta1(
+	return client.Core.CreateTriggerV1OrFail(
 		triggerName,
-		eventingtestresources.WithBrokerV1Beta1(brokerName),
+		eventingtestresources.WithBrokerV1(brokerName),
 		triggerFilter,
-		eventingtestresources.WithSubscriberServiceRefForTriggerV1Beta1(kserviceName),
+		eventingtestresources.WithSubscriberServiceRefForTriggerV1(kserviceName),
 	)
 }
 
 func createTriggerWithTargetServiceSubscriber(client *lib.Client,
 	brokerName, targetName string,
-	triggerFilter eventingtestresources.TriggerOptionV1Beta1) *eventingv1beta1.Trigger {
+	triggerFilter eventingtestresources.TriggerOptionV1) *eventingv1.Trigger {
 	client.T.Helper()
 	respTriggerName := "resp-broker-" + brokerName
-	return client.Core.CreateTriggerOrFailV1Beta1(
+	return client.Core.CreateTriggerV1OrFail(
 		respTriggerName,
-		eventingtestresources.WithBrokerV1Beta1(brokerName),
+		eventingtestresources.WithBrokerV1(brokerName),
 		triggerFilter,
-		eventingtestresources.WithSubscriberServiceRefForTriggerV1Beta1(targetName),
+		eventingtestresources.WithSubscriberServiceRefForTriggerV1(targetName),
 	)
 }
 

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"testing"
 
-	duckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
@@ -41,7 +41,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/protobuf/proto"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
@@ -169,7 +169,7 @@ func TestAllCases(t *testing.T) {
 			WantUpdates: []clientgotesting.UpdateActionImpl{{Object: testingdata.Config(
 				NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
 				testingdata.BrokerCellObjects{
-					BrokersToTriggers: map[*brokerv1beta1.Broker][]*brokerv1beta1.Trigger{
+					BrokersToTriggers: map[*brokerv1.Broker][]*brokerv1.Trigger{
 						NewBroker("broker", testNS, WithBrokerSetDefaults): {},
 					},
 				},
@@ -755,7 +755,7 @@ func TestAllCases(t *testing.T) {
 				{Object: testingdata.Config(
 					NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
 					testingdata.BrokerCellObjects{
-						BrokersToTriggers: map[*brokerv1beta1.Broker][]*brokerv1beta1.Trigger{
+						BrokersToTriggers: map[*brokerv1.Broker][]*brokerv1.Trigger{
 							NewBroker("broker", testNS, WithBrokerSetDefaults): {},
 						},
 					})},
@@ -890,7 +890,7 @@ func TestAllCases(t *testing.T) {
 					WithBrokerCellSetDefaults),
 				testingdata.Config(NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
 					testingdata.BrokerCellObjects{
-						BrokersToTriggers: map[*brokerv1beta1.Broker][]*brokerv1beta1.Trigger{
+						BrokersToTriggers: map[*brokerv1.Broker][]*brokerv1.Trigger{
 							NewBroker("broker", testNS, WithBrokerSetDefaults): {},
 						},
 					}),
@@ -1070,16 +1070,16 @@ func emptyHPASpec(template *hpav2beta2.HorizontalPodAutoscaler) *hpav2beta2.Hori
 func TestBrokerTargetsReconcileConfig(t *testing.T) {
 	testCases := []struct {
 		name           string
-		broker         *brokerv1beta1.Broker
-		triggers       []*brokerv1beta1.Trigger
+		broker         *brokerv1.Broker
+		triggers       []*brokerv1.Trigger
 		channels       []*v1beta1.Channel
 		bc             *intv1alpha1.BrokerCell
 		expectEmptyMap bool
 	}{
 		{
 			name:   "reconcile config of one broker and its triggers",
-			broker: NewBroker("broker", testNS, WithBrokerClass(brokerv1beta1.BrokerClass)),
-			triggers: []*brokerv1beta1.Trigger{
+			broker: NewBroker("broker", testNS, WithBrokerClass(brokerv1.BrokerClass)),
+			triggers: []*brokerv1.Trigger{
 				NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
 				NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults),
 			},
@@ -1090,7 +1090,7 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 		{
 			name:   "reconcile config when the broker is not gcp broker",
 			broker: NewBroker("broker", testNS, WithBrokerClass("some-other-broker-class")),
-			triggers: []*brokerv1beta1.Trigger{
+			triggers: []*brokerv1.Trigger{
 				NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
 				NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults),
 			},
@@ -1109,24 +1109,24 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 			name: "Channels with Subscribers",
 			channels: []*v1beta1.Channel{
 				NewChannel("channel1", testNS, WithChannelSetDefaults, WithChannelAddress("http://example.com/1"),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-1-uid",
 						SubscriberURI: uri("http://example.com/subscriber-1-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-1-reply"),
 					}),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-2-uid",
 						SubscriberURI: uri("http://example.com/subscriber-2-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-2-reply"),
 					}),
 				),
 				NewChannel("channel2", testNS, WithChannelSetDefaults, WithChannelAddress("http://example.com/2"),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-3-uid",
 						SubscriberURI: uri("http://example.com/subscriber-3-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-3-reply"),
 					}),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-4-uid",
 						SubscriberURI: uri("http://example.com/subscriber-4-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-4-reply"),
@@ -1137,32 +1137,32 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 		},
 		{
 			name:   "Brokers and Channels",
-			broker: NewBroker("broker", testNS, WithBrokerClass(brokerv1beta1.BrokerClass)),
-			triggers: []*brokerv1beta1.Trigger{
+			broker: NewBroker("broker", testNS, WithBrokerClass(brokerv1.BrokerClass)),
+			triggers: []*brokerv1.Trigger{
 				NewTrigger("trigger1", testNS, "broker", WithTriggerSetDefaults),
 				NewTrigger("trigger2", testNS, "broker", WithTriggerSetDefaults),
 			},
 			bc: NewBrokerCell(brokerCellName, testNS, WithBrokerCellSetDefaults),
 			channels: []*v1beta1.Channel{
 				NewChannel("channel1", testNS, WithChannelSetDefaults, WithChannelAddress("http://example.com/1"),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-1-uid",
 						SubscriberURI: uri("http://example.com/subscriber-1-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-1-reply"),
 					}),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-2-uid",
 						SubscriberURI: uri("http://example.com/subscriber-2-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-2-reply"),
 					}),
 				),
 				NewChannel("channel2", testNS, WithChannelSetDefaults, WithChannelAddress("http://example.com/2"),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-3-uid",
 						SubscriberURI: uri("http://example.com/subscriber-3-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-3-reply"),
 					}),
-					WithChannelSubscribers(duckv1beta1.SubscriberSpec{
+					WithChannelSubscribers(eventingduckv1.SubscriberSpec{
 						UID:           "subscriber-4-uid",
 						SubscriberURI: uri("http://example.com/subscriber-4-uri"),
 						ReplyURI:      uri("http://example.com/subscriber-4-reply"),
@@ -1213,7 +1213,7 @@ func TestBrokerTargetsReconcileConfig(t *testing.T) {
 				wantMap = testingdata.EmptyConfig(t, tc.bc)
 			} else {
 				wantMap = testingdata.Config(tc.bc, testingdata.BrokerCellObjects{
-					BrokersToTriggers: map[*brokerv1beta1.Broker][]*brokerv1beta1.Trigger{
+					BrokersToTriggers: map[*brokerv1.Broker][]*brokerv1.Trigger{
 						tc.broker: tc.triggers,
 					},
 					Channels: tc.channels,

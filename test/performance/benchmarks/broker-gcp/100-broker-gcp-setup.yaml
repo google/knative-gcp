@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: eventing.knative.dev/v1beta1
+apiVersion: eventing.knative.dev/v1
 kind: Broker
 metadata:
   name: gcp
@@ -22,7 +22,6 @@ metadata:
 spec: {}
 
 ---
-
 apiVersion: internal.events.cloud.google.com/v1alpha1
 kind: BrokerCell
 metadata:
@@ -43,8 +42,7 @@ spec:
       maxReplicas: 2
 
 ---
-
-apiVersion: eventing.knative.dev/v1beta1
+apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
   name: broker-gcp
@@ -58,7 +56,6 @@ spec:
       name: broker-gcp-receiver
 
 ---
-
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -66,7 +63,6 @@ metadata:
   namespace: default
 
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -81,7 +77,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -96,7 +91,6 @@ spec:
       protocol: TCP
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:

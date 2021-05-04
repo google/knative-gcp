@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	eventingduck "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/webhook/resourcesemantics"
@@ -62,7 +62,7 @@ var (
 type ChannelSpec struct {
 	// Channel conforms to Duck type Subscribable.
 	// +optional
-	*eventingduck.SubscribableSpec `json:",inline"`
+	*eventingduckv1.SubscribableSpec `json:",inline"`
 }
 
 var channelCondSet = apis.NewLivingConditionSet(
@@ -106,7 +106,7 @@ type ChannelStatus struct {
 	duckv1.AddressStatus `json:",inline"`
 
 	// SubscribableStatus is populated with the statuses of each of the Channelable's subscribers.
-	eventingduck.SubscribableStatus `json:",inline"`
+	eventingduckv1.SubscribableStatus `json:",inline"`
 
 	// ProjectID is the resolved project ID in use by the Channel.
 	// +optional

@@ -21,10 +21,10 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	apis "knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -38,31 +38,31 @@ func TestRetrieveLatestUpdateTime(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		resource *v1beta1.Trigger
+		resource *brokerv1.Trigger
 		expected time.Time
 	}{
 		{
 			name: "Creation time is selected when there are no other updates",
-			resource: &v1beta1.Trigger{
+			resource: &brokerv1.Trigger{
 				ObjectMeta: metav1.ObjectMeta{
 					CreationTimestamp: metav1.Time{
 						Time: creationTime,
 					},
 				},
-				Status: v1beta1.TriggerStatus{},
+				Status: brokerv1.TriggerStatus{},
 			},
 			expected: creationTime,
 		},
 		{
 			name: "Latest status update is selected",
-			resource: &v1beta1.Trigger{
+			resource: &brokerv1.Trigger{
 				ObjectMeta: metav1.ObjectMeta{
 					CreationTimestamp: metav1.Time{
 						Time: trigger2StatusUpdate1,
 					},
 				},
-				Status: v1beta1.TriggerStatus{
-					TriggerStatus: eventingv1beta1.TriggerStatus{
+				Status: brokerv1.TriggerStatus{
+					TriggerStatus: eventingv1.TriggerStatus{
 						Status: duckv1.Status{
 							Conditions: []apis.Condition{
 								{
@@ -88,7 +88,7 @@ func TestRetrieveLatestUpdateTime(t *testing.T) {
 		},
 		{
 			name: "Deletion time is picked as the latest",
-			resource: &v1beta1.Trigger{
+			resource: &brokerv1.Trigger{
 				ObjectMeta: metav1.ObjectMeta{
 					CreationTimestamp: metav1.Time{
 						Time: trigger2StatusUpdate1,
@@ -97,8 +97,8 @@ func TestRetrieveLatestUpdateTime(t *testing.T) {
 						Time: deletionTime,
 					},
 				},
-				Status: v1beta1.TriggerStatus{
-					TriggerStatus: eventingv1beta1.TriggerStatus{
+				Status: brokerv1.TriggerStatus{
+					TriggerStatus: eventingv1.TriggerStatus{
 						Status: duckv1.Status{
 							Conditions: []apis.Condition{
 								{

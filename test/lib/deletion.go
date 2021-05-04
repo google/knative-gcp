@@ -75,7 +75,7 @@ func (c *Client) DeleteAuditLogsOrFail(name string) {
 func (c *Client) DeleteGCPBrokerOrFail(name string) {
 	ctx := context.Background()
 	c.T.Helper()
-	brokers := c.KnativeGCP.EventingV1beta1().Brokers(c.Namespace)
+	brokers := c.KnativeGCP.EventingV1().Brokers(c.Namespace)
 	err := brokers.Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to delete gcp broker %s/%s: %v", c.Namespace, name, err)

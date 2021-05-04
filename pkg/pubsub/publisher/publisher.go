@@ -28,6 +28,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/logging"
+	"github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils/authcheck"
 
 	"go.uber.org/zap"
@@ -36,7 +37,6 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol"
 
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
-	"github.com/cloudevents/sdk-go/v2/extensions"
 	"go.opencensus.io/trace"
 )
 
@@ -118,7 +118,7 @@ func (p *Publisher) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.
 
 // Publish publishes an incoming event to a pubsub topic.
 func (p *Publisher) Publish(ctx context.Context, event *cev2.Event) protocol.Result {
-	dt := extensions.FromSpanContext(trace.FromContext(ctx).SpanContext())
+	dt := tracing.FromSpanContext(trace.FromContext(ctx).SpanContext())
 	msg := new(pubsub.Message)
 	if err := cepubsub.WritePubSubMessage(ctx, binding.ToMessage(event), msg, dt.WriteTransformer()); err != nil {
 		return err

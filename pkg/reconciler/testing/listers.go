@@ -39,14 +39,14 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	fakeservingclientset "knative.dev/serving/pkg/client/clientset/versioned/fake"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	EventsV1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	inteventsv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	Messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
-	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
+	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1"
 	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1"
 	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1"
 	intlisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
@@ -195,11 +195,11 @@ func (l *Listers) GetConfigMapLister() corev1listers.ConfigMapLister {
 }
 
 func (l *Listers) GetBrokerLister() brokerlisters.BrokerLister {
-	return brokerlisters.NewBrokerLister(l.indexerFor(&brokerv1beta1.Broker{}))
+	return brokerlisters.NewBrokerLister(l.indexerFor(&brokerv1.Broker{}))
 }
 
 func (l *Listers) GetTriggerLister() brokerlisters.TriggerLister {
-	return brokerlisters.NewTriggerLister(l.indexerFor(&brokerv1beta1.Trigger{}))
+	return brokerlisters.NewTriggerLister(l.indexerFor(&brokerv1.Trigger{}))
 }
 
 func (l *Listers) GetBrokerCellLister() intlisters.BrokerCellLister {

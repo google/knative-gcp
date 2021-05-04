@@ -19,7 +19,7 @@ limitations under the License.
 package scheme
 
 import (
-	eventingv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	eventingv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	eventsv1 "github.com/google/knative-gcp/pkg/apis/events/v1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	internalv1 "github.com/google/knative-gcp/pkg/apis/intevents/v1"
@@ -37,7 +37,7 @@ var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
-	eventingv1beta1.AddToScheme,
+	eventingv1.AddToScheme,
 	eventsv1beta1.AddToScheme,
 	eventsv1.AddToScheme,
 	internalv1alpha1.AddToScheme,

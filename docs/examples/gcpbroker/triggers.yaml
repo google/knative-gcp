@@ -1,4 +1,3 @@
-
 # Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: eventing.knative.dev/v1beta1
+apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
   name: hello-display
@@ -25,13 +24,12 @@ spec:
       type: greeting
   subscriber:
     ref:
-     apiVersion: v1
-     kind: Service
-     name: hello-display
+      apiVersion: v1
+      kind: Service
+      name: hello-display
 
 ---
-
-apiVersion: eventing.knative.dev/v1beta1
+apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
   name: goodbye-display
@@ -43,6 +41,6 @@ spec:
       source: sendoff
   subscriber:
     ref:
-     apiVersion: v1
-     kind: Service
-     name: goodbye-display
+      apiVersion: v1
+      kind: Service
+      name: goodbye-display

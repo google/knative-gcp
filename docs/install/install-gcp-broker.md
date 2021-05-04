@@ -107,7 +107,7 @@ kubectl create namespace ${NAMESPACE}
 
    ```shell
    kubectl apply -f - << END
-   apiVersion: eventing.knative.dev/v1beta1
+   apiVersion: eventing.knative.dev/v1
    kind: Broker
    metadata:
      name: ${BROKER}

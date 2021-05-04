@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
@@ -95,12 +95,12 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, c *v1beta1.Channel) pkgre
 
 func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Channel) error {
 	if channel.Status.SubscribableStatus.Subscribers == nil {
-		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)
+		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1.SubscriberStatus, 0)
 	}
 
 	// Determine which subscribers should be deleted by getting all subscribers in the status and
 	// removing those that are still in the spec.
-	subDeletes := make(map[types.UID]eventingduckv1beta1.SubscriberStatus, len(channel.Status.Subscribers))
+	subDeletes := make(map[types.UID]eventingduckv1.SubscriberStatus, len(channel.Status.Subscribers))
 	for _, s := range channel.Status.Subscribers {
 		subDeletes[s.UID] = s
 	}
@@ -134,8 +134,8 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1beta1.Chann
 	return nil
 }
 
-func writeSubscriberStatus(channel *v1beta1.Channel, s eventingduckv1beta1.SubscriberSpec, status *celltenant.SubscriberStatus) {
-	newStatus := eventingduckv1beta1.SubscriberStatus{
+func writeSubscriberStatus(channel *v1beta1.Channel, s eventingduckv1.SubscriberSpec, status *celltenant.SubscriberStatus) {
+	newStatus := eventingduckv1.SubscriberStatus{
 		UID:                s.UID,
 		ObservedGeneration: s.Generation,
 		Ready:              status.Ready(),
@@ -151,7 +151,7 @@ func writeSubscriberStatus(channel *v1beta1.Channel, s eventingduckv1beta1.Subsc
 	channel.Status.SubscribableStatus.Subscribers = append(channel.Status.SubscribableStatus.Subscribers, newStatus)
 }
 
-func removeSubscriberStatus(channel *v1beta1.Channel, s eventingduckv1beta1.SubscriberStatus) {
+func removeSubscriberStatus(channel *v1beta1.Channel, s eventingduckv1.SubscriberStatus) {
 	for i, ss := range channel.Status.SubscribableStatus.Subscribers {
 		if ss.UID == s.UID {
 			// Remove this subscriber status by swapping len-1 with i and then popping len-1 off

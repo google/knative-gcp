@@ -26,10 +26,10 @@ import (
 
 	"go.uber.org/zap"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
-	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
-	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
+	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1/broker"
+	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1/trigger"
 	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	hpainformer "github.com/google/knative-gcp/pkg/client/injection/kube/informers/autoscaling/v2beta2/horizontalpodautoscaler"
 	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
@@ -120,7 +120,7 @@ func NewController(
 	// Watch brokers and triggers to invoke configmap update immediately.
 	brokerinformer.Get(ctx).Informer().AddEventHandler(controller.HandleAll(
 		func(obj interface{}) {
-			if b, ok := obj.(*brokerv1beta1.Broker); ok {
+			if b, ok := obj.(*brokerv1.Broker); ok {
 				// TODO(#866) Select the brokercell that's associated with the given broker.
 				impl.EnqueueKey(types.NamespacedName{Namespace: system.Namespace(), Name: brokerresources.DefaultBrokerCellName})
 				reportLatency(ctx, b, latencyReporter, "Broker", b.Name, b.Namespace)
@@ -129,7 +129,7 @@ func NewController(
 	))
 	triggerinformer.Get(ctx).Informer().AddEventHandler(controller.HandleAll(
 		func(obj interface{}) {
-			if t, ok := obj.(*brokerv1beta1.Trigger); ok {
+			if t, ok := obj.(*brokerv1.Trigger); ok {
 				// TODO(#866) Select the brokercell that's associated with the given broker.
 				impl.EnqueueKey(types.NamespacedName{Namespace: system.Namespace(), Name: brokerresources.DefaultBrokerCellName})
 				reportLatency(ctx, t, latencyReporter, "Trigger", t.Name, t.Namespace)

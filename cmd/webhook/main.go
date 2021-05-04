@@ -20,7 +20,7 @@ import (
 	"context"
 	"log"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	"github.com/google/knative-gcp/pkg/apis/configs/brokerdelivery"
 	"github.com/google/knative-gcp/pkg/apis/configs/dataresidency"
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
@@ -52,8 +52,8 @@ import (
 
 var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	// For group eventing.knative.dev.
-	brokerv1beta1.SchemeGroupVersion.WithKind("Broker"):  &brokerv1beta1.Broker{},
-	brokerv1beta1.SchemeGroupVersion.WithKind("Trigger"): &brokerv1beta1.Trigger{},
+	brokerv1.SchemeGroupVersion.WithKind("Broker"):  &brokerv1.Broker{},
+	brokerv1.SchemeGroupVersion.WithKind("Trigger"): &brokerv1.Trigger{},
 
 	// For group messaging.cloud.google.com.
 	messagingv1beta1.SchemeGroupVersion.WithKind("Channel"): &messagingv1beta1.Channel{},

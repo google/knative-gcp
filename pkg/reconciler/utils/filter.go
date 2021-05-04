@@ -17,10 +17,10 @@ limitations under the License.
 package utils
 
 import (
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	reconciler "knative.dev/pkg/reconciler"
 )
 
 // BrokerClassFilter is the function to filter brokers with proper brokerclass.
-var BrokerClassFilter = reconciler.AnnotationFilterFunc(eventingv1beta1.BrokerClassAnnotationKey, brokerv1beta1.BrokerClass, false /*allowUnset*/)
+var BrokerClassFilter = reconciler.AnnotationFilterFunc(eventingv1.BrokerClassAnnotationKey, brokerv1.BrokerClass, false /*allowUnset*/)

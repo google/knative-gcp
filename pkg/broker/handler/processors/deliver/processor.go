@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	ceocclient "github.com/cloudevents/sdk-go/observability/opencensus/v2/client"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
@@ -87,7 +88,7 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 		// If the broker no longer exists, then there is nothing to process.
 		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.Stringer("broker", bk))
 		trace.FromContext(ctx).Annotate(
-			ceclient.EventTraceAttributes(e),
+			ceocclient.EventTraceAttributes(e),
 			"event dropped: broker config no longer exists",
 		)
 		return nil
@@ -97,7 +98,7 @@ func (p *Processor) Process(ctx context.Context, e *event.Event) error {
 		// If the target no longer exists, then there is nothing to process.
 		logging.FromContext(ctx).Warn("target no longer exist in the config", zap.Stringer("target", tk))
 		trace.FromContext(ctx).Annotate(
-			ceclient.EventTraceAttributes(e),
+			ceocclient.EventTraceAttributes(e),
 			"event dropped: trigger config no longer exists",
 		)
 		return nil
@@ -291,7 +292,7 @@ func (p *Processor) sendToSubscriber(ctx context.Context, target *config.Target,
 	if span := trace.FromContext(ctx); span.IsRecordingEvents() {
 		span.Annotate(
 			append(
-				ceclient.EventTraceAttributes(e),
+				ceocclient.EventTraceAttributes(e),
 				trace.Int64Attribute("remaining_hops", int64(hops)),
 			),
 			"Event reply dropped due to hop limit",

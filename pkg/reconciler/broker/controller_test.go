@@ -33,7 +33,7 @@ import (
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	// Fake injection informers
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1/broker/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell/fake"
 )
 

@@ -25,9 +25,9 @@ import (
 	"cloud.google.com/go/pubsub"
 	v1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	"github.com/google/knative-gcp/test/lib"
+	gcpeventingresources "github.com/google/knative-gcp/test/lib/resources"
 
 	. "github.com/cloudevents/sdk-go/v2/test"
-	testlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/recordevents"
 	eventingresources "knative.dev/eventing/test/lib/resources"
 )
@@ -56,10 +56,10 @@ func TriggerDependencyAnnotationTestImpl(t *testing.T, authConfig lib.AuthConfig
 	eventTracker, _ := recordevents.StartEventRecordOrFail(ctx, client.Core, subscriberName)
 
 	// Create triggers.
-	client.Core.CreateTriggerOrFailV1Beta1(triggerName,
-		eventingresources.WithBrokerV1Beta1(brokerName),
-		eventingresources.WithSubscriberServiceRefForTriggerV1Beta1(subscriberName),
-		eventingresources.WithDependencyAnnotationTriggerV1Beta1(dependencyAnnotation),
+	client.Core.CreateTriggerV1OrFail(triggerName,
+		eventingresources.WithBrokerV1(brokerName),
+		eventingresources.WithSubscriberServiceRefForTriggerV1(subscriberName),
+		gcpeventingresources.WithDependencyAnnotationTriggerV1(dependencyAnnotation),
 	)
 
 	pubSubConfig := lib.PubSubConfig{
@@ -72,7 +72,7 @@ func TriggerDependencyAnnotationTestImpl(t *testing.T, authConfig lib.AuthConfig
 	lib.MakePubSubOrDie(client, pubSubConfig)
 
 	// Trigger should become ready after CloudPubSubSource was created
-	client.Core.WaitForResourceReadyOrFail(triggerName, testlib.TriggerTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(triggerName, lib.TriggerTypeMeta)
 
 	// publish a message to PubSub
 	topic := lib.GetTopic(t, topicName)

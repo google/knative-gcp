@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"knative.dev/eventing/pkg/apis/eventing"
-	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/test/helpers"
@@ -49,17 +48,17 @@ func createBrokerWithPubSubChannel(client *lib.Client) (url.URL, string) {
 	// Create a new Broker.
 	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
 	client.Core.CreateRBACResourcesForBrokers()
-	client.Core.CreateBrokerConfigMapOrFail(brokerName, lib.ChannelTypeMeta)
-	client.Core.CreateBrokerV1Beta1OrFail(brokerName,
-		eventingtestresources.WithBrokerClassForBrokerV1Beta1(eventing.MTChannelBrokerClassValue),
-		eventingtestresources.WithConfigMapForBrokerConfig(),
+	cmRef := client.Core.CreateBrokerConfigMapOrFail(brokerName, lib.ChannelTypeMeta)
+	client.Core.CreateBrokerV1OrFail(brokerName,
+		eventingtestresources.WithBrokerClassForBrokerV1(eventing.MTChannelBrokerClassValue),
+		eventingtestresources.WithConfigForBrokerV1(cmRef),
 	)
 
 	// Wait for broker ready.
-	client.Core.WaitForResourceReadyOrFail(brokerName, eventingtestlib.BrokerTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(brokerName, lib.BrokerTypeMeta)
 
 	// Get broker URL.
-	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, eventingtestlib.BrokerTypeMeta)
+	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, lib.BrokerTypeMeta)
 	u, err := duck.GetAddressableURI(client.Core.Dynamic, metaAddressable)
 	if err != nil {
 		client.T.Error(err.Error())

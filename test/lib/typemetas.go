@@ -20,7 +20,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/google/knative-gcp/test/lib/resources"
+
+	eventingresources "knative.dev/eventing/test/lib/resources"
 )
+
+var BrokerTypeMeta = eventingTypeMeta(eventingresources.BrokerKind)
+
+var TriggerTypeMeta = eventingTypeMeta(eventingresources.TriggerKind)
+
+func eventingTypeMeta(kind string) *metav1.TypeMeta {
+	return &metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: resources.EventingV1APIVersion,
+	}
+}
 
 var JobTypeMeta = batchTypeMeta(resources.JobKind)
 

@@ -19,7 +19,7 @@ package v1beta1
 import (
 	"testing"
 
-	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
@@ -29,7 +29,7 @@ import (
 
 var (
 	clusterDefaultedBackoffDelay  = "PT1S"
-	clusterDefaultedBackoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
+	clusterDefaultedBackoffPolicy = eventingduckv1.BackoffPolicyExponential
 )
 
 func TestChannelDefaults(t *testing.T) {

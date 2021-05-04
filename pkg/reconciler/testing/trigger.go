@@ -20,22 +20,21 @@ import (
 	"context"
 	"time"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/apis/eventing"
-	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // TriggerOption enables further configuration of a Trigger.
-type TriggerOption func(*brokerv1beta1.Trigger)
+type TriggerOption func(*brokerv1.Trigger)
 
 // NewTrigger creates a Trigger with TriggerOptions.
-func NewTrigger(name, namespace, broker string, to ...TriggerOption) *brokerv1beta1.Trigger {
-	t := &brokerv1beta1.Trigger{
+func NewTrigger(name, namespace, broker string, to ...TriggerOption) *brokerv1.Trigger {
+	t := &brokerv1.Trigger{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -44,7 +43,7 @@ func NewTrigger(name, namespace, broker string, to ...TriggerOption) *brokerv1be
 				eventing.BrokerLabelKey: broker,
 			},
 		},
-		Spec: eventingv1beta1.TriggerSpec{
+		Spec: eventingv1.TriggerSpec{
 			Broker: broker,
 		},
 	}
@@ -56,13 +55,13 @@ func NewTrigger(name, namespace, broker string, to ...TriggerOption) *brokerv1be
 
 func WithTriggerSubscriberURI(rawurl string) TriggerOption {
 	uri, _ := apis.ParseURL(rawurl)
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Spec.Subscriber = duckv1.Destination{URI: uri}
 	}
 }
 
 func WithTriggerSubscriberRef(gvk metav1.GroupVersionKind, name, namespace string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Spec.Subscriber = duckv1.Destination{
 			Ref: &duckv1.KReference{
 				APIVersion: ApiVersion(gvk),
@@ -76,7 +75,7 @@ func WithTriggerSubscriberRef(gvk metav1.GroupVersionKind, name, namespace strin
 
 func WithTriggerSubscriberRefAndURIReference(gvk metav1.GroupVersionKind, name, namespace string, rawuri string) TriggerOption {
 	uri, _ := apis.ParseURL(rawuri)
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Spec.Subscriber = duckv1.Destination{
 			Ref: &duckv1.KReference{
 				APIVersion: ApiVersion(gvk),
@@ -90,136 +89,136 @@ func WithTriggerSubscriberRefAndURIReference(gvk metav1.GroupVersionKind, name, 
 }
 
 // WithInitTriggerConditions initializes the Triggers's conditions.
-func WithInitTriggerConditions(t *brokerv1beta1.Trigger) {
+func WithInitTriggerConditions(t *brokerv1.Trigger) {
 	t.Status.InitializeConditions()
 }
 
 func WithTriggerGeneration(gen int64) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Generation = gen
 	}
 }
 
 func WithTriggerStatusObservedGeneration(gen int64) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Status.ObservedGeneration = gen
 	}
 }
 
 // WithTriggerBrokerReady initializes the Triggers's conditions as if its
 // Broker were ready.
-func WithTriggerBrokerReady(t *brokerv1beta1.Trigger) {
-	t.Status.PropagateBrokerStatus(brokerv1beta1.TestHelper.ReadyBrokerStatus())
+func WithTriggerBrokerReady(t *brokerv1.Trigger) {
+	t.Status.PropagateBrokerStatus(brokerv1.TestHelper.ReadyBrokerStatus())
 }
 
 // WithTriggerBrokerFailed marks the Broker as failed
 func WithTriggerBrokerFailed(reason, message string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Status.MarkBrokerFailed(reason, message)
 	}
 }
 
 // WithTriggerBrokerUnknown marks the Broker as unknown
 func WithTriggerBrokerUnknown(reason, message string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Status.MarkBrokerUnknown(reason, message)
 	}
 }
 
 func WithTriggerStatusSubscriberURI(uri string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		u, _ := apis.ParseURL(uri)
 		t.Status.SubscriberURI = u
 	}
 }
 
 func WithInjectionAnnotation(injectionAnnotation string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		if t.Annotations == nil {
 			t.Annotations = make(map[string]string)
 		}
-		t.Annotations[v1beta1.InjectionAnnotation] = injectionAnnotation
+		t.Annotations[eventingv1.InjectionAnnotation] = injectionAnnotation
 	}
 }
 
 func WithDependencyAnnotation(dependencyAnnotation string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		if t.Annotations == nil {
 			t.Annotations = make(map[string]string)
 		}
-		t.Annotations[v1beta1.DependencyAnnotation] = dependencyAnnotation
+		t.Annotations[eventingv1.DependencyAnnotation] = dependencyAnnotation
 	}
 }
 
-func WithTriggerDependencyReady(t *brokerv1beta1.Trigger) {
+func WithTriggerDependencyReady(t *brokerv1.Trigger) {
 	t.Status.MarkDependencySucceeded()
 }
 
 func WithTriggerDependencyFailed(reason, message string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Status.MarkDependencyFailed(reason, message)
 	}
 }
 
 func WithTriggerDependencyUnknown(reason, message string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Status.MarkDependencyUnknown(reason, message)
 	}
 }
 
-func WithTriggerSubscriberResolvedSucceeded(t *brokerv1beta1.Trigger) {
+func WithTriggerSubscriberResolvedSucceeded(t *brokerv1.Trigger) {
 	t.Status.MarkSubscriberResolvedSucceeded()
 }
 
 func WithTriggerSubscriberResolvedFailed(reason, message string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Status.MarkSubscriberResolvedFailed(reason, message)
 	}
 }
 
 func WithTriggerSubscriberResolvedUnknown(reason, message string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Status.MarkSubscriberResolvedUnknown(reason, message)
 	}
 }
 
-func WithTriggerSubscriptionReady(t *brokerv1beta1.Trigger) {
+func WithTriggerSubscriptionReady(t *brokerv1.Trigger) {
 	t.Status.MarkSubscriptionReady("")
 }
 
-func WithTriggerTopicReady(t *brokerv1beta1.Trigger) {
+func WithTriggerTopicReady(t *brokerv1.Trigger) {
 	t.Status.MarkTopicReady()
 }
 
 func WithTriggerTopicUnknown(reason, msg string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Status.MarkTopicUnknown(reason, msg)
 	}
 }
 
 func WithTriggerSubscriptionUnknown(reason, msg string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Status.MarkSubscriptionUnknown(reason, msg)
 	}
 }
 
-func WithTriggerDeletionTimestamp(t *brokerv1beta1.Trigger) {
+func WithTriggerDeletionTimestamp(t *brokerv1.Trigger) {
 	deleteTime := metav1.NewTime(time.Unix(1e9, 0))
 	t.ObjectMeta.SetDeletionTimestamp(&deleteTime)
 }
 
 func WithTriggerUID(uid string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.UID = types.UID(uid)
 	}
 }
 
 func WithTriggerFinalizers(finalizers ...string) TriggerOption {
-	return func(t *brokerv1beta1.Trigger) {
+	return func(t *brokerv1.Trigger) {
 		t.Finalizers = finalizers
 	}
 }
 
-func WithTriggerSetDefaults(t *brokerv1beta1.Trigger) {
+func WithTriggerSetDefaults(t *brokerv1.Trigger) {
 	t.SetDefaults(context.Background())
 }
