@@ -24,7 +24,7 @@ import (
 
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	sources "knative.dev/eventing/pkg/apis/sources"
-	sourcesv1beta1 "knative.dev/eventing/pkg/apis/sources/v1beta1"
+	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
 )
 
 // EventTypeProbe is a handler that maps an event types to its corresponding underlying handler.
@@ -64,7 +64,7 @@ func NewEventTypeHandler(brokerE2EDeliveryProbe *BrokerE2EDeliveryProbe, cloudPu
 		sources.ApiServerSourceUpdateEventType:               apiServerSourceUpdateProbe,
 		sources.ApiServerSourceDeleteEventType:               apiServerSourceDeleteProbe,
 		schemasv1.CloudSchedulerJobExecutedEventType:         cloudSchedulerSourceProbe,
-		sourcesv1beta1.PingSourceEventType:                   pingSourceProbe,
+		sourcesv1.PingSourceEventType:                        pingSourceProbe,
 	}
 	return &EventTypeProbe{
 		forward: forwardHandlers,

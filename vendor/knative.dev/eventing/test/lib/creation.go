@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/retry"
@@ -34,15 +35,9 @@ import (
 	"knative.dev/pkg/reconciler"
 
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	flowsv1 "knative.dev/eventing/pkg/apis/flows/v1"
-	flowsv1beta1 "knative.dev/eventing/pkg/apis/flows/v1beta1"
 	messagingv1 "knative.dev/eventing/pkg/apis/messaging/v1"
-	messagingv1beta1 "knative.dev/eventing/pkg/apis/messaging/v1beta1"
 	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
-	sourcesv1alpha1 "knative.dev/eventing/pkg/apis/sources/v1alpha1"
-	sourcesv1alpha2 "knative.dev/eventing/pkg/apis/sources/v1alpha2"
-	sourcesv1beta1 "knative.dev/eventing/pkg/apis/sources/v1beta1"
 	sourcesv1beta2 "knative.dev/eventing/pkg/apis/sources/v1beta2"
 	"knative.dev/eventing/pkg/utils"
 	"knative.dev/eventing/test/lib/duck"
@@ -103,25 +98,8 @@ func (c *Client) CreateChannelsOrFail(names []string, channelTypeMeta *metav1.Ty
 	}
 }
 
-// CreateChannelWithDefaultOrFail will create a default Channel Resource in Eventing or fail the test if there is an error.
-func (c *Client) CreateChannelWithDefaultOrFail(channel *messagingv1beta1.Channel) {
-	c.T.Logf("Creating default v1beta1 channel %+v", channel)
-	channels := c.Eventing.MessagingV1beta1().Channels(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := channels.Create(context.Background(), channel, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create channel %q: %v", channel.Name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create channel %q: %v", channel.Name, err)
-	}
-	c.Tracker.AddObj(channel)
-}
-
 // CreateChannelV1WithDefaultOrFail will create a default Channel Resource in Eventing or fail the test if there is an error.
-func (c *Client) CreateChannelV1WithDefaultOrFail(channel *messagingv1.Channel) {
+func (c *Client) CreateChannelWithDefaultOrFail(channel *messagingv1.Channel) {
 	c.T.Logf("Creating default v1 channel %+v", channel)
 	channels := c.Eventing.MessagingV1().Channels(c.Namespace)
 	err := c.RetryWebhookErrors(func(attempts int) (err error) {
@@ -137,57 +115,14 @@ func (c *Client) CreateChannelV1WithDefaultOrFail(channel *messagingv1.Channel) 
 	c.Tracker.AddObj(channel)
 }
 
-// CreateSubscriptionOrFail will create a v1beta1 Subscription or fail the test if there is an error.
+// CreateSubscriptionV1OrFail will create a v1 Subscription or fail the test if there is an error.
 func (c *Client) CreateSubscriptionOrFail(
 	name, channelName string,
 	channelTypeMeta *metav1.TypeMeta,
-	options ...resources.SubscriptionOptionV1Beta1,
-) *messagingv1beta1.Subscription {
-	namespace := c.Namespace
-	subscription := resources.SubscriptionV1Beta1(name, channelName, channelTypeMeta, options...)
-	subscriptions := c.Eventing.MessagingV1beta1().Subscriptions(namespace)
-	var retSubscription *messagingv1beta1.Subscription
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		c.T.Logf("Creating v1beta1 subscription %s for channel %+v-%s", name, channelTypeMeta, channelName)
-		// update subscription with the new reference
-		var e error
-		retSubscription, e = subscriptions.Create(context.Background(), subscription, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create subscription %q: %v", name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create subscription %q: %v", name, err)
-	}
-	// Note that if the Create above failed with 'already created', then retSubscription won't be valid, so we have to grab it again.
-	if err != nil && errors.IsAlreadyExists(err) {
-		err = c.RetryWebhookErrors(func(attempts int) (err error) {
-			c.T.Logf("Getting v1beta1 subscription %s for channel %+v-%s", name, channelTypeMeta, channelName)
-			// update subscription with the new reference
-			var e error
-			retSubscription, e = subscriptions.Get(context.Background(), name, metav1.GetOptions{})
-			if e != nil {
-				c.T.Logf("Failed to get subscription %q: %v", name, e)
-			}
-			return e
-		})
-		if err != nil {
-			c.T.Fatalf("Failed to get a created subscription %q: %v", name, err)
-		}
-	}
-	c.Tracker.AddObj(retSubscription)
-	return retSubscription
-}
-
-// CreateSubscriptionV1OrFail will create a v1 Subscription or fail the test if there is an error.
-func (c *Client) CreateSubscriptionV1OrFail(
-	name, channelName string,
-	channelTypeMeta *metav1.TypeMeta,
-	options ...resources.SubscriptionOptionV1,
+	options ...resources.SubscriptionOption,
 ) *messagingv1.Subscription {
 	namespace := c.Namespace
-	subscription := resources.SubscriptionV1(name, channelName, channelTypeMeta, options...)
+	subscription := resources.Subscription(name, channelName, channelTypeMeta, options...)
 	var retSubscription *messagingv1.Subscription
 	subscriptions := c.Eventing.MessagingV1().Subscriptions(namespace)
 	err := c.RetryWebhookErrors(func(attempts int) (err error) {
@@ -222,29 +157,16 @@ func (c *Client) CreateSubscriptionV1OrFail(
 	return retSubscription
 }
 
-// CreateSubscriptionsOrFail will create a list of v1beta1 Subscriptions with the same configuration except the name.
+// CreateSubscriptionsV1OrFail will create a list of v1 Subscriptions with the same configuration except the name.
 func (c *Client) CreateSubscriptionsOrFail(
 	names []string,
 	channelName string,
 	channelTypeMeta *metav1.TypeMeta,
-	options ...resources.SubscriptionOptionV1Beta1,
+	options ...resources.SubscriptionOption,
 ) {
 	c.T.Logf("Creating subscriptions %v for channel %+v-%s", names, channelTypeMeta, channelName)
 	for _, name := range names {
 		c.CreateSubscriptionOrFail(name, channelName, channelTypeMeta, options...)
-	}
-}
-
-// CreateSubscriptionsV1OrFail will create a list of v1 Subscriptions with the same configuration except the name.
-func (c *Client) CreateSubscriptionsV1OrFail(
-	names []string,
-	channelName string,
-	channelTypeMeta *metav1.TypeMeta,
-	options ...resources.SubscriptionOptionV1,
-) {
-	c.T.Logf("Creating subscriptions %v for channel %+v-%s", names, channelTypeMeta, channelName)
-	for _, name := range names {
-		c.CreateSubscriptionV1OrFail(name, channelName, channelTypeMeta, options...)
 	}
 }
 
@@ -284,86 +206,10 @@ func (c *Client) CreateBrokerConfigMapOrFail(name string, channel *metav1.TypeMe
 	}
 }
 
-// CreateBrokerV1Beta1OrFail will create a v1beta1 Broker or fail the test if there is an error.
-func (c *Client) CreateBrokerV1Beta1OrFail(name string, options ...resources.BrokerV1Beta1Option) *v1beta1.Broker {
-	namespace := c.Namespace
-	broker := resources.BrokerV1Beta1(name, options...)
-	var retBroker *v1beta1.Broker
-	brokers := c.Eventing.EventingV1beta1().Brokers(namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		c.T.Logf("Creating v1beta1 broker %s", name)
-		// update broker with the new reference
-		var e error
-		retBroker, e = brokers.Create(context.Background(), broker, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create v1beta1 broker %q: %v", name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create v1beta1 broker %q: %v", name, err)
-	}
-	if err != nil && errors.IsAlreadyExists(err) {
-		c.RetryWebhookErrors(func(attempts int) (err error) {
-			c.T.Logf("Getting v1beta1 broker %s", name)
-			// update broker with the new reference
-			var e error
-			retBroker, e = brokers.Get(context.Background(), name, metav1.GetOptions{})
-			if e != nil {
-				c.T.Fatalf("Failed to get created v1beta1 broker %q: %v", name, e)
-			}
-			return e
-		})
-	}
-	c.Tracker.AddObj(retBroker)
-	return retBroker
-}
-
-// CreateTriggerOrFailV1Beta1 will create a v1beta1 Trigger or fail the test if there is an error.
-func (c *Client) CreateTriggerOrFailV1Beta1(name string, options ...resources.TriggerOptionV1Beta1) *v1beta1.Trigger {
-	namespace := c.Namespace
-	trigger := resources.TriggerV1Beta1(name, options...)
-	var retTrigger *v1beta1.Trigger
-	triggers := c.Eventing.EventingV1beta1().Triggers(namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		c.T.Logf("Creating v1beta1 trigger %s", name)
-		// update trigger with the new reference
-		var e error
-		retTrigger, e = triggers.Create(context.Background(), trigger, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create v1beta1 trigger %q: %v", name, e)
-		}
-		return e
-	})
-
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create v1beta1 trigger %q: %v", name, err)
-	}
-
-	if err != nil && errors.IsAlreadyExists(err) {
-		err = c.RetryWebhookErrors(func(attempts int) (err error) {
-			c.T.Logf("Getting v1beta1 trigger %s", name)
-			// update trigger with the new reference
-			var e error
-			retTrigger, e = triggers.Get(context.Background(), name, metav1.GetOptions{})
-			if e != nil {
-				c.T.Logf("Failed to get created v1beta1 trigger %q: %v", name, e)
-			}
-			return e
-		})
-		if err != nil {
-			c.T.Fatalf("Failed to get created v1beta1 trigger %q: %v", name, err)
-		}
-	}
-
-	c.Tracker.AddObj(retTrigger)
-	return retTrigger
-}
-
 // CreateBrokerV1OrFail will create a v1 Broker or fail the test if there is an error.
-func (c *Client) CreateBrokerV1OrFail(name string, options ...resources.BrokerV1Option) *eventingv1.Broker {
+func (c *Client) CreateBrokerOrFail(name string, options ...resources.BrokerOption) *eventingv1.Broker {
 	namespace := c.Namespace
-	broker := resources.BrokerV1(name, options...)
+	broker := resources.Broker(name, options...)
 	var retBroker *eventingv1.Broker
 	brokers := c.Eventing.EventingV1().Brokers(namespace)
 	err := c.RetryWebhookErrors(func(attempts int) (err error) {
@@ -399,10 +245,10 @@ func (c *Client) CreateBrokerV1OrFail(name string, options ...resources.BrokerV1
 	return retBroker
 }
 
-// CreateTriggerOrFailV1 will create a v1 Trigger or fail the test if there is an error.
-func (c *Client) CreateTriggerV1OrFail(name string, options ...resources.TriggerOptionV1) *eventingv1.Trigger {
+// CreateTriggerOrFail will create a v1 Trigger or fail the test if there is an error.
+func (c *Client) CreateTriggerOrFail(name string, options ...resources.TriggerOption) *eventingv1.Trigger {
 	namespace := c.Namespace
-	trigger := resources.TriggerV1(name, options...)
+	trigger := resources.Trigger(name, options...)
 	var retTrigger *eventingv1.Trigger
 	triggers := c.Eventing.EventingV1().Triggers(namespace)
 	err := c.RetryWebhookErrors(func(attempts int) (err error) {
@@ -439,25 +285,7 @@ func (c *Client) CreateTriggerV1OrFail(name string, options ...resources.Trigger
 
 // CreateFlowsSequenceOrFail will create a Sequence (in flows.knative.dev api group) or
 // fail the test if there is an error.
-func (c *Client) CreateFlowsSequenceOrFail(sequence *flowsv1beta1.Sequence) {
-	c.T.Logf("Creating flows sequence %+v", sequence)
-	sequences := c.Eventing.FlowsV1beta1().Sequences(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := sequences.Create(context.Background(), sequence, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create flows sequence %q: %v", sequence.Name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create flows sequence %q: %v", sequence.Name, err)
-	}
-	c.Tracker.AddObj(sequence)
-}
-
-// CreateFlowsSequenceOrFail will create a Sequence (in flows.knative.dev api group) or
-// fail the test if there is an error.
-func (c *Client) CreateFlowsSequenceV1OrFail(sequence *flowsv1.Sequence) {
+func (c *Client) CreateFlowsSequenceOrFail(sequence *flowsv1.Sequence) {
 	c.T.Logf("Creating flows sequence %+v", sequence)
 	sequences := c.Eventing.FlowsV1().Sequences(c.Namespace)
 	err := c.RetryWebhookErrors(func(attempts int) (err error) {
@@ -475,25 +303,7 @@ func (c *Client) CreateFlowsSequenceV1OrFail(sequence *flowsv1.Sequence) {
 
 // CreateFlowsParallelOrFail will create a Parallel (in flows.knative.dev api group) or
 // fail the test if there is an error.
-func (c *Client) CreateFlowsParallelOrFail(parallel *flowsv1beta1.Parallel) {
-	c.T.Logf("Creating flows parallel %+v", parallel)
-	parallels := c.Eventing.FlowsV1beta1().Parallels(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := parallels.Create(context.Background(), parallel, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create flows parallel %q: %v", parallel.Name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create flows parallel %q: %v", parallel.Name, err)
-	}
-	c.Tracker.AddObj(parallel)
-}
-
-// CreateFlowsParallelOrFail will create a Parallel (in flows.knative.dev api group) or
-// fail the test if there is an error.
-func (c *Client) CreateFlowsParallelV1OrFail(parallel *flowsv1.Parallel) {
+func (c *Client) CreateFlowsParallelOrFail(parallel *flowsv1.Parallel) {
 	c.T.Logf("Creating flows parallel %+v", parallel)
 	parallels := c.Eventing.FlowsV1().Parallels(c.Namespace)
 	err := c.RetryWebhookErrors(func(attempts int) (err error) {
@@ -507,57 +317,6 @@ func (c *Client) CreateFlowsParallelV1OrFail(parallel *flowsv1.Parallel) {
 		c.T.Fatalf("Failed to create flows parallel %q: %v", parallel.Name, err)
 	}
 	c.Tracker.AddObj(parallel)
-}
-
-// CreateSinkBindingV1Alpha1OrFail will create a SinkBinding or fail the test if there is an error.
-func (c *Client) CreateSinkBindingV1Alpha1OrFail(sb *sourcesv1alpha1.SinkBinding) {
-	c.T.Logf("Creating sinkbinding %+v", sb)
-	sbInterface := c.Eventing.SourcesV1alpha1().SinkBindings(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := sbInterface.Create(context.Background(), sb, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create sinkbinding %q: %v", sb.Name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create sinkbinding %q: %v", sb.Name, err)
-	}
-	c.Tracker.AddObj(sb)
-}
-
-// CreateSinkBindingV1Alpha2OrFail will create a SinkBinding or fail the test if there is an error.
-func (c *Client) CreateSinkBindingV1Alpha2OrFail(sb *sourcesv1alpha2.SinkBinding) {
-	c.T.Logf("Creating sinkbinding %+v", sb)
-	sbInterface := c.Eventing.SourcesV1alpha2().SinkBindings(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := sbInterface.Create(context.Background(), sb, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create sinkbinding %q: %v", sb.Name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create sinkbinding %q: %v", sb.Name, err)
-	}
-	c.Tracker.AddObj(sb)
-}
-
-// CreateSinkBindingV1Beta1OrFail will create a SinkBinding or fail the test if there is an error.
-func (c *Client) CreateSinkBindingV1Beta1OrFail(sb *sourcesv1beta1.SinkBinding) {
-	c.T.Logf("Creating sinkbinding %+v", sb)
-	sbInterface := c.Eventing.SourcesV1beta1().SinkBindings(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := sbInterface.Create(context.Background(), sb, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create sinkbinding %q: %v", sb.Name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create sinkbinding %q: %v", sb.Name, err)
-	}
-	c.Tracker.AddObj(sb)
 }
 
 // CreateSinkBindingV1OrFail will create a SinkBinding or fail the test if there is an error.
@@ -577,40 +336,6 @@ func (c *Client) CreateSinkBindingV1OrFail(sb *sourcesv1.SinkBinding) {
 	c.Tracker.AddObj(sb)
 }
 
-// CreateApiServerSourceV1Alpha2OrFail will create an v1alpha2 ApiServerSource
-func (c *Client) CreateApiServerSourceV1Alpha2OrFail(apiServerSource *sourcesv1alpha2.ApiServerSource) {
-	c.T.Logf("Creating apiserversource %+v", apiServerSource)
-	apiServerInterface := c.Eventing.SourcesV1alpha2().ApiServerSources(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := apiServerInterface.Create(context.Background(), apiServerSource, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create apiserversource %q: %v", apiServerSource.Name, err)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create apiserversource %q: %v", apiServerSource.Name, err)
-	}
-	c.Tracker.AddObj(apiServerSource)
-}
-
-// CreateApiServerSourceV1Beta1OrFail will create an v1beta1 ApiServerSource
-func (c *Client) CreateApiServerSourceV1Beta1OrFail(apiServerSource *sourcesv1beta1.ApiServerSource) {
-	c.T.Logf("Creating apiserversource %+v", apiServerSource)
-	apiServerInterface := c.Eventing.SourcesV1beta1().ApiServerSources(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := apiServerInterface.Create(context.Background(), apiServerSource, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create apiserversource %q: %v", apiServerSource.Name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create apiserversource %q: %v", apiServerSource.Name, err)
-	}
-	c.Tracker.AddObj(apiServerSource)
-}
-
 // CreateApiServerSourceV1OrFail will create an v1 ApiServerSource
 func (c *Client) CreateApiServerSourceV1OrFail(apiServerSource *sourcesv1.ApiServerSource) {
 	c.T.Logf("Creating apiserversource %+v", apiServerSource)
@@ -626,40 +351,6 @@ func (c *Client) CreateApiServerSourceV1OrFail(apiServerSource *sourcesv1.ApiSer
 		c.T.Fatalf("Failed to create apiserversource %q: %v", apiServerSource.Name, err)
 	}
 	c.Tracker.AddObj(apiServerSource)
-}
-
-// CreateContainerSourceV1Alpha2OrFail will create a v1alpha2 ContainerSource.
-func (c *Client) CreateContainerSourceV1Alpha2OrFail(containerSource *sourcesv1alpha2.ContainerSource) {
-	c.T.Logf("Creating containersource %+v", containerSource)
-	containerInterface := c.Eventing.SourcesV1alpha2().ContainerSources(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := containerInterface.Create(context.Background(), containerSource, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create containersource %q: %v", containerSource.Name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create containersource %q: %v", containerSource.Name, err)
-	}
-	c.Tracker.AddObj(containerSource)
-}
-
-// CreateContainerSourceV1Beta1OrFail will create a v1beta1 ContainerSource.
-func (c *Client) CreateContainerSourceV1Beta1OrFail(containerSource *sourcesv1beta1.ContainerSource) {
-	c.T.Logf("Creating containersource %+v", containerSource)
-	containerInterface := c.Eventing.SourcesV1beta1().ContainerSources(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := containerInterface.Create(context.Background(), containerSource, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create containersource %q: %v", containerSource.Name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create containersource %q: %v", containerSource.Name, err)
-	}
-	c.Tracker.AddObj(containerSource)
 }
 
 // CreateContainerSourceV1OrFail will create a v1 ContainerSource.
@@ -679,44 +370,27 @@ func (c *Client) CreateContainerSourceV1OrFail(containerSource *sourcesv1.Contai
 	c.Tracker.AddObj(containerSource)
 }
 
-// CreatePingSourceV1Alpha2OrFail will create a PingSource
-func (c *Client) CreatePingSourceV1Alpha2OrFail(pingSource *sourcesv1alpha2.PingSource) {
-	c.T.Logf("Creating pingsource %+v", pingSource)
-	pingInterface := c.Eventing.SourcesV1alpha2().PingSources(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := pingInterface.Create(context.Background(), pingSource, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create pingsource %q: %v", pingSource.Name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create pingsource %q: %v", pingSource.Name, err)
-	}
-	c.Tracker.AddObj(pingSource)
-}
-
-// CreatePingSourceV1Beta1OrFail will create a PingSource
-func (c *Client) CreatePingSourceV1Beta1OrFail(pingSource *sourcesv1beta1.PingSource) {
-	c.T.Logf("Creating pingsource %+v", pingSource)
-	pingInterface := c.Eventing.SourcesV1beta1().PingSources(c.Namespace)
-	err := c.RetryWebhookErrors(func(attempts int) (err error) {
-		_, e := pingInterface.Create(context.Background(), pingSource, metav1.CreateOptions{})
-		if e != nil {
-			c.T.Logf("Failed to create pingsource %q: %v", pingSource.Name, e)
-		}
-		return e
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		c.T.Fatalf("Failed to create pingsource %q: %v", pingSource.Name, err)
-	}
-	c.Tracker.AddObj(pingSource)
-}
-
 // CreatePingSourceV1Beta2OrFail will create a PingSource
 func (c *Client) CreatePingSourceV1Beta2OrFail(pingSource *sourcesv1beta2.PingSource) {
 	c.T.Logf("Creating pingsource %+v", pingSource)
 	pingInterface := c.Eventing.SourcesV1beta2().PingSources(c.Namespace)
+	err := c.RetryWebhookErrors(func(attempts int) (err error) {
+		_, e := pingInterface.Create(context.Background(), pingSource, metav1.CreateOptions{})
+		if e != nil {
+			c.T.Logf("Failed to create pingsource %q: %v", pingSource.Name, e)
+		}
+		return e
+	})
+	if err != nil && !errors.IsAlreadyExists(err) {
+		c.T.Fatalf("Failed to create pingsource %q: %v", pingSource.Name, err)
+	}
+	c.Tracker.AddObj(pingSource)
+}
+
+// CreatePingSourceV1OrFail will create a PingSource
+func (c *Client) CreatePingSourceV1OrFail(pingSource *sourcesv1.PingSource) {
+	c.T.Logf("Creating pingsource %+v", pingSource)
+	pingInterface := c.Eventing.SourcesV1().PingSources(c.Namespace)
 	err := c.RetryWebhookErrors(func(attempts int) (err error) {
 		_, e := pingInterface.Create(context.Background(), pingSource, metav1.CreateOptions{})
 		if e != nil {
@@ -771,11 +445,15 @@ func (c *Client) CreatePodOrFail(pod *corev1.Pod, options ...func(*corev1.Pod, *
 
 	c.applyAdditionalEnv(&pod.Spec)
 
-	err := reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
+	// the following retryable errors are expected when creating a blank Pod:
+	// - update conflicts
+	// - "No API token found for service account %q,
+	//    retry after the token is automatically created and added to the service account"
+	err := reconciler.RetryErrors(func(attempts int) (err error) {
 		c.T.Logf("Creating pod %+v", pod)
 		_, e := c.Kube.CreatePod(context.Background(), pod)
 		return e
-	})
+	}, apierrs.IsConflict, apierrs.IsServerTimeout)
 	if err != nil {
 		c.T.Fatalf("Failed to create pod %q: %v", pod.Name, err)
 	}

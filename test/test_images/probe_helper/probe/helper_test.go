@@ -48,7 +48,7 @@ import (
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	schemasv1 "github.com/google/knative-gcp/pkg/schemas/v1"
 	sources "knative.dev/eventing/pkg/apis/sources"
-	sourcesv1beta1 "knative.dev/eventing/pkg/apis/sources/v1beta1"
+	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
 
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -364,8 +364,8 @@ func runTestPingSource(ctx context.Context, group *errgroup.Group, period time.D
 			case <-ticker.C:
 				executedEvent := cloudevents.NewEvent()
 				executedEvent.SetID("1234567890")
-				executedEvent.SetType(sourcesv1beta1.PingSourceEventType)
-				executedEvent.SetSource(sourcesv1beta1.PingSourceSource(testNamespace, "test-ping-source"))
+				executedEvent.SetType(sourcesv1.PingSourceEventType)
+				executedEvent.SetSource(sourcesv1.PingSourceSource(testNamespace, "test-ping-source"))
 				if res := c.Send(ctx, executedEvent); !cloudevents.IsACK(res) {
 					logging.FromContext(ctx).Warnf("Failed to send job executed CloudEvent from the test PingSource: %v", res)
 				}

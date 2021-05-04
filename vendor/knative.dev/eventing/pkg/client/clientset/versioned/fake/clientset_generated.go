@@ -31,20 +31,10 @@ import (
 	fakeeventingv1beta1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/eventing/v1beta1/fake"
 	flowsv1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/flows/v1"
 	fakeflowsv1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/flows/v1/fake"
-	flowsv1beta1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/flows/v1beta1"
-	fakeflowsv1beta1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/flows/v1beta1/fake"
 	messagingv1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/messaging/v1"
 	fakemessagingv1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/messaging/v1/fake"
-	messagingv1beta1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/messaging/v1beta1"
-	fakemessagingv1beta1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/messaging/v1beta1/fake"
 	sourcesv1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1"
 	fakesourcesv1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1/fake"
-	sourcesv1alpha1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1alpha1"
-	fakesourcesv1alpha1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1alpha1/fake"
-	sourcesv1alpha2 "knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1alpha2"
-	fakesourcesv1alpha2 "knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1alpha2/fake"
-	sourcesv1beta1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1beta1"
-	fakesourcesv1beta1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1beta1/fake"
 	sourcesv1beta2 "knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1beta2"
 	fakesourcesv1beta2 "knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1beta2/fake"
 )
@@ -106,39 +96,14 @@ func (c *Clientset) EventingV1() eventingv1.EventingV1Interface {
 	return &fakeeventingv1.FakeEventingV1{Fake: &c.Fake}
 }
 
-// FlowsV1beta1 retrieves the FlowsV1beta1Client
-func (c *Clientset) FlowsV1beta1() flowsv1beta1.FlowsV1beta1Interface {
-	return &fakeflowsv1beta1.FakeFlowsV1beta1{Fake: &c.Fake}
-}
-
 // FlowsV1 retrieves the FlowsV1Client
 func (c *Clientset) FlowsV1() flowsv1.FlowsV1Interface {
 	return &fakeflowsv1.FakeFlowsV1{Fake: &c.Fake}
 }
 
-// MessagingV1beta1 retrieves the MessagingV1beta1Client
-func (c *Clientset) MessagingV1beta1() messagingv1beta1.MessagingV1beta1Interface {
-	return &fakemessagingv1beta1.FakeMessagingV1beta1{Fake: &c.Fake}
-}
-
 // MessagingV1 retrieves the MessagingV1Client
 func (c *Clientset) MessagingV1() messagingv1.MessagingV1Interface {
 	return &fakemessagingv1.FakeMessagingV1{Fake: &c.Fake}
-}
-
-// SourcesV1alpha1 retrieves the SourcesV1alpha1Client
-func (c *Clientset) SourcesV1alpha1() sourcesv1alpha1.SourcesV1alpha1Interface {
-	return &fakesourcesv1alpha1.FakeSourcesV1alpha1{Fake: &c.Fake}
-}
-
-// SourcesV1alpha2 retrieves the SourcesV1alpha2Client
-func (c *Clientset) SourcesV1alpha2() sourcesv1alpha2.SourcesV1alpha2Interface {
-	return &fakesourcesv1alpha2.FakeSourcesV1alpha2{Fake: &c.Fake}
-}
-
-// SourcesV1beta1 retrieves the SourcesV1beta1Client
-func (c *Clientset) SourcesV1beta1() sourcesv1beta1.SourcesV1beta1Interface {
-	return &fakesourcesv1beta1.FakeSourcesV1beta1{Fake: &c.Fake}
 }
 
 // SourcesV1beta2 retrieves the SourcesV1beta2Client
