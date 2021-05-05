@@ -169,9 +169,7 @@ func TestChannelChain(t *testing.T) {
 	e2ehelpers.ChannelChainTestHelper(
 		context.Background(),
 		t,
-		// TODO(tommyreddad): eventing 0.22 e2e/helpers has a bug where SubscriptionV1beta1 and SubscriptionV1 are flipped in the ChannelChainTestHelper.
-		// Flip it back once v1beta1 is deprecated in eventing >0.22. Tracking issue: https://github.com/google/knative-gcp/issues/2202
-		e2ehelpers.SubscriptionV1beta1,
+		e2ehelpers.SubscriptionV1,
 		channelTestRunner,
 		func(client *eventingtestlib.Client) {
 			// This test is running based on code in knative/eventing, so it does not use the same
