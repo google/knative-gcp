@@ -505,7 +505,7 @@ func createTriggerWithKServiceSubscriber(client *lib.Client,
 	client.T.Helper()
 	// Please refer to the graph in the file to check what sample trigger is used for.
 	triggerName := "trigger-broker-" + brokerName
-	return client.Core.CreateTriggerV1OrFail(
+	return client.Core.CreateTriggerOrFail(
 		triggerName,
 		eventingtestresources.WithBroker(brokerName),
 		triggerFilter,
@@ -518,7 +518,7 @@ func createTriggerWithTargetServiceSubscriber(client *lib.Client,
 	triggerFilter eventingtestresources.TriggerOption) *eventingv1.Trigger {
 	client.T.Helper()
 	respTriggerName := "resp-broker-" + brokerName
-	return client.Core.CreateTriggerV1OrFail(
+	return client.Core.CreateTriggerOrFail(
 		respTriggerName,
 		eventingtestresources.WithBroker(brokerName),
 		triggerFilter,
