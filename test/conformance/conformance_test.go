@@ -29,7 +29,6 @@ import (
 	"knative.dev/pkg/test/logstream"
 
 	"github.com/google/knative-gcp/test/lib"
-	gcpe2ehelpers "github.com/google/knative-gcp/test/lib/helpers"
 )
 
 // All conformance tests go below:
@@ -45,7 +44,7 @@ func TestEventTransformationForTrigger(t *testing.T) {
 	brokerVersion := "v1"
 	triggerVersion := "v1"
 	channelTestRunner.RunTests(t, eventingtestlib.FeatureBasic, func(t *testing.T, component metav1.TypeMeta) {
-		gcpe2ehelpers.EventTransformationForTriggerTestHelper(
+		e2ehelpers.EventTransformationForTriggerTestHelper(
 			context.Background(),
 			t,
 			brokerVersion,
@@ -74,7 +73,7 @@ func TestBrokerChannelFlow(t *testing.T) {
 	brokerClass := "MTChannelBasedBroker"
 	brokerVersion := "v1"
 	triggerVersion := "v1"
-	gcpe2ehelpers.BrokerChannelFlowWithTransformation(
+	e2ehelpers.BrokerChannelFlowWithTransformation(
 		context.Background(),
 		t,
 		brokerClass,
