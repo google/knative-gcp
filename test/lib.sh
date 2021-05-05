@@ -41,15 +41,11 @@ function start_knative_gcp_monitoring() {
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
   # Try reapply serving yaml again in case of race condition between webhook and config map
-  start_release_knative_serving 0.22.0 || start_release_knative_serving 0.22.0 || return 1
-  # TODO(tommyreddad): revert to using serving nightly once https://github.com/google/knative-gcp/pull/2199 goes in. Tracking issue: https://github.com/google/knative-gcp/issues/2201
-  #start_latest_knative_serving || start_latest_knative_serving || return 1
+  start_latest_knative_serving || start_latest_knative_serving || return 1
   # Try reapply eventing yaml again if config-imc-event-dispatcher failed to start
   # TODO: Restore the below line after https://github.com/knative/eventing/issues/3244 is fixed
   #start_latest_knative_eventing || return 1
-  start_release_knative_eventing 0.22.1 || start_release_knative_eventing 0.22.1 || return 1
-  # TODO(tommyreddad): revert to using eventing nightly once https://github.com/google/knative-gcp/pull/2199 goes in. Tracking issue: https://github.com/google/knative-gcp/issues/2201
-  #start_latest_knative_eventing || start_latest_knative_eventing || return 1
+  start_latest_knative_eventing || start_latest_knative_eventing || return 1
   start_knative_gcp_monitoring "$KNATIVE_GCP_MONITORING_YAML" || return 1
   cloud_run_events_setup $@ || return 1
   istio_patch || return 1

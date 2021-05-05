@@ -26,6 +26,7 @@ import (
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	knativegcptestresources "github.com/google/knative-gcp/test/lib/resources"
+	testlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/test/helpers"
@@ -137,7 +138,7 @@ func SmokeGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	gcpBroker := client.CreateGCPBrokerOrFail(brokerName, reconcilertesting.WithBrokerClass(brokerv1.BrokerClass))
 
 	// Wait for broker ready.
-	client.Core.WaitForResourceReadyOrFail(brokerName, lib.BrokerTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(brokerName, testlib.BrokerTypeMeta)
 
 	brokerresources.GenerateDecouplingTopicName(gcpBroker)
 
@@ -177,10 +178,10 @@ func createGCPBroker(client *lib.Client) (url.URL, string) {
 	client.CreateGCPBrokerOrFail(brokerName, reconcilertesting.WithBrokerClass(brokerv1.BrokerClass))
 
 	// Wait for broker ready.
-	client.Core.WaitForResourceReadyOrFail(brokerName, lib.BrokerTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(brokerName, testlib.BrokerTypeMeta)
 
 	// Get broker URL.
-	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, lib.BrokerTypeMeta)
+	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, testlib.BrokerTypeMeta)
 	u, err := duck.GetAddressableURI(client.Core.Dynamic, metaAddressable)
 	if err != nil {
 		client.T.Error(err.Error())

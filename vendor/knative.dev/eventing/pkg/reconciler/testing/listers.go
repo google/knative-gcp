@@ -31,32 +31,20 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/tools/cache"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
-	flowsv1beta1 "knative.dev/eventing/pkg/apis/flows/v1beta1"
-	messagingv1beta1 "knative.dev/eventing/pkg/apis/messaging/v1beta1"
-	sourcesv1alpha1 "knative.dev/eventing/pkg/apis/sources/v1alpha1"
-	sourcesv1alpha2 "knative.dev/eventing/pkg/apis/sources/v1alpha2"
-	sourcesv1beta1 "knative.dev/eventing/pkg/apis/sources/v1beta1"
 	sourcesv1beta2 "knative.dev/eventing/pkg/apis/sources/v1beta2"
 	fakeeventingclientset "knative.dev/eventing/pkg/client/clientset/versioned/fake"
-	eventingv1beta1listers "knative.dev/eventing/pkg/client/listers/eventing/v1beta1"
-	flowslisters "knative.dev/eventing/pkg/client/listers/flows/v1beta1"
-	messaginglistersv1beta1 "knative.dev/eventing/pkg/client/listers/messaging/v1beta1"
-	sourcelisters "knative.dev/eventing/pkg/client/listers/sources/v1alpha1"
-	sourcev1alpha2listers "knative.dev/eventing/pkg/client/listers/sources/v1alpha2"
-	sourcev1beta1listers "knative.dev/eventing/pkg/client/listers/sources/v1beta1"
 	sourcev1beta2listers "knative.dev/eventing/pkg/client/listers/sources/v1beta2"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/reconciler/testing"
 )
 
 var subscriberAddToScheme = func(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "testing.eventing.knative.dev", Version: "v1alpha1", Kind: "Subscriber"}, &unstructured.Unstructured{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "testing.eventing.knative.dev", Version: "v1", Kind: "Subscriber"}, &unstructured.Unstructured{})
 	return nil
 }
 
 var sourceAddToScheme = func(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "testing.sources.knative.dev", Version: "v1alpha1", Kind: "TestSource"}, &duckv1.Source{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "testing.sources.knative.dev", Version: "v1", Kind: "TestSource"}, &duckv1.Source{})
 	return nil
 }
 
@@ -124,64 +112,8 @@ func (l *Listers) GetAllObjects() []runtime.Object {
 	return all
 }
 
-func (l *Listers) GetV1Beta1SubscriptionLister() messaginglistersv1beta1.SubscriptionLister {
-	return messaginglistersv1beta1.NewSubscriptionLister(l.indexerFor(&messagingv1beta1.Subscription{}))
-}
-
-func (l *Listers) GetFlowsSequenceLister() flowslisters.SequenceLister {
-	return flowslisters.NewSequenceLister(l.indexerFor(&flowsv1beta1.Sequence{}))
-}
-
-func (l *Listers) GetV1Beta1TriggerLister() eventingv1beta1listers.TriggerLister {
-	return eventingv1beta1listers.NewTriggerLister(l.indexerFor(&eventingv1beta1.Trigger{}))
-}
-
-func (l *Listers) GetV1Beta1BrokerLister() eventingv1beta1listers.BrokerLister {
-	return eventingv1beta1listers.NewBrokerLister(l.indexerFor(&eventingv1beta1.Broker{}))
-}
-
-func (l *Listers) GetV1Beta1EventTypeLister() eventingv1beta1listers.EventTypeLister {
-	return eventingv1beta1listers.NewEventTypeLister(l.indexerFor(&eventingv1beta1.EventType{}))
-}
-
-func (l *Listers) GetV1Beta1InMemoryChannelLister() messaginglistersv1beta1.InMemoryChannelLister {
-	return messaginglistersv1beta1.NewInMemoryChannelLister(l.indexerFor(&messagingv1beta1.InMemoryChannel{}))
-}
-
-func (l *Listers) GetV1Beta1MessagingChannelLister() messaginglistersv1beta1.ChannelLister {
-	return messaginglistersv1beta1.NewChannelLister(l.indexerFor(&messagingv1beta1.Channel{}))
-}
-
-func (l *Listers) GetFlowsParallelLister() flowslisters.ParallelLister {
-	return flowslisters.NewParallelLister(l.indexerFor(&flowsv1beta1.Parallel{}))
-}
-
-func (l *Listers) GetApiServerSourceLister() sourcelisters.ApiServerSourceLister {
-	return sourcelisters.NewApiServerSourceLister(l.indexerFor(&sourcesv1alpha1.ApiServerSource{}))
-}
-
-func (l *Listers) GetSinkBindingLister() sourcelisters.SinkBindingLister {
-	return sourcelisters.NewSinkBindingLister(l.indexerFor(&sourcesv1alpha1.SinkBinding{}))
-}
-
-func (l *Listers) GetPingSourceV1beta1Lister() sourcev1beta1listers.PingSourceLister {
-	return sourcev1beta1listers.NewPingSourceLister(l.indexerFor(&sourcesv1beta1.PingSource{}))
-}
-
 func (l *Listers) GetPingSourceV1beta2Lister() sourcev1beta2listers.PingSourceLister {
 	return sourcev1beta2listers.NewPingSourceLister(l.indexerFor(&sourcesv1beta2.PingSource{}))
-}
-
-func (l *Listers) GetSinkBindingV1alpha2Lister() sourcev1alpha2listers.SinkBindingLister {
-	return sourcev1alpha2listers.NewSinkBindingLister(l.indexerFor(&sourcesv1alpha2.SinkBinding{}))
-}
-
-func (l *Listers) GetSinkBindingV1beta1Lister() sourcev1beta1listers.SinkBindingLister {
-	return sourcev1beta1listers.NewSinkBindingLister(l.indexerFor(&sourcesv1beta1.SinkBinding{}))
-}
-
-func (l *Listers) GetApiServerSourceV1alpha2Lister() sourcev1alpha2listers.ApiServerSourceLister {
-	return sourcev1alpha2listers.NewApiServerSourceLister(l.indexerFor(&sourcesv1alpha2.ApiServerSource{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
