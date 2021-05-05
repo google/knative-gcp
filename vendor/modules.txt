@@ -192,7 +192,7 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.4.1-0.20210128200529-19c2b639fab1
+# github.com/google/go-containerregistry v0.5.0
 github.com/google/go-containerregistry/pkg/name
 # github.com/google/go-github/v27 v27.0.6
 github.com/google/go-github/v27/github
@@ -1023,7 +1023,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.22.1-0.20210504001137-8a094e6031f2
+# knative.dev/eventing v0.22.1-0.20210505162953-768b7d116d03
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/duck
@@ -1248,7 +1248,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.22.1-0.20210504110338-c2f3fda2009a
+# knative.dev/serving v0.22.1-0.20210505154753-2d4e4a1eff9d
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
