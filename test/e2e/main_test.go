@@ -51,7 +51,8 @@ func TestMain(m *testing.M) {
 	os.Exit(func() int {
 		test.InitializeFlags()
 		eventingtest.InitializeEventingFlags()
-		projectID, e2e_test := os.LookupEnv(lib.ProwProjectKey)
+		// If there's no project ID environment variable, it's probably a build test
+		projectID, projectProvided := os.LookupEnv(lib.ProwProjectKey)
 		channelTestRunner = eventingtestlib.ComponentsTestRunner{
 			// ChannelFeatureMap saves the channel-features mapping.
 			// Each pair means the channel support the given list of features.
@@ -81,7 +82,7 @@ func TestMain(m *testing.M) {
 			return code
 		}
 
-		if e2e_test {
+		if projectProvided {
 			// The knative/pkg base controller emits custom metrics, plus some other components can
 			// potentially emit custom metrics. By default custom metrics should not be published to
 			// Stackdriver.
