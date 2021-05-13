@@ -51,7 +51,8 @@ func TestMain(m *testing.M) {
 	os.Exit(func() int {
 		test.InitializeFlags()
 		eventingtest.InitializeEventingFlags()
-		projectID = os.Getenv(lib.ProwProjectKey)
+		// If there's no project ID environment variable, it's probably a build test
+		projectID, projectProvided := os.LookupEnv(lib.ProwProjectKey)
 		channelTestRunner = eventingtestlib.ComponentsTestRunner{
 			// ChannelFeatureMap saves the channel-features mapping.
 			// Each pair means the channel support the given list of features.
@@ -81,13 +82,15 @@ func TestMain(m *testing.M) {
 			return code
 		}
 
-		// The knative/pkg base controller emits custom metrics, plus some other components can
-		// potentially emit custom metrics. By default custom metrics should not be published to
-		// Stackdriver.
-		// After running all tests, we verify that no custom metrics have been emitted in the past
-		// 30 min to cover roughly how long the e2e tests run.
-		if err := verifyNoCustomMetrics(projectID, time.Duration(-30)*time.Minute); err != nil {
-			log.Fatalf("Failed to verify that no custom metrics are emitted: %v", err)
+		if projectProvided {
+			// The knative/pkg base controller emits custom metrics, plus some other components can
+			// potentially emit custom metrics. By default custom metrics should not be published to
+			// Stackdriver.
+			// After running all tests, we verify that no custom metrics have been emitted in the past
+			// 30 min to cover roughly how long the e2e tests run.
+			if err := verifyNoCustomMetrics(projectID, time.Duration(-30)*time.Minute); err != nil {
+				log.Fatalf("Failed to verify that no custom metrics are emitted: %v", err)
+			}
 		}
 
 		return 0
