@@ -59,5 +59,6 @@ jobs:
                 sort | uniq | \
                 grep -v '^!' | \
                 tr '\n' ' ')"
+
           echo "Building with tags: ${tags}"
           go test -vet=off -tags "${tags}" -run=^$ ./...
