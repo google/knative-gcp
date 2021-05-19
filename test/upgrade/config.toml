@@ -6,4 +6,4 @@ interval = {{ .Config.Interval.Nanoseconds }}
 target = 'http://wathola-receiver.{{- .Config.Namespace -}}.svc.cluster.local'
 [receiver]
 teardown.Duration = 15000000000
-errors.UnavailablePeriodToReport = 0
+errors.UnavailablePeriodToReport = 1000000000
