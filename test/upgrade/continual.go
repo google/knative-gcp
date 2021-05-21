@@ -18,38 +18,29 @@ limitations under the License.
 package upgrade
 
 import (
-	"context"
 	"time"
 
 	brokerv1 "github.com/google/knative-gcp/pkg/apis/broker/v1"
-	testlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/resources"
 	"knative.dev/eventing/test/upgrade/prober"
+	"knative.dev/eventing/test/upgrade/prober/sut"
 	pkgupgrade "knative.dev/pkg/test/upgrade"
 )
 
 func ContinualTest() pkgupgrade.BackgroundOperation {
-	ctx := context.Background()
-	var client *testlib.Client
-	var probe prober.Prober
-	return pkgupgrade.NewBackgroundVerification("EventingContinualTest",
-		func(c pkgupgrade.Context) {
-			// setup
-			client = testlib.Setup(c.T, false)
-			config := prober.NewConfig(client.Namespace)
-			// overwrite configuration
-			config.FailOnErrors = true
-			config.Interval = 10 * time.Millisecond
-			config.BrokerOpts = append(config.BrokerOpts, resources.WithBrokerClassForBroker(brokerv1.BrokerClass))
-			config.FinishedSleep = 40 * time.Second
-			// This is always relative path from the eventing prober in vendor directory
-			config.ConfigTemplate = "../../../../../../test/upgrade/config.toml"
-			probe = prober.RunEventProber(ctx, c.Log, client, config)
-		},
-		func(c pkgupgrade.Context) {
-			// verify
-			defer testlib.TearDown(client)
-			prober.AssertEventProber(ctx, c.T, probe)
-		},
-	)
+	configurator := func(config *prober.Config) error {
+		config.FailOnErrors = true
+		config.Interval = 10 * time.Millisecond
+		config.FinishedSleep = 40 * time.Second
+		config.ConfigTemplate = "../../../../../../test/upgrade/config.toml"
+		bt := config.SystemUnderTest.(*sut.BrokerAndTriggers)
+		bt.Opts = []resources.BrokerOption{
+			resources.WithBrokerClassForBroker(brokerv1.BrokerClass),
+		}
+		return nil
+	}
+	opts := prober.ContinualVerificationOptions{
+		Configurators: []prober.Configurator{configurator},
+	}
+	return prober.NewContinualVerification("EventingContinualTest", opts)
 }
