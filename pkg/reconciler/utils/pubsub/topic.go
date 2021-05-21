@@ -48,7 +48,7 @@ func (r *Reconciler) ReconcileTopic(ctx context.Context, id string, topicConfig 
 	}
 
 	// Create a new topic.
-	logger.Debug("Creating topic with cfg", zap.String("id", id), zap.Any("cfg", topicConfig))
+	logger.Info("Creating topic with cfg", zap.String("id", id), zap.Any("cfg", topicConfig))
 	topic, err = r.client.CreateTopicWithConfig(ctx, id, topicConfig)
 	if err != nil {
 		logger.Error("Failed to create Pub/Sub topic", zap.Error(err))
