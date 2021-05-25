@@ -1,4 +1,4 @@
-# logLevel = 'DEBUG'
+# logLevel = 5 # DEBUG(5)
 [sender]
 address = '{{- .BrokerURL -}}'
 interval = {{ .Config.Interval.Nanoseconds }}

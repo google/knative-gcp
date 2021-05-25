@@ -136,7 +136,10 @@ func (dest *Destination) GetRef() *corev1.ObjectReference {
 	if dest.Ref != nil {
 		return dest.Ref
 	}
-	return dest.deprecatedObjectReference()
+	if ref := dest.deprecatedObjectReference(); ref != nil {
+		return ref
+	}
+	return nil
 }
 
 func validateDestinationRef(ref corev1.ObjectReference) *apis.FieldError {

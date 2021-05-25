@@ -20,6 +20,7 @@ require (
 	github.com/lightstep/tracecontext.go v0.0.0-20181129014701-1757c391b1ac
 	github.com/pkg/errors v0.9.1
 	github.com/rickb777/date v1.13.0
+	github.com/stretchr/testify v1.7.0 // indirect
 	go.opencensus.io v0.23.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
@@ -33,10 +34,11 @@ require (
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v0.19.7
-	knative.dev/eventing v0.23.1-0.20210520143017-869220a8c3c3
+	knative.dev/eventing v0.23.0
 	knative.dev/hack v0.0.0-20210428122153-93ad9129c268
-	knative.dev/pkg v0.0.0-20210520062216-e749d6a2ad0e
-	knative.dev/serving v0.23.1-0.20210520141217-a59495bbd17d
+	knative.dev/networking v0.0.0-20210519080815-4a780203e35b // indirect
+	knative.dev/pkg v0.0.0-20210510175900-4564797bf3b7
+	knative.dev/serving v0.23.0
 	sigs.k8s.io/yaml v1.2.0
 )
 

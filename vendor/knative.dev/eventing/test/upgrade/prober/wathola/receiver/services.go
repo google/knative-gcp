@@ -50,7 +50,7 @@ func (r receiver) Receive() {
 }
 
 func (r receiver) receiveEvent(e cloudevents.Event) {
-	log.Debug("Event received: ", e)
+	// do something with event.Context and event.Data (via event.DataAs(foo)
 	t := e.Context.GetType()
 	if t == event.StepType {
 		step := &event.Step{}
