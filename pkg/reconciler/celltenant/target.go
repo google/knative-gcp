@@ -19,6 +19,7 @@ package celltenant
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
@@ -89,6 +90,12 @@ func (r *TargetReconciler) ReconcileRetryTopicAndSubscription(ctx context.Contex
 	// Check if topic exists, and if not, create it.
 	topicID := t.GetTopicID()
 	topicConfig := &pubsub.TopicConfig{Labels: t.GetLabels()}
+	// Topic label value cannot contain ".", we replace it with "-".
+	for k, v := range topicConfig.Labels {
+		if strings.Contains(v, ".") {
+			topicConfig.Labels[k] = strings.ReplaceAll(v, ".", "-")
+		}
+	}
 	if r.DataresidencyStore != nil {
 		if r.DataresidencyStore.Load().DataResidencyDefaults.ComputeAllowedPersistenceRegions(topicConfig, r.ClusterRegion) {
 			logging.FromContext(ctx).Debug("Updated Topic Config AllowedPersistenceRegions for Trigger", zap.Any("topicConfig", *topicConfig))
@@ -107,9 +114,16 @@ func (r *TargetReconciler) ReconcileRetryTopicAndSubscription(ctx context.Contex
 
 	// Check if PullSub exists, and if not, create it.
 	subID := t.GetSubscriptionName()
+	// Topic label value cannot contain ".", we replace it with "-".
+	labels := t.GetLabels()
+	for k, v := range labels {
+		if strings.Contains(v, ".") {
+			labels[k] = strings.ReplaceAll(v, ".", "-")
+		}
+	}
 	subConfig := pubsub.SubscriptionConfig{
 		Topic:            topic,
-		Labels:           t.GetLabels(),
+		Labels:           labels,
 		RetryPolicy:      retryPolicy,
 		DeadLetterPolicy: deadLetterPolicy,
 		//TODO(grantr): configure these settings?
