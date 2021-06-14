@@ -3,7 +3,7 @@
     "oauth2": {
       "scopes": {
         "https://www.googleapis.com/auth/cloud-platform": {
-          "description": "View and manage your data across Google Cloud Platform services"
+          "description": "See, edit, configure, and delete your Google Cloud Platform data"
         },
         "https://www.googleapis.com/auth/cloud-platform.read-only": {
           "description": "View your data across Google Cloud Platform services"
@@ -386,7 +386,7 @@
               ],
               "parameters": {
                 "filter": {
-                  "description": "The standard list filter.",
+                  "description": "A filter to narrow down results to a preferred subset. The filtering language accepts strings like \"displayName=tokyo\", and is documented in more detail in AIP-160 (https://google.aip.dev/160).",
                   "location": "query",
                   "type": "string"
                 },
@@ -398,13 +398,13 @@
                   "type": "string"
                 },
                 "pageSize": {
-                  "description": "The standard list page size.",
+                  "description": "The maximum number of results to return. If not set, the service selects a default.",
                   "format": "int32",
                   "location": "query",
                   "type": "integer"
                 },
                 "pageToken": {
-                  "description": "The standard list page token.",
+                  "description": "A page token received from the next_page_token field in the response. Send that page token to receive the subsequent page.",
                   "location": "query",
                   "type": "string"
                 }
@@ -734,7 +734,7 @@
         "logs": {
           "methods": {
             "delete": {
-              "description": "Deletes all the log entries in a log. The log reappears if it receives new entries. Log entries written shortly before the delete operation might not be deleted. Entries received after the delete operation with a timestamp before the operation will be deleted.",
+              "description": "Deletes all the log entries in a log for the _Default Log Bucket. The log reappears if it receives new entries. Log entries written shortly before the delete operation might not be deleted. Entries received after the delete operation with a timestamp before the operation will be deleted.",
               "flatPath": "v2/billingAccounts/{billingAccountsId}/logs/{logsId}",
               "httpMethod": "DELETE",
               "id": "logging.billingAccounts.logs.delete",
@@ -743,7 +743,7 @@
               ],
               "parameters": {
                 "logName": {
-                  "description": "Required. The resource name of the log to delete: \"projects/[PROJECT_ID]/logs/[LOG_ID]\" \"organizations/[ORGANIZATION_ID]/logs/[LOG_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]\" \"folders/[FOLDER_ID]/logs/[LOG_ID]\" [LOG_ID] must be URL-encoded. For example, \"projects/my-project-id/logs/syslog\", \"organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity\". For more information about log names, see LogEntry.",
+                  "description": "Required. The resource name of the log to delete: projects/[PROJECT_ID]/logs/[LOG_ID] organizations/[ORGANIZATION_ID]/logs/[LOG_ID] billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID] folders/[FOLDER_ID]/logs/[LOG_ID][LOG_ID] must be URL-encoded. For example, \"projects/my-project-id/logs/syslog\", \"organizations/123/logs/cloudaudit.googleapis.com%2Factivity\".For more information about log names, see LogEntry.",
                   "location": "path",
                   "pattern": "^billingAccounts/[^/]+/logs/[^/]+$",
                   "required": true,
@@ -780,14 +780,14 @@
                   "type": "string"
                 },
                 "parent": {
-                  "description": "Required. The resource name that owns the logs: \"projects/[PROJECT_ID]\" \"organizations/[ORGANIZATION_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]\" \"folders/[FOLDER_ID]\" ",
+                  "description": "Required. The resource name that owns the logs: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]",
                   "location": "path",
                   "pattern": "^billingAccounts/[^/]+$",
                   "required": true,
                   "type": "string"
                 },
                 "resourceNames": {
-                  "description": "Optional. The resource name that owns the logs: projects/PROJECT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID organization/ORGANIZATION_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID billingAccounts/BILLING_ACCOUNT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID folders/FOLDER_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_IDTo support legacy queries, it could also be: \"projects/PROJECT_ID\" \"organizations/ORGANIZATION_ID\" \"billingAccounts/BILLING_ACCOUNT_ID\" \"folders/FOLDER_ID\"",
+                  "description": "Optional. The resource name that owns the logs: projects/[PROJECT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] organizations/[ORGANIZATION_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] billingAccounts/[BILLING_ACCOUNT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] folders/[FOLDER_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID]To support legacy queries, it could also be: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]",
                   "location": "query",
                   "repeated": true,
                   "type": "string"
@@ -1449,7 +1449,7 @@
               ],
               "parameters": {
                 "filter": {
-                  "description": "The standard list filter.",
+                  "description": "A filter to narrow down results to a preferred subset. The filtering language accepts strings like \"displayName=tokyo\", and is documented in more detail in AIP-160 (https://google.aip.dev/160).",
                   "location": "query",
                   "type": "string"
                 },
@@ -1461,13 +1461,13 @@
                   "type": "string"
                 },
                 "pageSize": {
-                  "description": "The standard list page size.",
+                  "description": "The maximum number of results to return. If not set, the service selects a default.",
                   "format": "int32",
                   "location": "query",
                   "type": "integer"
                 },
                 "pageToken": {
-                  "description": "The standard list page token.",
+                  "description": "A page token received from the next_page_token field in the response. Send that page token to receive the subsequent page.",
                   "location": "query",
                   "type": "string"
                 }
@@ -1853,7 +1853,7 @@
         "logs": {
           "methods": {
             "delete": {
-              "description": "Deletes all the log entries in a log. The log reappears if it receives new entries. Log entries written shortly before the delete operation might not be deleted. Entries received after the delete operation with a timestamp before the operation will be deleted.",
+              "description": "Deletes all the log entries in a log for the _Default Log Bucket. The log reappears if it receives new entries. Log entries written shortly before the delete operation might not be deleted. Entries received after the delete operation with a timestamp before the operation will be deleted.",
               "flatPath": "v2/folders/{foldersId}/logs/{logsId}",
               "httpMethod": "DELETE",
               "id": "logging.folders.logs.delete",
@@ -1862,7 +1862,7 @@
               ],
               "parameters": {
                 "logName": {
-                  "description": "Required. The resource name of the log to delete: \"projects/[PROJECT_ID]/logs/[LOG_ID]\" \"organizations/[ORGANIZATION_ID]/logs/[LOG_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]\" \"folders/[FOLDER_ID]/logs/[LOG_ID]\" [LOG_ID] must be URL-encoded. For example, \"projects/my-project-id/logs/syslog\", \"organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity\". For more information about log names, see LogEntry.",
+                  "description": "Required. The resource name of the log to delete: projects/[PROJECT_ID]/logs/[LOG_ID] organizations/[ORGANIZATION_ID]/logs/[LOG_ID] billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID] folders/[FOLDER_ID]/logs/[LOG_ID][LOG_ID] must be URL-encoded. For example, \"projects/my-project-id/logs/syslog\", \"organizations/123/logs/cloudaudit.googleapis.com%2Factivity\".For more information about log names, see LogEntry.",
                   "location": "path",
                   "pattern": "^folders/[^/]+/logs/[^/]+$",
                   "required": true,
@@ -1899,14 +1899,14 @@
                   "type": "string"
                 },
                 "parent": {
-                  "description": "Required. The resource name that owns the logs: \"projects/[PROJECT_ID]\" \"organizations/[ORGANIZATION_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]\" \"folders/[FOLDER_ID]\" ",
+                  "description": "Required. The resource name that owns the logs: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]",
                   "location": "path",
                   "pattern": "^folders/[^/]+$",
                   "required": true,
                   "type": "string"
                 },
                 "resourceNames": {
-                  "description": "Optional. The resource name that owns the logs: projects/PROJECT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID organization/ORGANIZATION_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID billingAccounts/BILLING_ACCOUNT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID folders/FOLDER_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_IDTo support legacy queries, it could also be: \"projects/PROJECT_ID\" \"organizations/ORGANIZATION_ID\" \"billingAccounts/BILLING_ACCOUNT_ID\" \"folders/FOLDER_ID\"",
+                  "description": "Optional. The resource name that owns the logs: projects/[PROJECT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] organizations/[ORGANIZATION_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] billingAccounts/[BILLING_ACCOUNT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] folders/[FOLDER_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID]To support legacy queries, it could also be: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]",
                   "location": "query",
                   "repeated": true,
                   "type": "string"
@@ -2178,7 +2178,7 @@
           ],
           "parameters": {
             "filter": {
-              "description": "The standard list filter.",
+              "description": "A filter to narrow down results to a preferred subset. The filtering language accepts strings like \"displayName=tokyo\", and is documented in more detail in AIP-160 (https://google.aip.dev/160).",
               "location": "query",
               "type": "string"
             },
@@ -2190,13 +2190,13 @@
               "type": "string"
             },
             "pageSize": {
-              "description": "The standard list page size.",
+              "description": "The maximum number of results to return. If not set, the service selects a default.",
               "format": "int32",
               "location": "query",
               "type": "integer"
             },
             "pageToken": {
-              "description": "The standard list page token.",
+              "description": "A page token received from the next_page_token field in the response. Send that page token to receive the subsequent page.",
               "location": "query",
               "type": "string"
             }
@@ -2582,7 +2582,7 @@
     "logs": {
       "methods": {
         "delete": {
-          "description": "Deletes all the log entries in a log. The log reappears if it receives new entries. Log entries written shortly before the delete operation might not be deleted. Entries received after the delete operation with a timestamp before the operation will be deleted.",
+          "description": "Deletes all the log entries in a log for the _Default Log Bucket. The log reappears if it receives new entries. Log entries written shortly before the delete operation might not be deleted. Entries received after the delete operation with a timestamp before the operation will be deleted.",
           "flatPath": "v2/{v2Id}/{v2Id1}/logs/{logsId}",
           "httpMethod": "DELETE",
           "id": "logging.logs.delete",
@@ -2591,7 +2591,7 @@
           ],
           "parameters": {
             "logName": {
-              "description": "Required. The resource name of the log to delete: \"projects/[PROJECT_ID]/logs/[LOG_ID]\" \"organizations/[ORGANIZATION_ID]/logs/[LOG_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]\" \"folders/[FOLDER_ID]/logs/[LOG_ID]\" [LOG_ID] must be URL-encoded. For example, \"projects/my-project-id/logs/syslog\", \"organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity\". For more information about log names, see LogEntry.",
+              "description": "Required. The resource name of the log to delete: projects/[PROJECT_ID]/logs/[LOG_ID] organizations/[ORGANIZATION_ID]/logs/[LOG_ID] billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID] folders/[FOLDER_ID]/logs/[LOG_ID][LOG_ID] must be URL-encoded. For example, \"projects/my-project-id/logs/syslog\", \"organizations/123/logs/cloudaudit.googleapis.com%2Factivity\".For more information about log names, see LogEntry.",
               "location": "path",
               "pattern": "^[^/]+/[^/]+/logs/[^/]+$",
               "required": true,
@@ -2628,14 +2628,14 @@
               "type": "string"
             },
             "parent": {
-              "description": "Required. The resource name that owns the logs: \"projects/[PROJECT_ID]\" \"organizations/[ORGANIZATION_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]\" \"folders/[FOLDER_ID]\" ",
+              "description": "Required. The resource name that owns the logs: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]",
               "location": "path",
               "pattern": "^[^/]+/[^/]+$",
               "required": true,
               "type": "string"
             },
             "resourceNames": {
-              "description": "Optional. The resource name that owns the logs: projects/PROJECT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID organization/ORGANIZATION_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID billingAccounts/BILLING_ACCOUNT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID folders/FOLDER_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_IDTo support legacy queries, it could also be: \"projects/PROJECT_ID\" \"organizations/ORGANIZATION_ID\" \"billingAccounts/BILLING_ACCOUNT_ID\" \"folders/FOLDER_ID\"",
+              "description": "Optional. The resource name that owns the logs: projects/[PROJECT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] organizations/[ORGANIZATION_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] billingAccounts/[BILLING_ACCOUNT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] folders/[FOLDER_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID]To support legacy queries, it could also be: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]",
               "location": "query",
               "repeated": true,
               "type": "string"
@@ -2956,7 +2956,7 @@
               ],
               "parameters": {
                 "filter": {
-                  "description": "The standard list filter.",
+                  "description": "A filter to narrow down results to a preferred subset. The filtering language accepts strings like \"displayName=tokyo\", and is documented in more detail in AIP-160 (https://google.aip.dev/160).",
                   "location": "query",
                   "type": "string"
                 },
@@ -2968,13 +2968,13 @@
                   "type": "string"
                 },
                 "pageSize": {
-                  "description": "The standard list page size.",
+                  "description": "The maximum number of results to return. If not set, the service selects a default.",
                   "format": "int32",
                   "location": "query",
                   "type": "integer"
                 },
                 "pageToken": {
-                  "description": "The standard list page token.",
+                  "description": "A page token received from the next_page_token field in the response. Send that page token to receive the subsequent page.",
                   "location": "query",
                   "type": "string"
                 }
@@ -3360,7 +3360,7 @@
         "logs": {
           "methods": {
             "delete": {
-              "description": "Deletes all the log entries in a log. The log reappears if it receives new entries. Log entries written shortly before the delete operation might not be deleted. Entries received after the delete operation with a timestamp before the operation will be deleted.",
+              "description": "Deletes all the log entries in a log for the _Default Log Bucket. The log reappears if it receives new entries. Log entries written shortly before the delete operation might not be deleted. Entries received after the delete operation with a timestamp before the operation will be deleted.",
               "flatPath": "v2/organizations/{organizationsId}/logs/{logsId}",
               "httpMethod": "DELETE",
               "id": "logging.organizations.logs.delete",
@@ -3369,7 +3369,7 @@
               ],
               "parameters": {
                 "logName": {
-                  "description": "Required. The resource name of the log to delete: \"projects/[PROJECT_ID]/logs/[LOG_ID]\" \"organizations/[ORGANIZATION_ID]/logs/[LOG_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]\" \"folders/[FOLDER_ID]/logs/[LOG_ID]\" [LOG_ID] must be URL-encoded. For example, \"projects/my-project-id/logs/syslog\", \"organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity\". For more information about log names, see LogEntry.",
+                  "description": "Required. The resource name of the log to delete: projects/[PROJECT_ID]/logs/[LOG_ID] organizations/[ORGANIZATION_ID]/logs/[LOG_ID] billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID] folders/[FOLDER_ID]/logs/[LOG_ID][LOG_ID] must be URL-encoded. For example, \"projects/my-project-id/logs/syslog\", \"organizations/123/logs/cloudaudit.googleapis.com%2Factivity\".For more information about log names, see LogEntry.",
                   "location": "path",
                   "pattern": "^organizations/[^/]+/logs/[^/]+$",
                   "required": true,
@@ -3406,14 +3406,14 @@
                   "type": "string"
                 },
                 "parent": {
-                  "description": "Required. The resource name that owns the logs: \"projects/[PROJECT_ID]\" \"organizations/[ORGANIZATION_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]\" \"folders/[FOLDER_ID]\" ",
+                  "description": "Required. The resource name that owns the logs: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]",
                   "location": "path",
                   "pattern": "^organizations/[^/]+$",
                   "required": true,
                   "type": "string"
                 },
                 "resourceNames": {
-                  "description": "Optional. The resource name that owns the logs: projects/PROJECT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID organization/ORGANIZATION_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID billingAccounts/BILLING_ACCOUNT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID folders/FOLDER_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_IDTo support legacy queries, it could also be: \"projects/PROJECT_ID\" \"organizations/ORGANIZATION_ID\" \"billingAccounts/BILLING_ACCOUNT_ID\" \"folders/FOLDER_ID\"",
+                  "description": "Optional. The resource name that owns the logs: projects/[PROJECT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] organizations/[ORGANIZATION_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] billingAccounts/[BILLING_ACCOUNT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] folders/[FOLDER_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID]To support legacy queries, it could also be: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]",
                   "location": "query",
                   "repeated": true,
                   "type": "string"
@@ -3848,7 +3848,7 @@
               ],
               "parameters": {
                 "filter": {
-                  "description": "The standard list filter.",
+                  "description": "A filter to narrow down results to a preferred subset. The filtering language accepts strings like \"displayName=tokyo\", and is documented in more detail in AIP-160 (https://google.aip.dev/160).",
                   "location": "query",
                   "type": "string"
                 },
@@ -3860,13 +3860,13 @@
                   "type": "string"
                 },
                 "pageSize": {
-                  "description": "The standard list page size.",
+                  "description": "The maximum number of results to return. If not set, the service selects a default.",
                   "format": "int32",
                   "location": "query",
                   "type": "integer"
                 },
                 "pageToken": {
-                  "description": "The standard list page token.",
+                  "description": "A page token received from the next_page_token field in the response. Send that page token to receive the subsequent page.",
                   "location": "query",
                   "type": "string"
                 }
@@ -4252,7 +4252,7 @@
         "logs": {
           "methods": {
             "delete": {
-              "description": "Deletes all the log entries in a log. The log reappears if it receives new entries. Log entries written shortly before the delete operation might not be deleted. Entries received after the delete operation with a timestamp before the operation will be deleted.",
+              "description": "Deletes all the log entries in a log for the _Default Log Bucket. The log reappears if it receives new entries. Log entries written shortly before the delete operation might not be deleted. Entries received after the delete operation with a timestamp before the operation will be deleted.",
               "flatPath": "v2/projects/{projectsId}/logs/{logsId}",
               "httpMethod": "DELETE",
               "id": "logging.projects.logs.delete",
@@ -4261,7 +4261,7 @@
               ],
               "parameters": {
                 "logName": {
-                  "description": "Required. The resource name of the log to delete: \"projects/[PROJECT_ID]/logs/[LOG_ID]\" \"organizations/[ORGANIZATION_ID]/logs/[LOG_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]\" \"folders/[FOLDER_ID]/logs/[LOG_ID]\" [LOG_ID] must be URL-encoded. For example, \"projects/my-project-id/logs/syslog\", \"organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity\". For more information about log names, see LogEntry.",
+                  "description": "Required. The resource name of the log to delete: projects/[PROJECT_ID]/logs/[LOG_ID] organizations/[ORGANIZATION_ID]/logs/[LOG_ID] billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID] folders/[FOLDER_ID]/logs/[LOG_ID][LOG_ID] must be URL-encoded. For example, \"projects/my-project-id/logs/syslog\", \"organizations/123/logs/cloudaudit.googleapis.com%2Factivity\".For more information about log names, see LogEntry.",
                   "location": "path",
                   "pattern": "^projects/[^/]+/logs/[^/]+$",
                   "required": true,
@@ -4298,14 +4298,14 @@
                   "type": "string"
                 },
                 "parent": {
-                  "description": "Required. The resource name that owns the logs: \"projects/[PROJECT_ID]\" \"organizations/[ORGANIZATION_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]\" \"folders/[FOLDER_ID]\" ",
+                  "description": "Required. The resource name that owns the logs: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]",
                   "location": "path",
                   "pattern": "^projects/[^/]+$",
                   "required": true,
                   "type": "string"
                 },
                 "resourceNames": {
-                  "description": "Optional. The resource name that owns the logs: projects/PROJECT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID organization/ORGANIZATION_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID billingAccounts/BILLING_ACCOUNT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID folders/FOLDER_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_IDTo support legacy queries, it could also be: \"projects/PROJECT_ID\" \"organizations/ORGANIZATION_ID\" \"billingAccounts/BILLING_ACCOUNT_ID\" \"folders/FOLDER_ID\"",
+                  "description": "Optional. The resource name that owns the logs: projects/[PROJECT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] organizations/[ORGANIZATION_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] billingAccounts/[BILLING_ACCOUNT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] folders/[FOLDER_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID]To support legacy queries, it could also be: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]",
                   "location": "query",
                   "repeated": true,
                   "type": "string"
@@ -4934,7 +4934,7 @@
       }
     }
   },
-  "revision": "20201114",
+  "revision": "20210507",
   "rootUrl": "https://logging.googleapis.com/",
   "schemas": {
     "BigQueryOptions": {
@@ -5242,7 +5242,7 @@
           "type": "array"
         },
         "resourceNames": {
-          "description": "Required. Names of one or more parent resources from which to retrieve log entries: \"projects/[PROJECT_ID]\" \"organizations/[ORGANIZATION_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]\" \"folders/[FOLDER_ID]\" May alternatively be one or more views projects/PROJECT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID organization/ORGANIZATION_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID billingAccounts/BILLING_ACCOUNT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID folders/FOLDER_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_IDProjects listed in the project_ids field are added to this list.",
+          "description": "Required. Names of one or more parent resources from which to retrieve log entries: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]May alternatively be one or more views: projects/[PROJECT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] organizations/[ORGANIZATION_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] billingAccounts/[BILLING_ACCOUNT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] folders/[FOLDER_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID]Projects listed in the project_ids field are added to this list.",
           "items": {
             "type": "string"
           },
@@ -5427,9 +5427,16 @@
           "type": "boolean"
         },
         "name": {
-          "description": "Output only. The resource name of the bucket. For example: \"projects/my-project-id/locations/my-location/buckets/my-bucket-id The supported locations are: \"global\"For the location of global it is unspecified where logs are actually stored. Once a bucket has been created, the location can not be changed.",
+          "description": "Output only. The resource name of the bucket. For example: \"projects/my-project-id/locations/my-location/buckets/my-bucket-id\" The supported locations are: global, us-central1, us-east1, us-west1, asia-east1, europe-west1.For the location of global it is unspecified where logs are actually stored. Once a bucket has been created, the location can not be changed.",
           "readOnly": true,
           "type": "string"
+        },
+        "restrictedFields": {
+          "description": "Log entry field paths that are denied access in this bucket. The following fields and their children are eligible: textPayload, jsonPayload, protoPayload, httpRequest, labels, sourceLocation. Restricting a repeated field will restrict all values. Adding a parent will block all child fields e.g. foo.bar will block foo.bar.baz.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "retentionDays": {
           "description": "Logs will be retained by default for this amount of time, after which they will automatically be deleted. The minimum retention period is 1 day. If this value is set to zero at bucket creation time, the default time of 30 days will be used.",
@@ -5469,16 +5476,16 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional. A set of user-defined (key, value) data that provides additional information about the log entry.",
+          "description": "Optional. A map of key, value pairs that provides additional information about the log entry. The labels can be user-defined or system-defined.User-defined labels are arbitrary key, value pairs that you can use to classify logs.System-defined labels are defined by GCP services for platform logs. They have two components - a service namespace component and the attribute name. For example: compute.googleapis.com/resource_name.Cloud Logging truncates label keys that exceed 512 B and label values that exceed 64 KB upon their associated log entry being written. The truncation is indicated by an ellipsis at the end of the character string.",
           "type": "object"
         },
         "logName": {
-          "description": "Required. The resource name of the log to which this log entry belongs: \"projects/[PROJECT_ID]/logs/[LOG_ID]\" \"organizations/[ORGANIZATION_ID]/logs/[LOG_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]\" \"folders/[FOLDER_ID]/logs/[LOG_ID]\" A project number may be used in place of PROJECT_ID. The project number is translated to its corresponding PROJECT_ID internally and the log_name field will contain PROJECT_ID in queries and exports.[LOG_ID] must be URL-encoded within log_name. Example: \"organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity\". [LOG_ID] must be less than 512 characters long and can only include the following characters: upper and lower case alphanumeric characters, forward-slash, underscore, hyphen, and period.For backward compatibility, if log_name begins with a forward-slash, such as /projects/..., then the log entry is ingested as usual but the forward-slash is removed. Listing the log entry will not show the leading slash and filtering for a log name with a leading slash will never return any results.",
+          "description": "Required. The resource name of the log to which this log entry belongs: \"projects/[PROJECT_ID]/logs/[LOG_ID]\" \"organizations/[ORGANIZATION_ID]/logs/[LOG_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]\" \"folders/[FOLDER_ID]/logs/[LOG_ID]\" A project number may be used in place of PROJECT_ID. The project number is translated to its corresponding PROJECT_ID internally and the log_name field will contain PROJECT_ID in queries and exports.[LOG_ID] must be URL-encoded within log_name. Example: \"organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity\".[LOG_ID] must be less than 512 characters long and can only include the following characters: upper and lower case alphanumeric characters, forward-slash, underscore, hyphen, and period.For backward compatibility, if log_name begins with a forward-slash, such as /projects/..., then the log entry is ingested as usual, but the forward-slash is removed. Listing the log entry will not show the leading slash and filtering for a log name with a leading slash will never return any results.",
           "type": "string"
         },
         "metadata": {
           "$ref": "MonitoredResourceMetadata",
-          "description": "Output only. Deprecated. Additional metadata about the monitored resource.Only k8s_container, k8s_pod, and k8s_node MonitoredResources have this field populated for GKE versions older than 1.12.6. For GKE versions 1.12.6 and above, the metadata field has been deprecated. The Kubernetes pod labels that used to be in metadata.userLabels will now be present in the labels field with a key prefix of k8s-pod/. The system labels that were present in the metadata.systemLabels field will no longer be available in the LogEntry.",
+          "description": "Output only. Deprecated. This field is not used by Logging. Any value written to it is cleared.",
           "readOnly": true
         },
         "operation": {
@@ -5699,6 +5706,10 @@
           "description": "Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.",
           "type": "string"
         },
+        "disabled": {
+          "description": "Optional. If set to True, then this metric is disabled and it does not generate any points.",
+          "type": "boolean"
+        },
         "filter": {
           "description": "Required. An advanced logs filter (https://cloud.google.com/logging/docs/view/advanced_filters) which is used to match log entries. Example: \"resource.type=gae_app AND severity\u003e=ERROR\" The maximum length of the filter is 20000 characters.",
           "type": "string"
@@ -5744,7 +5755,7 @@
       "type": "object"
     },
     "LogSink": {
-      "description": "Describes a sink used to export log entries to one of the following destinations in any project: a Cloud Storage bucket, a BigQuery dataset, or a Cloud Pub/Sub topic. A logs filter controls which log entries are exported. The sink must be created within a project, organization, billing account, or folder.",
+      "description": "Describes a sink used to export log entries to one of the following destinations in any project: a Cloud Storage bucket, a BigQuery dataset, a Cloud Pub/Sub topic or a Cloud Logging Bucket. A logs filter controls which log entries are exported. The sink must be created within a project, organization, billing account, or folder.",
       "id": "LogSink",
       "properties": {
         "bigqueryOptions": {
@@ -5926,7 +5937,7 @@
           "type": "string"
         },
         "unit": {
-          "description": "The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT) bit bit By byte s second min minute h hour d day 1 dimensionlessPrefixes (PREFIX) k kilo (10^3) M mega (10^6) G giga (10^9) T tera (10^12) P peta (10^15) E exa (10^18) Z zetta (10^21) Y yotta (10^24) m milli (10^-3) u micro (10^-6) n nano (10^-9) p pico (10^-12) f femto (10^-15) a atto (10^-18) z zepto (10^-21) y yocto (10^-24) Ki kibi (2^10) Mi mebi (2^20) Gi gibi (2^30) Ti tebi (2^40) Pi pebi (2^50)GrammarThe grammar also includes these connectors: / division or ratio (as an infix operator). For examples, kBy/{email} or MiBy/10ms (although you should almost never have /s in a metric unit; rates should always be computed at query time from the underlying cumulative or delta value). . multiplication or composition (as an infix operator). For examples, GBy.d or k{watt}.h.The grammar for a unit is as follows: Expression = Component { \".\" Component } { \"/\" Component } ; Component = ( [ PREFIX ] UNIT | \"%\" ) [ Annotation ] | Annotation | \"1\" ; Annotation = \"{\" NAME \"}\" ; Notes: Annotation is just a comment if it follows a UNIT. If the annotation is used alone, then the unit is equivalent to 1. For examples, {request}/s == 1/s, By{transmitted}/s == By/s. NAME is a sequence of non-blank printable ASCII characters not containing { or }. 1 represents a unitary dimensionless unit (https://en.wikipedia.org/wiki/Dimensionless_quantity) of 1, such as in 1/s. It is typically used when none of the basic units are appropriate. For example, \"new users per day\" can be represented as 1/d or {new-users}/d (and a metric value 5 would mean \"5 new users). Alternatively, \"thousands of page views per day\" would be represented as 1000/d or k1/d or k{page_views}/d (and a metric value of 5.3 would mean \"5300 page views per day\"). % represents dimensionless value of 1/100, and annotates values giving a percentage (so the metric values are typically in the range of 0..100, and a metric value 3 means \"3 percent\"). 10^2.% indicates a metric contains a ratio, typically in the range 0..1, that will be multiplied by 100 and displayed as a percentage (so a metric value 0.03 means \"3 percent\").",
+          "description": "The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems might scale the values to be more easily displayed (so a value of 0.02kBy might be displayed as 20By, and a value of 3523kBy might be displayed as 3.5MBy). However, if the unit is kBy, then the value of the metric is always in thousands of bytes, no matter how it might be displayed.If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (https://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT) bit bit By byte s second min minute h hour d day 1 dimensionlessPrefixes (PREFIX) k kilo (10^3) M mega (10^6) G giga (10^9) T tera (10^12) P peta (10^15) E exa (10^18) Z zetta (10^21) Y yotta (10^24) m milli (10^-3) u micro (10^-6) n nano (10^-9) p pico (10^-12) f femto (10^-15) a atto (10^-18) z zepto (10^-21) y yocto (10^-24) Ki kibi (2^10) Mi mebi (2^20) Gi gibi (2^30) Ti tebi (2^40) Pi pebi (2^50)GrammarThe grammar also includes these connectors: / division or ratio (as an infix operator). For examples, kBy/{email} or MiBy/10ms (although you should almost never have /s in a metric unit; rates should always be computed at query time from the underlying cumulative or delta value). . multiplication or composition (as an infix operator). For examples, GBy.d or k{watt}.h.The grammar for a unit is as follows: Expression = Component { \".\" Component } { \"/\" Component } ; Component = ( [ PREFIX ] UNIT | \"%\" ) [ Annotation ] | Annotation | \"1\" ; Annotation = \"{\" NAME \"}\" ; Notes: Annotation is just a comment if it follows a UNIT. If the annotation is used alone, then the unit is equivalent to 1. For examples, {request}/s == 1/s, By{transmitted}/s == By/s. NAME is a sequence of non-blank printable ASCII characters not containing { or }. 1 represents a unitary dimensionless unit (https://en.wikipedia.org/wiki/Dimensionless_quantity) of 1, such as in 1/s. It is typically used when none of the basic units are appropriate. For example, \"new users per day\" can be represented as 1/d or {new-users}/d (and a metric value 5 would mean \"5 new users). Alternatively, \"thousands of page views per day\" would be represented as 1000/d or k1/d or k{page_views}/d (and a metric value of 5.3 would mean \"5300 page views per day\"). % represents dimensionless value of 1/100, and annotates values giving a percentage (so the metric values are typically in the range of 0..100, and a metric value 3 means \"3 percent\"). 10^2.% indicates a metric contains a ratio, typically in the range 0..1, that will be multiplied by 100 and displayed as a percentage (so a metric value 0.03 means \"3 percent\").",
           "type": "string"
         },
         "valueType": {
@@ -6318,7 +6329,7 @@
           "type": "string"
         },
         "resourceNames": {
-          "description": "Required. Name of a parent resource from which to retrieve log entries: \"projects/[PROJECT_ID]\" \"organizations/[ORGANIZATION_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]\" \"folders/[FOLDER_ID]\" May alternatively be one or more views: \"projects/PROJECT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID\" \"organization/ORGANIZATION_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID\" \"billingAccounts/BILLING_ACCOUNT_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID\" \"folders/FOLDER_ID/locations/LOCATION_ID/buckets/BUCKET_ID/views/VIEW_ID\"",
+          "description": "Required. Name of a parent resource from which to retrieve log entries: projects/[PROJECT_ID] organizations/[ORGANIZATION_ID] billingAccounts/[BILLING_ACCOUNT_ID] folders/[FOLDER_ID]May alternatively be one or more views: projects/[PROJECT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] organizations/[ORGANIZATION_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] billingAccounts/[BILLING_ACCOUNT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID] folders/[FOLDER_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID]",
           "items": {
             "type": "string"
           },
@@ -6377,7 +6388,7 @@
           "type": "object"
         },
         "logName": {
-          "description": "Optional. A default log resource name that is assigned to all log entries in entries that do not specify a value for log_name: \"projects/[PROJECT_ID]/logs/[LOG_ID]\" \"organizations/[ORGANIZATION_ID]/logs/[LOG_ID]\" \"billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]\" \"folders/[FOLDER_ID]/logs/[LOG_ID]\" [LOG_ID] must be URL-encoded. For example: \"projects/my-project-id/logs/syslog\" \"organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity\" The permission logging.logEntries.create is needed on each project, organization, billing account, or folder that is receiving new log entries, whether the resource is specified in logName or in an individual log entry.",
+          "description": "Optional. A default log resource name that is assigned to all log entries in entries that do not specify a value for log_name: projects/[PROJECT_ID]/logs/[LOG_ID] organizations/[ORGANIZATION_ID]/logs/[LOG_ID] billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID] folders/[FOLDER_ID]/logs/[LOG_ID][LOG_ID] must be URL-encoded. For example: \"projects/my-project-id/logs/syslog\" \"organizations/123/logs/cloudaudit.googleapis.com%2Factivity\" The permission logging.logEntries.create is needed on each project, organization, billing account, or folder that is receiving new log entries, whether the resource is specified in logName or in an individual log entry.",
           "type": "string"
         },
         "partialSuccess": {
