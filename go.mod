@@ -3,7 +3,7 @@ module github.com/google/knative-gcp
 go 1.15
 
 require (
-	cloud.google.com/go v0.72.0
+	cloud.google.com/go v0.83.0
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
 	cloud.google.com/go/pubsub v1.8.0
 	cloud.google.com/go/storage v1.10.0
@@ -12,7 +12,7 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.4.1
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.5.2
-	github.com/google/go-cmp v0.5.5
+	github.com/google/go-cmp v0.5.6
 	github.com/google/uuid v1.2.0
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
@@ -20,25 +20,23 @@ require (
 	github.com/lightstep/tracecontext.go v0.0.0-20181129014701-1757c391b1ac
 	github.com/pkg/errors v0.9.1
 	github.com/rickb777/date v1.13.0
-	github.com/stretchr/testify v1.7.0 // indirect
 	go.opencensus.io v0.23.0
 	go.uber.org/multierr v1.6.0
-	go.uber.org/zap v1.16.0
-	golang.org/x/net v0.0.0-20210415231046-e915ea6b2b7d
-	golang.org/x/oauth2 v0.0.0-20210413134643-5e61552d6c78
+	go.uber.org/zap v1.17.0
+	golang.org/x/net v0.0.0-20210525063256-abc453219eb5
+	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	google.golang.org/api v0.36.0
-	google.golang.org/genproto v0.0.0-20210416161957-9910b6c460de
-	google.golang.org/grpc v1.37.0
+	google.golang.org/api v0.47.0
+	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
+	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.26.0
-	k8s.io/api v0.19.7
-	k8s.io/apimachinery v0.19.7
-	k8s.io/client-go v0.19.7
-	knative.dev/eventing v0.23.0
-	knative.dev/hack v0.0.0-20210601210329-de04b70e00d0
-	knative.dev/networking v0.0.0-20210519080815-4a780203e35b // indirect
-	knative.dev/pkg v0.0.0-20210510175900-4564797bf3b7
-	knative.dev/serving v0.23.0
+	k8s.io/api v0.20.7
+	k8s.io/apimachinery v0.20.7
+	k8s.io/client-go v0.20.7
+	knative.dev/eventing v0.23.1-0.20210615125721-af6744d48af9
+	knative.dev/hack v0.0.0-20210614141220-66ab1a098940
+	knative.dev/pkg v0.0.0-20210615092720-192b0c9d6e56
+	knative.dev/serving v0.23.1-0.20210615134628-561d9d0c6a04
 	sigs.k8s.io/yaml v1.2.0
 )
 
