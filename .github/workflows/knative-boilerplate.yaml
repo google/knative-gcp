@@ -42,10 +42,10 @@ jobs:
 
     steps:
 
-      - name: Set up Go 1.16.x
+      - name: Set up Go 1.17.x
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16.x
+          go-version: 1.17.x
         id: go
 
       - name: Check out code
@@ -85,7 +85,7 @@ jobs:
           boilerplate-check check \
             --boilerplate ./hack/boilerplate/boilerplate.${{ matrix.extension }}.txt \
             --file-extension ${{ matrix.extension }} \
-            --exclude "(vendor|third_party)/" |
+            --exclude "wire_gen.go|(vendor|third_party)/" |
           reviewdog -efm="%A%f:%l: %m" \
                 -efm="%C%.%#" \
                 -name="${{ matrix.language }} headers" \
