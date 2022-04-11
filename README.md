@@ -1,3 +1,9 @@
+![status: inactive](https://img.shields.io/badge/status-inactive-red.svg)
+
+This project is no longer actively developed or maintained.
+
+For new work related to this project see [Knative accepted as a CNCF incubating project](https://www.cncf.io/blog/2022/03/02/knative-accepted-as-a-cncf-incubating-project/)
+
 # Knative + Google Cloud Platform = 🚀
 
 [![GoDoc](https://godoc.org/github.com/google/knative-gcp?status.svg)](https://godoc.org/github.com/google/knative-gcp)
